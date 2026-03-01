@@ -1,0 +1,1 @@
+{"version":3,"file":"ComponentHeader.d.ts","sourceRoot":"","sources":["../../../../src/components/cards/ComponentHeader.tsx"],"names":[],"mappings":"AAQA,UAAU,KAAK;IACb,KAAK,EAAE,MAAM,CAAC;IACd,OAAO,CAAC,EAAE,MAAM,CAAC;IACjB,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,IAAI,CAAC,EAAE,MAAM,CAAC;CACf;AAED,QAAA,MAAM,eAAe,GAAI,qCAAmC,KAAK,qDA6BhE,CAAC;AAEF,eAAe,eAAe,CAAC"}
