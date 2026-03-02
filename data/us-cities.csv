@@ -1,0 +1,158 @@
+state,city,lat,lng
+AL,Birmingham,33.5186,-86.8104
+AL,Montgomery,32.3668,-86.3000
+AL,Mobile,30.6954,-88.0399
+AL,Huntsville,34.7304,-86.5861
+AK,Anchorage,61.2181,-149.9003
+AZ,Phoenix,33.4484,-112.0740
+AZ,Tucson,32.2226,-110.9747
+AZ,Mesa,33.4152,-111.8315
+AZ,Scottsdale,33.4942,-111.9261
+AZ,Flagstaff,35.1983,-111.6513
+AR,Little Rock,34.7465,-92.2896
+AR,Fort Smith,35.3859,-94.3985
+AR,Fayetteville,36.0626,-94.1574
+CA,Los Angeles,34.0522,-118.2437
+CA,San Francisco,37.7749,-122.4194
+CA,San Diego,32.7157,-117.1611
+CA,San Jose,37.3382,-121.8863
+CA,Sacramento,38.5816,-121.4944
+CA,Fresno,36.7378,-119.7871
+CA,Long Beach,33.7701,-118.1937
+CA,Oakland,37.8044,-122.2712
+CA,Bakersfield,35.3733,-119.0187
+CA,Anaheim,33.8366,-117.9143
+CA,Stockton,37.9577,-121.2908
+CO,Denver,39.7392,-104.9903
+CO,Colorado Springs,38.8339,-104.8214
+CO,Aurora,39.7294,-104.8319
+CO,Fort Collins,40.5853,-105.0844
+CT,Hartford,41.7658,-72.6851
+CT,New Haven,41.3083,-72.9279
+CT,Bridgeport,41.1865,-73.1952
+DE,Wilmington,39.7447,-75.5484
+FL,Jacksonville,30.3322,-81.6557
+FL,Miami,25.7617,-80.1918
+FL,Tampa,27.9506,-82.4572
+FL,Orlando,28.5383,-81.3792
+FL,St. Petersburg,27.7676,-82.6403
+FL,Fort Lauderdale,26.1224,-80.1373
+FL,Tallahassee,30.4518,-84.2807
+FL,Cape Coral,26.5629,-81.9495
+GA,Atlanta,33.7490,-84.3880
+GA,Augusta,33.4735,-82.0105
+GA,Columbus,32.4610,-84.9877
+GA,Savannah,32.0835,-81.0998
+HI,Honolulu,21.3069,-157.8583
+ID,Boise,43.6150,-116.2023
+ID,Nampa,43.5407,-116.5635
+IL,Chicago,41.8781,-87.6298
+IL,Aurora,41.7606,-88.3201
+IL,Rockford,42.2711,-89.0940
+IL,Joliet,41.5253,-88.0814
+IL,Springfield,39.7817,-89.6501
+IN,Indianapolis,39.7684,-86.1581
+IN,Fort Wayne,41.1306,-85.1289
+IN,Evansville,37.9716,-87.5711
+IN,South Bend,41.6764,-86.2520
+IA,Des Moines,41.5868,-93.6250
+IA,Cedar Rapids,41.9779,-91.6656
+IA,Davenport,41.5236,-90.5776
+KS,Wichita,37.6872,-97.3301
+KS,Kansas City,39.1155,-94.6268
+KS,Topeka,39.0558,-95.6890
+KY,Louisville,38.2527,-85.7585
+KY,Lexington,38.0406,-84.5037
+LA,New Orleans,29.9511,-90.0715
+LA,Baton Rouge,30.4515,-91.1871
+LA,Shreveport,32.5252,-93.7502
+ME,Portland,43.6591,-70.2568
+MD,Baltimore,39.2904,-76.6122
+MD,Rockville,39.0840,-77.1528
+MA,Boston,42.3601,-71.0589
+MA,Worcester,42.2626,-71.8023
+MA,Springfield,42.1015,-72.5898
+MI,Detroit,42.3314,-83.0458
+MI,Grand Rapids,42.9634,-85.6681
+MI,Warren,42.5145,-83.0147
+MI,Sterling Heights,42.5803,-83.0302
+MN,Minneapolis,44.9778,-93.2650
+MN,Saint Paul,44.9537,-93.0900
+MN,Rochester,44.0121,-92.4802
+MS,Jackson,32.2988,-90.1848
+MO,Kansas City,39.0997,-94.5786
+MO,Saint Louis,38.6270,-90.1994
+MO,Springfield,37.2090,-93.2923
+MT,Billings,45.7833,-108.5007
+MT,Missoula,46.8721,-113.9940
+NE,Omaha,41.2565,-95.9345
+NE,Lincoln,40.8136,-96.7026
+NV,Las Vegas,36.1699,-115.1398
+NV,Reno,39.5296,-119.8138
+NH,Manchester,42.9956,-71.4548
+NJ,Newark,40.7357,-74.1724
+NJ,Jersey City,40.7178,-74.0431
+NJ,Trenton,40.2171,-74.7429
+NM,Albuquerque,35.0844,-106.6504
+NM,Las Cruces,32.3199,-106.7637
+NY,New York City,40.7128,-74.0060
+NY,Buffalo,42.8864,-78.8784
+NY,Rochester,43.1566,-77.6088
+NY,Syracuse,43.0481,-76.1474
+NY,Albany,42.6526,-73.7562
+NC,Charlotte,35.2271,-80.8431
+NC,Raleigh,35.7796,-78.6382
+NC,Greensboro,36.0726,-79.7920
+NC,Durham,35.9940,-78.8986
+ND,Fargo,46.8772,-96.7898
+ND,Bismarck,46.8083,-100.7837
+OH,Columbus,39.9612,-82.9988
+OH,Cleveland,41.4993,-81.6944
+OH,Cincinnati,39.1031,-84.5120
+OH,Toledo,41.6639,-83.5552
+OH,Akron,41.0814,-81.5190
+OK,Oklahoma City,35.4676,-97.5164
+OK,Tulsa,36.1540,-95.9928
+OR,Portland,45.5051,-122.6750
+OR,Eugene,44.0521,-123.0868
+OR,Salem,44.9429,-123.0351
+PA,Philadelphia,39.9526,-75.1652
+PA,Pittsburgh,40.4406,-79.9959
+PA,Allentown,40.6023,-75.4714
+PA,Erie,42.1292,-80.0851
+RI,Providence,41.8240,-71.4128
+SC,Columbia,34.0007,-81.0348
+SC,Charleston,32.7765,-79.9311
+SD,Sioux Falls,43.5446,-96.7311
+TN,Nashville,36.1627,-86.7816
+TN,Memphis,35.1495,-90.0490
+TN,Knoxville,35.9606,-83.9207
+TN,Chattanooga,35.0456,-85.3097
+TX,Houston,29.7604,-95.3698
+TX,San Antonio,29.4241,-98.4936
+TX,Dallas,32.7767,-96.7970
+TX,Austin,30.2672,-97.7431
+TX,Fort Worth,32.7555,-97.3308
+TX,El Paso,31.7619,-106.4850
+TX,Arlington,32.7357,-97.1081
+TX,Corpus Christi,27.8006,-97.3964
+TX,Lubbock,33.5779,-101.8552
+TX,Laredo,27.5306,-99.4803
+UT,Salt Lake City,40.7608,-111.8910
+UT,West Valley City,40.6916,-112.0010
+UT,Provo,40.2338,-111.6585
+VT,Burlington,44.4759,-73.2121
+VA,Virginia Beach,36.8529,-75.9780
+VA,Norfolk,36.8508,-76.2859
+VA,Richmond,37.5407,-77.4360
+VA,Arlington,38.8816,-77.0910
+WA,Seattle,47.6062,-122.3321
+WA,Spokane,47.6588,-117.4260
+WA,Tacoma,47.2529,-122.4443
+WA,Vancouver,45.6387,-122.6615
+WV,Charleston,38.3498,-81.6326
+WI,Milwaukee,43.0389,-87.9065
+WI,Madison,43.0731,-89.4012
+WI,Green Bay,44.5133,-88.0133
+WY,Cheyenne,41.1400,-104.8202
+WY,Casper,42.8666,-106.3131
