@@ -5,8 +5,10 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
-  "dependsOn": ["BE-002"],
+  "status": "done",
+  "dependsOn": [
+    "BE-002"
+  ],
   "description": "Implement the checkCarrierOnboarding function that determines whether a carrier is allowed to be assigned to a load. COMPANY_ASSET carriers always pass. EXTERNAL_CARRIER carriers must have dispatch agreement, valid insurance (not expired), and W-9 on file. OWNER_OPERATOR is rejected with a clear message. TDD approach: write tests covering all carrier types and document states first. See TDD §6 for implementation reference. File: hussle-app-dispatch-api/src/shared/onboardingGate.ts.",
   "acceptanceCriteria": [
     "checkCarrierOnboarding returns { allowed: boolean, missingDocuments: string[] }",
@@ -23,8 +25,12 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest --coverage src/shared/onboardingGate && npx tsc --noEmit",
-  "commit": null,
-  "decisions": ["L-008", "X-001"],
-  "blockedReason": null,
-  "completedAt": null
+  "decisions": [
+    "L-008",
+    "X-001",
+    "D-BE005-001: Pure function — no DB calls, no side effects; receives CarrierOnboardingInput, returns CarrierOnboardingResult",
+    "D-BE005-002: Insurance cert missing takes precedence over expired — only one insurance-related entry in missingDocuments per evaluation"
+  ],
+  "commit": "4b8548709abe383036bb2d5d912c73d516553d50",
+  "completedAt": "2026-03-01T21:07:45.000Z"
 }

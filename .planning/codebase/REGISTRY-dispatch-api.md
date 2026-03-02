@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-004 (Load status state machine)
+> Last updated: BE-005 (Carrier onboarding gate)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -42,6 +42,7 @@ hussle-app-dispatch-api/
 │       ├── s3Presign.ts       # generatePresignedPutUrl, buildLoadDocumentKey, buildCarrierDocumentKey
 │       ├── geoLookup.ts       # getCityCoords(redis, state, city), haversineDistance(lat1, lng1, lat2, lng2)
 │       ├── financials.ts      # calculateLoadFinancials — Decimal.js ROUND_HALF_EVEN financial engine
+│       ├── onboardingGate.ts  # checkCarrierOnboarding — pure function, returns { allowed, missingDocuments }
 │       ├── stateMachine.ts    # TRANSITIONS, validateTransition, TRANSITION_SIDE_EFFECTS, KANBAN_GROUPS (re-export)
 │       ├── middleware/
 │       │   └── errorHandler.ts # Centralized Express error handler
@@ -263,6 +264,21 @@ Side effect tags by target status:
 - `TONU` → `['AUTO_CREATE_TONU_ACCESSORIAL', 'AUTO_GENERATE_INVOICE']`
 
 Validation order: (1) allowed transition check, (2) ADMIN-only, (3) notes required, (4) prerequisites (carrierId / driverId+vehicleId), (5) soft warnings.
+
+### `src/shared/onboardingGate.ts`
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `checkCarrierOnboarding` | function | Pure function — no DB calls. Accepts `CarrierOnboardingInput`, returns `CarrierOnboardingResult`. COMPANY_ASSET always passes. EXTERNAL_CARRIER checks dispatch agreement, insurance cert + expiry, and W-9. OWNER_OPERATOR always rejected (decision X-001). |
+| `CarrierOnboardingInput` | interface | `{ carrierType: CarrierType; dispatchAgreementOnFile: boolean; insuranceCertOnFile: boolean; insuranceExpiry: Date \| null; w9OnFile: boolean }` |
+| `CarrierOnboardingResult` | interface | `{ allowed: boolean; missingDocuments: string[] }` |
+
+Missing document messages:
+- Dispatch agreement missing → `'Signed Dispatch Agreement'`
+- Insurance cert missing → `'Certificate of Insurance'`
+- Insurance cert on file but expired → `'Insurance expired on YYYY-MM-DD'` (cert missing takes precedence)
+- W-9 missing → `'W-9'`
+- OWNER_OPERATOR → `'Owner-operator support coming soon'`
 
 ### `src/shared/middleware/errorHandler.ts`
 
