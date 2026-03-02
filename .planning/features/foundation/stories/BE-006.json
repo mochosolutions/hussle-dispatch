@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": ["BE-001"],
   "description": "Set up infrastructure clients and geo utilities. Create Redis client singleton with config. Create S3 presign utility for generating PUT URLs. Implement geo utilities: getCityCoords (Redis hash lookup) and haversineDistance (pure math). Create geoBootstrap script that reads data/us-cities.csv and populates the geo:cities Redis hash at API startup. Create the data/us-cities.csv file with a representative sample of US city centroids. See TDD §8.5 for geo implementation and PRD §9 for S3 presigned URL flow. Files in hussle-app-dispatch-api/src/shared/ and hussle-app-dispatch-api/src/config/.",
   "acceptanceCriteria": [
@@ -24,8 +24,8 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
-  "commit": null,
+  "commit": "77dd138c1",
   "decisions": ["L-005", "L-006", "D-004", "D-005"],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }

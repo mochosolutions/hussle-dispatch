@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-002 (constants layer)
+> Last updated: BE-006 (Redis client, S3 presign utility, geo utilities)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -28,14 +28,19 @@ hussle-app-dispatch-api/
 │   └── migrations/
 │       └── 20260302013455_init/migration.sql
 ├── src/
-│   ├── index.ts               # Entry point — starts Express on env.PORT
+│   ├── index.ts               # Entry point — connects Redis, runs geoBootstrap, starts Express
 │   ├── app.ts                 # Express app factory (createApp)
 │   ├── config/
-│   │   ├── env.ts             # Typed env config (DATABASE_URL, REDIS_URL, S3_BUCKET, etc.)
-│   │   └── database.ts        # Prisma client singleton
+│   │   ├── env.ts             # Typed env config (DATABASE_URL, REDIS_URL, S3_BUCKET, AWS_REGION, etc.)
+│   │   ├── database.ts        # Prisma client singleton
+│   │   ├── s3.ts              # S3Client singleton (AWS SDK v3, configured with AWS_REGION)
+│   │   └── geoBootstrap.ts    # runGeoBootstrap(redis) — reads data/us-cities.csv, bulk-loads geo:cities hash
 │   └── shared/
 │       ├── errors.ts          # Typed error classes (AppError + subtypes)
 │       ├── responseEnvelope.ts # sendSingle, sendList, buildPaginationMeta, success, paginated, buildErrorResponse
+│       ├── redisClient.ts     # Redis singleton (ioredis, lazy connect, REDIS_URL)
+│       ├── s3Presign.ts       # generatePresignedPutUrl, buildLoadDocumentKey, buildCarrierDocumentKey
+│       ├── geoLookup.ts       # getCityCoords(redis, state, city), haversineDistance(lat1, lng1, lat2, lng2)
 │       ├── middleware/
 │       │   └── errorHandler.ts # Centralized Express error handler
 │       └── constants/
@@ -173,6 +178,50 @@ import { LOAD_STATUSES, KANBAN_GROUPS, ROLES, ... } from '../shared/constants';
 | `GeoSource` | type union | |
 | `CARRIER_TYPES` | `{ COMPANY_ASSET, OWNER_OPERATOR, EXTERNAL_CARRIER }` (frozen) | |
 | `CarrierType` | type union | |
+
+### `src/shared/redisClient.ts`
+
+```typescript
+import { redisClient } from './shared/redisClient';
+// ioredis singleton — connect at startup via redisClient.connect()
+```
+
+### `src/config/s3.ts`
+
+```typescript
+import { s3Client } from './config/s3';
+// @aws-sdk/client-s3 S3Client — configured with AWS_REGION
+```
+
+### `src/shared/s3Presign.ts`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `generatePresignedPutUrl` | `(bucket, key, contentType, maxSize) => Promise<PresignedPutResult>` | 15-min PUT URL; validates contentType + maxSize |
+| `buildLoadDocumentKey` | `(orgId, loadId, type, filename) => string` | `{orgId}/loads/{loadId}/{type}/{filename}` |
+| `buildCarrierDocumentKey` | `(orgId, carrierId, type, filename) => string` | `{orgId}/carriers/{carrierId}/{type}/{filename}` |
+| `PresignedPutResult` | type | `{ url: string; key: string; expiresAt: Date }` |
+
+Accepted content types: `application/pdf` (max 5 MB), `image/png`, `image/jpg`, `image/jpeg` (max 10 MB each).
+
+### `src/shared/geoLookup.ts`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `getCityCoords` | `(redis, state, city) => Promise<CityCoords \| null>` | Looks up city in `geo:cities` hash; field: `{STATE}:{city_lowercase}` |
+| `haversineDistance` | `(lat1, lng1, lat2, lng2) => number` | Great-circle distance in miles (R = 3959) |
+| `CityCoords` | type | `{ lat: number; lng: number }` |
+
+### `src/config/geoBootstrap.ts`
+
+```typescript
+import { runGeoBootstrap } from './config/geoBootstrap';
+// runGeoBootstrap(redis) — call once at startup; reads data/us-cities.csv, bulk-loads geo:cities
+```
+
+### `data/us-cities.csv` (repo root)
+
+161 US city centroids. Format: `state,city,lat,lng`. Loaded into Redis `geo:cities` at API startup.
 
 ### `src/shared/middleware/errorHandler.ts`
 
