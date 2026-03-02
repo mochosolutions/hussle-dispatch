@@ -1,0 +1,21 @@
+FROM node:20-alpine
+
+WORKDIR /usr/app
+
+# Copy workspace root files for npm workspaces
+COPY package.json package-lock.json ./
+COPY hussle-app-dispatch-api/package.json ./hussle-app-dispatch-api/
+COPY mocho-ui/package.json ./mocho-ui/
+COPY hussle-app-dispatch-ui/package.json ./hussle-app-dispatch-ui/
+
+RUN npm ci
+
+COPY hussle-app-dispatch-api/ ./hussle-app-dispatch-api/
+
+WORKDIR /usr/app/hussle-app-dispatch-api
+
+RUN npx prisma generate
+
+EXPOSE 3001
+
+CMD ["npx", "ts-node-dev", "--respawn", "--transpile-only", "src/index.ts"]

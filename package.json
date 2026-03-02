@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "mocho-ui",
-    "hussle-app-dispatch-ui"
+    "hussle-app-dispatch-ui",
+    "hussle-app-dispatch-api"
   ],
   "scripts": {
     "build:ui-lib": "npm run build -w mocho-ui",
