@@ -5,7 +5,7 @@ import { KANBAN_GROUPS } from './constants/kanbanGroups';
 export { KANBAN_GROUPS };
 
 // ---------------------------------------------------------------------------
-// Transition map — all 14 statuses with their allowed targets
+// Transition map — 14 statuses with their allowed target statuses
 // ---------------------------------------------------------------------------
 
 export type TransitionMap = Readonly<Record<LoadStatus, readonly LoadStatus[]>>;
@@ -71,6 +71,27 @@ export interface TransitionResult {
 }
 
 // ---------------------------------------------------------------------------
+// Prerequisite checks — returns an error string or null
+// ---------------------------------------------------------------------------
+
+const checkPrerequisites = (toStatus: LoadStatus, load: LoadSnapshot): string | null => {
+  if (toStatus === 'BOOKED' && !load.carrierId) {
+    return 'Cannot book load: a carrier must be assigned before booking.';
+  }
+
+  if (toStatus === 'DISPATCHED') {
+    if (!load.driverId) {
+      return 'Cannot dispatch load: a driver must be assigned before dispatching.';
+    }
+    if (!load.vehicleId) {
+      return 'Cannot dispatch load: a vehicle must be assigned before dispatching.';
+    }
+  }
+
+  return null;
+};
+
+// ---------------------------------------------------------------------------
 // validateTransition — pure function
 // ---------------------------------------------------------------------------
 
@@ -113,28 +134,9 @@ export const validateTransition = (
   }
 
   // 4. Prerequisite checks
-  if (toStatus === 'BOOKED') {
-    if (!context.load.carrierId) {
-      return {
-        valid: false,
-        error: 'Cannot book load: a carrier must be assigned before booking.',
-      };
-    }
-  }
-
-  if (toStatus === 'DISPATCHED') {
-    if (!context.load.driverId) {
-      return {
-        valid: false,
-        error: 'Cannot dispatch load: a driver must be assigned before dispatching.',
-      };
-    }
-    if (!context.load.vehicleId) {
-      return {
-        valid: false,
-        error: 'Cannot dispatch load: a vehicle must be assigned before dispatching.',
-      };
-    }
+  const prerequisiteError = checkPrerequisites(toStatus, context.load);
+  if (prerequisiteError !== null) {
+    return { valid: false, error: prerequisiteError };
   }
 
   // 5. Soft warnings
