@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P1",
-  "status": "todo",
+  "status": "done",
   "dependsOn": ["BE-001", "BE-002"],
   "description": "Implement shared API infrastructure: pagination helper for offset-based pagination with meta envelope, sequence generator for load and invoice numbers, and auth middleware integration from the existing auth package. See PRD §11 for pagination spec, PRD §8 for sequence format. Files in hussle-app-dispatch-api/src/shared/ and hussle-app-dispatch-api/src/middleware/.",
   "acceptanceCriteria": [
@@ -23,8 +23,14 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
-  "commit": null,
-  "decisions": ["L-007", "L-010", "L-011"],
+  "commit": "75500fab7",
+  "decisions": [
+    "L-007",
+    "L-010",
+    "L-011",
+    "D-BE008-001: packages/auth/ does not exist — implemented thin placeholder middleware in src/middleware/auth.ts. Decoder uses base64 JSON tokens for development; swap requireAuth body when real auth package ships.",
+    "D-BE008-002: Decimal.js serialization applied via Express json replacer in createApp(). All JSON responses automatically stringify Decimal instances."
+  ],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }

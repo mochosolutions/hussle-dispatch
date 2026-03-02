@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-007 (Scoring utilities)
+> Last updated: BE-008 (Pagination, sequences, auth middleware)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -52,6 +52,8 @@ hussle-app-dispatch-api/
 │       │   ├── calculateChainScore.ts    # Round-trip chain score (0-100)
 │       │   └── __tests__/               # TDD test suite (58 tests)
 │       ├── stateMachine.ts    # TRANSITIONS, validateTransition, TRANSITION_SIDE_EFFECTS, KANBAN_GROUPS (re-export)
+│       ├── pagination.ts      # parsePaginationParams, paginateQuery, PAGINATION_DEFAULTS (BE-008)
+│       ├── sequenceGenerator.ts # generateSequenceNumber — Postgres sequences, per-org, LD-/INV- format (BE-008)
 │       ├── middleware/
 │       │   └── errorHandler.ts # Centralized Express error handler
 │       └── constants/
@@ -367,6 +369,47 @@ Missing document messages:
 - W-9 missing → `'W-9'`
 - OWNER_OPERATOR → `'Owner-operator support coming soon'`
 
+### `src/shared/pagination.ts` (BE-008)
+
+| Export | Signature / Type | Description |
+|--------|-----------------|-------------|
+| `parsePaginationParams` | `(query: Request['query']) => PaginationParams` | Extracts page/limit/sort/order from Express query string. Clamps limit to [1, 100]. Defaults: page=1, limit=25, sort='createdAt', order='desc'. |
+| `paginateQuery` | `<T>(params, runner: { findMany, count }) => Promise<PaginatedResult<T>>` | Runs Prisma findMany+count in parallel with skip/take/orderBy from params, returns `{ data, meta }`. |
+| `PAGINATION_DEFAULTS` | frozen const | `{ PAGE:1, LIMIT:25, MAX_LIMIT:100, SORT:'createdAt', ORDER:'desc' }` |
+| `PaginationParams` | interface | `{ page, limit, sort, order }` |
+| `PaginatedResult<T>` | interface | `{ data: T[]; meta: PaginationMeta }` |
+| `SortOrder` | type | `'asc' \| 'desc'` |
+
+### `src/shared/sequenceGenerator.ts` (BE-008)
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `generateSequenceNumber` | `(type: SequenceType, orgId: string) => Promise<string>` | Generates a formatted sequence number using a per-org Postgres sequence. Retries on error up to 3 times. Returns `LD-{YYYY}-{NNNNNN}` or `INV-{YYYY}-{NNNNNN}`. Throws `AppError('SEQUENCE_ERROR')` after max retries. |
+| `SequenceType` | type | `'LOAD' \| 'INVOICE'` |
+
+Sequence naming: `seq_load_{orgId}` / `seq_invoice_{orgId}` (hyphens replaced with underscores).
+Numbering is continuous — no annual reset. Year in format string is stamp at generation time.
+
+### `src/middleware/auth.ts` (BE-008)
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `requireAuth` | `RequestHandler` | Extracts Bearer token, decodes placeholder payload, injects `req.user`, `req.organizationId`, `req.orgSlug`. Throws `UnauthorizedError` (401) on missing/invalid token. |
+| `requireRole` | `(roles: Role[]) => RequestHandler` | Checks `req.user.role` against allowed list. Throws `ForbiddenError` (403) if not allowed. Throws `UnauthorizedError` (401) if `req.user` not set. |
+| `AuthenticatedUser` | interface | `{ id: string; email: string; role: Role }` |
+
+Express Request augmented globally:
+- `req.user?: AuthenticatedUser`
+- `req.organizationId?: string`
+- `req.orgSlug?: string`
+
+Placeholder token format: `base64(JSON.stringify({ id, email, role, organizationId, orgSlug }))`.
+Replace `requireAuth` body when `packages/auth/` ships — call-sites need no changes.
+
+### Decimal.js JSON Serialization (BE-008)
+
+`createApp()` registers a JSON replacer via `app.set('json replacer', ...)` that converts any `Decimal` instance to a string in API responses. No per-route configuration needed.
+
 ### `src/shared/middleware/errorHandler.ts`
 
 ```typescript
@@ -423,7 +466,6 @@ import { errorHandler } from './shared/middleware/errorHandler';
 
 ## Future Stories — Integration Points
 
-- **Auth middleware (L-007):** `Organization` and `User` models are stubs. When BE-auth integrates, they will be replaced. The auth module injects `req.user`, `req.organizationId`, `req.orgSlug`.
-- **Redis client:** `ioredis` is in dependencies — use `src/shared/redisClient.ts` (created by BE-002+)
-- **Shared utilities:** State machine, scoring, pagination, etc. go in `src/shared/` (created by later stories). Financial engine: `src/shared/financials.ts` (BE-003 done).
+- **Auth middleware (L-007):** Thin placeholder at `src/middleware/auth.ts`. Swap `requireAuth` body when `packages/auth/` ships. Express Request is augmented with `user`, `organizationId`, `orgSlug`.
+- **Redis client:** `ioredis` is in dependencies — use `src/shared/redisClient.ts`
 - **Feature routes:** Mounted on `app.ts` when each feature story implements its controllers
