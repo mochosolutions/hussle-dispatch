@@ -3,7 +3,15 @@ import type { CarrierType } from './constants/carrierTypes';
 import { CARRIER_TYPES } from './constants/carrierTypes';
 import { OwnerOperatorNotSupportedError } from './errors';
 
-Decimal.set({ rounding: Decimal.ROUND_HALF_EVEN });
+/**
+ * Rounding mode applied to all financial calculations.
+ * Banker's rounding (half to even) prevents systematic bias in batch processing.
+ */
+const ROUNDING = Decimal.ROUND_HALF_EVEN;
+
+/** Round a Decimal to 2 decimal places using banker's rounding and serialize. */
+const round2 = (value: Decimal): string =>
+  value.toDecimalPlaces(2, ROUNDING).toFixed(2);
 
 interface CarrierInput {
   type: CarrierType;
@@ -53,23 +61,23 @@ export const calculateLoadFinancials = (
   const splitPercent = new Decimal(carrier.partnerSplitPercent).dividedBy(100);
 
   const feeBase = carrier.feeIncludesAccessorials ? rate.plus(acc) : rate;
-  const dispatchFee = feeBase.times(feePercent).toDecimalPlaces(2);
-  const partnerSplit = dispatchFee.times(splitPercent).toDecimalPlaces(2);
-  const companyShare = dispatchFee.minus(partnerSplit).toDecimalPlaces(2);
+  const dispatchFee = feeBase.times(feePercent).toDecimalPlaces(2, ROUNDING);
+  const partnerSplit = dispatchFee.times(splitPercent).toDecimalPlaces(2, ROUNDING);
+  const companyShare = dispatchFee.minus(partnerSplit).toDecimalPlaces(2, ROUNDING);
 
   const totalRevenue =
     carrier.type === CARRIER_TYPES.COMPANY_ASSET
-      ? rate.plus(acc).toDecimalPlaces(2)
+      ? rate.plus(acc).toDecimalPlaces(2, ROUNDING)
       : dispatchFee;
 
   const ratePerMile =
     loadedMiles !== null && loadedMiles !== 0
-      ? rate.dividedBy(loadedMiles).toDecimalPlaces(2).toFixed(2)
+      ? round2(rate.dividedBy(loadedMiles))
       : null;
 
   return {
-    customerRate: rate.toFixed(2),
-    accessorials: acc.toFixed(2),
+    customerRate: round2(rate),
+    accessorials: round2(acc),
     dispatchFee: dispatchFee.toFixed(2),
     partnerSplit: partnerSplit.toFixed(2),
     companyShare: companyShare.toFixed(2),
