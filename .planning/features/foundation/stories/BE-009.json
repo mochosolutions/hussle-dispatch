@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P2",
-  "status": "todo",
+  "status": "done",
   "dependsOn": ["BE-001"],
   "description": "Create a Prisma seed script that populates the database with representative sample data for development and testing. Includes both carrier types, drivers with preference data, vehicles with expenses (for CPM testing), contacts, org settings, and sample places. File: hussle-app-dispatch-api/prisma/seed.ts. Configure package.json prisma.seed command.",
   "acceptanceCriteria": [
@@ -23,8 +23,15 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx prisma db seed && npx tsc --noEmit",
-  "commit": null,
-  "decisions": [],
+  "commit": "eb7c46e58",
+  "decisions": [
+    "Used fixed string IDs (seed-*) for all seed entities to make upsert idempotent across multiple runs",
+    "TruckExpenses use the unique(vehicleId, expenseKey) constraint for upsert idempotency",
+    "EXTERNAL_CARRIER has all three onboarding flags set (dispatchAgreementOnFile, insuranceCertOnFile, w9OnFile) plus carrierPacketOnFile",
+    "OrgSettings upsert uses update (not empty {}) to ensure PRD defaults are applied on re-seed",
+    "preferredLanes and noGoZones JSON follow a structured schema with origins[], destinations[], and notes fields for predictable querying in scoring tests",
+    "package.json prisma.seed was already correctly configured from BE-001 — no changes needed"
+  ],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }

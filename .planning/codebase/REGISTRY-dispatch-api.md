@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-006 (Redis client, S3 presign utility, geo utilities)
+> Last updated: BE-009 (Seed script with sample data)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -24,7 +24,7 @@
 hussle-app-dispatch-api/
 ├── prisma/
 │   ├── schema.prisma          # Complete domain schema (15 models + enums)
-│   ├── seed.ts                # Dev seed data
+│   ├── seed.ts                # Dev seed data (BE-009: full sample data — 2 carriers, 3 drivers, 3 vehicles, TruckExpenses, 3 contacts, OrgSettings, 3 places)
 │   └── migrations/
 │       └── 20260302013455_init/migration.sql
 ├── src/
