@@ -20,21 +20,24 @@ export interface PresignedPutResult {
   expiresAt: Date;
 }
 
+export interface PresignPutInput {
+  bucket: string;
+  key: string;
+  contentType: string;
+  maxSize: number;
+}
+
 /**
  * Generates a pre-signed S3 PUT URL for uploading a document.
  *
- * @param bucket - The S3 bucket name
- * @param key - The S3 object key (use buildS3Key to construct)
- * @param contentType - MIME type — must be one of: application/pdf, image/png, image/jpg, image/jpeg
- * @param maxSize - Maximum allowed file size in bytes (validated against per-type limits)
  * @returns { url, key, expiresAt } — the signed URL expires in 15 minutes
  */
-export const generatePresignedPutUrl = async (
-  bucket: string,
-  key: string,
-  contentType: string,
-  maxSize: number,
-): Promise<PresignedPutResult> => {
+export const generatePresignedPutUrl = async ({
+  bucket,
+  key,
+  contentType,
+  maxSize,
+}: PresignPutInput): Promise<PresignedPutResult> => {
   if (!ACCEPTED_CONTENT_TYPES.has(contentType)) {
     throw new ValidationError(
       `Unsupported content type: ${contentType}. Accepted types: PDF, PNG, JPG, JPEG.`,
@@ -64,24 +67,38 @@ export const generatePresignedPutUrl = async (
   return { url, key, expiresAt };
 };
 
+export interface LoadDocumentKeyInput {
+  orgId: string;
+  loadId: string;
+  type: string;
+  filename: string;
+}
+
 /**
  * Builds an S3 key for a load document.
  * Pattern: {orgId}/loads/{loadId}/{type}/{filename}
  */
-export const buildLoadDocumentKey = (
-  orgId: string,
-  loadId: string,
-  type: string,
-  filename: string,
-): string => `${orgId}/loads/${loadId}/${type}/${filename}`;
+export const buildLoadDocumentKey = ({
+  orgId,
+  loadId,
+  type,
+  filename,
+}: LoadDocumentKeyInput): string => `${orgId}/loads/${loadId}/${type}/${filename}`;
+
+export interface CarrierDocumentKeyInput {
+  orgId: string;
+  carrierId: string;
+  type: string;
+  filename: string;
+}
 
 /**
  * Builds an S3 key for a carrier document.
  * Pattern: {orgId}/carriers/{carrierId}/{type}/{filename}
  */
-export const buildCarrierDocumentKey = (
-  orgId: string,
-  carrierId: string,
-  type: string,
-  filename: string,
-): string => `${orgId}/carriers/${carrierId}/${type}/${filename}`;
+export const buildCarrierDocumentKey = ({
+  orgId,
+  carrierId,
+  type,
+  filename,
+}: CarrierDocumentKeyInput): string => `${orgId}/carriers/${carrierId}/${type}/${filename}`;

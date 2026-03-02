@@ -45,30 +45,26 @@ export const getCityCoords = async (
   return { lat, lng };
 };
 
+export interface HaversineInput {
+  from: CityCoords;
+  to: CityCoords;
+}
+
 /**
  * Calculates the great-circle distance between two coordinates using the Haversine formula.
  *
- * @param lat1 - Latitude of point 1 (degrees)
- * @param lng1 - Longitude of point 1 (degrees)
- * @param lat2 - Latitude of point 2 (degrees)
- * @param lng2 - Longitude of point 2 (degrees)
  * @returns Distance in miles (R = 3959)
  */
-export const haversineDistance = (
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number => {
+export const haversineDistance = ({ from, to }: HaversineInput): number => {
   const toRadians = (deg: number) => (deg * Math.PI) / 180;
 
-  const dLat = toRadians(lat2 - lat1);
-  const dLng = toRadians(lng2 - lng1);
+  const dLat = toRadians(to.lat - from.lat);
+  const dLng = toRadians(to.lng - from.lng);
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
+    Math.cos(toRadians(from.lat)) *
+      Math.cos(toRadians(to.lat)) *
       Math.sin(dLng / 2) *
       Math.sin(dLng / 2);
 

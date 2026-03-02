@@ -5,8 +5,10 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P1",
-  "status": "todo",
-  "dependsOn": ["BE-002"],
+  "status": "done",
+  "dependsOn": [
+    "BE-002"
+  ],
   "description": "Implement all five scoring utility functions as pure functions with no side effects. These are consumed by the load-intelligence feature at runtime. TDD approach: write tests from the PRD formulas and success criteria first. See TDD §8 for implementations, PRD §Capabilities for formulas. All files in hussle-app-dispatch-api/src/shared/scoring/.",
   "acceptanceCriteria": [
     "calculateMinBookRate({ vehicleCpm, totalMiles, feePercent, profitMargin }) returns number rounded up to nearest $50",
@@ -26,8 +28,12 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest --coverage src/shared/scoring && npx tsc --noEmit",
-  "commit": null,
-  "decisions": ["L-004", "L-008"],
+  "commit": "cbcdeb36362fd1ef8895bba2819b840bb21b966a",
+  "decisions": [
+    "L-004",
+    "L-008",
+    "D-BE007-001"
+  ],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }

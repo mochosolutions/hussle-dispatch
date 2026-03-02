@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-005 (Carrier onboarding gate)
+> Last updated: BE-007 (Scoring utilities)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -43,6 +43,14 @@ hussle-app-dispatch-api/
 │       ├── geoLookup.ts       # getCityCoords(redis, state, city), haversineDistance(lat1, lng1, lat2, lng2)
 │       ├── financials.ts      # calculateLoadFinancials — Decimal.js ROUND_HALF_EVEN financial engine
 │       ├── onboardingGate.ts  # checkCarrierOnboarding — pure function, returns { allowed, missingDocuments }
+│       ├── scoring/           # Pure scoring utility functions (BE-007)
+│       │   ├── index.ts                  # Barrel re-export
+│       │   ├── calculateMinBookRate.ts   # Minimum bookable rate (ceil to $50)
+│       │   ├── calculateCpm.ts           # Cost-per-mile from expense breakdown
+│       │   ├── calculateCompositeScore.ts # Full/route composite score (0-100/60)
+│       │   ├── calculateDriverFit.ts     # Driver fit score (0-30)
+│       │   ├── calculateChainScore.ts    # Round-trip chain score (0-100)
+│       │   └── __tests__/               # TDD test suite (58 tests)
 │       ├── stateMachine.ts    # TRANSITIONS, validateTransition, TRANSITION_SIDE_EFFECTS, KANBAN_GROUPS (re-export)
 │       ├── middleware/
 │       │   └── errorHandler.ts # Centralized Express error handler
@@ -264,6 +272,85 @@ Side effect tags by target status:
 - `TONU` → `['AUTO_CREATE_TONU_ACCESSORIAL', 'AUTO_GENERATE_INVOICE']`
 
 Validation order: (1) allowed transition check, (2) ADMIN-only, (3) notes required, (4) prerequisites (carrierId / driverId+vehicleId), (5) soft warnings.
+
+### `src/shared/scoring/` (BE-007)
+
+All scoring utilities are pure functions (no side effects, no DB/Redis calls). Import from the barrel:
+
+```typescript
+import {
+  calculateMinBookRate,
+  calculateCpm,
+  calculateCompositeScore,
+  calculateDriverFit,
+  calculateChainScore,
+} from './shared/scoring';
+```
+
+#### `calculateMinBookRate`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `calculateMinBookRate` | `(input: MinBookRateInput) => number` | Returns minimum bookable rate rounded UP to nearest $50. Formula: `ceil50(vehicleCpm × totalMiles / (1 − feePercent) / (1 − profitMargin))`. |
+
+`MinBookRateInput`: `{ vehicleCpm: number; totalMiles: number; feePercent: number; profitMargin: number }`
+
+Example: vehicleCpm=0.85, totalMiles=800, feePercent=0.10, profitMargin=0.15 → **900**
+
+#### `calculateCpm`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `calculateCpm` | `(expenses: ExpenseItem[]) => number` | Cost-per-mile from vehicle expense breakdown. Miles are deduplicated (same `milesPerMonth` across parallel expenses is not double-counted). Formula: `sum(cost) / sum(uniqueMiles)`. |
+
+`ExpenseItem`: `{ monthlyCost: number; milesPerMonth: number }`
+
+#### `calculateDriverFit`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `calculateDriverFit` | `(input: DriverFitInput) => DriverFitResult` | Driver fit score (0-30). Preferred lane = 30pts, no-go zone = 0pts, otherwise distance-based linear decay (max 1500mi) with optional days-out penalty. |
+
+`DriverFitInput`: `{ preferredLanes: string[]; noGoZones: string[]; homeBase: string; destination: string; maxDaysOut: number; currentDaysOut: number; milesFromHome: number }`
+
+`DriverFitResult`: `{ isPreferredLane: boolean; isNoGoZone: boolean; milesFromHome: number; daysFromHome: number; exceedsMaxDaysOut: boolean; points: number }`
+
+#### `calculateCompositeScore`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `calculateCompositeScore` | `(input: CompositeScoreInput) => CompositeScoreResult` | Composite load score. Full mode: CPM (0-40) + Market (0-30) + DriverFit (0-30) = max 100. Route mode: CPM=0, Market + DriverFit only = max 60. |
+
+Full mode input: `{ mode: 'full'; vehicleCpm: number; ratePerMile: number; marketTier: MarketTier; driverFitPoints: number }`
+Route mode input: `{ mode: 'route'; marketTier: MarketTier; driverFitPoints: number }`
+
+`CompositeScoreResult`: `{ cpmPoints: number; marketPoints: number; driverFitPoints: number; compositeScore: number; scoreType: 'full'|'route'; compositeLabel: string }`
+
+Labels — full mode: `>=85 Excellent, >=65 Good, >=40 Fair, <40 Poor`
+Labels — route mode: `>=50 Excellent, >=35 Good, >=20 Fair, <20 Poor`
+
+Market tier points: `STRONG=30, MODERATE=20, WEAK=10, UNKNOWN=5`
+
+#### `calculateChainScore`
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `calculateChainScore` | `(input: ChainScoreInput) => ChainScoreResult` | Chain (round-trip) load score. Profitability (0-40) + Return Positioning (0-35) + Time Efficiency (0-25) = 0-100. |
+
+`ChainScoreInput`: `{ outboundRate: number; outboundMiles: number; returnRate: number; returnMiles: number; totalTripDays: number; milesFromHomeAfterReturn: number; homeBase: string; returnDropState: string; preferredLanes: string[]; vehicleCpmPerDay: number }`
+
+`ChainScoreResult`: `{ chainProfitabilityPoints: number; returnPositioningPoints: number; timeEfficiencyPoints: number; chainScore: number; chainLabel: string; roundTripRevenue: number; roundTripProfit: number; chainRPM: number; dailyRevenueUtilization: number; projectedWeeklyGross: number }`
+
+Labels: `>=85 Excellent, >=65 Good, >=40 Marginal, <40 Pass`
+
+Metrics:
+- `roundTripRevenue = outboundRate + returnRate`
+- `roundTripProfit = roundTripRevenue − (vehicleCpmPerDay × totalTripDays)`
+- `chainRPM = roundTripRevenue / (outboundMiles + returnMiles)`
+- `dailyRevenueUtilization = roundTripRevenue / totalTripDays`
+- `projectedWeeklyGross = dailyRevenueUtilization × 7`
+
+---
 
 ### `src/shared/onboardingGate.ts`
 
