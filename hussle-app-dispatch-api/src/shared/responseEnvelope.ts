@@ -1,4 +1,5 @@
 import type { Response } from 'express';
+import type { AppError } from './errors';
 
 export interface PaginationMeta {
   page: number;
@@ -53,4 +54,35 @@ export const buildPaginationMeta = (
     totalPages,
     hasMore: page < totalPages,
   };
+};
+
+/**
+ * Builds a plain success envelope for a single resource.
+ * Use when you need the shaped object directly (e.g., tests, non-Express contexts).
+ */
+export const success = <T>(data: T): SingleResponse<T> => ({ data });
+
+/**
+ * Builds a plain paginated envelope for a list resource.
+ */
+export const paginated = <T>(data: T[], meta: PaginationMeta): ListResponse<T> => ({
+  data,
+  meta,
+});
+
+const hasDetails = (err: AppError): err is AppError & { details: string[] } =>
+  'details' in err && Array.isArray((err as { details: unknown }).details);
+
+/**
+ * Builds a plain error envelope from an AppError.
+ */
+export const buildErrorResponse = (appError: AppError): ErrorResponse => {
+  const errorBody: ErrorResponse['error'] = {
+    code: appError.code,
+    message: appError.message,
+  };
+  if (hasDetails(appError)) {
+    errorBody.details = appError.details;
+  }
+  return { error: errorBody };
 };
