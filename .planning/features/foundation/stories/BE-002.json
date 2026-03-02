@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": ["BE-001"],
   "description": "Create the foundational error handling and constants layer. Implement typed error classes extending a common AppError base (with statusCode, code, isOperational). Create response envelope helpers for consistent API responses. Define all shared constants that other features will import. See PRD §Error Handling Patterns and §State Machine Overview for constants. All files go in hussle-app-dispatch-api/src/shared/.",
   "acceptanceCriteria": [
@@ -21,8 +21,13 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
-  "commit": null,
-  "decisions": [],
+  "commit": "bb48aeec7",
+  "decisions": [
+    "D-BE002-001: Constants split into one file per domain (loadStatuses, kanbanGroups, stateMachine, equipmentTypes, facilityTypes, documentTypes, contactTypes, roles, commodities, marketTiers, scoringWeights, loadSources, expenseCategories, vehicleOwnership, stopTypes, accessorialTypes, invoiceTypes, geoSources, carrierTypes) — all re-exported from a barrel index at src/shared/constants/index.ts",
+    "D-BE002-002: Object-shaped constants (ROLES, VEHICLE_OWNERSHIP, MARKET_TIERS, GEO_SOURCES, CARRIER_TYPES) use Object.freeze(); array constants (LOAD_STATUSES, EQUIPMENT_TYPES, etc.) use as const for TypeScript type inference",
+    "D-BE002-003: responseEnvelope.ts extended with success(), paginated(), and buildErrorResponse() pure object builders alongside existing Express-coupled sendSingle/sendList helpers",
+    "D-BE002-004: ADMIN_ONLY_TRANSITIONS and NOTES_REQUIRED_TRANSITIONS exported from stateMachine.ts as frozen readonly arrays typed as readonly LoadStatus[]"
+  ],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }

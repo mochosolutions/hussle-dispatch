@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-001 (initial scaffold)
+> Last updated: BE-002 (constants layer)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -35,9 +35,30 @@ hussle-app-dispatch-api/
 │   │   └── database.ts        # Prisma client singleton
 │   └── shared/
 │       ├── errors.ts          # Typed error classes (AppError + subtypes)
-│       ├── responseEnvelope.ts # sendSingle, sendList, buildPaginationMeta
-│       └── middleware/
-│           └── errorHandler.ts # Centralized Express error handler
+│       ├── responseEnvelope.ts # sendSingle, sendList, buildPaginationMeta, success, paginated, buildErrorResponse
+│       ├── middleware/
+│       │   └── errorHandler.ts # Centralized Express error handler
+│       └── constants/
+│           ├── index.ts           # Barrel re-export for all constants
+│           ├── loadStatuses.ts    # LOAD_STATUSES, LoadStatus
+│           ├── kanbanGroups.ts    # KANBAN_GROUPS, KanbanGroup, KanbanGroupKey
+│           ├── stateMachine.ts    # ADMIN_ONLY_TRANSITIONS, NOTES_REQUIRED_TRANSITIONS
+│           ├── equipmentTypes.ts  # EQUIPMENT_TYPES, EquipmentType
+│           ├── facilityTypes.ts   # FACILITY_TYPES, DOCK_TYPES, FacilityType, DockType
+│           ├── documentTypes.ts   # DOCUMENT_TYPES, DocumentType
+│           ├── contactTypes.ts    # CONTACT_TYPES, ContactType
+│           ├── roles.ts           # ROLES, Role
+│           ├── commodities.ts     # PROHIBITED_COMMODITIES_DEFAULT
+│           ├── marketTiers.ts     # MARKET_TIERS, MarketTier
+│           ├── scoringWeights.ts  # SCORING_WEIGHTS, ScoringWeights
+│           ├── loadSources.ts     # LOAD_SOURCES, LoadSource
+│           ├── expenseCategories.ts # EXPENSE_CATEGORIES, ExpenseCategory
+│           ├── vehicleOwnership.ts  # VEHICLE_OWNERSHIP, VehicleOwnershipType
+│           ├── stopTypes.ts       # STOP_TYPES, StopType
+│           ├── accessorialTypes.ts # ACCESSORIAL_TYPES, AccessorialType
+│           ├── invoiceTypes.ts    # INVOICE_TYPES, INVOICE_STATUSES, InvoiceType, InvoiceStatus
+│           ├── geoSources.ts      # GEO_SOURCES, GeoSource
+│           └── carrierTypes.ts    # CARRIER_TYPES, CarrierType
 ├── __tests__/
 │   └── app.test.ts            # Smoke tests (app instantiation, health route)
 ├── package.json
@@ -94,9 +115,64 @@ import { prisma } from './config/database';
 | `sendSingle(res, data, statusCode?)` | Sends `{ data }` JSON response |
 | `sendList(res, data[], meta, statusCode?)` | Sends `{ data, meta }` JSON response |
 | `buildPaginationMeta(total, page, limit)` | Builds pagination meta object |
+| `success(data)` | Returns `{ data }` plain object (no Express dep) |
+| `paginated(data[], meta)` | Returns `{ data, meta }` plain object |
+| `buildErrorResponse(appError)` | Returns `{ error: { code, message, details? } }` |
 | `PaginationMeta` | type |
 | `SingleResponse<T>` | type |
 | `ListResponse<T>` | type |
+| `ErrorResponse` | type |
+
+### `src/shared/constants/index.ts`
+
+All constants re-exported from this barrel. Import via:
+```typescript
+import { LOAD_STATUSES, KANBAN_GROUPS, ROLES, ... } from '../shared/constants';
+```
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `LOAD_STATUSES` | `readonly LoadStatus[]` | All 14 load statuses |
+| `LoadStatus` | type union | `'QUOTED' \| 'BOOKED' \| ...` |
+| `KANBAN_GROUPS` | `KanbanGroupMap` | 6 groups with label, color, statuses |
+| `KanbanGroup`, `KanbanGroupKey` | types | |
+| `ADMIN_ONLY_TRANSITIONS` | `readonly LoadStatus[]` | `['EXCEPTION', 'PAID']` |
+| `NOTES_REQUIRED_TRANSITIONS` | `readonly LoadStatus[]` | `['EXCEPTION', 'CANCELED']` |
+| `EQUIPMENT_TYPES` | `readonly EquipmentType[]` | 7 types |
+| `EquipmentType` | type union | |
+| `FACILITY_TYPES` | `readonly FacilityType[]` | 16 types |
+| `FacilityType` | type union | |
+| `DOCK_TYPES` | `readonly DockType[]` | 4 types |
+| `DockType` | type union | |
+| `DOCUMENT_TYPES` | `readonly DocumentType[]` | 11 types |
+| `DocumentType` | type union | |
+| `CONTACT_TYPES` | `readonly ContactType[]` | 4 types |
+| `ContactType` | type union | |
+| `ROLES` | `{ ADMIN, DISPATCHER, VIEWER }` (frozen) | Role constants |
+| `Role` | type union | |
+| `PROHIBITED_COMMODITIES_DEFAULT` | `readonly string[]` | 4 default prohibited commodities |
+| `MARKET_TIERS` | `{ STRONG, MODERATE, WEAK, UNKNOWN }` (frozen) | |
+| `MarketTier` | type union | |
+| `SCORING_WEIGHTS` | `ScoringWeights` (frozen) | composite + chain weights |
+| `ScoringWeights`, `CompositeScoreWeights`, `ChainScoreWeights` | types | |
+| `LOAD_SOURCES` | `readonly LoadSource[]` | `['DAT', 'MANUAL', 'EMAIL', 'DIRECT']` |
+| `LoadSource` | type union | |
+| `EXPENSE_CATEGORIES` | `readonly ExpenseCategory[]` | 5 categories |
+| `ExpenseCategory` | type union | |
+| `VEHICLE_OWNERSHIP` | `{ OWNED, LEASED }` (frozen) | |
+| `VehicleOwnershipType` | type union | |
+| `STOP_TYPES` | `readonly StopType[]` | 5 types |
+| `StopType` | type union | |
+| `ACCESSORIAL_TYPES` | `readonly AccessorialType[]` | 9 types |
+| `AccessorialType` | type union | |
+| `INVOICE_TYPES` | `readonly InvoiceType[]` | 2 types |
+| `InvoiceType` | type union | |
+| `INVOICE_STATUSES` | `readonly InvoiceStatus[]` | 7 statuses |
+| `InvoiceStatus` | type union | |
+| `GEO_SOURCES` | `{ AUTO, MANUAL }` (frozen) | |
+| `GeoSource` | type union | |
+| `CARRIER_TYPES` | `{ COMPANY_ASSET, OWNER_OPERATOR, EXTERNAL_CARRIER }` (frozen) | |
+| `CarrierType` | type union | |
 
 ### `src/shared/middleware/errorHandler.ts`
 
