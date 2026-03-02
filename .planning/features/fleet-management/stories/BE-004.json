@@ -1,0 +1,30 @@
+{
+  "id": "BE-004",
+  "title": "Contacts CRUD API with type filtering and search",
+  "type": "implementation",
+  "service": "dispatch-api",
+  "assignedTo": "backend-coder",
+  "priority": "P0",
+  "status": "todo",
+  "dependsOn": [],
+  "description": "Implement full CRUD for contacts: create, list (paginated with type and search filters), update, soft-delete. Contacts have a type discriminator (BROKER, SHIPPER, CONSIGNEE, FACTORING) and payment terms fields. All endpoints scoped to organizationId via auth middleware. Note: CONCERNS.md flags dispatch-api has no lint command — validationCommand excludes lint.",
+  "acceptanceCriteria": [
+    "POST /api/v1/contacts returns 201 with contact data including generated UUID id",
+    "POST requires type (BROKER, SHIPPER, CONSIGNEE, FACTORING) and companyName as required fields",
+    "POST accepts all Contact model fields: contactName, phone, email, mcNumber, address, city, state, zip, paymentTerms (default 'net_30'), paymentTermsDays (default 30), quickPayDiscount (nullable Decimal), carrierPacketSentAt, notes",
+    "GET /api/v1/contacts returns paginated list with default limit 25, max 100; supports ?type= filter, ?search= (matches companyName, contactName), ?sort=&order=",
+    "PATCH /api/v1/contacts/:id returns 200 with updated contact",
+    "Soft delete via DELETE sets deletedAt; all queries filter WHERE deletedAt IS NULL",
+    "quickPayDiscount stored and returned as string-serialized Decimal (per pagination standard)",
+    "All endpoints require auth middleware; contact scoped to organizationId matching authenticated user's orgId",
+    "Yup validation schemas for CreateContactInput and UpdateContactInput",
+    "Entity IDs use uuid format (per cross-feature decision L-009)"
+  ],
+  "contractReference": null,
+  "designReference": null,
+  "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
+  "commit": null,
+  "decisions": ["L-001", "L-002", "L-003", "L-004"],
+  "blockedReason": null,
+  "completedAt": null
+}

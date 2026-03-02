@@ -1,0 +1,11 @@
+{
+  "agents": [
+    {
+      "storyId": "BE-001",
+      "agentType": "backend-coder",
+      "spawnedAt": "2026-03-02T01:28:52.220Z",
+      "completedAt": null,
+      "pid": 7291
+    }
+  ]
+}

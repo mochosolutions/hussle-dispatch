@@ -1,0 +1,33 @@
+{
+  "id": "FE-003",
+  "title": "Driver list page + detail page with availability sidebar",
+  "type": "implementation",
+  "service": "dispatch-ui",
+  "assignedTo": "frontend-coder",
+  "priority": "P0",
+  "status": "todo",
+  "dependsOn": ["FE-001"],
+  "description": "Create driver API client functions, Redux driver entity module, driver list page, driver create/edit FormDialog, and driver detail page matching driver_details.png design. List page shows all drivers with optional carrier filter. Detail page has header (name, carrier badge, type badge, availability status), summary bar (location, vehicle, hours available, days out, weekly gross placeholder, last delivered placeholder), and tabbed layout (Overview, Load History placeholder, Preferences placeholder tab, Documents placeholder). Right sidebar shows availability snapshot and preferences summary. Use createEntityModule from @mocho/ui/redux for driver state management.",
+  "acceptanceCriteria": [
+    "Driver API functions in src/pages/fleet/api/driverApi.ts: getDrivers(params), getDriver(id), createDriver(data), updateDriver(id, data), deleteDriver(id)",
+    "Redux driver entity module registered: entities.drivers in rootReducer, driver sagas in rootSaga",
+    "DriverListPage renders DataGrid with columns: name (link to detail), carrier name, phone, home base (city, ST), CDL info, availableHours, isAvailable status badge, actions (view/edit/delete)",
+    "DriverListPage supports ?carrierId= filter dropdown, search, pagination",
+    "DriverFormDialog uses Formik + Yup: name (required), carrierId (required, carrier select), phone, email, cdlNumber, cdlState, cdlExpiry, availableHours, currentCity, currentState, homeBaseCity, homeBaseState, maxDaysOut, isAvailable toggle, notes",
+    "DriverDetailPage header: driver name, avatar initials, carrier name + type badge, availability status (Available green / Unavailable gray), Edit button, 'Find Load for Driver' button (disabled placeholder)",
+    "Summary bar: Location (city, ST + 'Home base' label if matching), Vehicle (unit# + description), Hours Available (X hrs of 70 weekly), Days Out, Weekly Gross placeholder ($0), Last Delivered placeholder",
+    "Overview tab: Driver Information card (Full Name, Email, Carrier, Home Base, Phone, CDL, Vehicle, Dispatch Fee), Performance placeholders (Total Loads: 0, Revenue: $0, Avg Rate/Mi: —, On-Time %: —, Avg Days Out: —, TONU Rate: —), Weekly Gross History placeholder (empty bar chart area)",
+    "Right sidebar — 'Available Now' card: Location, Hours Remaining, Days From Home, Last Delivered",
+    "Right sidebar — Preferences Snapshot: Preferred Lanes (comma-separated), No-Go Zones (comma-separated), Max Days Out, Home Base",
+    "Placeholder tabs: Load History (EmptyState), Preferences (tab shell — content built in FE-004), Documents (EmptyState)",
+    "Back navigation: arrow button navigates to /fleet/drivers",
+    "Delete uses ConfirmDeleteDialog; shows blocking load list on 409 error"
+  ],
+  "contractReference": null,
+  "designReference": "fleet-management/designs/driver_details.png",
+  "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
+  "commit": null,
+  "decisions": ["L-006", "L-008", "X-004", "X-005", "X-006", "X-011"],
+  "blockedReason": null,
+  "completedAt": null
+}

@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-03-01T00:00:00.000Z",
+  "ecosystem": "js",
+  "monorepo": true,
+  "rootCommands": {
+    "validateAll": null,
+    "buildAll": null,
+    "testAll": null
+  },
+  "packages": [
+    {
+      "serviceKey": "mocho-ui",
+      "name": "@mocho/ui",
+      "path": "mocho-ui/",
+      "type": "shared-ui",
+      "registryFile": "REGISTRY-mocho-ui.md",
+      "stack": ["react", "mui", "vite", "storybook", "jest"],
+      "manifest": "package.json",
+      "commands": {
+        "test": "npm run test --workspace=mocho-ui",
+        "lint": "npm run lint --workspace=mocho-ui",
+        "typecheck": "npm run type-check --workspace=mocho-ui",
+        "build": "npm run build --workspace=mocho-ui",
+        "testRelated": "cd mocho-ui && npx jest --findRelatedTests"
+      }
+    },
+    {
+      "serviceKey": "dispatch-ui",
+      "name": "hussle-app-dispatch-ui",
+      "path": "hussle-app-dispatch-ui/",
+      "type": "frontend",
+      "registryFile": "REGISTRY-dispatch-ui.md",
+      "stack": ["react", "mui", "redux", "vite", "jest"],
+      "manifest": "package.json",
+      "commands": {
+        "test": "npm run test --workspace=hussle-app-dispatch-ui",
+        "lint": "npm run lint --workspace=hussle-app-dispatch-ui",
+        "typecheck": "npm run check-ts --workspace=hussle-app-dispatch-ui",
+        "build": "npm run build --workspace=hussle-app-dispatch-ui",
+        "testRelated": "cd hussle-app-dispatch-ui && npx jest --findRelatedTests"
+      }
+    }
+  ]
+}

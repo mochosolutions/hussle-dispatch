@@ -1,0 +1,11 @@
+{
+  "featureKey": "fleet-management",
+  "summary": "Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding gate enforcement, driver preferences (lanes, no-go zones), vehicle CPM expense tracking, and list/detail pages for each entity.",
+  "services": {
+    "declared": ["dispatch-api", "dispatch-ui"]
+  },
+  "createdAt": "2026-03-01T23:52:25Z",
+  "updatedAt": "2026-03-02T00:00:00Z",
+  "phase": "PLANNING",
+  "branchCreated": false
+}

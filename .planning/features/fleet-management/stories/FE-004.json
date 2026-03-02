@@ -1,0 +1,30 @@
+{
+  "id": "FE-004",
+  "title": "Driver preferences editor (lanes table + no-go zones)",
+  "type": "implementation",
+  "service": "dispatch-ui",
+  "assignedTo": "frontend-coder",
+  "priority": "P1",
+  "status": "todo",
+  "dependsOn": ["FE-003"],
+  "description": "Build the Preferences tab content for the driver detail page. Three sections matching the carrier_portal_prefernces.png design (adapted for admin view): Preferred Lanes table with add/remove rows (origin state -> dest state, optional city refinement), No-Go Zones chip list with add/remove (state, optional city), and basic scheduling fields (home base city/state, max days out). All edits save via PATCH /drivers/:id with the JSON preference fields. Use Formik for the form with Yup validation (each lane requires originState + destState, each no-go requires state).",
+  "acceptanceCriteria": [
+    "Preferences tab renders inside DriverDetailPage when 'Preferences' tab is selected",
+    "Preferred Lanes section: table showing origin state -> dest state with optional city columns, each row has a Remove button, '+ Add Lane' button adds empty row with state select dropdowns + optional city text fields",
+    "Lane state fields use select dropdowns with US state abbreviations (2-letter codes)",
+    "No-Go Zones section: rendered as removable chips (red-tinted per design), each showing state name; '+ Add' button opens inline select for state + optional city text field",
+    "Home Base section: city text field + state select dropdown (pre-filled from driver data)",
+    "Max Days Out: number input with range 1-14 (default 5)",
+    "Save button triggers PATCH /api/v1/drivers/:id with updated preferredLanes JSON array and noGoZones JSON array",
+    "Yup validation: each lane entry requires originState and destState; each no-go entry requires state; maxDaysOut between 1 and 14",
+    "Success: notistack toast 'Driver preferences updated'; Error: toast with error message",
+    "Loading state shown during save; form disabled while saving"
+  ],
+  "contractReference": null,
+  "designReference": "fleet-management/designs/carrier_portal_prefernces.png, fleet-management/designs/driver_details.png",
+  "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
+  "commit": null,
+  "decisions": ["L-006", "L-008"],
+  "blockedReason": null,
+  "completedAt": null
+}

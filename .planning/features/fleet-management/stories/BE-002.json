@@ -1,0 +1,31 @@
+{
+  "id": "BE-002",
+  "title": "Drivers CRUD API with preferences (lanes, no-go zones)",
+  "type": "implementation",
+  "service": "dispatch-api",
+  "assignedTo": "backend-coder",
+  "priority": "P0",
+  "status": "todo",
+  "dependsOn": [],
+  "description": "Implement full CRUD for drivers: create (requires valid carrierId), list (paginated with carrierId filter), update (including JSON preference fields), soft-delete with active load constraint. Driver preferences (preferredLanes, noGoZones) are stored as JSON fields — validate structure on write. All endpoints scoped to org via carrier's managedByOrgId. Note: CONCERNS.md flags dispatch-api has no lint command — validationCommand excludes lint.",
+  "acceptanceCriteria": [
+    "POST /api/v1/drivers returns 201 with driver data including generated UUID id",
+    "POST requires carrierId referencing an active (non-deleted) carrier; returns 404 if carrier not found or deleted",
+    "POST accepts all Driver model fields: name, phone, email, cdlNumber, cdlState, cdlExpiry, availableHours, currentCity, currentState, homeBaseCity, homeBaseState, maxDaysOut (default 5), preferredLanes, noGoZones, isAvailable, notes",
+    "GET /api/v1/drivers returns paginated list with default limit 25, max 100; supports ?carrierId= filter, ?search= (matches name), ?sort=&order=",
+    "PATCH /api/v1/drivers/:id accepts preferredLanes as JSON array of { originState: string, destState: string, originCity?: string, destCity?: string }",
+    "PATCH accepts noGoZones as JSON array of { state: string, city?: string }",
+    "Yup validation: each preferredLane entry requires originState and destState (2-letter state codes); each noGoZone entry requires state",
+    "Soft delete via DELETE sets deletedAt; returns 409 ConflictError with blocking load IDs if driver is assigned to a load with status before DELIVERED",
+    "All list queries filter WHERE deletedAt IS NULL",
+    "All endpoints require auth middleware; driver scoped to org via carrier.managedByOrgId",
+    "Entity IDs use uuid format (per cross-feature decision L-009)"
+  ],
+  "contractReference": null,
+  "designReference": "fleet-management/designs/driver_details.png, fleet-management/designs/carrier_portal_prefernces.png",
+  "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
+  "commit": null,
+  "decisions": ["L-001", "L-002", "L-003", "L-004", "L-006"],
+  "blockedReason": null,
+  "completedAt": null
+}
