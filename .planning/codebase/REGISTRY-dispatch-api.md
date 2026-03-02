@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-009 (Seed script with sample data)
+> Last updated: BE-003 (Financial calculations with Decimal.js)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -41,6 +41,7 @@ hussle-app-dispatch-api/
 │       ├── redisClient.ts     # Redis singleton (ioredis, lazy connect, REDIS_URL)
 │       ├── s3Presign.ts       # generatePresignedPutUrl, buildLoadDocumentKey, buildCarrierDocumentKey
 │       ├── geoLookup.ts       # getCityCoords(redis, state, city), haversineDistance(lat1, lng1, lat2, lng2)
+│       ├── financials.ts      # calculateLoadFinancials — Decimal.js ROUND_HALF_EVEN financial engine
 │       ├── middleware/
 │       │   └── errorHandler.ts # Centralized Express error handler
 │       └── constants/
@@ -223,6 +224,22 @@ import { runGeoBootstrap } from './config/geoBootstrap';
 
 161 US city centroids. Format: `state,city,lat,lng`. Loaded into Redis `geo:cities` at API startup.
 
+### `src/shared/financials.ts`
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `calculateLoadFinancials` | function | Calculates load financials using Decimal.js with ROUND_HALF_EVEN. Accepts `LoadFinancialsInput`, returns `LoadFinancialsResult`. Throws `OwnerOperatorNotSupportedError` for OWNER_OPERATOR type (decision X-001). |
+| `LoadFinancialsInput` | interface | `{ customerRate, accessorials, loadedMiles, carrier: { type, dispatchFeePercent, partnerSplitPercent, feeIncludesAccessorials } }` |
+| `LoadFinancialsResult` | interface | `{ customerRate, accessorials, dispatchFee, partnerSplit, companyShare, totalRevenue, ratePerMile }` — all strings; ratePerMile is `string \| null` |
+
+Financial rules:
+- `dispatchFee = customerRate × feePercent` (or `(customerRate + accessorials) × feePercent` if `feeIncludesAccessorials`)
+- `partnerSplit = dispatchFee × partnerSplitPercent`
+- `companyShare = dispatchFee − partnerSplit`
+- COMPANY_ASSET: `totalRevenue = customerRate + accessorials`
+- EXTERNAL_CARRIER: `totalRevenue = dispatchFee`
+- `ratePerMile = customerRate / loadedMiles` (null when loadedMiles is null or 0)
+
 ### `src/shared/middleware/errorHandler.ts`
 
 ```typescript
@@ -281,5 +298,5 @@ import { errorHandler } from './shared/middleware/errorHandler';
 
 - **Auth middleware (L-007):** `Organization` and `User` models are stubs. When BE-auth integrates, they will be replaced. The auth module injects `req.user`, `req.organizationId`, `req.orgSlug`.
 - **Redis client:** `ioredis` is in dependencies — use `src/shared/redisClient.ts` (created by BE-002+)
-- **Shared utilities:** Financial, state machine, scoring, pagination, etc. go in `src/shared/` (created by later stories)
+- **Shared utilities:** State machine, scoring, pagination, etc. go in `src/shared/` (created by later stories). Financial engine: `src/shared/financials.ts` (BE-003 done).
 - **Feature routes:** Mounted on `app.ts` when each feature story implements its controllers

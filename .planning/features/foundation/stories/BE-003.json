@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": ["BE-002"],
   "description": "Implement calculateLoadFinancials using Decimal.js with banker's rounding (ROUND_HALF_EVEN). Supports COMPANY_ASSET and EXTERNAL_CARRIER financial flows. Handles the feeIncludesAccessorials flag. Rejects OWNER_OPERATOR with a typed error. TDD approach: write tests first based on the success criteria in the PRD, then implement. See TDD §7 for the full implementation reference and PRD §Business Model for rules. File: hussle-app-dispatch-api/src/shared/financials.ts.",
   "acceptanceCriteria": [
@@ -24,8 +24,8 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest --coverage src/shared/financials && npx tsc --noEmit",
-  "commit": null,
-  "decisions": ["L-002", "L-008"],
+  "commit": "166150960",
+  "decisions": ["L-002", "L-008", "X-001"],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }
