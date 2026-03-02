@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": ["BE-002"],
   "description": "Implement the load status state machine as pure data structures and pure functions. Defines the complete transition map (13 statuses), prerequisites, warnings, and side effect tags. Provides a validateTransition function that checks allowed transitions, admin-only rules, notes requirements, and prerequisites. TDD approach: write comprehensive tests first covering all valid and invalid transitions. See TDD §5 for implementation reference and PRD §5 for the full state machine spec. File: hussle-app-dispatch-api/src/shared/stateMachine.ts.",
   "acceptanceCriteria": [
@@ -27,8 +27,8 @@
   "contractReference": null,
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest --coverage src/shared/stateMachine && npx tsc --noEmit",
-  "commit": null,
+  "commit": "816393b47",
   "decisions": ["L-003", "L-008"],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-01T00:00:00.000Z"
 }

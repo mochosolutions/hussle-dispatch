@@ -1,6 +1,6 @@
 # Registry: hussle-app-dispatch-api
 
-> Last updated: BE-003 (Financial calculations with Decimal.js)
+> Last updated: BE-004 (Load status state machine)
 > Service directory: `hussle-app-dispatch-api/`
 
 ---
@@ -42,6 +42,7 @@ hussle-app-dispatch-api/
 │       ├── s3Presign.ts       # generatePresignedPutUrl, buildLoadDocumentKey, buildCarrierDocumentKey
 │       ├── geoLookup.ts       # getCityCoords(redis, state, city), haversineDistance(lat1, lng1, lat2, lng2)
 │       ├── financials.ts      # calculateLoadFinancials — Decimal.js ROUND_HALF_EVEN financial engine
+│       ├── stateMachine.ts    # TRANSITIONS, validateTransition, TRANSITION_SIDE_EFFECTS, KANBAN_GROUPS (re-export)
 │       ├── middleware/
 │       │   └── errorHandler.ts # Centralized Express error handler
 │       └── constants/
@@ -239,6 +240,29 @@ Financial rules:
 - COMPANY_ASSET: `totalRevenue = customerRate + accessorials`
 - EXTERNAL_CARRIER: `totalRevenue = dispatchFee`
 - `ratePerMile = customerRate / loadedMiles` (null when loadedMiles is null or 0)
+
+### `src/shared/stateMachine.ts`
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `TRANSITIONS` | `TransitionMap` | Allowed target statuses per source status — all 14 load statuses |
+| `TRANSITION_SIDE_EFFECTS` | `SideEffectsMap` | Side-effect string tags per target status |
+| `KANBAN_GROUPS` | `KanbanGroupMap` | Re-export from constants/kanbanGroups — 6 groups with color + statuses |
+| `validateTransition` | function | `(from, to, context) => TransitionResult` — checks allowed map, ADMIN-only rules, notes requirement, prerequisites, and soft warnings |
+| `TransitionContext` | interface | `{ userRole: string; load: LoadSnapshot; notes?: string }` |
+| `TransitionResult` | interface | `{ valid: boolean; error?: string; warnings?: string[] }` |
+| `LoadSnapshot` | interface | Subset of load fields needed for transition checks (carrierId, driverId, vehicleId, rateConReceivedAt, bolSignedAt) |
+| `TransitionMap` | type | `Readonly<Record<LoadStatus, readonly LoadStatus[]>>` |
+| `SideEffectsMap` | type | `Readonly<Partial<Record<LoadStatus, readonly SideEffectTag[]>>>` |
+| `SideEffectTag` | type union | `'CALCULATE_FINANCIALS' \| 'FREEZE_FINANCIALS' \| 'AUTO_GENERATE_INVOICE' \| 'AUTO_CREATE_TONU_ACCESSORIAL'` |
+
+Side effect tags by target status:
+- `BOOKED` → `['CALCULATE_FINANCIALS']`
+- `DISPATCHED` → `['FREEZE_FINANCIALS']`
+- `DELIVERED` → `['AUTO_GENERATE_INVOICE']`
+- `TONU` → `['AUTO_CREATE_TONU_ACCESSORIAL', 'AUTO_GENERATE_INVOICE']`
+
+Validation order: (1) allowed transition check, (2) ADMIN-only, (3) notes required, (4) prerequisites (carrierId / driverId+vehicleId), (5) soft warnings.
 
 ### `src/shared/middleware/errorHandler.ts`
 
