@@ -3,7 +3,6 @@ import type { MarketTier } from '../constants/marketTiers';
 import { SCORING_WEIGHTS } from '../constants/scoringWeights';
 
 const MAX_CPM_POINTS = SCORING_WEIGHTS.composite.cpmProfitability;
-const MAX_MARKET_POINTS = SCORING_WEIGHTS.composite.destinationMarket;
 
 /**
  * Rate-to-CPM ratios that define CPM scoring tiers.

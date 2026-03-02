@@ -2,6 +2,7 @@ import { SCORING_WEIGHTS } from '../constants/scoringWeights';
 
 /**
  * Input for driver fit scoring.
+ * milesFromHome: current distance from driver's home base to the load destination.
  */
 export interface DriverFitInput {
   preferredLanes: string[];
