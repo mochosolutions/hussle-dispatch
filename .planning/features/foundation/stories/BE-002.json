@@ -1,0 +1,28 @@
+{
+  "id": "BE-002",
+  "title": "Error classes, response envelope, and shared constants",
+  "type": "implementation",
+  "service": "dispatch-api",
+  "assignedTo": "backend-coder",
+  "priority": "P0",
+  "status": "todo",
+  "dependsOn": ["BE-001"],
+  "description": "Create the foundational error handling and constants layer. Implement typed error classes extending a common AppError base (with statusCode, code, isOperational). Create response envelope helpers for consistent API responses. Define all shared constants that other features will import. See PRD §Error Handling Patterns and §State Machine Overview for constants. All files go in hussle-app-dispatch-api/src/shared/.",
+  "acceptanceCriteria": [
+    "AppError base class with statusCode, code, message, isOperational fields — extends Error",
+    "Typed error subclasses: ValidationError (400), NotFoundError (404), ConflictError (409), ForbiddenError (403), UnauthorizedError (401)",
+    "Response envelope: success(data), paginated(data, meta), error(appError) — all return properly shaped JSON",
+    "Constants file exports: LOAD_STATUSES array, KANBAN_GROUPS object with labels/colors/statuses, EQUIPMENT_TYPES, FACILITY_TYPES, DOCK_TYPES, DOCUMENT_TYPES, CONTACT_TYPES, ROLES (ADMIN/DISPATCHER/VIEWER), PROHIBITED_COMMODITIES_DEFAULT, MARKET_TIERS, SCORING_WEIGHTS, LOAD_SOURCES, EXPENSE_CATEGORIES, VEHICLE_OWNERSHIP, STOP_TYPES, ACCESSORIAL_TYPES, INVOICE_TYPES, INVOICE_STATUSES, GEO_SOURCES, CARRIER_TYPES",
+    "KANBAN_GROUPS matches PRD exactly: NEW (yellow, QUOTED), BOOKED (orange), ACTIVE (green, 5 statuses), DELIVERED (purple, 2 statuses), COMPLETE (gray, 2 statuses), ISSUES (red, 3 statuses)",
+    "ADMIN_ONLY_TRANSITIONS = ['EXCEPTION', 'PAID'] and NOTES_REQUIRED_TRANSITIONS = ['EXCEPTION', 'CANCELED'] exported as constants",
+    "All constants are readonly/frozen to prevent mutation",
+    "TypeScript types are exported for each constant (e.g., LoadStatus type union, EquipmentType type union)"
+  ],
+  "contractReference": null,
+  "designReference": null,
+  "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
+  "commit": null,
+  "decisions": [],
+  "blockedReason": null,
+  "completedAt": null
+}

@@ -1,0 +1,30 @@
+{
+  "id": "BE-008",
+  "title": "Pagination helper, sequence generator, and auth middleware integration",
+  "type": "implementation",
+  "service": "dispatch-api",
+  "assignedTo": "backend-coder",
+  "priority": "P1",
+  "status": "todo",
+  "dependsOn": ["BE-001", "BE-002"],
+  "description": "Implement shared API infrastructure: pagination helper for offset-based pagination with meta envelope, sequence generator for load and invoice numbers, and auth middleware integration from the existing auth package. See PRD §11 for pagination spec, PRD §8 for sequence format. Files in hussle-app-dispatch-api/src/shared/ and hussle-app-dispatch-api/src/middleware/.",
+  "acceptanceCriteria": [
+    "paginateQuery(query, { page, limit, sort, order }) returns { data, meta: { page, limit, total, totalPages, hasMore } }",
+    "Pagination defaults: page=1, limit=25, maxLimit=100, sort='createdAt', order='desc'",
+    "parsePaginationParams(req.query) extracts and validates page/limit/sort/order from query string, clamps limit to [1, 100]",
+    "generateSequenceNumber(type: 'LOAD'|'INVOICE', orgId) returns formatted string: LD-{YYYY}-{NNNNNN} or INV-{YYYY}-{NNNNNN}",
+    "Sequence generator uses Postgres sequence, retries on collision up to 3 times (per cross-feature decision L-011)",
+    "Sequence numbers are continuous (no annual reset), unique per organization",
+    "Auth middleware wraps the existing auth package middleware and injects req.user, req.organizationId, req.orgSlug",
+    "requireRole(roles[]) middleware returns 403 ForbiddenError if user role is not in allowed list",
+    "requireAuth middleware returns 401 UnauthorizedError if no valid session (per cross-feature decision L-007)",
+    "Decimals in API responses serialized as strings in JSON"
+  ],
+  "contractReference": null,
+  "designReference": null,
+  "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
+  "commit": null,
+  "decisions": ["L-007", "L-010", "L-011"],
+  "blockedReason": null,
+  "completedAt": null
+}

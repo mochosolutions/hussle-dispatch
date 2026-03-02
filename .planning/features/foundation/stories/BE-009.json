@@ -1,0 +1,30 @@
+{
+  "id": "BE-009",
+  "title": "Seed script with sample data",
+  "type": "implementation",
+  "service": "dispatch-api",
+  "assignedTo": "backend-coder",
+  "priority": "P2",
+  "status": "todo",
+  "dependsOn": ["BE-001"],
+  "description": "Create a Prisma seed script that populates the database with representative sample data for development and testing. Includes both carrier types, drivers with preference data, vehicles with expenses (for CPM testing), contacts, org settings, and sample places. File: hussle-app-dispatch-api/prisma/seed.ts. Configure package.json prisma.seed command.",
+  "acceptanceCriteria": [
+    "Seed script runs via 'npx prisma db seed' without errors",
+    "Creates at least 1 COMPANY_ASSET carrier with 2 drivers and 2 vehicles",
+    "Creates at least 1 EXTERNAL_CARRIER carrier (fully onboarded: dispatch agreement, insurance, W-9 all on file) with 1 driver and 1 vehicle",
+    "Drivers have realistic preferredLanes and noGoZones JSON data for driver fit testing",
+    "Vehicles have TruckExpense records across FIXED, VARIABLE, SERVICE categories for CPM calculation testing",
+    "Creates at least 3 contacts: 1 BROKER, 1 SHIPPER, 1 CONSIGNEE",
+    "Creates OrgSettings with PRD defaults (defaultTonuFee=$250, prohibitedCommodities=['garbage','refuse','recyclables','dirty recyclables'], weeklyGrossTarget=$5000, etc.)",
+    "Creates at least 3 sample Places with city/state/coordinates for geo testing",
+    "Seed script is idempotent (can run multiple times without duplicating data — uses upsert or deleteMany + create)",
+    "package.json contains prisma.seed configuration pointing to seed.ts"
+  ],
+  "contractReference": null,
+  "designReference": null,
+  "validationCommand": "cd hussle-app-dispatch-api && npx prisma db seed && npx tsc --noEmit",
+  "commit": null,
+  "decisions": [],
+  "blockedReason": null,
+  "completedAt": null
+}

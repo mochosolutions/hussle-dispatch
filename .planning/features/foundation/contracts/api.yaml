@@ -1,0 +1,189 @@
+openapi: 3.0.3
+info:
+  title: Hustle App Dispatch API
+  version: 1.0.0
+  description: >
+    Foundation contract — shared schemas, enums, and security definitions.
+    This feature provides infrastructure only (no API endpoints).
+    Individual feature contracts extend these schemas with endpoints.
+  x-feature: foundation
+  x-environment-urls:
+    development: http://localhost:3001/api
+
+servers:
+  - url: http://localhost:3001/api
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+paths: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # --- Error Handling ---
+    ErrorBody:
+      type: object
+      required: [statusCode, error, message]
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: ValidationError
+        message:
+          type: string
+          example: Invalid input data
+
+    # --- Pagination ---
+    PaginationMeta:
+      type: object
+      required: [page, limit, total, totalPages, hasMore]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 25
+        total:
+          type: integer
+          example: 42
+        totalPages:
+          type: integer
+          example: 2
+        hasMore:
+          type: boolean
+          example: true
+
+    PaginationParams:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+        sort:
+          type: string
+          default: createdAt
+        order:
+          type: string
+          enum: [asc, desc]
+          default: desc
+
+    # --- Domain Enums ---
+    CarrierType:
+      type: string
+      enum: [COMPANY_ASSET, OWNER_OPERATOR, EXTERNAL_CARRIER]
+
+    ContactType:
+      type: string
+      enum: [BROKER, SHIPPER, CONSIGNEE, FACTORING]
+
+    EquipmentType:
+      type: string
+      enum: [DRY_VAN, REEFER, FLATBED, STEP_DECK, BOX_TRUCK, HOTSHOT, POWER_ONLY]
+
+    VehicleOwnership:
+      type: string
+      enum: [OWNED, LEASED]
+
+    ExpenseCategory:
+      type: string
+      enum: [FIXED, VARIABLE, SERVICE, WAGE, DEDUCTION]
+
+    LoadStatus:
+      type: string
+      enum:
+        - QUOTED
+        - BOOKED
+        - DISPATCHED
+        - EN_ROUTE_PICKUP
+        - AT_PICKUP
+        - IN_TRANSIT
+        - AT_DELIVERY
+        - DELIVERED
+        - INVOICE_PENDING
+        - INVOICED
+        - PAID
+        - EXCEPTION
+        - CANCELED
+        - TONU
+
+    StopType:
+      type: string
+      enum: [PICKUP, DELIVERY, STOP_OFF, DROP_HOOK, LIVE_UNLOAD]
+
+    FacilityType:
+      type: string
+      enum:
+        - WAREHOUSE
+        - DISTRIBUTION_CENTER
+        - CROSS_DOCK
+        - COLD_STORAGE
+        - PORT
+        - RAIL_YARD
+        - TRUCK_STOP
+        - DROP_YARD
+        - MANUFACTURING
+        - RETAIL
+        - FARM
+        - CONSTRUCTION_SITE
+        - MILITARY
+        - GOVERNMENT
+        - RESIDENTIAL
+        - OTHER
+
+    DockType:
+      type: string
+      enum: [DOCK_HIGH, GROUND_LEVEL, BOTH, NONE]
+
+    GeoSource:
+      type: string
+      enum: [AUTO, MANUAL]
+
+    AccessorialType:
+      type: string
+      enum: [DETENTION, LUMPER, TONU, LAYOVER, DRIVER_ASSIST, FUEL_SURCHARGE, TARP, TOLL, OTHER]
+
+    InvoiceType:
+      type: string
+      enum: [CUSTOMER, DISPATCH_FEE]
+
+    InvoiceStatus:
+      type: string
+      enum: [DRAFT, APPROVED, SENT, PARTIALLY_PAID, PAID, OVERDUE, VOID]
+
+    DocumentType:
+      type: string
+      enum:
+        - BROKER_RATE_CON
+        - BOL_UNSIGNED
+        - BOL_SIGNED
+        - DISPATCH_AGREEMENT
+        - INSURANCE_CERT
+        - W9
+        - CARRIER_PACKET
+        - INVOICE
+        - LUMPER_RECEIPT
+        - SCALE_TICKET
+        - OTHER
+
+    UserRole:
+      type: string
+      enum: [ADMIN, DISPATCHER, VIEWER]
