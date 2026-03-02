@@ -1,12 +1,28 @@
 import 'express-async-errors';
+import Decimal from 'decimal.js';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { errorHandler } from './shared/middleware/errorHandler';
 
+/**
+ * JSON replacer that serializes Decimal.js instances as strings.
+ * This ensures financial values are never silently truncated by JSON number precision.
+ * Acceptance criterion: "Decimals in API responses serialized as strings in JSON."
+ */
+const decimalReplacer = (_key: string, value: unknown): unknown => {
+  if (value instanceof Decimal) {
+    return value.toFixed();
+  }
+  return value;
+};
+
 export const createApp = (): express.Application => {
   const app = express();
+
+  // Serialize Decimal.js instances as strings in all JSON responses
+  app.set('json replacer', decimalReplacer);
 
   // Security headers
   app.use(helmet());
