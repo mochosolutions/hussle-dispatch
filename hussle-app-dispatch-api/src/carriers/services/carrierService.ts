@@ -1,6 +1,11 @@
 import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
 import { LOAD_STATUSES } from '@/shared/constants/loadStatuses';
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
+import {
+  ActiveLoadsConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '@/shared/errors';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
@@ -123,8 +128,9 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     );
 
     if (blockingLoadIds.length > 0) {
-      throw new ConflictError(
-        `Carrier has active loads and cannot be deleted. Blocking load IDs: ${blockingLoadIds.join(', ')}`,
+      throw new ActiveLoadsConflictError(
+        'Carrier has active loads and cannot be deleted.',
+        blockingLoadIds,
       );
     }
 

@@ -51,6 +51,22 @@ export class ConflictError extends CustomError {
   }
 }
 
+export class ActiveLoadsConflictError extends CustomError {
+  statusCode = 409;
+  readonly code = 'ACTIVE_LOADS';
+  readonly blockingLoadIds: string[];
+
+  constructor(message: string, blockingLoadIds: string[]) {
+    super(message);
+    this.blockingLoadIds = blockingLoadIds;
+    Object.setPrototypeOf(this, ActiveLoadsConflictError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
 export class UnauthorizedError extends CustomError {
   statusCode = 401;
   readonly code = 'UNAUTHORIZED';

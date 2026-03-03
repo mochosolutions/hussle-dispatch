@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js';
 import { CarrierType } from '@prisma/client';
-import { ForbiddenError, ValidationError } from '@/shared/errors';
+import { ActiveLoadsConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
 import { createCarrierService } from '../carrierService';
 
 const buildCarrier = () => ({
@@ -115,5 +115,54 @@ describe('carrierService', () => {
     });
 
     expect(result.partnerSplitPercent).toEqual(new Decimal('50.00'));
+  });
+
+  it('throws NotFoundError when carrier does not exist on delete', async () => {
+    mockCarrierRepository.findById.mockResolvedValue(null);
+
+    await expect(
+      carrierService.deleteCarrier({
+        id: '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+        organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        role: 'admin',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('throws ActiveLoadsConflictError with blockingLoadIds when carrier has active loads', async () => {
+    const blockingIds = [
+      'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+    ];
+    mockCarrierRepository.findById.mockResolvedValue(buildCarrier());
+    mockLoadRepository.findBlockingLoadIds.mockResolvedValue(blockingIds);
+
+    const error = await carrierService
+      .deleteCarrier({
+        id: '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+        organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        role: 'admin',
+      })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ActiveLoadsConflictError);
+    expect((error as ActiveLoadsConflictError).blockingLoadIds).toEqual(blockingIds);
+  });
+
+  it('soft-deletes carrier when no active loads exist', async () => {
+    mockCarrierRepository.findById.mockResolvedValue(buildCarrier());
+    mockLoadRepository.findBlockingLoadIds.mockResolvedValue([]);
+    mockCarrierRepository.softDelete.mockResolvedValue(undefined);
+
+    await carrierService.deleteCarrier({
+      id: '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+      organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+      role: 'admin',
+    });
+
+    expect(mockCarrierRepository.softDelete).toHaveBeenCalledWith(
+      '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+      expect.any(Date),
+    );
   });
 });
