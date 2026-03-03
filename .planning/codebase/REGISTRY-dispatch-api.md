@@ -464,6 +464,52 @@ import { errorHandler } from './shared/middleware/errorHandler';
 
 ---
 
+## Fleet Management — Carriers Module (BE-001)
+
+### `src/carriers/`
+
+Full CRUD module for carriers. Mounted at `/api/v1/carriers` in `app.ts`.
+
+**Composition root:** `src/carriers/compositionRoot.ts` — `createCarriersModule({ prismaClient })`
+
+**Module entry:** `src/carriers/index.ts` — exports `carriersRouter`
+
+| File | Description |
+|------|-------------|
+| `services/carrierService.ts` | `createCarrierService(deps)` — all carrier business logic |
+| `repositories/carrierRepositoryPrisma.ts` | `carrierRepositoryPrisma(prisma)` — implements `CarrierRepositoryPort` + `LoadRepositoryPort` |
+| `controllers/carrierController.ts` | `createCarrierControllers(deps)` — all 6 route handlers |
+| `controllers/transformers/carrierTransformer.ts` | `toCarrierResponse`, `toCarrierListResponse`, `toCarrierListEnvelope` |
+| `controllers/mappers/createCarrierMapper.ts` | Maps POST body to `CreateCarrierServiceInput` |
+| `controllers/mappers/listCarriersMapper.ts` | Maps GET query params to `ListCarriersServiceInput` |
+| `controllers/mappers/updateCarrierMapper.ts` | Maps PATCH body+params to `UpdateCarrierServiceInput` |
+| `controllers/mappers/getRequestContextMapper.ts` | Extracts `{ organizationId, role }` from req |
+| `controllers/mappers/getRequiredCarrierIdMapper.ts` | Extracts carrier `:id` from params |
+| `validators/carrierValidators.ts` | Yup schemas: `createCarrierValidator`, `updateCarrierValidator`, `listCarriersValidator`, `carrierIdParamValidator` |
+| `routes/carrierRoutes.ts` | `createCarriersRouter(controllers)` — all 6 routes with auth + validation |
+| `types/carrierTypes.ts` | Domain types: `CreateCarrierInput`, `UpdateCarrierInput`, `CarrierWithCounts`, `CarrierResponse`, `CarrierRepositoryPort`, `LoadRepositoryPort`, `InsuranceWarning`, etc. |
+| `types/carrierServiceTypes.ts` | Service input/output types: `CreateCarrierServiceInput`, `ListCarriersServiceInput`, etc. + `CarrierService` interface |
+
+**Key behaviors:**
+- OWNER_OPERATOR type rejected with `ValidationError('Owner-operator support coming soon')` (L-010)
+- `owner_operator` role rejected with `ForbiddenError` on all operations
+- DISPATCHER role omits `partnerSplitPercent` from responses (L-012)
+- Insurance warning computed in transformer: `EXPIRED`, `7_DAY`, `30_DAY` or null
+- `onboardingComplete` computed via `checkCarrierOnboarding` from `src/shared/onboardingGate.ts`
+- DELETE returns `ActiveLoadsConflictError` (409) with `blockingLoadIds: string[]` if carrier has loads with status != PAID
+- All queries scope to `managedByOrgId` matching authenticated user's `organizationId`
+- All list queries filter `WHERE deletedAt IS NULL`
+
+### `src/shared/errors.ts` — Addition: `ActiveLoadsConflictError`
+
+| Export | Status Code | Code | Extra Fields |
+|--------|-------------|------|--------------|
+| `ActiveLoadsConflictError` | 409 | `ACTIVE_LOADS` | `blockingLoadIds: string[]` |
+
+Error handler (`src/shared/middleware/errorHandler.ts`) emits `blockingLoadIds` array in response body when this error is thrown.
+
+---
+
 ## Future Stories — Integration Points
 
 - **Auth middleware (L-007):** Thin placeholder at `src/middleware/auth.ts`. Swap `requireAuth` body when `packages/auth/` ships. Express Request is augmented with `user`, `organizationId`, `orgSlug`.
