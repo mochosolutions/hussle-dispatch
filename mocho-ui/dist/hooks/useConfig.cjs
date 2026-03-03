@@ -1,9 +1,6 @@
 "use strict";
-Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const LayoutContext = require("../components/layout/LayoutContext.cjs");
-function useConfig() {
-  return LayoutContext.useLayoutConfig();
-}
-exports.default = useConfig;
-exports.useConfig = useConfig;
+const React = require("react");
+const ConfigContext = require("../contexts/ConfigContext.cjs");
+const useConfig = () => React.useContext(ConfigContext.ConfigContext);
+module.exports = useConfig;
 //# sourceMappingURL=useConfig.cjs.map

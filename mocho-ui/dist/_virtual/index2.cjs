@@ -1,5 +1,5 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-var reactIs = { exports: {} };
-exports.__module = reactIs;
+var lib = {};
+exports.__exports = lib;
 //# sourceMappingURL=index2.cjs.map

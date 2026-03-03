@@ -1,8 +1,7 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
+import { useTheme, styled } from "@mui/material/styles";
+import MuiAvatar from "@mui/material/Avatar";
 import getColors from "../../utils/getColors.js";
-import useTheme from "../../node_modules/@mui/material/styles/useTheme.js";
-import styled from "../../node_modules/@mui/material/styles/styled.js";
-import Avatar$1 from "../../node_modules/@mui/material/Avatar/Avatar.js";
 function getColorStyle({
   variant,
   theme,
@@ -85,7 +84,7 @@ function getSizeStyle(size) {
       };
   }
 }
-const AvatarStyle = styled(Avatar$1, {
+const AvatarStyle = styled(MuiAvatar, {
   shouldForwardProp: (prop) => prop !== "color" && prop !== "type" && prop !== "size"
 })(({
   theme,

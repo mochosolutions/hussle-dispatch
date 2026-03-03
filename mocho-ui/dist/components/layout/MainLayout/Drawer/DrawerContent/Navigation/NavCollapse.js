@@ -1,18 +1,16 @@
-import { jsx, jsxs, Fragment } from "../../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { useState, useMemo, useEffect } from "react";
+import { jsx, Fragment, jsxs } from "@emotion/react/jsx-runtime";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTheme, styled } from "@mui/material/styles";
 import { useMediaQuery, Typography, ListItemButton, ListItemIcon, ListItemText, Paper, ClickAwayListener, Collapse, List, Box, Popper } from "@mui/material";
 import NavItem from "./NavItem.js";
 import Dot from "../../../../../extended/Dot.js";
 import SimpleBar from "../../../../../third-party/SimpleBar.js";
 import Transitions from "../../../../../extended/Transitions.js";
-import { useConfig } from "../../../../../../hooks/useConfig.js";
-import { useSelector, dispatch } from "../../../../../../store/index.js";
-import { activeItem } from "../../../../../../store/reducers/menu.js";
+import useConfig from "../../../../../../hooks/useConfig.js";
+import useLayoutState from "../../../../../../hooks/useLayoutState.js";
 import { UpOutlined, DownOutlined, RightOutlined, BorderOutlined } from "@ant-design/icons";
 import { ThemeMode, MenuOrientation } from "../../../../../../types/config.js";
-import useTheme from "../../../../../../node_modules/@mui/material/styles/useTheme.js";
-import styled from "../../../../../../node_modules/@mui/material/styles/styled.js";
 const PopperStyled = styled(Popper)(({
   theme
 }) => ({
@@ -41,18 +39,19 @@ const NavCollapse = ({
   setSelectedItems,
   selectedItems,
   setSelectedLevel,
-  selectedLevel
+  selectedLevel,
+  openItem,
+  onActiveItem
 }) => {
   const theme = useTheme();
   const downLG = useMediaQuery(theme.breakpoints.down("lg"));
-  const menuState = useSelector((state) => state.menu);
   const {
     drawerOpen
-  } = menuState;
+  } = useLayoutState();
   const {
     menuOrientation
   } = useConfig();
-  const Navigation = useNavigate();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -63,14 +62,14 @@ const NavCollapse = ({
       setOpen(!open);
       setSelected(!selected ? menu.id : null);
       setSelectedItems(!selected ? menu.id : "");
-      if (menu.url) Navigation(`${menu.url}`);
+      if (menu.url) navigate(`${menu.url}`);
     } else {
       setAnchorEl(event?.currentTarget);
     }
   };
   const handlerIconLink = () => {
     if (!drawerOpen) {
-      if (menu.url) Navigation(`${menu.url}`);
+      if (menu.url) navigate(`${menu.url}`);
       setSelected(menu.id);
     }
   };
@@ -90,20 +89,18 @@ const NavCollapse = ({
     }
     setAnchorEl(null);
   };
-  useMemo(() => {
+  useEffect(() => {
     if (selected === selectedItems) {
       if (level === 1) {
         setOpen(true);
       }
-    } else {
-      if (level === selectedLevel) {
-        setOpen(false);
-        if (!miniMenuOpened && !drawerOpen && !selected) {
-          setSelected(null);
-        }
-        if (drawerOpen) {
-          setSelected(null);
-        }
+    } else if (level === selectedLevel) {
+      setOpen(false);
+      if (!miniMenuOpened && !drawerOpen && !selected) {
+        setSelected(null);
+      }
+      if (drawerOpen) {
+        setSelected(null);
       }
     }
   }, [selectedItems, level, selected, miniMenuOpened, drawerOpen, selectedLevel]);
@@ -114,7 +111,7 @@ const NavCollapse = ({
     if (pathname === menu.url) {
       setSelected(menu.id);
     }
-  }, [pathname]);
+  }, [pathname, menu.url, menu.id]);
   const checkOpenForParent = (child, id) => {
     child.forEach((item) => {
       if (item.url === pathname) {
@@ -132,7 +129,7 @@ const NavCollapse = ({
     if (menu.children) {
       menu.children.forEach((item) => {
         if (item.children?.length) {
-          checkOpenForParent(item.children, menu.id);
+          checkOpenForParent(item.children, menu.id ?? "");
         }
         if (pathname && pathname.includes("product-details")) {
           if (item.url && item.url.includes("product-details")) {
@@ -149,18 +146,18 @@ const NavCollapse = ({
   }, [pathname, menu.children]);
   useEffect(() => {
     if (menu.url === pathname && menu.id) {
-      dispatch(activeItem([menu.id]));
+      onActiveItem([menu.id]);
       setSelected(menu.id);
       setAnchorEl(null);
       setOpen(true);
     }
-  }, [pathname, menu, dispatch]);
+  }, [pathname, menu, onActiveItem]);
   const navCollapse = menu.children?.map((item) => {
     switch (item.type) {
       case "collapse":
-        return /* @__PURE__ */ jsx(NavCollapse, { setSelectedItems, setSelectedLevel, selectedLevel, selectedItems, menu: item, level: level + 1, parentId }, item.id);
+        return /* @__PURE__ */ jsx(NavCollapse, { setSelectedItems, setSelectedLevel, selectedLevel, selectedItems, menu: item, level: level + 1, parentId, openItem, onActiveItem }, item.id);
       case "item":
-        return /* @__PURE__ */ jsx(NavItem, { item, level: level + 1 }, item.id);
+        return /* @__PURE__ */ jsx(NavItem, { item, level: level + 1, openItem, onActiveItem }, item.id);
       default:
         return /* @__PURE__ */ jsx(Typography, { variant: "h6", color: "error", align: "center", children: "Fix - Collapse or Item" }, item.id);
     }
@@ -170,7 +167,7 @@ const NavCollapse = ({
     fontSize: "1rem"
   } }) : false;
   const Icon = menu.icon;
-  const menuIcon = menu.icon ? /* @__PURE__ */ jsx(Icon, { style: {
+  const menuIcon = Icon ? /* @__PURE__ */ jsx(Icon, { style: {
     fontSize: drawerOpen ? "1rem" : "1.25rem"
   } }) : borderIcon;
   const textColor = theme.palette.mode === ThemeMode.DARK ? "grey.400" : "text.primary";

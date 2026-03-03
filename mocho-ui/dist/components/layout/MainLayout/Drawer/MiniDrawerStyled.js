@@ -1,7 +1,7 @@
+import { styled } from "@mui/material/styles";
+import Drawer from "@mui/material/Drawer";
 import { DRAWER_WIDTH } from "../../../../config.js";
 import { ThemeMode } from "../../../../types/config.js";
-import styled from "../../../../node_modules/@mui/material/styles/styled.js";
-import Drawer from "../../../../node_modules/@mui/material/Drawer/Drawer.js";
 const openedMixin = (theme) => ({
   width: DRAWER_WIDTH,
   borderRight: `1px solid ${theme.palette.divider}`,

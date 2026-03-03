@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
-let prisma: PrismaClient;
+export type PrismaTransaction = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -24,6 +27,6 @@ const createPrismaClient = (): PrismaClient => {
   return global.__prisma;
 };
 
-prisma = createPrismaClient();
+const prisma = createPrismaClient();
 
 export { prisma };

@@ -1,6 +1,6 @@
+import { styled } from "@mui/material/styles";
+import AppBar from "@mui/material/AppBar";
 import { DRAWER_WIDTH } from "../../../../config.js";
-import styled from "../../../../node_modules/@mui/material/styles/styled.js";
-import AppBar from "../../../../node_modules/@mui/material/AppBar/AppBar.js";
 const AppBarStyled = styled(AppBar, {
   shouldForwardProp: (prop) => prop !== "open"
 })(({

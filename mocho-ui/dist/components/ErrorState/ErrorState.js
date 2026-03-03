@@ -1,5 +1,5 @@
-import { jsx, jsxs } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { AlertTitle, Typography, Box, Button, Alert } from "@mui/material";
+import { jsx, jsxs } from "@emotion/react/jsx-runtime";
+import { Box, Alert, AlertTitle, Typography, Button } from "@mui/material";
 import { Refresh, ArrowBack, ErrorOutline } from "@mui/icons-material";
 function ErrorState({
   message,

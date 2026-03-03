@@ -1,6 +1,6 @@
-import { jsxs, jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { Box, IconButton, Typography, Stack } from "@mui/material";
-import ArrowBackIcon from "../../_virtual/ArrowBack.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
+import { Stack, Box, IconButton, Typography } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 const PageHeader = ({
   showBackButton = false,
   onNavigate,

@@ -1,8 +1,8 @@
 "use strict";
+const styles = require("@mui/material/styles");
+const Drawer = require("@mui/material/Drawer");
 const config = require("../../../../config.cjs");
 const config$1 = require("../../../../types/config.cjs");
-const styled = require("../../../../node_modules/@mui/material/styles/styled.cjs");
-const Drawer = require("../../../../node_modules/@mui/material/Drawer/Drawer.cjs");
 const openedMixin = (theme) => ({
   width: config.DRAWER_WIDTH,
   borderRight: `1px solid ${theme.palette.divider}`,
@@ -23,7 +23,7 @@ const closedMixin = (theme) => ({
   borderRight: "none",
   boxShadow: theme.customShadows.z1
 });
-const MiniDrawerStyled = styled.default(Drawer.default, {
+const MiniDrawerStyled = styles.styled(Drawer, {
   shouldForwardProp: (prop) => prop !== "open"
 })(({
   theme,

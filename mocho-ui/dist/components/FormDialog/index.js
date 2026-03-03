@@ -1,5 +1,5 @@
-import { jsx, jsxs } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { DialogTitle, DialogContent, DialogActions, Button, Dialog } from "@mui/material";
+import { jsx, jsxs } from "@emotion/react/jsx-runtime";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import { Formik, Form } from "formik";
 import AnimateButton from "../extended/AnimateButton.js";
 import { LoadingButton } from "@mui/lab";

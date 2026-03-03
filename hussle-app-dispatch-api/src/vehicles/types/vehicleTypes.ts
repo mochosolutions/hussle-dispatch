@@ -1,0 +1,116 @@
+import type {
+  ExpenseCategory,
+  LoadStatus,
+  Prisma,
+  Vehicle,
+  EquipmentType,
+  VehicleOwnership,
+} from '@prisma/client';
+import type { SortOrder } from '@/shared/pagination';
+import type { PaginationMeta } from '@/shared/responseEnvelope';
+
+export interface VehicleExpenseInput {
+  category: ExpenseCategory;
+  expenseKey: string;
+  label: string;
+  monthlyAmount?: string | number;
+}
+
+export interface CreateVehicleInput {
+  carrierId: string;
+  unitNumber: string;
+  type: EquipmentType;
+  ownership?: VehicleOwnership;
+  year?: number;
+  make?: string;
+  model?: string;
+  vin?: string;
+  licensePlate?: string;
+  licensePlateState?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  warrantyInfo?: string;
+  monthlyGrossTarget?: string | number;
+  monthlyMilesTarget?: number;
+  workingDaysPerMonth?: number;
+  isActive?: boolean;
+  notes?: string;
+}
+
+export interface UpdateVehicleDataInput {
+  carrierId?: string;
+  unitNumber?: string;
+  type?: EquipmentType;
+  ownership?: VehicleOwnership;
+  year?: number;
+  make?: string;
+  model?: string;
+  vin?: string;
+  licensePlate?: string;
+  licensePlateState?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  warrantyInfo?: string;
+  monthlyGrossTarget?: string | number;
+  monthlyMilesTarget?: number;
+  workingDaysPerMonth?: number;
+  isActive?: boolean;
+  notes?: string;
+}
+
+export interface UpdateVehicleInput extends UpdateVehicleDataInput {
+  expenses?: VehicleExpenseInput[];
+}
+
+export interface VehicleListFilters {
+  carrierId?: string;
+  search?: string;
+}
+
+export interface VehicleQueryInput {
+  organizationId: string;
+  filters: VehicleListFilters;
+}
+
+export type VehicleWithExpenses = Prisma.VehicleGetPayload<{
+  include: {
+    expenses: true;
+  };
+}>;
+
+export interface ListVehiclesRepositoryInput extends VehicleQueryInput {
+  skip: number;
+  take: number;
+  orderBy: Record<string, SortOrder>;
+}
+
+export interface VehicleRepositoryPort {
+  create(input: CreateVehicleInput): Promise<VehicleWithExpenses>;
+  findById(id: string, organizationId: string): Promise<VehicleWithExpenses | null>;
+  list(input: ListVehiclesRepositoryInput): Promise<VehicleWithExpenses[]>;
+  count(input: VehicleQueryInput): Promise<number>;
+  update(id: string, input: UpdateVehicleDataInput): Promise<VehicleWithExpenses>;
+  replaceExpenses(vehicleId: string, expenses: VehicleExpenseInput[]): Promise<void>;
+  softDelete(id: string, deletedAt: Date): Promise<void>;
+}
+
+export interface CarrierRepositoryPort {
+  findActiveByIdForOrg(carrierId: string, organizationId: string): Promise<boolean>;
+}
+
+export interface LoadRepositoryPort {
+  findBlockingLoadIdsByVehicle(
+    vehicleId: string,
+    statuses: LoadStatus[],
+    limit: number,
+  ): Promise<string[]>;
+}
+
+export interface ListVehiclesResult {
+  data: VehicleWithExpenses[];
+  meta: PaginationMeta;
+}
+
+export type VehicleResponse = Vehicle & {
+  expenses: VehicleWithExpenses['expenses'];
+};

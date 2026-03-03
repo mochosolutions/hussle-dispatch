@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const emotionReactJsxRuntime_browser_esm = require("../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const styled = require("styled-components");
 const reactRouterDom = require("react-router-dom");
@@ -34,10 +34,10 @@ const FooterContainer = styled.footer`
     width: 100%;
 `;
 function SimpleLayout() {
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(React.Suspense, { fallback: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(Loader, {}), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(PageContainer, { children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(HeaderContainer, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(Header, {}) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(MainContainer, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(reactRouterDom.Outlet, {}) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterContainer, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterBlock, { isFull: true }) })
+  return /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(Loader, {}), children: /* @__PURE__ */ jsxRuntime.jsxs(PageContainer, { children: [
+    /* @__PURE__ */ jsxRuntime.jsx(HeaderContainer, { children: /* @__PURE__ */ jsxRuntime.jsx(Header, {}) }),
+    /* @__PURE__ */ jsxRuntime.jsx(MainContainer, { children: /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Outlet, {}) }),
+    /* @__PURE__ */ jsxRuntime.jsx(FooterContainer, { children: /* @__PURE__ */ jsxRuntime.jsx(FooterBlock, { isFull: true }) })
   ] }) });
 }
 exports.FooterContainer = FooterContainer;

@@ -1,4 +1,4 @@
-import { AppError } from '../errors';
+import { SequenceError } from '../errors';
 
 // ---------------------------------------------------------------------------
 // Mock the Prisma singleton before importing the module under test
@@ -81,10 +81,10 @@ describe('generateSequenceNumber', () => {
     expect(call2[0]).toContain('seq_load_org_bbb');
   });
 
-  it('retries up to 3 times on error then throws AppError', async () => {
+  it('retries up to 3 times on error then throws SequenceError', async () => {
     mockQueryRawUnsafe.mockRejectedValue(new Error('DB connection error'));
 
-    await expect(generateSequenceNumber('LOAD', 'org-fail')).rejects.toThrow(AppError);
+    await expect(generateSequenceNumber('LOAD', 'org-fail')).rejects.toThrow(SequenceError);
     // 3 attempts × 1 executeRaw + 1 queryRaw each = 3 queryRaw calls
     expect(mockQueryRawUnsafe).toHaveBeenCalledTimes(3);
   });
@@ -101,14 +101,14 @@ describe('generateSequenceNumber', () => {
     expect(mockQueryRawUnsafe).toHaveBeenCalledTimes(2);
   });
 
-  it('throws AppError with SEQUENCE_ERROR code after exhausting retries', async () => {
+  it('throws SequenceError with SEQUENCE_ERROR code after exhausting retries', async () => {
     mockQueryRawUnsafe.mockRejectedValue(new Error('persistent failure'));
 
     const error = await generateSequenceNumber('LOAD', 'org-fail').catch((e: unknown) => e);
 
-    expect(error).toBeInstanceOf(AppError);
-    expect((error as AppError).code).toBe('SEQUENCE_ERROR');
-    expect((error as AppError).statusCode).toBe(500);
+    expect(error).toBeInstanceOf(SequenceError);
+    expect((error as SequenceError).code).toBe('SEQUENCE_ERROR');
+    expect((error as SequenceError).statusCode).toBe(500);
   });
 
   it('formats large sequence numbers beyond 6 digits correctly', async () => {

@@ -1,7 +1,7 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
 import { Box, CircularProgress } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import { ErrorBoundary } from "../ErrorBoundary/ErrorBoundary.js";
-import styled from "../../node_modules/@mui/material/styles/styled.js";
 const LoaderWrapper = styled("div")(({
   theme
 }) => ({
@@ -26,8 +26,18 @@ const PageWrapper = ({
   isError,
   errorContext,
   onBoundaryError,
+  sx,
   ...boxProps
 }) => {
+  const baseSx = {
+    m: 0,
+    p: 0,
+    height: "100%",
+    flex: 1,
+    display: "flex",
+    flexDirection: "column"
+  };
+  const mergedSx = Array.isArray(sx) ? [baseSx, ...sx] : sx === void 0 ? baseSx : [baseSx, sx];
   let content;
   if (isLoading) {
     content = /* @__PURE__ */ jsx(LoaderWrapper, { children: loadingComponent ?? /* @__PURE__ */ jsx(CircularProgress, { color: "primary" }) });
@@ -36,12 +46,7 @@ const PageWrapper = ({
   } else if (isEmpty) {
     content = /* @__PURE__ */ jsx(LoaderWrapper, { children: emptyComponent ?? /* @__PURE__ */ jsx("div", { children: "No data found." }) });
   } else {
-    content = /* @__PURE__ */ jsx(Box, { sx: {
-      height: "100%",
-      flex: 1,
-      display: "flex",
-      flexDirection: "column"
-    }, ...boxProps, children });
+    content = /* @__PURE__ */ jsx(Box, { sx: mergedSx, ...boxProps, children });
   }
   return /* @__PURE__ */ jsx(ErrorBoundary, { context: errorContext, onError: onBoundaryError, fallback: () => /* @__PURE__ */ jsx("div", { children: "This page failed to load. Please try refreshing the page." }), children: content });
 };

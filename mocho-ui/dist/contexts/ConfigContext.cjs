@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const emotionReactJsxRuntime_browser_esm = require("../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const config = require("../config.cjs");
 const useLocalStorage = require("../hooks/useLocalStorage.cjs");
@@ -76,7 +76,7 @@ function ConfigProvider({
       fontFamily
     });
   };
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(ConfigContext.Provider, { value: {
+  return /* @__PURE__ */ jsxRuntime.jsx(ConfigContext.Provider, { value: {
     ...config2,
     onChangeContainer,
     onChangeLocalization,

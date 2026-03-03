@@ -1,8 +1,8 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
-const LinearProgress = require("../../node_modules/@mui/material/LinearProgress/LinearProgress.cjs");
-const styled = require("../../node_modules/@mui/material/styles/styled.cjs");
-const LoaderWrapper = styled.default("div")(({
+const jsxRuntime = require("@emotion/react/jsx-runtime");
+const styles = require("@mui/material/styles");
+const LinearProgress = require("@mui/material/LinearProgress");
+const LoaderWrapper = styles.styled("div")(({
   theme
 }) => ({
   position: "fixed",
@@ -14,6 +14,6 @@ const LoaderWrapper = styled.default("div")(({
     marginTop: theme.spacing(2)
   }
 }));
-const Loader = () => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(LoaderWrapper, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(LinearProgress, { color: "primary" }) });
+const Loader = () => /* @__PURE__ */ jsxRuntime.jsx(LoaderWrapper, { children: /* @__PURE__ */ jsxRuntime.jsx(LinearProgress, { color: "primary" }) });
 module.exports = Loader;
 //# sourceMappingURL=Loader.cjs.map

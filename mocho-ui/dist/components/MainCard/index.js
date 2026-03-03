@@ -1,7 +1,7 @@
-import { jsxs, jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
 import { forwardRef } from "react";
+import { useTheme } from "@mui/material/styles";
 import { Card, CardHeader, Typography, Divider, CardContent } from "@mui/material";
-import useTheme from "../../node_modules/@mui/material/styles/useTheme.js";
 const headerSX = {
   p: 2.5,
   "& .MuiCardHeader-action": {

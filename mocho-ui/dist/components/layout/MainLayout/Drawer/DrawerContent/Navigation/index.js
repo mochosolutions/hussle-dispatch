@@ -1,14 +1,15 @@
-import { jsx } from "../../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { useState, useLayoutEffect } from "react";
+import { jsx } from "@emotion/react/jsx-runtime";
+import { useState, useCallback } from "react";
+import { useTheme } from "@mui/material/styles";
 import { useMediaQuery, Typography, Box } from "@mui/material";
 import NavGroup from "./NavGroup.js";
-import { useSelector } from "../../../../../../store/index.js";
-import { useConfig } from "../../../../../../hooks/useConfig.js";
+import useLayoutState from "../../../../../../hooks/useLayoutState.js";
+import useConfig from "../../../../../../hooks/useConfig.js";
 import { HORIZONTAL_MAX_ITEM } from "../../../../../../config.js";
 import { MenuOrientation } from "../../../../../../types/config.js";
-import menuItems from "../../../../menu-items/index.js";
-import useTheme from "../../../../../../node_modules/@mui/material/styles/useTheme.js";
-const Navigation = () => {
+const Navigation = ({
+  menuItems
+}) => {
   const theme = useTheme();
   const downLG = useMediaQuery(theme.breakpoints.down("lg"));
   const {
@@ -16,33 +17,35 @@ const Navigation = () => {
   } = useConfig();
   const {
     drawerOpen
-  } = useSelector((state) => state.menu);
+  } = useLayoutState();
   const [selectedItems, setSelectedItems] = useState("");
   const [selectedLevel, setSelectedLevel] = useState(0);
-  const [menuItems$1, setMenuItems] = useState({
-    items: []
-  });
-  useLayoutEffect(() => {
-    setMenuItems(menuItems);
-  }, [menuItems]);
+  const [openItem, setOpenItem] = useState(["dashboard"]);
+  const [selectedID, setSelectedID] = useState(null);
+  const handleActiveItem = useCallback((itemIds) => {
+    setOpenItem(itemIds);
+  }, []);
+  const handleActiveID = useCallback((id) => {
+    setSelectedID(id);
+  }, []);
   const isHorizontal = menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
   const lastItem = isHorizontal ? HORIZONTAL_MAX_ITEM : null;
-  let lastItemIndex = menuItems$1.items.length - 1;
+  let lastItemIndex = menuItems.length - 1;
   let remItems = [];
-  let lastItemId;
-  if (lastItem && lastItem < menuItems$1.items.length) {
-    lastItemId = menuItems$1.items[lastItem - 1].id;
+  let lastItemId = "";
+  if (lastItem && lastItem < menuItems.length) {
+    lastItemId = menuItems[lastItem - 1].id ?? "";
     lastItemIndex = lastItem - 1;
-    remItems = menuItems$1.items.slice(lastItem - 1, menuItems$1.items.length).map((item) => ({
+    remItems = menuItems.slice(lastItem - 1, menuItems.length).map((item) => ({
       title: item.title,
       elements: item.children,
       icon: item.icon
     }));
   }
-  const navGroups = menuItems$1.items.slice(0, lastItemIndex + 1).map((item) => {
+  const navGroups = menuItems.slice(0, lastItemIndex + 1).map((item) => {
     switch (item.type) {
       case "group":
-        return /* @__PURE__ */ jsx(NavGroup, { setSelectedItems, setSelectedLevel, selectedLevel, selectedItems, lastItem, remItems, lastItemId, item }, item.id);
+        return /* @__PURE__ */ jsx(NavGroup, { setSelectedItems, setSelectedLevel, selectedLevel, selectedItems, lastItem: lastItem ?? 0, remItems, lastItemId, item, openItem, onActiveItem: handleActiveItem, selectedID, onActiveID: handleActiveID }, item.id);
       default:
         return /* @__PURE__ */ jsx(Typography, { variant: "h6", color: "error", align: "center", children: "Fix - Navigation Group" }, item.id);
     }

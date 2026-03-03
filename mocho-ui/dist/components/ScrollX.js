@@ -1,4 +1,4 @@
-import styled from "../node_modules/@mui/material/styles/styled.js";
+import { styled } from "@mui/material/styles";
 const ScrollX = styled("div")({
   width: "100%",
   overflowX: "auto",

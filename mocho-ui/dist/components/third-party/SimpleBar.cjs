@@ -1,14 +1,14 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const SimpleBarReact = require("simplebar-react");
 const material = require("@mui/material");
-;/* empty css                                                          */
+require("simplebar-react/dist/simplebar.min.css");
 const SimpleBar = ({
   children,
   sx,
   ...props
 }) => {
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { component: SimpleBarReact, sx: {
+  return /* @__PURE__ */ jsxRuntime.jsx(material.Box, { component: SimpleBarReact, sx: {
     maxHeight: "100%",
     "& .simplebar-scrollbar::before": {
       backgroundColor: "grey.500"

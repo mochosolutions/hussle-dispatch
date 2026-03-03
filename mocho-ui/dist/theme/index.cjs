@@ -1,15 +1,14 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const material = require("@mui/material");
+const styles = require("@mui/material/styles");
 const styled = require("styled-components");
 const palette = require("./palette.cjs");
 const typography = require("./typography.cjs");
 const shadows = require("./shadows.cjs");
 const index = require("./overrides/index.cjs");
 const config = require("../types/config.cjs");
-const createTheme = require("../node_modules/@mui/material/styles/createTheme.cjs");
-const ThemeProvider = require("../node_modules/@mui/material/styles/ThemeProvider.cjs");
 function ThemeCustomization({
   children,
   mode = config.ThemeMode.LIGHT,
@@ -46,13 +45,13 @@ function ThemeCustomization({
     customShadows: themeCustomShadows,
     typography: themeTypography
   }), [themeDirection, theme, themeTypography, themeCustomShadows]);
-  const themes = createTheme(themeOptions);
-  const themesWithComponents = createTheme({
+  const themes = styles.createTheme(themeOptions);
+  const themesWithComponents = styles.createTheme({
     ...themes,
     components: index(themes)
   });
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.StyledEngineProvider, { injectFirst: true, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(ThemeProvider, { theme: themesWithComponents, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(styled.ThemeProvider, { theme: themesWithComponents, children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.CssBaseline, {}),
+  return /* @__PURE__ */ jsxRuntime.jsx(material.StyledEngineProvider, { injectFirst: true, children: /* @__PURE__ */ jsxRuntime.jsx(styles.ThemeProvider, { theme: themesWithComponents, children: /* @__PURE__ */ jsxRuntime.jsxs(styled.ThemeProvider, { theme: themesWithComponents, children: [
+    /* @__PURE__ */ jsxRuntime.jsx(material.CssBaseline, {}),
     children
   ] }) }) });
 }

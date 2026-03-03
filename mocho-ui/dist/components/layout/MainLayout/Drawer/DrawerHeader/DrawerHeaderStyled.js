@@ -1,5 +1,5 @@
+import { styled } from "@mui/material/styles";
 import { Box } from "@mui/material";
-import styled from "../../../../../node_modules/@mui/material/styles/styled.js";
 const DrawerHeaderStyled = styled(Box, {
   shouldForwardProp: (prop) => prop !== "open"
 })(({

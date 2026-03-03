@@ -1,12 +1,10 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
+const MuiLoadingButton = require("@mui/lab/LoadingButton");
+const styles = require("@mui/material/styles");
 const getColors = require("../../utils/getColors.cjs");
 const getShadow = require("../../utils/getShadow.cjs");
-const useTheme = require("../../node_modules/@mui/material/styles/useTheme.cjs");
-const styled = require("../../node_modules/@mui/material/styles/styled.cjs");
-const LoadingButton$1 = require("../../node_modules/@mui/lab/LoadingButton/LoadingButton.cjs");
-const system = require("@mui/system");
 function getColorStyle({
   variant,
   theme,
@@ -34,10 +32,10 @@ function getColorStyle({
   };
   const commonShadow = {
     "&::after": {
-      boxShadow: `0 0 6px 6px ${system.alpha(main, 0.9)}`
+      boxShadow: `0 0 6px 6px ${styles.alpha(main, 0.9)}`
     },
     "&:active::after": {
-      boxShadow: `0 0 0 0 ${system.alpha(main, 0.9)}`
+      boxShadow: `0 0 0 0 ${styles.alpha(main, 0.9)}`
     },
     "&:focus-visible": {
       outline: `2px solid ${dark}`,
@@ -116,7 +114,7 @@ function getColorStyle({
       };
   }
 }
-const LoadingButtonStyle = styled.default(LoadingButton$1, {
+const LoadingButtonStyle = styles.styled(MuiLoadingButton, {
   shouldForwardProp: (prop) => prop !== "shape" && prop !== "variant"
 })(({
   theme,
@@ -216,8 +214,8 @@ const LoadingButton = React.forwardRef(({
   color = "primary",
   ...others
 }, ref) => {
-  const theme = useTheme();
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(LoadingButtonStyle, { ref, variant, shape, theme, loadingPosition: others.loadingPosition, loading: others.loading, color, ...others, children });
+  const theme = styles.useTheme();
+  return /* @__PURE__ */ jsxRuntime.jsx(LoadingButtonStyle, { ref, variant, shape, theme, loadingPosition: others.loadingPosition, loading: others.loading, color, ...others, children });
 });
 LoadingButton.displayName = "LoadingButton";
 module.exports = LoadingButton;

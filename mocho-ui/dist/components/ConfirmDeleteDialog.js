@@ -1,13 +1,13 @@
-import { jsxs, jsx } from "../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import WarningAmberIcon from "../_virtual/WarningAmber.js";
-import Stack from "../node_modules/@mui/material/Stack/Stack.js";
-import Typography from "../node_modules/@mui/material/Typography/Typography.js";
-import DialogTitle from "../node_modules/@mui/material/DialogTitle/DialogTitle.js";
-import DialogContentText from "../node_modules/@mui/material/DialogContentText/DialogContentText.js";
-import DialogContent from "../node_modules/@mui/material/DialogContent/DialogContent.js";
-import DialogActions from "../node_modules/@mui/material/DialogActions/DialogActions.js";
-import Button from "../node_modules/@mui/material/Button/Button.js";
-import Dialog from "../node_modules/@mui/material/Dialog/Dialog.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 const ConfirmDeleteDialog = ({
   open,
   title = "Delete Item",

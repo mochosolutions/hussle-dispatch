@@ -1,4 +1,4 @@
-import { alpha } from "@mui/system";
+import { alpha } from "@mui/material/styles";
 function Dialog() {
   return {
     MuiDialog: {

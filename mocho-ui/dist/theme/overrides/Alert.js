@@ -1,5 +1,5 @@
+import { alpha } from "@mui/material/styles";
 import getColors from "../../utils/getColors.js";
-import { alpha } from "@mui/system";
 function getColorStyle({
   color,
   theme

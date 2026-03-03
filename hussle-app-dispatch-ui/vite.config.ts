@@ -38,6 +38,8 @@ export default defineConfig({
       '@mui/system',
       '@reduxjs/toolkit',
       'react-redux',
+      'react-router',
+      'react-router-dom',
     ],
   },
   server: {

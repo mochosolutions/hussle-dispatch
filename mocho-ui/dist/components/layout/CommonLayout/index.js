@@ -1,4 +1,4 @@
-import { jsxs, jsx, Fragment } from "../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, Fragment, jsx } from "@emotion/react/jsx-runtime";
 import { Suspense, lazy } from "react";
 import { Outlet } from "react-router-dom";
 import Loader from "../../Loadable/Loader.js";

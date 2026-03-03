@@ -1,7 +1,7 @@
 "use strict";
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
-const styled = require("../../../../../node_modules/@mui/material/styles/styled.cjs");
-const DrawerHeaderStyled = styled.default(material.Box, {
+const DrawerHeaderStyled = styles.styled(material.Box, {
   shouldForwardProp: (prop) => prop !== "open"
 })(({
   theme,

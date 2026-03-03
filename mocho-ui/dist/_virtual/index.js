@@ -1,8 +1,8 @@
 import { getDefaultExportFromCjs } from "./_commonjsHelpers.js";
-import { __require as requirePropTypes } from "../node_modules/prop-types/index.js";
-var propTypesExports = /* @__PURE__ */ requirePropTypes();
-const PropTypes = /* @__PURE__ */ getDefaultExportFromCjs(propTypesExports);
+import { __require as requireLib } from "../node_modules/react18-input-otp/lib/index.js";
+var libExports = requireLib();
+const OtpInput = /* @__PURE__ */ getDefaultExportFromCjs(libExports);
 export {
-  PropTypes as default
+  OtpInput as default
 };
 //# sourceMappingURL=index.js.map

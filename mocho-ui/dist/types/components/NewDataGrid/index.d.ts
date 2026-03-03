@@ -10,6 +10,10 @@ interface AgGridTableProps {
     loadingComponent?: React.ReactNode;
     errorComponent?: React.ReactNode;
     noDataComponent?: React.ReactNode;
+    footerComponent?: React.ReactNode;
+    showRowCountFooter?: boolean;
+    totalRowCount?: number;
+    rowCountLabel?: string;
 }
 declare const AgGridTable: React.FC<AgGridTableProps>;
 export default AgGridTable;

@@ -1,5 +1,5 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const material = require("@mui/material");
 const Transitions = React.forwardRef(({
@@ -46,28 +46,28 @@ const Transitions = React.forwardRef(({
       };
       break;
   }
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { ref, children: [
-    type === "grow" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grow, { ...others, timeout: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { ref, children: [
+    type === "grow" && /* @__PURE__ */ jsxRuntime.jsx(material.Grow, { ...others, timeout: {
       appear: 0,
       enter: 150,
       exit: 150
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: positionSX, children }) }),
-    type === "collapse" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Collapse, { ...others, sx: positionSX, children }),
-    type === "fade" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Fade, { ...others, timeout: {
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: positionSX, children }) }),
+    type === "collapse" && /* @__PURE__ */ jsxRuntime.jsx(material.Collapse, { ...others, sx: positionSX, children }),
+    type === "fade" && /* @__PURE__ */ jsxRuntime.jsx(material.Fade, { ...others, timeout: {
       appear: 0,
       enter: 300,
       exit: 150
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: positionSX, children }) }),
-    type === "slide" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Slide, { ...others, timeout: {
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: positionSX, children }) }),
+    type === "slide" && /* @__PURE__ */ jsxRuntime.jsx(material.Slide, { ...others, timeout: {
       appear: 0,
       enter: 150,
       exit: 150
-    }, direction, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: positionSX, children }) }),
-    type === "zoom" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Zoom, { ...others, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: positionSX, children }) })
+    }, direction, children: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: positionSX, children }) }),
+    type === "zoom" && /* @__PURE__ */ jsxRuntime.jsx(material.Zoom, { ...others, children: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: positionSX, children }) })
   ] });
 });
 React.forwardRef(function Transition(props, ref) {
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Zoom, { ref, timeout: 200, ...props });
+  return /* @__PURE__ */ jsxRuntime.jsx(material.Zoom, { ref, timeout: 200, ...props });
 });
 module.exports = Transitions;
 //# sourceMappingURL=Transitions.cjs.map

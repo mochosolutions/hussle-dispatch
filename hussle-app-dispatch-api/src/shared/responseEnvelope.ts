@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import type { AppError } from './errors';
+import type { CustomError } from '@mocho/common';
 
 export interface PaginationMeta {
   page: number;
@@ -19,11 +19,7 @@ export interface ListResponse<T> {
 }
 
 export interface ErrorResponse {
-  error: {
-    code: string;
-    message: string;
-    details?: string[];
-  };
+  errors: { message: string; field?: string }[];
 }
 
 export const sendSingle = <T>(res: Response, data: T, statusCode = 200): void => {
@@ -56,33 +52,13 @@ export const buildPaginationMeta = (
   };
 };
 
-/**
- * Builds a plain success envelope for a single resource.
- * Use when you need the shaped object directly (e.g., tests, non-Express contexts).
- */
 export const success = <T>(data: T): SingleResponse<T> => ({ data });
 
-/**
- * Builds a plain paginated envelope for a list resource.
- */
 export const paginated = <T>(data: T[], meta: PaginationMeta): ListResponse<T> => ({
   data,
   meta,
 });
 
-const hasDetails = (err: AppError): err is AppError & { details: string[] } =>
-  'details' in err && Array.isArray((err as { details: unknown }).details);
-
-/**
- * Builds a plain error envelope from an AppError.
- */
-export const buildErrorResponse = (appError: AppError): ErrorResponse => {
-  const errorBody: ErrorResponse['error'] = {
-    code: appError.code,
-    message: appError.message,
-  };
-  if (hasDetails(appError)) {
-    errorBody.details = appError.details;
-  }
-  return { error: errorBody };
-};
+export const buildErrorResponse = (error: CustomError): ErrorResponse => ({
+  errors: error.serializeErrors(),
+});

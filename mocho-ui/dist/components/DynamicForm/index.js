@@ -1,6 +1,6 @@
-import { jsx, jsxs } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx, jsxs } from "@emotion/react/jsx-runtime";
 import { createElement } from "@emotion/react";
-import { Stack, Grid, Typography, AccordionSummary, AccordionDetails, Accordion, InputLabel, FormHelperText, MenuItem, Select, TextField, OutlinedInput } from "@mui/material";
+import { Stack, Grid, Accordion, AccordionSummary, Typography, AccordionDetails, InputLabel, FormHelperText, Select, MenuItem, TextField, OutlinedInput } from "@mui/material";
 import { ExpandMore } from "@mui/icons-material";
 import { getFieldValue, getGridBreakpoints } from "./utils.js";
 import { CharCounterField } from "./fields/CharCounterField.js";

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const emotionReactJsxRuntime_browser_esm = require("../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const material = require("@mui/material");
 const utils = require("../utils.cjs");
@@ -24,7 +24,7 @@ function SlugField({
       setFieldValue(field.name, generatedSlug);
     }
   }, [utils.getFieldValue(values, field.sourceField), isTouched, field.generator, field.name, setFieldValue]);
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.OutlinedInput, { id: field.name, name: field.name, value: fieldValue, onChange: handleChange, onBlur: handleBlur, placeholder: field.placeholder, disabled: field.disabled, fullWidth: true, error: hasError });
+  return /* @__PURE__ */ jsxRuntime.jsx(material.OutlinedInput, { id: field.name, name: field.name, value: fieldValue, onChange: handleChange, onBlur: handleBlur, placeholder: field.placeholder, disabled: field.disabled, fullWidth: true, error: hasError });
 }
 exports.SlugField = SlugField;
 //# sourceMappingURL=SlugField.cjs.map

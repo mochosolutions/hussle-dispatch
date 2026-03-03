@@ -102,6 +102,15 @@ export interface SelectOption {
     label: string;
 }
 /**
+ * Typeahead option type.
+ */
+export interface TypeaheadOption {
+    value: string;
+    label: string;
+    description?: string;
+    metadata?: Record<string, string>;
+}
+/**
  * Props for SelectField component.
  */
 export interface SelectFieldProps<T = Record<string, unknown>> {
@@ -110,6 +119,27 @@ export interface SelectFieldProps<T = Record<string, unknown>> {
     data: SelectOption[];
     required?: boolean;
     formik: FormikFieldProps<T>;
+}
+/**
+ * Props for TypeaheadField component.
+ * Single-select autocomplete field with optional free text input.
+ */
+export interface TypeaheadFieldProps<T = Record<string, unknown>> {
+    name: string;
+    label: string;
+    options: TypeaheadOption[];
+    formik: FormikFieldProps<T>;
+    placeholder?: string;
+    disabled?: boolean;
+    required?: boolean;
+    helperText?: string;
+    allowFreeText?: boolean;
+    loading?: boolean;
+    noOptionsText?: string;
+    actionButtonLabel?: string;
+    onActionButtonClick?: () => void;
+    onInputValueChange?: (value: string) => void;
+    renderOptionContent?: (option: TypeaheadOption) => ReactNode;
 }
 /**
  * Props for CharCounterField component.

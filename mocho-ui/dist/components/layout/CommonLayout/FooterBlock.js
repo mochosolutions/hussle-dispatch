@@ -1,11 +1,10 @@
-import { jsxs, jsx, Fragment } from "../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { Box, CardMedia, Grid, Typography, Button, Link, Container, Stack, Divider } from "@mui/material";
+import { jsxs, Fragment, jsx } from "@emotion/react/jsx-runtime";
+import { useTheme, styled } from "@mui/material/styles";
+import { Box, CardMedia, Container, Grid, Typography, Button, Link, Stack, Divider } from "@mui/material";
 import { motion } from "framer-motion";
 import { SendOutlined } from "@ant-design/icons";
 import AnimateButton from "../../extended/AnimateButton.js";
 import { ThemeMode, ThemeDirection } from "../../../types/config.js";
-import useTheme from "../../../node_modules/@mui/material/styles/useTheme.js";
-import styled from "../../../node_modules/@mui/material/styles/styled.js";
 const imgfooterlogo = "";
 const FooterLink = styled(Link)(({
   theme

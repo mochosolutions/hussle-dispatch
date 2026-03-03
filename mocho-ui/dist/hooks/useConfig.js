@@ -1,9 +1,7 @@
-import { useLayoutConfig } from "../components/layout/LayoutContext.js";
-function useConfig() {
-  return useLayoutConfig();
-}
+import { useContext } from "react";
+import { ConfigContext } from "../contexts/ConfigContext.js";
+const useConfig = () => useContext(ConfigContext);
 export {
-  useConfig as default,
-  useConfig
+  useConfig as default
 };
 //# sourceMappingURL=useConfig.js.map

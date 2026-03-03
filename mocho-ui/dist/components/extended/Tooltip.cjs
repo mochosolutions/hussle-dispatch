@@ -1,9 +1,8 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
 const getColors = require("../../utils/getColors.cjs");
-const useTheme = require("../../node_modules/@mui/material/styles/useTheme.cjs");
-const styled = require("../../node_modules/@mui/material/styles/styled.cjs");
 function getVariantStyle({
   color,
   theme,
@@ -38,10 +37,10 @@ function getVariantStyle({
     };
   }
 }
-const TooltipStyle = styled.default(({
+const TooltipStyle = styles.styled(({
   className,
   ...props
-}) => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { ...props, classes: {
+}) => /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { ...props, classes: {
   popper: className
 } }), {
   shouldForwardProp: (prop) => prop !== "color" && prop !== "labelColor"
@@ -62,8 +61,8 @@ function CustomTooltip({
   labelColor = "",
   ...rest
 }) {
-  const theme = useTheme();
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { display: "flex", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(TooltipStyle, { arrow, ...rest, theme, labelColor, children }) });
+  const theme = styles.useTheme();
+  return /* @__PURE__ */ jsxRuntime.jsx(material.Box, { display: "flex", children: /* @__PURE__ */ jsxRuntime.jsx(TooltipStyle, { arrow, ...rest, theme, labelColor, children }) });
 }
 module.exports = CustomTooltip;
 //# sourceMappingURL=Tooltip.cjs.map

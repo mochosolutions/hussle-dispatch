@@ -1,12 +1,12 @@
 "use strict";
-const system = require("@mui/system");
+const styles = require("@mui/material/styles");
 function Dialog() {
   return {
     MuiDialog: {
       styleOverrides: {
         root: {
           "& .MuiBackdrop-root": {
-            backgroundColor: system.alpha("#000", 0.7)
+            backgroundColor: styles.alpha("#000", 0.7)
           }
         }
       }

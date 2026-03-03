@@ -1,121 +1,195 @@
 /**
- * Base error class for all typed application errors.
- * Extend this for each domain error — never throw generic Error.
+ * Domain error classes — all extend CustomError from @mocho/common.
+ * Each class provides serializeErrors() for consistent API error responses.
  */
-export class AppError extends Error {
-  readonly statusCode: number;
-  readonly code: string;
-  readonly isOperational: boolean;
+import { CustomError } from '@mocho/common';
 
-  constructor(message: string, statusCode: number, code: string, isOperational = true) {
+export class NotFoundError extends CustomError {
+  statusCode = 404;
+  readonly code = 'NOT_FOUND';
+
+  constructor(public message: string) {
     super(message);
-    this.name = this.constructor.name;
-    this.statusCode = statusCode;
-    this.code = code;
-    this.isOperational = isOperational;
-    Error.captureStackTrace(this, this.constructor);
+    Object.setPrototypeOf(this, NotFoundError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class NotFoundError extends AppError {
-  constructor(message: string) {
-    super(message, 404, 'NOT_FOUND');
-  }
-}
-
-export class ValidationError extends AppError {
+export class ValidationError extends CustomError {
+  statusCode = 400;
+  readonly code = 'VALIDATION_ERROR';
   readonly details: string[];
 
   constructor(message: string, details: string[] = []) {
-    super(message, 400, 'VALIDATION_ERROR');
+    super(message);
     this.details = details;
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+
+  serializeErrors() {
+    if (this.details.length > 0) {
+      return this.details.map((detail) => ({ message: detail }));
+    }
+    return [{ message: this.message }];
   }
 }
 
-export class ConflictError extends AppError {
-  constructor(message: string) {
-    super(message, 409, 'CONFLICT');
+export class ConflictError extends CustomError {
+  statusCode = 409;
+  readonly code = 'CONFLICT';
+
+  constructor(public message: string) {
+    super(message);
+    Object.setPrototypeOf(this, ConflictError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized') {
-    super(message, 401, 'UNAUTHORIZED');
+export class UnauthorizedError extends CustomError {
+  statusCode = 401;
+  readonly code = 'UNAUTHORIZED';
+
+  constructor(public message: string) {
+    super(message ?? 'Unauthorized');
+    Object.setPrototypeOf(this, UnauthorizedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class ForbiddenError extends AppError {
-  constructor(message: string = 'Forbidden') {
-    super(message, 403, 'FORBIDDEN');
+export class ForbiddenError extends CustomError {
+  statusCode = 403;
+  readonly code = 'FORBIDDEN';
+
+  constructor(public message: string) {
+    super(message ?? 'Forbidden');
+    Object.setPrototypeOf(this, ForbiddenError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class InvalidTransitionError extends AppError {
+export class InvalidTransitionError extends CustomError {
+  statusCode = 422;
+  readonly code = 'INVALID_STATUS_TRANSITION';
   readonly currentStatus: string;
   readonly targetStatus: string;
   readonly allowedTransitions: string[];
 
   constructor(currentStatus: string, targetStatus: string, allowedTransitions: string[]) {
-    super(
-      `Cannot move to ${targetStatus}. Allowed: ${allowedTransitions.join(', ')}`,
-      422,
-      'INVALID_STATUS_TRANSITION',
-    );
+    super(`Cannot move to ${targetStatus}. Allowed: ${allowedTransitions.join(', ')}`);
     this.currentStatus = currentStatus;
     this.targetStatus = targetStatus;
     this.allowedTransitions = allowedTransitions;
+    Object.setPrototypeOf(this, InvalidTransitionError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class OnboardingBlockError extends AppError {
+export class OnboardingBlockError extends CustomError {
+  statusCode = 422;
+  readonly code = 'ONBOARDING_INCOMPLETE';
   readonly missingDocuments: string[];
 
   constructor(carrierName: string, missingDocuments: string[]) {
     super(
       `${carrierName} missing: ${missingDocuments.join(', ')}. Complete onboarding first.`,
-      422,
-      'ONBOARDING_INCOMPLETE',
     );
     this.missingDocuments = missingDocuments;
+    Object.setPrototypeOf(this, OnboardingBlockError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class ProhibitedCommodityError extends AppError {
+export class ProhibitedCommodityError extends CustomError {
+  statusCode = 422;
+  readonly code = 'PROHIBITED_COMMODITY';
+
   constructor(commodity: string) {
-    super(`This commodity is prohibited per company policy: ${commodity}`, 422, 'PROHIBITED_COMMODITY');
+    super(`This commodity is prohibited per company policy: ${commodity}`);
+    Object.setPrototypeOf(this, ProhibitedCommodityError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class InsuranceExpiredError extends AppError {
+export class InsuranceExpiredError extends CustomError {
+  statusCode = 422;
+  readonly code = 'INSURANCE_EXPIRED';
+
   constructor(carrierName: string, expiryDate: Date) {
-    super(
-      `${carrierName} insurance expired ${expiryDate.toISOString().split('T')[0]}.`,
-      422,
-      'INSURANCE_EXPIRED',
-    );
+    super(`${carrierName} insurance expired ${expiryDate.toISOString().split('T')[0]}.`);
+    Object.setPrototypeOf(this, InsuranceExpiredError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class ConcurrentEditError extends AppError {
+export class ConcurrentEditError extends CustomError {
+  statusCode = 409;
+  readonly code = 'CONCURRENT_EDIT';
   readonly updatedBy: string;
   readonly updatedAt: Date;
 
   constructor(updatedBy: string, updatedAt: Date) {
-    super(
-      `Updated by ${updatedBy} at ${updatedAt.toISOString()}. Please refresh.`,
-      409,
-      'CONCURRENT_EDIT',
-    );
+    super(`Updated by ${updatedBy} at ${updatedAt.toISOString()}. Please refresh.`);
     this.updatedBy = updatedBy;
     this.updatedAt = updatedAt;
+    Object.setPrototypeOf(this, ConcurrentEditError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export class OwnerOperatorNotSupportedError extends AppError {
+export class OwnerOperatorNotSupportedError extends CustomError {
+  statusCode = 422;
+  readonly code = 'OWNER_OPERATOR_NOT_SUPPORTED';
+
   constructor() {
-    super('OWNER_OPERATOR carrier type is not supported in this release.', 422, 'OWNER_OPERATOR_NOT_SUPPORTED');
+    super('OWNER_OPERATOR carrier type is not supported in this release.');
+    Object.setPrototypeOf(this, OwnerOperatorNotSupportedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
   }
 }
 
-export const isAppError = (error: unknown): error is AppError =>
-  error instanceof AppError;
+export class SequenceError extends CustomError {
+  statusCode = 500;
+  readonly code = 'SEQUENCE_ERROR';
+
+  constructor(public message: string) {
+    super(message);
+    Object.setPrototypeOf(this, SequenceError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
+export const isCustomError = (error: unknown): error is CustomError =>
+  error instanceof CustomError;

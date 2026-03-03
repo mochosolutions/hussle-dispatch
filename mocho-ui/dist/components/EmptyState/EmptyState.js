@@ -1,6 +1,6 @@
-import { jsxs, jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { Typography, Box, Button } from "@mui/material";
-import { Inbox, HourglassEmpty, ErrorOutline, SearchOff, Add } from "@mui/icons-material";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
+import { Box, Typography, Button } from "@mui/material";
+import { Add, Inbox, HourglassEmpty, ErrorOutline, SearchOff } from "@mui/icons-material";
 function EmptyState({
   icon,
   title,

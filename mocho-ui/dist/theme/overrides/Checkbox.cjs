@@ -1,5 +1,5 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const material = require("@mui/material");
 const getColors = require("../../utils/getColors.cjs");
 const icons = require("@ant-design/icons");
@@ -71,31 +71,31 @@ function Checkbox(theme) {
     MuiCheckbox: {
       defaultProps: {
         className: "size-small",
-        icon: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { className: "icon", sx: {
+        icon: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { className: "icon", sx: {
           width: 16,
           height: 16,
           border: "1px solid",
           borderColor: "inherit",
           borderRadius: 0.25
         } }),
-        checkedIcon: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { className: "icon", sx: {
+        checkedIcon: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { className: "icon", sx: {
           width: 16,
           height: 16,
           border: "1px solid",
           borderColor: "inherit",
           borderRadius: 0.25,
           position: "relative"
-        }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.CheckSquareFilled, { className: "filled", style: {
+        }, children: /* @__PURE__ */ jsxRuntime.jsx(icons.CheckSquareFilled, { className: "filled", style: {
           position: "absolute"
         } }) }),
-        indeterminateIcon: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { className: "icon", sx: {
+        indeterminateIcon: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { className: "icon", sx: {
           width: 16,
           height: 16,
           border: "1px solid",
           borderColor: "inherit",
           borderRadius: 0.25,
           position: "relative"
-        }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.MinusSquareFilled, { className: "filled", style: {
+        }, children: /* @__PURE__ */ jsxRuntime.jsx(icons.MinusSquareFilled, { className: "filled", style: {
           position: "absolute"
         } }) })
       },

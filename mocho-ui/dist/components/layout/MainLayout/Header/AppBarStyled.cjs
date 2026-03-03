@@ -1,8 +1,8 @@
 "use strict";
+const styles = require("@mui/material/styles");
+const AppBar = require("@mui/material/AppBar");
 const config = require("../../../../config.cjs");
-const styled = require("../../../../node_modules/@mui/material/styles/styled.cjs");
-const AppBar = require("../../../../node_modules/@mui/material/AppBar/AppBar.cjs");
-const AppBarStyled = styled.default(AppBar, {
+const AppBarStyled = styles.styled(AppBar, {
   shouldForwardProp: (prop) => prop !== "open"
 })(({
   theme,

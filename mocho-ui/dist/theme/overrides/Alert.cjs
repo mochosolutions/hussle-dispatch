@@ -1,6 +1,6 @@
 "use strict";
+const styles = require("@mui/material/styles");
 const getColors = require("../../utils/getColors.cjs");
-const system = require("@mui/system");
 function getColorStyle({
   color,
   theme
@@ -12,7 +12,7 @@ function getColorStyle({
     main
   } = colors;
   return {
-    borderColor: system.alpha(light, 0.5),
+    borderColor: styles.alpha(light, 0.5),
     backgroundColor: lighter,
     "& .MuiAlert-icon": {
       color: main

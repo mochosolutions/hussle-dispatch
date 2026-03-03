@@ -3,6 +3,7 @@ Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toString
 const APP_DEFAULT_PATH = "/";
 const HORIZONTAL_MAX_ITEM = 7;
 const DRAWER_WIDTH = 260;
+const MINI_DRAWER_WIDTH = 60;
 var ThemeMode = /* @__PURE__ */ ((ThemeMode2) => {
   ThemeMode2["LIGHT"] = "light";
   ThemeMode2["DARK"] = "dark";
@@ -22,6 +23,7 @@ const config = {
 exports.APP_DEFAULT_PATH = APP_DEFAULT_PATH;
 exports.DRAWER_WIDTH = DRAWER_WIDTH;
 exports.HORIZONTAL_MAX_ITEM = HORIZONTAL_MAX_ITEM;
+exports.MINI_DRAWER_WIDTH = MINI_DRAWER_WIDTH;
 exports.ThemeMode = ThemeMode;
 exports.default = config;
 //# sourceMappingURL=config.cjs.map

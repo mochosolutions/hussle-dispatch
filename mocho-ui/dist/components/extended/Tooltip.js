@@ -1,8 +1,7 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
+import { useTheme, styled } from "@mui/material/styles";
 import { Box, Tooltip, tooltipClasses } from "@mui/material";
 import getColors from "../../utils/getColors.js";
-import useTheme from "../../node_modules/@mui/material/styles/useTheme.js";
-import styled from "../../node_modules/@mui/material/styles/styled.js";
 function getVariantStyle({
   color,
   theme,

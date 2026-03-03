@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const material = require("@mui/material");
 const reactRouterDom = require("react-router-dom");
-const EditOutlined = require("../../_virtual/EditOutlined.cjs");
-const DeleteOutlined = require("../../_virtual/DeleteOutlined.cjs");
-const VisibilityOutlined = require("../../_virtual/VisibilityOutlined.cjs");
+const EditOutlinedIcon = require("@mui/icons-material/EditOutlined");
+const DeleteOutlinedIcon = require("@mui/icons-material/DeleteOutlined");
+const VisibilityOutlinedIcon = require("@mui/icons-material/VisibilityOutlined");
 const ActionsCell = ({
   data,
   config
@@ -21,9 +21,9 @@ const ActionsCell = ({
     showView = false,
     showEdit = true,
     showDelete = true,
-    viewIcon = /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(VisibilityOutlined, { fontSize: "small" }),
-    editIcon = /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(EditOutlined, { fontSize: "small" }),
-    deleteIcon = /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(DeleteOutlined, { fontSize: "small" }),
+    viewIcon = /* @__PURE__ */ jsxRuntime.jsx(VisibilityOutlinedIcon, { fontSize: "small" }),
+    editIcon = /* @__PURE__ */ jsxRuntime.jsx(EditOutlinedIcon, { fontSize: "small" }),
+    deleteIcon = /* @__PURE__ */ jsxRuntime.jsx(DeleteOutlinedIcon, { fontSize: "small" }),
     viewTooltip = "View",
     editTooltip = "Edit",
     deleteTooltip = "Delete",
@@ -61,22 +61,22 @@ const ActionsCell = ({
   const editDisabled = isEditDisabled ? isEditDisabled(data) : false;
   const deleteDisabled = isDeleteDisabled ? isDeleteDisabled(data) : false;
   const viewDisabled = isViewDisabled ? isViewDisabled(data) : false;
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
     display: "flex",
     height: "100%",
     alignItems: "center",
     gap: 0.5,
     p: 1
   }, children: [
-    showView && getViewRoute && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: viewTooltip, arrow: true, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("span", { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { onClick: handleView, disabled: viewDisabled, size: "small", "aria-label": viewTooltip, children: viewIcon }) }) }),
-    showEdit && getEditRoute && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: editTooltip, arrow: true, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("span", { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { onClick: handleEdit, disabled: editDisabled, size: "small", "aria-label": editTooltip, children: editIcon }) }) }),
-    showDelete && onDelete && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: deleteTooltip, arrow: true, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("span", { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { onClick: handleDelete, disabled: deleteDisabled, size: "small", color: "error", "aria-label": deleteTooltip, children: deleteIcon }) }) }),
-    onCustomAction && customActionIcon && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: customActionTooltip, arrow: true, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("span", { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { onClick: handleCustomAction, size: "small", "aria-label": customActionTooltip, children: customActionIcon }) }) })
+    showView && getViewRoute && /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: viewTooltip, arrow: true, children: /* @__PURE__ */ jsxRuntime.jsx("span", { children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { onClick: handleView, disabled: viewDisabled, size: "small", "aria-label": viewTooltip, children: viewIcon }) }) }),
+    showEdit && getEditRoute && /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: editTooltip, arrow: true, children: /* @__PURE__ */ jsxRuntime.jsx("span", { children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { onClick: handleEdit, disabled: editDisabled, size: "small", "aria-label": editTooltip, children: editIcon }) }) }),
+    showDelete && onDelete && /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: deleteTooltip, arrow: true, children: /* @__PURE__ */ jsxRuntime.jsx("span", { children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { onClick: handleDelete, disabled: deleteDisabled, size: "small", color: "error", "aria-label": deleteTooltip, children: deleteIcon }) }) }),
+    onCustomAction && customActionIcon && /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: customActionTooltip, arrow: true, children: /* @__PURE__ */ jsxRuntime.jsx("span", { children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { onClick: handleCustomAction, size: "small", "aria-label": customActionTooltip, children: customActionIcon }) }) })
   ] });
 };
 function createActionsCell(config) {
   const ConfiguredActionsCell = (props) => {
-    return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(ActionsCell, { ...props, config });
+    return /* @__PURE__ */ jsxRuntime.jsx(ActionsCell, { ...props, config });
   };
   ConfiguredActionsCell.displayName = "ConfiguredActionsCell";
   return ConfiguredActionsCell;

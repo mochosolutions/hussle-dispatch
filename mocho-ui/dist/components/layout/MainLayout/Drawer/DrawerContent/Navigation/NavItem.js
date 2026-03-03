@@ -1,24 +1,24 @@
-import { jsx, jsxs, Fragment } from "../../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx, Fragment, jsxs } from "@emotion/react/jsx-runtime";
 import { forwardRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useMediaQuery, ListItemIcon, ListItemText, Typography, Chip, Avatar, ListItemButton } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { useMediaQuery, ListItemButton, ListItemIcon, ListItemText, Typography, Chip, Avatar } from "@mui/material";
 import Dot from "../../../../../extended/Dot.js";
-import { useConfig } from "../../../../../../hooks/useConfig.js";
-import { useSelector, dispatch } from "../../../../../../store/index.js";
-import { activeItem } from "../../../../../../store/reducers/menu.js";
+import useConfig from "../../../../../../hooks/useConfig.js";
+import useLayoutState from "../../../../../../hooks/useLayoutState.js";
 import { ThemeMode, MenuOrientation } from "../../../../../../types/config.js";
-import useTheme from "../../../../../../node_modules/@mui/material/styles/useTheme.js";
 const NavItem = ({
   item,
-  level
+  level,
+  openItem,
+  onActiveItem
 }) => {
   const theme = useTheme();
-  const menu = useSelector((state) => state.menu);
-  const matchDownLg = useMediaQuery(theme.breakpoints.down("lg"));
   const {
     drawerOpen,
-    openItem
-  } = menu;
+    onDrawerClose
+  } = useLayoutState();
+  const matchDownLg = useMediaQuery(theme.breakpoints.down("lg"));
   const downLG = useMediaQuery(theme.breakpoints.down("lg"));
   const {
     menuOrientation
@@ -28,7 +28,7 @@ const NavItem = ({
     itemTarget = "_blank";
   }
   let listItemProps = {
-    component: forwardRef((props, ref) => /* @__PURE__ */ jsx(Link, { ...props, to: item.url, target: itemTarget, ref }))
+    component: forwardRef((props, ref) => /* @__PURE__ */ jsx(Link, { ...props, to: item.url ?? "", target: itemTarget, ref }))
   };
   if (item?.external) {
     listItemProps = {
@@ -38,7 +38,7 @@ const NavItem = ({
     };
   }
   const Icon = item.icon;
-  const itemIcon = item.icon ? /* @__PURE__ */ jsx(Icon, { style: {
+  const itemIcon = Icon ? /* @__PURE__ */ jsx(Icon, { style: {
     fontSize: drawerOpen ? "1rem" : "1.25rem"
   } }) : false;
   const isSelected = openItem.findIndex((id) => id === item.id) > -1;
@@ -49,18 +49,18 @@ const NavItem = ({
     if (!item.id) return;
     if (pathname && pathname.includes("product-details")) {
       if (item.url && item.url.includes("product-details")) {
-        dispatch(activeItem([item.id]));
+        onActiveItem([item.id]);
       }
     }
     if (pathname && pathname.includes("kanban")) {
       if (item.url && item.url.includes("kanban")) {
-        dispatch(activeItem([item.id]));
+        onActiveItem([item.id]);
       }
     }
     if (pathname === item.url) {
-      dispatch(activeItem([item.id]));
+      onActiveItem([item.id]);
     }
-  }, [pathname, item.id, item.url, dispatch]);
+  }, [pathname, item.id, item.url, onActiveItem]);
   const textColor = theme.palette.mode === ThemeMode.DARK ? "grey.400" : "text.primary";
   const iconSelectedColor = theme.palette.mode === ThemeMode.DARK && drawerOpen ? "text.primary" : "primary.main";
   return /* @__PURE__ */ jsx(Fragment, { children: menuOrientation === MenuOrientation.VERTICAL || downLG ? /* @__PURE__ */ jsxs(ListItemButton, { ...listItemProps, disabled: item.disabled, selected: isSelected, sx: {
@@ -93,7 +93,7 @@ const NavItem = ({
       }
     }
   }, ...matchDownLg && {
-    onClick: () => dispatch()
+    onClick: () => onDrawerClose()
   }, children: [
     itemIcon && /* @__PURE__ */ jsx(ListItemIcon, { sx: {
       minWidth: 28,

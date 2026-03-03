@@ -1,0 +1,100 @@
+import type { Driver, LoadStatus, Prisma } from '@prisma/client';
+import type { PaginationMeta } from '@/shared/responseEnvelope';
+
+export interface PreferredLaneInput {
+  originState: string;
+  destState: string;
+  originCity?: string;
+  destCity?: string;
+}
+
+export interface NoGoZoneInput {
+  state: string;
+  city?: string;
+}
+
+export interface CreateDriverInput {
+  carrierId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  cdlNumber?: string;
+  cdlState?: string;
+  cdlExpiry?: Date;
+  availableHours?: string | number;
+  currentCity?: string;
+  currentState?: string;
+  homeBaseCity?: string;
+  homeBaseState?: string;
+  maxDaysOut?: number;
+  preferredLanes?: PreferredLaneInput[];
+  noGoZones?: NoGoZoneInput[];
+  isAvailable?: boolean;
+  status?: string;
+  notes?: string;
+}
+
+export interface UpdateDriverInput {
+  carrierId?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  cdlNumber?: string;
+  cdlState?: string;
+  cdlExpiry?: Date;
+  availableHours?: string | number;
+  currentCity?: string;
+  currentState?: string;
+  homeBaseCity?: string;
+  homeBaseState?: string;
+  maxDaysOut?: number;
+  preferredLanes?: PreferredLaneInput[];
+  noGoZones?: NoGoZoneInput[];
+  isAvailable?: boolean;
+  status?: string;
+  notes?: string;
+}
+
+export interface DriverListFilters {
+  carrierId?: string;
+  search?: string;
+}
+
+export interface DriverQueryInput {
+  organizationId: string;
+  filters: DriverListFilters;
+}
+
+export interface ListDriversRepositoryInput extends DriverQueryInput {
+  skip: number;
+  take: number;
+  orderBy: Prisma.DriverOrderByWithRelationInput;
+}
+
+export interface DriverRepositoryPort {
+  create(input: CreateDriverInput): Promise<Driver>;
+  findById(id: string, organizationId: string): Promise<Driver | null>;
+  list(input: ListDriversRepositoryInput): Promise<Driver[]>;
+  count(input: DriverQueryInput): Promise<number>;
+  update(id: string, input: UpdateDriverInput): Promise<Driver>;
+  softDelete(id: string, deletedAt: Date): Promise<void>;
+}
+
+export interface CarrierRepositoryPort {
+  findActiveByIdForOrg(carrierId: string, organizationId: string): Promise<boolean>;
+}
+
+export interface LoadRepositoryPort {
+  findBlockingLoadIdsByDriver(
+    driverId: string,
+    statuses: LoadStatus[],
+    limit: number,
+  ): Promise<string[]>;
+}
+
+export interface ListDriversResult {
+  data: Driver[];
+  meta: PaginationMeta;
+}
+
+export type DriverResponse = Driver;

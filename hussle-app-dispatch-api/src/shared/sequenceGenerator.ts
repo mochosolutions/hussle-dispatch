@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { AppError } from './errors';
+import { SequenceError } from './errors';
 
 export type SequenceType = 'LOAD' | 'INVOICE';
 
@@ -29,7 +29,7 @@ const nextSequenceValue = async (name: string): Promise<bigint> => {
   );
   const row = rows[0];
   if (row === undefined) {
-    throw new AppError('Sequence returned no value', 500, 'SEQUENCE_ERROR');
+    throw new SequenceError('Sequence returned no value');
   }
   return row.nextval;
 };
@@ -72,10 +72,7 @@ export const generateSequenceNumber = async (
     }
   }
 
-  throw new AppError(
+  throw new SequenceError(
     `Failed to generate sequence number after ${MAX_RETRIES} attempts`,
-    500,
-    'SEQUENCE_ERROR',
-    true,
   );
 };

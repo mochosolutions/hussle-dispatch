@@ -1,11 +1,9 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
 import { forwardRef } from "react";
+import MuiLoadingButton from "@mui/lab/LoadingButton";
+import { useTheme, styled, alpha } from "@mui/material/styles";
 import getColors from "../../utils/getColors.js";
 import getShadow from "../../utils/getShadow.js";
-import useTheme from "../../node_modules/@mui/material/styles/useTheme.js";
-import styled from "../../node_modules/@mui/material/styles/styled.js";
-import LoadingButton$1 from "../../node_modules/@mui/lab/LoadingButton/LoadingButton.js";
-import { alpha } from "@mui/system";
 function getColorStyle({
   variant,
   theme,
@@ -115,7 +113,7 @@ function getColorStyle({
       };
   }
 }
-const LoadingButtonStyle = styled(LoadingButton$1, {
+const LoadingButtonStyle = styled(MuiLoadingButton, {
   shouldForwardProp: (prop) => prop !== "shape" && prop !== "variant"
 })(({
   theme,

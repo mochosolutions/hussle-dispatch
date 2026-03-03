@@ -12,46 +12,148 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// Stub models for auth integration (will be replaced by the auth package)
+// Auth models — integrated from mocho-solutions auth module
 // ---------------------------------------------------------------------------
 
-/// Stub — replaced when auth package is integrated (L-007)
 model Organization {
-  id               String        @id @default(uuid())
+  id               String               @id @default(uuid())
   name             String
-  slug             String        @unique
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  managedCarriers  Carrier[]     @relation("ManagedCarriers")
-  carrierOrgs      Carrier[]     @relation("CarrierOrg")
+  slug             String               @unique
+  email            String
+  description      String?
+  phoneNumber      String?
+  address          String?
+  website          String?
+  logo             String?
+  vertical         OrganizationVertical @default(LOGISTICS)
+  role             OrganizationRole     @default(BROKER)
+  status           OrganizationStatus   @default(PENDING)
+  subscriptionTier SubscriptionTier     @default(FREE)
+  deleted          Boolean              @default(false)
+  deletedAt        DateTime?
+  customFields     Json?
+  resources        Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  memberships      Membership[]
+  invitations      Invitation[]
+  managedCarriers  Carrier[]            @relation("ManagedCarriers")
+  carrierOrgs      Carrier[]            @relation("CarrierOrg")
   contacts         Contact[]
   loads            Load[]
   places           Place[]
   documents        Document[]
   orgSettings      OrgSettings?
+
+  @@index([slug])
+  @@index([deleted, status])
 }
 
-/// Stub — replaced when auth package is integrated (L-007)
 model User {
-  id              String             @id @default(uuid())
-  organizationId  String
-  email           String             @unique
-  name            String
-  role            UserRole           @default(DISPATCHER)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  statusChanges   LoadStatusHistory[]
-  checkCalls      CheckCall[]
+  id                 String             @id @default(uuid())
+  externalId         String             @unique
+  email              String             @unique
+  firstName          String
+  lastName           String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  memberships        Membership[]       @relation("UserMemberships")
+  invitedMemberships Membership[]       @relation("InvitedBy")
+  invitations        Invitation[]
+  statusChanges      LoadStatusHistory[]
+  checkCalls         CheckCall[]
+
+  @@index([externalId])
+  @@index([email])
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  role           String
+  status         String       @default("active")
+  invitedById    String?
+  deleted        Boolean      @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation("UserMemberships", fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  invitedBy      User?        @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([userId, status])
+  @@index([organizationId, status])
+}
+
+model Invitation {
+  id             String           @id @default(uuid())
+  organizationId String
+  email          String
+  role           String
+  token          String           @unique
+  status         InvitationStatus @default(PENDING)
+  invitedById    String
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  invitedBy      User             @relation(fields: [invitedById], references: [id])
+
+  @@unique([organizationId, email])
+  @@index([token])
+  @@index([status, expiresAt])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  organizationId String
+  action         String
+  entityType     String
+  entityId       String
+  changes        Json?
+  metadata       Json?
+  timestamp      DateTime @default(now())
+
+  @@index([organizationId, timestamp])
+  @@index([userId])
 }
 
 // ---------------------------------------------------------------------------
 // Enums
 // ---------------------------------------------------------------------------
 
-enum UserRole {
-  ADMIN
-  DISPATCHER
-  VIEWER
+enum OrganizationVertical {
+  LOGISTICS
+  HEALTHCARE
+  STAFFING
+}
+
+enum OrganizationRole {
+  BROKER
+  CARRIER
+  SHIPPER
+}
+
+enum OrganizationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
 }
 
 enum CarrierType {

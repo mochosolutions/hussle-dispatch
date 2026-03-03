@@ -1,5 +1,5 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const icons = require("@ant-design/icons");
 function AccordionSummary(theme) {
   const {
@@ -9,7 +9,7 @@ function AccordionSummary(theme) {
   return {
     MuiAccordionSummary: {
       defaultProps: {
-        expandIcon: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.RightOutlined, { style: {
+        expandIcon: /* @__PURE__ */ jsxRuntime.jsx(icons.RightOutlined, { style: {
           fontSize: "0.75rem"
         } })
       },

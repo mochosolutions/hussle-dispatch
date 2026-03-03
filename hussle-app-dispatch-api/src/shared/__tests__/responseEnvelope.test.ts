@@ -1,5 +1,5 @@
 import { success, paginated, buildErrorResponse, buildPaginationMeta } from '../responseEnvelope';
-import { AppError, ValidationError } from '../errors';
+import { NotFoundError, ValidationError } from '../errors';
 
 describe('success', () => {
   it('wraps data in a { data } envelope', () => {
@@ -50,39 +50,28 @@ describe('buildPaginationMeta', () => {
 });
 
 describe('buildErrorResponse', () => {
-  it('builds error envelope from a basic AppError', () => {
-    const err = new AppError('Something went wrong', 500, 'INTERNAL_ERROR');
+  it('builds error envelope from a NotFoundError', () => {
+    const err = new NotFoundError('Something went wrong');
     const result = buildErrorResponse(err);
     expect(result).toEqual({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Something went wrong',
-      },
+      errors: [{ message: 'Something went wrong' }],
     });
   });
 
-  it('includes details array when error has details field (ValidationError)', () => {
+  it('includes individual detail messages when error has details (ValidationError)', () => {
     const err = new ValidationError('Invalid input', ['field is required', 'email is invalid']);
     const result = buildErrorResponse(err);
     expect(result).toEqual({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid input',
-        details: ['field is required', 'email is invalid'],
-      },
+      errors: [
+        { message: 'field is required' },
+        { message: 'email is invalid' },
+      ],
     });
   });
 
-  it('omits details key when ValidationError has empty details array', () => {
+  it('uses main message when ValidationError has empty details array', () => {
     const err = new ValidationError('Invalid input');
     const result = buildErrorResponse(err);
-
-    // Empty details array is still an array — it should be included
-    expect(result.error.details).toEqual([]);
-  });
-
-  it('omits details key for errors without a details field', () => {
-    const { error } = buildErrorResponse(new AppError('Not found', 404, 'NOT_FOUND'));
-    expect('details' in error).toBe(false);
+    expect(result.errors).toEqual([{ message: 'Invalid input' }]);
   });
 });

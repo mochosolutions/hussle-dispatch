@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const emotionReactJsxRuntime_browser_esm = require("../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const reactRouterDom = require("react-router-dom");
 const material = require("@mui/material");
 const index = require("./Header/index.cjs");
@@ -38,9 +38,9 @@ const MainLayoutContainer = styled.div`
     padding: 1rem 0;
   }
 `;
-const ProfileSetupLayout = () => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(MainLayoutContainer, { children: [
-  /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(index, {}),
-  /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { component: "main", className: "main", sx: {
+const ProfileSetupLayout = () => /* @__PURE__ */ jsxRuntime.jsxs(MainLayoutContainer, { children: [
+  /* @__PURE__ */ jsxRuntime.jsx(index, {}),
+  /* @__PURE__ */ jsxRuntime.jsx(material.Box, { component: "main", className: "main", sx: {
     width: "100%",
     overflow: "hidden",
     flexGrow: 1,
@@ -48,13 +48,13 @@ const ProfileSetupLayout = () => /* @__PURE__ */ emotionReactJsxRuntime_browser_
       xs: 2,
       sm: 3
     }
-  }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Container, { sx: {
+  }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Container, { sx: {
     position: "relative",
     display: "flex",
     flexDirection: "column"
     // justifyContent: "flex-end",
-  }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(reactRouterDom.Outlet, {}) }) }),
-  /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(index$1, {})
+  }, children: /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Outlet, {}) }) }),
+  /* @__PURE__ */ jsxRuntime.jsx(index$1, {})
 ] });
 exports.MainLayoutContainer = MainLayoutContainer;
 exports.default = ProfileSetupLayout;

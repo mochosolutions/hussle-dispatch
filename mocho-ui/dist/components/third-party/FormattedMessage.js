@@ -1,4 +1,4 @@
-import { jsx, Fragment } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx, Fragment } from "@emotion/react/jsx-runtime";
 const FormattedMessage = ({
   id,
   defaultMessage

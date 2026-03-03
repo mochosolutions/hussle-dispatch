@@ -1,1 +1,1 @@
-{"version":3,"file":"useConfig.d.ts","sourceRoot":"","sources":["../../../src/hooks/useConfig.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,iBAAiB,CAAC;AAE1D;;;;GAIG;AACH,wBAAgB,SAAS,IAAI,kBAAkB,CAE9C;AAED,eAAe,SAAS,CAAC"}
+{"version":3,"file":"useConfig.d.ts","sourceRoot":"","sources":["../../../src/hooks/useConfig.ts"],"names":[],"mappings":"AAIA,QAAA,MAAM,SAAS,uCAAkC,CAAC;AAElD,eAAe,SAAS,CAAC"}

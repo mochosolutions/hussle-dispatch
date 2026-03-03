@@ -1,4 +1,4 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
 import { Box } from "@mui/material";
 import getColors from "../../utils/getColors.js";
 function getColorStyle({

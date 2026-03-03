@@ -1,5 +1,5 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const framerMotion = require("framer-motion");
 function AnimateButton({
   children,
@@ -30,7 +30,7 @@ function AnimateButton({
   const [y, cycleY] = framerMotion.useCycle(offset1, offset2);
   switch (type) {
     case "rotate":
-      return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(framerMotion.motion.div, { animate: {
+      return /* @__PURE__ */ jsxRuntime.jsx(framerMotion.motion.div, { animate: {
         rotate: 360
       }, transition: {
         repeat: Infinity,
@@ -40,11 +40,11 @@ function AnimateButton({
       }, children });
     case "slide":
       if (direction === "up" || direction === "down") {
-        return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(framerMotion.motion.div, { animate: {
+        return /* @__PURE__ */ jsxRuntime.jsx(framerMotion.motion.div, { animate: {
           y: y !== void 0 ? y : ""
         }, onHoverEnd: () => cycleY(), onHoverStart: () => cycleY(), children });
       }
-      return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(framerMotion.motion.div, { animate: {
+      return /* @__PURE__ */ jsxRuntime.jsx(framerMotion.motion.div, { animate: {
         x: x !== void 0 ? x : ""
       }, onHoverEnd: () => cycleX(), onHoverStart: () => cycleX(), children });
     case "scale":
@@ -55,7 +55,7 @@ function AnimateButton({
           tap: scale
         };
       }
-      return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(framerMotion.motion.div, { whileHover: {
+      return /* @__PURE__ */ jsxRuntime.jsx(framerMotion.motion.div, { whileHover: {
         scale: scale?.hover
       }, whileTap: {
         scale: scale?.tap

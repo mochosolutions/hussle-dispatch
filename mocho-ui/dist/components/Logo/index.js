@@ -1,4 +1,4 @@
-import { jsxs, jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
 import { Box, Typography } from "@mui/material";
 const Logo = ({
   src,

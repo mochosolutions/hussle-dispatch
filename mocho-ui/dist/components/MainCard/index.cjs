@@ -1,8 +1,8 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
-const useTheme = require("../../node_modules/@mui/material/styles/useTheme.cjs");
 const headerSX = {
   p: 2.5,
   "& .MuiCardHeader-action": {
@@ -27,11 +27,11 @@ const MainCard = React.forwardRef(({
   modal = false,
   ...others
 }, ref) => {
-  const theme = useTheme();
+  const theme = styles.useTheme();
   const isDarkMode = theme.palette.mode === "dark";
   const computedBoxShadow = isDarkMode ? boxShadow ?? true : boxShadow;
   const customShadow = shadow || (theme.customShadows?.z1 ?? theme.shadows[1]);
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Card, { elevation: elevation ?? 0, ref, ...others, sx: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(material.Card, { elevation: elevation ?? 0, ref, ...others, sx: {
     display: "flex",
     flexDirection: "column",
     marginTop: 1,
@@ -61,12 +61,12 @@ const MainCard = React.forwardRef(({
     },
     ...sx
   }, children: [
-    !darkTitle && title && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.CardHeader, { sx: headerSX, titleTypographyProps: {
+    !darkTitle && title && /* @__PURE__ */ jsxRuntime.jsx(material.CardHeader, { sx: headerSX, titleTypographyProps: {
       variant: "subtitle1"
     }, title, action: secondary, subheader }),
-    darkTitle && title && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.CardHeader, { sx: headerSX, title: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h4", children: title }), action: secondary }),
-    title && divider && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, {}),
-    content && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.CardContent, { sx: contentSX, children }),
+    darkTitle && title && /* @__PURE__ */ jsxRuntime.jsx(material.CardHeader, { sx: headerSX, title: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h4", children: title }), action: secondary }),
+    title && divider && /* @__PURE__ */ jsxRuntime.jsx(material.Divider, {}),
+    content && /* @__PURE__ */ jsxRuntime.jsx(material.CardContent, { sx: contentSX, children }),
     !content && children
   ] });
 });

@@ -1,20 +1,18 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const reactRouterDom = require("react-router-dom");
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
 const NavItem = require("./NavItem.cjs");
 const Dot = require("../../../../../extended/Dot.cjs");
 const SimpleBar = require("../../../../../third-party/SimpleBar.cjs");
 const Transitions = require("../../../../../extended/Transitions.cjs");
 const useConfig = require("../../../../../../hooks/useConfig.cjs");
-const index = require("../../../../../../store/index.cjs");
-const menu = require("../../../../../../store/reducers/menu.cjs");
+const useLayoutState = require("../../../../../../hooks/useLayoutState.cjs");
 const icons = require("@ant-design/icons");
 const config = require("../../../../../../types/config.cjs");
-const useTheme = require("../../../../../../node_modules/@mui/material/styles/useTheme.cjs");
-const styled = require("../../../../../../node_modules/@mui/material/styles/styled.cjs");
-const PopperStyled = styled.default(material.Popper)(({
+const PopperStyled = styles.styled(material.Popper)(({
   theme
 }) => ({
   overflow: "visible",
@@ -36,24 +34,25 @@ const PopperStyled = styled.default(material.Popper)(({
   }
 }));
 const NavCollapse = ({
-  menu: menu$1,
+  menu,
   level,
   parentId,
   setSelectedItems,
   selectedItems,
   setSelectedLevel,
-  selectedLevel
+  selectedLevel,
+  openItem,
+  onActiveItem
 }) => {
-  const theme = useTheme();
+  const theme = styles.useTheme();
   const downLG = material.useMediaQuery(theme.breakpoints.down("lg"));
-  const menuState = index.useSelector((state) => state.menu);
   const {
     drawerOpen
-  } = menuState;
+  } = useLayoutState();
   const {
     menuOrientation
-  } = useConfig.useConfig();
-  const Navigation = reactRouterDom.useNavigate();
+  } = useConfig();
+  const navigate = reactRouterDom.useNavigate();
   const [open, setOpen] = React.useState(false);
   const [selected, setSelected] = React.useState(null);
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -62,49 +61,47 @@ const NavCollapse = ({
     setSelectedLevel(level);
     if (drawerOpen) {
       setOpen(!open);
-      setSelected(!selected ? menu$1.id : null);
-      setSelectedItems(!selected ? menu$1.id : "");
-      if (menu$1.url) Navigation(`${menu$1.url}`);
+      setSelected(!selected ? menu.id : null);
+      setSelectedItems(!selected ? menu.id : "");
+      if (menu.url) navigate(`${menu.url}`);
     } else {
       setAnchorEl(event?.currentTarget);
     }
   };
   const handlerIconLink = () => {
     if (!drawerOpen) {
-      if (menu$1.url) Navigation(`${menu$1.url}`);
-      setSelected(menu$1.id);
+      if (menu.url) navigate(`${menu.url}`);
+      setSelected(menu.id);
     }
   };
   const handleHover = (event) => {
     setAnchorEl(event?.currentTarget);
     if (!drawerOpen) {
-      setSelected(menu$1.id);
+      setSelected(menu.id);
     }
   };
   const miniMenuOpened = Boolean(anchorEl);
   const handleClose = () => {
     setOpen(false);
     if (!miniMenuOpened) {
-      if (!menu$1.url) {
+      if (!menu.url) {
         setSelected(null);
       }
     }
     setAnchorEl(null);
   };
-  React.useMemo(() => {
+  React.useEffect(() => {
     if (selected === selectedItems) {
       if (level === 1) {
         setOpen(true);
       }
-    } else {
-      if (level === selectedLevel) {
-        setOpen(false);
-        if (!miniMenuOpened && !drawerOpen && !selected) {
-          setSelected(null);
-        }
-        if (drawerOpen) {
-          setSelected(null);
-        }
+    } else if (level === selectedLevel) {
+      setOpen(false);
+      if (!miniMenuOpened && !drawerOpen && !selected) {
+        setSelected(null);
+      }
+      if (drawerOpen) {
+        setSelected(null);
       }
     }
   }, [selectedItems, level, selected, miniMenuOpened, drawerOpen, selectedLevel]);
@@ -112,10 +109,10 @@ const NavCollapse = ({
     pathname
   } = reactRouterDom.useLocation();
   React.useEffect(() => {
-    if (pathname === menu$1.url) {
-      setSelected(menu$1.id);
+    if (pathname === menu.url) {
+      setSelected(menu.id);
     }
-  }, [pathname]);
+  }, [pathname, menu.url, menu.id]);
   const checkOpenForParent = (child, id) => {
     child.forEach((item) => {
       if (item.url === pathname) {
@@ -130,61 +127,61 @@ const NavCollapse = ({
       setSelected(null);
     }
     if (miniMenuOpened) setAnchorEl(null);
-    if (menu$1.children) {
-      menu$1.children.forEach((item) => {
+    if (menu.children) {
+      menu.children.forEach((item) => {
         if (item.children?.length) {
-          checkOpenForParent(item.children, menu$1.id);
+          checkOpenForParent(item.children, menu.id ?? "");
         }
         if (pathname && pathname.includes("product-details")) {
           if (item.url && item.url.includes("product-details")) {
-            setSelected(menu$1.id);
+            setSelected(menu.id);
             setOpen(true);
           }
         }
         if (item.url === pathname) {
-          setSelected(menu$1.id);
+          setSelected(menu.id);
           setOpen(true);
         }
       });
     }
-  }, [pathname, menu$1.children]);
+  }, [pathname, menu.children]);
   React.useEffect(() => {
-    if (menu$1.url === pathname && menu$1.id) {
-      index.dispatch(menu.activeItem([menu$1.id]));
-      setSelected(menu$1.id);
+    if (menu.url === pathname && menu.id) {
+      onActiveItem([menu.id]);
+      setSelected(menu.id);
       setAnchorEl(null);
       setOpen(true);
     }
-  }, [pathname, menu$1, index.dispatch]);
-  const navCollapse = menu$1.children?.map((item) => {
+  }, [pathname, menu, onActiveItem]);
+  const navCollapse = menu.children?.map((item) => {
     switch (item.type) {
       case "collapse":
-        return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(NavCollapse, { setSelectedItems, setSelectedLevel, selectedLevel, selectedItems, menu: item, level: level + 1, parentId }, item.id);
+        return /* @__PURE__ */ jsxRuntime.jsx(NavCollapse, { setSelectedItems, setSelectedLevel, selectedLevel, selectedItems, menu: item, level: level + 1, parentId, openItem, onActiveItem }, item.id);
       case "item":
-        return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(NavItem, { item, level: level + 1 }, item.id);
+        return /* @__PURE__ */ jsxRuntime.jsx(NavItem, { item, level: level + 1, openItem, onActiveItem }, item.id);
       default:
-        return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h6", color: "error", align: "center", children: "Fix - Collapse or Item" }, item.id);
+        return /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h6", color: "error", align: "center", children: "Fix - Collapse or Item" }, item.id);
     }
   });
-  const isSelected = selected === menu$1.id;
-  const borderIcon = level === 1 ? /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.BorderOutlined, { style: {
+  const isSelected = selected === menu.id;
+  const borderIcon = level === 1 ? /* @__PURE__ */ jsxRuntime.jsx(icons.BorderOutlined, { style: {
     fontSize: "1rem"
   } }) : false;
-  const Icon = menu$1.icon;
-  const menuIcon = menu$1.icon ? /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(Icon, { style: {
+  const Icon = menu.icon;
+  const menuIcon = Icon ? /* @__PURE__ */ jsxRuntime.jsx(Icon, { style: {
     fontSize: drawerOpen ? "1rem" : "1.25rem"
   } }) : borderIcon;
   const textColor = theme.palette.mode === config.ThemeMode.DARK ? "grey.400" : "text.primary";
   const iconSelectedColor = theme.palette.mode === config.ThemeMode.DARK && drawerOpen ? theme.palette.text.primary : theme.palette.primary.main;
-  const popperId = miniMenuOpened ? `collapse-pop-${menu$1.id}` : void 0;
+  const popperId = miniMenuOpened ? `collapse-pop-${menu.id}` : void 0;
   const FlexBox = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%"
   };
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(emotionReactJsxRuntime_browser_esm.Fragment, { children: menuOrientation === config.MenuOrientation.VERTICAL || downLG ? /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(emotionReactJsxRuntime_browser_esm.Fragment, { children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { disableRipple: true, selected: selected === menu$1.id, ...!drawerOpen && {
+  return /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, { children: menuOrientation === config.MenuOrientation.VERTICAL || downLG ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { disableRipple: true, selected: selected === menu.id, ...!drawerOpen && {
       onMouseEnter: handleClick,
       onMouseLeave: handleClose
     }, onClick: handleClick, sx: {
@@ -215,9 +212,9 @@ const NavCollapse = ({
         }
       }
     }, children: [
-      menuIcon && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { onClick: handlerIconLink, sx: {
+      menuIcon && /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { onClick: handlerIconLink, sx: {
         minWidth: 28,
-        color: selected === menu$1.id ? "primary.main" : textColor,
+        color: selected === menu.id ? "primary.main" : textColor,
         ...!drawerOpen && {
           borderRadius: 1.5,
           width: 36,
@@ -228,23 +225,23 @@ const NavCollapse = ({
             bgcolor: theme.palette.mode === config.ThemeMode.DARK ? "secondary.light" : "secondary.lighter"
           }
         },
-        ...!drawerOpen && selected === menu$1.id && {
+        ...!drawerOpen && selected === menu.id && {
           bgcolor: theme.palette.mode === config.ThemeMode.DARK ? "primary.900" : "primary.lighter",
           "&:hover": {
             bgcolor: theme.palette.mode === config.ThemeMode.DARK ? "primary.darker" : "primary.lighter"
           }
         }
       }, children: menuIcon }),
-      (drawerOpen || !drawerOpen && level !== 1) && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h6", color: selected === menu$1.id ? "primary" : textColor, children: menu$1.title }), secondary: menu$1.caption && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "caption", color: "secondary", children: menu$1.caption }) }),
-      (drawerOpen || !drawerOpen && level !== 1) && (miniMenuOpened || open ? /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.UpOutlined, { style: {
+      (drawerOpen || !drawerOpen && level !== 1) && /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h6", color: selected === menu.id ? "primary" : textColor, children: menu.title }), secondary: menu.caption && /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "caption", color: "secondary", children: menu.caption }) }),
+      (drawerOpen || !drawerOpen && level !== 1) && (miniMenuOpened || open ? /* @__PURE__ */ jsxRuntime.jsx(icons.UpOutlined, { style: {
         fontSize: "0.625rem",
         marginLeft: 1,
         color: theme.palette.primary.main
-      } }) : /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.DownOutlined, { style: {
+      } }) : /* @__PURE__ */ jsxRuntime.jsx(icons.DownOutlined, { style: {
         fontSize: "0.625rem",
         marginLeft: 1
       } })),
-      !drawerOpen && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(PopperStyled, { open: miniMenuOpened, anchorEl, placement: "right-start", style: {
+      !drawerOpen && /* @__PURE__ */ jsxRuntime.jsx(PopperStyled, { open: miniMenuOpened, anchorEl, placement: "right-start", style: {
         zIndex: 2001
       }, popperOptions: {
         modifiers: [{
@@ -255,46 +252,46 @@ const NavCollapse = ({
         }]
       }, children: ({
         TransitionProps
-      }) => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(Transitions, { in: miniMenuOpened, ...TransitionProps, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Paper, { sx: {
+      }) => /* @__PURE__ */ jsxRuntime.jsx(Transitions, { in: miniMenuOpened, ...TransitionProps, children: /* @__PURE__ */ jsxRuntime.jsx(material.Paper, { sx: {
         overflow: "hidden",
         mt: 1.5,
         boxShadow: theme.customShadows.z1,
         backgroundImage: "none",
         border: `1px solid ${theme.palette.divider}`
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ClickAwayListener, { onClickAway: handleClose, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(SimpleBar, { sx: {
+      }, children: /* @__PURE__ */ jsxRuntime.jsx(material.ClickAwayListener, { onClickAway: handleClose, children: /* @__PURE__ */ jsxRuntime.jsx(SimpleBar, { sx: {
         overflowX: "hidden",
         overflowY: "auto",
         maxHeight: "calc(100vh - 170px)"
       }, children: navCollapse }) }) }) }) })
     ] }),
-    drawerOpen && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Collapse, { in: open, timeout: "auto", unmountOnExit: true, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.List, { sx: {
+    drawerOpen && /* @__PURE__ */ jsxRuntime.jsx(material.Collapse, { in: open, timeout: "auto", unmountOnExit: true, children: /* @__PURE__ */ jsxRuntime.jsx(material.List, { sx: {
       p: 0
     }, children: navCollapse }) })
-  ] }) : /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(emotionReactJsxRuntime_browser_esm.Fragment, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { id: `boundary-${popperId}`, disableRipple: true, selected: isSelected, onMouseEnter: handleHover, onMouseLeave: handleClose, onClick: handleHover, "aria-describedby": popperId, sx: {
+  ] }) : /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, { children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { id: `boundary-${popperId}`, disableRipple: true, selected: isSelected, onMouseEnter: handleHover, onMouseLeave: handleClose, onClick: handleHover, "aria-describedby": popperId, sx: {
     "&.Mui-selected": {
       bgcolor: "transparent"
     }
   }, children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { onClick: handlerIconLink, sx: FlexBox, children: [
-      menuIcon && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { onClick: handlerIconLink, sx: FlexBox, children: [
+      menuIcon && /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { sx: {
         my: "auto",
-        minWidth: !menu$1.icon ? 18 : 36,
+        minWidth: !menu.icon ? 18 : 36,
         color: theme.palette.secondary.dark
       }, children: menuIcon }),
-      !menuIcon && level !== 1 && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { sx: {
+      !menuIcon && level !== 1 && /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { sx: {
         my: "auto",
-        minWidth: !menu$1.icon ? 18 : 36,
+        minWidth: !menu.icon ? 18 : 36,
         bgcolor: "transparent",
         "&:hover": {
           bgcolor: "transparent"
         }
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(Dot, { size: 4, color: isSelected ? "primary" : "secondary" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "body1", color: "inherit", sx: {
+      }, children: /* @__PURE__ */ jsxRuntime.jsx(Dot, { size: 4, color: isSelected ? "primary" : "secondary" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "body1", color: "inherit", sx: {
         my: "auto"
-      }, children: menu$1.title }) }),
-      miniMenuOpened ? /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.RightOutlined, {}) : /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.DownOutlined, {})
+      }, children: menu.title }) }),
+      miniMenuOpened ? /* @__PURE__ */ jsxRuntime.jsx(icons.RightOutlined, {}) : /* @__PURE__ */ jsxRuntime.jsx(icons.DownOutlined, {})
     ] }),
-    anchorEl && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(PopperStyled, { id: popperId, open: miniMenuOpened, anchorEl, placement: "right-start", style: {
+    anchorEl && /* @__PURE__ */ jsxRuntime.jsx(PopperStyled, { id: popperId, open: miniMenuOpened, anchorEl, placement: "right-start", style: {
       zIndex: 2001
     }, modifiers: [{
       name: "offset",
@@ -303,13 +300,13 @@ const NavCollapse = ({
       }
     }], children: ({
       TransitionProps
-    }) => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(Transitions, { in: miniMenuOpened, ...TransitionProps, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Paper, { sx: {
+    }) => /* @__PURE__ */ jsxRuntime.jsx(Transitions, { in: miniMenuOpened, ...TransitionProps, children: /* @__PURE__ */ jsxRuntime.jsx(material.Paper, { sx: {
       overflow: "hidden",
       mt: 1.5,
       py: 0.5,
       boxShadow: theme.shadows[8],
       backgroundImage: "none"
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ClickAwayListener, { onClickAway: handleClose, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(SimpleBar, { sx: {
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.ClickAwayListener, { onClickAway: handleClose, children: /* @__PURE__ */ jsxRuntime.jsx(SimpleBar, { sx: {
       overflowX: "hidden",
       overflowY: "auto",
       maxHeight: "calc(100vh - 170px)"

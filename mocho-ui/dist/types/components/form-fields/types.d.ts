@@ -46,6 +46,16 @@ export interface TextFieldProps extends BaseInputFieldProps {
     type?: 'text' | 'number';
 }
 /**
+ * Props for DateField component.
+ */
+export interface DateFieldProps extends Omit<BaseInputFieldProps, 'placeholder'> {
+}
+/**
+ * Props for TimeField component.
+ */
+export interface TimeFieldProps extends Omit<BaseInputFieldProps, 'placeholder'> {
+}
+/**
  * Props for PasswordField component.
  */
 export interface PasswordFieldProps extends Omit<BaseInputFieldProps, 'disabled'> {
@@ -101,6 +111,15 @@ export interface SelectOption {
     label: string;
 }
 /**
+ * Typeahead option type.
+ */
+export interface TypeaheadOption {
+    value: string;
+    label: string;
+    description?: string;
+    metadata?: Record<string, string>;
+}
+/**
  * Props for SelectField component.
  */
 export interface SelectFieldProps {
@@ -109,6 +128,27 @@ export interface SelectFieldProps {
     data: SelectOption[];
     required?: boolean;
     formik: FormikFieldProps;
+}
+/**
+ * Props for TypeaheadField component.
+ * Single-select autocomplete field with optional free text input.
+ */
+export interface TypeaheadFieldProps {
+    name: string;
+    label: string;
+    options: TypeaheadOption[];
+    formik: FormikFieldProps;
+    placeholder?: string;
+    disabled?: boolean;
+    required?: boolean;
+    helperText?: string;
+    allowFreeText?: boolean;
+    loading?: boolean;
+    noOptionsText?: string;
+    actionButtonLabel?: string;
+    onActionButtonClick?: () => void;
+    onInputValueChange?: (value: string) => void;
+    renderOptionContent?: (option: TypeaheadOption) => React.ReactNode;
 }
 /**
  * Props for CharCounterField component.

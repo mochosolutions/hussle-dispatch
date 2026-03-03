@@ -1,14 +1,13 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
 const framerMotion = require("framer-motion");
 const icons = require("@ant-design/icons");
 const AnimateButton = require("../../extended/AnimateButton.cjs");
 const config = require("../../../types/config.cjs");
-const useTheme = require("../../../node_modules/@mui/material/styles/useTheme.cjs");
-const styled = require("../../../node_modules/@mui/material/styles/styled.cjs");
 const imgfooterlogo = "";
-const FooterLink = styled.default(material.Link)(({
+const FooterLink = styles.styled(material.Link)(({
   theme
 }) => ({
   color: theme.palette.text.secondary,
@@ -22,7 +21,7 @@ const FooterLink = styled.default(material.Link)(({
 const FooterBlock = ({
   isFull
 }) => {
-  const theme = useTheme();
+  const theme = styles.useTheme();
   const textColor = theme.palette.mode === config.ThemeMode.DARK ? "text.primary" : "background.paper";
   ({
     color: theme.palette.common.white
@@ -43,8 +42,8 @@ const FooterBlock = ({
     title: ".Net",
     link: "https://codedthemes.com/item/mantis-dotnet-bootstrap-dashboard-template/"
   }];
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(emotionReactJsxRuntime_browser_esm.Fragment, { children: [
-    isFull && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+    isFull && /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
       position: "relative",
       bgcolor: theme.palette.grey.A700,
       zIndex: 1,
@@ -71,7 +70,7 @@ const FooterBlock = ({
         background: theme.direction === config.ThemeDirection.RTL ? `linear-gradient(transparent 100%, rgb(31, 31, 31) 70%)` : `linear-gradient(180deg, transparent 0%, ${theme.palette.grey.A700} 70%)`
       }
     }, children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(
+      /* @__PURE__ */ jsxRuntime.jsx(
         material.CardMedia,
         {
           component: "img",
@@ -92,19 +91,19 @@ const FooterBlock = ({
           }
         }
       ),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Container, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { container: true, alignItems: "center", justifyContent: "space-between", spacing: 2, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, md: 6, sx: {
+      /* @__PURE__ */ jsxRuntime.jsx(material.Container, { children: /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { container: true, alignItems: "center", justifyContent: "space-between", spacing: 2, children: /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, md: 6, sx: {
         position: "relative",
         zIndex: 1
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Grid, { container: true, spacing: 2, sx: {
+      }, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Grid, { container: true, spacing: 2, sx: {
         [theme.breakpoints.down("md")]: {
           pr: 0,
           textAlign: "center"
         }
       }, children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "subtitle1", sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "subtitle1", sx: {
           color: theme.palette.common.white
         }, children: "Roadmap" }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(framerMotion.motion.div, { initial: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ jsxRuntime.jsx(framerMotion.motion.div, { initial: {
           opacity: 0,
           translateY: 550
         }, animate: {
@@ -114,26 +113,26 @@ const FooterBlock = ({
           type: "spring",
           stiffness: 150,
           damping: 30
-        }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h2", sx: {
+        }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h2", sx: {
           color: theme.palette.common.white,
           fontWeight: 700
         }, children: "Upcoming Release" }) }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "body1", sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "body1", sx: {
           color: theme.palette.common.white
         }, children: "What is next? Checkout the Upcoming release of Mantis React." }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, sx: {
           my: 2
-        }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+        }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
           display: "inline-block"
-        }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(AnimateButton, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Button, { size: "large", variant: "contained", endIcon: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.SendOutlined, {}), component: material.Link, href: "https://codedthemes.gitbook.io/mantis/roadmap", target: "_blank", children: "Roadmap" }) }) }) })
+        }, children: /* @__PURE__ */ jsxRuntime.jsx(AnimateButton, { children: /* @__PURE__ */ jsxRuntime.jsx(material.Button, { size: "large", variant: "contained", endIcon: /* @__PURE__ */ jsxRuntime.jsx(icons.SendOutlined, {}), component: material.Link, href: "https://codedthemes.gitbook.io/mantis/roadmap", target: "_blank", children: "Roadmap" }) }) }) })
       ] }) }) }) })
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
       pt: isFull ? 0 : 10,
       pb: 10,
       bgcolor: theme.palette.grey.A700
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Container, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Grid, { container: true, spacing: 2, children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, md: 4, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(framerMotion.motion.div, { initial: {
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Container, { children: /* @__PURE__ */ jsxRuntime.jsxs(material.Grid, { container: true, spacing: 2, children: [
+      /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, md: 4, children: /* @__PURE__ */ jsxRuntime.jsx(framerMotion.motion.div, { initial: {
         opacity: 0,
         translateY: 550
       }, animate: {
@@ -143,91 +142,91 @@ const FooterBlock = ({
         type: "spring",
         stiffness: 150,
         damping: 30
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Grid, { container: true, spacing: 2, children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.CardMedia, { component: "img", image: imgfooterlogo, sx: {
+      }, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Grid, { container: true, spacing: 2, children: [
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ jsxRuntime.jsx(material.CardMedia, { component: "img", image: imgfooterlogo, sx: {
           width: "auto"
         } }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "subtitle1", sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, children: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "subtitle1", sx: {
           fontWeight: 400,
           color: theme.palette.common.white
         }, children: "Since 2017, More than 50K+ Developers trust the CodedThemes Digital Product. Mantis React is Manage under their Experienced Team Players." }) })
       ] }) }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, md: 8, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Grid, { container: true, spacing: {
+      /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, md: 8, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Grid, { container: true, spacing: {
         xs: 5,
         md: 2
       }, children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
           xs: 3,
           md: 5
         }, children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
+          /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
             fontWeight: 500
           }, children: "Help" }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+          /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
             xs: 1.5,
             md: 2.5
           }, children: [
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "https://blog.mantisdashboard.io/", target: "_blank", underline: "none", children: "Blog" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "https://codedthemes.gitbook.io/mantis/", target: "_blank", underline: "none", children: "Documentation" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "https://codedthemes.gitbook.io/mantis/changelog", target: "_blank", underline: "none", children: "Change Log" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "https://codedthemes.support-hub.io/", target: "_blank", underline: "none", children: "Support" })
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "https://blog.mantisdashboard.io/", target: "_blank", underline: "none", children: "Blog" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "https://codedthemes.gitbook.io/mantis/", target: "_blank", underline: "none", children: "Documentation" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "https://codedthemes.gitbook.io/mantis/changelog", target: "_blank", underline: "none", children: "Change Log" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "https://codedthemes.support-hub.io/", target: "_blank", underline: "none", children: "Support" })
           ] })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
           xs: 3,
           md: 5
         }, children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
+          /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
             fontWeight: 500
           }, children: "Store Help" }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+          /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
             xs: 1.5,
             md: 2.5
           }, children: [
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "#", target: "_blank", underline: "none", children: "License" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "#", target: "_blank", underline: "none", children: "Refund Policy" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "#", target: "_blank", underline: "none", children: "Submit a Request" })
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "#", target: "_blank", underline: "none", children: "License" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "#", target: "_blank", underline: "none", children: "Refund Policy" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "#", target: "_blank", underline: "none", children: "Submit a Request" })
           ] })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
           xs: 3,
           md: 5
         }, children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
+          /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
             fontWeight: 500
           }, children: "Mantis Eco-System" }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Stack, { spacing: {
+          /* @__PURE__ */ jsxRuntime.jsx(material.Stack, { spacing: {
             xs: 1.5,
             md: 2.5
-          }, children: frameworks.map((item, index) => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: item.link, target: "_blank", underline: "none", children: item.title }, index)) })
+          }, children: frameworks.map((item, index) => /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: item.link, target: "_blank", underline: "none", children: item.title }, index)) })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 6, sm: 3, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
           xs: 3,
           md: 5
         }, children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
+          /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "h5", color: textColor, sx: {
             fontWeight: 500
           }, children: "More Products" }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: {
+          /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: {
             xs: 1.5,
             md: 2.5
           }, children: [
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "", target: "_blank", underline: "none", children: "Berry React Material" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "", target: "_blank", underline: "none", children: "Free Berry React" }),
-            /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(FooterLink, { href: "", target: "_blank", underline: "none", children: "Free Mantis React" })
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "", target: "_blank", underline: "none", children: "Berry React Material" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "", target: "_blank", underline: "none", children: "Free Berry React" }),
+            /* @__PURE__ */ jsxRuntime.jsx(FooterLink, { href: "", target: "_blank", underline: "none", children: "Free Mantis React" })
           ] })
         ] }) })
       ] }) })
     ] }) }) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Divider, { sx: {
       borderColor: "grey.700"
     } }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
       py: 1.5,
       bgcolor: theme.palette.mode === config.ThemeMode.DARK ? theme.palette.grey[50] : theme.palette.grey[800]
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Container, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Grid, { container: true, spacing: 2, children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, sm: 8, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { variant: "subtitle2", color: "secondary", children: "© Made with love by Team CodedThemes" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Grid, { item: true, xs: 12, sm: 4 })
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Container, { children: /* @__PURE__ */ jsxRuntime.jsxs(material.Grid, { container: true, spacing: 2, children: [
+      /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, sm: 8, children: /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { variant: "subtitle2", color: "secondary", children: "© Made with love by Team CodedThemes" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.Grid, { item: true, xs: 12, sm: 4 })
     ] }) }) })
   ] });
 };

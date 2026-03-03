@@ -1,6 +1,6 @@
-import { jsxs, jsx } from "../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
 import { Outlet } from "react-router-dom";
-import { Container, Box } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import Header from "./Header/index.js";
 import Footer from "./Footer/index.js";
 import styled from "styled-components";

@@ -1,7 +1,7 @@
 "use strict";
+const styles = require("@mui/material/styles");
 const getColors = require("../../utils/getColors.cjs");
 const getShadow = require("../../utils/getShadow.cjs");
-const system = require("@mui/system");
 function getColorStyle({
   color,
   theme
@@ -28,11 +28,11 @@ function getColorStyle({
     },
     "&::after": {
       borderRadius: "50px",
-      boxShadow: `0 0 5px 5px ${system.alpha(main, 0.9)}`
+      boxShadow: `0 0 5px 5px ${styles.alpha(main, 0.9)}`
     },
     "&:active::after": {
       borderRadius: "50px",
-      boxShadow: `0 0 0 0 ${system.alpha(main, 0.9)}`
+      boxShadow: `0 0 0 0 ${styles.alpha(main, 0.9)}`
     }
   };
 }

@@ -1,6 +1,6 @@
-import { jsx, jsxs } from "../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx, jsxs } from "@emotion/react/jsx-runtime";
 import { Link as Link$1 } from "react-router-dom";
-import { Container, Typography, Stack, Link } from "@mui/material";
+import { Container, Stack, Typography, Link } from "@mui/material";
 const Footer = () => /* @__PURE__ */ jsx("footer", { className: "footer", children: /* @__PURE__ */ jsx(Container, { children: /* @__PURE__ */ jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: {
   p: "24px 16px 0px",
   mt: "auto"

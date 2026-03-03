@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import { AppError } from '../errors';
+import { CustomError } from '@mocho/common';
+import { logger } from '@/shared/utils/logger';
 
 export const errorHandler = (
   error: unknown,
@@ -7,24 +8,23 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  if (error instanceof AppError) {
+  if (error instanceof CustomError) {
+    logger.warn('Handled error', {
+      type: error.constructor.name,
+      statusCode: error.statusCode,
+      message: error.message,
+    });
     res.status(error.statusCode).json({
-      error: {
-        code: error.code,
-        message: error.message,
-        ...(error.statusCode === 400 && 'details' in error
-          ? { details: (error as { details: string[] }).details }
-          : {}),
-      },
+      errors: error.serializeErrors(),
     });
     return;
   }
 
-  // Unknown error — do not leak internals
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  const stack = error instanceof Error ? error.stack : undefined;
+  logger.error('Unhandled error', { message, stack });
+
   res.status(500).json({
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred.',
-    },
+    errors: [{ message: 'An unexpected error occurred.' }],
   });
 };

@@ -1,9 +1,9 @@
-import { jsxs, jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
+import { useTheme } from "@mui/material/styles";
 import { Typography, Grid, Divider } from "@mui/material";
+import MuiBreadcrumbs from "@mui/material/Breadcrumbs";
 import MainCard from "../MainCard/index.js";
 import { HomeOutlined, HomeFilled } from "@ant-design/icons";
-import useTheme from "../../node_modules/@mui/material/styles/useTheme.js";
-import Breadcrumbs$1 from "../../node_modules/@mui/material/Breadcrumbs/Breadcrumbs.js";
 const Breadcrumbs = ({
   items = [],
   card = true,
@@ -73,7 +73,7 @@ const Breadcrumbs = ({
   }, ...others, content: card, shadow: "none", children: [
     /* @__PURE__ */ jsxs(Grid, { container: true, direction: rightAlign ? "row" : "column", justifyContent: rightAlign ? "space-between" : "flex-start", alignItems: rightAlign ? "center" : "flex-start", spacing: 1, children: [
       title && !titleBottom && /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsx(Typography, { variant: "h2", children: pageTitle }) }),
-      /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsxs(Breadcrumbs$1, { "aria-label": "breadcrumb", maxItems, separator: separatorIcon, children: [
+      /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsxs(MuiBreadcrumbs, { "aria-label": "breadcrumb", maxItems, separator: separatorIcon, children: [
         homeContent,
         breadcrumbItems
       ] }) }),

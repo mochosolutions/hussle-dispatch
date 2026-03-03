@@ -1,23 +1,21 @@
-import { jsxs, jsx } from "../../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
 import { useRef, useState } from "react";
-import { Stack, Typography, ButtonBase, Paper, ClickAwayListener, CardContent, Grid, Tooltip, Box, Popper } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { Box, ButtonBase, Stack, Typography, Popper, Paper, ClickAwayListener, CardContent, Grid, Tooltip } from "@mui/material";
 import { LogoutOutlined } from "@ant-design/icons";
 import Avatar from "../../../../../extended/Avatar.js";
 import MainCard from "../../../../../MainCard/index.js";
 import Transitions from "../../../../../extended/Transitions.js";
 import IconButton from "../../../../../extended/IconButton.js";
-import { useLayout } from "../../../../LayoutContext.js";
 import { ThemeMode } from "../../../../../../types/config.js";
-import useTheme from "../../../../../../node_modules/@mui/material/styles/useTheme.js";
-const Profile = () => {
+const Profile = ({
+  user,
+  onLogout
+}) => {
   const theme = useTheme();
-  const {
-    user,
-    onLogout
-  } = useLayout();
-  const userFullName = user?.name || "User";
-  const currentOrgName = user?.organizationName || "No active organization";
-  const handleLogout = async () => {
+  const userFullName = user?.name ?? "User";
+  const currentOrgName = user?.organizationName ?? "No active organization";
+  const handleLogout = () => {
     if (onLogout) {
       onLogout();
     }
@@ -70,41 +68,29 @@ const Profile = () => {
       [theme.breakpoints.down("md")]: {
         maxWidth: 250
       }
-    }, children: /* @__PURE__ */ jsx(ClickAwayListener, { onClickAway: handleClose, children: /* @__PURE__ */ jsx(MainCard, { elevation: 0, border: false, content: false, style: {
-      // border: "1px solid red",
+    }, children: /* @__PURE__ */ jsx(ClickAwayListener, { onClickAway: handleClose, children: /* @__PURE__ */ jsx(MainCard, { elevation: 0, border: false, content: false, sx: {
       width: "100%",
       height: "100%"
-    }, children: /* @__PURE__ */ jsxs(
-      CardContent,
-      {
-        children: [
-          /* @__PURE__ */ jsxs(Grid, { container: true, justifyContent: "space-between", alignItems: "center", children: [
-            /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsxs(Stack, { direction: "row", spacing: 1.25, alignItems: "center", children: [
-              /* @__PURE__ */ jsx(
-                Avatar,
-                {
-                  alt: "profile user",
-                  sx: {
-                    width: 32,
-                    height: 32
-                  }
-                }
-              ),
-              /* @__PURE__ */ jsxs(Stack, { children: [
-                /* @__PURE__ */ jsx(Typography, { variant: "h6", textTransform: "capitalize", children: userFullName }),
-                /* @__PURE__ */ jsx(Typography, { variant: "body2", color: "textSecondary" })
-              ] })
-            ] }) }),
-            /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsx(Tooltip, { title: "Logout", children: /* @__PURE__ */ jsx(IconButton, { size: "large", sx: {
-              color: "text.primary"
-            }, onClick: handleLogout, children: /* @__PURE__ */ jsx(LogoutOutlined, {}) }) }) })
-          ] }),
-          /* @__PURE__ */ jsx(Box, { sx: {
-            mt: 2
-          }, children: /* @__PURE__ */ jsx(Typography, { variant: "body2", color: "textSecondary", textTransform: "capitalize", children: currentOrgName }) })
-        ]
-      }
-    ) }) }) }) }) })
+    }, children: /* @__PURE__ */ jsxs(CardContent, { children: [
+      /* @__PURE__ */ jsxs(Grid, { container: true, justifyContent: "space-between", alignItems: "center", children: [
+        /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsxs(Stack, { direction: "row", spacing: 1.25, alignItems: "center", children: [
+          /* @__PURE__ */ jsx(Avatar, { alt: "profile user", src: user?.avatar, sx: {
+            width: 32,
+            height: 32
+          } }),
+          /* @__PURE__ */ jsxs(Stack, { children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "h6", textTransform: "capitalize", children: userFullName }),
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", color: "textSecondary" })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ jsx(Grid, { item: true, children: /* @__PURE__ */ jsx(Tooltip, { title: "Logout", children: /* @__PURE__ */ jsx(IconButton, { size: "large", sx: {
+          color: "text.primary"
+        }, onClick: handleLogout, children: /* @__PURE__ */ jsx(LogoutOutlined, {}) }) }) })
+      ] }),
+      /* @__PURE__ */ jsx(Box, { sx: {
+        mt: 2
+      }, children: /* @__PURE__ */ jsx(Typography, { variant: "body2", color: "textSecondary", textTransform: "capitalize", children: currentOrgName }) })
+    ] }) }) }) }) }) })
   ] });
 };
 export {

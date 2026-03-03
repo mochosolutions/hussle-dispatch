@@ -1,0 +1,185 @@
+import Decimal from 'decimal.js';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
+import { createVehicleService } from '../vehicleService';
+
+const buildVehicle = () => ({
+  id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+  carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
+  unitNumber: 'TRK-001',
+  type: 'DRY_VAN',
+  ownership: 'OWNED',
+  year: 2021,
+  make: 'Freightliner',
+  model: 'Cascadia',
+  vin: '1FUJGLDR3AS123456',
+  licensePlate: 'ABC1234',
+  licensePlateState: 'TX',
+  emergencyContactName: 'Jane Doe',
+  emergencyContactPhone: '555-555-9090',
+  warrantyInfo: 'powertrain',
+  monthlyGrossTarget: new Decimal('18000.00'),
+  monthlyMilesTarget: 9000,
+  workingDaysPerMonth: 22,
+  isActive: true,
+  notes: null,
+  createdAt: new Date('2026-03-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-03-01T00:00:00.000Z'),
+  deletedAt: null,
+  expenses: [
+    {
+      id: 'ab66be57-c6f3-4ec4-a9c5-f6988988d83f',
+      vehicleId: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+      category: 'FIXED',
+      expenseKey: 'insurance',
+      label: 'Insurance',
+      monthlyAmount: new Decimal('300.00'),
+      createdAt: new Date('2026-03-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-03-01T00:00:00.000Z'),
+    },
+  ],
+});
+
+describe('vehicleService', () => {
+  const mockVehicleRepository = {
+    create: jest.fn(),
+    findById: jest.fn(),
+    list: jest.fn(),
+    count: jest.fn(),
+    update: jest.fn(),
+    replaceExpenses: jest.fn(),
+    softDelete: jest.fn(),
+  };
+
+  const mockCarrierRepository = {
+    findActiveByIdForOrg: jest.fn(),
+  };
+
+  const mockLoadRepository = {
+    findBlockingLoadIdsByVehicle: jest.fn(),
+  };
+
+  const mockTransactionManager = {
+    runInTransaction: jest.fn(),
+  };
+
+  const vehicleService = createVehicleService({
+    vehicleRepository: mockVehicleRepository,
+    carrierRepository: mockCarrierRepository,
+    loadRepository: mockLoadRepository,
+    transactionManager: mockTransactionManager,
+    vehicleRepositoryFactory: () => mockVehicleRepository,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('blocks owner_operator role from creating vehicles', async () => {
+    await expect(
+      vehicleService.createVehicle({
+        organizationId: 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
+        role: 'owner_operator',
+        input: {
+          carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
+          unitNumber: 'TRK-001',
+          type: 'DRY_VAN',
+        },
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('returns not found when carrier does not exist on create', async () => {
+    mockCarrierRepository.findActiveByIdForOrg.mockResolvedValue(false);
+
+    await expect(
+      vehicleService.createVehicle({
+        organizationId: 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
+        role: 'admin',
+        input: {
+          carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
+          unitNumber: 'TRK-001',
+          type: 'DRY_VAN',
+        },
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('rejects update when duplicate expense keys are provided', async () => {
+    mockVehicleRepository.findById.mockResolvedValue(buildVehicle());
+
+    await expect(
+      vehicleService.updateVehicle({
+        id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+        organizationId: 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
+        role: 'admin',
+        input: {
+          expenses: [
+            {
+              category: 'FIXED',
+              expenseKey: 'insurance',
+              label: 'Insurance #1',
+              monthlyAmount: 100,
+            },
+            {
+              category: 'VARIABLE',
+              expenseKey: 'insurance',
+              label: 'Insurance #2',
+              monthlyAmount: 120,
+            },
+          ],
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('replaces expenses in transaction when expenses are provided', async () => {
+    const updatedVehicle = buildVehicle();
+    mockVehicleRepository.findById
+      .mockResolvedValueOnce(buildVehicle())
+      .mockResolvedValueOnce(updatedVehicle);
+
+    mockTransactionManager.runInTransaction.mockImplementation(async (operation) => operation({}));
+
+    const result = await vehicleService.updateVehicle({
+      id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+      organizationId: 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
+      role: 'admin',
+      input: {
+        unitNumber: 'TRK-009',
+        expenses: [
+          {
+            category: 'FIXED',
+            expenseKey: 'insurance',
+            label: 'Insurance',
+            monthlyAmount: 350,
+          },
+        ],
+      },
+    });
+
+    expect(mockVehicleRepository.update).toHaveBeenCalledWith(
+      '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+      expect.objectContaining({
+        unitNumber: 'TRK-009',
+      }),
+    );
+    expect(mockVehicleRepository.replaceExpenses).toHaveBeenCalledWith(
+      '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+      expect.any(Array),
+    );
+    expect(result.unitNumber).toBe('TRK-001');
+  });
+
+  it('blocks soft-delete when loads are active before delivered', async () => {
+    mockVehicleRepository.findById.mockResolvedValue(buildVehicle());
+    mockLoadRepository.findBlockingLoadIdsByVehicle.mockResolvedValue(['load-1', 'load-2']);
+
+    await expect(
+      vehicleService.deleteVehicle({
+        id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+        organizationId: 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
+        role: 'admin',
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+});

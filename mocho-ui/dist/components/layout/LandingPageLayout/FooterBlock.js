@@ -1,21 +1,20 @@
-import { jsxs, jsx, Fragment } from "../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, Fragment, jsx } from "@emotion/react/jsx-runtime";
+import { useTheme, styled } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import CardMedia from "@mui/material/CardMedia";
+import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
+import Link from "@mui/material/Link";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import { motion } from "framer-motion";
-import { useConfig } from "../../../hooks/useConfig.js";
+import useConfig from "../../../hooks/useConfig.js";
 import { ThemeMode } from "../../../config.js";
-import FacebookFilled from "../../../_virtual/FacebookFilled.js";
-import InstagramFilled from "../../../_virtual/InstagramFilled.js";
-import LinkedinFilled from "../../../_virtual/LinkedinFilled.js";
-import TwitterOutlined from "../../../_virtual/TwitterOutlined.js";
-import useTheme from "../../../node_modules/@mui/material/styles/useTheme.js";
-import Container from "../../../node_modules/@mui/material/Container/Container.js";
-import Grid from "../../../node_modules/@mui/material/Grid/Grid.js";
-import CardMedia from "../../../node_modules/@mui/material/CardMedia/CardMedia.js";
-import Typography from "../../../node_modules/@mui/material/Typography/Typography.js";
-import Stack from "../../../node_modules/@mui/material/Stack/Stack.js";
-import styled from "../../../node_modules/@mui/material/styles/styled.js";
-import Box from "../../../node_modules/@mui/material/Box/Box.js";
-import Divider from "../../../node_modules/@mui/material/Divider/Divider.js";
-import Link from "../../../node_modules/@mui/material/Link/Link.js";
+import FacebookFilled from "@ant-design/icons/FacebookFilled";
+import InstagramFilled from "@ant-design/icons/InstagramFilled";
+import LinkedinFilled from "@ant-design/icons/LinkedinFilled";
+import TwitterOutlined from "@ant-design/icons/TwitterOutlined";
 const imgfooterlogo = "";
 const FooterLink = styled(Link)(({
   theme

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const material = require("@mui/material");
 const react = require("@tiptap/react");
@@ -61,7 +61,7 @@ const TiptapEditor = ({
       editor.setEditable(!disabled);
     }
   }, [disabled, editor]);
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
     border: 1,
     borderColor: error ? "error.main" : "divider",
     borderRadius: 1,
@@ -71,8 +71,8 @@ const TiptapEditor = ({
       boxShadow: (theme) => error ? `0 0 0 1px ${theme.palette.error.main}` : `0 0 0 1px ${theme.palette.primary.main}`
     }
   }, children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(MenuBar.MenuBar, { editor, onImageSelect, onLinkAdd }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(MenuBar.MenuBar, { editor, onImageSelect, onLinkAdd }),
+    /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
       minHeight,
       maxHeight,
       overflow: "auto",
@@ -176,8 +176,8 @@ const TiptapEditor = ({
           mb: 1
         }
       }
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(react.EditorContent, { editor }) }),
-    helperText && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.FormHelperText, { error, sx: {
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(react.EditorContent, { editor }) }),
+    helperText && /* @__PURE__ */ jsxRuntime.jsx(material.FormHelperText, { error, sx: {
       mx: 2,
       mb: 1
     }, children: helperText })

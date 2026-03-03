@@ -1,5 +1,5 @@
-import { jsxs, jsx, Fragment } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { Skeleton, Box, Stack, Divider } from "@mui/material";
+import { jsxs, jsx, Fragment } from "@emotion/react/jsx-runtime";
+import { Box, Skeleton, Stack, Divider } from "@mui/material";
 function FormSkeleton({
   fields = 5,
   showBackButton = true,

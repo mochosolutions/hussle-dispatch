@@ -1,5 +1,5 @@
-var reactIs = { exports: {} };
+var lib = {};
 export {
-  reactIs as __module
+  lib as __exports
 };
 //# sourceMappingURL=index2.js.map

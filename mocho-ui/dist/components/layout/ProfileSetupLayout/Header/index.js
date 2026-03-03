@@ -1,4 +1,4 @@
-import { jsx } from "../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
 import { Container, Box, Typography } from "@mui/material";
 import { Logo } from "../../../Logo/index.js";
 const Header = () => /* @__PURE__ */ jsx("div", { className: "header", style: {

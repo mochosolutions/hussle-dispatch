@@ -1,5 +1,5 @@
-import { jsx, jsxs } from "../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { lazy, Suspense } from "react";
+import { jsx, jsxs } from "@emotion/react/jsx-runtime";
+import { Suspense, lazy } from "react";
 import styled from "styled-components";
 import { Outlet } from "react-router-dom";
 import Loader from "../../Loadable/Loader.js";

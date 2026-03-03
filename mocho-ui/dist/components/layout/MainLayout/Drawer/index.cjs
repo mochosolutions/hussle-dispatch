@@ -1,43 +1,50 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
-const index$2 = require("./DrawerHeader/index.cjs");
-const index$1 = require("./DrawerContent/index.cjs");
+const index$1 = require("./DrawerHeader/index.cjs");
+const index = require("./DrawerContent/index.cjs");
 const MiniDrawerStyled = require("./MiniDrawerStyled.cjs");
 const config = require("../../../../config.cjs");
-const index = require("../../../../store/index.cjs");
-const menu = require("../../../../store/reducers/menu.cjs");
-const useTheme = require("../../../../node_modules/@mui/material/styles/useTheme.cjs");
+const useLayoutState = require("../../../../hooks/useLayoutState.cjs");
 const MainDrawer = ({
-  window
+  menuItems,
+  logo,
+  logoIcon,
+  header,
+  footer,
+  window: windowProp,
+  navStyles,
+  paperStyles,
+  mobilePaperStyles,
+  headerStyles
 }) => {
-  const theme = useTheme();
-  const dispatch = index.useDispatch();
+  const theme = styles.useTheme();
   const matchDownMD = material.useMediaQuery(theme.breakpoints.down("lg"));
-  const menu$1 = index.useSelector((state) => state.menu);
   const {
-    drawerOpen
-  } = menu$1;
-  console.log("Drawer render", drawerOpen);
-  const container = window !== void 0 ? () => window().document.body : void 0;
-  const drawerContent = React.useMemo(() => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(index$1, {}), []);
-  const drawerHeader = React.useMemo(() => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(index$2, { open: drawerOpen }), [drawerOpen]);
+    drawerOpen,
+    onDrawerClose
+  } = useLayoutState();
+  const container = windowProp !== void 0 ? () => windowProp().document.body : void 0;
+  const drawerContent = React.useMemo(() => /* @__PURE__ */ jsxRuntime.jsx(index, { menuItems }), [menuItems]);
+  const drawerHeader = React.useMemo(() => header ?? /* @__PURE__ */ jsxRuntime.jsx(index$1, { open: drawerOpen, logo, logoIcon, styles: headerStyles }), [drawerOpen, header, logo, logoIcon, headerStyles]);
   if (!matchDownMD) {
-    return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { component: "nav", sx: {
+    return /* @__PURE__ */ jsxRuntime.jsx(material.Box, { component: "nav", sx: {
       flexShrink: {
         md: 0
       },
-      zIndex: 1200
-    }, "aria-label": "mailbox folders", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(MiniDrawerStyled, { variant: "permanent", open: drawerOpen, children: [
+      zIndex: 1200,
+      ...navStyles ?? {}
+    }, "aria-label": "mailbox folders", children: /* @__PURE__ */ jsxRuntime.jsxs(MiniDrawerStyled, { variant: "permanent", open: drawerOpen, PaperProps: paperStyles ? {
+      sx: paperStyles
+    } : void 0, children: [
       drawerHeader,
-      drawerContent
+      drawerContent,
+      footer
     ] }) });
   }
-  console.log("Rendering mobile drawer, open:", drawerOpen);
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Drawer, { container, variant: "temporary", open: drawerOpen, onClose: () => {
-    dispatch(menu.openDrawer(false));
-  }, ModalProps: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(material.Drawer, { container, variant: "temporary", open: drawerOpen, onClose: onDrawerClose, ModalProps: {
     keepMounted: true,
     slotProps: {
       backdrop: {
@@ -50,17 +57,21 @@ const MainDrawer = ({
     display: {
       xs: "block",
       lg: "none"
-    },
-    "& .MuiDrawer-paper": {
+    }
+  }, PaperProps: {
+    sx: {
       boxSizing: "border-box",
       width: config.DRAWER_WIDTH,
       borderRight: `1px solid ${theme.palette.divider}`,
       backgroundImage: "none",
-      boxShadow: "inherit"
+      boxShadow: "inherit",
+      ...paperStyles ?? {},
+      ...mobilePaperStyles ?? {}
     }
   }, children: [
     drawerHeader,
-    drawerContent
+    drawerContent,
+    footer
   ] });
 };
 module.exports = MainDrawer;

@@ -1,12 +1,15 @@
-import { jsx } from "../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
+import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
 import DrawerHeaderStyled from "./DrawerHeaderStyled.js";
 import { Logo } from "../../../../Logo/index.js";
-import { useConfig } from "../../../../../hooks/useConfig.js";
+import useConfig from "../../../../../hooks/useConfig.js";
 import { MenuOrientation } from "../../../../../types/config.js";
-import useTheme from "../../../../../node_modules/@mui/material/styles/useTheme.js";
 const DrawerHeader = ({
-  open
+  open,
+  logo,
+  logoIcon,
+  styles
 }) => {
   const theme = useTheme();
   const downLG = useMediaQuery(theme.breakpoints.down("lg"));
@@ -14,7 +17,7 @@ const DrawerHeader = ({
     menuOrientation
   } = useConfig();
   const isHorizontal = menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
-  return /* @__PURE__ */ jsx(DrawerHeaderStyled, { theme, open, sx: {
+  const headerStyles = {
     minHeight: isHorizontal ? "unset" : "60px",
     width: isHorizontal ? {
       xs: "100%",
@@ -31,11 +34,18 @@ const DrawerHeader = ({
     paddingLeft: isHorizontal ? {
       xs: "24px",
       lg: "0"
-    } : open ? "24px" : 0
-  }, children: /* @__PURE__ */ jsx(Logo, { isIcon: !open, sx: {
-    width: open ? "auto" : 35,
-    height: 35
-  } }) });
+    } : open ? "24px" : 0,
+    ...styles ?? {}
+  };
+  const renderLogo = () => {
+    if (!open && logoIcon) return logoIcon;
+    if (open && logo) return logo;
+    return /* @__PURE__ */ jsx(Logo, { isIcon: !open, sx: {
+      width: open ? "auto" : 35,
+      height: 35
+    } });
+  };
+  return /* @__PURE__ */ jsx(DrawerHeaderStyled, { theme, open, sx: headerStyles, children: renderLogo() });
 };
 export {
   DrawerHeader as default

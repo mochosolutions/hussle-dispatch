@@ -1,9 +1,8 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
+const styles = require("@mui/material/styles");
+const MuiAvatar = require("@mui/material/Avatar");
 const getColors = require("../../utils/getColors.cjs");
-const useTheme = require("../../node_modules/@mui/material/styles/useTheme.cjs");
-const styled = require("../../node_modules/@mui/material/styles/styled.cjs");
-const Avatar$1 = require("../../node_modules/@mui/material/Avatar/Avatar.cjs");
 function getColorStyle({
   variant,
   theme,
@@ -86,7 +85,7 @@ function getSizeStyle(size) {
       };
   }
 }
-const AvatarStyle = styled.default(Avatar$1, {
+const AvatarStyle = styles.styled(MuiAvatar, {
   shouldForwardProp: (prop) => prop !== "color" && prop !== "type" && prop !== "size"
 })(({
   theme,
@@ -114,8 +113,8 @@ function Avatar({
   size = "md",
   ...others
 }) {
-  const theme = useTheme();
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(AvatarStyle, { variant, theme, color, ...others, children });
+  const theme = styles.useTheme();
+  return /* @__PURE__ */ jsxRuntime.jsx(AvatarStyle, { variant, theme, color, ...others, children });
 }
 module.exports = Avatar;
 //# sourceMappingURL=Avatar.cjs.map

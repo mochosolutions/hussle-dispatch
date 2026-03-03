@@ -8,7 +8,9 @@ interface Props {
     selectedItems: string | undefined;
     setSelectedLevel: React.Dispatch<React.SetStateAction<number>>;
     selectedLevel: number;
+    openItem: string[];
+    onActiveItem: (itemIds: string[]) => void;
 }
-declare const NavCollapse: ({ menu, level, parentId, setSelectedItems, selectedItems, setSelectedLevel, selectedLevel, }: Props) => import("@emotion/react/jsx-runtime").JSX.Element;
+declare const NavCollapse: ({ menu, level, parentId, setSelectedItems, selectedItems, setSelectedLevel, selectedLevel, openItem, onActiveItem, }: Props) => import("@emotion/react/jsx-runtime").JSX.Element;
 export default NavCollapse;
 //# sourceMappingURL=NavCollapse.d.ts.map

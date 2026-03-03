@@ -1,7 +1,9 @@
 "use strict";
-const emotionReactJsxRuntime_browser_esm = require("../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const reactRouterDom = require("react-router-dom");
+const AppBar = require("@mui/material/AppBar");
+const styles = require("@mui/material/styles");
 const material = require("@mui/material");
 const config = require("../../../config.cjs");
 const IconButton = require("../../extended/IconButton.cjs");
@@ -9,8 +11,6 @@ const AnimateButton = require("../../extended/AnimateButton.cjs");
 const index = require("../../Logo/index.cjs");
 const icons = require("@ant-design/icons");
 const config$1 = require("../../../types/config.cjs");
-const useTheme = require("../../../node_modules/@mui/material/styles/useTheme.cjs");
-const AppBar = require("../../../node_modules/@mui/material/AppBar/AppBar.cjs");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
   if (e) {
@@ -33,7 +33,7 @@ function ElevationScroll({
   children,
   window
 }) {
-  const theme = useTheme();
+  const theme = styles.useTheme();
   const trigger = material.useScrollTrigger({
     disableHysteresis: true,
     threshold: 10,
@@ -52,7 +52,7 @@ const Header = ({
   layout = "landing",
   ...others
 }) => {
-  const theme = useTheme();
+  const theme = styles.useTheme();
   const matchDownMd = material.useMediaQuery(theme.breakpoints.down("md"));
   const [drawerToggle, setDrawerToggle] = React.useState(false);
   const drawerToggler = (open) => (event) => {
@@ -61,11 +61,11 @@ const Header = ({
     }
     setDrawerToggle(open);
   };
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(ElevationScroll, { layout, ...others, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(AppBar, { sx: {
+  return /* @__PURE__ */ jsxRuntime.jsx(ElevationScroll, { layout, ...others, children: /* @__PURE__ */ jsxRuntime.jsx(AppBar, { sx: {
     bgcolor: "transparent",
     color: theme.palette.text.primary,
     boxShadow: "none"
-  }, className: "header", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Container, { disableGutters: matchDownMd, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Toolbar, { sx: {
+  }, className: "header", children: /* @__PURE__ */ jsxRuntime.jsx(material.Container, { disableGutters: matchDownMd, children: /* @__PURE__ */ jsxRuntime.jsxs(material.Toolbar, { sx: {
     px: {
       xs: 1.5,
       md: 0,
@@ -73,18 +73,18 @@ const Header = ({
     },
     py: 2
   }, children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { direction: "row", sx: {
+    /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { direction: "row", sx: {
       flexGrow: 1,
       display: {
         xs: "none",
         md: "block"
       }
     }, alignItems: "center", children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { component: "div", sx: {
+      /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { component: "div", sx: {
         textAlign: "left",
         display: "inline-block"
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(index.Logo, { reverse: true, to: "/" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(
+      }, children: /* @__PURE__ */ jsxRuntime.jsx(index.Logo, { reverse: true, to: "/" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(
         material.Chip,
         {
           variant: "outlined",
@@ -102,7 +102,7 @@ const Header = ({
         }
       )
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { direction: "row", sx: {
+    /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { direction: "row", sx: {
       "& .header-link": {
         px: 1,
         "&:hover": {
@@ -114,14 +114,14 @@ const Header = ({
         md: "block"
       }
     }, spacing: 2, children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { className: "header-link", color: "white", component: reactRouterDom.Link, to: "/login", target: "_blank", underline: "none", children: "Dashboard" }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { className: "header-link", color: handleDrawerOpen ? "primary" : "white", component: reactRouterDom.Link, to: "/components-overview/buttons", underline: "none", children: "Components" }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { className: "header-link", color: "white", href: "https://codedthemes.gitbook.io/mantis/", target: "_blank", underline: "none", children: "Documentation" }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+      /* @__PURE__ */ jsxRuntime.jsx(material.Link, { className: "header-link", color: "white", component: reactRouterDom.Link, to: "/login", target: "_blank", underline: "none", children: "Dashboard" }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.Link, { className: "header-link", color: handleDrawerOpen ? "primary" : "white", component: reactRouterDom.Link, to: "/components-overview/buttons", underline: "none", children: "Components" }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.Link, { className: "header-link", color: "white", href: "https://codedthemes.gitbook.io/mantis/", target: "_blank", underline: "none", children: "Documentation" }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
         display: "inline-block"
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(AnimateButton, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Button, { component: material.Link, href: "https://mui.com/store/items/mantis-react-admin-dashboard-template/", disableElevation: true, color: "primary", variant: "contained", children: "Purchase Now" }) }) })
+      }, children: /* @__PURE__ */ jsxRuntime.jsx(AnimateButton, { children: /* @__PURE__ */ jsxRuntime.jsx(material.Button, { component: material.Link, href: "https://mui.com/store/items/mantis-react-admin-dashboard-template/", disableElevation: true, color: "primary", variant: "contained", children: "Purchase Now" }) }) })
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
       width: "100%",
       alignItems: "center",
       justifyContent: "space-between",
@@ -130,20 +130,20 @@ const Header = ({
         md: "none"
       }
     }, children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Typography, { component: "div", sx: {
+      /* @__PURE__ */ jsxRuntime.jsx(material.Typography, { component: "div", sx: {
         textAlign: "left",
         display: "inline-block"
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(index.Logo, { reverse: true, to: "/" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { direction: "row", spacing: 2, children: [
-        layout === "component" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Button, { variant: "outlined", size: "small", color: "warning", component: reactRouterDom.Link, to: config.APP_DEFAULT_PATH, sx: {
+      }, children: /* @__PURE__ */ jsxRuntime.jsx(index.Logo, { reverse: true, to: "/" }) }),
+      /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { direction: "row", spacing: 2, children: [
+        layout === "component" && /* @__PURE__ */ jsxRuntime.jsx(material.Button, { variant: "outlined", size: "small", color: "warning", component: reactRouterDom.Link, to: config.APP_DEFAULT_PATH, sx: {
           mt: 0.5,
           height: 28
         }, children: "Dashboard" }),
-        layout !== "component" && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Button, { variant: "outlined", size: "small", color: "warning", component: reactRouterDom.Link, to: "/components-overview/buttons", sx: {
+        layout !== "component" && /* @__PURE__ */ jsxRuntime.jsx(material.Button, { variant: "outlined", size: "small", color: "warning", component: reactRouterDom.Link, to: "/components-overview/buttons", sx: {
           mt: 0.5,
           height: 28
         }, children: "All Components" }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(IconButton, { color: "secondary", ...layout === "component" ? {
+        /* @__PURE__ */ jsxRuntime.jsx(IconButton, { color: "secondary", ...layout === "component" ? {
           onClick: handleDrawerOpen
         } : {
           onClick: drawerToggler(true)
@@ -151,75 +151,75 @@ const Header = ({
           "&:hover": {
             bgcolor: theme.palette.mode === config$1.ThemeMode.DARK ? "secondary.lighter" : "secondary.dark"
           }
-        }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.MenuOutlined, { style: {
+        }, children: /* @__PURE__ */ jsxRuntime.jsx(icons.MenuOutlined, { style: {
           color: theme.palette.mode === config$1.ThemeMode.DARK ? "inherit" : theme.palette.grey[100]
         } }) })
       ] }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Drawer, { anchor: "top", open: drawerToggle, onClose: drawerToggler(false), sx: {
+      /* @__PURE__ */ jsxRuntime.jsx(material.Drawer, { anchor: "top", open: drawerToggle, onClose: drawerToggler(false), sx: {
         "& .MuiDrawer-paper": {
           backgroundImage: "none"
         }
-      }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+      }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
         width: "auto",
         "& .MuiListItemIcon-root": {
           fontSize: "1rem",
           minWidth: 28
         }
-      }, role: "presentation", onClick: drawerToggler(false), onKeyDown: drawerToggler(false), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.List, { children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { style: {
+      }, role: "presentation", onClick: drawerToggler(false), onKeyDown: drawerToggler(false), children: /* @__PURE__ */ jsxRuntime.jsxs(material.List, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(material.Link, { style: {
           textDecoration: "none"
-        }, href: "/login", target: "_blank", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { component: "span", children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.LineOutlined, {}) }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: "Dashboard", primaryTypographyProps: {
+        }, href: "/login", target: "_blank", children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { component: "span", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { children: /* @__PURE__ */ jsxRuntime.jsx(icons.LineOutlined, {}) }),
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: "Dashboard", primaryTypographyProps: {
             variant: "h6",
             color: "text.primary"
           } })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { style: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Link, { style: {
           textDecoration: "none"
-        }, href: "/components-overview/buttons", target: "_blank", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { component: "span", children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.LineOutlined, {}) }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: "All Components", primaryTypographyProps: {
+        }, href: "/components-overview/buttons", target: "_blank", children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { component: "span", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { children: /* @__PURE__ */ jsxRuntime.jsx(icons.LineOutlined, {}) }),
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: "All Components", primaryTypographyProps: {
             variant: "h6",
             color: "text.primary"
           } })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { style: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Link, { style: {
           textDecoration: "none"
-        }, href: "https://github.com/codedthemes/mantis-free-react-admin-template", target: "_blank", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { component: "span", children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.LineOutlined, {}) }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: "Free Version", primaryTypographyProps: {
+        }, href: "https://github.com/codedthemes/mantis-free-react-admin-template", target: "_blank", children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { component: "span", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { children: /* @__PURE__ */ jsxRuntime.jsx(icons.LineOutlined, {}) }),
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: "Free Version", primaryTypographyProps: {
             variant: "h6",
             color: "text.primary"
           } })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { style: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Link, { style: {
           textDecoration: "none"
-        }, href: "https://codedthemes.gitbook.io/mantis/", target: "_blank", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { component: "span", children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.LineOutlined, {}) }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: "Documentation", primaryTypographyProps: {
+        }, href: "https://codedthemes.gitbook.io/mantis/", target: "_blank", children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { component: "span", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { children: /* @__PURE__ */ jsxRuntime.jsx(icons.LineOutlined, {}) }),
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: "Documentation", primaryTypographyProps: {
             variant: "h6",
             color: "text.primary"
           } })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { style: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Link, { style: {
           textDecoration: "none"
-        }, href: "https://codedthemes.support-hub.io/", target: "_blank", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { component: "span", children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.LineOutlined, {}) }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: "Support", primaryTypographyProps: {
+        }, href: "https://codedthemes.support-hub.io/", target: "_blank", children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { component: "span", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { children: /* @__PURE__ */ jsxRuntime.jsx(icons.LineOutlined, {}) }),
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: "Support", primaryTypographyProps: {
             variant: "h6",
             color: "text.primary"
           } })
         ] }) }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Link, { style: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Link, { style: {
           textDecoration: "none"
-        }, href: "https://mui.com/store/items/mantis-react-admin-dashboard-template/", target: "_blank", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ListItemButton, { component: "span", children: [
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemIcon, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(icons.LineOutlined, {}) }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ListItemText, { primary: "Purchase Now", primaryTypographyProps: {
+        }, href: "https://mui.com/store/items/mantis-react-admin-dashboard-template/", target: "_blank", children: /* @__PURE__ */ jsxRuntime.jsxs(material.ListItemButton, { component: "span", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemIcon, { children: /* @__PURE__ */ jsxRuntime.jsx(icons.LineOutlined, {}) }),
+          /* @__PURE__ */ jsxRuntime.jsx(material.ListItemText, { primary: "Purchase Now", primaryTypographyProps: {
             variant: "h6",
             color: "text.primary"
           } }),
-          /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Chip, { color: "primary", label: "v1.0", size: "small" })
+          /* @__PURE__ */ jsxRuntime.jsx(material.Chip, { color: "primary", label: "v1.0", size: "small" })
         ] }) })
       ] }) }) })
     ] })

@@ -1,8 +1,7 @@
+import { createTheme, alpha } from "@mui/material/styles";
 import { presetDarkPalettes, presetPalettes } from "@ant-design/colors";
 import Theme from "./theme/index.js";
 import { ThemeMode } from "../types/config.js";
-import createTheme from "../node_modules/@mui/material/styles/createTheme.js";
-import { alpha } from "@mui/system";
 const Palette = (mode, presetColor) => {
   const colors = mode === ThemeMode.DARK ? presetDarkPalettes : presetPalettes;
   let greyPrimary = ["#ffffff", "#fafafa", "#f5f5f5", "#f0f0f0", "#d9d9d9", "#bfbfbf", "#8c8c8c", "#595959", "#262626", "#141414", "#000000"];

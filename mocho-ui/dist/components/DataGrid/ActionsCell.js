@@ -1,9 +1,9 @@
-import { jsx, jsxs } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { IconButton, Tooltip, Box } from "@mui/material";
+import { jsx, jsxs } from "@emotion/react/jsx-runtime";
+import { Box, Tooltip, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import EditOutlinedIcon from "../../_virtual/EditOutlined.js";
-import DeleteOutlinedIcon from "../../_virtual/DeleteOutlined.js";
-import VisibilityOutlinedIcon from "../../_virtual/VisibilityOutlined.js";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 const ActionsCell = ({
   data,
   config

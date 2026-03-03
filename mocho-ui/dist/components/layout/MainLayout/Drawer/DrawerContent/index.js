@@ -1,12 +1,15 @@
-import { jsx } from "../../../../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
 import Navigation from "./Navigation/index.js";
 import SimpleBar from "../../../../third-party/SimpleBar.js";
-const DrawerContent = () => /* @__PURE__ */ jsx(SimpleBar, { sx: {
+const DrawerContent = ({
+  menuItems = [],
+  children
+}) => /* @__PURE__ */ jsx(SimpleBar, { sx: {
   "& .simplebar-content": {
     display: "flex",
     flexDirection: "column"
   }
-}, children: /* @__PURE__ */ jsx(Navigation, {}) });
+}, children: children ?? /* @__PURE__ */ jsx(Navigation, { menuItems }) });
 export {
   DrawerContent as default
 };

@@ -1,5 +1,5 @@
+import { alpha } from "@mui/material/styles";
 import { ThemeMode } from "../types/config.js";
-import { alpha } from "@mui/system";
 const CustomShadows = (theme) => ({
   // z1: `0px 2px 8px rgba(0, 0, 0, 0.15)`,
   button: theme.palette.mode === ThemeMode.DARK ? `0 2px 0 rgb(0 0 0 / 5%)` : `0 2px #0000000b`,

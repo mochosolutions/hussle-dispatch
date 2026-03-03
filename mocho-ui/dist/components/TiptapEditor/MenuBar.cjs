@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const React = require("react");
 const material = require("@mui/material");
 const iconsMaterial = require("@mui/icons-material");
@@ -47,7 +47,7 @@ const MenuBar = ({
       }).run();
     }
   };
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+  return /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
     display: "flex",
     flexWrap: "wrap",
     alignItems: "center",
@@ -57,46 +57,46 @@ const MenuBar = ({
     borderColor: "divider",
     bgcolor: "background.default"
   }, children: [
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ToggleButtonGroup, { size: "small", "aria-label": "text formatting", children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "bold", "aria-label": "bold", selected: editor.isActive("bold"), onClick: () => editor.chain().focus().toggleBold().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatBold, { fontSize: "small" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "italic", "aria-label": "italic", selected: editor.isActive("italic"), onClick: () => editor.chain().focus().toggleItalic().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatItalic, { fontSize: "small" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "strike", "aria-label": "strikethrough", selected: editor.isActive("strike"), onClick: () => editor.chain().focus().toggleStrike().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatStrikethrough, { fontSize: "small" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "code", "aria-label": "code", selected: editor.isActive("code"), onClick: () => editor.chain().focus().toggleCode().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.Code, { fontSize: "small" }) })
+    /* @__PURE__ */ jsxRuntime.jsxs(material.ToggleButtonGroup, { size: "small", "aria-label": "text formatting", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "bold", "aria-label": "bold", selected: editor.isActive("bold"), onClick: () => editor.chain().focus().toggleBold().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatBold, { fontSize: "small" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "italic", "aria-label": "italic", selected: editor.isActive("italic"), onClick: () => editor.chain().focus().toggleItalic().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatItalic, { fontSize: "small" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "strike", "aria-label": "strikethrough", selected: editor.isActive("strike"), onClick: () => editor.chain().focus().toggleStrike().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatStrikethrough, { fontSize: "small" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "code", "aria-label": "code", selected: editor.isActive("code"), onClick: () => editor.chain().focus().toggleCode().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.Code, { fontSize: "small" }) })
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
       mx: 0.5
     } }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ToggleButtonGroup, { size: "small", "aria-label": "lists", children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "bulletList", "aria-label": "bullet list", selected: editor.isActive("bulletList"), onClick: () => editor.chain().focus().toggleBulletList().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatListBulleted, { fontSize: "small" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "orderedList", "aria-label": "ordered list", selected: editor.isActive("orderedList"), onClick: () => editor.chain().focus().toggleOrderedList().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatListNumbered, { fontSize: "small" }) })
+    /* @__PURE__ */ jsxRuntime.jsxs(material.ToggleButtonGroup, { size: "small", "aria-label": "lists", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "bulletList", "aria-label": "bullet list", selected: editor.isActive("bulletList"), onClick: () => editor.chain().focus().toggleBulletList().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatListBulleted, { fontSize: "small" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "orderedList", "aria-label": "ordered list", selected: editor.isActive("orderedList"), onClick: () => editor.chain().focus().toggleOrderedList().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatListNumbered, { fontSize: "small" }) })
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
       mx: 0.5
     } }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.ToggleButtonGroup, { size: "small", "aria-label": "block elements", children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "blockquote", "aria-label": "blockquote", selected: editor.isActive("blockquote"), onClick: () => editor.chain().focus().toggleBlockquote().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatQuote, { fontSize: "small" }) }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.ToggleButton, { value: "codeBlock", "aria-label": "code block", selected: editor.isActive("codeBlock"), onClick: () => editor.chain().focus().toggleCodeBlock().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.Code, { fontSize: "small" }) })
+    /* @__PURE__ */ jsxRuntime.jsxs(material.ToggleButtonGroup, { size: "small", "aria-label": "block elements", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "blockquote", "aria-label": "blockquote", selected: editor.isActive("blockquote"), onClick: () => editor.chain().focus().toggleBlockquote().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatQuote, { fontSize: "small" }) }),
+      /* @__PURE__ */ jsxRuntime.jsx(material.ToggleButton, { value: "codeBlock", "aria-label": "code block", selected: editor.isActive("codeBlock"), onClick: () => editor.chain().focus().toggleCodeBlock().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.Code, { fontSize: "small" }) })
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
       mx: 0.5
     } }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: "Add Link", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { size: "small", onClick: handleLinkClick, color: editor.isActive("link") ? "primary" : "default", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.Link, { fontSize: "small" }) }) }),
-    onImageSelect && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(emotionReactJsxRuntime_browser_esm.Fragment, { children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("input", { type: "file", ref: fileInputRef, onChange: handleFileChange, accept: "image/*", style: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: "Add Link", children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { size: "small", onClick: handleLinkClick, color: editor.isActive("link") ? "primary" : "default", children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.Link, { fontSize: "small" }) }) }),
+    onImageSelect && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx("input", { type: "file", ref: fileInputRef, onChange: handleFileChange, accept: "image/*", style: {
         display: "none"
       } }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: "Insert Image", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { size: "small", onClick: handleImageButtonClick, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.Image, { fontSize: "small" }) }) })
+      /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: "Insert Image", children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { size: "small", onClick: handleImageButtonClick, children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.Image, { fontSize: "small" }) }) })
     ] }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: "Horizontal Rule", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().setHorizontalRule().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.HorizontalRule, { fontSize: "small" }) }) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: "Horizontal Rule", children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().setHorizontalRule().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.HorizontalRule, { fontSize: "small" }) }) }),
+    /* @__PURE__ */ jsxRuntime.jsx(material.Divider, { orientation: "vertical", flexItem: true, sx: {
       mx: 0.5
     } }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: "Clear Formatting", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().clearNodes().unsetAllMarks().run(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.FormatClear, { fontSize: "small" }) }) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+    /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: "Clear Formatting", children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().clearNodes().unsetAllMarks().run(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.FormatClear, { fontSize: "small" }) }) }),
+    /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
       flexGrow: 1
     } }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: "Undo", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("span", { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().undo().run(), disabled: !editor.can().undo(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.Undo, { fontSize: "small" }) }) }) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Tooltip, { title: "Redo", children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx("span", { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().redo().run(), disabled: !editor.can().redo(), children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(iconsMaterial.Redo, { fontSize: "small" }) }) }) })
+    /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: "Undo", children: /* @__PURE__ */ jsxRuntime.jsx("span", { children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().undo().run(), disabled: !editor.can().undo(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.Undo, { fontSize: "small" }) }) }) }),
+    /* @__PURE__ */ jsxRuntime.jsx(material.Tooltip, { title: "Redo", children: /* @__PURE__ */ jsxRuntime.jsx("span", { children: /* @__PURE__ */ jsxRuntime.jsx(material.IconButton, { size: "small", onClick: () => editor.chain().focus().redo().run(), disabled: !editor.can().redo(), children: /* @__PURE__ */ jsxRuntime.jsx(iconsMaterial.Redo, { fontSize: "small" }) }) }) })
   ] });
 };
 exports.MenuBar = MenuBar;

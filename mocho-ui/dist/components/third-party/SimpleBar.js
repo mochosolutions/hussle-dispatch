@@ -1,7 +1,7 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsx } from "@emotion/react/jsx-runtime";
 import SimpleBarReact from "simplebar-react";
 import { Box } from "@mui/material";
-/* empty css                                                        */
+import "simplebar-react/dist/simplebar.min.css";
 const SimpleBar = ({
   children,
   sx,

@@ -1,8 +1,8 @@
-import { jsxs, jsx, Fragment } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
+import { jsxs, Fragment, jsx } from "@emotion/react/jsx-runtime";
 import { Fade, Button, Alert, Grow, Slide } from "@mui/material";
+import MuiSnackbar from "@mui/material/Snackbar";
 import IconButton from "./IconButton.js";
 import { CloseOutlined } from "@ant-design/icons";
-import Snackbar$1 from "../../node_modules/@mui/material/Snackbar/Snackbar.js";
 function TransitionSlideLeft(props) {
   return /* @__PURE__ */ jsx(Slide, { ...props, direction: "left" });
 }
@@ -51,13 +51,13 @@ const Snackbar = ({
     onClose();
   };
   return /* @__PURE__ */ jsxs(Fragment, { children: [
-    variant === "default" && /* @__PURE__ */ jsx(Snackbar$1, { anchorOrigin, open, autoHideDuration, onClose: handleClose, message, TransitionComponent: animation[transition], action: /* @__PURE__ */ jsxs(Fragment, { children: [
+    variant === "default" && /* @__PURE__ */ jsx(MuiSnackbar, { anchorOrigin, open, autoHideDuration, onClose: handleClose, message, TransitionComponent: animation[transition], action: /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(Button, { color: "secondary", size: "small", onClick: handleClose, children: "UNDO" }),
       /* @__PURE__ */ jsx(IconButton, { size: "small", "aria-label": "close", color: "inherit", onClick: handleClose, sx: {
         mt: 0.25
       }, children: /* @__PURE__ */ jsx(CloseOutlined, {}) })
     ] }) }),
-    variant === "alert" && /* @__PURE__ */ jsx(Snackbar$1, { TransitionComponent: animation[transition], anchorOrigin, open, autoHideDuration, onClose: handleClose, children: /* @__PURE__ */ jsx(Alert, { variant: alert.variant, color: alert.color, action: /* @__PURE__ */ jsxs(Fragment, { children: [
+    variant === "alert" && /* @__PURE__ */ jsx(MuiSnackbar, { TransitionComponent: animation[transition], anchorOrigin, open, autoHideDuration, onClose: handleClose, children: /* @__PURE__ */ jsx(Alert, { variant: alert.variant, color: alert.color, action: /* @__PURE__ */ jsxs(Fragment, { children: [
       actionButton !== false && /* @__PURE__ */ jsx(Button, { color: alert.color, size: "small", onClick: handleClose, children: "UNDO" }),
       close !== false && /* @__PURE__ */ jsx(IconButton, { sx: {
         mt: 0.25

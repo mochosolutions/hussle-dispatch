@@ -1,7 +1,6 @@
 import { all } from 'redux-saga/effects';
+import { carrierSagaWatcher } from 'pages/fleet/store/sagas';
 
 export default function* rootSaga() {
-  yield all([
-    // Feature saga watchers will be added here
-  ]);
+  yield all([carrierSagaWatcher()]);
 }

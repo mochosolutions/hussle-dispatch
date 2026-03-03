@@ -1,6 +1,6 @@
-import { jsx, Fragment } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import CircularProgress from "../../node_modules/@mui/material/CircularProgress/CircularProgress.js";
-import styled from "../../node_modules/@mui/material/styles/styled.js";
+import { jsx, Fragment } from "@emotion/react/jsx-runtime";
+import { styled } from "@mui/material/styles";
+import CircularProgress from "@mui/material/CircularProgress";
 const LoaderWrapper = styled("div")(({
   theme
 }) => ({

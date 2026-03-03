@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
+const jsxRuntime = require("@emotion/react/jsx-runtime");
 const material = require("@mui/material");
 function FormSkeleton({
   fields = 5,
@@ -11,55 +11,55 @@ function FormSkeleton({
   fieldSpacing = 3,
   showCard = true
 }) {
-  const content = /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+  const content = /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
     width: "100%",
     padding: showCard ? 3 : 0
   }, role: "status", "aria-live": "polite", "aria-label": "Loading form", children: [
-    showBackButton && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+    showBackButton && /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
       mb: 2
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "rectangular", width: 100, height: 36, sx: {
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "rectangular", width: 100, height: 36, sx: {
       borderRadius: 1
     } }) }),
-    showTitle && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+    showTitle && /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
       mb: 3
-    }, children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "text", width: "40%", height: 40 }) }),
-    /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Stack, { spacing: fieldSpacing, children: [
+    }, children: /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "text", width: "40%", height: 40 }) }),
+    /* @__PURE__ */ jsxRuntime.jsxs(material.Stack, { spacing: fieldSpacing, children: [
       Array.from({
         length: fields
-      }).map((_, index) => /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "text", width: 120, height: 24, sx: {
+      }).map((_, index) => /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "text", width: 120, height: 24, sx: {
           mb: 1
         } }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "rectangular", width: "100%", height: index % 3 === 0 ? 56 : index % 3 === 1 ? 100 : 56, sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "rectangular", width: "100%", height: index % 3 === 0 ? 56 : index % 3 === 1 ? 100 : 56, sx: {
           borderRadius: 1
         } })
       ] }, index)),
-      showRichEditor && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "text", width: 150, height: 24, sx: {
+      showRichEditor && /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "text", width: 150, height: 24, sx: {
           mb: 1
         } }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "rectangular", width: "100%", height: 48, sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "rectangular", width: "100%", height: 48, sx: {
           borderRadius: "4px 4px 0 0",
           mb: 0.5
         } }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "rectangular", width: "100%", height: 200, sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "rectangular", width: "100%", height: 200, sx: {
           borderRadius: "0 0 4px 4px"
         } })
       ] })
     ] }),
-    showActions && /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(emotionReactJsxRuntime_browser_esm.Fragment, { children: [
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Divider, { sx: {
+    showActions && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(material.Divider, { sx: {
         my: 3
       } }),
-      /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsxs(material.Box, { sx: {
+      /* @__PURE__ */ jsxRuntime.jsxs(material.Box, { sx: {
         display: "flex",
         gap: 2,
         justifyContent: "flex-end"
       }, children: [
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "rectangular", width: 100, height: 40, sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "rectangular", width: 100, height: 40, sx: {
           borderRadius: 1
         } }),
-        /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Skeleton, { variant: "rectangular", width: 120, height: 40, sx: {
+        /* @__PURE__ */ jsxRuntime.jsx(material.Skeleton, { variant: "rectangular", width: 120, height: 40, sx: {
           borderRadius: 1
         } })
       ] })
@@ -68,7 +68,7 @@ function FormSkeleton({
   if (!showCard) {
     return content;
   }
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(material.Box, { sx: {
+  return /* @__PURE__ */ jsxRuntime.jsx(material.Box, { sx: {
     backgroundColor: "background.paper",
     borderRadius: 1,
     boxShadow: 1

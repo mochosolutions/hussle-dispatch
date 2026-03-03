@@ -1,5 +1,5 @@
-import { jsxs, jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import { Box, Typography, DialogTitle, DialogContentText, DialogContent, DialogActions, Button, Dialog } from "@mui/material";
+import { jsxs, jsx } from "@emotion/react/jsx-runtime";
+import { Dialog, DialogTitle, Box, Typography, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import { Error, Info, WarningAmber } from "@mui/icons-material";
 const ConfirmDialog = ({
   open,

@@ -1,6 +1,6 @@
 "use strict";
-const styled = require("../node_modules/@mui/material/styles/styled.cjs");
-const ScrollX = styled.default("div")({
+const styles = require("@mui/material/styles");
+const ScrollX = styles.styled("div")({
   width: "100%",
   overflowX: "auto",
   display: "block"

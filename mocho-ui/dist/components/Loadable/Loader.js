@@ -1,6 +1,6 @@
-import { jsx } from "../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.js";
-import LinearProgress from "../../node_modules/@mui/material/LinearProgress/LinearProgress.js";
-import styled from "../../node_modules/@mui/material/styles/styled.js";
+import { jsx } from "@emotion/react/jsx-runtime";
+import { styled } from "@mui/material/styles";
+import LinearProgress from "@mui/material/LinearProgress";
 const LoaderWrapper = styled("div")(({
   theme
 }) => ({

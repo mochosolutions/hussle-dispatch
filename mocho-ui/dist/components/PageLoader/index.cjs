@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const emotionReactJsxRuntime_browser_esm = require("../../node_modules/@emotion/react/jsx-runtime/dist/emotion-react-jsx-runtime.browser.esm.cjs");
-const CircularProgress = require("../../node_modules/@mui/material/CircularProgress/CircularProgress.cjs");
-const styled = require("../../node_modules/@mui/material/styles/styled.cjs");
-const LoaderWrapper = styled.default("div")(({
+const jsxRuntime = require("@emotion/react/jsx-runtime");
+const styles = require("@mui/material/styles");
+const CircularProgress = require("@mui/material/CircularProgress");
+const LoaderWrapper = styles.styled("div")(({
   theme
 }) => ({
   zIndex: 2001,
@@ -21,9 +21,9 @@ const PageLoader = ({
   children
 }) => {
   if (open) {
-    return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(LoaderWrapper, { children: /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(CircularProgress, { color: "primary" }) });
+    return /* @__PURE__ */ jsxRuntime.jsx(LoaderWrapper, { children: /* @__PURE__ */ jsxRuntime.jsx(CircularProgress, { color: "primary" }) });
   }
-  return /* @__PURE__ */ emotionReactJsxRuntime_browser_esm.jsx(emotionReactJsxRuntime_browser_esm.Fragment, { children });
+  return /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, { children });
 };
 exports.PageLoader = PageLoader;
 exports.default = PageLoader;
