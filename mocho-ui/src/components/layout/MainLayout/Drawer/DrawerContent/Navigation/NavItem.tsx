@@ -4,10 +4,10 @@ import {
   ForwardRefExoticComponent,
   RefAttributes,
 } from 'react';
-import {Link, useLocation} from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 // material-ui
-import {useTheme} from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import {
   Avatar,
   Chip,
@@ -21,30 +21,30 @@ import {
 // project import
 import Dot from '../../../../../extended/Dot';
 import useConfig from '../../../../../../hooks/useConfig';
-import {dispatch, useSelector} from '../../../../../../store';
-import {activeItem, openDrawer} from '../../../../../../store/reducers/menu';
+import useLayoutState from '../../../../../../hooks/useLayoutState';
 
 // types
-import {LinkTarget, NavItemType} from '../../../../../../types/menu';
-import {MenuOrientation, ThemeMode} from '../../../../../../types/config';
+import type { LinkTarget, NavItemType } from '../../../../../../types/menu';
+import { MenuOrientation, ThemeMode } from '../../../../../../types/config';
 
 // ==============================|| NAVIGATION - LIST ITEM ||============================== //
 
 interface Props {
   item: NavItemType;
   level: number;
+  openItem: string[];
+  onActiveItem: (itemIds: string[]) => void;
 }
 
-const NavItem = ({item, level}: Props) => {
+const NavItem = ({ item, level, openItem, onActiveItem }: Props) => {
   const theme = useTheme();
 
-  const menu = useSelector((state) => state.menu);
+  const { drawerOpen, onDrawerClose } = useLayoutState();
   const matchDownLg = useMediaQuery(theme.breakpoints.down('lg'));
-  const {drawerOpen, openItem} = menu;
 
   const downLG = useMediaQuery(theme.breakpoints.down('lg'));
 
-  const {menuOrientation} = useConfig();
+  const { menuOrientation } = useConfig();
   let itemTarget: LinkTarget = '_self';
   if (item.target) {
     itemTarget = '_blank';
@@ -58,23 +58,23 @@ const NavItem = ({item, level}: Props) => {
     target?: LinkTarget;
   } = {
     component: forwardRef((props, ref) => (
-      <Link {...props} to={item.url!} target={itemTarget} ref={ref} />
+      <Link {...props} to={item.url ?? ''} target={itemTarget} ref={ref} />
     )),
   };
   if (item?.external) {
-    listItemProps = {component: 'a', href: item.url, target: itemTarget};
+    listItemProps = { component: 'a', href: item.url, target: itemTarget };
   }
 
-  const Icon = item.icon!;
-  const itemIcon = item.icon ? (
-    <Icon style={{fontSize: drawerOpen ? '1rem' : '1.25rem'}} />
+  const Icon = item.icon;
+  const itemIcon = Icon ? (
+    <Icon style={{ fontSize: drawerOpen ? '1rem' : '1.25rem' }} />
   ) : (
     false
   );
 
   const isSelected = openItem.findIndex((id) => id === item.id) > -1;
 
-  const {pathname} = useLocation();
+  const { pathname } = useLocation();
 
   // active menu item on page load
   useEffect(() => {
@@ -82,20 +82,20 @@ const NavItem = ({item, level}: Props) => {
 
     if (pathname && pathname.includes('product-details')) {
       if (item.url && item.url.includes('product-details')) {
-        dispatch(activeItem([item.id]));
+        onActiveItem([item.id]);
       }
     }
 
     if (pathname && pathname.includes('kanban')) {
       if (item.url && item.url.includes('kanban')) {
-        dispatch(activeItem([item.id]));
+        onActiveItem([item.id]);
       }
     }
 
     if (pathname === item.url) {
-      dispatch(activeItem([item.id]));
+      onActiveItem([item.id]);
     }
-  }, [pathname, item.id, item.url, dispatch]);
+  }, [pathname, item.id, item.url, onActiveItem]);
 
   const textColor =
     theme.palette.mode === ThemeMode.DARK ? 'grey.400' : 'text.primary';
@@ -151,7 +151,7 @@ const NavItem = ({item, level}: Props) => {
             }),
           }}
           {...(matchDownLg && {
-            onClick: () => dispatch(openDrawer(false)),
+            onClick: () => onDrawerClose(),
           })}
         >
           {itemIcon && (
@@ -195,7 +195,7 @@ const NavItem = ({item, level}: Props) => {
               primary={
                 <Typography
                   variant="h6"
-                  sx={{color: isSelected ? iconSelectedColor : textColor}}
+                  sx={{ color: isSelected ? iconSelectedColor : textColor }}
                 >
                   {item.title}
                 </Typography>

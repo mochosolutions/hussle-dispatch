@@ -41,54 +41,42 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: [
-        // React ecosystem
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        // MUI ecosystem
-        '@mui/material',
-        '@mui/base',
-        '@mui/icons-material',
-        '@mui/lab',
-        '@mui/system',
-        '@mui/x-date-pickers',
-        // Emotion
-        '@emotion/react',
-        '@emotion/styled',
-        'styled-components',
-        // Redux ecosystem
-        '@reduxjs/toolkit',
-        'react-redux',
-        'redux-saga',
-        'normalizr',
-        // Form libraries
-        'formik',
-        'yup',
-        // Third-party UI
-        'framer-motion',
-        'notistack',
-        // AG Grid
-        'ag-grid-community',
-        'ag-grid-react',
-        '@ag-grid-community/react',
-        // Tiptap
-        '@tiptap/react',
-        '@tiptap/starter-kit',
-        '@tiptap/extension-image',
-        '@tiptap/extension-link',
-        '@tiptap/extension-placeholder',
-        '@tiptap/pm',
-        // Other utilities
-        'date-fns',
-        'dompurify',
-        'lodash',
-        'react-router-dom',
-        'react-dropzone',
-        'simplebar-react',
-        '@ant-design/colors',
-        '@ant-design/icons',
-      ],
+      external: (id) => {
+        // Externalize peer/optional dependencies and all their subpath imports.
+        // Using a function because exact strings (e.g. '@mui/material') don't match
+        // subpath imports (e.g. '@mui/material/styles'), which causes Rollup to
+        // bundle MUI internals and break default-export interop.
+        const patterns = [
+          'react',
+          'react-dom',
+          'react/jsx-runtime',
+          '@mui',
+          '@emotion',
+          'styled-components',
+          '@reduxjs/toolkit',
+          'react-redux',
+          'redux-saga',
+          'normalizr',
+          'formik',
+          'yup',
+          'framer-motion',
+          'notistack',
+          'ag-grid-community',
+          'ag-grid-react',
+          '@ag-grid-community',
+          '@tiptap',
+          'date-fns',
+          'dompurify',
+          'lodash',
+          'react-router-dom',
+          'react-router',
+          'react-dropzone',
+          'simplebar-react',
+          '@ant-design',
+          '@babel/runtime',
+        ];
+        return patterns.some((p) => id === p || id.startsWith(`${p}/`));
+      },
       output: {
         preserveModules: true,
         preserveModulesRoot: 'src',

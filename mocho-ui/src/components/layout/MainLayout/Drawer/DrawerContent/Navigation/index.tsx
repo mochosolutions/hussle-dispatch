@@ -1,47 +1,52 @@
-import {useLayoutEffect, useState} from 'react';
-import {useTheme} from '@mui/material/styles';
-import {Box, Typography, useMediaQuery} from '@mui/material';
+import { useCallback, useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import { Box, Typography, useMediaQuery } from '@mui/material';
 import NavGroup from './NavGroup';
-import {useSelector} from '../../../../../../store';
+import useLayoutState from '../../../../../../hooks/useLayoutState';
 import useConfig from '../../../../../../hooks/useConfig';
-import {HORIZONTAL_MAX_ITEM} from '../../../../../../config';
-import {NavItemType} from '../../../../../../types/menu';
-import {MenuOrientation} from '../../../../../../types/config';
-import menuItem from '../../../../menu-items';
+import { HORIZONTAL_MAX_ITEM } from '../../../../../../config';
+import type { NavItemType } from '../../../../../../types/menu';
+import { MenuOrientation } from '../../../../../../types/config';
 
-const Navigation = () => {
+interface NavigationProps {
+  menuItems: NavItemType[];
+}
+
+const Navigation = ({ menuItems }: NavigationProps) => {
   const theme = useTheme();
 
   const downLG = useMediaQuery(theme.breakpoints.down('lg'));
 
-  const {menuOrientation} = useConfig();
-  const {drawerOpen} = useSelector((state) => state.menu);
+  const { menuOrientation } = useConfig();
+  const { drawerOpen } = useLayoutState();
   const [selectedItems, setSelectedItems] = useState<string | undefined>('');
   const [selectedLevel, setSelectedLevel] = useState<number>(0);
-  const [menuItems, setMenuItems] = useState<{items: NavItemType[]}>({
-    items: [],
-  });
 
-  useLayoutEffect(() => {
-    setMenuItems(menuItem);
-  }, [menuItem]);
+  // Local state for active item and selected group (previously in Redux)
+  const [openItem, setOpenItem] = useState<string[]>(['dashboard']);
+  const [selectedID, setSelectedID] = useState<string | null>(null);
+
+  const handleActiveItem = useCallback((itemIds: string[]) => {
+    setOpenItem(itemIds);
+  }, []);
+
+  const handleActiveID = useCallback((id: string) => {
+    setSelectedID(id);
+  }, []);
 
   const isHorizontal =
     menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
 
   const lastItem = isHorizontal ? HORIZONTAL_MAX_ITEM : null;
-  let lastItemIndex = menuItems.items.length - 1;
+  let lastItemIndex = menuItems.length - 1;
   let remItems: NavItemType[] = [];
-  let lastItemId: string;
+  let lastItemId: string = '';
 
-  //  first it checks menu item is more than giving HORIZONTAL_MAX_ITEM after that get lastItemid by giving horizontal max
-  // item and it sets horizontal menu by giving horizontal max item lastly slice menuItem from array and set into remItems
-
-  if (lastItem && lastItem < menuItems.items.length) {
-    lastItemId = menuItems.items[lastItem - 1].id!;
+  if (lastItem && lastItem < menuItems.length) {
+    lastItemId = menuItems[lastItem - 1].id ?? '';
     lastItemIndex = lastItem - 1;
-    remItems = menuItems.items
-      .slice(lastItem - 1, menuItems.items.length)
+    remItems = menuItems
+      .slice(lastItem - 1, menuItems.length)
       .map((item) => ({
         title: item.title,
         elements: item.children,
@@ -49,7 +54,7 @@ const Navigation = () => {
       }));
   }
 
-  const navGroups = menuItems.items.slice(0, lastItemIndex + 1).map((item) => {
+  const navGroups = menuItems.slice(0, lastItemIndex + 1).map((item) => {
     switch (item.type) {
       case 'group':
         return (
@@ -59,10 +64,14 @@ const Navigation = () => {
             setSelectedLevel={setSelectedLevel}
             selectedLevel={selectedLevel}
             selectedItems={selectedItems}
-            lastItem={lastItem!}
+            lastItem={lastItem ?? 0}
             remItems={remItems}
             lastItemId={lastItemId}
             item={item}
+            openItem={openItem}
+            onActiveItem={handleActiveItem}
+            selectedID={selectedID}
+            onActiveID={handleActiveID}
           />
         );
       default:
@@ -77,8 +86,8 @@ const Navigation = () => {
     <Box
       sx={{
         pt: drawerOpen ? (isHorizontal ? 0 : 2) : 0,
-        '& > ul:first-of-type': {mt: 0},
-        display: isHorizontal ? {xs: 'block', lg: 'flex'} : 'block',
+        '& > ul:first-of-type': { mt: 0 },
+        display: isHorizontal ? { xs: 'block', lg: 'flex' } : 'block',
       }}
     >
       {navGroups}

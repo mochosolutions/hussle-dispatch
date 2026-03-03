@@ -1,13 +1,7 @@
-import { useLayoutConfig } from '../components/layout/LayoutContext';
-import type { CustomizationProps } from '../types/config';
+import { useContext } from 'react';
 
-/**
- * Hook to access theme/layout configuration
- *
- * Must be used within a LayoutProvider
- */
-export function useConfig(): CustomizationProps {
-  return useLayoutConfig();
-}
+import { ConfigContext } from '../contexts/ConfigContext';
+
+const useConfig = () => useContext(ConfigContext);
 
 export default useConfig;

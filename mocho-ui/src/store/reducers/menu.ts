@@ -1,32 +1,53 @@
-/**
- * Menu action creators for layout components
- *
- * These work with the LayoutContext dispatch system
- */
+import { createSlice } from '@reduxjs/toolkit';
 
-/**
- * Action to open/close the drawer
- */
-export function openDrawer(open: boolean) {
-  return { type: 'menu/openDrawer' as const, payload: open };
-}
+import type { MenuProps } from '../../types/menu';
 
-/**
- * Action to set active menu group ID
- */
-export function activeID(id: string | null) {
-  return { type: 'menu/activeID' as const, payload: id };
-}
+const initialState: MenuProps = {
+  openItem: ['dashboard'],
+  openComponent: 'buttons',
+  selectedID: null,
+  drawerOpen: false,
+  componentDrawerOpen: true,
+  menu: {},
+  error: null,
+};
 
-/**
- * Action to set active menu items
- */
-export function activeItem(items: string[]) {
-  return { type: 'menu/activeItem' as const, payload: items };
-}
+const menu = createSlice({
+  name: 'menu',
+  initialState,
+  reducers: {
+    activeItem(state, action) {
+      state.openItem = action.payload.openItem;
+    },
 
-// Export action types for type inference
-export type MenuAction =
-  | ReturnType<typeof openDrawer>
-  | ReturnType<typeof activeID>
-  | ReturnType<typeof activeItem>;
+    activeID(state, action) {
+      state.selectedID = action.payload;
+    },
+
+    activeComponent(state, action) {
+      state.openComponent = action.payload.openComponent;
+    },
+
+    openDrawer(state, action) {
+      state.drawerOpen = action.payload;
+    },
+
+    openComponentDrawer(state, action) {
+      state.componentDrawerOpen = action.payload.componentDrawerOpen;
+    },
+
+    hasError(state, action) {
+      state.error = action.payload;
+    },
+  },
+});
+
+export default menu.reducer;
+
+export const {
+  activeItem,
+  activeComponent,
+  openDrawer,
+  openComponentDrawer,
+  activeID,
+} = menu.actions;

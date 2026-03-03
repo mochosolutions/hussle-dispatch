@@ -1,97 +1,137 @@
-import {useMemo} from 'react';
+import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 
 // material-ui
-import {useTheme} from '@mui/material/styles';
-import {Box, Drawer, useMediaQuery} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { Box, Drawer, useMediaQuery } from '@mui/material';
 
 // project import
 import DrawerHeader from './DrawerHeader';
 import DrawerContent from './DrawerContent';
 import MiniDrawerStyled from './MiniDrawerStyled';
 
-import {DRAWER_WIDTH} from '../../../../config';
-import {useDispatch, useSelector} from '../../../../store';
-import {openDrawer} from '../../../../store/reducers/menu';
+import { DRAWER_WIDTH } from '../../../../config';
+import useLayoutState from '../../../../hooks/useLayoutState';
+
+// types
+import type { NavItemType } from '../../../../types/menu';
 
 // ==============================|| MAIN LAYOUT - DRAWER ||============================== //
 
-interface Props {
-  window?: () => Window;
+export interface LayoutDrawerProps {
+	menuItems?: NavItemType[];
+	logo?: ReactNode;
+	logoIcon?: ReactNode;
+	header?: ReactNode;
+	footer?: ReactNode;
+	window?: () => Window;
+	navStyles?: Record<string, unknown>;
+	paperStyles?: Record<string, unknown>;
+	mobilePaperStyles?: Record<string, unknown>;
+	headerStyles?: Record<string, unknown>;
 }
 
-const MainDrawer = ({window}: Props) => {
-  const theme = useTheme();
-  const dispatch = useDispatch();
-  const matchDownMD = useMediaQuery(theme.breakpoints.down('lg'));
+const MainDrawer = ({
+	menuItems,
+	logo,
+	logoIcon,
+	header,
+	footer,
+	window: windowProp,
+	navStyles,
+	paperStyles,
+	mobilePaperStyles,
+	headerStyles,
+}: LayoutDrawerProps) => {
+	const theme = useTheme();
+	const matchDownMD = useMediaQuery(theme.breakpoints.down('lg'));
 
-  const menu = useSelector((state) => state.menu);
-  const {drawerOpen} = menu;
+	const { drawerOpen, onDrawerClose } = useLayoutState();
 
-  console.log("Drawer render", drawerOpen);
+	// responsive drawer container
+	const container =
+		windowProp !== undefined ? () => windowProp().document.body : undefined;
 
-  // responsive drawer container
-  const container =
-    window !== undefined ? () => window().document.body : undefined;
+	// header content
+	const drawerContent = useMemo(
+		() => <DrawerContent menuItems={menuItems} />,
+		[menuItems],
+	);
+	const drawerHeader = useMemo(
+		() =>
+			header ?? (
+				<DrawerHeader
+					open={drawerOpen}
+					logo={logo}
+					logoIcon={logoIcon}
+					styles={headerStyles}
+				/>
+			),
+		[drawerOpen, header, logo, logoIcon, headerStyles],
+	);
 
-  // header content
-  const drawerContent = useMemo(() => <DrawerContent />, []);
-  const drawerHeader = useMemo(
-    () => <DrawerHeader open={drawerOpen} />,
-    [drawerOpen],
-  );
+	// Desktop: Wrap in Box with nav role
+	if (!matchDownMD) {
+		return (
+			<Box
+				component='nav'
+				sx={{
+					flexShrink: { md: 0 },
+					zIndex: 1200,
+					...(navStyles ?? {}),
+				}}
+				aria-label='mailbox folders'
+			>
+				<MiniDrawerStyled
+					variant='permanent'
+					open={drawerOpen}
+					PaperProps={paperStyles ? { sx: paperStyles } : undefined}
+				>
+					{drawerHeader}
+					{drawerContent}
+					{footer}
+				</MiniDrawerStyled>
+			</Box>
+		);
+	}
 
-  // Desktop: Wrap in Box with nav role
-  if (!matchDownMD) {
-    return (
-      <Box
-        component="nav"
-        sx={{flexShrink: {md: 0}, zIndex: 1200}}
-        aria-label="mailbox folders"
-      >
-        <MiniDrawerStyled variant="permanent" open={drawerOpen}>
-          {drawerHeader}
-          {drawerContent}
-        </MiniDrawerStyled>
-      </Box>
-    );
-  }
-
-  console.log("Rendering mobile drawer, open:", drawerOpen);
-
-  // Mobile: Render Drawer directly without Box wrapper to avoid stacking context issues
-  return (
-    <Drawer
-      container={container}
-      variant="temporary"
-      open={drawerOpen}
-      onClose={() => {
-        dispatch(openDrawer(false));
-      }}
-      ModalProps={{
-        keepMounted: true,
-        slotProps: {
-          backdrop: {
-            sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            }
-          }
-        }
-      }}
-      sx={{
-        display: {xs: 'block', lg: 'none'},
-        '& .MuiDrawer-paper': {
-          boxSizing: 'border-box',
-          width: DRAWER_WIDTH,
-          borderRight: `1px solid ${theme.palette.divider}`,
-          backgroundImage: 'none',
-          boxShadow: 'inherit',
-        },
-      }}
-    >
-      {drawerHeader}
-      {drawerContent}
-    </Drawer>
-  );
+	// Mobile: Render Drawer directly without Box wrapper to avoid stacking context issues
+	return (
+		<Drawer
+			container={container}
+			variant='temporary'
+			open={drawerOpen}
+			onClose={onDrawerClose}
+			ModalProps={{
+				keepMounted: true,
+				slotProps: {
+					backdrop: {
+						sx: {
+							backgroundColor: 'rgba(0, 0, 0, 0.5)',
+						},
+					},
+				},
+			}}
+			sx={{
+				display: { xs: 'block', lg: 'none' },
+			}}
+			PaperProps={{
+				sx: {
+					boxSizing: 'border-box',
+					width: DRAWER_WIDTH,
+					borderRight: `1px solid ${theme.palette.divider}`,
+					backgroundImage: 'none',
+					boxShadow: 'inherit',
+					...(paperStyles ?? {}),
+					...(mobilePaperStyles ?? {}),
+				},
+			}}
+		>
+			{drawerHeader}
+			{drawerContent}
+			{footer}
+		</Drawer>
+	);
 };
 
 export default MainDrawer;

@@ -14,6 +14,9 @@ export { ConfirmPasswordField } from './ConfirmPasswordField';
 export { OTPField } from './OTPField';
 export { CheckboxField } from './CheckboxField';
 export { SelectField } from './SelectField';
+export { TypeaheadField } from './TypeaheadField';
+export { DateField } from './DateField';
+export { TimeField } from './TimeField';
 
 // Extended input components
 export { CharCounterField } from './CharCounterField';

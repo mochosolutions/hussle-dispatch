@@ -1,8 +1,8 @@
-import {Fragment, useEffect, useState} from 'react';
-import {useLocation} from 'react-router';
+import { Fragment, useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 
 // material-ui
-import {useTheme, styled} from '@mui/material/styles';
+import { useTheme, styled } from '@mui/material/styles';
 import {
   Box,
   ClickAwayListener,
@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 
 // third-party
-import {FormattedMessage} from '../../../../../third-party/FormattedMessage';
+import { FormattedMessage } from '../../../../../third-party/FormattedMessage';
 
 // project import
 import NavItem from './NavItem';
@@ -26,15 +26,14 @@ import SimpleBar from '../../../../../third-party/SimpleBar';
 import Transitions from '../../../../../extended/Transitions';
 
 import useConfig from '../../../../../../hooks/useConfig';
-import {dispatch, useSelector} from '../../../../../../store';
-import {activeID} from '../../../../../../store/reducers/menu';
+import useLayoutState from '../../../../../../hooks/useLayoutState';
 
 // assets
-import {DownOutlined, RightOutlined} from '@ant-design/icons';
+import { DownOutlined, RightOutlined } from '@ant-design/icons';
 
 // types
-import {NavItemType} from '../../../../../../types/menu';
-import {MenuOrientation, ThemeMode} from '../../../../../../types/config';
+import type { NavItemType } from '../../../../../../types/menu';
+import { MenuOrientation, ThemeMode } from '../../../../../../types/config';
 
 // ==============================|| NAVIGATION - LIST GROUP ||============================== //
 
@@ -47,6 +46,10 @@ interface Props {
   selectedItems: string | undefined;
   setSelectedLevel: React.Dispatch<React.SetStateAction<number>>;
   selectedLevel: number;
+  openItem: string[];
+  onActiveItem: (itemIds: string[]) => void;
+  selectedID: string | null;
+  onActiveID: (id: string) => void;
 }
 
 type VirtualElement = {
@@ -54,7 +57,7 @@ type VirtualElement = {
   contextElement?: Element;
 };
 
-const PopperStyled = styled(Popper)(({theme}) => ({
+const PopperStyled = styled(Popper)(({ theme }) => ({
   overflow: 'visible',
   zIndex: 1202,
   minWidth: 180,
@@ -83,13 +86,16 @@ const NavGroup = ({
   selectedItems,
   setSelectedLevel,
   selectedLevel,
+  openItem,
+  onActiveItem,
+  selectedID,
+  onActiveID,
 }: Props) => {
   const theme = useTheme();
-  const {pathname} = useLocation();
+  const { pathname } = useLocation();
 
-  const {menuOrientation} = useConfig();
-  const menu = useSelector((state) => state.menu);
-  const {drawerOpen, selectedID} = menu;
+  const { menuOrientation } = useConfig();
+  const { drawerOpen } = useLayoutState();
 
   const downLG = useMediaQuery(theme.breakpoints.down('lg'));
 
@@ -103,8 +109,10 @@ const NavGroup = ({
   useEffect(() => {
     if (lastItem) {
       if (item.id === lastItemId) {
-        const localItem: any = {...item};
-        const elements = remItems.map((ele: NavItemType) => ele.elements);
+        const localItem: NavItemType = { ...item };
+        const elements = remItems
+          .map((ele: NavItemType) => ele.elements)
+          .filter((el): el is NavItemType[] => Array.isArray(el));
         localItem.children = elements.flat(1);
         setCurrentItem(localItem);
       } else {
@@ -117,10 +125,10 @@ const NavGroup = ({
   const checkOpenForParent = (child: NavItemType[], id: string) => {
     child.forEach((ele: NavItemType) => {
       if (ele.children?.length) {
-        checkOpenForParent(ele.children, currentItem.id!);
+        checkOpenForParent(ele.children, currentItem.id ?? '');
       }
       if (ele.url === pathname) {
-        dispatch(activeID(id));
+        onActiveID(id);
       }
     });
   };
@@ -128,10 +136,10 @@ const NavGroup = ({
     const childrens = data.children ? data.children : [];
     childrens.forEach((itemCheck: NavItemType) => {
       if (itemCheck.children?.length) {
-        checkOpenForParent(itemCheck.children, currentItem.id!);
+        checkOpenForParent(itemCheck.children, currentItem.id ?? '');
       }
       if (itemCheck.url === pathname) {
-        dispatch(activeID(currentItem.id!));
+        onActiveID(currentItem.id ?? '');
       }
     });
   };
@@ -186,11 +194,21 @@ const NavGroup = ({
             selectedLevel={selectedLevel}
             selectedItems={selectedItems}
             level={1}
-            parentId={currentItem.id!}
+            parentId={currentItem.id ?? ''}
+            openItem={openItem}
+            onActiveItem={onActiveItem}
           />
         );
       case 'item':
-        return <NavItem key={menuItem.id} item={menuItem} level={1} />;
+        return (
+          <NavItem
+            key={menuItem.id}
+            item={menuItem}
+            level={1}
+            openItem={openItem}
+            onActiveItem={onActiveItem}
+          />
+        );
       default:
         return (
           <Typography
@@ -211,31 +229,41 @@ const NavGroup = ({
   const moreItems = remItems.map((itemRem: NavItemType, i) => (
     <Fragment key={i}>
       {itemRem.title && (
-        <Typography variant="caption" sx={{pl: 2}}>
+        <Typography variant="caption" sx={{ pl: 2 }}>
           {itemRem.title}
         </Typography>
       )}
-      {itemRem?.elements?.map((menu) => {
-        switch (menu.type) {
+      {itemRem?.elements?.map((menuEl) => {
+        switch (menuEl.type) {
           case 'collapse':
             return (
               <NavCollapse
-                key={menu.id}
-                menu={menu}
+                key={menuEl.id}
+                menu={menuEl}
                 level={1}
-                parentId={currentItem.id!}
+                parentId={currentItem.id ?? ''}
                 setSelectedItems={setSelectedItems}
                 setSelectedLevel={setSelectedLevel}
                 selectedLevel={selectedLevel}
                 selectedItems={selectedItems}
+                openItem={openItem}
+                onActiveItem={onActiveItem}
               />
             );
           case 'item':
-            return <NavItem key={menu.id} item={menu} level={1} />;
+            return (
+              <NavItem
+                key={menuEl.id}
+                item={menuEl}
+                level={1}
+                openItem={openItem}
+                onActiveItem={onActiveItem}
+              />
+            );
           default:
             return (
               <Typography
-                key={menu.id}
+                key={menuEl.id}
                 variant="h6"
                 color="error"
                 align="center"
@@ -249,26 +277,36 @@ const NavGroup = ({
   ));
 
   // menu list collapse & items
-  const items = currentItem.children?.map((menu) => {
-    switch (menu.type) {
+  const items = currentItem.children?.map((menuChild) => {
+    switch (menuChild.type) {
       case 'collapse':
         return (
           <NavCollapse
-            key={menu.id}
-            menu={menu}
+            key={menuChild.id}
+            menu={menuChild}
             level={1}
-            parentId={currentItem.id!}
+            parentId={currentItem.id ?? ''}
             setSelectedItems={setSelectedItems}
             setSelectedLevel={setSelectedLevel}
             selectedLevel={selectedLevel}
             selectedItems={selectedItems}
+            openItem={openItem}
+            onActiveItem={onActiveItem}
           />
         );
       case 'item':
-        return <NavItem key={menu.id} item={menu} level={1} />;
+        return (
+          <NavItem
+            key={menuChild.id}
+            item={menuChild}
+            level={1}
+            openItem={openItem}
+            onActiveItem={onActiveItem}
+          />
+        );
       default:
         return (
-          <Typography key={menu.id} variant="h6" color="error" align="center">
+          <Typography key={menuChild.id} variant="h6" color="error" align="center">
             Menu Items Error
           </Typography>
         );
@@ -284,7 +322,7 @@ const NavGroup = ({
           subheader={
             item.title &&
             drawerOpen && (
-              <Box sx={{pl: 3, mb: 1.5}}>
+              <Box sx={{ pl: 3, mb: 1.5 }}>
                 <Typography
                   variant="subtitle2"
                   color={
@@ -303,7 +341,7 @@ const NavGroup = ({
               </Box>
             )
           }
-          sx={{mt: drawerOpen && item.title ? 1.5 : 0, py: 0, zIndex: 0}}
+          sx={{ mt: drawerOpen && item.title ? 1.5 : 0, py: 0, zIndex: 0 }}
         >
           {navCollapse}
         </List>
@@ -328,16 +366,16 @@ const NavGroup = ({
             aria-describedby={popperId}
           >
             {itemIcon && (
-              <ListItemIcon sx={{minWidth: 28}}>
+              <ListItemIcon sx={{ minWidth: 28 }}>
                 {currentItem.id === lastItemId ? (
-                  <DownOutlined style={{fontSize: 20, stroke: '1.5'}} />
+                  <DownOutlined style={{ fontSize: 20, stroke: '1.5' }} />
                 ) : (
                   itemIcon
                 )}
               </ListItemIcon>
             )}
             <ListItemText
-              sx={{mr: 1}}
+              sx={{ mr: 1 }}
               primary={
                 <Typography
                   variant="body1"
@@ -356,9 +394,9 @@ const NavGroup = ({
               }
             />
             {openMini ? (
-              <DownOutlined style={{fontSize: 16, stroke: '1.5'}} />
+              <DownOutlined style={{ fontSize: 16, stroke: '1.5' }} />
             ) : (
-              <RightOutlined style={{fontSize: 16, stroke: '1.5'}} />
+              <RightOutlined style={{ fontSize: 16, stroke: '1.5' }} />
             )}
             {anchorEl && (
               <PopperStyled
@@ -370,7 +408,7 @@ const NavGroup = ({
                   zIndex: 2001,
                 }}
               >
-                {({TransitionProps}) => (
+                {({ TransitionProps }) => (
                   <Transitions in={openMini} {...TransitionProps}>
                     <Paper
                       sx={{

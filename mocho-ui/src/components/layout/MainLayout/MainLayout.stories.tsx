@@ -1,33 +1,46 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Box, Typography, Paper, Grid, Card, CardContent, Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { LayoutProvider } from '../LayoutContext';
+import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { LayoutStateProvider } from '../../../contexts/LayoutStateContext';
 import MainLayout from './index';
+import LayoutShell from './LayoutShell';
+import MainContent from './MainContent';
+import Header from './Header';
+import Drawer from './Drawer';
+import Footer from './Footer';
+import Profile from './Header/HeaderContent/Profile';
+import type { NavItemType } from '../../../types/menu';
 
 // Sample menu items for the layout
-const sampleMenuItems = [
+const sampleMenuItems: NavItemType[] = [
   {
-    id: 'dashboard',
-    title: 'Dashboard',
-    type: 'item' as const,
-    url: '/',
-    icon: undefined,
-  },
-  {
-    id: 'users',
-    title: 'Users',
-    type: 'item' as const,
-    url: '/users',
-    icon: undefined,
-  },
-  {
-    id: 'settings',
-    title: 'Settings',
-    type: 'item' as const,
-    url: '/settings',
-    icon: undefined,
+    id: 'nav',
+    title: 'Navigation',
+    type: 'group',
+    children: [
+      {
+        id: 'dashboard',
+        title: 'Dashboard',
+        type: 'item',
+        url: '/',
+      },
+      {
+        id: 'users',
+        title: 'Users',
+        type: 'item',
+        url: '/users',
+      },
+      {
+        id: 'settings',
+        title: 'Settings',
+        type: 'item',
+        url: '/settings',
+      },
+    ],
   },
 ];
+
+const sampleUser = { name: 'John Doe', organizationName: 'Acme Corp' };
 
 // Dashboard content
 const DashboardContent = () => (
@@ -111,11 +124,9 @@ const MiniDrawerContent = () => (
  * - Footer
  *
  * It integrates with:
- * - LayoutContext for menu state and configuration
- * - Redux (via LayoutContext hooks) for drawer state
+ * - LayoutStateContext for drawer state
+ * - ConfigContext for theme configuration
  * - React Router for navigation
- *
- * **Note:** This layout requires LayoutProvider to be wrapped around it.
  */
 const meta: Meta<typeof MainLayout> = {
   title: 'Components/Layouts/MainLayout',
@@ -137,93 +148,117 @@ type Story = StoryObj<typeof MainLayout>;
 export const Default: Story = {
   name: 'Default Dashboard',
   render: () => (
-    <LayoutProvider
-      menuItems={sampleMenuItems}
-      user={{
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'Admin',
-      }}
-      onLogout={() => console.log('Logout clicked')}
-    >
-      <MemoryRouter>
-        <Routes>
-          <Route path="*" element={<MainLayout />}>
-            <Route index element={<DashboardContent />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </LayoutProvider>
+    <MemoryRouter>
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <MainLayout
+              menuItems={sampleMenuItems}
+              user={sampleUser}
+              onLogout={() => {}}
+            />
+          }
+        >
+          <Route index element={<DashboardContent />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>
   ),
 };
 
 export const WithDataTable: Story = {
   name: 'With Data Table',
   render: () => (
-    <LayoutProvider
-      menuItems={sampleMenuItems}
-      user={{
-        id: '1',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        role: 'Manager',
-      }}
-    >
-      <MemoryRouter>
-        <Routes>
-          <Route path="*" element={<MainLayout />}>
-            <Route index element={<DataTableContent />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </LayoutProvider>
-  ),
-};
-
-export const LoadingState: Story = {
-  name: 'Loading State',
-  render: () => (
-    <LayoutProvider
-      menuItems={sampleMenuItems}
-      user={{
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-      }}
-      isLoading={true}
-      loadingMessage="Switching organization..."
-    >
-      <MemoryRouter>
-        <Routes>
-          <Route path="*" element={<MainLayout />}>
-            <Route index element={<div>This content won't show</div>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </LayoutProvider>
+    <MemoryRouter>
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <MainLayout
+              menuItems={sampleMenuItems}
+              user={{ name: 'Jane Smith', organizationName: 'Acme Corp' }}
+            />
+          }
+        >
+          <Route index element={<DataTableContent />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>
   ),
 };
 
 export const MiniDrawerMode: Story = {
   name: 'Mini Drawer (Collapsed)',
   render: () => (
-    <LayoutProvider
-      menuItems={sampleMenuItems}
-      user={{
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-      }}
-      initialDrawerOpen={false}
-    >
-      <MemoryRouter>
-        <Routes>
-          <Route path="*" element={<MainLayout />}>
-            <Route index element={<MiniDrawerContent />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </LayoutProvider>
+    <MemoryRouter>
+      <Routes>
+        <Route
+          path="*"
+          element={<MainLayout menuItems={sampleMenuItems} user={sampleUser} />}
+        >
+          <Route index element={<MiniDrawerContent />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>
+  ),
+};
+
+// Composable layout using the individual building-block components
+const CustomComposableLayout = () => (
+  <LayoutStateProvider>
+    <LayoutShell>
+      <Header>
+        <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+          <Profile user={sampleUser} />
+        </div>
+      </Header>
+      <Drawer menuItems={sampleMenuItems} />
+      <MainContent drawerWidth={300} miniDrawerWidth={80}>
+        <Outlet />
+        <Footer />
+      </MainContent>
+    </LayoutShell>
+  </LayoutStateProvider>
+);
+
+export const ComposableLayout: Story = {
+  name: 'Custom Composable Layout',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Demonstrates composing a custom layout from individual building-block components. Each piece (Header, Drawer, MainContent, Footer) can be used independently with custom props.',
+      },
+      source: {
+        type: 'code',
+        code: `import { LayoutStateProvider, LayoutShell, LayoutHeader, LayoutDrawer, MainContent, LayoutFooter, Profile } from '@mocho/ui/components';
+import { Outlet } from 'react-router-dom';
+
+const CustomLayout = () => (
+  <LayoutStateProvider>
+    <LayoutShell>
+      <LayoutHeader>
+        <Profile user={user} onLogout={handleLogout} />
+      </LayoutHeader>
+      <LayoutDrawer menuItems={menuItems} />
+      <MainContent drawerWidth={300} miniDrawerWidth={80}>
+        <Outlet />
+        <LayoutFooter />
+      </MainContent>
+    </LayoutShell>
+  </LayoutStateProvider>
+);`,
+        language: 'tsx',
+      },
+    },
+  },
+  render: () => (
+    <MemoryRouter>
+      <Routes>
+        <Route path="*" element={<CustomComposableLayout />}>
+          <Route index element={<DashboardContent />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>
   ),
 };

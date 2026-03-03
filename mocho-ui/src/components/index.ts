@@ -2,8 +2,13 @@
 export { default as MainCard } from './MainCard';
 
 // DataGrid utilities
-export { ActionsCell, createActionsCell, createStandardCrudActionsConfig } from './DataGrid';
+export {
+	ActionsCell,
+	createActionsCell,
+	createStandardCrudActionsConfig,
+} from './DataGrid';
 export type { ActionsCellConfig, ActionsCellProps } from './DataGrid';
+export { default as NewDataGrid } from './NewDataGrid';
 
 // Feedback & States
 export { default as EmptyState } from './EmptyState/EmptyState';
@@ -35,6 +40,34 @@ export { default as ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';
 export { default as ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 export { default as DynamicForm } from './DynamicForm';
+export {
+	BaseFieldWrapper,
+	EmailField,
+	TextField,
+	PasswordField,
+	PasswordFieldWithStrength,
+	PasswordFieldWithChecklist,
+	ConfirmPasswordField,
+	OTPField,
+	CheckboxField,
+	SelectField,
+	TypeaheadField,
+	DateField,
+	TimeField,
+	CharCounterField,
+	MultiSelectChipField,
+	DateTimePickerField,
+	ImageUploadField,
+	DocumentImageUploadField,
+	DeferredImageUploadField,
+	RichTextEditorField,
+	SubmitButton,
+	SecondaryButton,
+	FormLink,
+	TermsNotice,
+	FormError,
+	HelperText,
+} from './form-fields';
 
 // Layout Components
 export { default as Loadable } from './Loadable';
@@ -58,21 +91,29 @@ export type { LogoProps } from './Logo';
 export { PageWrapper } from './PageWrapper';
 export { PageHeader } from './PageHeader';
 
-// Layout Context
-export {
-  LayoutProvider,
-  useLayout,
-  useMenu,
-  useLayoutConfig,
-} from './layout/LayoutContext';
-export type {
-  LayoutContextValue,
-  LayoutProviderProps,
-  MenuState,
-} from './layout/LayoutContext';
-
 // Layout Components
 export { default as MainLayout } from './layout/MainLayout';
+export type { MainLayoutProps } from './layout/MainLayout';
 export { default as CommonLayout } from './layout/CommonLayout';
 export { default as LandingPageLayout } from './layout/LandingPageLayout';
 export { default as ProfileSetupLayout } from './layout/ProfileSetupLayout';
+
+// Layout State
+export { LayoutStateProvider } from '../contexts/LayoutStateContext';
+export type { LayoutStateProviderProps } from '../contexts/LayoutStateContext';
+
+// Composable Layout Building Blocks
+export { default as LayoutHeader } from './layout/MainLayout/Header';
+export type { LayoutHeaderProps } from './layout/MainLayout/Header';
+export { default as LayoutDrawer } from './layout/MainLayout/Drawer';
+export type { LayoutDrawerProps } from './layout/MainLayout/Drawer';
+export { default as LayoutFooter } from './layout/MainLayout/Footer';
+export type { LayoutFooterProps } from './layout/MainLayout/Footer';
+export { default as MainContent } from './layout/MainLayout/MainContent';
+export type { MainContentProps } from './layout/MainLayout/MainContent';
+export { default as LayoutShell } from './layout/MainLayout/LayoutShell';
+export type { LayoutShellProps } from './layout/MainLayout/LayoutShell';
+
+// Layout sub-components
+export { default as Profile } from './layout/MainLayout/Header/HeaderContent/Profile';
+export type { ProfileProps } from './layout/MainLayout/Header/HeaderContent/Profile';

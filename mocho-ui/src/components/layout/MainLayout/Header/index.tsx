@@ -1,40 +1,51 @@
-import {ReactNode, useMemo} from 'react';
+import type { ReactNode } from 'react';
 
 // material-ui
-import {useTheme} from '@mui/material/styles';
-import {AppBar, Toolbar, useMediaQuery, AppBarProps} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { AppBar, Toolbar, useMediaQuery } from '@mui/material';
+import type { AppBarProps } from '@mui/material';
 
 // project import
 import AppBarStyled from './AppBarStyled';
-import HeaderContent from './HeaderContent';
+import Profile from './HeaderContent/Profile';
 import IconButton from '../../../extended/IconButton';
 
 import useConfig from '../../../../hooks/useConfig';
-import {useDispatch, useSelector} from '../../../../store';
-import {openDrawer} from '../../../../store/reducers/menu';
+import useLayoutState from '../../../../hooks/useLayoutState';
 
 // assets
-import {MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 
 // types
-import {MenuOrientation, ThemeMode} from '../../../../types/config';
+import { MenuOrientation, ThemeMode } from '../../../../types/config';
 
 // ==============================|| MAIN LAYOUT - HEADER ||============================== //
 
-const Header = () => {
-  const theme = useTheme();
-  const dispatch = useDispatch();
-  const downLG = useMediaQuery(theme.breakpoints.down('lg'));
-  const {menuOrientation} = useConfig();
+export interface LayoutHeaderProps {
+  children?: ReactNode;
+}
 
-  const menu = useSelector((state) => state.menu);
-  const {drawerOpen} = menu;
+const Header = ({ children }: LayoutHeaderProps) => {
+  const theme = useTheme();
+  const downLG = useMediaQuery(theme.breakpoints.down('lg'));
+  const { menuOrientation } = useConfig();
+
+  const { drawerOpen, onDrawerToggle } = useLayoutState();
 
   const isHorizontal =
     menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
 
-  // header content
-  const headerContent = useMemo(() => <HeaderContent />, []);
+  const headerContent = children ?? (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        marginLeft: 'auto',
+      }}
+    >
+      <Profile />
+    </div>
+  );
 
   const iconBackColorOpen =
     theme.palette.mode === ThemeMode.DARK ? 'grey.200' : 'grey.300';
@@ -47,14 +58,14 @@ const Header = () => {
       {!isHorizontal ? (
         <IconButton
           aria-label="open drawer"
-          onClick={() => dispatch(openDrawer(!drawerOpen))}
+          onClick={onDrawerToggle}
           edge="start"
           color="secondary"
           variant="light"
           sx={{
             color: 'text.primary',
             bgcolor: drawerOpen ? iconBackColorOpen : iconBackColor,
-            ml: {xs: 0, lg: -2},
+            ml: { xs: 0, lg: -2 },
           }}
         >
           {!drawerOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -76,7 +87,7 @@ const Header = () => {
         ? '100%'
         : drawerOpen
           ? 'calc(100% - 260px)'
-          : {xs: '100%', lg: 'calc(100% - 60px)'},
+          : { xs: '100%', lg: 'calc(100% - 60px)' },
     },
   };
 

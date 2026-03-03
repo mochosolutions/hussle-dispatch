@@ -63,3 +63,5 @@ export {
 
 // Contexts
 export { ConfigContext, ConfigProvider } from './contexts/ConfigContext';
+export { LayoutStateProvider } from './contexts/LayoutStateContext';
+export type { LayoutStateContextValue, LayoutStateProviderProps } from './contexts/LayoutStateContext';

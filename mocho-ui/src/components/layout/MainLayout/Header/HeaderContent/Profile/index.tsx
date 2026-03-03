@@ -1,16 +1,16 @@
 import { useRef, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import {
-	Box,
-	ButtonBase,
-	CardContent,
-	ClickAwayListener,
-	Grid,
-	Paper,
-	Popper,
-	Stack,
-	Tooltip,
-	Typography,
+  Box,
+  ButtonBase,
+  CardContent,
+  ClickAwayListener,
+  Grid,
+  Paper,
+  Popper,
+  Stack,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import { LogoutOutlined } from '@ant-design/icons';
 
@@ -18,199 +18,178 @@ import Avatar from '../../../../../extended/Avatar';
 import MainCard from '../../../../../MainCard';
 import Transitions from '../../../../../extended/Transitions';
 import IconButton from '../../../../../extended/IconButton';
-import { useLayout } from '../../../../LayoutContext';
 
 import { ThemeMode } from '../../../../../../types/config';
 
-const Profile = () => {
-	const theme = useTheme();
-	const { user, onLogout } = useLayout();
+export interface ProfileProps {
+  user?: { name: string; organizationName?: string; avatar?: string };
+  onLogout?: () => void;
+}
 
-	// Derive user display values from context
-	const userFullName = user?.name || 'User';
-	const currentOrgName = user?.organizationName || 'No active organization';
+const Profile = ({ user, onLogout }: ProfileProps) => {
+  const theme = useTheme();
 
-	const handleLogout = async () => {
-		if (onLogout) {
-			onLogout();
-		}
-	};
+  const userFullName = user?.name ?? 'User';
+  const currentOrgName = user?.organizationName ?? 'No active organization';
 
-	const anchorRef = useRef<any>(null);
-	const [open, setOpen] = useState(false);
-	const handleToggle = () => {
-		setOpen((prevOpen) => !prevOpen);
-	};
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+  };
 
-	const handleClose = (event: MouseEvent | TouchEvent) => {
-		if (anchorRef.current && anchorRef.current.contains(event.target)) {
-			return;
-		}
-		setOpen(false);
-	};
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const handleToggle = () => {
+    setOpen((prevOpen) => !prevOpen);
+  };
 
-	const iconBackColorOpen =
-		theme.palette.mode === ThemeMode.DARK ? 'grey.200' : 'grey.300';
+  const handleClose = (event: MouseEvent | TouchEvent) => {
+    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
+      return;
+    }
+    setOpen(false);
+  };
 
-	return (
-		<Box sx={{ flexShrink: 0, ml: 0.75 }}>
-			<ButtonBase
-				sx={{
-					p: 0.25,
-					bgcolor: open ? iconBackColorOpen : 'transparent',
-					borderRadius: 1,
-					'&:hover': {
-						bgcolor:
-							theme.palette.mode === ThemeMode.DARK
-								? 'secondary.light'
-								: 'secondary.lighter',
-					},
-					'&:focus-visible': {
-						outline: `2px solid ${theme.palette.secondary.dark}`,
-						outlineOffset: 2,
-					},
-				}}
-				aria-label='open profile'
-				ref={anchorRef}
-				aria-controls={open ? 'profile-grow' : undefined}
-				aria-haspopup='true'
-				onClick={handleToggle}
-			>
-				<Stack direction='row' spacing={2} alignItems='center' sx={{ p: 0.5 }}>
-					<Typography variant='subtitle1' textTransform='capitalize'>
-						{userFullName}
-					</Typography>
-				</Stack>
-			</ButtonBase>
-			<Popper
-				placement='bottom-end'
-				open={open}
-				anchorEl={anchorRef.current}
-				role={undefined}
-				transition
-				disablePortal
-				popperOptions={{
-					modifiers: [
-						{
-							name: 'offset',
-							options: {
-								offset: [0, 9],
-							},
-						},
-					],
-				}}
-			>
-				{({ TransitionProps }) => (
-					<Transitions
-						type='grow'
-						position='top-right'
-						in={open}
-						{...TransitionProps}
-					>
-						<Paper
-							sx={{
-								display: 'flex',
-								boxShadow: theme.customShadows.z1,
-								width: '100%',
-								minWidth: 240,
-								maxWidth: 290,
-								[theme.breakpoints.down('md')]: {
-									maxWidth: 250,
-								},
-							}}
-						>
-							<ClickAwayListener onClickAway={handleClose}>
-								<MainCard
-									elevation={0}
-									border={false}
-									content={false}
-									style={{
-										// border: "1px solid red",
-										width: '100%',
-										height: '100%',
-									}}
-								>
-									<CardContent
-									// sx={{px: 2.5, pt: 3}}
-									>
-										<Grid
-											container
-											justifyContent='space-between'
-											alignItems='center'
-										>
-											<Grid item>
-												<Stack
-													direction='row'
-													spacing={1.25}
-													alignItems='center'
-												>
-													<Avatar
-														alt='profile user'
-														// src={avatar1}
-														sx={{ width: 32, height: 32 }}
-													/>
-													<Stack>
-														<Typography variant='h6' textTransform='capitalize'>
-															{userFullName}
-														</Typography>
-														<Typography
-															variant='body2'
-															color='textSecondary'
-														></Typography>
-													</Stack>
-												</Stack>
-											</Grid>
-											<Grid item>
-												<Tooltip title='Logout'>
-													<IconButton
-														size='large'
-														sx={{ color: 'text.primary' }}
-														onClick={handleLogout}
-													>
-														<LogoutOutlined />
-													</IconButton>
-												</Tooltip>
-											</Grid>
-										</Grid>
+  const iconBackColorOpen =
+    theme.palette.mode === ThemeMode.DARK ? 'grey.200' : 'grey.300';
 
-										<Box sx={{ mt: 2 }}>
-											{/* <FormControl sx={{ minWidth: 80 }}>
-												<InputLabel id='demo-simple-select-autowidth-label'>
-													Auto
-												</InputLabel>
-												<Select
-													labelId='demo-simple-select-autowidth-label'
-													id='demo-simple-select-autowidth'
-													// value={age}
-													// onChange={handleChange}
-													autoWidth
-												>
-													<MenuItem value=''>
-														<em>None</em>
-													</MenuItem>
-													<MenuItem value={10}>Twenty</MenuItem>
-													<MenuItem value={21}>Twenty one</MenuItem>
-													<MenuItem value={22}>Twenty one and a half</MenuItem>
-												</Select>
-											</FormControl> */}
+  return (
+    <Box sx={{ flexShrink: 0, ml: 0.75 }}>
+      <ButtonBase
+        sx={{
+          p: 0.25,
+          bgcolor: open ? iconBackColorOpen : 'transparent',
+          borderRadius: 1,
+          '&:hover': {
+            bgcolor:
+              theme.palette.mode === ThemeMode.DARK
+                ? 'secondary.light'
+                : 'secondary.lighter',
+          },
+          '&:focus-visible': {
+            outline: `2px solid ${theme.palette.secondary.dark}`,
+            outlineOffset: 2,
+          },
+        }}
+        aria-label="open profile"
+        ref={anchorRef}
+        aria-controls={open ? 'profile-grow' : undefined}
+        aria-haspopup="true"
+        onClick={handleToggle}
+      >
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 0.5 }}>
+          <Typography variant="subtitle1" textTransform="capitalize">
+            {userFullName}
+          </Typography>
+        </Stack>
+      </ButtonBase>
+      <Popper
+        placement="bottom-end"
+        open={open}
+        anchorEl={anchorRef.current}
+        role={undefined}
+        transition
+        disablePortal
+        popperOptions={{
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, 9],
+              },
+            },
+          ],
+        }}
+      >
+        {({ TransitionProps }) => (
+          <Transitions
+            type="grow"
+            position="top-right"
+            in={open}
+            {...TransitionProps}
+          >
+            <Paper
+              sx={{
+                display: 'flex',
+                boxShadow: theme.customShadows.z1,
+                width: '100%',
+                minWidth: 240,
+                maxWidth: 290,
+                [theme.breakpoints.down('md')]: {
+                  maxWidth: 250,
+                },
+              }}
+            >
+              <ClickAwayListener onClickAway={handleClose}>
+                <MainCard
+                  elevation={0}
+                  border={false}
+                  content={false}
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  <CardContent>
+                    <Grid
+                      container
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Grid item>
+                        <Stack
+                          direction="row"
+                          spacing={1.25}
+                          alignItems="center"
+                        >
+                          <Avatar
+                            alt="profile user"
+                            src={user?.avatar}
+                            sx={{ width: 32, height: 32 }}
+                          />
+                          <Stack>
+                            <Typography variant="h6" textTransform="capitalize">
+                              {userFullName}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="textSecondary"
+                            />
+                          </Stack>
+                        </Stack>
+                      </Grid>
+                      <Grid item>
+                        <Tooltip title="Logout">
+                          <IconButton
+                            size="large"
+                            sx={{ color: 'text.primary' }}
+                            onClick={handleLogout}
+                          >
+                            <LogoutOutlined />
+                          </IconButton>
+                        </Tooltip>
+                      </Grid>
+                    </Grid>
 
-											<Typography
-												variant='body2'
-												color='textSecondary'
-												textTransform='capitalize'
-											>
-												{currentOrgName}
-											</Typography>
-										</Box>
-									</CardContent>
-								</MainCard>
-							</ClickAwayListener>
-						</Paper>
-					</Transitions>
-				)}
-			</Popper>
-		</Box>
-	);
+                    <Box sx={{ mt: 2 }}>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        textTransform="capitalize"
+                      >
+                        {currentOrgName}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </MainCard>
+              </ClickAwayListener>
+            </Paper>
+          </Transitions>
+        )}
+      </Popper>
+    </Box>
+  );
 };
 
 export default Profile;

@@ -19,6 +19,11 @@ jest.mock('./Footer', () => ({
   default: () => <footer data-testid="footer">Footer</footer>,
 }));
 
+jest.mock('./Header/HeaderContent/Profile', () => ({
+  __esModule: true,
+  default: () => <div data-testid="profile">Profile</div>,
+}));
+
 jest.mock('../../Loadable/Loader', () => ({
   __esModule: true,
   default: () => <div data-testid="loader">Loading...</div>,
@@ -34,23 +39,22 @@ jest.mock('../../../hooks/useConfig', () => ({
   }),
 }));
 
-jest.mock('../../../store', () => ({
-  useDispatch: () => jest.fn(),
-  useSelector: () => ({ drawerOpen: true }),
-}));
-
-jest.mock('../LayoutContext', () => ({
-  useLayout: () => ({
-    isLoading: false,
-    loadingMessage: '',
+jest.mock('../../../hooks/useLayoutState', () => ({
+  __esModule: true,
+  default: () => ({
+    drawerOpen: true,
+    onDrawerToggle: jest.fn(),
+    onDrawerClose: jest.fn(),
   }),
 }));
 
-jest.mock('../../../store/reducers/menu', () => ({
-  openDrawer: (open: boolean) => ({ type: 'menu/openDrawer', payload: open }),
+jest.mock('../../../contexts/LayoutStateContext', () => ({
+  LayoutStateProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 import MainLayout from './index';
+import MainContent from './MainContent';
+import LayoutShell from './LayoutShell';
 
 const theme = createTheme();
 
@@ -115,5 +119,60 @@ describe('MainLayout', () => {
   });
 });
 
-// Note: Loading state testing requires a separate test file with different mock configuration
-// due to Jest's module mocking limitations with React contexts
+describe('MainContent', () => {
+  const renderMainContent = (props: Partial<React.ComponentProps<typeof MainContent>> = {}) => {
+    return render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <MainContent {...props}>
+            <div data-testid="main-children">Content</div>
+          </MainContent>
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+  };
+
+  it('renders children', () => {
+    renderMainContent();
+
+    expect(screen.getByTestId('main-children')).toBeInTheDocument();
+  });
+
+  it('renders a main element', () => {
+    const { container } = renderMainContent();
+
+    expect(container.querySelector('main')).toBeInTheDocument();
+  });
+
+  it('renders toolbar spacer by default', () => {
+    const { container } = renderMainContent();
+
+    // Toolbar spacer is rendered inside main
+    const toolbars = container.querySelectorAll('.MuiToolbar-root');
+    expect(toolbars.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('hides toolbar spacer when showToolbarSpacer is false', () => {
+    const { container } = renderMainContent({ showToolbarSpacer: false });
+
+    const main = container.querySelector('main');
+    const toolbars = main?.querySelectorAll('.MuiToolbar-root') ?? [];
+    expect(toolbars.length).toBe(0);
+  });
+});
+
+describe('LayoutShell', () => {
+  it('renders children in a flex container', () => {
+    const { container } = render(
+      <ThemeProvider theme={theme}>
+        <LayoutShell>
+          <div data-testid="shell-child">Child</div>
+        </LayoutShell>
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('shell-child')).toBeInTheDocument();
+    const shellBox = container.firstChild as HTMLElement;
+    expect(shellBox).toHaveStyle({ display: 'flex', width: '100%' });
+  });
+});
