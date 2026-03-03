@@ -23,7 +23,7 @@
     "Delete uses ConfirmDeleteDialog; shows blocking load list on 409",
     "GIVEN vehicle with expenses totaling $8,500/month and 10,000 miles target THEN CPM displays $0.85/mile"
   ],
-  "contractReference": null,
+  "contractReference": "paths./vehicles, paths./vehicles/{vehicleId}, components/schemas/VehicleListItem, components/schemas/Vehicle, components/schemas/TruckExpense, components/schemas/TruckExpenseInput",
   "designReference": "fleet-management/designs/carrier_portal_drivers_vehicles.png",
   "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
   "commit": null,

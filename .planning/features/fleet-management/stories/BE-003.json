@@ -22,7 +22,7 @@
     "All endpoints require auth middleware; vehicle scoped to org via carrier.managedByOrgId",
     "Entity IDs use uuid format (per cross-feature decision L-009)"
   ],
-  "contractReference": null,
+  "contractReference": "paths./vehicles, paths./vehicles/{vehicleId}, components/schemas/Vehicle, components/schemas/VehicleListItem, components/schemas/TruckExpense, components/schemas/TruckExpenseInput",
   "designReference": "fleet-management/designs/carrier_portal_drivers_vehicles.png",
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
   "commit": null,

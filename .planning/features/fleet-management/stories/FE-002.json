@@ -22,7 +22,7 @@
     "Insurance expiry warning banner: yellow alert when within 30 days, red when expired, with expiry date",
     "Back navigation: arrow button navigates to /fleet/carriers"
   ],
-  "contractReference": null,
+  "contractReference": "paths./carriers/{carrierId}, paths./carriers/{carrierId}/onboarding, components/schemas/Carrier, components/schemas/OnboardingStatus",
   "designReference": "fleet-management/designs/carrier_details.png, fleet-management/designs/carrier_onboarding_details.png",
   "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
   "commit": null,

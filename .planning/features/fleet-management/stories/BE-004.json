@@ -20,7 +20,7 @@
     "Yup validation schemas for CreateContactInput and UpdateContactInput",
     "Entity IDs use uuid format (per cross-feature decision L-009)"
   ],
-  "contractReference": null,
+  "contractReference": "paths./contacts, paths./contacts/{contactId}, components/schemas/Contact",
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
   "commit": null,

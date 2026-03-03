@@ -2,10 +2,27 @@
   "featureKey": "fleet-management",
   "summary": "Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding gate enforcement, driver preferences (lanes, no-go zones), vehicle CPM expense tracking, and list/detail pages for each entity.",
   "services": {
-    "declared": ["dispatch-api", "dispatch-ui"]
+    "declared": ["dispatch-api", "dispatch-ui"],
+    "verified": []
+  },
+  "serviceDependencies": {
+    "dispatch-api": {
+      "dependsOn": [],
+      "produces": ["REST endpoints per contract — carriers, drivers, vehicles, contacts CRUD + onboarding status"]
+    },
+    "dispatch-ui": {
+      "dependsOn": ["api-contract"],
+      "produces": ["Carrier list/detail pages", "Driver list/detail/preferences pages", "Vehicle list/detail/CPM editor pages", "Contact list/detail pages"]
+    }
   },
   "createdAt": "2026-03-01T23:52:25Z",
-  "updatedAt": "2026-03-02T00:00:00Z",
-  "phase": "PLANNING",
-  "branchCreated": true
+  "updatedAt": "2026-03-03T00:00:00Z",
+  "phase": "CONTRACT",
+  "branchCreated": true,
+  "contract": {
+    "version": "1.0.0",
+    "frozen": true,
+    "frozenAt": "2026-03-03T00:00:00Z",
+    "contentHash": "27e95bc13407fd3525b2784d1f4c5a4143d20643d07dc77418fbfe734a6e2f6e"
+  }
 }

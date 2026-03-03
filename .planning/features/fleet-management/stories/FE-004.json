@@ -20,7 +20,7 @@
     "Success: notistack toast 'Driver preferences updated'; Error: toast with error message",
     "Loading state shown during save; form disabled while saving"
   ],
-  "contractReference": null,
+  "contractReference": "paths./drivers/{driverId}, components/schemas/UpdateDriverRequest, components/schemas/PreferredLane, components/schemas/NoGoZone",
   "designReference": "fleet-management/designs/carrier_portal_prefernces.png, fleet-management/designs/driver_details.png",
   "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
   "commit": null,

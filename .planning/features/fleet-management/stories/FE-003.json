@@ -23,7 +23,7 @@
     "Back navigation: arrow button navigates to /fleet/drivers",
     "Delete uses ConfirmDeleteDialog; shows blocking load list on 409 error"
   ],
-  "contractReference": null,
+  "contractReference": "paths./drivers, paths./drivers/{driverId}, components/schemas/Driver",
   "designReference": "fleet-management/designs/driver_details.png",
   "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
   "commit": null,

@@ -22,7 +22,7 @@
     "At least one test: CarrierListPage.test.tsx renders page title and DataGrid using renderWithTheme pattern",
     "All styling uses MUI sx prop; no CSS modules or styled-components"
   ],
-  "contractReference": null,
+  "contractReference": "components/schemas/Carrier, components/schemas/CarrierListItem, components/schemas/Driver, components/schemas/Vehicle, components/schemas/Contact",
   "designReference": "fleet-management/designs/carrier_onboarding.png, fleet-management/designs/carrier_details.png",
   "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
   "commit": null,

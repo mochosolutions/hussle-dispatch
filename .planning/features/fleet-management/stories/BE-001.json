@@ -25,7 +25,7 @@
     "Yup validation schemas defined for CreateCarrierInput and UpdateCarrierInput",
     "Entity IDs use uuid format (per cross-feature decision L-009)"
   ],
-  "contractReference": null,
+  "contractReference": "paths./carriers, paths./carriers/{carrierId}, paths./carriers/{carrierId}/onboarding, components/schemas/Carrier, components/schemas/CarrierListItem, components/schemas/OnboardingStatus",
   "designReference": "fleet-management/designs/carrier_details.png, fleet-management/designs/carrier_onboarding.png",
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
   "commit": null,
