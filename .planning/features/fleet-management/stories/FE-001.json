@@ -5,7 +5,7 @@
   "service": "dispatch-ui",
   "assignedTo": "frontend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": [],
   "description": "Scaffold the fleet feature module in dispatch-ui. Define TypeScript interfaces for all fleet entities (Carrier, Driver, Vehicle, Contact, TruckExpense). Create carrier API client functions using axiosInstance. Set up Redux carrier entity module using createEntityModule from @mocho/ui/redux. Register carrier entities in the root store (reducer + saga). Create fleet routes scaffold with all fleet page paths. Build the carrier list page with DataGrid (using existing DataGrid + ActionsCell from @mocho/ui) and carrier create/edit FormDialog. Add Fleet nav group to sidebar (Carriers, Drivers, Vehicles under Fleet + Contacts as separate item). CONCERNS.md notes dispatch-ui has no tests yet — include at least one test file to establish the pattern.",
   "acceptanceCriteria": [
@@ -25,8 +25,10 @@
   "contractReference": "components/schemas/Carrier, components/schemas/CarrierListItem, components/schemas/Driver, components/schemas/Vehicle, components/schemas/Contact",
   "designReference": "fleet-management/designs/carrier_onboarding.png, fleet-management/designs/carrier_details.png",
   "validationCommand": "npm run lint --workspace=hussle-app-dispatch-ui && npm run check-ts --workspace=hussle-app-dispatch-ui && npm run test --workspace=hussle-app-dispatch-ui",
-  "commit": null,
-  "decisions": ["L-008", "L-009", "L-010"],
-  "blockedReason": null,
-  "completedAt": null
+  "decisions": [
+    "L-008",
+    "L-009",
+    "L-010"
+  ],
+  "completedAt": "2026-03-03T00:00:00.000Z"
 }

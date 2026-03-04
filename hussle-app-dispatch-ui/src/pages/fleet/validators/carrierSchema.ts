@@ -1,7 +1,8 @@
 import * as Yup from 'yup';
 import type { InferType } from 'yup';
 
-const CARRIER_TYPES = ['COMPANY_ASSET', 'OWNER_OPERATOR', 'EXTERNAL_CARRIER'] as const;
+// OWNER_OPERATOR is rejected at runtime (decision L-010)
+const CARRIER_TYPES = ['COMPANY_ASSET', 'EXTERNAL_CARRIER'] as const;
 type CarrierType = (typeof CARRIER_TYPES)[number];
 
 export const carrierSchema = Yup.object({
@@ -25,6 +26,7 @@ export const carrierSchema = Yup.object({
   w9OnFile: Yup.boolean().optional(),
   carrierPacketOnFile: Yup.boolean().optional(),
   insuranceExpiry: Yup.date().nullable().optional(),
+  notes: Yup.string().optional(),
 }).required();
 
 export type CarrierFormValues = InferType<typeof carrierSchema>;

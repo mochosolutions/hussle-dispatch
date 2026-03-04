@@ -11,7 +11,7 @@ import {
 } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
-import type { Carrier, CreateCarrierInput, UpdateCarrierInput } from '../types';
+import type { CarrierListItem, CreateCarrierInput, UpdateCarrierInput } from '../types';
 import type { CarrierFormValues } from '../validators/carrierSchema';
 import {
   fetchCarriersRequest,
@@ -29,24 +29,12 @@ import {
 } from '../store/selectors/carrierSelectors';
 import { CarrierFormDialog } from '../components/CarrierFormDialog';
 
+// OWNER_OPERATOR excluded per decision L-010
 const TYPE_OPTIONS = [
   { value: 'all', label: 'All Types' },
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
-  { value: 'OWNER_OPERATOR', label: 'Owner Operator' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
 ];
-
-const STATUS_CHIP_COLOR: Record<
-  string,
-  'success' | 'warning' | 'info' | 'default' | 'error'
-> = {
-  active: 'success',
-  pending: 'warning',
-  onboarding: 'info',
-  inactive: 'error',
-};
-
-const ONBOARDING_COMPLETE = ['COMPANY_ASSET', 'OWNER_OPERATOR'];
 
 const CarrierListPage = () => {
   const dispatch = useDispatch();
@@ -59,8 +47,8 @@ const CarrierListPage = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Carrier | null>(null);
+  const [editingCarrier, setEditingCarrier] = useState<CarrierListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CarrierListItem | null>(null);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,11 +115,7 @@ const CarrierListPage = () => {
         const data: UpdateCarrierInput = { ...values, insuranceExpiry };
         dispatch(updateCarrierRequest({ id: editingCarrier.id, data }));
       } else {
-        const data: CreateCarrierInput = {
-          ...values,
-          managedByOrgId: 'org-mock-0001',
-          insuranceExpiry,
-        };
+        const data: CreateCarrierInput = { ...values, insuranceExpiry };
         dispatch(createCarrierRequest({ data }));
       }
       handleCloseDialog();
@@ -146,7 +130,7 @@ const CarrierListPage = () => {
     setDeleteTarget(null);
   }, [dispatch, deleteTarget]);
 
-  const actionsConfig = useMemo<ActionsCellConfig<Carrier>>(
+  const actionsConfig = useMemo<ActionsCellConfig<CarrierListItem>>(
     () => ({
       showView: true,
       getViewRoute: (carrier) => `/fleet/carriers/${carrier.id}`,
@@ -169,7 +153,7 @@ const CarrierListPage = () => {
         field: 'name',
         minWidth: 240,
         flex: 1.5,
-        cellRenderer: ({ data }: { data: Carrier }) => (
+        cellRenderer: ({ data }: { data: CarrierListItem }) => (
           <Stack direction="column" justifyContent="center" sx={{ height: '100%' }}>
             <Typography
               variant="subtitle2"
@@ -188,7 +172,7 @@ const CarrierListPage = () => {
         headerName: 'Type',
         field: 'type',
         minWidth: 160,
-        cellRenderer: ({ value }: { value: Carrier['type'] }) => {
+        cellRenderer: ({ value }: { value: CarrierListItem['type'] }) => {
           const isCompanyAsset = value === 'COMPANY_ASSET';
           const label = isCompanyAsset ? 'Company Asset' : 'External Carrier';
           const color = isCompanyAsset ? 'secondary' : 'info';
@@ -211,34 +195,19 @@ const CarrierListPage = () => {
         valueFormatter: ({ value }: { value: string | null }) => value ?? '—',
       },
       {
-        headerName: 'Status',
-        field: 'status',
-        minWidth: 130,
-        cellRenderer: ({ value }: { value: string }) => {
-          const chipColor = STATUS_CHIP_COLOR[value] ?? 'default';
-          const label = value.charAt(0).toUpperCase() + value.slice(1);
-
-          return (
-            <Chip label={label} size="small" color={chipColor} variant="filled" />
-          );
-        },
-      },
-      {
         headerName: 'Onboarding',
-        field: 'onboardingStatus',
+        field: 'onboardingComplete',
         minWidth: 140,
-        cellRenderer: ({ data }: { data: Carrier }) => {
-          if (ONBOARDING_COMPLETE.includes(data.type)) {
+        cellRenderer: ({ data }: { data: CarrierListItem }) => {
+          if (data.type === 'COMPANY_ASSET') {
             return null;
           }
 
-          const isComplete = data.onboardingStatus === 'complete';
-
           return (
             <Chip
-              label={isComplete ? 'Complete' : 'Incomplete'}
+              label={data.onboardingComplete ? 'Complete' : 'Incomplete'}
               size="small"
-              color={isComplete ? 'success' : 'warning'}
+              color={data.onboardingComplete ? 'success' : 'warning'}
               variant="outlined"
             />
           );

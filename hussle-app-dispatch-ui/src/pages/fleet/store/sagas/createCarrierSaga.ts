@@ -2,6 +2,7 @@ import { call, put, select, type SagaReturnType } from 'redux-saga/effects';
 import { enqueueSnackbar } from 'notistack';
 import { createCarrier } from 'utils/api/fleet/carrierApi';
 import type { RootState } from 'store';
+import type { CarrierListItem } from 'pages/fleet/types';
 import {
   createCarrierRequest,
   createCarrierSuccess,
@@ -17,7 +18,15 @@ export function* createCarrierSaga(action: ReturnType<typeof createCarrierReques
       action.payload.data,
     )) as SagaReturnType<typeof createCarrier>;
 
-    yield put(carrierActions.addOne(response.carrier));
+    // Optimistically add with default list fields — the refetch below will replace it
+    const carrierListItem: CarrierListItem = {
+      ...response.carrier,
+      driverCount: 0,
+      vehicleCount: 0,
+      onboardingComplete: false,
+    };
+
+    yield put(carrierActions.addOne(carrierListItem));
     yield put(createCarrierSuccess());
 
     yield call(enqueueSnackbar, 'Carrier created', { variant: 'success' });
