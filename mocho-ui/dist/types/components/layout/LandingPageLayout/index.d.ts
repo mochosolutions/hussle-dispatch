@@ -1,6 +1,0 @@
-export declare const PageContainer: import('node_modules/styled-components/dist/types').IStyledComponentBase<"web", import('styled-components').FastOmit<import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLDivElement>, HTMLDivElement>, never>> & string;
-export declare const HeaderContainer: import('node_modules/styled-components/dist/types').IStyledComponentBase<"web", import('styled-components').FastOmit<import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement>, never>> & string;
-export declare const MainContainer: import('node_modules/styled-components/dist/types').IStyledComponentBase<"web", import('styled-components').FastOmit<import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement>, never>> & string;
-export declare const FooterContainer: import('node_modules/styled-components/dist/types').IStyledComponentBase<"web", import('styled-components').FastOmit<import('react').DetailedHTMLProps<import('react').HTMLAttributes<HTMLElement>, HTMLElement>, never>> & string;
-export default function SimpleLayout(): import("@emotion/react/jsx-runtime").JSX.Element;
-//# sourceMappingURL=index.d.ts.map
