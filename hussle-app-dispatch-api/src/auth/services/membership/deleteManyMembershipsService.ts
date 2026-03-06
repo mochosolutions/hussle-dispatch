@@ -1,4 +1,5 @@
 import { logger } from '@/shared/utils/logger';
+import { SequenceError } from '@/shared/errors';
 import type {
   Membership,
   DeleteManyMembershipArgs,
@@ -8,11 +9,10 @@ import type {
 export const deleteManyMembershipsService = async (
   { ids }: DeleteManyMembershipArgs,
   { deleteManyMemberships }: DeleteManyMembershipsDeps,
-  context?: any
 ): Promise<Membership[] | null> => {
   try {
     logger.info('Deleting memberships', { count: ids.length });
-    const updatedMembership = await deleteManyMemberships(ids, context);
+    const updatedMembership = await deleteManyMemberships(ids);
     logger.info('Deleted memberships', { count: updatedMembership?.length ?? 0 });
     if (!updatedMembership) {
       return null;
@@ -20,6 +20,8 @@ export const deleteManyMembershipsService = async (
     return updatedMembership;
   } catch (error) {
     logger.error('Error deleting memberships', { error });
-    throw Error('Failed to deleting memberships(s)');
+    const serviceError = new SequenceError('Failed to deleting memberships(s)');
+    serviceError.cause = error;
+    throw serviceError;
   }
 };

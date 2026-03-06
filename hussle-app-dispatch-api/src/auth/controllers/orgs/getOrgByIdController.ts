@@ -1,18 +1,31 @@
-import type { Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
-import { getAllOrgByIdService } from '../../services';
+import type { Request, RequestHandler, Response } from 'express';
+import { NotFoundError } from '@/shared/errors';
+import type { Organization } from '../../types/organizationTypes';
+import { getOrganizationByIdMapper } from './mappers/getOrganizationByIdMapper';
+import { toOrganizationResponse } from './transformers/organizationTransformer';
 
-export const getOrganizationsByIdController = async (req: Request, res: Response) => {
-  const orgRepo = organizationRepositoryPrisma(prisma);
-  const result = await getAllOrgByIdService(
-    { id: req.params['organizationId'] ?? '' },
-    {
-      findById: orgRepo.findOrganizationById,
+interface OrganizationRepoDeps {
+  findOrganizationById: (id: string) => Promise<Organization | null>;
+}
+
+interface GetOrganizationByIdControllerDeps {
+  orgRepo: OrganizationRepoDeps;
+}
+
+export const getOrganizationsByIdController =
+  ({ orgRepo }: GetOrganizationByIdControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const { organizationId } = getOrganizationByIdMapper(req);
+    const result = await orgRepo.findOrganizationById(organizationId);
+
+    if (!result) {
+      throw new NotFoundError('Organization not found');
     }
-  );
-  return res.status(200).json({
-    message: 'Organizations retrieved successfully',
-    organization: result,
-  });
-};
+
+    const response = toOrganizationResponse(result);
+
+    return res.status(200).json({
+      message: 'Organizations retrieved successfully',
+      organization: response.organization,
+    });
+  };

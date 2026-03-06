@@ -1,0 +1,10 @@
+/**
+ * Central export point for all domain error classes.
+ * Each extends CustomError from @mocho/common.
+ */
+
+export { NotFoundError, ValidationError, ConflictError, ActiveLoadsConflictError, UnauthorizedError, ForbiddenError, InvalidTransitionError, OnboardingBlockError, ProhibitedCommodityError, InsuranceExpiredError, ConcurrentEditError, OwnerOperatorNotSupportedError, SequenceError, isCustomError } from './commonErrors';
+
+export { AuthRequestError } from './authError';
+
+export { RequestValidationError } from './requestValidationError';

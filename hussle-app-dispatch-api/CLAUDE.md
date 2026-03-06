@@ -55,6 +55,7 @@ Global rules from `~/.claude/CLAUDE.md` apply. Additionally:
 - NEVER return raw service results from controllers (use transformers)
 - NEVER use domain events for pre-action validation (use repo injection)
 - NEVER modify another entity directly in a service (use events or transactions)
+- NEVER add validation throws to mappers as a replacement for route middleware — fix the route instead (missing auth = add `appAuth`; missing field validation = add `validateRequest(schema)`)
 
 ---
 

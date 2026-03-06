@@ -3,12 +3,13 @@ import type { Invite } from '../../types/invite';
 
 export const getInvitesService = async (
   organizationId: string,
-  { findAllInvites }: { findAllInvites: (context?: any) => Promise<Invite[]> }
+  { findAllInvites }: { findAllInvites: (filter?: { organizationId?: string }) => Promise<Invite[]> }
 ) => {
   try {
     const invites = await findAllInvites({ organizationId });
     return invites;
-  } catch (error: any) {
-    throw new BadRequestError(error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to get invites';
+    throw new BadRequestError(message);
   }
 };

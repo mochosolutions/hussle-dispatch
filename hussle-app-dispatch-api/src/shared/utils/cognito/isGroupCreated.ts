@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { ListGroupsCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface IsGroupCreatedParams {
   groupName: string;
@@ -21,8 +22,8 @@ export const isGroupCreated = async ({
     const response = await client.send(command);
     const groups = response.Groups || [];
     return groups.some((group) => group.GroupName === groupName);
-  } catch (error) {
-    console.error('Error checking group in Cognito:', error);
+  } catch (error: unknown) {
+    logger.error('Error checking group in Cognito', { error });
     throw new AuthRequestError('Error checking group in Cognito');
   }
 };

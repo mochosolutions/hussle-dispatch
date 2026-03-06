@@ -27,14 +27,15 @@ export const sendSingle = <T>(res: Response, data: T, statusCode = 200): void =>
   res.status(statusCode).json(body);
 };
 
-export const sendList = <T>(
-  res: Response,
-  data: T[],
-  meta: PaginationMeta,
-  statusCode = 200,
-): void => {
-  const body: ListResponse<T> = { data, meta };
-  res.status(statusCode).json(body);
+interface SendListInput<T> {
+  data: T[];
+  meta: PaginationMeta;
+  statusCode?: number;
+}
+
+export const sendList = <T>(res: Response, input: SendListInput<T>): void => {
+  const body: ListResponse<T> = { data: input.data, meta: input.meta };
+  res.status(input.statusCode ?? 200).json(body);
 };
 
 export const buildPaginationMeta = (

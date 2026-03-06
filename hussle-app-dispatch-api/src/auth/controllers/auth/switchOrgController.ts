@@ -1,58 +1,40 @@
-import type { NextFunction, Request, Response } from 'express';
-import { redisClient as redis } from '@/shared/redisClient';
+import type { Request, Response } from 'express';
+import type { RequestHandler } from 'express';
 import { logger } from '@/shared/utils/logger';
-import { prisma } from '@/shared/prisma';
+import { UnauthorizedError } from '@/shared/errors';
 import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
-import { tokenProvider } from '../../providers/tokenProvider';
-import { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
+import type { ITokenProvider } from '../../types/tokenProvider';
+import type { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
 import { switchOrgService } from '../../services';
+import { mapSwitchOrgRequest } from './mappers/mapSwitchOrgRequest';
+import { toSwitchOrgResponse } from './transformers/switchOrgTransformer';
 
-export const switchOrgController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { user } = req;
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+interface SwitchOrgControllerDeps {
+  userRepo: Pick<ReturnType<typeof userRepositoryPrisma>, 'findUserByIdWithMemberships'>;
+  tokenProviderInstance: ITokenProvider;
+}
+
+export const createSwitchOrgController = ({
+  userRepo,
+  tokenProviderInstance,
+}: SwitchOrgControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const serviceInput = mapSwitchOrgRequest(req);
+
+    if (!serviceInput) {
+      throw new UnauthorizedError('Unauthorized');
     }
 
-    const { userId, sessionId } = user;
-    const { organizationId } = req.body;
-    const tokenProviderInstance = tokenProvider({ client: redis });
-    const userRepo = userRepositoryPrisma(prisma);
-
-    const currentRefreshToken = req.cookies?.refreshToken;
-    // Call the use case
-    const result = await switchOrgService(
-      {
-        organizationId,
-        userId,
-        sessionId: sessionId ?? '',
-        refreshToken: currentRefreshToken,
-      },
-      {
-        tokenProvider: tokenProviderInstance,
-        findUserByIdWithMemberships: userRepo.findUserByIdWithMemberships,
-      }
-    );
-
-    if (!result) {
-      return res.status(404).json({ error: 'Organization not found or user not a member' });
-    }
-
-    const { user: formattedUser, orgs, accessToken, refreshToken } = result;
+    const result = await switchOrgService(serviceInput, {
+      tokenProvider: tokenProviderInstance,
+      findUserByIdWithMemberships: userRepo.findUserByIdWithMemberships,
+    });
 
     logger.info('Org switch completed, setting tokens');
 
-    // Set both tokens as HttpOnly cookies
-    setAccessTokenCookie(res, accessToken);
-    setRefreshTokenCookie(res, refreshToken);
+    setAccessTokenCookie(res, result.accessToken);
+    setRefreshTokenCookie(res, result.refreshToken);
 
-    // Return the response
-    return res.status(200).json({
-      message: 'success',
-      user: formattedUser,
-      accessibleOrgs: orgs,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
+    return res.status(200).json(toSwitchOrgResponse(result));
+  };
+

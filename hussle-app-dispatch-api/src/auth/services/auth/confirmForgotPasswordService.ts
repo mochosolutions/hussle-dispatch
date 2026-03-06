@@ -4,7 +4,6 @@ import type {
   ConfirmForgotPasswordInput,
   ConfirmForgotPasswordServiceDeps,
 } from '../../types/authProviderTypes';
-import { IAuthProvider } from '../../types/authProviderTypes';
 
 export const confirmForgotPasswordService = async (
   { email, code, newPassword }: ConfirmForgotPasswordInput,

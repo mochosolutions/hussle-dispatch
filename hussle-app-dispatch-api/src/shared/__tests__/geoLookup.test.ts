@@ -6,7 +6,10 @@ describe('haversineDistance', () => {
     // New York City: 40.7128, -74.006
     // Los Angeles: 34.0522, -118.2437
     // Great-circle (straight-line) distance: ~2,446 miles
-    const distance = haversineDistance(40.7128, -74.006, 34.0522, -118.2437);
+    const distance = haversineDistance({
+      from: { lat: 40.7128, lng: -74.006 },
+      to: { lat: 34.0522, lng: -118.2437 },
+    });
     const reference = 2446;
 
     expect(Math.abs(distance - reference) / reference).toBeLessThan(0.01);
@@ -16,21 +19,33 @@ describe('haversineDistance', () => {
     // Chicago: 41.8781, -87.6298
     // Houston: 29.7604, -95.3698
     // Great-circle (straight-line) distance: ~942 miles
-    const distance = haversineDistance(41.8781, -87.6298, 29.7604, -95.3698);
+    const distance = haversineDistance({
+      from: { lat: 41.8781, lng: -87.6298 },
+      to: { lat: 29.7604, lng: -95.3698 },
+    });
     const reference = 942;
 
     expect(Math.abs(distance - reference) / reference).toBeLessThan(0.01);
   });
 
   it('returns 0 for identical coordinates', () => {
-    const distance = haversineDistance(40.7128, -74.006, 40.7128, -74.006);
+    const distance = haversineDistance({
+      from: { lat: 40.7128, lng: -74.006 },
+      to: { lat: 40.7128, lng: -74.006 },
+    });
 
     expect(distance).toBe(0);
   });
 
   it('is symmetric — A to B equals B to A', () => {
-    const aToB = haversineDistance(40.7128, -74.006, 34.0522, -118.2437);
-    const bToA = haversineDistance(34.0522, -118.2437, 40.7128, -74.006);
+    const aToB = haversineDistance({
+      from: { lat: 40.7128, lng: -74.006 },
+      to: { lat: 34.0522, lng: -118.2437 },
+    });
+    const bToA = haversineDistance({
+      from: { lat: 34.0522, lng: -118.2437 },
+      to: { lat: 40.7128, lng: -74.006 },
+    });
 
     expect(aToB).toBeCloseTo(bToA, 6);
   });
@@ -39,7 +54,10 @@ describe('haversineDistance', () => {
     // Dallas: 32.7767, -96.797
     // Denver: 39.7392, -104.9903
     // Great-circle (straight-line) distance: ~663 miles
-    const distance = haversineDistance(32.7767, -96.797, 39.7392, -104.9903);
+    const distance = haversineDistance({
+      from: { lat: 32.7767, lng: -96.797 },
+      to: { lat: 39.7392, lng: -104.9903 },
+    });
     const reference = 663;
 
     expect(Math.abs(distance - reference) / reference).toBeLessThan(0.01);

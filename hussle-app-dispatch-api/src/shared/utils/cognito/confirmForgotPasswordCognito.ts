@@ -29,7 +29,7 @@ export const confirmForgotPasswordCognito = async ({
     });
     const response = await client.send(command);
     return response;
-  } catch (error) {
+  } catch {
     throw new AuthRequestError(`Error confirming password reset for user ${username}`);
   }
 };

@@ -5,7 +5,6 @@ import type { User, GetUserByIdInput, GetUserByIdDeps } from '../../types/user';
 export const getUserByIdService = async (
   { userId }: GetUserByIdInput,
   { findUserById }: GetUserByIdDeps,
-  context?: any
 ): Promise<User | null> => {
   try {
     const user = await findUserById(userId);

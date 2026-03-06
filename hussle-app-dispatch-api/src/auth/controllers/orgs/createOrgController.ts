@@ -1,27 +1,31 @@
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { logger } from '@/shared/utils/logger';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
+import type { Request, RequestHandler, Response } from 'express';
 import { createOrganizationService } from '../../services';
+import type { CreateOrganizationInput, Organization } from '../../types/organizationTypes';
+import { createOrganizationMapper } from './mappers/createOrganizationMapper';
+import { toOrganizationResponse } from './transformers/organizationTransformer';
 
-export const createOrganizationController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const requestPayload = req.body;
-    const orgRepo = organizationRepositoryPrisma(prisma);
-    logger.info('Create organization request received');
+interface OrganizationRepoDeps {
+  createOrganization: (data: CreateOrganizationInput) => Promise<Organization>;
+}
+
+interface CreateOrganizationControllerDeps {
+  orgRepo: OrganizationRepoDeps;
+}
+
+export const createOrganizationController =
+  ({ orgRepo }: CreateOrganizationControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const requestPayload = createOrganizationMapper(req);
     const result = await createOrganizationService(
       requestPayload,
       {
         create: orgRepo.createOrganization,
-        findByName: orgRepo.findOrganizationByName,
       },
-      null
     );
+    const response = toOrganizationResponse(result);
+
     return res.status(201).json({
       message: 'Organization created successfully',
-      data: result,
+      data: response.organization,
     });
-  } catch (error) {
-    return next(error);
-  }
-};
+  };

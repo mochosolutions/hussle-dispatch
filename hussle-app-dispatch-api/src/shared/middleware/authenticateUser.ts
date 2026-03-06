@@ -8,6 +8,7 @@ export interface AuthPayload {
   email?: string;
   organizationId: string;
   orgSlug: string;
+  orgStatus: string;
   membershipId: string;
   role: string;
   refreshTokenHash: string;
@@ -68,6 +69,11 @@ export const createAppAuthMiddleware = (options: {
           correlationId: req.correlationId,
         });
         res.status(401).json({ error: 'Session has been revoked' });
+        return;
+      }
+
+      if (decoded.orgStatus !== 'active') {
+        res.status(403).json({ error: 'Organization is suspended or inactive' });
         return;
       }
 

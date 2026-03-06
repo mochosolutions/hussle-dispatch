@@ -2,23 +2,39 @@ import express from 'express';
 import { appAuth } from '@/shared/middleware/authenticateUser';
 import { requireAuthOrInviteToken } from '@/shared/middleware/requireAuthOrInviteToken';
 import { validateRequest } from '@/shared/middleware/validateRequest';
-import { inviteUserController, verifyInviteController } from '../controllers';
-import { inviteUserValidator, verifyInviteValidator } from '../validators/tenantValidator';
+import type { AuthControllers } from '../controllers';
+import { acceptInviteValidator } from '../validators/acceptInviteValidator';
+import { getMembershipValidator, inviteUserValidator, verifyInviteValidator } from '../validators/tenantValidator';
 
-const router = express.Router();
+export const createInviteRouter = (controllers: AuthControllers): express.Router => {
+  const router = express.Router();
 
-router.post(
-  '/organizations/:organizationId/invite',
-  appAuth,
-  validateRequest(inviteUserValidator),
-  inviteUserController
-);
+  router.post(
+    '/organizations/:organizationId/invite',
+    appAuth,
+    validateRequest(inviteUserValidator),
+    controllers.inviteUserController,
+  );
 
-router.get(
-  '/organizations/:organizationId/verify-invite',
-  requireAuthOrInviteToken,
-  validateRequest(verifyInviteValidator),
-  verifyInviteController
-);
+  router.get(
+    '/organizations/:organizationId/verify-invite',
+    requireAuthOrInviteToken,
+    validateRequest(verifyInviteValidator),
+    controllers.verifyInviteController,
+  );
 
-export { router as inviteRouter };
+  router.post(
+    '/invitations/accept',
+    validateRequest(acceptInviteValidator),
+    controllers.acceptInviteController,
+  );
+
+  router.get(
+    '/organizations/:organizationId/invites',
+    appAuth,
+    validateRequest(getMembershipValidator),
+    controllers.getInvitesController,
+  );
+
+  return router;
+};

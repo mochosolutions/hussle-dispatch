@@ -1,6 +1,11 @@
 import Decimal from 'decimal.js';
 import { CarrierType } from '@prisma/client';
-import { ActiveLoadsConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
+import {
+  ActiveLoadsConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '@/shared/errors';
 import { createCarrierService } from '../carrierService';
 
 const buildCarrier = () => ({
@@ -50,6 +55,7 @@ describe('carrierService', () => {
     count: jest.fn(),
     update: jest.fn(),
     softDelete: jest.fn(),
+    createWithAssets: jest.fn(),
   };
 
   const mockLoadRepository = {

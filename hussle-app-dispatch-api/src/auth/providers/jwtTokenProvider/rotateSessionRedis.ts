@@ -1,3 +1,4 @@
+import type Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/utils/logger';
 import { REFRESH_TTL_SECONDS } from '../../constants';
@@ -11,7 +12,7 @@ interface RotateSessionInput {
 
 export const rotateSessionRedis = async (
   data: RotateSessionInput,
-  { redisClient }: { redisClient: any }
+  { redisClient }: { redisClient: Redis }
 ): Promise<CreateSessionResult | null> => {
   logger.info('rotateSessionRedis called');
   const { refreshToken, singleSession } = data;

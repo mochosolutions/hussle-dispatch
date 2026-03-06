@@ -1,18 +1,17 @@
-import {PayloadAction} from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { AuthState, Tenant, UserProfile } from '../authSlice';
 import {
   defaultUserProfileState,
-  UserProfile,
 } from '../authSlice';
 
 export const initReducer = {
-  initRequest: (state) => {
+  initRequest: (state: AuthState) => {
     state.isInitializing = true;
   },
   initSuccess: (
-    state,
-    action: PayloadAction<{user: UserProfile; orgs}>,
+    state: AuthState,
+    action: PayloadAction<{user: UserProfile; orgs: Tenant[]}>,
   ) => {
-    console.log("initSuccess", state);
     const {user, orgs} = action.payload;
     state.isInitializing = false;
     state.isLoggedIn = true;
@@ -21,7 +20,7 @@ export const initReducer = {
     state.errors.init = '';
     state.initAttempted = true;
   },
-  initFailure: (state) => {
+  initFailure: (state: AuthState) => {
     state.isInitializing = false;
     state.isLoggedIn = false;
     state.user = defaultUserProfileState;

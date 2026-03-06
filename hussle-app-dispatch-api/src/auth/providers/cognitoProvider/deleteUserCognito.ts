@@ -3,7 +3,7 @@ import { deleteUserFromCognito, deleteUsersBySubArray } from '@/shared/utils/cog
 import { AuthRequestError } from '@/shared/errors/authError';
 import type { DeleteUserCognitoDeps } from '../../types/authProviderTypes';
 
-export const deleteUserCognito = async (id: string, deps: DeleteUserCognitoDeps): Promise<any> => {
+export const deleteUserCognito = async (id: string, deps: DeleteUserCognitoDeps): Promise<{ id: string }> => {
   try {
     const { client, userPoolId } = deps;
     if (!userPoolId) {
@@ -26,7 +26,7 @@ export const deleteUserCognito = async (id: string, deps: DeleteUserCognitoDeps)
 export const deleteUserManyCognito = async (
   ids: string[],
   deps: DeleteUserCognitoDeps
-): Promise<any> => {
+): Promise<{ ids: string[] }> => {
   try {
     const { client, userPoolId } = deps;
     if (!userPoolId) {

@@ -22,6 +22,9 @@ import type { ActionsCellConfig } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
 import type { CarrierListItem } from '../../types';
 import { fetchCarriersRequest, setTypeFilter } from '../../store/reducers/carrierPageSlice';
+import { carrierPageSlice } from '../../store/reducers/carrierNewPageSlice';
+
+export const { actions: carrierPageActions } = carrierPageSlice;
 
 import {
   selectAllCarriers,
@@ -70,7 +73,8 @@ const CarrierListPage = () => {
 
   // Initial fetch
   useEffect(() => {
-    dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
+    // dispatch(({ page: 1, limit: 25 }));
+    // dispatch();
   }, [dispatch]);
 
   const handleSearchChange = useCallback(

@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface RefreshCognitoUserTokenParams {
   clientId: string;
@@ -31,8 +32,8 @@ export const refreshCognitoUserToken = async ({
       idToken: response.AuthenticationResult?.IdToken || '',
       refreshToken: response.AuthenticationResult?.RefreshToken || refreshToken,
     };
-  } catch (error) {
-    console.error('Error refreshing user token:', error);
+  } catch (error: unknown) {
+    logger.error('Error refreshing user token', { error });
     throw new AuthRequestError('Error refreshing user token');
   }
 };

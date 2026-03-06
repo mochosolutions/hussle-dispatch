@@ -20,7 +20,7 @@ export const updateUserAttributes = async ({
     });
     const response = await client.send(command);
     return response;
-  } catch (error) {
+  } catch {
     throw new AuthRequestError(`Error updating user attributes for user`);
   }
 };

@@ -32,7 +32,7 @@ export const createVehicleControllers = (deps: VehicleControllerDeps): VehicleCo
     const serviceInput = listVehiclesMapper(req);
     const result = await deps.vehicleService.listVehicles(serviceInput);
     const response = toVehicleListEnvelope(result.data, result.meta);
-    sendList(res, response.data, response.meta);
+    sendList(res, { data: response.data, meta: response.meta });
   },
 
   getVehicleById: async (req: Request, res: Response): Promise<void> => {

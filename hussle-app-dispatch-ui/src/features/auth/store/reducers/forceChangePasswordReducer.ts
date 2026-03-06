@@ -1,14 +1,14 @@
-import {PayloadAction} from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import {
   setPending,
   setFulfilled,
   setRejected,
 } from '../../../../utils/authSliceHelpers';
-import {UserProfile} from '../authSlice';
+import type { AuthState, UserProfile } from '../authSlice';
 
 export const forceChangePasswordReducer = {
   forceChangePasswordSessionInit: (
-    state,
+    state: AuthState,
     action: PayloadAction<{
       user: UserProfile;
       session: string;
@@ -22,12 +22,12 @@ export const forceChangePasswordReducer = {
     state.forceChangePassword = true;
   },
   forceChangePasswordRequest: (
-    state,
-    action: PayloadAction<{password: string}>,
+    state: AuthState,
+    _action: PayloadAction<{password: string}>,
   ) => {
     setPending(state, {key: 'forceChangePassword'});
   },
-  forceChangePasswordSuccess: (state, action: PayloadAction<any>) => {
+  forceChangePasswordSuccess: (state: AuthState, action: PayloadAction<{session: string}>) => {
     const {session} = action.payload;
     state.isLoggedIn = true;
     setFulfilled(state, {
@@ -37,7 +37,7 @@ export const forceChangePasswordReducer = {
     state.session = session;
     state.forceChangePassword = false;
   },
-  forceChangePasswordFailure: (state) => {
+  forceChangePasswordFailure: (state: AuthState) => {
     setRejected(state, {
       loadingKey: 'forceChangePassword',
       errorKey: 'forceChangePassword',

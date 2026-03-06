@@ -30,7 +30,7 @@ export interface SignupOrgInput {
   orgName: string;
   orgRole?: string;
   orgVertical?: string;
-  customMetadata?: Record<string, any>;
+  customMetadata?: Record<string, unknown>;
 }
 
 export interface SignupOrganizationResult {

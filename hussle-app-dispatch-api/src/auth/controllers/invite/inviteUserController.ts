@@ -1,45 +1,72 @@
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { inviteRepositoryPrisma } from '../../repositories/inviteRepositoryPrisma';
-import { membershipRepositoryPrisma } from '../../repositories/membershipRepositoryPrisma';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
-import { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
+import type { Request, Response } from 'express';
+import type { Invite } from '../../types/invite';
+import type { MembershipWithUser } from '../../types/membershipTypes';
+import type { Organization } from '../../types/organizationTypes';
+import { UnauthorizedError } from '@/shared/errors';
 import { inviteUserService } from '../../services/invite/inviteUserService';
+import { inviteUserMapper } from './mappers/inviteUserMapper';
 
-export const inviteUserController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { users } = req.body;
-    if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+interface InviteUserControllerDeps {
+  inviteRepo: {
+    create: (data: {
+      email: string;
+      role: string;
+      organizationId: string;
+      token: string;
+      status: string;
+      expiresAt: Date;
+    }) => Promise<{ email: string }>;
+    findInviteByFilter: (
+      organizationId: string,
+      filter: Record<string, unknown>,
+    ) => Promise<Invite[] | null>;
+  };
+  membershipRepo: {
+    findMembershipsByFilter: (
+      organizationId: string,
+      filter: Record<string, unknown>,
+    ) => Promise<MembershipWithUser[] | null>;
+  };
+  userRepo: {
+    findUsersByEmails: (emails: string[]) => Promise<{ id: string }[]>;
+  };
+  orgRepo: {
+    findOrganizationById: (id: string) => Promise<Organization | null>;
+  };
+  allowedRoles: string[];
+}
+
+export const createInviteUserController =
+  (deps: InviteUserControllerDeps) =>
+  async (req: Request, res: Response) => {
+    const input = inviteUserMapper(req);
+
+    if (!input) {
+      throw new UnauthorizedError('Unauthorized');
     }
-    const { organizationId: userOrganizationId } = req.user;
-    const organizationId = req.params['organizationId'] ?? '';
 
-    const inviteRepo = inviteRepositoryPrisma(prisma, organizationId);
-    const memberShipRepo = membershipRepositoryPrisma(prisma, organizationId);
-    const userRepo = userRepositoryPrisma(prisma);
-    const orgRepo = organizationRepositoryPrisma(prisma);
-
-    const invite = await inviteUserService(
-      {
-        users,
-        organizationId,
-        userOrganizationId,
+    const invite = await inviteUserService(input, {
+      createInvite: (data) => deps.inviteRepo.create(data),
+      findInviteByFilter: (filter) =>
+        deps.inviteRepo.findInviteByFilter(input.organizationId, filter),
+      findMembershipbyFilter: (filter) =>
+        deps.membershipRepo.findMembershipsByFilter(input.organizationId, filter),
+      findUserByFilter: async (filter) => {
+        const found = await deps.userRepo.findUsersByEmails(filter.email.$in);
+        return found.length > 0 ? found : null;
       },
-      {
-        createInvite: inviteRepo.create,
-        findInviteByFilter: inviteRepo.findInviteByFilter,
-        findMembershipbyFilter: memberShipRepo.findMembershipsByFilter,
-        findUserByFilter: userRepo.findUserByFilter,
-        findOneOrganizationByFilter: orgRepo.findOneByFilter,
-      }
-    );
+      findOneOrganizationByFilter: async (filter) => {
+        const org = await deps.orgRepo.findOrganizationById(filter.id);
+        if (!org || org.status !== filter.status) {
+          return null;
+        }
+        return { id: org.id };
+      },
+      allowedRoles: deps.allowedRoles,
+    });
 
     return res.status(200).json({
       message: 'User invited successfully',
       invite,
     });
-  } catch (error) {
-    return next(error);
-  }
-};
+  };

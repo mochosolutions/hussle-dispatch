@@ -1,7 +1,8 @@
 import type { PrismaTransaction } from '@/shared/prisma';
+import { ValidationError } from '@/shared/errors';
 import { logger } from '@/shared/utils/logger';
 import { generateSlug } from '../../../shared/utils/slugValidator';
-import type { CreateMembershipInput, Membership } from '../../types/membershipTypes';
+import type { Membership } from '../../types/membershipTypes';
 import type { CreateOrganizationInput, Organization } from '../../types/organizationTypes';
 import type { SignupOrgInput, SignupOrgResult } from '../../types/signupOrgTypes';
 import type { User, CreateUserInput } from '../../types/user';
@@ -10,12 +11,23 @@ export interface SignupOrganizationUseCaseDeps {
   transactionManager: {
     runInTransaction: <T>(fn: (tx: PrismaTransaction) => Promise<T>) => Promise<T>;
   };
-  createOrgService: (data: CreateOrganizationInput, tx: PrismaTransaction) => Promise<Organization>;
-  createUserService: (data: CreateUserInput, tx: PrismaTransaction) => Promise<User>;
-  createMembershipService: (
-    data: CreateMembershipInput,
-    tx: PrismaTransaction
-  ) => Promise<Membership>;
+  organizationRepository: {
+    create: (
+      input: {
+        organization: CreateOrganizationInput;
+        user: CreateUserInput;
+        membership: {
+          role: string;
+          status: string;
+        };
+      },
+      tx: PrismaTransaction,
+    ) => Promise<{
+      organization: Organization;
+      user: User;
+      membership: Membership;
+    }>;
+  };
   authProvider: {
     signUpUser: (args: {
       email: string;
@@ -33,13 +45,55 @@ export interface SignupOrganizationUseCaseDeps {
         attributeName?: string;
       };
     }>;
-    deleteUser: (id: string) => Promise<any>;
+    deleteUser: (id: string) => Promise<{ id: string }>;
+  };
+  config: {
+    defaultOrgRole: string;
   };
 }
 
+const toCreateOrganizationInput = (input: {
+  email: string;
+  orgName: string;
+  orgRole: string;
+}): CreateOrganizationInput => ({
+  name: input.orgName,
+  slug: generateSlug(input.orgName),
+  email: input.email,
+  role: input.orgRole,
+});
+
+const toCreateUserInput = (input: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  externalId: string;
+}): CreateUserInput => ({
+  email: input.email,
+  firstName: input.firstName,
+  lastName: input.lastName,
+  externalId: input.externalId,
+});
+
+const getErrorMessage = (error: unknown): string => {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const candidate = error.message;
+    if (typeof candidate === 'string') {
+      return candidate;
+    }
+  }
+
+  return '';
+};
+
+const isExistingAccountError = (error: unknown): boolean => {
+  const message = getErrorMessage(error).toLowerCase();
+  return message.includes('already exists');
+};
+
 export const signupOrganizationUseCase = async (
   data: SignupOrgInput,
-  deps: SignupOrganizationUseCaseDeps
+  deps: SignupOrganizationUseCaseDeps,
 ): Promise<SignupOrgResult> => {
   const {
     email,
@@ -47,60 +101,52 @@ export const signupOrganizationUseCase = async (
     firstName,
     lastName,
     orgName,
-    orgRole = 'BROKER', // Default value if not provided
-    orgVertical = 'STAFFING', // Default value if not provided
+    orgRole = deps.config.defaultOrgRole,
     customMetadata = {},
   } = data;
 
-  let externalUserId: string | undefined;
+  logger.debug('Signup metadata captured', {
+    hasCustomMetadata: Object.keys(customMetadata).length > 0,
+  });
+
+  let externalUser: Awaited<
+    ReturnType<SignupOrganizationUseCaseDeps['authProvider']['signUpUser']>
+  >;
+
+  try {
+    externalUser = await deps.authProvider.signUpUser({
+      email,
+      password,
+      firstName,
+      lastName,
+    });
+  } catch (error: unknown) {
+    if (isExistingAccountError(error)) {
+      throw new ValidationError('An account with this email already exists. Please log in.');
+    }
+
+    throw error;
+  }
 
   try {
     return await deps.transactionManager.runInTransaction(async (tx) => {
       logger.info('Starting organization signup process with Prisma transaction');
 
-      // Generate slug from org name (e.g., "Acme Corp" -> "acme-corp")
-      const orgSlug = generateSlug(orgName);
-
-      const organization = await deps.createOrgService(
+      const { organization, user, membership } = await deps.organizationRepository.create(
         {
-          name: orgName,
-          slug: orgSlug,
-          email,
-          role: orgRole,
-          vertical: orgVertical,
+          organization: toCreateOrganizationInput({ email, orgName, orgRole }),
+          user: toCreateUserInput({
+            email,
+            firstName,
+            lastName,
+            externalId: externalUser.id,
+          }),
+          membership: {
+            role: 'admin',
+            status: 'active',
+          },
         },
-        tx
-      );
-
-      // Use SignUp API for public self-service registration (NOT AdminCreateUser)
-      // User will be UNCONFIRMED and must verify email with code before login
-      const externalUser = await deps.authProvider.signUpUser({
-        email,
-        password,
-        firstName,
-        lastName,
-      });
-
-      externalUserId = externalUser.id;
-
-      const user = await deps.createUserService(
-        {
-          email,
-          firstName,
-          lastName,
-          externalId: externalUser.id,
-        },
-        tx
-      );
-
-      const membership = await deps.createMembershipService(
-        {
-          userId: user.id,
-          organizationId: organization.id,
-          role: 'admin',
-          status: 'active',
-        },
-        tx
+        tx,
       );
 
       logger.info('Organization signup process completed successfully', {
@@ -127,15 +173,18 @@ export const signupOrganizationUseCase = async (
         },
       };
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error during organization signup process', { error });
-    if (externalUserId) {
-      try {
-        await deps.authProvider.deleteUser(externalUserId);
-      } catch (cleanupError) {
-        logger.error('Error cleaning up external user', { externalUserId, error: cleanupError });
-      }
+
+    try {
+      await deps.authProvider.deleteUser(externalUser.id);
+    } catch (cleanupError: unknown) {
+      logger.error('Error cleaning up external user', {
+        externalUserId: externalUser.id,
+        error: cleanupError,
+      });
     }
+
     throw error;
   }
 };

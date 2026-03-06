@@ -1,6 +1,5 @@
 import { logger } from '@/shared/utils/logger';
 import type { SessionData } from '../../types/tokenProvider';
-import { ITokenProvider, TokenProviderDeps } from '../../types/tokenProvider';
 
 export interface OrgSessionWithRefreshToken {
   sessionKey: string;

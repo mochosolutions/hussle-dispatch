@@ -1,6 +1,4 @@
 import * as Yup from 'yup';
-import { emailValidation, longerNameValidation, passwordValidation } from '@/shared/validators';
-import { CreateOrganizationInput } from '../types/organizationTypes';
 
 export const organizationIdSchema = Yup.object({
   organizationId: Yup.string().required('Organization ID is required').trim(),

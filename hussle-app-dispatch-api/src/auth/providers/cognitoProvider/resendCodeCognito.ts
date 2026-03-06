@@ -17,7 +17,7 @@ export const resendCodeCognito = async (
   { clientId, client }: ResendCodeDeps
 ) => {
   try {
-    const response = await resendConfirmationCodeCognito({
+    await resendConfirmationCodeCognito({
       clientId,
       username,
       client,

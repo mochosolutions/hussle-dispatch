@@ -1,9 +1,10 @@
+import type Redis from 'ioredis';
 import { logger } from '@/shared/utils/logger';
 import type { SessionData } from '../../types/tokenProvider';
 
 export const getSessionById = async (
   sessionId: string,
-  { redisClient }: { redisClient: any }
+  { redisClient }: { redisClient: Redis }
 ): Promise<SessionData | null> => {
   const sessionKey = `session:refresh:${sessionId}`;
 

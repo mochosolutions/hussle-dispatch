@@ -1,67 +1,49 @@
-import { BadRequestError } from '@mocho/common';
-import type { NextFunction, Request, Response } from 'express';
-import { InvitationStatus } from '@prisma/client';
-import { prisma } from '@/shared/prisma';
-import { logger } from '@/shared/utils/logger';
-import { inviteRepositoryPrisma } from '../../repositories/inviteRepositoryPrisma';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
-import { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
+import type { Request, Response } from 'express';
+import type { Invite } from '../../types/invite';
+import type { Organization } from '../../types/organizationTypes';
+import type { User } from '../../types/user';
+import { verifyInviteService } from '../../services/invite/verifyInviteService';
+import { verifyInviteMapper } from './mappers/verifyInviteMapper';
 
-export const verifyInviteController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const invitationToken = req.query.invitationToken as string;
-    const { organizationId } = req.params;
+interface VerifyInviteControllerDeps {
+  inviteRepo: {
+    findOneByFilter: (
+      organizationId: string,
+      filter: Record<string, unknown>,
+    ) => Promise<Invite | null>;
+    updateInvite: (
+      organizationId: string,
+      id: string,
+      data: Partial<Invite>,
+    ) => Promise<Invite | null>;
+  };
+  orgRepo: {
+    findOrganizationById: (id: string) => Promise<Organization | null>;
+  };
+  userRepo: {
+    findUserByEmail: (email: string) => Promise<User | null>;
+  };
+}
 
-    if (!invitationToken) {
-      throw new BadRequestError('Missing token');
-    }
+export const createVerifyInviteController =
+  (deps: VerifyInviteControllerDeps) =>
+  async (req: Request, res: Response) => {
+    const input = verifyInviteMapper(req);
 
-    const inviteRepo = inviteRepositoryPrisma(prisma, organizationId);
-    const orgRepo = organizationRepositoryPrisma(prisma);
-    const userRepo = userRepositoryPrisma(prisma);
-
-    const existingInvitation = await inviteRepo.findOneByFilter({ token: invitationToken });
-    logger.debug('Invitation lookup', {
-      invitationId: existingInvitation?.id,
-      status: existingInvitation?.status,
+    const result = await verifyInviteService(input, {
+      inviteRepo: {
+        findOneByFilter: (filter) =>
+          deps.inviteRepo.findOneByFilter(input.organizationId, filter),
+        updateInvite: (id, data) =>
+          deps.inviteRepo.updateInvite(input.organizationId, id, data),
+      },
+      orgRepo: deps.orgRepo,
+      userRepo: deps.userRepo,
     });
-
-    if (!existingInvitation) {
-      throw new BadRequestError('Invalid or expired invite');
-    }
-
-    if (existingInvitation.status !== InvitationStatus.PENDING) {
-      throw new BadRequestError('Invitation is no longer valid');
-    }
-
-    if (new Date() > new Date(existingInvitation.expiresAt)) {
-      inviteRepo.updateInvite(existingInvitation.id, { status: InvitationStatus.EXPIRED });
-      // existingInvitation.status = 'expired';
-      // await existingInvitation.save();
-      throw new BadRequestError('Invite link has expired');
-    }
-
-    const organization = await orgRepo.findOrganizationById(existingInvitation.organizationId);
-    logger.debug('Organization lookup', { organizationId: existingInvitation.organizationId });
-
-    if (!organization) {
-      throw new BadRequestError('Organization no longer exists');
-    }
-
-    const userExists = await userRepo.findUserByEmail(existingInvitation.email);
-    logger.debug('User existence check', { exists: !!userExists });
 
     return res.status(200).json({
       message: 'Invite verified successfully',
-      invite: {
-        email: existingInvitation.email,
-        role: existingInvitation.role,
-        organizationId: existingInvitation.organizationId,
-        expiresAt: existingInvitation.expiresAt,
-      },
-      userExists: !!userExists,
+      invite: result.invite,
+      userExists: result.userExists,
     });
-  } catch (error) {
-    return next(error);
-  }
-};
+  };

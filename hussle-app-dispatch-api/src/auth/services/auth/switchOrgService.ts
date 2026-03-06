@@ -1,6 +1,8 @@
+import { AuthRequestError } from '@/shared/errors/authError';
 import { logger } from '@/shared/utils/logger';
 import type { Membership } from '../../types/membershipTypes';
 import type { ITokenProvider } from '../../types/tokenProvider';
+import type { User } from '../../types/user';
 
 export interface SwitchOrgInput {
   userId: string;
@@ -9,12 +11,40 @@ export interface SwitchOrgInput {
   refreshToken: string;
 }
 
-export interface SwitchOrgDeps {
-  tokenProvider: ITokenProvider;
-  findUserByIdWithMemberships: (userId: string) => Promise<any>;
+interface UserWithMemberships extends User {
+  memberships: Membership[];
 }
 
-export const switchOrgService = async (data: SwitchOrgInput, deps: SwitchOrgDeps) => {
+interface SwitchOrgResult {
+  accessToken: string;
+  refreshToken: string;
+  user: User & { organizationId: string };
+  orgs: Membership[];
+}
+
+export interface SwitchOrgDeps {
+  tokenProvider: ITokenProvider;
+  findUserByIdWithMemberships: (userId: string) => Promise<UserWithMemberships | null>;
+}
+
+const getTargetMembership = (memberships: Membership[], organizationId: string): Membership => {
+  const membership = memberships.find(
+    (item) => item.organizationId === organizationId && item.status === 'active',
+  );
+
+  if (!membership) {
+    throw new AuthRequestError(
+      'User does not have an active membership in the target organization',
+    );
+  }
+
+  return membership;
+};
+
+export const switchOrgService = async (
+  data: SwitchOrgInput,
+  deps: SwitchOrgDeps,
+): Promise<SwitchOrgResult> => {
   const { userId, sessionId, refreshToken: ogRefreshToken, organizationId } = data;
   const { tokenProvider, findUserByIdWithMemberships } = deps;
 
@@ -24,18 +54,14 @@ export const switchOrgService = async (data: SwitchOrgInput, deps: SwitchOrgDeps
   const userWithMemberships = await findUserByIdWithMemberships(userId);
 
   if (!userWithMemberships) {
-    throw new Error('User not found');
+    throw new AuthRequestError('User not found');
   }
 
-  const membership = userWithMemberships.memberships?.find(
-    (m: Membership) => m.organizationId === organizationId && m.status === 'active'
-  );
+  const membership = getTargetMembership(userWithMemberships.memberships, organizationId);
 
-  if (!membership) {
-    throw new Error('User does not have an active membership in the target organization');
-  }
-
-  logger.info('SwitchOrgService found memberships', { count: userWithMemberships.memberships?.length ?? 0 });
+  logger.info('SwitchOrgService found memberships', {
+    count: userWithMemberships.memberships?.length ?? 0,
+  });
 
   const formattedUser = {
     ...userWithMemberships,
@@ -53,7 +79,6 @@ export const switchOrgService = async (data: SwitchOrgInput, deps: SwitchOrgDeps
     membershipId: membership.membershipId,
     orgStatus: membership.orgStatus,
     role: membership.role,
-    // permissionsVersion: 1,
   });
 
   return {

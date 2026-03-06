@@ -1,21 +1,25 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /usr/app
 
-# Copy workspace root files for npm workspaces
+RUN apk add --no-cache openssl
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
 COPY package.json package-lock.json ./
-COPY hussle-app-dispatch-api/package.json ./hussle-app-dispatch-api/
-COPY mocho-ui/package.json ./mocho-ui/
-COPY hussle-app-dispatch-ui/package.json ./hussle-app-dispatch-ui/
 
-RUN npm ci
+RUN npm install
 
-COPY hussle-app-dispatch-api/ ./hussle-app-dispatch-api/
 
-WORKDIR /usr/app/hussle-app-dispatch-api
-
+# Generate Prisma client with platform-specific binaries for the container
+# This MUST happen after npm install (which installs @prisma/client)
+# and BEFORE copying source code (which imports from generated client)
 RUN npx prisma generate
 
-EXPOSE 3001
+COPY . .
 
-CMD ["npx", "ts-node-dev", "--respawn", "--transpile-only", "src/index.ts"]
+
+# Run migrations and start dev server with hot reload
+# Using 'sh' to run the script since volume mount may override execute permissions
+CMD ["sh", "./scripts/migrate-and-start.sh", "--dev"]

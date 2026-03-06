@@ -1,4 +1,5 @@
 import { logger } from '@/shared/utils/logger';
+import { ConflictError, SequenceError, isCustomError } from '@/shared/errors';
 import type {
   CreateMembershipInput,
   Membership,
@@ -8,19 +9,22 @@ import type {
 export const createMembershipService = async (
   data: CreateMembershipInput,
   { create, findOneByFilter }: CreateMembershipServiceDeps,
-  context?: any
 ): Promise<Membership> => {
   try {
     const exists = await findOneByFilter(
       { userId: data.userId, organizationId: data.organizationId },
-      context
     );
     if (exists) {
-      throw new Error(`Membership already exists for user ${data.userId}`);
+      throw new ConflictError(`Membership already exists for user ${data.userId}`);
     }
-    return await create(data, context);
+    return await create(data);
   } catch (error) {
+    if (isCustomError(error)) {
+      throw error;
+    }
     logger.error('Error creating membership', { error });
-    throw new Error(`Failed to create membership`);
+    const serviceError = new SequenceError(`Failed to create membership`);
+    serviceError.cause = error;
+    throw serviceError;
   }
 };

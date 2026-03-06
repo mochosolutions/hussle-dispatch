@@ -51,22 +51,23 @@ export const signUpUserCognito = async (
           }
         : undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Failed to sign up user in Cognito', { error });
 
     // Handle common Cognito errors
-    if (error.name === 'UsernameExistsException') {
-      throw new AuthRequestError('An account with this email already exists');
-    }
-
-    if (error.name === 'InvalidPasswordException') {
-      throw new AuthRequestError(
-        'Password does not meet requirements. Must be at least 8 characters with uppercase, lowercase, numbers, and special characters.'
-      );
-    }
-
-    if (error.name === 'InvalidParameterException') {
-      throw new AuthRequestError('Invalid signup parameters. Please check your input.');
+    if (typeof error === 'object' && error !== null && 'name' in error) {
+      const name = (error as { name: string }).name;
+      if (name === 'UsernameExistsException') {
+        throw new AuthRequestError('An account with this email already exists');
+      }
+      if (name === 'InvalidPasswordException') {
+        throw new AuthRequestError(
+          'Password does not meet requirements. Must be at least 8 characters with uppercase, lowercase, numbers, and special characters.'
+        );
+      }
+      if (name === 'InvalidParameterException') {
+        throw new AuthRequestError('Invalid signup parameters. Please check your input.');
+      }
     }
 
     throw new AuthRequestError('Unable to create user account. Please try again.');

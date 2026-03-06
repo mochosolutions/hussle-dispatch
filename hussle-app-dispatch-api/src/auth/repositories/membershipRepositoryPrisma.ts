@@ -20,26 +20,57 @@
  * - Should only be called with globalRepositoryFactory
  */
 
-/* eslint-disable max-lines-per-function, max-lines, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, no-console, complexity, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-condition */
-// TODO: Fix pre-existing lint violations (155 errors) - documented in STATE.md
-
 import { BadRequestError } from '@mocho/common';
 import type { PrismaClient, Membership as PrismaMembership } from '@prisma/client';
 import { logger } from '@/shared/utils/logger';
 import type { PrismaTransaction } from '@/config/database';
 // TODO: Refactor to use tenantRepositoryFactory or remove baseRepository dependency
-// eslint-disable-next-line no-restricted-imports
 import { repositoryFactoryPrisma } from '@/shared/utils/repositoryFactoryPrisma';
 import type {
   CreateMembershipInput,
   Membership,
+  MembershipFilter,
   MembershipWithUser,
 } from '../types/membershipTypes';
+
+interface PrismaMembershipWithOrg {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  organization?: {
+    id?: string;
+    name?: string;
+    slug?: string;
+    subscriptionTier?: string;
+    status?: string;
+  } | null;
+}
+
+interface PrismaMembershipWithUser {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    externalId?: string;
+  } | null;
+}
 
 /**
  * Format Prisma Membership to API Membership (dates to strings, populate organization data)
  */
-export const formatMembership = (membership: any): Membership => {
+export const formatMembership = (membership: PrismaMembershipWithOrg): Membership => {
   try {
     const { id, userId, organizationId, organization, role, status, createdAt, updatedAt } =
       membership;
@@ -71,7 +102,7 @@ export const formatMembership = (membership: any): Membership => {
 /**
  * Format Membership with populated User data
  */
-export const formatMembershipUsers = (membership: any): MembershipWithUser => {
+export const formatMembershipUsers = (membership: PrismaMembershipWithUser): MembershipWithUser => {
   const { id, userId, user, organizationId, role, status, createdAt, updatedAt } = membership;
 
   return {
@@ -93,14 +124,14 @@ export const membershipRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
   tenantId?: string
 ) => {
-  const baseRepository = repositoryFactoryPrisma<PrismaMembership>(prisma, 'membership', tenantId);
+  const baseRepository = repositoryFactoryPrisma<PrismaMembership>({ prisma, modelName: 'membership', tenantId });
 
   return {
     /**
      * TENANT-SCOPED: Creates a membership in the current tenant.
      * Always uses tenantId to set organizationId.
      */
-    create: async (data: CreateMembershipInput, context?: any): Promise<Membership> => {
+    create: async (data: CreateMembershipInput): Promise<Membership> => {
       try {
         // Create membership with organization data in single query
         const created = await prisma.membership.create({
@@ -135,9 +166,8 @@ export const membershipRepositoryPrisma = (
      * Filters by organizationId when tenantId is provided.
      */
     findOneByFilter: async (
-      filter: Record<string, any>,
-      context?: any
-    ): Promise<Membership | null> => {
+      filter: Record<string, unknown>,
+          ): Promise<Membership | null> => {
       try {
         const where = tenantId ? { ...filter, organizationId: tenantId } : filter;
 
@@ -169,9 +199,8 @@ export const membershipRepositoryPrisma = (
      * Should filter by organizationId when tenantId is provided.
      */
     findMembershipsByFilter: async (
-      filter: Record<string, any>,
-      context?: any
-    ): Promise<MembershipWithUser[] | null> => {
+      filter: Record<string, unknown>,
+          ): Promise<MembershipWithUser[] | null> => {
       try {
         // Apply tenant filter - FIX: add tenantId to filter
         const where = tenantId ? { ...filter, organizationId: tenantId } : filter;
@@ -217,8 +246,7 @@ export const membershipRepositoryPrisma = (
      */
     findMembershipsByUserId: async (
       userId: string,
-      context?: any
-    ): Promise<Membership[] | null> => {
+          ): Promise<Membership[] | null> => {
       try {
         const memberships = await prisma.membership.findMany({
           where: { userId },
@@ -254,7 +282,7 @@ export const membershipRepositoryPrisma = (
      *
      * For user-facing requests, use findMembershipByOrg (filtered by tenant).
      */
-    findAllMemberships: async (context?: any): Promise<Membership[]> => {
+    findAllMemberships: async (): Promise<Membership[]> => {
       try {
         const memberships = await prisma.membership.findMany({
           include: {
@@ -289,8 +317,7 @@ export const membershipRepositoryPrisma = (
     updateMembership: async (
       id: string,
       data: Partial<Membership>,
-      context?: any
-    ): Promise<Membership | null> => {
+          ): Promise<Membership | null> => {
       try {
         // Apply tenant filter - FIX: add tenantId to where clause
         const where = tenantId ? { id, organizationId: tenantId } : { id };
@@ -324,12 +351,11 @@ export const membershipRepositoryPrisma = (
      * Uses baseRepository which applies tenantId filter.
      */
     updateManyMembership: async (
-      filter: any,
+      filter: MembershipFilter,
       data: Partial<Membership>,
-      context?: any
-    ): Promise<Membership[] | null> => {
+          ): Promise<Membership[] | null> => {
       try {
-        const updateCount = await baseRepository.updateMany({ filter, data });
+        const updateCount = await baseRepository.updateMany({ filter: { ...filter }, data });
         logger.info('updateManyMembership count', { updateCount });
 
         if (updateCount === 0) {
@@ -363,7 +389,7 @@ export const membershipRepositoryPrisma = (
      * TENANT-SCOPED: Soft deletes a membership within current tenant.
      * Should verify membership belongs to organizationId before deleting.
      */
-    deleteMembership: async (id: string, context?: any): Promise<Membership | null> => {
+    deleteMembership: async (id: string): Promise<Membership | null> => {
       try {
         // Apply tenant filter - FIX: verify membership belongs to tenant before deleting
         const where = tenantId ? { id, organizationId: tenantId } : { id };
@@ -400,7 +426,7 @@ export const membershipRepositoryPrisma = (
      * TENANT-SCOPED: Bulk soft deletes memberships within current tenant.
      * Uses baseRepository which applies tenantId filter.
      */
-    deleteManyMemberships: async (ids: string[], context?: unknown): Promise<number> => {
+    deleteManyMemberships: async (ids: string[], _context?: unknown): Promise<number> => {
       try {
         // Soft delete: update deleted flag and status
         const updateData = {
@@ -424,7 +450,7 @@ export const membershipRepositoryPrisma = (
      * TENANT-SCOPED: Lists all members in the current organization.
      * Filters by organizationId when tenantId is provided.
      */
-    findMembershipByOrg: async (context?: any): Promise<MembershipWithUser[] | null> => {
+    findMembershipByOrg: async (): Promise<MembershipWithUser[] | null> => {
       try {
         // This uses tenant filtering from baseRepository context
         const memberships = await prisma.membership.findMany({
@@ -458,7 +484,7 @@ export const membershipRepositoryPrisma = (
      * SERVICE-LAYER CONTROL: Only use for checking the authenticated user's own
      * membership count or in admin contexts with proper authorization.
      */
-    getActiveMembershipsCount: async (userId: string, context?: any): Promise<number> => {
+    getActiveMembershipsCount: async (userId: string): Promise<number> => {
       try {
         // Count active memberships for a user (excluding soft-deleted ones)
         const count = await prisma.membership.count({

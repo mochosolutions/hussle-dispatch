@@ -9,7 +9,6 @@ import type {
 export const deleteOrganizationService = async (
   { organizationId }: DeleteOrganizationArgs,
   { deleteOrganization, findOrganizationById }: DeleteOrganizationServiceDeps,
-  context?: any
 ): Promise<Organization | null> => {
   try {
     logger.info('Deleting organization', { organizationId });
@@ -18,7 +17,7 @@ export const deleteOrganizationService = async (
     if (!existingOrg) {
       throw new BadRequestError('Organization not found');
     }
-    const organization = await deleteOrganization(organizationId, context);
+    const organization = await deleteOrganization(organizationId);
     return organization;
   } catch (error) {
     logger.error('Error deleting organization service', { organizationId, error });

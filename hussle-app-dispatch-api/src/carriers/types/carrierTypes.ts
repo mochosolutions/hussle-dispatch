@@ -1,6 +1,8 @@
-import type { Carrier, CarrierType, LoadStatus } from '@prisma/client';
+import type { Carrier, CarrierType, LoadStatus, Driver } from '@prisma/client';
 import type { SortOrder } from '@/shared/pagination';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
+import type { CreateDriverInput } from '@/drivers/types/driverTypes';
+import type { CreateVehicleInput, VehicleWithExpenses } from '@/vehicles/types/vehicleTypes';
 
 export interface CreateCarrierInput {
   name: string;
@@ -29,6 +31,11 @@ export interface CreateCarrierInput {
   authorityStatus?: string;
   status?: string;
   notes?: string;
+}
+
+export interface CreateCarrierWithAssetsInput extends CreateCarrierInput {
+  drivers?: Omit<CreateDriverInput, 'carrierId'>[];
+  vehicles?: Omit<CreateVehicleInput, 'carrierId'>[];
 }
 
 export interface UpdateCarrierInput {
@@ -74,12 +81,22 @@ export interface CarrierWithCounts extends Carrier {
   };
 }
 
+export interface CarrierWithAssets extends CarrierWithCounts {
+  drivers: Driver[];
+  vehicles: VehicleWithExpenses[];
+}
+
 export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;
   insuranceWarning: InsuranceWarning | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
+}
+
+export interface CarrierWithAssetsResponse extends CarrierResponse {
+  drivers: Driver[];
+  vehicles: VehicleWithExpenses[];
 }
 
 export interface CarrierQueryInput {
@@ -95,6 +112,14 @@ export interface ListCarriersRepositoryInput extends CarrierQueryInput {
 
 export interface CarrierRepositoryPort {
   create(organizationId: string, input: CreateCarrierInput): Promise<CarrierWithCounts>;
+  createWithAssets(
+    organizationId: string,
+    payload: {
+      carrier: CreateCarrierInput;
+      drivers?: Omit<CreateDriverInput, 'carrierId'>[];
+      vehicles?: Omit<CreateVehicleInput, 'carrierId'>[];
+    },
+  ): Promise<CarrierWithAssets>;
   findById(id: string, organizationId: string): Promise<CarrierWithCounts | null>;
   list(input: ListCarriersRepositoryInput): Promise<CarrierWithCounts[]>;
   count(input: CarrierQueryInput): Promise<number>;

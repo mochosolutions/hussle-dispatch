@@ -3,11 +3,16 @@ import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { CarrierService } from '../types/carrierServiceTypes';
 import { createCarrierMapper } from './mappers/createCarrierMapper';
+import { createCarrierWithAssetsMapper } from './mappers/createCarrierWithAssetsMapper';
 import { getRequiredCarrierIdMapper } from './mappers/getRequiredCarrierIdMapper';
 import { getRequestContextMapper } from './mappers/getRequestContextMapper';
 import { listCarriersMapper } from './mappers/listCarriersMapper';
 import { updateCarrierMapper } from './mappers/updateCarrierMapper';
-import { toCarrierListEnvelope, toCarrierResponse } from './transformers/carrierTransformer';
+import {
+  toCarrierListEnvelope,
+  toCarrierResponse,
+  toCarrierWithAssetsResponse,
+} from './transformers/carrierTransformer';
 
 interface CarrierControllerDeps {
   carrierService: CarrierService;
@@ -15,6 +20,7 @@ interface CarrierControllerDeps {
 
 export interface CarrierControllers {
   createCarrier: RequestHandler;
+  createCarrierWithAssets: RequestHandler;
   listCarriers: RequestHandler;
   getCarrierById: RequestHandler;
   updateCarrier: RequestHandler;
@@ -29,11 +35,17 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
     sendSingle(res, toCarrierResponse(carrier, serviceInput.role), 201);
   },
 
+  createCarrierWithAssets: async (req: Request, res: Response): Promise<void> => {
+    const serviceInput = createCarrierWithAssetsMapper(req);
+    const carrier = await deps.carrierService.createCarrierWithAssets(serviceInput);
+    sendSingle(res, toCarrierWithAssetsResponse(carrier, serviceInput.role), 201);
+  },
+
   listCarriers: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = listCarriersMapper(req);
     const result = await deps.carrierService.listCarriers(serviceInput);
     const response = toCarrierListEnvelope(result.data, serviceInput.role, result.meta);
-    sendList(res, response.data, response.meta);
+    sendList(res, { data: response.data, meta: response.meta });
   },
 
   getCarrierById: async (req: Request, res: Response): Promise<void> => {

@@ -1,15 +1,51 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Driver, Prisma } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type {
   CarrierQueryInput,
   CarrierRepositoryPort,
   CarrierWithCounts,
+  CarrierWithAssets,
   CreateCarrierInput,
   ListCarriersRepositoryInput,
   LoadRepositoryPort,
   UpdateCarrierInput,
 } from '../types/carrierTypes';
 import type { LoadStatus } from '@prisma/client';
+import type {
+  CreateDriverInput,
+  NoGoZoneInput,
+  PreferredLaneInput,
+} from '@/drivers/types/driverTypes';
+import type { CreateVehicleInput } from '@/vehicles/types/vehicleTypes';
+import type { VehicleWithExpenses } from '@/vehicles/types/vehicleTypes';
+
+const toPreferredLanesJson = (
+  preferredLanes: PreferredLaneInput[] | undefined,
+): Prisma.InputJsonValue | undefined => {
+  if (preferredLanes === undefined) {
+    return undefined;
+  }
+
+  return preferredLanes.map((lane) => ({
+    originState: lane.originState,
+    destState: lane.destState,
+    originCity: lane.originCity ?? null,
+    destCity: lane.destCity ?? null,
+  }));
+};
+
+const toNoGoZonesJson = (
+  noGoZones: NoGoZoneInput[] | undefined,
+): Prisma.InputJsonValue | undefined => {
+  if (noGoZones === undefined) {
+    return undefined;
+  }
+
+  return noGoZones.map((zone) => ({
+    state: zone.state,
+    city: zone.city ?? null,
+  }));
+};
 
 const selectWithCounts = {
   _count: {
@@ -82,6 +118,79 @@ export const carrierRepositoryPrisma = (
       },
       include: selectWithCounts,
     }),
+
+  createWithAssets: async (
+    organizationId: string,
+    payload: {
+      carrier: CreateCarrierInput;
+      drivers?: Omit<CreateDriverInput, 'carrierId'>[];
+      vehicles?: Omit<CreateVehicleInput, 'carrierId'>[];
+    },
+  ): Promise<CarrierWithAssets> => {
+    const executeCreateWithAssets = async (
+      tx: PrismaClient | PrismaTransaction,
+    ): Promise<CarrierWithAssets> => {
+      // Create carrier
+      const newCarrier = await tx.carrier.create({
+        data: {
+          managedByOrgId: organizationId,
+          ...payload.carrier,
+        },
+        include: selectWithCounts,
+      });
+
+      // Create drivers if provided
+      let createdDrivers: Driver[] = [];
+      if (payload.drivers?.length) {
+        for (const driver of payload.drivers) {
+          await tx.driver.create({
+            data: {
+              ...driver,
+              carrierId: newCarrier.id,
+              preferredLanes: toPreferredLanesJson(driver.preferredLanes),
+              noGoZones: toNoGoZonesJson(driver.noGoZones),
+            },
+          });
+        }
+        createdDrivers = await tx.driver.findMany({
+          where: { carrierId: newCarrier.id, deletedAt: null },
+          orderBy: { createdAt: 'asc' },
+        });
+      }
+
+      // Create vehicles if provided
+      let createdVehicles: VehicleWithExpenses[] = [];
+      if (payload.vehicles?.length) {
+        createdVehicles = await Promise.all(
+          payload.vehicles.map((vehicle) =>
+            tx.vehicle.create({
+              data: {
+                ...vehicle,
+                carrierId: newCarrier.id,
+              },
+              include: {
+                expenses: true,
+              },
+            }),
+          ),
+        );
+      }
+
+      return {
+        ...newCarrier,
+        drivers: createdDrivers,
+        vehicles: createdVehicles,
+      };
+    };
+
+    // Check if prisma is a PrismaClient (has $transaction method)
+    if ('$transaction' in prisma && typeof prisma.$transaction === 'function') {
+      return prisma.$transaction(async (tx) => executeCreateWithAssets(tx));
+    }
+
+    // If it's already a transaction, just execute directly
+    return executeCreateWithAssets(prisma);
+  },
 
   findById: (id: string, organizationId: string): Promise<CarrierWithCounts | null> =>
     prisma.carrier.findFirst({

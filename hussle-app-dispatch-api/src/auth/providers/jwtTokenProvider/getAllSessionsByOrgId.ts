@@ -1,5 +1,5 @@
+import type Redis from 'ioredis';
 import type { SessionData } from '../../types/tokenProvider';
-import { ITokenProvider, TokenProviderDeps } from '../../types/tokenProvider';
 
 export interface GetOrgSessionsInput {
   organizationId: string;
@@ -18,7 +18,7 @@ export interface GetOrgSessionsDeps {
   };
 }
 
-export const getAllSessionsByOrgId = async (orgId: string, redisClient: any): Promise<string[]> => {
+export const getAllSessionsByOrgId = async (orgId: string, redisClient: Redis): Promise<string[]> => {
   const keys = await redisClient.keys('session:*');
   const matchingSessionIds: string[] = [];
   for (const key of keys) {

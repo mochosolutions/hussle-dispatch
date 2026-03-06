@@ -21,17 +21,3 @@ export enum OrganizationRole {
   CARRIER = 'carrier',
   SHIPPER = 'shipper',
 }
-
-export enum MembershipRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  DISPATCHER = 'dispatcher',
-  DRIVER = 'driver',
-}
-
-export enum InvitationStatus {
-  Pending = 'pending',
-  Accepted = 'accepted',
-  Expired = 'expired',
-  Revoked = 'revoked',
-}

@@ -1,20 +1,25 @@
 import { logger } from '@/shared/utils/logger';
+import { ConflictError, SequenceError, isCustomError } from '@/shared/errors';
 import type { User, CreateUserInput, CreateUserServiceDeps } from '../../types/user';
 
 export const createUserService = async (
   data: CreateUserInput,
   { create, findByEmail }: CreateUserServiceDeps,
-  context?: any
 ): Promise<User> => {
   try {
-    const exists = await findByEmail(data.email, context);
+    const exists = await findByEmail(data.email);
     if (exists) {
-      throw new Error(`User with email "${data.email}" already exists`);
+      throw new ConflictError(`User with email "${data.email}" already exists`);
     }
-    const user = await create(data, context);
+    const user = await create(data);
     return user;
   } catch (error) {
+    if (isCustomError(error)) {
+      throw error;
+    }
     logger.error('Error creating user', { error });
-    throw new Error('Failed to create user');
+    const serviceError = new SequenceError('Failed to create user');
+    serviceError.cause = error;
+    throw serviceError;
   }
 };

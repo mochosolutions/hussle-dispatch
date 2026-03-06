@@ -1,5 +1,6 @@
 import express from 'express';
-import { requireAuth } from '@/middleware/auth';
+import { requireAuth, requireRole } from '@/middleware/auth';
+import { ROLES } from '@/config/roles';
 import { validateRequest } from '@/shared/middleware/validateRequest';
 import type { CarrierControllers } from '../controllers/carrierController';
 import {
@@ -12,7 +13,20 @@ import {
 export const createCarriersRouter = (controllers: CarrierControllers): express.Router => {
   const router = express.Router();
 
-  router.post('/', requireAuth, validateRequest(createCarrierValidator), controllers.createCarrier);
+  router.post(
+    '/',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(createCarrierValidator),
+    controllers.createCarrier,
+  );
+  router.post(
+    '/with-assets',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(createCarrierValidator),
+    controllers.createCarrierWithAssets,
+  );
   router.get('/', requireAuth, validateRequest(listCarriersValidator), controllers.listCarriers);
   router.get(
     '/:id',
@@ -23,12 +37,14 @@ export const createCarriersRouter = (controllers: CarrierControllers): express.R
   router.patch(
     '/:id',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(updateCarrierValidator),
     controllers.updateCarrier,
   );
   router.delete(
     '/:id',
     requireAuth,
+    requireRole([ROLES.ADMIN]),
     validateRequest(carrierIdParamValidator),
     controllers.deleteCarrier,
   );

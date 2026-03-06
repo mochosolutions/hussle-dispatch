@@ -7,17 +7,13 @@ export const passwordChallengeService = async (
   args: PasswordChallengeInput,
   { authProvider }: PasswordChallengeServiceDeps
 ) => {
-  try {
-    const { username, newPassword, session } = args;
-    const response = await authProvider.passwordChallenge({
-      session,
-      username,
-      newPassword,
-    });
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const { username, newPassword, session } = args;
+  const response = await authProvider.passwordChallenge({
+    session,
+    username,
+    newPassword,
+  });
+  return response;
 };
 
 export default passwordChallengeService;

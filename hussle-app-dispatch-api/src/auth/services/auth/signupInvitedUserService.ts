@@ -1,5 +1,6 @@
 import type { PrismaTransaction } from '@/shared/prisma';
 import { logger } from '@/shared/utils/logger';
+import { NotFoundError } from '@/shared/errors';
 import type { CreateMembershipInput, Membership } from '../../types/membershipTypes';
 import type { Organization } from '../../types/organizationTypes';
 import type { SignupOrgResult } from '../../types/signupOrgTypes';
@@ -9,7 +10,7 @@ export interface SignupInvitedUserUseCaseDeps {
   transactionManager: {
     runInTransaction: <T>(fn: (tx: PrismaTransaction) => Promise<T>) => Promise<T>;
   };
-  acceptInvitationService: (data: AcceptInvitationInput, tx: PrismaTransaction) => Promise<any>;
+  acceptInvitationService: (data: AcceptInvitationInput, tx: PrismaTransaction) => Promise<{ invite: unknown }>;
   createUserService: (data: CreateUserInput, tx: PrismaTransaction) => Promise<User>;
   createMembershipService: (
     data: CreateMembershipInput,
@@ -24,10 +25,10 @@ export interface SignupInvitedUserUseCaseDeps {
       lastName: string;
       orgId: string;
       orgRole: string;
-      customMetadata?: Record<string, any>;
+      customMetadata?: Record<string, string>;
     }) => Promise<{ id: string; email: string; firstName: string; lastName: string }>;
 
-    deleteUser: (id: string) => Promise<any>;
+    deleteUser: (id: string) => Promise<{ id: string }>;
   };
 }
 
@@ -60,7 +61,6 @@ export const signupInvitedUserUseCase = async (
     lastName,
     invitationToken,
     organizationId,
-    userOrganizationId,
   } = data;
 
   let externalUserId: string | undefined;
@@ -74,7 +74,7 @@ export const signupInvitedUserUseCase = async (
 
   try {
     return await transactionManager.runInTransaction(async (tx) => {
-      const invitationResult = await deps.acceptInvitationService(
+      await deps.acceptInvitationService(
         {
           email,
           invitationToken,
@@ -120,7 +120,7 @@ export const signupInvitedUserUseCase = async (
       const organization = await findOrganizationById(organizationId, tx);
 
       if (!organization) {
-        throw new Error('Organization not found');
+        throw new NotFoundError('Organization not found');
       }
 
       return {

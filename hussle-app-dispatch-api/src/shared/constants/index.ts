@@ -18,9 +18,6 @@ export type { DocumentType } from './documentTypes';
 export { CONTACT_TYPES } from './contactTypes';
 export type { ContactType } from './contactTypes';
 
-export { ROLES } from './roles';
-export type { Role } from './roles';
-
 export { PROHIBITED_COMMODITIES_DEFAULT } from './commodities';
 
 export { MARKET_TIERS } from './marketTiers';

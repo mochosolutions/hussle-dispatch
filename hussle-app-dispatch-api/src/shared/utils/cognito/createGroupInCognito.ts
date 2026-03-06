@@ -1,6 +1,7 @@
 import { CreateGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
 import type { CreateGroupParams } from './cognitoTypes';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 export const createGroupInCognito = async ({
   groupName,
@@ -14,10 +15,10 @@ export const createGroupInCognito = async ({
 
   try {
     const response = await client.send(command);
-    console.log('Group created in Cognito:', response);
+    logger.info('Group created in Cognito');
     return response;
-  } catch (error) {
-    console.error('Error creating group in Cognito:', error);
+  } catch (error: unknown) {
+    logger.error('Error creating group in Cognito', { error });
     throw new AuthRequestError('Error creating group in Cognito');
   }
 };

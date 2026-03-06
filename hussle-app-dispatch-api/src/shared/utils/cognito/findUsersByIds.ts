@@ -1,12 +1,19 @@
-import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
+import type {
+  CognitoIdentityProviderClient,
+  UserType,
+  ListUsersCommandInput,
+  ListUsersCommandOutput,
+} from '@aws-sdk/client-cognito-identity-provider';
 import { ListUsersCommand } from '@aws-sdk/client-cognito-identity-provider';
+import type { formatCognitoUser as FormatCognitoUserFn } from './formatCognitoUser';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface FindUsersByIdsParams {
   ids: string[];
   userPoolId: string;
   client: CognitoIdentityProviderClient;
-  formatCognitoUser: (user: any) => any; // Function to format the user object
+  formatCognitoUser: typeof FormatCognitoUserFn;
 }
 
 export const findUsersByIds = async ({
@@ -16,21 +23,21 @@ export const findUsersByIds = async ({
   formatCognitoUser,
 }: FindUsersByIdsParams) => {
   try {
-    let users: any[] = [];
+    let users: UserType[] = [];
 
     for (const id of ids) {
       const filter = `sub = "${id}"`;
       let paginationToken; // For handling pagination if there are many users
 
       do {
-        const params: any = {
+        const params: ListUsersCommandInput = {
           UserPoolId: userPoolId,
           Filter: filter,
           PaginationToken: paginationToken,
         };
 
         const command = new ListUsersCommand(params);
-        const response = await client.send(command);
+        const response: ListUsersCommandOutput = await client.send(command);
 
         if (response.Users) {
           users = users.concat(response.Users);
@@ -41,8 +48,8 @@ export const findUsersByIds = async ({
     }
 
     return users.map((user) => formatCognitoUser(user));
-  } catch (error) {
-    console.error('Error retrieving users by IDs:', error);
+  } catch (error: unknown) {
+    logger.error('Error retrieving users by IDs', { error });
     throw new AuthRequestError('Error retrieving users by IDs');
   }
 };

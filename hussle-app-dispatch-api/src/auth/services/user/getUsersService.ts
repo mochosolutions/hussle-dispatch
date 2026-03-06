@@ -1,7 +1,8 @@
 import { logger } from '@/shared/utils/logger';
+import { SequenceError } from '@/shared/errors';
 import type { User, GetUserServiceDeps } from '../../types/user';
 
-export const getUserService = async (dep: GetUserServiceDeps, context?: any): Promise<User[]> => {
+export const getUserService = async (dep: GetUserServiceDeps): Promise<User[]> => {
   const { findAllUsers } = dep;
   try {
     const users = await findAllUsers();
@@ -11,6 +12,8 @@ export const getUserService = async (dep: GetUserServiceDeps, context?: any): Pr
     return users;
   } catch (error) {
     logger.error('Error fetching users', { error });
-    throw new Error('Error fetching users');
+    const serviceError = new SequenceError('Error fetching users');
+    serviceError.cause = error;
+    throw serviceError;
   }
 };

@@ -41,9 +41,18 @@ export const createUserCognito = async (
       throw new AuthRequestError('Cognito response missing user data');
     }
 
-    const { email, firstName, lastName, id } = formatCognitoUser(User);
+    const formatted = formatCognitoUser(User);
 
-    return { id, email, firstName, lastName };
+    if (!formatted.id || !formatted.email || !formatted.firstName || !formatted.lastName) {
+      throw new AuthRequestError('Cognito user is missing required attributes');
+    }
+
+    return {
+      id: formatted.id,
+      email: formatted.email,
+      firstName: formatted.firstName,
+      lastName: formatted.lastName,
+    };
   } catch (error) {
     logger.error('Failed to create user in Cognito', { error });
     throw new AuthRequestError('Unable to create user in Cognito');

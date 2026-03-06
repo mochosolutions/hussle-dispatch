@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { AdminGetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface FindUserByEmailParams {
   email: string;
@@ -20,8 +21,8 @@ export const findUserByEmailInCognito = async ({
     });
     const response = await client.send(command);
     return response;
-  } catch (error) {
-    console.error('Error retrieving user by email:', error);
+  } catch (error: unknown) {
+    logger.error('Error retrieving user by email', { error });
     throw new AuthRequestError('Error retrieving user by email');
   }
 };

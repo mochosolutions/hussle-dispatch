@@ -13,14 +13,13 @@ export const confirmForgotPassword = async (
   try {
     const { email, code, newPassword } = args;
     const { client, clientId } = deps;
-    const response = await confirmForgotPasswordCognito({
+    await confirmForgotPasswordCognito({
       client,
       clientId,
       username: email,
       confirmationCode: code,
       newPassword,
     });
-    // const {} = response; // Assuming the response is not used, but we can log or handle it if needed
     return {
       success: true,
       message: 'Password reset successfully.',

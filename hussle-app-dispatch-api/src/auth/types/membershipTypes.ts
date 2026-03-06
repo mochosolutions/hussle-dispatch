@@ -35,19 +35,16 @@ export interface CreateMembershipInput {
 }
 
 export interface CreateMembershipServiceDeps {
-  create: (data: CreateMembershipInput, options?: { context?: any }) => Promise<Membership>;
-  findOneByFilter: (
-    filters: { userId: string; organizationId: string },
-    options?: { context?: any }
-  ) => Promise<Membership | null>;
+  create: (data: CreateMembershipInput) => Promise<Membership>;
+  findOneByFilter: (filters: { userId: string; organizationId: string }) => Promise<Membership | null>;
 }
 
 export interface MembershipServiceDeps {
-  findAllMemberships: any;
+  findAllMemberships: () => Promise<Membership[]>;
 }
 
 export interface GetUserMembershipServiceDeps {
-  findByUserId: any;
+  findByUserId: (userId: string) => Promise<Membership | null>;
 }
 
 export interface DeleteManyMembershipArgs {
@@ -55,15 +52,15 @@ export interface DeleteManyMembershipArgs {
 }
 
 export interface DeleteMembershipServiceDeps {
-  deleteById: any;
+  deleteById: (id: string) => Promise<Membership | null>;
 }
 
 export interface DeleteManyMembershipsDeps {
-  deleteManyMemberships: (ids: string[], context?: any) => Promise<any>;
+  deleteManyMemberships: (ids: string[]) => Promise<Membership[] | null>;
 }
 
 export interface UpdateMembershipServiceDeps {
-  updateMembership: (ids: string, data: Partial<Membership>, context?: any) => Promise<Membership>;
+  updateMembership: (id: string, data: Partial<Membership>) => Promise<Membership>;
 }
 
 export interface UpdateMembershipInput {
@@ -74,9 +71,8 @@ export interface UpdateMembershipInput {
 
 export interface UpdateManyMembershipsDeps {
   updateManyMembership: (
-    filter: any,
-    data: Partial<Membership>,
-    context?: any
+    filter: MembershipFilter,
+    data: Partial<Membership>
   ) => Promise<Membership[] | null>;
 }
 
@@ -85,7 +81,12 @@ export interface UpdateMemberInput {
   status?: Membership['status'];
 }
 
+export interface MembershipFilter {
+  organizationId?: string;
+  userId?: string;
+}
+
 export interface UpdateManyMembershipArgs {
-  filter: { [key: string]: any };
+  filter: MembershipFilter;
   data: UpdateMemberInput;
 }

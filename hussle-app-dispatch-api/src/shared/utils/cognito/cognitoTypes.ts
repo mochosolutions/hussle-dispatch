@@ -30,8 +30,8 @@ export interface AuthenticateResponse {
   challengeName: string;
   challengeParams: {
     userID: string;
-    requiredAttributes: any;
-    userAttributes: any;
+    requiredAttributes: string | undefined;
+    userAttributes: string | undefined;
   };
 }
 

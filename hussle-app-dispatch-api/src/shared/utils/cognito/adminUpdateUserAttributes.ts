@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface AdminUpdateUserAttributesParams {
   userPoolId: string;
@@ -22,10 +23,10 @@ export const adminUpdateUserAttributes = async ({
       UserAttributes: userAttributes,
     });
     const response = await client.send(command);
-    console.log(`User attributes updated successfully for user "${username}"`);
+    logger.info(`User attributes updated successfully for user "${username}"`);
     return response;
-  } catch (error) {
-    console.error(`Error updating user attributes for user "${username}":`, error);
+  } catch (error: unknown) {
+    logger.error(`Error updating user attributes for user "${username}"`, { error });
     throw new AuthRequestError(`Error updating user attributes for user "${username}"`);
   }
 };

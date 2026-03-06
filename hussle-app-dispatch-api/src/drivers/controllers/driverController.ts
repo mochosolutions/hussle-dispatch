@@ -32,7 +32,7 @@ export const createDriverControllers = (deps: DriverControllerDeps): DriverContr
     const serviceInput = listDriversMapper(req);
     const result = await deps.driverService.listDrivers(serviceInput);
     const response = toDriverListEnvelope(result.data, result.meta);
-    sendList(res, response.data, response.meta);
+    sendList(res, { data: response.data, meta: response.meta });
   },
 
   getDriverById: async (req: Request, res: Response): Promise<void> => {

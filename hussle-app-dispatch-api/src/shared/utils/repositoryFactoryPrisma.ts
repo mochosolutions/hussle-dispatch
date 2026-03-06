@@ -121,13 +121,8 @@ export interface RepositoryFactoryConfig {
   tenantField?: string;
 }
 
-export const repositoryFactoryPrisma = <T = unknown>(
-  prisma: PrismaClient | PrismaTransaction,
-  modelName: string,
-  tenantId?: string,
-  options?: FactoryOptions,
-  tenantField = 'organizationId',
-) => {
+export const repositoryFactoryPrisma = <T = unknown>(config: RepositoryFactoryConfig) => {
+  const { prisma, modelName, tenantId, options, tenantField = 'organizationId' } = config;
   const model = getPrismaModelDelegate(prisma, modelName);
   const relations = options?.relations ?? [];
 

@@ -1,4 +1,5 @@
 import { logger } from '@/shared/utils/logger';
+import { SequenceError } from '@/shared/errors';
 import type {
   Membership,
   UpdateManyMembershipsDeps,
@@ -8,11 +9,10 @@ import type {
 export const updateManyMembershipsService = async (
   { filter, data }: UpdateManyMembershipArgs,
   { updateManyMembership }: UpdateManyMembershipsDeps,
-  context?: any
 ): Promise<Membership[] | null> => {
   try {
     logger.info('Updating memberships', { filter });
-    const updatedMembership = await updateManyMembership(filter, data, context);
+    const updatedMembership = await updateManyMembership(filter, data);
     logger.info('Updated memberships', { count: updatedMembership?.length ?? 0 });
     if (!updatedMembership) {
       return null;
@@ -20,6 +20,8 @@ export const updateManyMembershipsService = async (
     return updatedMembership;
   } catch (error) {
     logger.error('Error updating memberships', { error });
-    throw Error('Failed to update memberships(s)');
+    const serviceError = new SequenceError('Failed to update memberships(s)');
+    serviceError.cause = error;
+    throw serviceError;
   }
 };

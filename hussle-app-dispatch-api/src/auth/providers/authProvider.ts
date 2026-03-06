@@ -1,5 +1,6 @@
 import { logger } from '@/shared/utils/logger';
 import type { IAuthProvider, CognitoProviderDeps } from '../types/authProviderTypes';
+import type { AuthenticateResponse } from '@/shared/utils/cognito/cognitoTypes';
 import { authenticateUserCognito } from './cognitoProvider/authenticateUserCognito';
 import { confirmForgotPassword as confirmForgotPasswordCognito } from './cognitoProvider/confirmForgotPassword';
 import { confirmUserCognito } from './cognitoProvider/confirmUserCognito';
@@ -26,7 +27,7 @@ export const cognitoProvider = ({
   deleteUserMany: async (ids: string[]) => deleteUserManyCognito(ids, { client, userPoolId }),
   authenticateUser: async ({ username, password }) =>
     authenticateUserCognito({ username, password }, { client, clientId }),
-  passwordChallenge: async ({ username, newPassword, session }): Promise<any> =>
+  passwordChallenge: async ({ username, newPassword, session }): Promise<AuthenticateResponse> =>
     passwordChallengeCognito({ session, newPassword, username }, { clientId, client, userPoolId }),
   confirmUser: async ({
     username,

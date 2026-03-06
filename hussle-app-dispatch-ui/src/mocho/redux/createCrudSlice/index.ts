@@ -98,7 +98,7 @@ export interface CrudPageState {
  */
 export interface CrudSliceGeneratedActions<
   TCreateData = Record<string, unknown>,
-  TUpdateData = Record<string, unknown>
+  TUpdateData = Record<string, unknown>,
 > {
   // Fetch all (operation-level)
   fetchAllRequest: ActionCreatorWithPayload<FetchAllRequestPayload | void>;
@@ -148,7 +148,7 @@ export interface CrudSliceGeneratedActions<
  * ```
  */
 export function createCrudSelectors<TRootState>(
-  sliceSelector: (state: TRootState) => CrudPageState
+  sliceSelector: (state: TRootState) => CrudPageState,
 ) {
   return {
     /**
@@ -287,10 +287,7 @@ export function createCrudSlice(config: CrudSliceConfig) {
   // Fetch All (getAll) - Operation-level state
   // ============================================================================
   if (operations.includes('getAll')) {
-    reducers.fetchAllRequest = (
-      state,
-      _action: PayloadAction<FetchAllRequestPayload | void>
-    ) => {
+    reducers.fetchAllRequest = (state, _action: PayloadAction<FetchAllRequestPayload | void>) => {
       setPending(state, { key: 'getAll' });
     };
 
@@ -311,26 +308,17 @@ export function createCrudSlice(config: CrudSliceConfig) {
   // Fetch By ID (getById) - Entity-level state
   // ============================================================================
   if (operations.includes('getById')) {
-    reducers.fetchByIdRequest = (
-      state,
-      action: PayloadAction<FetchByIdRequestPayload>
-    ) => {
+    reducers.fetchByIdRequest = (state, action: PayloadAction<FetchByIdRequestPayload>) => {
       const key = `getById:${action.payload.id}`;
       setPending(state, { key });
     };
 
-    reducers.fetchByIdSuccess = (
-      state,
-      action: PayloadAction<FetchByIdSuccessPayload>
-    ) => {
+    reducers.fetchByIdSuccess = (state, action: PayloadAction<FetchByIdSuccessPayload>) => {
       const key = `getById:${action.payload.id}`;
       setFulfilled(state, { loadingKey: key, errorKey: key });
     };
 
-    reducers.fetchByIdFailure = (
-      state,
-      action: PayloadAction<FailurePayload>
-    ) => {
+    reducers.fetchByIdFailure = (state, action: PayloadAction<FailurePayload>) => {
       const key = action.payload.id ? `getById:${action.payload.id}` : 'getById';
       setRejected(state, {
         loadingKey: key,
@@ -344,10 +332,7 @@ export function createCrudSlice(config: CrudSliceConfig) {
   // Create - Operation-level state
   // ============================================================================
   if (operations.includes('create')) {
-    reducers.createRequest = (
-      state,
-      _action: PayloadAction<CreateRequestPayload<unknown>>
-    ) => {
+    reducers.createRequest = (state, _action: PayloadAction<CreateRequestPayload<unknown>>) => {
       setPending(state, { key: 'create' });
     };
 
@@ -355,10 +340,7 @@ export function createCrudSlice(config: CrudSliceConfig) {
       setFulfilled(state, { loadingKey: 'create', errorKey: 'create' });
     };
 
-    reducers.createFailure = (
-      state,
-      action: PayloadAction<FailurePayload>
-    ) => {
+    reducers.createFailure = (state, action: PayloadAction<FailurePayload>) => {
       setRejected(state, {
         loadingKey: 'create',
         errorKey: 'create',
@@ -371,26 +353,17 @@ export function createCrudSlice(config: CrudSliceConfig) {
   // Update - Entity-level state
   // ============================================================================
   if (operations.includes('update')) {
-    reducers.updateRequest = (
-      state,
-      action: PayloadAction<UpdateRequestPayload<unknown>>
-    ) => {
+    reducers.updateRequest = (state, action: PayloadAction<UpdateRequestPayload<unknown>>) => {
       const key = `update:${action.payload.id}`;
       setPending(state, { key });
     };
 
-    reducers.updateSuccess = (
-      state,
-      action: PayloadAction<UpdateSuccessPayload>
-    ) => {
+    reducers.updateSuccess = (state, action: PayloadAction<UpdateSuccessPayload>) => {
       const key = `update:${action.payload.id}`;
       setFulfilled(state, { loadingKey: key, errorKey: key });
     };
 
-    reducers.updateFailure = (
-      state,
-      action: PayloadAction<FailurePayload>
-    ) => {
+    reducers.updateFailure = (state, action: PayloadAction<FailurePayload>) => {
       const key = action.payload.id ? `update:${action.payload.id}` : 'update';
       setRejected(state, {
         loadingKey: key,
@@ -404,26 +377,17 @@ export function createCrudSlice(config: CrudSliceConfig) {
   // Delete - Entity-level state
   // ============================================================================
   if (operations.includes('delete')) {
-    reducers.deleteRequest = (
-      state,
-      action: PayloadAction<DeleteRequestPayload>
-    ) => {
+    reducers.deleteRequest = (state, action: PayloadAction<DeleteRequestPayload>) => {
       const key = `delete:${action.payload.id}`;
       setPending(state, { key });
     };
 
-    reducers.deleteSuccess = (
-      state,
-      action: PayloadAction<DeleteSuccessPayload>
-    ) => {
+    reducers.deleteSuccess = (state, action: PayloadAction<DeleteSuccessPayload>) => {
       const key = `delete:${action.payload.id}`;
       setFulfilled(state, { loadingKey: key, errorKey: key });
     };
 
-    reducers.deleteFailure = (
-      state,
-      action: PayloadAction<FailurePayload>
-    ) => {
+    reducers.deleteFailure = (state, action: PayloadAction<FailurePayload>) => {
       const key = action.payload.id ? `delete:${action.payload.id}` : 'delete';
       setRejected(state, {
         loadingKey: key,
@@ -439,14 +403,13 @@ export function createCrudSlice(config: CrudSliceConfig) {
     ...extraReducers,
   };
 
-  // Create the slice
-  // Using 'as never' to satisfy Redux Toolkit's complex generic constraints
-  // The reducers are correctly typed at runtime
-  return createSlice({
+  const slice = createSlice({
     name,
     initialState,
     reducers: allReducers as never,
   });
+
+  return slice as typeof slice & { actions: CrudSliceGeneratedActions };
 }
 
 // =============================================================================

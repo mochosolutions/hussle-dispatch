@@ -20,16 +20,16 @@ export interface DeleteOrganizationUseCaseDeps {
     tx: PrismaTransaction
   ) => Promise<Organization | null>;
   updateManyUsersService: (
-    filter: any,
+    filter: Record<string, string>,
     data: UpdateUserInput,
     tx: PrismaTransaction
   ) => Promise<User[] | null>;
   deleteManyMembershipService: (
     filter: DeleteManyMembershipArgs,
     tx: PrismaTransaction
-  ) => Promise<any[] | null>;
+  ) => Promise<Membership[] | null>;
   deleteInvitationsByFilter: (
-    filter: Record<string, any>,
+    filter: Record<string, string>,
     tx: PrismaTransaction
   ) => Promise<number>;
   getUserActiveMembershipsCount: (userId: string, tx: PrismaTransaction) => Promise<number>;
@@ -53,7 +53,7 @@ export const deleteOrganizationUseCase = async (
     tokenProvider,
     authProvider,
     getMembershipService,
-    updateManyUsersService,
+    updateManyUsersService: _updateManyUsersService,
     deleteOrgService,
     deleteManyMembershipService,
     deleteInvitationsByFilter,
@@ -84,7 +84,7 @@ export const deleteOrganizationUseCase = async (
       logger.info('Memberships to delete', { count: membershipIds.length });
 
       // Parallel cleanup operations
-      const cleanupPromises: Promise<any>[] = [];
+      const cleanupPromises: Promise<unknown>[] = [];
 
       // 1. Delete all memberships for this organization
       if (membershipIds.length > 0) {
@@ -119,7 +119,7 @@ export const deleteOrganizationUseCase = async (
       cleanupPromises.push(sessionCleanup());
 
       // Wait for all cleanup operations to complete
-      const [deletedMemberships, deletedInvitationsCount] = await Promise.all(cleanupPromises);
+      const [, deletedInvitationsCount] = await Promise.all(cleanupPromises);
 
       logger.info('Cleanup results', {
         deletedMembershipsCount: membershipIds.length,
@@ -128,7 +128,7 @@ export const deleteOrganizationUseCase = async (
 
       // 4. Detect orphaned users (users with no remaining active memberships)
       const userIds = memberships?.map((m) => m.userId).filter(Boolean) || [];
-      const orphanedUsers: Array<{ userId: string; externalId: string }> = [];
+      const orphanedUsers: { userId: string; externalId: string }[] = [];
 
       for (const userId of userIds) {
         const activeMembershipsCount = await getUserActiveMembershipsCount(userId, tx);

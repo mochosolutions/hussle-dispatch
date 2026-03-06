@@ -1,15 +1,26 @@
-import type { Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
+import type { Request, RequestHandler, Response } from 'express';
 import { getAllOrgService } from '../../services';
+import type { Organization } from '../../types/organizationTypes';
+import { toOrganizationListResponse } from './transformers/organizationTransformer';
 
-export const getOrganizationsController = async (req: Request, res: Response) => {
-  const orgRepo = organizationRepositoryPrisma(prisma);
-  const result = await getAllOrgService({
-    findAll: orgRepo.findAllOrganizations,
-  });
-  return res.status(200).json({
-    message: 'Organizations retrieved successfully',
-    organizations: result,
-  });
-};
+interface OrganizationRepoDeps {
+  findAllOrganizations: () => Promise<Organization[]>;
+}
+
+interface GetOrganizationsControllerDeps {
+  orgRepo: OrganizationRepoDeps;
+}
+
+export const getOrganizationsController =
+  ({ orgRepo }: GetOrganizationsControllerDeps): RequestHandler =>
+  async (_req: Request, res: Response) => {
+    const result = await getAllOrgService({
+      findAll: orgRepo.findAllOrganizations,
+    });
+    const response = toOrganizationListResponse(result);
+
+    return res.status(200).json({
+      message: 'Organizations retrieved successfully',
+      organizations: response.organizations,
+    });
+  };

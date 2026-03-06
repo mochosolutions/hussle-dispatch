@@ -3,12 +3,12 @@ import type { PaginationMeta } from '@/shared/responseEnvelope';
 import type {
   CarrierResponse,
   CarrierWithCounts,
+  CarrierWithAssets,
+  CarrierWithAssetsResponse,
   InsuranceWarning,
 } from '../../types/carrierTypes';
 
-const DISPATCHER_ROLE = 'dispatcher';
-
-const isDispatcherRole = (role: string): boolean => role === DISPATCHER_ROLE;
+const isAdminRole = (role: string): boolean => role === 'admin';
 
 const daysUntil = (date: Date): number => {
   const now = new Date();
@@ -81,7 +81,7 @@ export const toCarrierResponse = (carrier: CarrierWithCounts, role: string): Car
     insuranceWarning: getInsuranceWarning(carrier.insuranceExpiry),
   };
 
-  if (isDispatcherRole(role)) {
+  if (!isAdminRole(role)) {
     return responseBase;
   }
 
@@ -104,3 +104,14 @@ export const toCarrierListEnvelope = (
   data: toCarrierListResponse(carriers, role),
   meta,
 });
+
+export const toCarrierWithAssetsResponse = (
+  carrier: CarrierWithAssets,
+  role: string,
+): CarrierWithAssetsResponse => {
+  return {
+    ...toCarrierResponse(carrier, role),
+    drivers: carrier.drivers,
+    vehicles: carrier.vehicles,
+  };
+};

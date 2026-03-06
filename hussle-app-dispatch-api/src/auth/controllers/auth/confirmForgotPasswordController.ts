@@ -1,14 +1,18 @@
-import type { NextFunction, Request, Response } from 'express';
-import { getClientId } from '@/shared/utils/cognito';
-import { cognitoIdentityClient } from '@/shared/utils/cognito';
+import type { Request, RequestHandler, Response } from 'express';
 import { cognitoProvider } from '../../providers/authProvider';
 import { confirmForgotPasswordService } from '../../services';
+import { mapConfirmForgotPasswordRequest } from './mappers/mapConfirmForgotPasswordRequest';
 
-export const confirmForgotPasswordController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, confirmationCode, newPassword } = req.body;
-    const { clientId, userPoolId } = await getClientId();
-    const authProvider = cognitoProvider({ client: cognitoIdentityClient, userPoolId, clientId });
+interface ConfirmForgotPasswordControllerDeps {
+  getAuthProvider: () => Promise<ReturnType<typeof cognitoProvider>>;
+}
+
+export const createConfirmForgotPasswordController = ({
+  getAuthProvider,
+}: ConfirmForgotPasswordControllerDeps): RequestHandler => {
+  return async (req: Request, res: Response) => {
+    const { email, confirmationCode, newPassword } = mapConfirmForgotPasswordRequest(req);
+    const authProvider = await getAuthProvider();
 
     await confirmForgotPasswordService(
       {
@@ -16,10 +20,9 @@ export const confirmForgotPasswordController = async (req: Request, res: Respons
         newPassword,
         code: confirmationCode,
       },
-      { authProvider }
+      { authProvider },
     );
+
     return res.status(200).json({ message: 'Password reset successfully' });
-  } catch (error) {
-    return next(error);
-  }
+  };
 };

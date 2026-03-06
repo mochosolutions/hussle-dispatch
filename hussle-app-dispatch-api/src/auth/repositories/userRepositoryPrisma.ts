@@ -38,22 +38,19 @@
  * - JWT Middleware: Ensures organizationId is from valid membership
  */
 
-/* eslint-disable max-lines-per-function, max-lines, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment, no-console, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-redundant-type-constituents */
-// TODO: Fix pre-existing lint violations - this file has 100+ lint errors from legacy code
-
 import { BadRequestError } from '@mocho/common';
 import type { PrismaClient, User as PrismaUser } from '@prisma/client';
 import { logger } from '@/shared/utils/logger';
 import type { PrismaTransaction } from '@/config/database';
 // TODO: Refactor to use tenantRepositoryFactory or remove baseRepository dependency
-// eslint-disable-next-line no-restricted-imports
 import { repositoryFactoryPrisma } from '@/shared/utils/repositoryFactoryPrisma';
-import type { CreateUserInput, User } from '../types/user';
+import type { CreateUserInput, User, UserFilter, UserWithMemberships } from '../types/user';
+import { formatMembership } from './membershipRepositoryPrisma';
 
 /**
  * Format Prisma User to API User (dates to strings)
  */
-const formatUser = (user: PrismaUser): User => ({
+export const formatUser = (user: PrismaUser): User => ({
   id: user.id,
   firstName: user.firstName,
   lastName: user.lastName,
@@ -64,10 +61,10 @@ const formatUser = (user: PrismaUser): User => ({
 });
 
 export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) => {
-  const baseRepository = repositoryFactoryPrisma<PrismaUser>(prisma, 'user');
+  const baseRepository = repositoryFactoryPrisma<PrismaUser>({ prisma, modelName: 'user' });
 
   return {
-    createUser: async (data: CreateUserInput, context?: any): Promise<User> => {
+    createUser: async (data: CreateUserInput, ): Promise<User> => {
       try {
         const rawUser = await baseRepository.create({ data });
         if (!rawUser) {
@@ -84,7 +81,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
       }
     },
 
-    findUserByFilter: async (filter: Partial<User>, context?: any): Promise<User | null> => {
+    findUserByFilter: async (filter: Partial<User>, ): Promise<User | null> => {
       try {
         logger.info('findUserByFilter', { filter });
         const docs = await baseRepository.findMany({ filter });
@@ -104,7 +101,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
       }
     },
 
-    findOneByFilter: async (filter: Partial<User>, context?: any): Promise<User | null> => {
+    findOneByFilter: async (filter: Partial<User>, ): Promise<User | null> => {
       try {
         logger.info('findOneByFilter', { filter });
         const rawUser = await baseRepository.findOne({ filter });
@@ -133,7 +130,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
      * Unsafe uses:
      * - Returning data without membership check
      */
-    findUserById: async (id: string, context?: any): Promise<User | null> => {
+    findUserById: async (id: string, ): Promise<User | null> => {
       try {
         const user = await baseRepository.findOne({ filter: { id } });
         if (!user) {
@@ -160,7 +157,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
      * Not safe for:
      * - Admin viewing another user (exposes their other orgs)
      */
-    findUserByIdWithMemberships: async (id: string, context?: any): Promise<any | null> => {
+    findUserByIdWithMemberships: async (id: string): Promise<UserWithMemberships | null> => {
       try {
         // Single query to fetch user with memberships and organization data
         const user = await prisma.user.findUnique({
@@ -186,9 +183,6 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
           return null;
         }
 
-        // Import formatMembership from membership repository
-        const { formatMembership } = await import('./membershipRepositoryPrisma');
-
         return {
           ...formatUser(user),
           memberships: user.memberships.map(formatMembership),
@@ -210,7 +204,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
      *
      * Never use to expose user data in org-scoped admin views.
      */
-    findUserByEmail: async (email: string, context?: any): Promise<User | null> => {
+    findUserByEmail: async (email: string, ): Promise<User | null> => {
       try {
         const user = await baseRepository.findOne({ filter: { email } });
         if (!user) {
@@ -223,7 +217,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
       }
     },
 
-    findUserByExternalId: async (externalId: string, context?: any): Promise<User | null> => {
+    findUserByExternalId: async (externalId: string, ): Promise<User | null> => {
       try {
         const user = await baseRepository.findOne({ filter: { externalId } });
         if (!user) {
@@ -283,7 +277,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
       }
     },
 
-    updateUser: async (id: string, data: Partial<User>, context?: any): Promise<User | null> => {
+    updateUser: async (id: string, data: Partial<User>, ): Promise<User | null> => {
       try {
         const updated = await baseRepository.update({ id, data });
         if (!updated) {
@@ -297,14 +291,13 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
     },
 
     updateManyUsers: async (
-      filter: any,
+      filter: UserFilter,
       data: Partial<User>,
-      context?: any
     ): Promise<User[] | null> => {
       try {
         // Prisma updateMany returns count, not records
         // Need to fetch updated records separately
-        const count = await baseRepository.updateMany({ filter, data });
+        const count = await baseRepository.updateMany({ filter: { ...filter }, data });
         logger.info('updateManyUsers count', { count });
 
         if (count === 0) {
@@ -312,7 +305,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
         }
 
         // Fetch the updated users
-        const updatedUsers = await baseRepository.findMany({ filter });
+        const updatedUsers = await baseRepository.findMany({ filter: { ...filter } });
         return updatedUsers.map(formatUser);
       } catch (error) {
         logger.error('Error updating users', { error });
@@ -320,7 +313,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
       }
     },
 
-    deleteUser: async (id: string, context?: any): Promise<User | null> => {
+    deleteUser: async (id: string, ): Promise<User | null> => {
       try {
         const deletedUser = await baseRepository.delete({ id });
         if (!deletedUser) {
@@ -331,6 +324,19 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
       } catch (error) {
         logger.error('Error deleting user', { error });
         throw new BadRequestError('Error deleting user');
+      }
+    },
+
+    findUsersByEmails: async (emails: string[]): Promise<{ id: string }[]> => {
+      try {
+        const users = await prisma.user.findMany({
+          where: { email: { in: emails } },
+          select: { id: true },
+        });
+        return users;
+      } catch (error) {
+        logger.error('Error finding users by emails', { error });
+        throw new BadRequestError('Error finding users by emails');
       }
     },
   };

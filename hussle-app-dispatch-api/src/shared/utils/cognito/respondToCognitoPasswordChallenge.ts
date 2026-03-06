@@ -2,6 +2,7 @@ import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-iden
 import { AdminRespondToAuthChallengeCommand } from '@aws-sdk/client-cognito-identity-provider';
 import type { AuthenticateResponse } from './cognitoTypes';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface RespondToCognitoPasswordChallengeParams {
   userPoolId: string;
@@ -33,7 +34,7 @@ export const respondToCognitoPasswordChallenge = async ({
     });
 
     const response = await client.send(command);
-    console.log('response:', response);
+    logger.debug('AdminRespondToAuthChallenge response received');
     return {
       accessToken: response.AuthenticationResult?.AccessToken || '',
       refreshToken: response.AuthenticationResult?.RefreshToken || '',
@@ -47,8 +48,8 @@ export const respondToCognitoPasswordChallenge = async ({
         userID: response.ChallengeParameters?.USER_ID_FOR_SRP ?? '',
       },
     };
-  } catch (error) {
-    console.error('Error responding to Cognito password challenge:', error);
+  } catch (error: unknown) {
+    logger.error('Error responding to Cognito password challenge', { error });
     throw new AuthRequestError('Error responding to Cognito password challenge');
   }
 };

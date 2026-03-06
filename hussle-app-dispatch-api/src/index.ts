@@ -1,11 +1,11 @@
 import { env } from './config/env';
-import { runGeoBootstrap } from './config/geoBootstrap';
-import { redisClient } from './shared/redisClient';
+// import { runGeoBootstrap } from './config/geoBootstrap';
+// import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
 
 const start = async (): Promise<void> => {
-  await redisClient.connect();
-  await runGeoBootstrap(redisClient);
+  // await redisClient.connect();
+  // await runGeoBootstrap(redisClient);
 
   const app = createApp();
 

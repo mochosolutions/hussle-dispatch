@@ -1,40 +1,38 @@
 import type { Request, Response } from 'express';
-import { redisClient as redis } from '@/shared/redisClient';
+import type { RequestHandler } from 'express';
+import { UnauthorizedError } from '@/shared/errors';
 import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
-import { logger } from '@/shared/utils/logger';
-import { tokenProvider } from '../../providers/tokenProvider';
+import type { ITokenProvider } from '../../types/tokenProvider';
 import { refreshUserTokenService } from '../../services';
+import { mapRefreshTokenRequest } from './mappers/mapRefreshTokenRequest';
+import { toRefreshTokenSuccessResponse } from './transformers/refreshTokenTransformer';
 
-export const refreshTokenController = async (req: Request, res: Response) => {
-  try {
-    const { refreshToken } = req.cookies;
-    const tokenProviderInstance = tokenProvider({ client: redis });
+interface RefreshTokenControllerDeps {
+  tokenProviderInstance: ITokenProvider;
+}
 
-    if (!refreshToken) {
-      return res.status(401).json({ error: 'No refresh token found' });
+export const createRefreshTokenController = ({
+  tokenProviderInstance,
+}: RefreshTokenControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const serviceInput = mapRefreshTokenRequest(req);
+
+    if (!serviceInput) {
+      throw new UnauthorizedError('No refresh token found');
     }
 
-    const newTokens = await refreshUserTokenService(
-      { refreshToken },
-      { tokenProvider: tokenProviderInstance }
-    );
-    if (!newTokens) {
-      return res.status(401).json({ error: 'No refresh token found' });
+    const tokens = await refreshUserTokenService(serviceInput, {
+      tokenProvider: tokenProviderInstance,
+    });
+
+    if (!tokens) {
+      throw new UnauthorizedError('Token refresh failed');
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = newTokens;
+    const { accessToken, refreshToken: newRefreshToken } = tokens;
 
-    // Set both tokens as HttpOnly cookies
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, newRefreshToken);
 
-    return res.status(200).json({
-      message: 'Token refreshed successfully',
-    });
-  } catch (error: unknown) {
-    logger.error('Token refresh failed', { correlationId: req.correlationId });
-    return res.status(400).json({ error: 'Token refresh failed' });
-  }
-};
-
-export default refreshTokenController;
+    return res.status(200).json(toRefreshTokenSuccessResponse());
+  };

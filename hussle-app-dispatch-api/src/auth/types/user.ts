@@ -1,4 +1,5 @@
 import type { User as PrismaUser } from '@prisma/client';
+import type { Membership } from './membershipTypes';
 
 /**
  * User type (derived from Prisma)
@@ -35,8 +36,8 @@ export interface UpdateUserInput {
 // ============================================================================
 
 export interface CreateUserServiceDeps {
-  create: (data: CreateUserInput, options?: { context?: any }) => Promise<User>;
-  findByEmail: (email: string, options?: { context?: any }) => Promise<User | null>;
+  create: (data: CreateUserInput) => Promise<User>;
+  findByEmail: (email: string) => Promise<User | null>;
 }
 
 export interface GetUserByIdInput {
@@ -48,14 +49,23 @@ export interface GetUserByIdDeps {
 }
 
 export interface GetUserServiceDeps {
-  findAllUsers: (context?: any) => Promise<any[] | null>;
+  findAllUsers: () => Promise<User[] | null>;
 }
 
 export interface UpdateManyUsersDeps {
-  updateManyUsers: (filter: any, data: Partial<User>, context?: any) => Promise<User[] | null>;
+  updateManyUsers: (filter: UserFilter, data: Partial<User>) => Promise<User[] | null>;
+}
+
+export interface UserFilter {
+  organizationId?: string;
+  externalId?: string;
 }
 
 export interface UpdateUserServiceDeps {
-  filter: { [key: string]: any };
+  filter: UserFilter;
   data: UpdateUserInput;
+}
+
+export interface UserWithMemberships extends User {
+  memberships: Membership[];
 }

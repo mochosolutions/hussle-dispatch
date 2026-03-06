@@ -1,127 +1,85 @@
 services:
-  dispatch-ui:
-    build:
-      context: .
-      dockerfile: hussle-app-dispatch-ui/Dockerfile.dev
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./hussle-app-dispatch-ui/src:/app/hussle-app-dispatch-ui/src
-      - ./hussle-app-dispatch-ui/public:/app/hussle-app-dispatch-ui/public
-      - ./hussle-app-dispatch-ui/index.html:/app/hussle-app-dispatch-ui/index.html
-      - ./hussle-app-dispatch-ui/vite.config.ts:/app/hussle-app-dispatch-ui/vite.config.ts
-      - ./hussle-app-dispatch-ui/tsconfig.json:/app/hussle-app-dispatch-ui/tsconfig.json
-      - ./hussle-app-dispatch-ui/tsconfig.app.json:/app/hussle-app-dispatch-ui/tsconfig.app.json
-      - ./hussle-app-dispatch-ui/tsconfig.node.json:/app/hussle-app-dispatch-ui/tsconfig.node.json
-      - ./mocho-ui/src:/app/mocho-ui/src
-    working_dir: /app/hussle-app-dispatch-ui
-    command: npx vite --host 0.0.0.0 --force
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    # tmpfs:
-    #   - /app/hussle-app-dispatch-ui/node_modules/.vite
-
-  storybook:
-    build:
-      context: .
-      dockerfile: mocho-ui/Dockerfile.dev
-    ports:
-      - "6006:6006"
-    volumes:
-      - ./mocho-ui/src:/app/mocho-ui/src
-      - ./mocho-ui/.storybook:/app/mocho-ui/.storybook
-    working_dir: /app/mocho-ui
-    command: npx storybook dev -p 6006 --host 0.0.0.0 --no-open --force-build-preview
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    # tmpfs:
-    #   - /app/mocho-ui/node_modules/.vite
-    #   - /app/mocho-ui/node_modules/.cache/storybook
-
-  # --- Backend services ---
-
-  # hussle-app-postgres:
-  #   image: postgres:15-alpine
-  #   container_name: hussle-app-postgres
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_DB=mocho_solutions
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-  # hussle-app-redis:
-  #   image: redis:7-alpine
-  #   container_name: hussle-app-redis
-  #   ports:
-  #     - "6379:6379"
-  #   command: redis-server --appendonly yes
-  #   volumes:
-  #     - redis-data:/data
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-  # hussle-app-dispatch-api:
+  # dispatch-ui:
   #   build:
-  #     context: .
-  #     dockerfile: hussle-app-dispatch-api/Dockerfile.dev
+  #     context: ./hussle-app-dispatch-ui
+  #     dockerfile: Dockerfile.dev
   #   ports:
-  #     - "3001:3001"
+  #     - "5173:5173"
   #   volumes:
-  #     - ./hussle-app-dispatch-api:/usr/app/hussle-app-dispatch-api
-  #     - api-node_modules:/usr/app/node_modules
-  #   depends_on:
-  #     hussle-app-redis:
-  #       condition: service_healthy
-  #     hussle-app-postgres:
-  #       condition: service_healthy
+  #     - ./hussle-app-dispatch-ui/src:/app/hussle-app-dispatch-ui/src
+  #     - ./hussle-app-dispatch-ui/public:/app/hussle-app-dispatch-ui/public
+  #     - ./hussle-app-dispatch-ui/index.html:/app/hussle-app-dispatch-ui/index.html
+  #     - ./hussle-app-dispatch-ui/vite.config.ts:/app/hussle-app-dispatch-ui/vite.config.ts
+  #     - ./hussle-app-dispatch-ui/tsconfig.json:/app/hussle-app-dispatch-ui/tsconfig.json
+  #     - ./hussle-app-dispatch-ui/tsconfig.app.json:/app/hussle-app-dispatch-ui/tsconfig.app.json
+  #     - ./hussle-app-dispatch-ui/tsconfig.node.json:/app/hussle-app-dispatch-ui/tsconfig.node.json
+  #     - ./mocho-ui/src:/app/mocho-ui/src
+  #   working_dir: /app/hussle-app-dispatch-ui
+  #   command: npx vite --host 0.0.0.0 --force
   #   environment:
-  #     - DATABASE_URL=postgresql://postgres:postgres@hussle-app-postgres:5432/mocho_solutions
-  #     - REDIS_URL=redis://hussle-app-redis:6379
-  #     - PORT=3001
-  #     - NODE_ENV=development
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
+  #     - CHOKIDAR_USEPOLLING=true
+  dispatch-api:
+    build:
+      context: ./hussle-app-dispatch-api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev --db-name "$${DB_NAME}"'
+    volumes:
+      - ./hussle-app-dispatch-api:/usr/app
+      - api-node_modules:/usr/app/node_modules
+    depends_on:
+      hussle-app-redis:
+        condition: service_healthy
+      hussle-app-postgres:
+        condition: service_healthy
+    environment:
+      - DB_NAME=hussle_dispatch
+      - DATABASE_URL=postgresql://postgres:postgres@hussle-app-postgres:5432/hussle_dispatch
+      - REDIS_URL=redis://hussle-app-redis:6379
+      - PORT=3001
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=300
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # --- Optional tooling (disabled by default) ---
+  hussle-app-postgres:
+    image: postgres:15-alpine
+    container_name: hussle-app-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hussle_dispatch
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # hussle-app-pgadmin:
-  #   image: dpage/pgadmin4:latest
-  #   container_name: hussle-app-pgadmin
-  #   ports:
-  #     - "5050:80"
-  #   environment:
-  #     - PGADMIN_DEFAULT_EMAIL=admin@local.dev
-  #     - PGADMIN_DEFAULT_PASSWORD=admin
-  #   depends_on:
-  #     - hussle-app-postgres
-
-  # hussle-app-redis-insight:
-  #   image: redis/redisinsight:latest
-  #   container_name: hussle-app-redis-insight
-  #   ports:
-  #     - "5540:5540"
-  #   volumes:
-  #     - redisinsight-data:/data
-  #   depends_on:
-  #     - hussle-app-redis
-  #   restart: unless-stopped
+  hussle-app-redis:
+    image: redis:7-alpine
+    container_name: hussle-app-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres-data:

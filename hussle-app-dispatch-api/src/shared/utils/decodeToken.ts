@@ -1,5 +1,6 @@
 import type { JwtPayload } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
+import { logger } from '@/shared/utils/logger';
 
 /**
  * Decodes a JWT token and returns the payload.
@@ -18,8 +19,8 @@ export function decodeToken(token: string): JwtPayload | null {
       return decoded;
     }
     return null;
-  } catch (error) {
-    console.error('Error decoding token:', error);
+  } catch (error: unknown) {
+    logger.error('Error decoding token', { error });
     return null;
   }
 }

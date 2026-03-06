@@ -80,6 +80,11 @@ export const organizationIdSchema = Yup.object({
   organizationId: Yup.string().required('Organization ID is required').trim(),
 });
 
+export const membershipParamsSchema = Yup.object({
+  organizationId: Yup.string().required('Organization ID is required').trim(),
+  membershipId: Yup.string().required('Membership ID is required').trim(),
+});
+
 export const createMembershipSchema = Yup.object({
   userId: Yup.string().required(),
   organizationId: Yup.string().required(),
@@ -93,6 +98,7 @@ export const createOrganizationValidator = Yup.object({
 
 export const updateOrganizationValidator = Yup.object({
   body: updateOrganizationSchema,
+  params: organizationIdSchema,
 });
 
 export const createMembershipValidator = Yup.object({
@@ -135,4 +141,16 @@ export const inviteUserValidator = Yup.object({
 
 export const verifyInviteValidator = Yup.object({
   params: organizationIdSchema,
+});
+
+export const updateMembershipValidator = Yup.object({
+  body: Yup.object({
+    role: Yup.string().optional(),
+    status: Yup.string().optional(),
+  }),
+  params: membershipParamsSchema,
+});
+
+export const deleteMembershipValidator = Yup.object({
+  params: membershipParamsSchema,
 });

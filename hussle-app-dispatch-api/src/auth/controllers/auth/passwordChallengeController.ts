@@ -1,16 +1,20 @@
-import type { NextFunction, Request, Response } from 'express';
-import { getClientId } from '@/shared/utils/cognito';
+import type { Request, RequestHandler, Response } from 'express';
 import { logger } from '@/shared/utils/logger';
-import { cognitoIdentityClient } from '@/shared/utils/cognito';
 import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
 import { cognitoProvider } from '../../providers/authProvider';
 import { passwordChallengeService } from '../../services';
+import { mapPasswordChallengeRequest } from './mappers/mapPasswordChallengeRequest';
 
-export const passwordChallengeController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password, session, challengeName } = req.body;
-    const { clientId, userPoolId } = await getClientId();
-    const authProvider = cognitoProvider({ client: cognitoIdentityClient, userPoolId, clientId });
+interface PasswordChallengeControllerDeps {
+  getAuthProvider: () => Promise<ReturnType<typeof cognitoProvider>>;
+}
+
+export const createPasswordChallengeController = ({
+  getAuthProvider,
+}: PasswordChallengeControllerDeps): RequestHandler => {
+  return async (req: Request, res: Response) => {
+    const { email, password, session, challengeName } = mapPasswordChallengeRequest(req);
+    const authProvider = await getAuthProvider();
     logger.info('passwordChallengeController', { email, challengeName });
 
     const authResponse = await passwordChallengeService(
@@ -19,10 +23,9 @@ export const passwordChallengeController = async (req: Request, res: Response, n
         username: email,
         newPassword: password,
       },
-      { authProvider }
+      { authProvider },
     );
 
-    // Set both tokens as HttpOnly cookies
     if (authResponse?.accessToken) {
       setAccessTokenCookie(res, authResponse.accessToken);
     }
@@ -35,9 +38,5 @@ export const passwordChallengeController = async (req: Request, res: Response, n
       session: authResponse?.session,
       message: 'User responded to new password challenge successfully',
     });
-  } catch (error) {
-    return next(error);
-  }
+  };
 };
-
-export default passwordChallengeController;

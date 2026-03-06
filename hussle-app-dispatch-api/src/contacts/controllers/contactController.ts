@@ -32,7 +32,7 @@ export const createContactControllers = (deps: ContactControllerDeps): ContactCo
     const serviceInput = listContactsMapper(req);
     const result = await deps.contactService.listContacts(serviceInput);
     const response = toContactListEnvelope(result.data, result.meta);
-    sendList(res, response.data, response.meta);
+    sendList(res, { data: response.data, meta: response.meta });
   },
 
   getContactById: async (req: Request, res: Response): Promise<void> => {

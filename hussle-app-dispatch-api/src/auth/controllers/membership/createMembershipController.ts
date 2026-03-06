@@ -1,28 +1,39 @@
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { membershipRepositoryPrisma } from '../../repositories/membershipRepositoryPrisma';
+import type { Request, RequestHandler, Response } from 'express';
 import { createMembershipService } from '../../services';
+import type { CreateMembershipInput, Membership } from '../../types/membershipTypes';
+import { createMembershipMapper } from './mappers/createMembershipMapper';
+import { toMembershipResponse } from './transformers/membershipTransformer';
 
-export const createOrgMembershipController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId, role } = req.body;
-    const organizationId = req.params['organizationId'] ?? '';
-    const createMemberPayload = {
-      userId,
-      organizationId,
-      role,
-      status: 'active',
-    };
-    const memberRepo = membershipRepositoryPrisma(prisma, organizationId);
+interface MembershipRepoDeps {
+  createMembership: (organizationId: string, data: CreateMembershipInput) => Promise<Membership>;
+  findMembershipByUserAndOrganization: (
+    organizationId: string,
+    userId: string,
+  ) => Promise<Membership | null>;
+}
+
+interface CreateMembershipControllerDeps {
+  membershipRepo: MembershipRepoDeps;
+}
+
+export const createOrgMembershipController =
+  ({ membershipRepo }: CreateMembershipControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const createMemberPayload = createMembershipMapper(req);
+
     const result = await createMembershipService(createMemberPayload, {
-      create: memberRepo.create,
-      findOneByFilter: memberRepo.findOneByFilter,
+      create: (data) => membershipRepo.createMembership(createMemberPayload.organizationId, data),
+      findOneByFilter: (filters) =>
+        membershipRepo.findMembershipByUserAndOrganization(
+          createMemberPayload.organizationId,
+          filters.userId,
+        ),
     });
+
+    const response = toMembershipResponse(result);
+
     return res.status(200).json({
       message: 'Organization updated successfully',
-      data: result,
+      data: response.membership,
     });
-  } catch (error) {
-    return next(error);
-  }
-};
+  };

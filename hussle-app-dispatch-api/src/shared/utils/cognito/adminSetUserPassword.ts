@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { AdminSetUserPasswordCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 export interface AdminSetUserPasswordParams {
   userPoolId: string;
@@ -27,8 +28,8 @@ export const adminSetUserPassword = async ({
   try {
     const response = await client.send(command);
     return response;
-  } catch (error) {
-    console.error('Error setting user password in Cognito:', error);
+  } catch (error: unknown) {
+    logger.error('Error setting user password in Cognito', { error });
     throw new AuthRequestError(`Error setting password for user ${username} in Cognito`);
   }
 };

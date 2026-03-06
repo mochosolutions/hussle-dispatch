@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { ResendConfirmationCodeCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface ResendConfirmationCodeCognitoParams {
   clientId: string;
@@ -20,8 +21,8 @@ export const resendConfirmationCodeCognito = async ({
     });
     const response = await client.send(command);
     return response;
-  } catch (error) {
-    console.error('Error resending confirmation code:', error);
+  } catch (error: unknown) {
+    logger.error('Error resending confirmation code', { error });
     throw new AuthRequestError(`Error resending confirmation code to user ${username}`);
   }
 };

@@ -1,9 +1,7 @@
-import {
-  CognitoIdentityProviderClient,
-  InitiateAuthCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
+import { InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
 import type { AuthenticateResponse, AuthenticateCognitoUserParams } from './cognitoTypes';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 export const authenticateCognitoUser = async ({
   username,
@@ -23,7 +21,7 @@ export const authenticateCognitoUser = async ({
   try {
     const command = new InitiateAuthCommand(params);
     const response = await client.send(command);
-    console.log('cognito InitiateAuthCommand response:', response);
+    logger.debug('cognito InitiateAuthCommand response received');
     return {
       accessToken: response.AuthenticationResult?.AccessToken || '',
       refreshToken: response.AuthenticationResult?.RefreshToken || '',
@@ -37,11 +35,10 @@ export const authenticateCognitoUser = async ({
         userID: response.ChallengeParameters?.USER_ID_FOR_SRP ?? '',
       },
     };
-  } catch (error: any) {
-    console.log('authenticateCognitoUser error:', error);
-    console.log('Error Name:', error.name);
+  } catch (error: unknown) {
+    logger.error('Error authenticating user', { error });
 
-    if (error.name === 'UserNotConfirmedException') {
+    if (error instanceof Error && error.name === 'UserNotConfirmedException') {
       return {
         challengeName: 'UNCONFIRMED',
       };

@@ -1,48 +1,27 @@
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { isAdminOrSupport } from '@/shared/constants/roles';
-import { membershipRepositoryPrisma } from '../../repositories/membershipRepositoryPrisma';
-import { getUsersMembershipService, getMembershipService } from '../../services';
+import type { Request, RequestHandler, Response } from 'express';
+import type { MembershipWithUser } from '../../types/membershipTypes';
+import { getMembershipsMapper } from './mappers/getMembershipsMapper';
+import { toMembershipListResponse } from './transformers/membershipTransformer';
 
-export const getUserMembershipController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.body;
-    const { organizationId } = req.params;
-    const memberRepo = membershipRepositoryPrisma(prisma, organizationId);
-    const result = await getUsersMembershipService(userId, {
-      findByUserId: memberRepo.findMembershipsByUserId,
-    });
-    return res.status(200).json({
-      message: 'Organization updated successfully',
-      data: result,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
+interface MembershipRepoDeps {
+  findMembershipsByOrganization: (organizationId: string) => Promise<MembershipWithUser[]>;
+}
 
-export const getMembershipController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // Admin/support users can view any org's memberships via URL param
-    // Regular users can only view their own organization
-    if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    const isPrivileged = req.user.role === 'SystemAdmin' || req.user.role === 'CustomerSupport';
-    const organizationId =
-      isPrivileged && req.params.organizationId
-        ? req.params.organizationId
-        : req.user.organizationId;
+interface GetMembershipControllerDeps {
+  membershipRepo: MembershipRepoDeps;
+}
 
-    const memberRepo = membershipRepositoryPrisma(prisma, organizationId);
-    const result = await getMembershipService({
-      findAllMemberships: memberRepo.findMembershipByOrg,
-    });
+export const getMembershipController =
+  ({ membershipRepo }: GetMembershipControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const { organizationId } = getMembershipsMapper(req);
+
+    const result = await membershipRepo.findMembershipsByOrganization(organizationId);
+
+    const response = toMembershipListResponse(result);
+
     return res.status(200).json({
       message: 'Memberships retrieved successfully',
-      memberships: result,
+      memberships: response.memberships,
     });
-  } catch (error) {
-    return next(error);
-  }
-};
+  };

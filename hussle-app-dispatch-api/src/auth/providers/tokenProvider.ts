@@ -1,5 +1,4 @@
 import type { ITokenProvider, TokenProviderDeps } from '../types/tokenProvider';
-import { SessionData } from '../types/tokenProvider';
 import { createSessionRedis } from './jwtTokenProvider/createSessionRedis';
 import { deleteOrgSessions } from './jwtTokenProvider/deleteOrgSessions';
 import { getOrgSessionsWithRefreshTokens } from './jwtTokenProvider/getAllSessionsByOrgId';
@@ -17,8 +16,9 @@ export const tokenProvider = ({
   createSession: async (args) =>
     createSessionRedis({ ...args, singleSession }, { redisClient: client }),
   refreshToken: (args) => rotateSessionRedis({ ...args, singleSession }, { redisClient: client }),
-  revokeSession: ({ sessionId, refreshToken }) =>
-    revokeSessionRedis({ sessionId, refreshToken }, { redisClient: client }),
+  revokeSession: async ({ sessionId, refreshToken }) => {
+    await revokeSessionRedis({ sessionId, refreshToken }, { redisClient: client });
+  },
   revokeUserOrgSessions: ({ userId, organizationId }) =>
     revokeUserOrgSessions({ userId, organizationId }, { redisClient: client }),
   verifyAccessToken: (args) => verifyAccessToken(args),

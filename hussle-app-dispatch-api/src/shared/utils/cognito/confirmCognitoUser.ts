@@ -16,7 +16,7 @@ export const confirmCognitoUser = async ({
     });
     const response = await client.send(command);
     return response;
-  } catch (error) {
+  } catch {
     throw new AuthRequestError(`Error confirming password for user ${username}`);
   }
 };

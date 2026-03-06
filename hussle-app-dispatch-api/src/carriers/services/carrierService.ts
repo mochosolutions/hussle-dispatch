@@ -16,6 +16,7 @@ import type {
 import type {
   CarrierService,
   CreateCarrierServiceInput,
+  CreateCarrierWithAssetsServiceInput,
   DeleteCarrierServiceInput,
   GetCarrierByIdServiceInput,
   GetCarrierOnboardingServiceInput,
@@ -72,6 +73,21 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     assertCarrierTypeSupported(input.type);
 
     return deps.carrierRepository.create(organizationId, input);
+  },
+
+  createCarrierWithAssets: async ({
+    organizationId,
+    role,
+    input,
+  }: CreateCarrierWithAssetsServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    assertCarrierTypeSupported(input.type);
+
+    return deps.carrierRepository.createWithAssets(organizationId, {
+      carrier: input,
+      drivers: input.drivers,
+      vehicles: input.vehicles,
+    });
   },
 
   listCarriers: async ({ query, organizationId, filters, role }: ListCarriersServiceInput) => {

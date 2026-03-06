@@ -1,23 +1,39 @@
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { membershipRepositoryPrisma } from '../../repositories/membershipRepositoryPrisma';
+import type { Request, RequestHandler, Response } from 'express';
+import { NotFoundError } from '@/shared/errors';
+import type { Membership, UpdateMembershipInput } from '../../types/membershipTypes';
+import { updateMembershipMapper } from './mappers/updateMembershipMapper';
+import { toMembershipResponse } from './transformers/membershipTransformer';
 
-export const updateMembershipController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const organizationId = req.params['organizationId'] ?? '';
-    const membershipId = req.params['membershipId'] ?? '';
-    const updates = req.body;
-    const memberRepo = membershipRepositoryPrisma(prisma, organizationId);
-    const updatedMembership = await memberRepo.updateMembership(membershipId, updates);
+interface MembershipRepoDeps {
+  updateMembership: (
+    organizationId: string,
+    membershipId: string,
+    data: UpdateMembershipInput,
+  ) => Promise<Membership | null>;
+}
+
+interface UpdateMembershipControllerDeps {
+  membershipRepo: MembershipRepoDeps;
+}
+
+export const updateMembershipController =
+  ({ membershipRepo }: UpdateMembershipControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const { organizationId, membershipId, data } = updateMembershipMapper(req);
+    const updatedMembership = await membershipRepo.updateMembership(
+      organizationId,
+      membershipId,
+      data,
+    );
 
     if (!updatedMembership) {
-      return res.status(404).json({ message: 'Membership not found' });
+      throw new NotFoundError('Membership not found');
     }
 
-    return res
-      .status(200)
-      .json({ message: 'Membership updated successfully', data: updatedMembership });
-  } catch (error) {
-    return next(error);
-  }
-};
+    const response = toMembershipResponse(updatedMembership);
+
+    return res.status(200).json({
+      message: 'Membership updated successfully',
+      data: response.membership,
+    });
+  };

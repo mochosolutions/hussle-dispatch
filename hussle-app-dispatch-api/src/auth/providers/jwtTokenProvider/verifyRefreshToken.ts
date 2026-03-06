@@ -1,13 +1,14 @@
+import type Redis from 'ioredis';
 import { logger } from '@/shared/utils/logger';
 import type { SessionData } from '../../types/tokenProvider';
-import { hashToken, verifyToken } from './tokenHelpers';
+import { verifyToken } from './tokenHelpers';
 
 interface VerifyRefreshTokenInput {
   refreshToken: string;
 }
 
 interface VerifyRefreshTokenDeps {
-  redisClient: any;
+  redisClient: Redis;
 }
 
 export const verifyRefreshToken = async (

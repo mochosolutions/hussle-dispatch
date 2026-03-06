@@ -1,6 +1,7 @@
 import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { SignUpCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 interface CreateUserParams {
   clientId: string;
@@ -27,8 +28,8 @@ export const createUserInCognito = async ({
   try {
     const response = await client.send(command);
     return response;
-  } catch (error) {
-    console.error('Error signing up user in Cognito:', error);
+  } catch (error: unknown) {
+    logger.error('Error signing up user in Cognito', { error });
     throw new AuthRequestError('Error signing up user in Cognito');
   }
 };

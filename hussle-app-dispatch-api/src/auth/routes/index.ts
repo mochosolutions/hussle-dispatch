@@ -1,12 +1,20 @@
 import express from 'express';
-import { userAuthRouter } from './auth';
-import { inviteRouter } from './invite';
-import { organizationRouter } from './organization';
+import type { AuthControllers } from '../controllers';
+import { createUserAuthRouter } from './auth';
+import { createInviteRouter } from './invite';
+import { createOrganizationRouter } from './organization';
 
-const rootAuthRouter = express.Router();
+export const createRootAuthRouter = (controllers: AuthControllers): express.Router => {
+  const rootAuthRouter = express.Router();
+  const userAuthRouter = createUserAuthRouter(controllers);
+  const organizationRouter = createOrganizationRouter(controllers);
+  const inviteRouter = createInviteRouter(controllers);
 
-rootAuthRouter.use('/api', userAuthRouter);
-rootAuthRouter.use('/api', organizationRouter);
-rootAuthRouter.use('/api', inviteRouter);
+  ['/api', '/api/v1'].forEach((prefix) => {
+    rootAuthRouter.use(prefix, userAuthRouter);
+    rootAuthRouter.use(prefix, organizationRouter);
+    rootAuthRouter.use(prefix, inviteRouter);
+  });
 
-export default rootAuthRouter;
+  return rootAuthRouter;
+};

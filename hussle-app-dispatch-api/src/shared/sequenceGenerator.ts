@@ -61,14 +61,12 @@ export const generateSequenceNumber = async (
   orgId: string,
 ): Promise<string> => {
   const name = sequenceName(type, orgId);
-  let lastError: unknown;
-
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
     try {
       const value = await nextSequenceValue(name);
       return formatSequenceNumber(type, value);
-    } catch (error: unknown) {
-      lastError = error;
+    } catch {
+      // retry on transient failure
     }
   }
 

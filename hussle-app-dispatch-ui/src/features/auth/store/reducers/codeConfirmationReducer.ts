@@ -1,31 +1,31 @@
-import {PayloadAction} from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import {
   setPending,
   setFulfilled,
   setRejected,
 } from '../../../../utils/authSliceHelpers';
-import {CodeConfirmationParams} from '../authSlice';
+import type { AuthState, CodeConfirmationParams } from '../authSlice';
 
 export const codeConfirmationReducer = {
-  codeConfirmationInit: (state, action: PayloadAction<{email: string}>) => {
+  codeConfirmationInit: (state: AuthState, action: PayloadAction<{email: string}>) => {
     state.user.email = action.payload.email;
   },
 
   codeConfirmationRequest: (
-    state,
-    action: PayloadAction<CodeConfirmationParams>,
+    state: AuthState,
+    _action: PayloadAction<CodeConfirmationParams>,
   ) => {
     setPending(state, {key: 'confirmCode'});
   },
 
-  codeConfirmationSuccess: (state, action: PayloadAction<{email: string}>) => {
+  codeConfirmationSuccess: (state: AuthState, _action: PayloadAction<{email: string}>) => {
     setFulfilled(state, {
       loadingKey: 'confirmCode',
       errorKey: 'confirmCode',
     });
   },
 
-  codeConfirmationFailure: (state) => {
+  codeConfirmationFailure: (state: AuthState) => {
     setRejected(state, {
       loadingKey: 'confirmCode',
       errorKey: 'confirmCode',

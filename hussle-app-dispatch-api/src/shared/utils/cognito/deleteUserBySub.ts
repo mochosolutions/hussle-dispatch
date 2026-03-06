@@ -1,10 +1,10 @@
 import {
   ListUsersCommand,
   AdminDeleteUserCommand,
-  CognitoIdentityProviderClient,
 } from '@aws-sdk/client-cognito-identity-provider';
 import type { DeleteUserSubParams, DeleteUserBySubArrayParams } from './cognitoTypes';
 import { AuthRequestError } from '@/shared/errors/authError';
+import { logger } from '@/shared/utils/logger';
 
 export async function deleteUserBySub({ subId, userPoolId, client }: DeleteUserSubParams) {
   try {
@@ -27,16 +27,15 @@ export async function deleteUserBySub({ subId, userPoolId, client }: DeleteUserS
         UserPoolId: userPoolId,
         Username: username,
       };
-      console.log('Delete Params:', deleteParams);
-      console.log('Deleting user list response...', listResponse);
+      logger.debug('Deleting user from Cognito', { deleteParams });
       const deleteCommand = new AdminDeleteUserCommand(deleteParams);
       await client.send(deleteCommand);
-      console.log(`Deleted user with sub ${subId} (username: ${username}).`);
+      logger.info(`Deleted user with sub ${subId}`, { username });
     } else {
-      console.error(`User with sub ${subId} not found.`);
+      logger.warn(`User with sub ${subId} not found`);
     }
-  } catch (error) {
-    console.error(`Error deleting user with sub ${subId}:`, error);
+  } catch (error: unknown) {
+    logger.error(`Error deleting user with sub ${subId}`, { error });
     throw new AuthRequestError(`Error deleting user with sub ${subId}`);
   }
 }
@@ -51,8 +50,8 @@ export async function deleteUsersBySubArray({
       try {
         await deleteUserBySub({ subId, userPoolId, client });
         return { subId, success: true };
-      } catch (error: any) {
-        return { subId, success: false, error: error.message };
+      } catch (error: unknown) {
+        return { subId, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
       }
     })
   );

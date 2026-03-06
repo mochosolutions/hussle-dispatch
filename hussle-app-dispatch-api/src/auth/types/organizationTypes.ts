@@ -1,7 +1,6 @@
 import type { JsonValue } from '@prisma/client/runtime/library';
 import type {
   Organization as PrismaOrganization,
-  Membership as PrismaMembership,
   OrganizationVertical,
   OrganizationRole,
   OrganizationStatus,
@@ -62,7 +61,7 @@ export interface SignupOrganizationInput {
   orgName: string;
   orgRole: string;
   orgVertical: string;
-  customMetadata?: Record<string, any>;
+  customMetadata?: Record<string, string>;
 }
 
 /**
@@ -82,10 +81,10 @@ export interface CreateOrganizationInput {
   slug: string; // URL-safe identifier for public routes
   email: string;
   role: string;
-  vertical: string;
+  vertical?: string;
   subscriptionTier?: string;
   status?: string;
-  customFields?: Record<string, any> | JsonValue;
+  customFields?: Record<string, unknown> | JsonValue;
   website?: string;
   description?: string;
   logo?: string;
@@ -99,8 +98,7 @@ export interface CreateOrganizationInput {
 // ============================================================================
 
 export interface CreateOrganizationServiceDeps {
-  create: (data: CreateOrganizationInput, options?: { context?: any }) => Promise<Organization>;
-  findByName: (name: string, context?: any) => Promise<Organization | null>;
+  create: (data: CreateOrganizationInput) => Promise<Organization>;
 }
 
 export interface DeleteOrganizationArgs {
@@ -108,8 +106,8 @@ export interface DeleteOrganizationArgs {
 }
 
 export interface DeleteOrganizationServiceDeps {
-  findOrganizationById: Function;
-  deleteOrganization: (id: string, context?: any) => Promise<Organization | null>;
+  findOrganizationById: (id: string) => Promise<Organization | null>;
+  deleteOrganization: (id: string) => Promise<Organization | null>;
 }
 
 // Re-export Prisma enums for convenience

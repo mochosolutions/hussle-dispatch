@@ -1,4 +1,5 @@
 import { logger } from '@/shared/utils/logger';
+import { SequenceError } from '@/shared/errors';
 import type {
   User,
   UpdateUserServiceDeps,
@@ -6,28 +7,36 @@ import type {
   UpdateUserInput,
 } from '../../types/user';
 
+interface UpdateUserDeps {
+  updateUser: (id: string, data: Partial<User>) => Promise<User | null>;
+}
+
+interface UpdateUserInput2 {
+  id: string;
+  data: UpdateUserInput;
+}
+
 export const updateUserService = async (
-  id: string,
-  data: UpdateUserInput,
-  { updateUser }: any,
-  context?: any
+  { id, data }: UpdateUserInput2,
+  { updateUser }: UpdateUserDeps,
 ): Promise<User | null> => {
   try {
-    return await updateUser(id, data, context);
+    return await updateUser(id, data);
   } catch (error) {
     logger.error('Error updating user', { userId: id, error });
-    throw Error(`Failed to update user with ID ${id}`);
+    const serviceError = new SequenceError(`Failed to update user with ID ${id}`);
+    serviceError.cause = error;
+    throw serviceError;
   }
 };
 
 export const updateManyUsersService = async (
   { filter, data }: UpdateUserServiceDeps,
   { updateManyUsers }: UpdateManyUsersDeps,
-  context?: any
 ): Promise<User[] | null> => {
   try {
     logger.info('Updating users', { filter });
-    const updatedUsers = await updateManyUsers(filter, data, context);
+    const updatedUsers = await updateManyUsers(filter, data);
     logger.info('Updated users', { count: updatedUsers?.length ?? 0 });
     if (!updatedUsers) {
       return null;
@@ -35,6 +44,8 @@ export const updateManyUsersService = async (
     return updatedUsers;
   } catch (error) {
     logger.error('Error updating users', { error });
-    throw Error('Failed to update user(s)');
+    const serviceError = new SequenceError('Failed to update user(s)');
+    serviceError.cause = error;
+    throw serviceError;
   }
 };

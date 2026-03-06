@@ -4,15 +4,11 @@
  * Follows dependency injection pattern - receives Prisma client as parameter
  */
 
-/* eslint-disable max-lines-per-function, max-lines, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment, no-console, @typescript-eslint/no-unnecessary-condition */
-// TODO: Fix pre-existing lint violations - this file has 100+ lint errors from legacy code
-
 import { BadRequestError } from '@mocho/common';
 import type { PrismaClient, Invitation as PrismaInvitation } from '@prisma/client';
 import { logger } from '@/shared/utils/logger';
 import type { PrismaTransaction } from '@/config/database';
 // TODO: Refactor to use tenantRepositoryFactory or remove baseRepository dependency
-// eslint-disable-next-line no-restricted-imports
 import { repositoryFactoryPrisma } from '@/shared/utils/repositoryFactoryPrisma';
 import type { Invite } from '../types/invite';
 
@@ -36,10 +32,10 @@ export const inviteRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
   tenantId?: string
 ) => {
-  const baseRepository = repositoryFactoryPrisma<PrismaInvitation>(prisma, 'invitation', tenantId);
+  const baseRepository = repositoryFactoryPrisma<PrismaInvitation>({ prisma, modelName: 'invitation', tenantId });
 
   return {
-    create: async (data: any, context?: any): Promise<Invite> => {
+    create: async (data: Record<string, unknown>): Promise<Invite> => {
       try {
         const rawInvite = await baseRepository.create({ data });
         return formatInvite(rawInvite);
@@ -49,7 +45,7 @@ export const inviteRepositoryPrisma = (
       }
     },
 
-    findInviteById: async (id: string, context?: any): Promise<Invite | null> => {
+    findInviteById: async (id: string): Promise<Invite | null> => {
       try {
         const rawInvite = await baseRepository.findOne({ filter: { id } });
         if (!rawInvite) {
@@ -62,7 +58,7 @@ export const inviteRepositoryPrisma = (
       }
     },
 
-    findOneByFilter: async (filter: Record<string, any>, context?: any): Promise<Invite | null> => {
+    findOneByFilter: async (filter: Record<string, unknown>): Promise<Invite | null> => {
       try {
         const rawInvite = await baseRepository.findOne({ filter });
         if (!rawInvite) {
@@ -76,8 +72,7 @@ export const inviteRepositoryPrisma = (
     },
 
     findInviteByFilter: async (
-      filter: Record<string, any>,
-      context?: any
+      filter: Record<string, unknown>
     ): Promise<Invite[] | null> => {
       try {
         const docs = await baseRepository.findMany({ filter });
@@ -93,9 +88,9 @@ export const inviteRepositoryPrisma = (
       }
     },
 
-    findAllInvites: async (context?: any): Promise<Invite[]> => {
+    findAllInvites: async (filter?: { organizationId?: string }): Promise<Invite[]> => {
       try {
-        const invites = await baseRepository.findMany();
+        const invites = await baseRepository.findMany(filter ? { filter } : {});
         if (!invites || invites.length === 0) {
           logger.info('No invites found');
           return [];
@@ -109,8 +104,7 @@ export const inviteRepositoryPrisma = (
 
     updateInvite: async (
       id: string,
-      data: Partial<Invite>,
-      context?: any
+      data: Partial<Invite>
     ): Promise<Invite | null> => {
       try {
         const updatedInvite = await baseRepository.update({ id, data });
@@ -124,7 +118,7 @@ export const inviteRepositoryPrisma = (
       }
     },
 
-    deleteInvite: async (id: string, context?: any): Promise<Invite | null> => {
+    deleteInvite: async (id: string): Promise<Invite | null> => {
       try {
         const deletedInvite = await baseRepository.delete({ id });
         if (!deletedInvite) {
@@ -137,7 +131,7 @@ export const inviteRepositoryPrisma = (
       }
     },
 
-    deleteInvitesByFilter: async (filter: Record<string, any>, context?: any): Promise<number> => {
+    deleteInvitesByFilter: async (filter: Record<string, unknown>): Promise<number> => {
       try {
         const deletedCount = await baseRepository.deleteMany({ filter });
         return deletedCount;

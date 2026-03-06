@@ -1,3 +1,4 @@
+import type Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/utils/logger';
@@ -11,7 +12,7 @@ import { hashToken } from './tokenHelpers';
 
 export const createSessionRedis = async (
   data: CreateSessionInput & { ipAddress?: string; userAgent?: string; singleSession?: boolean },
-  { redisClient }: { redisClient: any }
+  { redisClient }: { redisClient: Redis }
 ): Promise<CreateSessionResult> => {
   const {
     userId,

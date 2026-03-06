@@ -1,64 +1,29 @@
-import type { NextFunction, Request, Response } from 'express';
-import { auditLogRepositoryPrisma } from '../../../audit/repositories/auditLogRepositoryPrisma';
-import { redisClient as redis } from '@/shared/redisClient';
-import { PrismaTransactionManager, type PrismaTransaction } from '@/shared/prisma';
-import { prisma } from '@/shared/prisma';
-import { getClientId } from '@/shared/utils/cognito';
-import { cognitoIdentityClient } from '@/shared/utils/cognito';
+import type { Request, Response } from 'express';
+import type { RequestHandler } from 'express';
+import type { CreateAuditLogInput } from '../../../audit/types/auditTypes';
 import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
-import { cognitoProvider } from '../../providers/authProvider';
-import { tokenProvider } from '../../providers/tokenProvider';
-import { membershipRepositoryPrisma } from '../../repositories/membershipRepositoryPrisma';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
-import { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
-import {
-  signupOrganizationUseCase,
-  createOrganizationService,
-  createUserService,
-  createMembershipService,
-} from '../../services';
-import type { CreateMembershipInput } from '../../types/membershipTypes';
-import type { CreateOrganizationInput } from '../../types/organizationTypes';
-import type { SignupOrgInput } from '../../types/signupOrgTypes';
-import type { CreateUserInput } from '../../types/user';
+import type { ITokenProvider } from '../../types/tokenProvider';
+import type { SignupOrgInput, SignupOrgResult } from '../../types/signupOrgTypes';
+import { mapSignupOrgRequest } from './mappers/mapSignupOrgRequest';
+import { toSignupOrgResponse } from './transformers/signupOrgTransformer';
 
-export const signupOrgController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { clientId, userPoolId } = await getClientId();
-    const authProvider = cognitoProvider({ client: cognitoIdentityClient, userPoolId, clientId });
-    const transactionManager = new PrismaTransactionManager();
+interface SignupOrgControllerDeps {
+  auditLogRepo: {
+    create: (organizationId: string, input: CreateAuditLogInput) => Promise<unknown>;
+  };
+  tokenProviderInstance: ITokenProvider;
+  signupOrganization: (data: SignupOrgInput) => Promise<SignupOrgResult>;
+}
 
-    // req.body validated by Yup middleware, safe to type assert
-    const signupData = req.body as SignupOrgInput;
+export const createSignupOrgController = ({
+  auditLogRepo,
+  tokenProviderInstance,
+  signupOrganization,
+}: SignupOrgControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const signupData = mapSignupOrgRequest(req);
+    const result = await signupOrganization(signupData);
 
-    const result = await signupOrganizationUseCase(signupData, {
-      authProvider,
-      transactionManager,
-      createOrgService: (data: CreateOrganizationInput, tx: PrismaTransaction) => {
-        const orgRepo = organizationRepositoryPrisma(tx);
-        return createOrganizationService(data, {
-          create: orgRepo.createOrganization,
-          findByName: orgRepo.findOrganizationByName,
-        });
-      },
-      createUserService: (data: CreateUserInput, tx: PrismaTransaction) => {
-        const userRepo = userRepositoryPrisma(tx);
-        return createUserService(data, {
-          create: userRepo.createUser,
-          findByEmail: userRepo.findUserByEmail,
-        });
-      },
-      createMembershipService: (data: CreateMembershipInput, tx: PrismaTransaction) => {
-        const membershipRepo = membershipRepositoryPrisma(tx);
-        return createMembershipService(data, {
-          create: membershipRepo.create,
-          findOneByFilter: membershipRepo.findOneByFilter,
-        });
-      },
-    });
-
-    // Generate tokens after successful signup
-    const tokenProviderInstance = tokenProvider({ client: redis });
     const { accessToken, refreshToken } = await tokenProviderInstance.createSession({
       userId: result.user.userId,
       organizationId: result.tenant.tenantId,
@@ -69,14 +34,11 @@ export const signupOrgController = async (req: Request, res: Response, next: Nex
       orgStatus: result.tenant.status,
     });
 
-    // Set both tokens as HttpOnly cookies
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, refreshToken);
 
-    // Audit log for user signup (fire-and-forget)
-    const auditLogRepo = auditLogRepositoryPrisma(prisma, result.tenant.tenantId);
     auditLogRepo
-      .create({
+      .create(result.tenant.tenantId, {
         userId: result.user.userId,
         action: 'CREATE',
         entityType: 'User',
@@ -90,12 +52,8 @@ export const signupOrgController = async (req: Request, res: Response, next: Nex
       })
       .catch(() => {
         // Audit failure should not block user flow
+        // TODO: move to domain event
       });
 
-    return res.status(201).json({ message: 'Signup successful', ...result });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-export default signupOrgController;
+    return res.status(201).json(toSignupOrgResponse(result));
+  };

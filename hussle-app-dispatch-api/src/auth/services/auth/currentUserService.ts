@@ -1,5 +1,7 @@
+import type { UserWithMemberships } from '../../types/user';
+
 export interface CurrentUserServiceDeps {
-  findUserByIdWithMemberships: any;
+  findUserByIdWithMemberships: (userId: string) => Promise<UserWithMemberships | null>;
 }
 
 export interface CurrentUserInput {

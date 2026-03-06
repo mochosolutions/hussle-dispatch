@@ -1,5 +1,5 @@
 /**
- * Domain error classes — all extend CustomError from @mocho/common.
+ * Core domain error classes — all extend CustomError from @mocho/common.
  * Each class provides serializeErrors() for consistent API error responses.
  */
 import { CustomError } from '@mocho/common';

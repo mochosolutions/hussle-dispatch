@@ -1,25 +1,23 @@
-import { BadRequestError } from '@mocho/common';
-import type { NextFunction, Request, Response } from 'express';
-import { prisma } from '@/shared/prisma';
-import { inviteRepositoryPrisma } from '../../repositories/inviteRepositoryPrisma';
-import { organizationRepositoryPrisma } from '../../repositories/organizationRepositoryPrisma';
-import { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
+import type { Request, Response } from 'express';
+import type { Invite } from '../../types/invite';
+import { getInvitesMapper } from './mappers/getInvitesMapper';
+import { toInviteListResponse } from './transformers/inviteTransformer';
 
-export const getInvitesController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // const invitationToken = req.query.invitationToken as string;
-    const { organizationId } = req.params;
-    const inviteRepo = inviteRepositoryPrisma(prisma, organizationId);
-    const orgRepo = organizationRepositoryPrisma(prisma);
-    const userRepo = userRepositoryPrisma(prisma);
+interface GetInvitesControllerDeps {
+  inviteRepo: {
+    findAllInvites: (organizationId: string) => Promise<Invite[]>;
+  };
+}
 
-    const invites = await inviteRepo.findAllInvites();
+export const createGetInvitesController =
+  (deps: GetInvitesControllerDeps) =>
+  async (req: Request, res: Response) => {
+    const { organizationId } = getInvitesMapper(req);
+
+    const invites = await deps.inviteRepo.findAllInvites(organizationId);
 
     return res.status(200).json({
       message: 'Invite verified successfully',
-      invites,
+      invites: toInviteListResponse(invites),
     });
-  } catch (error) {
-    return next(error);
-  }
-};
+  };

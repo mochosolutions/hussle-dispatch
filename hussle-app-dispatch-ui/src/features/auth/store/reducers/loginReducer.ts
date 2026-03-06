@@ -1,35 +1,32 @@
-import {PayloadAction} from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import {
   setPending,
   setFulfilled,
   setRejected,
 } from 'utils/authSliceHelpers';
-import {defaultUserProfileState} from '../authSlice';
+import type { AuthState, Tenant, UserProfile } from '../authSlice';
+import { defaultUserProfileState } from '../authSlice';
 
 export const loginReducer = {
-  // Login actions using handlers
   loginRequest: (
-    state,
-    action: PayloadAction<{
+    state: AuthState,
+    _action: PayloadAction<{
       data: {email: string; password: string; rememberMe?: boolean};
-      navigate: any;
       returnTo: string | null;
     }>,
   ) => {
     setPending(state, {key: 'login'});
   },
-  loginSuccess: (state, action: PayloadAction<any>) => {
+  loginSuccess: (state: AuthState, action: PayloadAction<{user: UserProfile; rememberMe: boolean; orgs: Tenant[]}>) => {
     const {user, rememberMe, orgs} = action.payload;
     state.isLoggedIn = true;
     state.user = user;
-    state.orgs = orgs; // Ensure orgs is always an array
-    // Using handler to update loading & error state
+    state.orgs = orgs;
     setFulfilled(state, {loadingKey: 'login', errorKey: 'login'});
-    state.rememberMe = rememberMe; // Save persistence choice
+    state.rememberMe = rememberMe;
     state.initAttempted = true;
   },
-  loginFailure: (state) => {
-    // Use failure handler for login failure
+  loginFailure: (state: AuthState) => {
     setRejected(state, {
       loadingKey: 'login',
       errorKey: 'login',

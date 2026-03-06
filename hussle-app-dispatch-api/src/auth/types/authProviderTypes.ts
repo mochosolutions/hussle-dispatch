@@ -1,6 +1,11 @@
-import type { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
+import type {
+  CognitoIdentityProviderClient,
+  ForgotPasswordCommandOutput,
+  GlobalSignOutCommandOutput,
+} from '@aws-sdk/client-cognito-identity-provider';
 import type { JwtPayload } from 'jsonwebtoken';
 import type { AuthStatus } from '@/shared/constants/authConstants';
+import type { AuthenticateResponse } from '@/shared/utils/cognito/cognitoTypes';
 import type { Membership } from './membershipTypes';
 import type { ITokenProvider } from './tokenProvider';
 import type { User } from './user';
@@ -142,8 +147,8 @@ export interface AuthenticateUserServiceDeps {
   decodeToken: (token: string) => JwtPayload | null;
   authProvider: IAuthProvider;
   tokenProvider: ITokenProvider;
-  findMemberByUserId: (userId: string, context?: any) => Promise<Membership[] | null>;
-  findUserByExternalId: (externalId: string, context?: any) => Promise<User | null>;
+  findMemberByUserId: (userId: string) => Promise<Membership[] | null>;
+  findUserByExternalId: (externalId: string) => Promise<User | null>;
 }
 
 export interface ConfirmForgotPasswordServiceDeps {
@@ -175,15 +180,15 @@ export interface IAuthProvider {
   signUpUser: (args: CreateUserInput) => Promise<SignUpUserResponse>; // Public self-service signup
   authenticateUser: (args: AuthenticateUserInput) => Promise<AuthenticateUserResult>;
   deleteUser: (id: string) => Promise<{ id: string }>;
-  passwordChallenge: (args: PasswordChallengeInput) => Promise<any>;
+  passwordChallenge: (args: PasswordChallengeInput) => Promise<AuthenticateResponse>;
   confirmUser: (args: ConfirmUserInput) => Promise<{ success: boolean; message: string }>;
   resendConfirmationCode: (
     args: ResendConfirmCodeInput
   ) => Promise<{ success: boolean; message: string }>;
-  logout: (args: LogoutInput) => Promise<any>;
-  forgotPassword: (args: ForgotPasswordInput) => Promise<any>;
-  confirmForgotPassword: (args: ConfirmForgotPasswordInput) => Promise<any>;
-  refreshToken: (args: { refreshToken: string }) => Promise<any>;
+  logout: (args: LogoutInput) => Promise<GlobalSignOutCommandOutput>;
+  forgotPassword: (args: ForgotPasswordInput) => Promise<ForgotPasswordCommandOutput>;
+  confirmForgotPassword: (args: ConfirmForgotPasswordInput) => Promise<{ success: boolean; message: string }>;
+  refreshToken: (args: { refreshToken: string }) => Promise<{ accessToken: string; idToken: string; refreshToken: string }>;
   deleteUserMany: (ids: string[]) => Promise<{ ids: string[] }>;
 }
 

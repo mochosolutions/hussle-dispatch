@@ -1,19 +1,21 @@
-import type { NextFunction, Request, Response } from 'express';
-import { getClientId } from '@/shared/utils/cognito';
-import { cognitoIdentityClient } from '@/shared/utils/cognito';
+import type { Request, RequestHandler, Response } from 'express';
 import { cognitoProvider } from '../../providers/authProvider';
 import { confirmUserService } from '../../services';
+import { mapConfirmUserSignUpRequest } from './mappers/mapConfirmUserSignUpRequest';
 
-export const confirmUserSignUpController = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, confirmationCode } = req.body;
-    const { clientId, userPoolId } = await getClientId();
-    const authProvider = cognitoProvider({ client: cognitoIdentityClient, userPoolId, clientId });
+interface ConfirmUserSignUpControllerDeps {
+  getAuthProvider: () => Promise<ReturnType<typeof cognitoProvider>>;
+}
+
+export const createConfirmUserSignUpController = ({
+  getAuthProvider,
+}: ConfirmUserSignUpControllerDeps): RequestHandler => {
+  return async (req: Request, res: Response) => {
+    const { email, confirmationCode } = mapConfirmUserSignUpRequest(req);
+    const authProvider = await getAuthProvider();
+
     await confirmUserService({ username: email, confirmationCode }, { authProvider });
-    return res.status(200).json({ message: 'User confirmed successfully' });
-  } catch (error) {
-    return next(error);
-  }
-};
 
-export default confirmUserSignUpController;
+    return res.status(200).json({ message: 'User confirmed successfully' });
+  };
+};
