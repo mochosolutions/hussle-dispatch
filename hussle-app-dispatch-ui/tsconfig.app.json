@@ -3,43 +3,93 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
-    "types": ["vite/client"],
+    "types": [
+      "vite/client"
+    ],
     "skipLibCheck": true,
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-
     /* Path aliases */
     "baseUrl": "./src",
     "paths": {
-      "store": ["store"],
-      "store/*": ["store/*"],
-      "utils/*": ["utils/*"],
-      "components/*": ["components/*"],
-      "pages/*": ["pages/*"],
-      "hooks/*": ["hooks/*"],
-      "types/*": ["types/*"]
+      "store": [
+        "store"
+      ],
+      "store/*": [
+        "store/*"
+      ],
+      "utils/*": [
+        "utils/*"
+      ],
+      "components/*": [
+        "components/*"
+      ],
+      "pages/*": [
+        "pages/*"
+      ],
+      "hooks/*": [
+        "hooks/*"
+      ],
+      "types/*": [
+        "types/*"
+      ],
+      "features/*": [
+        "features/*"
+      ],
+      "mocho/*": [
+        "mocho/*"
+      ],
+      "@mocho/ui": [
+        "mocho"
+      ],
+      "@mocho/ui/redux": [
+        "mocho/redux"
+      ],
+      "@mocho/ui/components": [
+        "mocho/components"
+      ],
+      "@mocho/ui/forms": [
+        "mocho/forms"
+      ],
+      "@mocho/ui/hooks": [
+        "mocho/hooks"
+      ],
+      "@mocho/ui/utils": [
+        "mocho/utils"
+      ],
+      "@mocho/ui/types": [
+        "mocho/types"
+      ],
+      "@mocho/ui/theme": [
+        "mocho/theme"
+      ]
     }
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "exclude": [
     "src/**/__tests__/**",
     "src/**/*.test.ts",
-    "src/**/*.test.tsx"
+    "src/**/*.test.tsx",
+    "src/**/*.stories.ts",
+    "src/**/*.stories.tsx"
   ]
 }

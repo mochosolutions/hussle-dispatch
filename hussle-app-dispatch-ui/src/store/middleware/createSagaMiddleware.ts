@@ -1,8 +1,9 @@
 import createSagaMiddleware from 'redux-saga';
+import type { NavigateFunction } from 'react-router-dom';
 
-let navigate;
+let navigate: NavigateFunction | undefined;
 
-export const setNavigate = (navFn) => {
+export const setNavigate = (navFn: NavigateFunction) => {
   navigate = navFn;
 };
 

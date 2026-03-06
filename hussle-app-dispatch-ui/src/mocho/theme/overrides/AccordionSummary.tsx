@@ -1,0 +1,33 @@
+// material-ui
+import {Theme} from '@mui/material/styles';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+
+// ==============================|| OVERRIDES - ALERT TITLE ||============================== //
+
+export default function AccordionSummary(theme: Theme) {
+  const {palette, spacing} = theme;
+
+  return {
+    MuiAccordionSummary: {
+      defaultProps: {
+        expandIcon: <ChevronRightIcon style={{fontSize: '0.75rem'}} />,
+      },
+      styleOverrides: {
+        root: {
+          backgroundColor: palette.secondary.lighter,
+          minHeight: 46,
+        },
+        expandIconWrapper: {
+          '&.Mui-expanded': {
+            transform: 'rotate(90deg)',
+          },
+        },
+        content: {
+          marginTop: spacing(1.25),
+          marginBottom: spacing(1.25),
+          marginLeft: spacing(1),
+        },
+      },
+    },
+  };
+}

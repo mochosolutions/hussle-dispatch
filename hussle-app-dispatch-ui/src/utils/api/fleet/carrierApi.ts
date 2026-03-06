@@ -5,8 +5,12 @@ import type {
   CarrierOnboardingStatus,
   CreateCarrierInput,
   UpdateCarrierInput,
+  Driver,
+  Vehicle,
+  CreateDriverInput,
+  CreateVehicleInput,
   PaginationMeta,
-} from 'pages/fleet/types';
+} from 'features/carrier/types';
 
 interface GetCarriersParams {
   page?: number;
@@ -51,7 +55,7 @@ export const updateCarrier = async (
   id: string,
   data: UpdateCarrierInput,
 ): Promise<{ carrier: Carrier }> => {
-  const response = await axiosInstance.put<GetCarrierResponse>(`/carriers/${id}`, data);
+  const response = await axiosInstance.patch<GetCarrierResponse>(`/carriers/${id}`, data);
   return { carrier: response.data.data };
 };
 
@@ -66,4 +70,28 @@ export const getCarrierOnboarding = async (
     `/carriers/${id}/onboarding`,
   );
   return { onboarding: response.data.data };
+};
+
+export interface CreateCarrierWithAssetsInput extends CreateCarrierInput {
+  drivers?: CreateDriverInput[];
+  vehicles?: CreateVehicleInput[];
+}
+
+export interface CarrierWithAssets extends Carrier {
+  drivers: Driver[];
+  vehicles: Vehicle[];
+}
+
+interface GetCarrierWithAssetsResponse {
+  data: CarrierWithAssets;
+}
+
+export const createCarrierWithAssets = async (
+  data: CreateCarrierWithAssetsInput,
+): Promise<{ carrier: CarrierWithAssets }> => {
+  const response = await axiosInstance.post<GetCarrierWithAssetsResponse>(
+    '/carriers/with-assets',
+    data,
+  );
+  return { carrier: response.data.data };
 };

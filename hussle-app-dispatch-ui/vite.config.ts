@@ -12,21 +12,21 @@ export default defineConfig({
       store: path.resolve(__dirname, 'src/store'),
       utils: path.resolve(__dirname, 'src/utils'),
       components: path.resolve(__dirname, 'src/components'),
+      features: path.resolve(__dirname, 'src/features'),
       pages: path.resolve(__dirname, 'src/pages'),
       hooks: path.resolve(__dirname, 'src/hooks'),
       types: path.resolve(__dirname, 'src/types'),
 
-      // In Docker, resolve @mocho/ui subpaths to TypeScript source for HMR
-      ...(isDocker && {
-        '@mocho/ui/components': path.resolve(__dirname, '../mocho-ui/src/components'),
-        '@mocho/ui/redux': path.resolve(__dirname, '../mocho-ui/src/redux'),
-        '@mocho/ui/forms': path.resolve(__dirname, '../mocho-ui/src/forms'),
-        '@mocho/ui/theme': path.resolve(__dirname, '../mocho-ui/src/theme'),
-        '@mocho/ui/hooks': path.resolve(__dirname, '../mocho-ui/src/hooks'),
-        '@mocho/ui/utils': path.resolve(__dirname, '../mocho-ui/src/utils'),
-        '@mocho/ui/types': path.resolve(__dirname, '../mocho-ui/src/types'),
-        '@mocho/ui': path.resolve(__dirname, '../mocho-ui/src'),
-      }),
+      // Resolve mocho/ and @mocho/ui subpaths to local mocho directory in dispatch-ui
+      mocho: path.resolve(__dirname, 'src/mocho'),
+      '@mocho/ui/components': path.resolve(__dirname, 'src/mocho/components'),
+      '@mocho/ui/redux': path.resolve(__dirname, 'src/mocho/redux'),
+      '@mocho/ui/forms': path.resolve(__dirname, 'src/mocho/forms'),
+      '@mocho/ui/theme': path.resolve(__dirname, 'src/mocho/theme'),
+      '@mocho/ui/hooks': path.resolve(__dirname, 'src/mocho/hooks'),
+      '@mocho/ui/utils': path.resolve(__dirname, 'src/mocho/utils'),
+      '@mocho/ui/types': path.resolve(__dirname, 'src/mocho/types'),
+      '@mocho/ui': path.resolve(__dirname, 'src/mocho'),
     },
     dedupe: [
       'react',

@@ -1,22 +1,39 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "types": ["vite/client", "jest", "node"],
+    "types": [
+      "vite/client",
+      "jest",
+      "node"
+    ],
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "verbatimModuleSyntax": false,
     "module": "CommonJS",
     "moduleResolution": "Node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@mocho/ui": ["../../node_modules/@mocho/ui/dist/types/index.d.ts"],
-      "@mocho/ui/redux": ["../../node_modules/@mocho/ui/dist/types/redux/index.d.ts"],
-      "@mocho/ui/components": ["../../node_modules/@mocho/ui/dist/types/components/index.d.ts"],
-      "@mocho/ui/forms": ["../../node_modules/@mocho/ui/dist/types/forms/index.d.ts"],
-      "@mocho/ui/hooks": ["../../node_modules/@mocho/ui/dist/types/hooks/index.d.ts"],
-      "@mocho/ui/utils": ["../../node_modules/@mocho/ui/dist/types/utils/index.d.ts"],
-      "@mocho/ui/types": ["../../node_modules/@mocho/ui/dist/types/types/index.d.ts"]
+      "@mocho/ui": [
+        "../../node_modules/@mocho/ui/dist/types/index.d.ts"
+      ],
+      "@mocho/ui/redux": [
+        "../../node_modules/@mocho/ui/dist/types/redux/index.d.ts"
+      ],
+      "@mocho/ui/components": [
+        "../../node_modules/@mocho/ui/dist/types/components/index.d.ts"
+      ],
+      "@mocho/ui/forms": [
+        "../../node_modules/@mocho/ui/dist/types/forms/index.d.ts"
+      ],
+      "@mocho/ui/hooks": [
+        "../../node_modules/@mocho/ui/dist/types/hooks/index.d.ts"
+      ],
+      "@mocho/ui/utils": [
+        "../../node_modules/@mocho/ui/dist/types/utils/index.d.ts"
+      ],
+      "@mocho/ui/types": [
+        "../../node_modules/@mocho/ui/dist/types/types/index.d.ts"
+      ]
     }
   },
   "include": [

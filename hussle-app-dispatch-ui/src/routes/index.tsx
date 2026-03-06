@@ -1,31 +1,25 @@
 import { createBrowserRouter } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
+import DashboardRoutes from 'features/dashboard/routes/DashboardRoutes';
+import LoginRoutes from 'features/auth/routes/LoginRoutes';
+import DispatchBoardRoutes from 'features/dispatchboard/routes/DispatchBoardRoutes';
+// import FleetRoutes from 'pages/fleet/routes/FleetRoutes';
+import CarrierRoutes from 'features/carrier/routes/carrierRoutes';
+import InvoiceRoutes from 'features/invoices/routes/InvoiceRoutes';
+import LoadIntelligenceRoutes from 'features/loadintelligence/routes/LoadIntelligence';
 import App from '../App';
-import HomeRoutes from 'pages/home/routes/HomeRoutes';
-import DashboardRoutes from 'pages/dashboard/routes/DashboardRoutes';
-import DispatchBoardRoutes from 'pages/dispatchboard/routes/DispatchBoardRoutes';
-import FleetRoutes from 'pages/fleet/routes/FleetRoutes';
-import InvoiceRoutes from 'pages/invoices/routes/InvoiceRoutes';
-import LoadIntelligenceRoutes from 'pages/loadintelligence/routes/LoadIntelligence';
-
-// const router = createBrowserRouter([
-//   {
-//     path: '/',
-//     element: <App />,
-//     children: [...HomeRoutes],
-//   },
-// ]);
-
 export const routes: RouteObject[] = [
   {
     element: <App />,
     children: [
-      ...HomeRoutes,
+      LoginRoutes,
       DashboardRoutes,
       DispatchBoardRoutes,
-      FleetRoutes,
+      // FleetRoutes,
+      CarrierRoutes,
       InvoiceRoutes,
       LoadIntelligenceRoutes,
+
       // {
       //   path: '*',
       //   element: <ErrorPage />,

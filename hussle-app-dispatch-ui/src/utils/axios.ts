@@ -15,7 +15,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        await axios.post(`${config.apiUrl}/auth/refresh`, {}, { withCredentials: true });
+        await axios.post(`${config.apiUrl}/auth/token/refresh`, {}, { withCredentials: true });
         return axiosInstance(originalRequest);
       } catch {
         window.location.href = '/login';
