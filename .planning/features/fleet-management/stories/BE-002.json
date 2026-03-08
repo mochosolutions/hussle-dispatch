@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": [],
   "description": "Implement full CRUD for drivers: create (requires valid carrierId), list (paginated with carrierId filter), update (including JSON preference fields), soft-delete with active load constraint. Driver preferences (preferredLanes, noGoZones) are stored as JSON fields — validate structure on write. All endpoints scoped to org via carrier's managedByOrgId. Note: CONCERNS.md flags dispatch-api has no lint command — validationCommand excludes lint.",
   "acceptanceCriteria": [
@@ -24,8 +24,8 @@
   "contractReference": "paths./drivers, paths./drivers/{driverId}, components/schemas/Driver, components/schemas/PreferredLane, components/schemas/NoGoZone",
   "designReference": "fleet-management/designs/driver_details.png, fleet-management/designs/carrier_portal_prefernces.png",
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
-  "commit": null,
+  "commit": "db4a509a3",
   "decisions": ["L-001", "L-002", "L-003", "L-004", "L-006"],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-03T00:00:00.000Z"
 }

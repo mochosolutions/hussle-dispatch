@@ -19,9 +19,10 @@
       "commands": {
         "test": "npm run test --workspace=mocho-ui",
         "lint": "npm run lint --workspace=mocho-ui",
+        "lintFiles": "npx eslint",
         "typecheck": "npm run type-check --workspace=mocho-ui",
         "build": "npm run build --workspace=mocho-ui",
-        "testRelated": "cd mocho-ui && npx jest --findRelatedTests"
+        "testRelated": "npx jest --config mocho-ui/jest.config.ts --findRelatedTests"
       }
     },
     {
@@ -35,9 +36,10 @@
       "commands": {
         "test": "npm run test --workspace=hussle-app-dispatch-ui",
         "lint": "npm run lint --workspace=hussle-app-dispatch-ui",
+        "lintFiles": "npx eslint",
         "typecheck": "npm run check-ts --workspace=hussle-app-dispatch-ui",
         "build": "npm run build --workspace=hussle-app-dispatch-ui",
-        "testRelated": "cd hussle-app-dispatch-ui && npx jest --findRelatedTests"
+        "testRelated": "npx jest --config hussle-app-dispatch-ui/jest.config.ts --findRelatedTests"
       }
     }
   ]

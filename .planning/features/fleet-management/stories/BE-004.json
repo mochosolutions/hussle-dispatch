@@ -5,7 +5,7 @@
   "service": "dispatch-api",
   "assignedTo": "backend-coder",
   "priority": "P0",
-  "status": "todo",
+  "status": "done",
   "dependsOn": [],
   "description": "Implement full CRUD for contacts: create, list (paginated with type and search filters), update, soft-delete. Contacts have a type discriminator (BROKER, SHIPPER, CONSIGNEE, FACTORING) and payment terms fields. All endpoints scoped to organizationId via auth middleware. Note: CONCERNS.md flags dispatch-api has no lint command — validationCommand excludes lint.",
   "acceptanceCriteria": [
@@ -23,8 +23,8 @@
   "contractReference": "paths./contacts, paths./contacts/{contactId}, components/schemas/Contact",
   "designReference": null,
   "validationCommand": "cd hussle-app-dispatch-api && npx jest && npx tsc --noEmit",
-  "commit": null,
+  "commit": "db4a509a3",
   "decisions": ["L-001", "L-002", "L-003", "L-004"],
   "blockedReason": null,
-  "completedAt": null
+  "completedAt": "2026-03-03T00:00:00.000Z"
 }
