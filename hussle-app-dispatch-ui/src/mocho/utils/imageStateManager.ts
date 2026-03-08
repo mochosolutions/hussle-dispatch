@@ -108,7 +108,7 @@ export function isValidImageType(file: File): boolean {
  * @param maxSizeMB - Maximum size in megabytes (default: 10MB)
  * @returns true if the file is within the size limit
  */
-export function isValidImageSize(file: File, maxSizeMB: number = 10): boolean {
+export function isValidImageSize(file: File, maxSizeMB = 10): boolean {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   return file.size <= maxSizeBytes;
 }
@@ -122,7 +122,7 @@ export function isValidImageSize(file: File, maxSizeMB: number = 10): boolean {
  */
 export function validateImageFile(
   file: File,
-  maxSizeMB: number = 10
+  maxSizeMB = 10
 ): { valid: boolean; error?: string } {
   if (!isValidImageType(file)) {
     return {

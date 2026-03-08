@@ -3,15 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { Formik, Form } from 'formik';
 import { DocumentImageUploadField } from './index';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import * as useDocumentUploadModule from '../../../hooks/useDocumentUpload';
 
 // Mock the validation utility
 jest.mock('../../../utils/imageUploadErrors', () => ({
   validateImageBeforeUpload: jest.fn(() => null),
-  ImageUploadError: class ImageUploadError extends Error {
-    constructor(message: string) {
-      super(message);
-    }
-  },
+  ImageUploadError: class ImageUploadError extends Error {},
 }));
 
 // Mock the useDocumentUpload hook
@@ -26,6 +23,8 @@ jest.mock('../../../hooks/useDocumentUpload', () => ({
     reset: jest.fn(),
   })),
 }));
+
+const mockedUseDocumentUpload = jest.mocked(useDocumentUploadModule.useDocumentUpload);
 
 const theme = createTheme();
 
@@ -196,8 +195,7 @@ describe('DocumentImageUploadField', () => {
   describe('upload states', () => {
     it('shows uploading text when state is uploading', () => {
       // Override the mock for this test
-      const { useDocumentUpload } = require('../../../hooks/useDocumentUpload');
-      useDocumentUpload.mockReturnValue({
+      mockedUseDocumentUpload.mockReturnValue({
         state: 'uploading',
         progress: 50,
         error: null,
@@ -221,8 +219,7 @@ describe('DocumentImageUploadField', () => {
     });
 
     it('shows error message when upload fails', () => {
-      const { useDocumentUpload } = require('../../../hooks/useDocumentUpload');
-      useDocumentUpload.mockReturnValue({
+      mockedUseDocumentUpload.mockReturnValue({
         state: 'error',
         progress: 0,
         error: 'Upload failed: Network error',
@@ -245,8 +242,7 @@ describe('DocumentImageUploadField', () => {
     });
 
     it('disables select button while uploading', () => {
-      const { useDocumentUpload } = require('../../../hooks/useDocumentUpload');
-      useDocumentUpload.mockReturnValue({
+      mockedUseDocumentUpload.mockReturnValue({
         state: 'uploading',
         progress: 25,
         error: null,

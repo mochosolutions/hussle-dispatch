@@ -8,11 +8,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 // Mock the validation utility
 jest.mock('../../../utils/imageUploadErrors', () => ({
   validateImageBeforeUpload: jest.fn(() => null),
-  ImageUploadError: class ImageUploadError extends Error {
-    constructor(message: string) {
-      super(message);
-    }
-  },
+  ImageUploadError: class ImageUploadError extends Error {},
 }));
 
 const theme = createTheme();

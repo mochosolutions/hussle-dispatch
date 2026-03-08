@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Box, Grid, Typography, FormControl } from '@mui/material';
 import { PasswordField } from '../PasswordField';
 import { strengthIndicator, strengthColor } from '../../../utils/password-strength';
 import type { PasswordFieldWithStrengthProps } from '../types';
-import type { StringColorProps } from '../../../types/password';
 
 /**
  * PasswordFieldWithStrength - Password field with strength indicator.
@@ -20,13 +19,11 @@ export const PasswordFieldWithStrength: React.FC<PasswordFieldWithStrengthProps>
   name,
   ...rest
 }) => {
-  const [level, setLevel] = useState<StringColorProps | undefined>();
-
-  useEffect(() => {
-    const password = (formik.values[name] as string) || '';
-    const temp = strengthIndicator(password);
-    setLevel(strengthColor(temp));
-  }, [formik.values[name], name]);
+  const password = (formik.values[name] as string) ?? '';
+  const level = useMemo(
+    () => strengthColor(strengthIndicator(password)),
+    [password],
+  );
 
   return (
     <>

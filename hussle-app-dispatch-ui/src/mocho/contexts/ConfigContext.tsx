@@ -18,14 +18,14 @@ import {
 // initial state
 const initialState: CustomizationProps = {
   ...config,
-  onChangeContainer: () => {},
-  onChangeLocalization: (lang: I18n) => {},
-  onChangeMode: (mode: ThemeMode) => {},
-  onChangePresetColor: (theme: PresetColor) => {},
-  onChangeDirection: (direction: ThemeDirection) => {},
-  onChangeMiniDrawer: (miniDrawer: boolean) => {},
-  onChangeMenuOrientation: (menuOrientation: MenuOrientation) => {},
-  onChangeFontFamily: (fontFamily: FontFamily) => {},
+  onChangeContainer: () => { return; },
+  onChangeLocalization: (_lang: I18n) => { return; },
+  onChangeMode: (_mode: ThemeMode) => { return; },
+  onChangePresetColor: (_theme: PresetColor) => { return; },
+  onChangeDirection: (_direction: ThemeDirection) => { return; },
+  onChangeMiniDrawer: (_miniDrawer: boolean) => { return; },
+  onChangeMenuOrientation: (_menuOrientation: MenuOrientation) => { return; },
+  onChangeFontFamily: (_fontFamily: FontFamily) => { return; },
 };
 
 // ==============================|| CONFIG CONTEXT & PROVIDER ||============================== //

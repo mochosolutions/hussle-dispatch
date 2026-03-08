@@ -102,7 +102,7 @@ export function createDeleteSaga<TEntity extends { id: string }>(
       }
 
       // Call API to delete (may return DeleteResult with cascade info)
-      const deleteResult = (yield call(apiClient.delete, id)) as void | DeleteResult;
+      const deleteResult = (yield call(apiClient.delete, id)) as DeleteResult | undefined;
 
       // Remove from entity store
       yield put(entityActions.removeOne(id));

@@ -60,14 +60,16 @@ const MainContent = ({
   // When disableMiniDrawer is active on desktop, the nav Box placeholder already reserves
   // DRAWER_WIDTH in the flex layout — let flexGrow:1 fill the remainder naturally.
   // Setting an explicit width here would double-count the drawer width and cause overflow.
-  const mainWidth =
-    disableMiniDrawer && !downBreakpoint
-      ? undefined
-      : downBreakpoint
-        ? '100%'
-        : drawerOpen
-          ? `calc(100% - ${drawerWidth}px)`
-          : `calc(100% - ${miniDrawerWidth}px)`;
+  let mainWidth: string | undefined;
+  if (disableMiniDrawer && !downBreakpoint) {
+    mainWidth = undefined;
+  } else if (downBreakpoint) {
+    mainWidth = '100%';
+  } else if (drawerOpen) {
+    mainWidth = `calc(100% - ${drawerWidth}px)`;
+  } else {
+    mainWidth = `calc(100% - ${miniDrawerWidth}px)`;
+  }
 
   return (
     <Box

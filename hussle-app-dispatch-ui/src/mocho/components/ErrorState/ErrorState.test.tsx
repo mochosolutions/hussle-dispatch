@@ -73,7 +73,7 @@ describe('ErrorState', () => {
 
   describe('buttons', () => {
     it('renders retry button when onRetry is provided', () => {
-      renderWithTheme(<ErrorState onRetry={() => {}} />);
+      renderWithTheme(<ErrorState onRetry={jest.fn()} />);
 
       expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     });
@@ -85,7 +85,7 @@ describe('ErrorState', () => {
     });
 
     it('renders go back button when onGoBack is provided', () => {
-      renderWithTheme(<ErrorState onGoBack={() => {}} />);
+      renderWithTheme(<ErrorState onGoBack={jest.fn()} />);
 
       expect(screen.getByRole('button', { name: 'Go Back' })).toBeInTheDocument();
     });
@@ -97,25 +97,25 @@ describe('ErrorState', () => {
     });
 
     it('hides retry button when hideRetry is true', () => {
-      renderWithTheme(<ErrorState onRetry={() => {}} hideRetry />);
+      renderWithTheme(<ErrorState onRetry={jest.fn()} hideRetry />);
 
       expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
     });
 
     it('hides go back button when hideGoBack is true', () => {
-      renderWithTheme(<ErrorState onGoBack={() => {}} hideGoBack />);
+      renderWithTheme(<ErrorState onGoBack={jest.fn()} hideGoBack />);
 
       expect(screen.queryByRole('button', { name: 'Go Back' })).not.toBeInTheDocument();
     });
 
     it('renders custom retry text', () => {
-      renderWithTheme(<ErrorState onRetry={() => {}} retryText="Try Again" />);
+      renderWithTheme(<ErrorState onRetry={jest.fn()} retryText="Try Again" />);
 
       expect(screen.getByRole('button', { name: 'Try Again' })).toBeInTheDocument();
     });
 
     it('renders custom go back text', () => {
-      renderWithTheme(<ErrorState onGoBack={() => {}} goBackText="Return" />);
+      renderWithTheme(<ErrorState onGoBack={jest.fn()} goBackText="Return" />);
 
       expect(screen.getByRole('button', { name: 'Return' })).toBeInTheDocument();
     });

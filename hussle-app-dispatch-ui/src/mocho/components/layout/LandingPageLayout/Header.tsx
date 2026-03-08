@@ -113,8 +113,8 @@ export default function Header() {
 
 	const drawerToggler = (open: boolean) => (event: any) => {
 		if (
-			event.type! === 'keydown' &&
-			(event.key! === 'Tab' || event.key! === 'Shift')
+			event.type === 'keydown' &&
+			(event.key === 'Tab' || event.key === 'Shift')
 		) {
 			return;
 		}

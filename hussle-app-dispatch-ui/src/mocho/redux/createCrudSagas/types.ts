@@ -203,7 +203,8 @@ export interface CrudApiClient<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   update?: (id: string, data: any) => Promise<TEntity>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete?: (id: string) => Promise<void | DeleteResult | any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete?: (id: string) => Promise<DeleteResult | undefined | any>;
   // Bulk operations
   deleteMany?: (ids: string[]) => Promise<BulkDeleteResult>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -50,7 +50,7 @@ export interface TextareaFieldConfig extends BaseFieldConfig {
  */
 export interface SelectFieldConfig extends BaseFieldConfig {
   type: 'select';
-  options: Array<{ value: string; label: string }>;
+  options: { value: string; label: string }[];
   multiple?: boolean;
 }
 
@@ -81,7 +81,7 @@ export interface CharCounterFieldConfig extends BaseFieldConfig {
  */
 export interface AutocompleteFieldConfig extends BaseFieldConfig {
   type: 'autocomplete';
-  options: Array<{ value: string; label: string }>;
+  options: { value: string; label: string }[];
   multiple?: boolean;
 }
 

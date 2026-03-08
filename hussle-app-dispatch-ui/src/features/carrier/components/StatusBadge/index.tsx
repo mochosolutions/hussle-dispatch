@@ -12,11 +12,11 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { STATUS_OPTIONS } from '../../constants';
-import { CarrierData } from '../../types';
+import type { CarrierStatus } from '../../types';
 
 export const StatusBadge: React.FC<{
-  status: CarrierData['status'];
-  onChange: (status: CarrierData['status']) => void;
+  status: CarrierStatus;
+  onChange: (status: CarrierStatus) => void;
 }> = ({ status, onChange }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const current = STATUS_OPTIONS.find((s) => s.value === status)!;

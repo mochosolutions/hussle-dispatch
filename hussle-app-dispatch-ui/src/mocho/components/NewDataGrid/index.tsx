@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -42,21 +42,12 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
   rowCountLabel = 'rows',
 }) => {
   const theme = useTheme();
-  const [displayData, setDisplayData] = useState(rowData);
+  const displayData = !loading && !error && rowData.length === 0 ? [] : rowData;
   const resolvedDomLayout = gridOptions?.domLayout ?? 'normal';
   const resolvedGridOptions = {
     ...gridOptions,
     domLayout: resolvedDomLayout,
   };
-
-  useEffect(() => {
-    // Automatically handle "no data" state if there's no row data provided
-    if (!loading && !error && rowData.length === 0) {
-      setDisplayData([]);
-    } else {
-      setDisplayData(rowData);
-    }
-  }, [rowData, loading, error]);
 
   const gridStyle = {
     flex: '1 1 0px',

@@ -67,7 +67,7 @@ const Notistack = ({
             }
           : undefined
       }
-      hideIconVariant={iconVariant === 'hide' ? true : false}
+      hideIconVariant={iconVariant === 'hide'}
     >
       {children}
     </StyledSnackbarProvider>

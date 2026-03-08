@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Loadable } from '@mocho/ui/components';
 import AppLayout from '../../../components/AppLayout';
 
-const CarrierIndexPage = Loadable(lazy(() => import('../pages/CarrierIndex')));
+// const CarrierIndexPage = Loadable(lazy(() => import('../pages/CarrierIndex')));
 const CarrierListPage = Loadable(lazy(() => import('../pages/CarrierListPage')));
 const CreateCarrierPage = Loadable(lazy(() => import('../pages/CreateCarrierPage')));
 const CarrierDetailPage = Loadable(lazy(() => import('features/carrier/pages/CarrierDetailPage')));
@@ -14,14 +14,6 @@ const carrierRoutes = {
   children: [
     {
       index: true,
-      element: <CarrierIndexPage />,
-    },
-    {
-      path: 'old',
-      element: <CarrierIndexPage />,
-    },
-    {
-      path: 'new',
       element: <CarrierListPage />,
     },
     {

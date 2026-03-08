@@ -40,7 +40,7 @@ const Navigation = ({ menuItems }: NavigationProps) => {
   const lastItem = isHorizontal ? HORIZONTAL_MAX_ITEM : null;
   let lastItemIndex = menuItems.length - 1;
   let remItems: NavItemType[] = [];
-  let lastItemId: string = '';
+  let lastItemId = '';
 
   if (lastItem && lastItem < menuItems.length) {
     lastItemId = menuItems[lastItem - 1].id ?? '';
@@ -85,7 +85,7 @@ const Navigation = ({ menuItems }: NavigationProps) => {
   return (
     <Box
       sx={{
-        pt: drawerOpen ? (isHorizontal ? 0 : 2) : 0,
+        pt: drawerOpen && !isHorizontal ? 2 : 0,
         '& > ul:first-of-type': { mt: 0 },
         display: isHorizontal ? { xs: 'block', lg: 'flex' } : 'block',
       }}

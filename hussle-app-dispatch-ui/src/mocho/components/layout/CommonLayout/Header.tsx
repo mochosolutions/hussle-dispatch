@@ -74,8 +74,8 @@ const Header = ({handleDrawerOpen, layout = 'landing', ...others}: Props) => {
   /** Method called on multiple components with different event types */
   const drawerToggler = (open: boolean) => (event: any) => {
     if (
-      event.type! === 'keydown' &&
-      (event.key! === 'Tab' || event.key! === 'Shift')
+      event.type === 'keydown' &&
+      (event.key === 'Tab' || event.key === 'Shift')
     ) {
       return;
     }

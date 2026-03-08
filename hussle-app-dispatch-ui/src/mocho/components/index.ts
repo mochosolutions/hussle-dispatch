@@ -87,9 +87,15 @@ export type { TiptapEditorProps } from './TiptapEditor';
 export { Logo } from './Logo';
 export type { LogoProps } from './Logo';
 
+// Popup Managers
+export { DrawerManager } from './DrawerManager';
+export { ModalManager } from './ModalManager';
+
 // Page Components
 export { PageWrapper } from './PageWrapper';
 export { PageHeader } from './PageHeader';
+export { DataGuard } from './DataGuard';
+export type { DataGuardProps } from './DataGuard';
 
 // Layout Components
 export { default as MainLayout } from './layout/MainLayout';

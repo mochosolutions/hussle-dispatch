@@ -1,14 +1,18 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { enqueueSnackbar } from 'notistack';
 import { updateCarrier } from 'utils/api/fleet/carrierApi';
 import {
-  updateCarrierRequest,
   updateCarrierSuccess,
   updateCarrierFailure,
-} from '../reducers/carrierPageSlice';
+} from '../reducers/carrierNewPageSlice';
 import { carrierActions } from '../reducers/carrierEntitySlice';
+import type { UpdateRequestPayload } from '../../../../mocho/redux/createCrudSlice';
+import type { UpdateCarrierInput } from '../../types';
 
-export function* updateCarrierSaga(action: ReturnType<typeof updateCarrierRequest>): Generator {
+export function* updateCarrierSaga(
+  action: PayloadAction<UpdateRequestPayload<UpdateCarrierInput>>,
+): Generator {
   try {
     const { id, data } = action.payload;
 

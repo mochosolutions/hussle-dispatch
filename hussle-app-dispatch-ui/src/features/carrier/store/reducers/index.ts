@@ -1,20 +1,11 @@
-export { default as carrierPageReducer } from './carrierPageSlice';
 export {
-  carrierEntityModule,
-  carrierActions,
-  carrierReducer,
-  carrierSelectors,
-} from './carrierEntitySlice';
-export {
+  carrierPageSlice,
   fetchCarriersRequest,
   fetchCarriersSuccess,
   fetchCarriersFailure,
   fetchCarrierDetailsRequest,
   fetchCarrierDetailsSuccess,
   fetchCarrierDetailsFailure,
-  fetchCarrierOnboardingRequest,
-  fetchCarrierOnboardingSuccess,
-  fetchCarrierOnboardingFailure,
   createCarrierRequest,
   createCarrierSuccess,
   createCarrierFailure,
@@ -24,31 +15,11 @@ export {
   deleteCarrierRequest,
   deleteCarrierSuccess,
   deleteCarrierFailure,
-  setTypeFilter,
-} from './carrierPageSlice';
+} from './carrierNewPageSlice';
 
-export { default as driverPageReducer } from './driverPageSlice';
 export {
-  driverEntityModule,
-  driverActions,
-  driverReducer,
-  driverSelectors,
-} from './driverEntitySlice';
-export {
-  fetchDriversRequest,
-  fetchDriversSuccess,
-  fetchDriversFailure,
-  fetchDriverDetailsRequest,
-  fetchDriverDetailsSuccess,
-  fetchDriverDetailsFailure,
-  createDriverRequest,
-  createDriverSuccess,
-  createDriverFailure,
-  updateDriverRequest,
-  updateDriverSuccess,
-  updateDriverFailure,
-  deleteDriverRequest,
-  deleteDriverSuccess,
-  deleteDriverFailure,
-  setCarrierIdFilter,
-} from './driverPageSlice';
+  carrierEntityModule,
+  carrierActions,
+  carrierReducer,
+  carrierSelectors,
+} from './carrierEntitySlice';

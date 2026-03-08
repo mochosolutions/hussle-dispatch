@@ -42,7 +42,7 @@ export const valuesEqual = (
   if (submitted === originalValue) return true;
 
   // Both null/undefined
-  if (submitted == null && originalValue == null) return true;
+  if ((submitted === null || submitted === undefined) && (originalValue === null || originalValue === undefined)) return true;
 
   // Array comparison (order-independent)
   if (Array.isArray(submitted) && Array.isArray(originalValue)) {

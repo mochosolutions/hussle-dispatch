@@ -160,7 +160,7 @@ export function createDirtyFormSaga({
  */
 export function createMultipleDirtyFormSagas(
   configs: DirtyFormSagaConfig[]
-): Array<() => Generator> {
+): (() => Generator)[] {
   return configs.map((config) => createDirtyFormSaga(config));
 }
 

@@ -7,7 +7,7 @@ import { Link, Stack, Typography } from '@mui/material';
 export interface LayoutFooterProps {
   children?: ReactNode;
   copyright?: string;
-  links?: Array<{ label: string; href: string; external?: boolean }>;
+  links?: { label: string; href: string; external?: boolean }[];
 }
 
 const Footer = ({ children, copyright, links }: LayoutFooterProps) => {

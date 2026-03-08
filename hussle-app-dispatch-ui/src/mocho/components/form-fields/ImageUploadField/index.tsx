@@ -47,12 +47,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   const [validationError, setValidationError] = useState<ImageUploadError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update preview when existing URL changes (edit mode)
-  useEffect(() => {
-    if (existingUrl && !previewUrl) {
-      setPreviewUrl(existingUrl);
-    }
-  }, [existingUrl, previewUrl]);
+  // Note: previewUrl is initialized from existingUrl above; file selection updates it via handleFileSelect
 
   // Cleanup blob URLs on unmount
   useEffect(() => {

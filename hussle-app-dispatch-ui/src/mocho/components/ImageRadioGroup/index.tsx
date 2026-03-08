@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   Radio,
   RadioGroup,
@@ -38,23 +38,19 @@ const ImageRadioGroup: React.FC<ImageRadioGroupProps> = ({
   defaultValue, // Default value for uncontrolled behavior
   onChange, // Optional handler
 }) => {
-  const [internalValue, setInternalValue] = useState<string>(
-    defaultValue || '',
+  const [uncontrolledValue, setUncontrolledValue] = useState<string>(
+    defaultValue ?? '',
   );
 
-  // Sync internal state with the controlled `selectedValue` prop, if provided
-  useEffect(() => {
-    if (selectedValue !== undefined) {
-      setInternalValue(selectedValue);
-    }
-  }, [selectedValue]);
+  // Use controlled value if provided, otherwise use internal state
+  const internalValue = selectedValue !== undefined ? selectedValue : uncontrolledValue;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const {value} = event.target;
 
     // Update internal state for uncontrolled usage
     if (selectedValue === undefined) {
-      setInternalValue(value);
+      setUncontrolledValue(value);
     }
 
     // Call the parent's `onChange` handler if provided

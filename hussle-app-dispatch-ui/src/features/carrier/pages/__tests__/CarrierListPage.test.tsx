@@ -5,7 +5,7 @@ import { store } from 'store';
 import CarrierListPage from '../CarrierListPage';
 
 // Mock @mocho/ui/components to avoid styled-components / AG Grid complexity in unit tests
-jest.mock('../../mocho/components', () => ({
+jest.mock('@mocho/ui/components', () => ({
   ActionsCell: () => null,
   ConfirmDeleteDialog: ({ open, title }: { open: boolean; title: string }) =>
     open ? <div>{title}</div> : null,

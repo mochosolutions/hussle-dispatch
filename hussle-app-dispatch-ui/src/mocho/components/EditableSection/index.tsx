@@ -128,62 +128,83 @@ function EditableSectionInner<T extends object>(
     }
 
     // In edit mode for editable fields, show form input
-    const fieldError = formik.touched[name] && formik.errors[name];
+    // Field names come from the fields config and are valid keys of T,
+    // but TypeScript cannot narrow string to keyof Partial<T> here.
+    const touched = formik.touched as Record<string, boolean | undefined>;
+    const errors = formik.errors as Record<string, string | undefined>;
+    const values = formik.values as Record<string, unknown>;
+    const fieldError = touched[name] && errors[name];
+
+    let inputType = 'text';
+    if (type === 'email') {
+      inputType = 'email';
+    } else if (type === 'number') {
+      inputType = 'number';
+    }
+
+    let fieldContent: React.ReactNode;
+    if (type === 'select') {
+      fieldContent = (
+        <TextField
+          select
+          fullWidth
+          id={name}
+          name={name}
+          label={label}
+          value={values[name] ?? ''}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={Boolean(fieldError)}
+          helperText={fieldError as string}
+          size="small"
+        >
+          {options?.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      );
+    } else if (type === 'textarea') {
+      fieldContent = (
+        <TextField
+          fullWidth
+          multiline
+          rows={rows}
+          id={name}
+          name={name}
+          label={label}
+          placeholder={placeholder}
+          value={values[name] ?? ''}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={Boolean(fieldError)}
+          helperText={fieldError as string}
+          size="small"
+        />
+      );
+    } else {
+      fieldContent = (
+        <TextField
+          fullWidth
+          id={name}
+          name={name}
+          label={label}
+          type={inputType}
+          placeholder={placeholder}
+          value={values[name] ?? ''}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={Boolean(fieldError)}
+          helperText={fieldError as string}
+          size="small"
+        />
+      );
+    }
 
     return (
       <Grid item xs={12} sm={gridSize} key={name}>
-        {type === 'select' ? (
-          <TextField
-            select
-            fullWidth
-            id={name}
-            name={name}
-            label={label}
-            value={formik.values[name] ?? ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={Boolean(fieldError)}
-            helperText={fieldError as string}
-            size="small"
-          >
-            {options?.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        ) : type === 'textarea' ? (
-          <TextField
-            fullWidth
-            multiline
-            rows={rows}
-            id={name}
-            name={name}
-            label={label}
-            placeholder={placeholder}
-            value={formik.values[name] ?? ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={Boolean(fieldError)}
-            helperText={fieldError as string}
-            size="small"
-          />
-        ) : (
-          <TextField
-            fullWidth
-            id={name}
-            name={name}
-            label={label}
-            type={type === 'email' ? 'email' : type === 'number' ? 'number' : 'text'}
-            placeholder={placeholder}
-            value={formik.values[name] ?? ''}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={Boolean(fieldError)}
-            helperText={fieldError as string}
-            size="small"
-          />
-        )}
+        {fieldContent}
       </Grid>
     );
   };

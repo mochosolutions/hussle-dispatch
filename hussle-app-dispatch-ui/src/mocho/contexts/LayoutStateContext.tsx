@@ -91,13 +91,13 @@ export const LayoutStateProvider = (props: LayoutStateProviderProps) => {
 
   if (isControlled) {
     drawerOpen = drawerOpenProp;
-    onDrawerToggle = onDrawerToggleProp ?? (() => {});
-    onDrawerClose = onDrawerCloseProp ?? (() => {});
+    onDrawerToggle = onDrawerToggleProp ?? (() => { return; });
+    onDrawerClose = onDrawerCloseProp ?? (() => { return; });
   } else if (disableMiniDrawer && !matchDownLg) {
     // Desktop + disableMiniDrawer: always open, no toggle
     drawerOpen = true;
-    onDrawerToggle = () => {};
-    onDrawerClose = () => {};
+    onDrawerToggle = () => { return; };
+    onDrawerClose = () => { return; };
   } else {
     // Uncontrolled (includes mobile with disableMiniDrawer — normal toggle behaviour)
     drawerOpen = internalDrawerOpen;

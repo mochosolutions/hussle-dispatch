@@ -54,7 +54,7 @@ export const asyncStatusSlice = createSlice({
      * Clear any error for a given key.
      */
     clearAsyncError(state, action: PayloadAction<{ key: string }>) {
-      delete state.errors[action.payload.key];
+      Reflect.deleteProperty(state.errors, action.payload.key);
     },
   },
 });

@@ -38,14 +38,15 @@ const Profile = ({ user, onLogout }: ProfileProps) => {
     }
   };
 
-  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const anchorRef = (el: HTMLButtonElement | null) => { setAnchorEl(el); };
   const [open, setOpen] = useState(false);
   const handleToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
 
   const handleClose = (event: MouseEvent | TouchEvent) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target as Node)) {
+    if (anchorEl && anchorEl.contains(event.target as Node)) {
       return;
     }
     setOpen(false);
@@ -87,7 +88,7 @@ const Profile = ({ user, onLogout }: ProfileProps) => {
       <Popper
         placement="bottom-end"
         open={open}
-        anchorEl={anchorRef.current}
+        anchorEl={anchorEl}
         role={undefined}
         transition
         disablePortal

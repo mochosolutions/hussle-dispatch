@@ -8,6 +8,9 @@ interface ModalState {
 interface DrawerState {
   drawerType: string;
   drawerProps: Record<string, unknown>;
+  anchor?: 'left' | 'right' | 'top' | 'bottom';
+  width?: number;
+  disableBackdropClose?: boolean;
 }
 
 interface UiState {

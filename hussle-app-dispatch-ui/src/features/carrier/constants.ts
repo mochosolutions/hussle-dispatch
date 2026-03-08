@@ -1,4 +1,4 @@
-import type { VehicleType, CarrierData } from './types';
+import type { VehicleType, CarrierStatus } from './types';
 
 export const EQUIPMENT_OPTIONS: readonly { value: VehicleType; label: string }[] = [
   { value: 'DRY_VAN', label: 'Dry Van' },
@@ -39,9 +39,25 @@ export const CONTACT_ROLES = [
 
 export const PAYMENT_TERMS_OPTIONS = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Quick Pay'];
 
-export const STATUS_OPTIONS: { value: CarrierData['status']; label: string; color: string }[] = [
+export const STATUS_OPTIONS: { value: CarrierStatus; label: string; color: string }[] = [
   { value: 'approved', label: 'Approved', color: 'success.main' },
   { value: 'pending', label: 'Pending Review', color: 'warning.main' },
   { value: 'suspended', label: 'Suspended', color: 'error.main' },
   { value: 'draft', label: 'Draft', color: 'text.disabled' },
+];
+
+
+
+export const CARRIER_TYPE_OPTIONS = [
+  { value: 'COMPANY_ASSET', label: 'Company Asset' },
+  { value: 'OWNER_OPERATOR', label: 'Owner Operator' },
+  { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
+];
+
+export const CARRIER_DETAIL_TAB_ITEMS: { key: string; label: string; count?: number }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'assets', label: 'Drivers & Vehicles' },
+  { key: 'loadHistory', label: 'Load History', count: 42 },
+  { key: 'documents', label: 'Documents', count: 3 },
+  // { key: 'billing', label: 'Billing', count: 3 },
 ];

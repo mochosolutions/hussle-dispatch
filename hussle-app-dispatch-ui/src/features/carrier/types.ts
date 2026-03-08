@@ -3,6 +3,8 @@
 
 export type CarrierType = 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
 
+export type CarrierStatus = 'approved' | 'pending' | 'suspended' | 'draft';
+
 export type InsuranceWarning = '30_DAY' | '7_DAY' | 'EXPIRED' | null;
 
 export type VehicleType =
@@ -354,6 +356,7 @@ export type SubmitStatus = 'active' | 'pending';
  */
 export interface VehicleFormEntry {
   localId: string;
+  unitNumber: string;
   type: VehicleType;
   make: string;
   model: string;
@@ -361,7 +364,6 @@ export interface VehicleFormEntry {
   year: string;
   vin: string;
   licensePlate: string;
-  assignedDriverLocalId: string | null;
 }
 
 /**
@@ -370,32 +372,9 @@ export interface VehicleFormEntry {
  */
 export interface DriverFormEntry {
   localId: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone: string;
   cdlNumber: string;
-  cdlClass: string;
   cdlExpiry: string;
   email: string;
-  assignedVehicleLocalId: string | null;
-}
-
-export interface CarrierData {
-  id: string;
-  legalName: string;
-  mcNumber: string;
-  dotNumber: string;
-  address: string;
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
-  equipmentTypes: string[];
-  status: 'approved' | 'pending' | 'suspended' | 'draft';
-  dispatchFee: number;
-  partnerSplit: number;
-  paymentTerms: string;
-  agreementDate: string;
-  notes: string;
-  notesAuthor: string;
-  notesDate: string;
 }

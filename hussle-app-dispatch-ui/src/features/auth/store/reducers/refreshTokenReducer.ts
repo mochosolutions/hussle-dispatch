@@ -1,7 +1,7 @@
 import {PayloadAction} from '@reduxjs/toolkit';
 
 export const refreshTokenReducer = {
-  refreshTokenSuccess: (state, action: PayloadAction<{}>) => {
+  refreshTokenSuccess: (state, action: PayloadAction<Record<string, never>>) => {
     // Token refresh handled by cookies - no state update needed
   },
   refreshTokenFailure: (state) => {

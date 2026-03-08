@@ -11,8 +11,8 @@ import { LoadingState } from '../types/loadingState';
 // Payload Type Definitions
 // =============================================================================
 
-/** Payload for fetching all entities (no parameters needed) */
-export interface FetchAllRequestPayload {}
+/** Payload for fetching all entities (optional filter/pagination parameters) */
+export type FetchAllRequestPayload = Record<string, unknown>;
 
 /** Payload for fetching a single entity by ID */
 export interface FetchByIdRequestPayload {
@@ -101,7 +101,7 @@ export interface CrudSliceGeneratedActions<
   TUpdateData = Record<string, unknown>,
 > {
   // Fetch all (operation-level)
-  fetchAllRequest: ActionCreatorWithPayload<FetchAllRequestPayload | void>;
+  fetchAllRequest: ActionCreatorWithPayload<FetchAllRequestPayload>;
   fetchAllSuccess: ActionCreatorWithPayload<unknown>;
   fetchAllFailure: ActionCreatorWithPayload<FailurePayload>;
 
@@ -287,7 +287,7 @@ export function createCrudSlice(config: CrudSliceConfig) {
   // Fetch All (getAll) - Operation-level state
   // ============================================================================
   if (operations.includes('getAll')) {
-    reducers.fetchAllRequest = (state, _action: PayloadAction<FetchAllRequestPayload | void>) => {
+    reducers.fetchAllRequest = (state, _action: PayloadAction<FetchAllRequestPayload>) => {
       setPending(state, { key: 'getAll' });
     };
 
@@ -409,7 +409,7 @@ export function createCrudSlice(config: CrudSliceConfig) {
     reducers: allReducers as never,
   });
 
-  return slice as typeof slice & { actions: CrudSliceGeneratedActions };
+  return slice as Omit<typeof slice, 'actions'> & { actions: CrudSliceGeneratedActions };
 }
 
 // =============================================================================

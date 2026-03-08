@@ -69,19 +69,10 @@ export const DeferredImageUploadField: React.FC<DeferredImageUploadFieldProps> =
   const heroImageState = formik.values[name] as HeroImageState | null;
   const existingUrl = existingUrlFieldName ? (formik.values[existingUrlFieldName] as string | null) : null;
 
-  // Local state
-  const [previewUrl, setPreviewUrl] = useState<string | null>(heroImageState?.blobUrl || existingUrl);
+  // Derive preview URL from props — prefer blobUrl from state, fallback to existingUrl
+  const previewUrl = heroImageState?.blobUrl ?? existingUrl ?? null;
   const [validationError, setValidationError] = useState<ImageUploadError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Update preview when existing URL changes (edit mode) or heroImageState changes
-  useEffect(() => {
-    if (heroImageState?.blobUrl) {
-      setPreviewUrl(heroImageState.blobUrl);
-    } else if (existingUrl && !heroImageState) {
-      setPreviewUrl(existingUrl);
-    }
-  }, [existingUrl, heroImageState]);
 
   // Cleanup blob URL on unmount
   useEffect(() => {
@@ -117,7 +108,6 @@ export const DeferredImageUploadField: React.FC<DeferredImageUploadFieldProps> =
 
       // Create blob URL for preview
       const blobUrl = URL.createObjectURL(file);
-      setPreviewUrl(blobUrl);
 
       // Store file in form state (will be uploaded on submit)
       const newHeroImageState: HeroImageState = {
@@ -142,8 +132,7 @@ export const DeferredImageUploadField: React.FC<DeferredImageUploadFieldProps> =
       URL.revokeObjectURL(heroImageState.blobUrl);
     }
 
-    // Clear preview
-    setPreviewUrl(null);
+    // Clear validation errors
     setValidationError(null);
 
     // Reset file input

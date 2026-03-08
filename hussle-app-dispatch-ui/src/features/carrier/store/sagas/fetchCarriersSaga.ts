@@ -1,16 +1,21 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { enqueueSnackbar } from 'notistack';
 import { getCarriers } from 'utils/api/fleet/carrierApi';
 import {
-  fetchCarriersRequest,
   fetchCarriersSuccess,
   fetchCarriersFailure,
-} from '../reducers/carrierPageSlice';
+} from '../reducers/carrierNewPageSlice';
 import { carrierActions } from '../reducers/carrierEntitySlice';
 
-export function* fetchCarriersSaga(
-  action: ReturnType<typeof fetchCarriersRequest>,
-): Generator {
+interface FetchCarriersPayload {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+}
+
+export function* fetchCarriersSaga(action: PayloadAction<FetchCarriersPayload>): Generator {
   try {
     const response = (yield call(
       getCarriers,

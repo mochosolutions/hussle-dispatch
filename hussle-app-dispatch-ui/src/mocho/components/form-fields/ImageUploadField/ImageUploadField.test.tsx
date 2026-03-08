@@ -27,7 +27,7 @@ const createMockFormik = (overrides: Partial<FormikFieldProps> = {}): FormikFiel
   ...overrides,
 });
 
-const createMockFile = (name: string = 'test.jpg', type: string = 'image/jpeg', size: number = 1024) => {
+const createMockFile = (name = 'test.jpg', type = 'image/jpeg', size = 1024) => {
   const file = new File(['test content'], name, { type });
   Object.defineProperty(file, 'size', { value: size });
   return file;

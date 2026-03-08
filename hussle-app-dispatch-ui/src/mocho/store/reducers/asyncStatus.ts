@@ -60,7 +60,7 @@ export const asyncStatusSlice = createSlice({
       state,
       action: PayloadAction<{ key: string }>
     ) {
-      delete state.errors[action.payload.key];
+      Reflect.deleteProperty(state.errors, action.payload.key);
     },
   },
 });

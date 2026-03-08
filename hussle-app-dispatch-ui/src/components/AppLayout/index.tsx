@@ -11,7 +11,7 @@ import {
 import type { NavItemType } from '@mocho/ui/types';
 import type { ComponentProps } from 'react';
 import { Outlet, useMatches } from 'react-router-dom';
-import { House, Van } from 'lucide-react';
+import { House, Van, BarChart3 } from 'lucide-react';
 
 // Camera
 
@@ -32,13 +32,12 @@ const menuItems: NavItemType[] = [
         id: 'fleet',
         title: 'Fleet Management',
         type: 'collapse',
-        url: '/carriers',
+        // url: '/carriers',
         icon: <Van size={24} />,
         children: [
-          { id: 'carriers-old', title: 'Old Carriers', type: 'item', url: '/carriers/old' },
-          { id: 'carriers', title: 'Carriers', type: 'item', url: '/carriers/new' },
-          //   { id: 'drivers', title: 'Drivers', type: 'item', url: '/fleet/drivers' },
-          //   { id: 'vehicles', title: 'Vehicles', type: 'item', url: '/fleet/vehicles' },
+          { id: 'carriers', title: 'Carriers', type: 'item', url: '/carriers' },
+          { id: 'vehicles', title: 'Vehicles', type: 'item', url: '/vehicles' },
+          { id: 'drivers', title: 'Drivers', type: 'item', url: '/drivers' },
           //   { id: 'contacts', title: 'Contacts', type: 'item', url: '/fleet/contacts' },
         ],
       },
@@ -49,12 +48,13 @@ const menuItems: NavItemType[] = [
       //   type: 'item',
       //   url: '/dispatch-board/create-load',
       // },
-      // {
-      //   id: 'load-intelligence',
-      //   title: 'Load Intelligence',
-      //   type: 'item',
-      //   url: '/load-intelligence',
-      // },
+      {
+        id: 'load-intelligence',
+        title: 'Load Intelligence',
+        type: 'item',
+        url: '/load-intelligence',
+        icon: <BarChart3 size={24} />,
+      },
 
       // { id: 'invoices', title: 'Invoices', type: 'item', url: '/invoices' },
     ],

@@ -46,9 +46,7 @@ export interface BaseInputFieldProps<T = Record<string, unknown>> {
 /**
  * Props for EmailField component.
  */
-export interface EmailFieldProps<
-	T = Record<string, unknown>,
-> extends BaseInputFieldProps<T> {}
+export type EmailFieldProps<T = Record<string, unknown>> = BaseInputFieldProps<T>;
 
 /**
  * Props for TextField component.
@@ -98,9 +96,7 @@ export interface PasswordFieldWithChecklistProps<
 /**
  * Props for ConfirmPasswordField component.
  */
-export interface ConfirmPasswordFieldProps<
-	T = Record<string, unknown>,
-> extends PasswordFieldProps<T> {}
+export type ConfirmPasswordFieldProps<T = Record<string, unknown>> = PasswordFieldProps<T>;
 
 /**
  * Props for OTPField component.

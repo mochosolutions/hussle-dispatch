@@ -3,28 +3,24 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { EQUIPMENT_OPTIONS } from '../../constants';
-import type { DriverFormEntry, VehicleFormEntry } from '../../types';
+import type { VehicleFormEntry } from '../../types';
 
 interface VehicleSummaryCardProps {
   vehicle: VehicleFormEntry;
-  drivers: DriverFormEntry[];
   onEdit: () => void;
   onRemove: () => void;
 }
 
 export const VehicleSummaryCard = ({
   vehicle,
-  drivers,
   onEdit,
   onRemove,
 }: VehicleSummaryCardProps) => {
-  const assigned = drivers.find((d) => d.localId === vehicle.assignedDriverLocalId);
   const eqLabel = EQUIPMENT_OPTIONS.find((e) => e.value === vehicle.type)?.label;
   const details = [
     vehicle.vin && `VIN …${vehicle.vin.slice(-6)}`,
     eqLabel,
     vehicle.licensePlate,
-    assigned && `→ ${assigned.firstName}`,
   ].filter(Boolean);
 
   return (
@@ -52,7 +48,7 @@ export const VehicleSummaryCard = ({
         </Avatar>
         <Box>
           <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            {vehicle.year} {vehicle.make} {vehicle.model}
+            {vehicle.unitNumber} — {vehicle.year} {vehicle.make} {vehicle.model}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             {details.join(' · ')}

@@ -177,7 +177,7 @@ describe('EmptyState', () => {
     });
 
     it('does not render button when onAction provided without actionText', () => {
-      render(<EmptyState title="Test" onAction={() => {}} />);
+      render(<EmptyState title="Test" onAction={jest.fn()} />);
 
       // variant=custom has no default actionText
       expect(screen.queryByRole('button')).not.toBeInTheDocument();
@@ -202,7 +202,7 @@ describe('EmptyState', () => {
         <EmptyState
           title="Test"
           actionText="Create Item"
-          onAction={() => {}}
+          onAction={jest.fn()}
         />
       );
 
@@ -233,7 +233,7 @@ describe('EmptyState', () => {
         <EmptyState
           variant="no-results"
           actionText="Reset Search"
-          onAction={() => {}}
+          onAction={jest.fn()}
         />
       );
 

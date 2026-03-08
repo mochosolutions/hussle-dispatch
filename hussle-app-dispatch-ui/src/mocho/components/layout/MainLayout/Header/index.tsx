@@ -76,6 +76,15 @@ const Header = ({ children }: LayoutHeaderProps) => {
     </Toolbar>
   );
 
+  let appBarWidth: string | { xs: string; lg: string };
+  if (isHorizontal) {
+    appBarWidth = '100%';
+  } else if (drawerOpen) {
+    appBarWidth = 'calc(100% - 260px)';
+  } else {
+    appBarWidth = { xs: '100%', lg: 'calc(100% - 60px)' };
+  }
+
   // app-bar params
   const appBar: AppBarProps = {
     position: 'fixed',
@@ -84,11 +93,7 @@ const Header = ({ children }: LayoutHeaderProps) => {
     sx: {
       borderBottom: `1px solid ${theme.palette.divider}`,
       zIndex: downLG ? 1100 : 1200,
-      width: isHorizontal
-        ? '100%'
-        : drawerOpen
-          ? 'calc(100% - 260px)'
-          : { xs: '100%', lg: 'calc(100% - 60px)' },
+      width: appBarWidth,
     },
   };
 

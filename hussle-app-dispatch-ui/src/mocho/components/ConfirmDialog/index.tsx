@@ -105,24 +105,26 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   /**
    * Handle dialog close events (backdrop click, escape key)
    */
-  const handleClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
+  const handleClose = (_event: object, _reason: 'backdropClick' | 'escapeKeyDown') => {
     // Allow backdrop clicks and escape key to close the dialog
     onClose();
   };
 
   // Select icon based on severity
-  const Icon = severity === 'error'
-    ? ErrorIcon
-    : severity === 'info'
-    ? InfoIcon
-    : WarningAmberIcon;
+  let Icon = WarningAmberIcon;
+  if (severity === 'error') {
+    Icon = ErrorIcon;
+  } else if (severity === 'info') {
+    Icon = InfoIcon;
+  }
 
   // Select color based on severity
-  const iconColor = severity === 'error'
-    ? 'error'
-    : severity === 'info'
-    ? 'info'
-    : 'warning';
+  let iconColor: 'warning' | 'error' | 'info' = 'warning';
+  if (severity === 'error') {
+    iconColor = 'error';
+  } else if (severity === 'info') {
+    iconColor = 'info';
+  }
 
   const buttonColor = severity === 'error' ? 'error' : 'warning';
 

@@ -3,11 +3,11 @@ import {ReactNode} from 'react';
 // material-ui
 import {ChipProps} from '@mui/material';
 
-import {GenericCardProps} from './root';
+import type { GenericCardProps } from '../../../mocho/types/root';
 
 // ==============================|| MENU TYPES  ||============================== //
 
-export type NavItemType = {
+export interface NavItemType {
   breadcrumbs?: boolean;
   caption?: ReactNode | string;
   children?: NavItemType[];
@@ -23,11 +23,11 @@ export type NavItemType = {
   title?: ReactNode | string;
   type?: string;
   url?: string | undefined;
-};
+}
 
 export type LinkTarget = '_blank' | '_self' | '_parent' | '_top';
 
-export type MenuProps = {
+export interface MenuProps {
   openItem: string[];
   openComponent: string;
   selectedID: string | null;
@@ -35,4 +35,4 @@ export type MenuProps = {
   componentDrawerOpen: boolean;
   menu: NavItemType;
   error: null;
-};
+}

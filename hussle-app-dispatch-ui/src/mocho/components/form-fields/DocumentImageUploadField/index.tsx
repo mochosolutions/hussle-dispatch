@@ -208,6 +208,13 @@ export const DocumentImageUploadField: React.FC<DocumentImageUploadFieldProps> =
   const isUploading = state === 'requesting' || state === 'uploading' || state === 'processing';
   const hasError = validationError || uploadError;
 
+  let borderColor = 'divider';
+  if (hasError) {
+    borderColor = 'error.main';
+  } else if (state === 'complete') {
+    borderColor = 'success.main';
+  }
+
   return (
     <Stack spacing={1}>
       <InputLabel>{label}</InputLabel>
@@ -216,7 +223,7 @@ export const DocumentImageUploadField: React.FC<DocumentImageUploadFieldProps> =
       <Box
         sx={{
           border: 1,
-          borderColor: hasError ? 'error.main' : state === 'complete' ? 'success.main' : 'divider',
+          borderColor,
           borderRadius: 1,
           p: 2,
           textAlign: 'center',

@@ -105,7 +105,7 @@ export function FormSkeleton({
             <Skeleton
               variant="rectangular"
               width="100%"
-              height={index % 3 === 0 ? 56 : index % 3 === 1 ? 100 : 56}
+              height={index % 3 === 1 ? 100 : 56}
               sx={{ borderRadius: 1 }}
             />
           </Box>

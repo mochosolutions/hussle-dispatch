@@ -68,11 +68,14 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
 		flexDirection: 'column',
 	};
 
-	const mergedSx: SxProps<Theme> = Array.isArray(sx)
-		? [baseSx, ...sx]
-		: sx === undefined
-			? baseSx
-			: [baseSx, sx];
+	let mergedSx: SxProps<Theme>;
+	if (Array.isArray(sx)) {
+		mergedSx = [baseSx, ...sx];
+	} else if (sx === undefined) {
+		mergedSx = baseSx;
+	} else {
+		mergedSx = [baseSx, sx];
+	}
 
 	let content: React.ReactNode;
 

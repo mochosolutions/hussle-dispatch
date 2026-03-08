@@ -45,7 +45,7 @@ interface BaseInputFieldProps {
 /**
  * Props for EmailField component.
  */
-export interface EmailFieldProps extends BaseInputFieldProps {}
+export type EmailFieldProps = BaseInputFieldProps;
 
 /**
  * Props for TextField component.
@@ -57,18 +57,12 @@ export interface TextFieldProps extends BaseInputFieldProps {
 /**
  * Props for DateField component.
  */
-export interface DateFieldProps extends Omit<
-	BaseInputFieldProps,
-	'placeholder'
-> {}
+export type DateFieldProps = Omit<BaseInputFieldProps, 'placeholder'>;
 
 /**
  * Props for TimeField component.
  */
-export interface TimeFieldProps extends Omit<
-	BaseInputFieldProps,
-	'placeholder'
-> {}
+export type TimeFieldProps = Omit<BaseInputFieldProps, 'placeholder'>;
 
 /**
  * Props for PasswordField component.
@@ -105,7 +99,7 @@ export interface PasswordFieldWithChecklistProps extends PasswordFieldProps {
 /**
  * Props for ConfirmPasswordField component.
  */
-export interface ConfirmPasswordFieldProps extends PasswordFieldProps {}
+export type ConfirmPasswordFieldProps = PasswordFieldProps;
 
 /**
  * Props for OTPField component.

@@ -5,6 +5,8 @@ import LoginRoutes from 'features/auth/routes/LoginRoutes';
 import DispatchBoardRoutes from 'features/dispatchboard/routes/DispatchBoardRoutes';
 // import FleetRoutes from 'pages/fleet/routes/FleetRoutes';
 import CarrierRoutes from 'features/carrier/routes/carrierRoutes';
+import VehicleRoutes from 'features/vehicle/routes/vehicleRoutes';
+import DriverRoutes from 'features/driver/routes/driverRoutes';
 import InvoiceRoutes from 'features/invoices/routes/InvoiceRoutes';
 import LoadIntelligenceRoutes from 'features/loadintelligence/routes/LoadIntelligence';
 import App from '../App';
@@ -17,6 +19,8 @@ export const routes: RouteObject[] = [
       DispatchBoardRoutes,
       // FleetRoutes,
       CarrierRoutes,
+      VehicleRoutes,
+      DriverRoutes,
       InvoiceRoutes,
       LoadIntelligenceRoutes,
 

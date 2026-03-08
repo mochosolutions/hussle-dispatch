@@ -141,7 +141,7 @@ export function generateSlug(title: string): string {
 /**
  * Helper function to truncate excerpt
  */
-export function truncateExcerpt(text: string, maxLength: number = 160): string {
+export function truncateExcerpt(text: string, maxLength = 160): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3).trim() + '...';
+  return `${text.substring(0, maxLength - 3).trim()}...`;
 }

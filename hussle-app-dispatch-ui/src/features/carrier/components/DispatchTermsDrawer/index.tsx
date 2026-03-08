@@ -1,174 +1,116 @@
-import { Formik, Form } from 'formik';
-import {
-  Box,
-  Typography,
-  TextField,
-  MenuItem,
-  Button,
-  Card,
-  Grid,
-  Stack,
-  CircularProgress,
-} from '@mui/material';
+import React from 'react';
+import { Formik, Form, useFormikContext } from 'formik';
+import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { useDispatch, useSelector } from 'store';
+import { TextField, CheckboxField } from '../../../../mocho/components';
 import { EditDrawer } from '../../components/EditDrawer';
 import { dispatchTermsSchema } from '../../validators/fleetSchema';
-import { PAYMENT_TERMS_OPTIONS } from '../../constants';
-import { CarrierData } from '../../types';
+import { selectCarrierById } from '../../store/selectors/carrierSelectors';
+import { updateCarrierRequest } from '../../store/reducers/carrierNewPageSlice';
 
-export const DispatchTermsDrawer: React.FC<{
-  open: boolean;
+interface DispatchTermsDrawerProps {
+  carrierId: string;
   onClose: () => void;
-  data: CarrierData;
-  onSave: (values: Partial<CarrierData>) => void;
-}> = ({ open, onClose, data, onSave }) => (
-  <EditDrawer open={open} onClose={onClose} title="Edit Dispatch Terms" subtitle={data.legalName}>
+}
+
+export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
+  carrierId,
+  onClose,
+}) => {
+  const dispatch = useDispatch();
+  const carrier = useSelector(selectCarrierById(carrierId));
+
+  if (!carrier) {
+    return null;
+  }
+
+  return (
     <Formik
       initialValues={{
-        dispatchFee: data.dispatchFee,
-        partnerSplit: data.partnerSplit,
-        paymentTerms: data.paymentTerms,
-        agreementDate: data.agreementDate,
+        dispatchFeePercent: carrier.dispatchFeePercent,
+        feeIncludesAccessorials: carrier.feeIncludesAccessorials,
+        dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       }}
       validationSchema={dispatchTermsSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        setTimeout(() => {
-          onSave(values);
-          setSubmitting(false);
-          onClose();
-        }, 600);
+      onSubmit={(values) => {
+        dispatch(updateCarrierRequest({ id: carrierId, data: values }));
+        onClose();
       }}
       enableReinitialize
     >
-      {({ values, errors, touched, handleChange, handleBlur, isSubmitting, isValid, dirty }) => (
-        <Form>
-          <Stack spacing={2.5}>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="dispatchFee"
-                  label="Dispatch Fee %"
-                  type="number"
-                  value={values.dispatchFee}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.dispatchFee && Boolean(errors.dispatchFee)}
-                  helperText={touched.dispatchFee && errors.dispatchFee}
-                  InputProps={{ inputProps: { min: 0, max: 100, step: 0.5 } }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="partnerSplit"
-                  label="Partner Split %"
-                  type="number"
-                  value={values.partnerSplit}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.partnerSplit && Boolean(errors.partnerSplit)}
-                  helperText={touched.partnerSplit && errors.partnerSplit}
-                  InputProps={{ inputProps: { min: 0, max: 100, step: 0.5 } }}
-                />
-              </Grid>
-            </Grid>
-
-            <TextField
-              fullWidth
-              select
-              name="paymentTerms"
-              label="Payment Terms"
-              value={values.paymentTerms}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.paymentTerms && Boolean(errors.paymentTerms)}
-              helperText={touched.paymentTerms && errors.paymentTerms}
-            >
-              {PAYMENT_TERMS_OPTIONS.map((t) => (
-                <MenuItem key={t} value={t}>
-                  {t}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              fullWidth
-              name="agreementDate"
-              label="Agreement Date"
-              type="date"
-              value={values.agreementDate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-            />
-
-            {/* Summary preview */}
-            <Card variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 600, color: 'text.secondary', mb: 1, display: 'block' }}
-              >
-                Preview
-              </Typography>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  rowGap: 0.75,
-                  fontSize: '0.8125rem',
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Dispatch Fee
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: 'primary.main', textAlign: 'right' }}
-                >
-                  {values.dispatchFee}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Partner Split
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
-                  {values.partnerSplit}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Payment Terms
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
-                  {values.paymentTerms || '—'}
-                </Typography>
-              </Box>
-            </Card>
-
-            <Box
-              sx={{
-                pt: 2,
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 1.5,
-                borderTop: 1,
-                borderColor: 'divider',
-                mt: 1,
-              }}
-            >
-              <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!isValid || !dirty || isSubmitting}
-                startIcon={
-                  isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined
-                }
-              >
-                {isSubmitting ? 'Saving…' : 'Save Changes'}
-              </Button>
-            </Box>
-          </Stack>
-        </Form>
-      )}
+      <DispatchTermsDrawerContent carrierName={carrier.name} partnerSplitPercent={carrier.partnerSplitPercent} onClose={onClose} />
     </Formik>
-  </EditDrawer>
-);
+  );
+};
+
+interface DispatchTermsDrawerContentProps {
+  carrierName: string;
+  partnerSplitPercent: string | null | undefined;
+  onClose: () => void;
+}
+
+const DispatchTermsDrawerContent: React.FC<DispatchTermsDrawerContentProps> = ({
+  carrierName,
+  partnerSplitPercent,
+  onClose,
+}) => {
+  const { values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting, isValid, dirty } =
+    useFormikContext<Record<string, unknown>>();
+
+  const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
+
+  const footer = (
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="edit-dispatch-terms"
+        variant="contained"
+        disabled={!isValid || !dirty || isSubmitting}
+        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
+      >
+        {isSubmitting ? 'Saving\u2026' : 'Save Changes'}
+      </Button>
+    </Box>
+  );
+
+  return (
+    <EditDrawer
+      open
+      onClose={onClose}
+      title="Edit Dispatch Terms"
+      subtitle={carrierName}
+      isDirty={dirty}
+      footer={footer}
+    >
+      <Form id="edit-dispatch-terms">
+        <Stack spacing={2.5} sx={{ p: 3 }}>
+          <TextField
+            name="dispatchFeePercent"
+            label="Dispatch Fee %"
+            type="number"
+            formik={formikProps}
+          />
+
+          <Typography variant="body2" color="text.secondary">
+            Partner Split: {partnerSplitPercent ?? '—'}% (admin-managed)
+          </Typography>
+
+          <CheckboxField
+            name="feeIncludesAccessorials"
+            label="Fee includes accessorials"
+            formik={formikProps}
+          />
+
+          <CheckboxField
+            name="dispatchAgreementOnFile"
+            label="Dispatch agreement on file"
+            formik={formikProps}
+          />
+        </Stack>
+      </Form>
+    </EditDrawer>
+  );
+};

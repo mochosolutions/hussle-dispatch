@@ -1,30 +1,23 @@
 import { Avatar, Box, IconButton, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
-import type { DriverFormEntry, VehicleFormEntry } from '../../types';
+import type { DriverFormEntry } from '../../types';
 
 interface DriverSummaryCardProps {
   driver: DriverFormEntry;
-  vehicles: VehicleFormEntry[];
   onEdit: () => void;
   onRemove: () => void;
 }
 
-export const DriverSummaryCard = ({
-  driver,
-  vehicles,
-  onEdit,
-  onRemove,
-}: DriverSummaryCardProps) => {
-  const assigned = vehicles.find((v) => v.localId === driver.assignedVehicleLocalId);
-  const initials = `${driver.firstName[0] ?? ''}${driver.lastName[0] ?? ''}`.toUpperCase();
+export const DriverSummaryCard = ({ driver, onEdit, onRemove }: DriverSummaryCardProps) => {
+  const initials = driver.name
+    .split(' ')
+    .map((w) => w[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
-  const details = [
-    driver.cdlClass && `CDL ${driver.cdlClass}`,
-    driver.cdlNumber,
-    driver.phone,
-    assigned && `→ ${assigned.year} ${assigned.make}`,
-  ].filter(Boolean);
+  const details = [driver.cdlNumber, driver.phone].filter(Boolean);
 
   return (
     <Box
@@ -60,7 +53,7 @@ export const DriverSummaryCard = ({
         </Avatar>
         <Box>
           <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            {driver.firstName} {driver.lastName}
+            {driver.name}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             {details.join(' · ')}

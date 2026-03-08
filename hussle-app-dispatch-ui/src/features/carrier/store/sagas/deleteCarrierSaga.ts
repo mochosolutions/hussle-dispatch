@@ -6,7 +6,7 @@ import {
   deleteCarrierRequest,
   deleteCarrierSuccess,
   deleteCarrierFailure,
-} from '../reducers/carrierPageSlice';
+} from '../reducers/carrierNewPageSlice';
 import { carrierActions } from '../reducers/carrierEntitySlice';
 
 export function* deleteCarrierSaga(action: ReturnType<typeof deleteCarrierRequest>): Generator {

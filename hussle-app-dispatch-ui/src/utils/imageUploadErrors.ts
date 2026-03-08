@@ -176,7 +176,7 @@ export async function parseErrorResponse(response: Response): Promise<ImageUploa
  */
 export function formatErrorMessage(
   error: ImageUploadError,
-  includeDetails: boolean = false
+  includeDetails = false
 ): string {
   let message = error.message;
 
@@ -246,7 +246,7 @@ export function getErrorTitle(error: ImageUploadError): string {
  */
 export function validateImageBeforeUpload(
   file: File,
-  maxSizeMB: number = 10
+  maxSizeMB = 10
 ): ImageUploadError | null {
   // Check file type
   const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];

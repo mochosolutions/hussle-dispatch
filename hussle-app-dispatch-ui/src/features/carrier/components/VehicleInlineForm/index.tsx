@@ -1,19 +1,19 @@
-import { Box, Button, Grid, MenuItem, TextField } from '@mui/material';
+import { Box, Button, Grid } from '@mui/material';
 import { Formik } from 'formik';
+import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
+import { TextField } from '../../../../mocho/components/form-fields/TextField';
 import { EQUIPMENT_OPTIONS, VEHICLE_MAKES } from '../../constants';
-import type { DriverFormEntry, VehicleFormEntry } from '../../types';
+import type { VehicleFormEntry } from '../../types';
 import { vehicleSchema } from '../../validators/vehicleSchema';
 
 interface VehicleInlineFormProps {
   initial?: VehicleFormEntry | null;
-  drivers: DriverFormEntry[];
   onSave: (vehicle: VehicleFormEntry) => void;
   onCancel: () => void;
 }
 
 export const VehicleInlineForm = ({
   initial,
-  drivers,
   onSave,
   onCancel,
 }: VehicleInlineFormProps) => {
@@ -22,33 +22,34 @@ export const VehicleInlineForm = ({
   return (
     <Formik
       initialValues={{
+        unitNumber: initial?.unitNumber ?? '',
         year: initial?.year ?? '',
         make: initial?.make ?? '',
         model: initial?.model ?? '',
         vin: initial?.vin ?? '',
         type: initial?.type ?? '',
         licensePlate: initial?.licensePlate ?? '',
-        assignedDriverLocalId: initial?.assignedDriverLocalId ?? '',
       }}
       validationSchema={vehicleSchema}
       onSubmit={(values) => {
         onSave({
           localId: initial?.localId ?? `v-${Date.now()}`,
+          unitNumber: values.unitNumber,
           year: values.year,
           make: values.make,
           model: values.model ?? '',
           vin: values.vin ?? '',
           type: (values.type as VehicleFormEntry['type']) || 'DRY_VAN',
           licensePlate: values.licensePlate ?? '',
-          assignedDriverLocalId: values.assignedDriverLocalId || null,
         });
       }}
       enableReinitialize
     >
-      {({ values, errors, touched, handleBlur, handleChange, handleSubmit, isValid }) => (
+      {({ values, errors, touched, handleBlur, handleChange, handleSubmit, setFieldValue, isValid }) => {
+        const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
+
+        return (
         <Box
-          component="form"
-          onSubmit={handleSubmit}
           sx={{
             p: 2.5,
             bgcolor: 'primary.light',
@@ -59,124 +60,59 @@ export const VehicleInlineForm = ({
           }}
         >
           <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={2}>
-              <TextField
-                fullWidth
-                name="year"
-                label="Year"
-                placeholder="2022"
-                value={values.year}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={Boolean(touched.year && errors.year)}
-                helperText={touched.year ? errors.year : undefined}
-              />
+            <Grid item xs={3}>
+              <TextField name="unitNumber" label="Unit #" placeholder="TRK-001" formik={formikProps} />
             </Grid>
-            <Grid item xs={5}>
-              <TextField
-                fullWidth
-                select
+            <Grid item xs={2}>
+              <TextField name="year" label="Year" placeholder="2022" formik={formikProps} />
+            </Grid>
+            <Grid item xs={4}>
+              <SelectField
                 name="make"
                 label="Make"
-                value={values.make}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={Boolean(touched.make && errors.make)}
-                helperText={touched.make ? errors.make : undefined}
-              >
-                <MenuItem value="" disabled>
-                  Select make
-                </MenuItem>
-                {VEHICLE_MAKES.map((make) => (
-                  <MenuItem key={make} value={make}>
-                    {make}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={5}>
-              <TextField
-                fullWidth
-                name="model"
-                label="Model"
-                placeholder="Cascadia"
-                value={values.model}
-                onChange={handleChange}
+                data={[{ value: '', label: 'Select make' }, ...VEHICLE_MAKES.map((m) => ({ value: m, label: m }))]}
+                formik={formikProps}
               />
+            </Grid>
+            <Grid item xs={3}>
+              <TextField name="model" label="Model" placeholder="Cascadia" formik={formikProps} />
             </Grid>
           </Grid>
 
           <Grid container spacing={1.5} sx={{ mb: 2 }}>
             <Grid item xs={4}>
-              <TextField
-                fullWidth
-                name="vin"
-                label="VIN"
-                placeholder="1FUJGLDR..."
-                value={values.vin}
-                onChange={handleChange}
-              />
+              <TextField name="vin" label="VIN" placeholder="1FUJGLDR..." formik={formikProps} />
             </Grid>
             <Grid item xs={4}>
-              <TextField
-                fullWidth
-                select
+              <SelectField
                 name="type"
                 label="Equipment Type"
-                value={values.type}
-                onChange={handleChange}
-              >
-                <MenuItem value="">—</MenuItem>
-                {EQUIPMENT_OPTIONS.map((equipment) => (
-                  <MenuItem key={equipment.value} value={equipment.value}>
-                    {equipment.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={4}>
-              <TextField
-                fullWidth
-                name="licensePlate"
-                label="License Plate"
-                placeholder="ABC-1234"
-                value={values.licensePlate}
-                onChange={handleChange}
+                data={[{ value: '', label: '—' }, ...EQUIPMENT_OPTIONS]}
+                formik={formikProps}
               />
             </Grid>
+            <Grid item xs={4}>
+              <TextField name="licensePlate" label="License Plate" placeholder="ABC-1234" formik={formikProps} />
+            </Grid>
           </Grid>
-
-          {drivers.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                select
-                name="assignedDriverLocalId"
-                label="Assign Driver"
-                value={values.assignedDriverLocalId}
-                onChange={handleChange}
-                helperText="You can also assign later"
-              >
-                <MenuItem value="">Assign later</MenuItem>
-                {drivers.map((driver) => (
-                  <MenuItem key={driver.localId} value={driver.localId}>
-                    {driver.firstName} {driver.lastName}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          )}
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
             <Button variant="outlined" size="small" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" variant="contained" size="small" disabled={!isValid}>
+            <Button
+              type="button"
+              variant="contained"
+              size="small"
+              disabled={!isValid}
+              onClick={() => void handleSubmit()}
+            >
               {isEdit ? 'Update Vehicle' : 'Add Vehicle'}
             </Button>
           </Box>
         </Box>
-      )}
+        );
+      }}
     </Formik>
   );
 };

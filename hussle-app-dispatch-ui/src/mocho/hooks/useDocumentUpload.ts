@@ -134,7 +134,7 @@ export function useDocumentUpload(options: UseDocumentUploadOptions): UseDocumen
    * Poll for document processing status
    */
   const pollStatus = useCallback(
-    async (documentId: string, file: File, attempt: number = 0): Promise<void> => {
+    async (documentId: string, file: File, attempt = 0): Promise<void> => {
       if (attempt >= maxPollingAttempts) {
         const errorMsg = 'Processing timeout - please try again';
         setError(errorMsg);

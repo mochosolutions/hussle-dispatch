@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import {
-  MenuItem,
-  Select,
   Stack,
   TextField,
   Box,
@@ -12,26 +10,15 @@ import {
   Chip,
   Button,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import ApartmentIcon from '@mui/icons-material/Apartment';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { useNavigate } from 'react-router-dom';
 import type { SelectChangeEvent } from '@mui/material';
-import { ActionsCell, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
-import type { ActionsCellConfig } from '@mocho/ui/components';
+import { ActionsCell, ActionsCellConfig, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
 import type { CarrierListItem } from '../../types';
-import { fetchCarriersRequest, setTypeFilter } from '../../store/reducers/carrierPageSlice';
-import { carrierPageSlice } from '../../store/reducers/carrierNewPageSlice';
-
-export const { actions: carrierPageActions } = carrierPageSlice;
-
+import { fetchCarriersRequest } from '../../store/reducers/carrierNewPageSlice';
 import {
   selectAllCarriers,
   selectCarrierListLoading,
-  selectCarrierCreateLoading,
-  selectCarrierPagination,
-  selectCarrierTypeFilter,
 } from '../../store/selectors/carrierSelectors';
 import {
   CarrierNameCellRenderer,
@@ -58,24 +45,22 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 
 const CarrierListPage = () => {
   const [activeTab, setActiveTab] = useState<CarrierTab>('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const carriers = useSelector(selectAllCarriers);
   const isLoading = useSelector(selectCarrierListLoading);
-  // const isCreateLoading = useSelector(selectCarrierCreateLoading);
-  const pagination = useSelector(selectCarrierPagination);
-  const typeFilter = useSelector(selectCarrierTypeFilter);
-
-  const [searchQuery, setSearchQuery] = useState('');
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initial fetch
   useEffect(() => {
     // dispatch(({ page: 1, limit: 25 }));
-    // dispatch();
-  }, [dispatch]);
+    // console.log('Dispatching fetchCarriersRequest for initial load');
+    dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
+  }, []);
 
   const handleSearchChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -90,30 +75,30 @@ const CarrierListPage = () => {
         dispatch(
           fetchCarriersRequest({
             page: 1,
-            limit: pagination.limit,
+            limit: 25,
             search: query,
             type: typeFilter,
           }),
         );
       }, 300);
     },
-    [dispatch, pagination.limit, typeFilter],
+    [dispatch, typeFilter],
   );
 
   const handleTypeFilterChange = useCallback(
     (event: SelectChangeEvent<string>) => {
       const newFilter = event.target.value;
-      dispatch(setTypeFilter(newFilter));
+      setTypeFilter(newFilter);
       dispatch(
         fetchCarriersRequest({
           page: 1,
-          limit: pagination.limit,
+          limit: 25,
           search: searchQuery,
           type: newFilter,
         }),
       );
     },
-    [dispatch, pagination.limit, searchQuery],
+    [dispatch, searchQuery],
   );
 
   const handleOpenCreate = useCallback(() => {
@@ -191,8 +176,6 @@ const CarrierListPage = () => {
     ],
     [actionsConfig],
   );
-
-  console.log('Carriers:', { carriers });
 
   const kpiData = useMemo(() => {
     const activeCount = carriers.filter((carrier) => carrier.onboardingComplete).length;
@@ -272,15 +255,6 @@ const CarrierListPage = () => {
               Add Carrier
             </Button>
           </Stack>
-          // <SplitButton
-          //   options={headerActionOptions}
-          //   buttonGroupAriaLabel="Carrier actions"
-          //   menuAriaLabel="Select carrier action"
-          //   buttonVariant="contained"
-          //   buttonSize="small"
-          //   primaryButtonIcon={<AddIcon fontSize="small" />}
-          //   showOptionIcons
-          // />
         }
       />
 

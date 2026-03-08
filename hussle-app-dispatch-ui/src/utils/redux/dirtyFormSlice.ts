@@ -64,7 +64,7 @@ export const dirtyFormSlice = createSlice({
      */
     clearFormDirty(state, action: PayloadAction<{ formId: string }>) {
       const { formId } = action.payload;
-      delete state.dirtyForms[formId];
+      Reflect.deleteProperty(state.dirtyForms, formId);
     },
 
     /**
@@ -108,7 +108,7 @@ export const dirtyFormSlice = createSlice({
     confirmNavigation(state) {
       // Clear dirty state for this form
       if (state.pendingNavigation?.formId) {
-        delete state.dirtyForms[state.pendingNavigation.formId];
+        Reflect.deleteProperty(state.dirtyForms, state.pendingNavigation.formId);
       }
 
       // Close dialog (saga will proceed with navigation)
