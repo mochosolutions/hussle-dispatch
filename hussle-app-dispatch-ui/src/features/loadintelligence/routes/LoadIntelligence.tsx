@@ -12,6 +12,12 @@ const LoadIntelligenceRoutes = {
     {
       index: true,
       element: <LoadIntelligence />,
+      // handle: {
+      //   mainContentProps: {
+      //     container: false,
+      //     contentPadding: 0,
+      //   },
+      // },
     },
   ],
 };

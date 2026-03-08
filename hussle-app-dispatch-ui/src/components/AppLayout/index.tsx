@@ -29,6 +29,13 @@ const menuItems: NavItemType[] = [
         icon: <House size={24} />,
       },
       {
+        id: 'load-intelligence',
+        title: 'Load Intelligence',
+        type: 'item',
+        url: '/load-intelligence',
+        icon: <BarChart3 size={24} />,
+      },
+      {
         id: 'fleet',
         title: 'Fleet Management',
         type: 'collapse',
@@ -48,13 +55,6 @@ const menuItems: NavItemType[] = [
       //   type: 'item',
       //   url: '/dispatch-board/create-load',
       // },
-      {
-        id: 'load-intelligence',
-        title: 'Load Intelligence',
-        type: 'item',
-        url: '/load-intelligence',
-        icon: <BarChart3 size={24} />,
-      },
 
       // { id: 'invoices', title: 'Invoices', type: 'item', url: '/invoices' },
     ],

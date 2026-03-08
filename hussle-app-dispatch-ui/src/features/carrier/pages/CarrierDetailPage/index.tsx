@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   Box,
@@ -17,11 +17,13 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useDispatch, useSelector } from 'store';
 import { FieldRow } from '../../components/FieldRow';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { EditableSectionHeader } from '../../components/EditableSectionHeader';
+import { CarrierDetailTitle } from '../../components/CarrierDetailTitle';
+import { CarrierDetailsActions } from '../../components/CarrierDetailsActions';
+import { CarrierKPI } from '../../components/CarrierKPI';
 import { CARRIER_DETAIL_TAB_ITEMS as tabItems } from '../../constants';
 import { selectFormattedCarrierById } from '../../store/selectors/carrierSelectors';
 import {
@@ -29,194 +31,7 @@ import {
   carrierPageSelectors,
 } from '../../store/reducers/carrierNewPageSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
-// import { InnerPageHeader } from '../../../../components/InnerPageHeader';
-
-interface InnerPageHeaderProps {
-  onBack: () => void;
-  backLabel: string;
-  title: ReactNode;
-  subtitle?: ReactNode;
-  actions?: ReactNode;
-  // children: React.ReactNode;
-}
-
-export const InnerPageHeader = ({
-  onBack,
-  backLabel,
-  title,
-  subtitle,
-  actions,
-}: InnerPageHeaderProps) => {
-  return (
-    <Box
-      sx={{
-        backgroundColor: 'background.paper',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        mt: 1,
-        mb: 2,
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={onBack}
-          size="small"
-          sx={{ color: 'primary.main' }}
-        >
-          {backLabel}
-        </Button>
-        <Divider orientation="vertical" flexItem />
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {typeof title === 'string' ? (
-              <Typography variant="h5" color="text.primary">
-                {title}
-              </Typography>
-            ) : (
-              title
-            )}
-            {/* <StatusBadge
-                  status={carrier.status}
-                  onChange={(s) => handleUpdate({ status: s })}
-                /> */}
-          </Box>
-          {subtitle && (
-            <Typography variant="body2" color="text.secondary">
-              {subtitle}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
-      {actions && (
-        <Stack direction="row" spacing={1}>
-          {actions}
-        </Stack>
-      )}
-    </Box>
-  );
-};
-
-type CarrierDetailTitleProps = {
-  title: string;
-  subTitle: string;
-} & ({ avatarSrc: string; initials?: never } | { initials: string; avatarSrc?: never });
-
-const CarrierDetailTitle = ({ title, subTitle, avatarSrc, initials }: CarrierDetailTitleProps) => (
-  <>
-    <Avatar
-      src={avatarSrc}
-      sx={{
-        width: 36,
-        height: 36,
-        bgcolor: 'primary.light',
-        color: 'primary.main',
-        fontWeight: 700,
-        fontSize: 14,
-      }}
-    >
-      {initials}
-    </Avatar>
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Typography variant="h5">{title}</Typography>
-        <Chip label="active" />
-      </Box>
-      <Typography variant="body2" color="text.secondary">
-        {subTitle}
-      </Typography>
-    </Box>
-  </>
-);
-
-const CarrierDetailsActions = ({
-  carrierId: _carrierId,
-  handleEdit,
-}: {
-  carrierId: string;
-  handleEdit: () => void;
-}) => (
-  <Stack direction="row" spacing={1}>
-    <Button variant="contained">Dispatch Load</Button>
-    <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEdit}>
-      Edit
-    </Button>
-  </Stack>
-);
-
-const CarrierKPI = (c) => {
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: 1,
-        bgcolor: 'grey.50',
-      }}
-    >
-      {[
-        { label: 'MC / DOT', primary: c.mcNumber, secondary: c.dotNumber },
-        { label: 'CONTACT', primary: c.phone ?? '—', secondary: c.email ?? '—' },
-        {
-          label: 'DISPATCH FEE',
-          primary: `${c.dispatchFeePercent}%`,
-          secondary: c.partnerSplitPercent ? `${c.partnerSplitPercent}% partner split` : '',
-        },
-        { label: 'DRIVERS', primary: '2', secondary: '1 available, 1 at delivery' },
-        {
-          label: 'LIFETIME REVENUE',
-          primary: '$12,800',
-          secondary: '8 loads',
-          highlight: true,
-        },
-        {
-          label: 'COI EXPIRES',
-          primary: 'Aug 30, 2026',
-          secondary: '152 days remaining',
-          highlightGreen: true,
-        },
-      ].map((kpi, i) => (
-        <Box
-          key={kpi.label}
-          sx={{
-            px: 2.5,
-            py: 1.5,
-            borderRight: i < 5 ? 1 : 0,
-            borderColor: 'divider',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-              color: 'text.disabled',
-              fontSize: '0.625rem',
-            }}
-          >
-            {kpi.label}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 700,
-              color: kpi.highlight || kpi.highlightGreen ? 'success.main' : 'text.primary',
-              mt: 0.5,
-            }}
-          >
-            {kpi.primary}
-          </Typography>
-          <Typography variant="caption">{kpi.secondary}</Typography>
-        </Box>
-      ))}
-    </Box>
-  );
-};
+import { InnerPageHeader } from '../../../../components/InnerPageHeader';
 
 const CarrierDetailEditable: React.FC = () => {
   // const [carrier, setCarrier] = useState<CarrierData>(MOCK_CARRIER);
@@ -240,11 +55,6 @@ const CarrierDetailEditable: React.FC = () => {
   const handleBack = () => {
     navigate('/carriers');
   };
-
-  // const handleUpdate = (patch: Partial<CarrierData>) => {
-  //   setCarrier((prev) => ({ ...prev, ...patch }));
-  //   // In production: dispatch Redux action or API call
-  // };
 
   return (
     <PageWrapper isLoading={isLoading} isError={isError} errorContext="CarrierDetailPage">

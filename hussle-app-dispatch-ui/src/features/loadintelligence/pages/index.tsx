@@ -1,123 +1,214 @@
-import { useMemo } from 'react';
-import { Box } from '@mui/material';
+import { useState, useMemo, useCallback } from 'react';
+import { Box, Stack, TextField } from '@mui/material';
 import { MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
 
-interface MockLoad {
-  id: string;
-  origin: string;
-  destination: string;
-  status: string;
-  rate: number;
-  carrier: string;
-}
+import type { ColDef, RowClickedEvent } from 'ag-grid-community';
+import type { LoadFilters, MockLoad } from '../types';
+import { MOCK_DRIVERS, MOCK_LOADS } from '../mockData';
+import { getScoreTier } from '../getScoreTier';
+import { useDrawerActions } from '../../ui/hooks/useDrawerActions';
+import { LoadIntelligenceHeader } from '../components/LoadIntelligenceHeader';
+import {
+  SingleScoreCellRenderer,
+  OriginCellRenderer,
+  DestinationCellRenderer,
+  EquipmentCellRenderer,
+  RateCellRenderer,
+  MilesRateCellRenderer,
+  CustomerCellRenderer,
+  SourceBadgeCellRenderer,
+} from '../components/LoadIntelligenceCellRenderers';
 
-const MOCK_LOADS: MockLoad[] = [
+const DEFAULT_FILTERS: LoadFilters = { score: 'All', source: 'All', equipment: 'All' };
+
+const columnDefs: ColDef<MockLoad>[] = [
   {
-    id: 'L-1001',
-    origin: 'Chicago, IL',
-    destination: 'Dallas, TX',
-    status: 'In Transit',
-    rate: 2400,
-    carrier: 'ABC Trucking',
+    colId: 'score',
+    headerName: 'Score',
+    cellRenderer: SingleScoreCellRenderer,
+    flex: 1.4,
+    minWidth: 120,
   },
   {
-    id: 'L-1002',
-    origin: 'Atlanta, GA',
-    destination: 'Miami, FL',
-    status: 'Delivered',
-    rate: 1850,
-    carrier: 'FastHaul LLC',
+    colId: 'origin',
+    headerName: 'ORIGIN',
+    cellRenderer: OriginCellRenderer,
+    flex: 1.8,
+    minWidth: 150,
   },
   {
-    id: 'L-1003',
-    origin: 'Los Angeles, CA',
-    destination: 'Phoenix, AZ',
-    status: 'Pending',
-    rate: 975,
-    carrier: 'SunState Transport',
+    colId: 'destination',
+    headerName: 'DEST',
+    cellRenderer: DestinationCellRenderer,
+    flex: 1.8,
+    minWidth: 150,
   },
   {
-    id: 'L-1004',
-    origin: 'New York, NY',
-    destination: 'Boston, MA',
-    status: 'In Transit',
-    rate: 620,
-    carrier: 'NorthEast Carriers',
+    field: 'equipmentType',
+    headerName: 'EQUIP',
+    cellRenderer: EquipmentCellRenderer,
+    flex: 0.8,
+    minWidth: 80,
+  },
+  { colId: 'rate', headerName: 'RATE', cellRenderer: RateCellRenderer, flex: 1.2, minWidth: 100 },
+  {
+    colId: 'miles',
+    headerName: 'MILES',
+    cellRenderer: MilesRateCellRenderer,
+    flex: 0.8,
+    minWidth: 80,
   },
   {
-    id: 'L-1005',
-    origin: 'Houston, TX',
-    destination: 'Denver, CO',
-    status: 'Cancelled',
-    rate: 1700,
-    carrier: 'Lone Star Freight',
+    colId: 'customer',
+    headerName: 'CUSTOMER',
+    cellRenderer: CustomerCellRenderer,
+    flex: 1.8,
+    minWidth: 150,
+  },
+  {
+    colId: 'source',
+    headerName: 'Load Source',
+    cellRenderer: SourceBadgeCellRenderer,
+    flex: 1.4,
+    minWidth: 120,
   },
 ];
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
+const defaultColDef: ColDef<MockLoad> = {
+  sortable: true,
+  resizable: true,
+  filter: false,
+};
+
+// TODO: Wire to actual logic
+const onCreateLoad = () => {
+  // placeholder
+};
+const onAddManually = () => {
+  // placeholder
+};
 
 const LoadIntelligencePage = () => {
-  const columnDefs = useMemo(
-    () => [
-      { headerName: 'Load #', field: 'id', minWidth: 120, maxWidth: 140 },
-      { headerName: 'Origin', field: 'origin', minWidth: 160, flex: 1 },
-      { headerName: 'Destination', field: 'destination', minWidth: 160, flex: 1 },
-      { headerName: 'Carrier', field: 'carrier', minWidth: 160, flex: 1 },
-      { headerName: 'Status', field: 'status', minWidth: 120 },
-      {
-        headerName: 'Rate',
-        field: 'rate',
-        minWidth: 110,
-        maxWidth: 140,
-        valueFormatter: ({ value }: { value: number }) => currencyFormatter.format(value),
-      },
-    ],
-    [],
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<LoadFilters>(DEFAULT_FILTERS);
+  const { openDrawer } = useDrawerActions();
+
+  const handleRowClicked = useCallback(
+    (event: RowClickedEvent<MockLoad>) => {
+      if (event.data) {
+        openDrawer('loadDetail', { loadId: event.data.id });
+      }
+    },
+    [openDrawer],
   );
 
-  const defaultColDef = useMemo(
-    () => ({
-      flex: 1,
-      minWidth: 100,
-      sortable: true,
-      resizable: true,
-      filter: false,
-    }),
-    [],
-  );
+  const filteredLoads = useMemo(() => {
+    let result = MOCK_LOADS;
+
+    if (filters.source !== 'All') {
+      result = result.filter((load) => load.source.type === filters.source);
+    }
+
+    if (filters.score !== 'All') {
+      result = result.filter((load) => getScoreTier(load.score).label === filters.score);
+    }
+
+    if (filters.equipment !== 'All') {
+      result = result.filter((load) => load.equipmentType === filters.equipment);
+    }
+
+    // Driver filter is a no-op for now
+    return result;
+  }, [filters]);
 
   return (
     <PageWrapper isLoading={false} errorContext="LoadIntelligencePage" sx={{ gap: 2 }}>
       <PageHeader title="Load Intelligence" />
+      {/* <LoadIntelligenceHeader
+        onCreateLoad={onCreateLoad}
+        onAddManually={onAddManually}
+        drivers={MOCK_DRIVERS}
+        selectedDriverId={selectedDriverId}
+        onDriverSelect={setSelectedDriverId}
+        loads={filteredLoads}
+        filters={filters}
+        onFilterChange={setFilters}
+      /> */}
 
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          // p: 3,
+        }}
       >
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={MOCK_LOADS}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={MOCK_LOADS.length}
-              rowCountLabel="loads"
-              noDataMessage="No loads found"
-              gridOptions={{
-                domLayout: 'normal',
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 62,
-              }}
+        <MainCard
+          content={false}
+          sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+        >
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+          justifyContent="space-between"
+          spacing={2}
+          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+        >
+          {/* <Tabs
+            value={activeTab}
+            onChange={(_event, value: CarrierTab) => setActiveTab(value)}
+            variant="scrollable"
+            allowScrollButtonsMobile
+            sx={{ minHeight: 40 }}
+          >
+            {tabOptions.map((tabOption) => (
+              <Tab
+                key={tabOption.key}
+                value={tabOption.key}
+                label={
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <Typography variant="body2">{tabOption.label}</Typography>
+                    <Chip label={tabOption.count} size="small" />
+                  </Stack>
+                }
+                sx={{ minHeight: 40 }}
+              />
+            ))}
+          </Tabs> */}
+          <Box>
+            <TextField
+              // value={searchQuery}
+              // onChange={handleSearchChange}
+              placeholder="Search by name, MC#, email..."
+              size="small"
+              sx={{ width: { xs: '100%', lg: 320 } }}
             />
           </Box>
-        </Box>
-      </MainCard>
+        </Stack>
+
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+            <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
+              <NewDataGrid
+                columnDefs={columnDefs}
+                rowData={filteredLoads}
+                defaultColDef={defaultColDef}
+                showRowCountFooter
+                totalRowCount={filteredLoads.length}
+                rowCountLabel="loads"
+                noDataMessage="No loads found"
+                gridOptions={{
+                  domLayout: 'normal',
+                  suppressCellFocus: true,
+                  headerHeight: 44,
+                  rowHeight: 68,
+                  onRowClicked: handleRowClicked,
+                }}
+              />
+            </Box>
+          </Box>
+        </MainCard>
+      </Box>
     </PageWrapper>
   );
 };

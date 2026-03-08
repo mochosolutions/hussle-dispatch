@@ -15,13 +15,15 @@ export type DrawerType =
   | 'carrierCompanyInfo'
   | 'carrierDispatchTerms'
   | 'vehicleInfo'
-  | 'driverInfo';
+  | 'driverInfo'
+  | 'loadDetail';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
   carrierDispatchTerms: { carrierId: string };
   vehicleInfo: { vehicleId: string };
   driverInfo: { driverId: string };
+  loadDetail: { loadId: string };
 }
 
 // ---------------------------------------------------------------------------
