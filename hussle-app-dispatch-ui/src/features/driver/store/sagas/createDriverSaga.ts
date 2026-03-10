@@ -21,7 +21,8 @@ export function* createDriverSaga(action: CreateDriverAction): Generator {
       const mockDriver: Driver = {
         id: crypto.randomUUID(),
         carrierId: data.carrierId ?? null,
-        name: data.name,
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email ?? null,
         phone: data.phone ?? null,
         cdlNumber: data.cdlNumber ?? null,

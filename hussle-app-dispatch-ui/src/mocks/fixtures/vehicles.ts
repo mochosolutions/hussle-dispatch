@@ -4,6 +4,7 @@ export const mockVehicles: Vehicle[] = [
   {
     id: 'vehicle-001',
     carrierId: 'carrier-001',
+    driverId: 'driver-001',
     unitNumber: 'ACM-101',
     make: 'Freightliner',
     model: 'Cascadia',
@@ -50,6 +51,7 @@ export const mockVehicles: Vehicle[] = [
   {
     id: 'vehicle-002',
     carrierId: 'carrier-001',
+    driverId: 'driver-002',
     unitNumber: 'ACM-102',
     make: 'Peterbilt',
     model: '389',
@@ -75,6 +77,7 @@ export const mockVehicles: Vehicle[] = [
   {
     id: 'vehicle-003',
     carrierId: 'carrier-002',
+    driverId: 'driver-003',
     unitNumber: 'MKT-001',
     make: 'Kenworth',
     model: 'T680',
@@ -111,6 +114,7 @@ export const mockVehicles: Vehicle[] = [
   {
     id: 'vehicle-004',
     carrierId: null,
+    driverId: null,
     unitNumber: 'UNASSIGNED-001',
     make: 'Volvo',
     model: 'VNL 860',

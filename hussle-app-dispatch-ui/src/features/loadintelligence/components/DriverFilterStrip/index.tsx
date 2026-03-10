@@ -1,5 +1,6 @@
 import React from 'react';
 import { Avatar, Box, Chip } from '@mui/material';
+import getDriverDisplayName from 'utils/getDriverDisplayName';
 
 import type { MockDriver } from '../../types';
 

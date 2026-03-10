@@ -33,10 +33,13 @@ services:
         condition: service_healthy
       hussle-app-postgres:
         condition: service_healthy
+      hussle-app-rabbitmq:
+        condition: service_healthy
     environment:
       - DB_NAME=hussle_dispatch
       - DATABASE_URL=postgresql://postgres:postgres@hussle-app-postgres:5432/hussle_dispatch
       - REDIS_URL=redis://hussle-app-redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@hussle-app-rabbitmq:5672
       - PORT=3001
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
@@ -81,8 +84,27 @@ services:
       timeout: 5s
       retries: 5
 
+  hussle-app-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: hussle-app-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres-data:
   redis-data:
+  rabbitmq-data:
   api-node_modules:
   # redisinsight-data:

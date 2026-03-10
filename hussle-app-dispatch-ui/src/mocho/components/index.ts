@@ -35,6 +35,7 @@ export { default as Snackbar } from './extended/Snackbar';
 export type { SnackbarProps } from './extended/Snackbar';
 
 // Form Components
+export { FormDrawer } from './FormDrawer';
 export { default as FormDialog } from './FormDialog';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';

@@ -2,15 +2,33 @@ import { env } from './config/env';
 // import { runGeoBootstrap } from './config/geoBootstrap';
 // import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
+import { createRabbitMqEventBus } from './shared/messaging';
+import { logger } from './shared/utils/logger';
 
 const start = async (): Promise<void> => {
   // await redisClient.connect();
   // await runGeoBootstrap(redisClient);
 
+  const eventBus = createRabbitMqEventBus(env.RABBITMQ_URL, logger);
+
   const app = createApp();
 
+  // Graceful shutdown: close event bus on SIGTERM/SIGINT
+  const shutdown = async (): Promise<void> => {
+    logger.info('Shutting down event bus...');
+    await eventBus.close();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => {
+    shutdown().catch(() => process.exit(1));
+  });
+  process.on('SIGINT', () => {
+    shutdown().catch(() => process.exit(1));
+  });
+
   app.listen(env.PORT, () => {
-    process.stdout.write(`[hussle-app-dispatch-api] Listening on port ${env.PORT}\n`);
+    logger.info('Server started', { port: env.PORT, eventBus: 'rabbitmq' });
   });
 };
 

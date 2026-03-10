@@ -1,0 +1,37 @@
+import type { Request, Response, RequestHandler } from 'express';
+import { sendSingle, sendList } from '@/shared/responseEnvelope';
+import type { DocumentService } from '../types/documentServiceTypes';
+import { presignMapper } from './mappers/presignMapper';
+import { confirmMapper } from './mappers/confirmMapper';
+import { listDocumentsMapper } from './mappers/listDocumentsMapper';
+import { toDocumentResponse, toDocumentListResponse } from './transformers/documentTransformer';
+
+interface DocumentControllerDeps {
+  documentService: DocumentService;
+}
+
+export interface DocumentControllers {
+  presign: RequestHandler;
+  confirm: RequestHandler;
+  list: RequestHandler;
+}
+
+export const createDocumentControllers = (deps: DocumentControllerDeps): DocumentControllers => ({
+  presign: async (req: Request, res: Response): Promise<void> => {
+    const input = presignMapper(req);
+    const result = await deps.documentService.presign(input);
+    sendSingle(res, result, 201);
+  },
+
+  confirm: async (req: Request, res: Response): Promise<void> => {
+    const input = confirmMapper(req);
+    const document = await deps.documentService.confirm(input);
+    sendSingle(res, toDocumentResponse(document));
+  },
+
+  list: async (req: Request, res: Response): Promise<void> => {
+    const input = listDocumentsMapper(req);
+    const documents = await deps.documentService.list(input);
+    sendList(res, { data: toDocumentListResponse(documents), meta: { page: 1, limit: documents.length, total: documents.length, totalPages: 1, hasMore: false } });
+  },
+});

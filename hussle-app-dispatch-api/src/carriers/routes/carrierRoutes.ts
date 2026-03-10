@@ -5,6 +5,8 @@ import { validateRequest } from '@/shared/middleware/validateRequest';
 import type { CarrierControllers } from '../controllers/carrierController';
 import {
   carrierIdParamValidator,
+  carrierNotesParamValidator,
+  createCarrierNoteValidator,
   createCarrierValidator,
   listCarriersValidator,
   updateCarrierValidator,
@@ -53,6 +55,18 @@ export const createCarriersRouter = (controllers: CarrierControllers): express.R
     requireAuth,
     validateRequest(carrierIdParamValidator),
     controllers.getCarrierOnboarding,
+  );
+  router.get(
+    '/:carrierId/notes',
+    requireAuth,
+    validateRequest(carrierNotesParamValidator),
+    controllers.listNotes,
+  );
+  router.post(
+    '/:carrierId/notes',
+    requireAuth,
+    validateRequest(createCarrierNoteValidator),
+    controllers.createNote,
   );
 
   return router;

@@ -1,6 +1,7 @@
 import { Avatar, Box, IconButton, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
+import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { DriverFormEntry } from '../../types';
 
 interface DriverSummaryCardProps {
@@ -10,11 +11,10 @@ interface DriverSummaryCardProps {
 }
 
 export const DriverSummaryCard = ({ driver, onEdit, onRemove }: DriverSummaryCardProps) => {
-  const initials = driver.name
-    .split(' ')
-    .map((w) => w[0] ?? '')
+  const displayName = getDriverDisplayName(driver);
+  const initials = [driver.firstName.charAt(0), driver.lastName.charAt(0)]
+    .filter(Boolean)
     .join('')
-    .slice(0, 2)
     .toUpperCase();
 
   const details = [driver.cdlNumber, driver.phone].filter(Boolean);
@@ -53,7 +53,7 @@ export const DriverSummaryCard = ({ driver, onEdit, onRemove }: DriverSummaryCar
         </Avatar>
         <Box>
           <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            {driver.name}
+            {displayName}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>
             {details.join(' · ')}

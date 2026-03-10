@@ -5,6 +5,7 @@ import { createVehicleService } from '../vehicleService';
 const buildVehicle = () => ({
   id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
   carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
+  driverId: null as string | null,
   unitNumber: 'TRK-001',
   type: 'DRY_VAN',
   ownership: 'OWNED',
@@ -48,6 +49,9 @@ describe('vehicleService', () => {
     update: jest.fn(),
     replaceExpenses: jest.fn(),
     softDelete: jest.fn(),
+    assignDriver: jest.fn(),
+    unassignDriver: jest.fn(),
+    findByDriverId: jest.fn(),
   };
 
   const mockCarrierRepository = {
@@ -58,6 +62,15 @@ describe('vehicleService', () => {
     findBlockingLoadIdsByVehicle: jest.fn(),
   };
 
+  const mockDriverQueryPort = {
+    findById: jest.fn(),
+  };
+
+  const mockLoadQueryPort = {
+    getLoadsByDriverId: jest.fn(),
+    getLoadsByVehicleId: jest.fn(),
+  };
+
   const mockTransactionManager = {
     runInTransaction: jest.fn(),
   };
@@ -66,6 +79,8 @@ describe('vehicleService', () => {
     vehicleRepository: mockVehicleRepository,
     carrierRepository: mockCarrierRepository,
     loadRepository: mockLoadRepository,
+    driverQueryPort: mockDriverQueryPort,
+    loadQueryPort: mockLoadQueryPort,
     transactionManager: mockTransactionManager,
     vehicleRepositoryFactory: () => mockVehicleRepository,
   });

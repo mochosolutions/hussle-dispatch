@@ -1,0 +1,41 @@
+import { createSelector } from '@reduxjs/toolkit';
+import { format } from 'date-fns';
+import type { RootState } from 'store';
+import { LoadingState } from '@mocho/ui/redux';
+import { placeSelectors } from '../reducers/placeEntitySlice';
+
+const DATE_FORMAT = 'MM/dd/yyyy';
+
+const formatDate = (value: string | null) => (value ? format(new Date(value), DATE_FORMAT) : '');
+
+export const selectAllPlaces = (state: RootState) => placeSelectors.selectAll(state);
+
+export const selectPlaceById = (id: string) => (state: RootState) =>
+  placeSelectors.selectById(state, id);
+
+export const selectPlaceListLoading = (state: RootState) =>
+  state.pages.places.loading['getAll'] === LoadingState.Pending;
+
+export const selectPlaceCreateLoading = (state: RootState) =>
+  state.pages.places.loading['create'] === LoadingState.Pending;
+
+export const selectPlaceUpdateLoading = (id: string) => (state: RootState) =>
+  state.pages.places.loading[`update:${id}`] === LoadingState.Pending;
+
+export const selectPlaceDeleteLoading = (id: string) => (state: RootState) =>
+  state.pages.places.loading[`delete:${id}`] === LoadingState.Pending;
+
+export const selectFormattedPlaceById = (id: string | undefined) =>
+  createSelector(
+    [(state: RootState) => (id ? placeSelectors.selectById(state, id) : undefined)],
+    (place) => {
+      if (!place) {
+        return undefined;
+      }
+      return {
+        ...place,
+        createdAt: formatDate(place.createdAt),
+        updatedAt: formatDate(place.updatedAt),
+      };
+    },
+  );

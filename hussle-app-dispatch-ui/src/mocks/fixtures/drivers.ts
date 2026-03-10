@@ -4,7 +4,8 @@ export const mockDrivers: Driver[] = [
   {
     id: 'driver-001',
     carrierId: 'carrier-001',
-    name: 'Carlos Rivera',
+    firstName: 'Carlos',
+    lastName: 'Rivera',
     email: 'crivera@acmefreight.com',
     phone: '(555) 111-0001',
     cdlNumber: 'TX-CDL-001',
@@ -28,7 +29,8 @@ export const mockDrivers: Driver[] = [
   {
     id: 'driver-002',
     carrierId: 'carrier-001',
-    name: 'Sarah Johnson',
+    firstName: 'Sarah',
+    lastName: 'Johnson',
     email: 'sjohnson@acmefreight.com',
     phone: '(555) 111-0002',
     cdlNumber: 'TX-CDL-002',
@@ -52,7 +54,8 @@ export const mockDrivers: Driver[] = [
   {
     id: 'driver-003',
     carrierId: 'carrier-002',
-    name: 'Mike Thompson',
+    firstName: 'Mike',
+    lastName: 'Thompson',
     email: 'mike@mikestrucking.com',
     phone: '(555) 222-0001',
     cdlNumber: 'TX-CDL-003',
@@ -79,7 +82,8 @@ export const mockDrivers: Driver[] = [
   {
     id: 'driver-004',
     carrierId: null,
-    name: 'Priya Patel',
+    firstName: 'Priya',
+    lastName: 'Patel',
     email: 'ppatel@gmail.com',
     phone: '(555) 444-0004',
     cdlNumber: 'AZ-CDL-004',

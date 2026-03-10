@@ -31,6 +31,18 @@ export interface ImageUploadError {
 }
 
 /**
+ * Extracts the error string from an unknown response body, if present.
+ */
+const getResponseError = (value: unknown): string | undefined => {
+  if (typeof value !== 'object' || value === null || !('error' in value)) {
+    return undefined;
+  }
+  // After 'error' in value, TypeScript narrows to { error: unknown }
+  const { error } = value;
+  return typeof error === 'string' ? error : undefined;
+};
+
+/**
  * Maps HTTP status code to user-friendly error message
  *
  * @param statusCode - HTTP status code from the response
@@ -39,14 +51,14 @@ export interface ImageUploadError {
  */
 export function getErrorFromStatusCode(
   statusCode: number,
-  responseBody?: any
+  responseBody?: unknown
 ): ImageUploadError {
   switch (statusCode) {
     case 400:
       return {
         type: ImageUploadErrorType.VALIDATION_ERROR,
         message: 'Invalid image data. Please check your file and try again.',
-        technicalDetails: responseBody?.error || 'Bad Request',
+        technicalDetails: getResponseError(responseBody) ?? 'Bad Request',
         retryable: false,
         statusCode,
       };
@@ -94,7 +106,7 @@ export function getErrorFromStatusCode(
       return {
         type: ImageUploadErrorType.SERVER_ERROR,
         message: 'Server error. Your images were not uploaded. Please try again.',
-        technicalDetails: responseBody?.error || 'Internal Server Error',
+        technicalDetails: getResponseError(responseBody) ?? 'Internal Server Error',
         retryable: true,
         statusCode,
       };
@@ -103,7 +115,7 @@ export function getErrorFromStatusCode(
       return {
         type: ImageUploadErrorType.UNKNOWN_ERROR,
         message: `Unexpected error (${statusCode}). Please try again.`,
-        technicalDetails: responseBody?.error || 'Unknown Error',
+        technicalDetails: getResponseError(responseBody) ?? 'Unknown Error',
         retryable: true,
         statusCode,
       };
@@ -150,7 +162,7 @@ export function getErrorFromException(error: unknown): ImageUploadError {
  * @returns Structured error information
  */
 export async function parseErrorResponse(response: Response): Promise<ImageUploadError> {
-  let responseBody: any;
+  let responseBody: unknown;
 
   try {
     const contentType = response.headers.get('content-type');

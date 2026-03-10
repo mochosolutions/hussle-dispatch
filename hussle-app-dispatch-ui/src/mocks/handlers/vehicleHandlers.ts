@@ -26,6 +26,7 @@ export const vehicleHandlers = [
     const created: Vehicle = {
       id: `vehicle-${Date.now()}`,
       carrierId: null,
+      driverId: null,
       unitNumber: '',
       make: null,
       model: null,

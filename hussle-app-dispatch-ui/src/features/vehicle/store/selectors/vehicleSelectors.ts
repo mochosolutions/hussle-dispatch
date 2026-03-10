@@ -4,6 +4,7 @@ import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { vehicleSelectors } from '../reducers/vehicleEntitySlice';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
+import { driverSelectors } from 'features/driver/store/reducers/driverEntitySlice';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -47,14 +48,70 @@ export const selectVehicleWithCarrier = (vehicleId: string) =>
     [
       (state: RootState) => vehicleSelectors.selectById(state, vehicleId),
       (state: RootState) => carrierSelectors.selectEntities(state),
+      (state: RootState) => driverSelectors.selectEntities(state),
     ],
-    (vehicle, carrierEntities) => {
+    (vehicle, carrierEntities, driverEntities) => {
       if (!vehicle) return undefined;
       const carrier = vehicle.carrierId ? carrierEntities[vehicle.carrierId] : undefined;
+      const driver = vehicle.driverId ? driverEntities[vehicle.driverId] : undefined;
       return {
         ...vehicle,
         carrierName: carrier?.name ?? null,
         carrierType: carrier?.type ?? null,
+        driverName: driver ? `${driver.firstName} ${driver.lastName}` : null,
       };
+    },
+  );
+
+interface VehicleKpiItem {
+  label: string;
+  value: string;
+  subtitle: string;
+}
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+
+export const selectVehicleKpis = createSelector(
+  [selectAllVehicles],
+  (vehicles): VehicleKpiItem[] => {
+    const activeCount = vehicles.filter((vehicle) => vehicle.isActive).length;
+    const carrierCount = 0;
+    const totalRevenue = 0;
+
+    return [
+      {
+        label: 'Total Vehicles',
+        value: String(vehicles.length),
+        subtitle: `${activeCount} active`,
+      },
+      {
+        label: 'Active Vehicles',
+        value: String(activeCount),
+        subtitle: 'Currently in service',
+      },
+      {
+        label: 'Carrier Count',
+        value: String(carrierCount),
+        subtitle: 'Placeholder',
+      },
+      {
+        label: 'Revenue',
+        value: currencyFormatter.format(totalRevenue),
+        subtitle: 'Placeholder',
+      },
+    ];
+  },
+);
+
+export const selectDriversByCarrierId = (carrierId: string | null) =>
+  createSelector(
+    [(state: RootState) => driverSelectors.selectAll(state)],
+    (drivers) => {
+      if (!carrierId) return [];
+      return drivers.filter((driver) => driver.carrierId === carrierId);
     },
   );

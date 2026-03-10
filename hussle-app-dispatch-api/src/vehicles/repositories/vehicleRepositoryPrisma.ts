@@ -1,15 +1,11 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type {
-  CarrierRepositoryPort,
   ListVehiclesRepositoryInput,
-  LoadRepositoryPort,
   VehicleExpenseInput,
   VehicleQueryInput,
   VehicleRepositoryPort,
 } from '../types/vehicleTypes';
-
-type VehiclePersistence = VehicleRepositoryPort & CarrierRepositoryPort & LoadRepositoryPort;
 
 const includeExpenses = {
   expenses: true,
@@ -68,7 +64,7 @@ const buildListWhere = (
 
 export const vehicleRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
-): VehiclePersistence => ({
+): VehicleRepositoryPort => ({
   create: (input) =>
     prisma.vehicle.create({
       data: input,
@@ -136,37 +132,26 @@ export const vehicleRepositoryPrisma = (
     });
   },
 
-  findActiveByIdForOrg: async (carrierId, organizationId) => {
-    const carrier = await prisma.carrier.findFirst({
+  assignDriver: (vehicleId, driverId) =>
+    prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { driverId },
+      include: includeExpenses,
+    }),
+
+  unassignDriver: (vehicleId) =>
+    prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { driverId: null },
+      include: includeExpenses,
+    }),
+
+  findByDriverId: (driverId) =>
+    prisma.vehicle.findFirst({
       where: {
-        id: carrierId,
-        managedByOrgId: organizationId,
-        status: 'active',
+        driverId,
         deletedAt: null,
       },
-      select: {
-        id: true,
-      },
-    });
-
-    return carrier !== null;
-  },
-
-  findBlockingLoadIdsByVehicle: async (vehicleId, statuses, limit) => {
-    const loads = await prisma.load.findMany({
-      where: {
-        vehicleId,
-        deletedAt: null,
-        status: {
-          in: statuses,
-        },
-      },
-      select: {
-        id: true,
-      },
-      take: limit,
-    });
-
-    return loads.map((load) => load.id);
-  },
+      include: includeExpenses,
+    }),
 });

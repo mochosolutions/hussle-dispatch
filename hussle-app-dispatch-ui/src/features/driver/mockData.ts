@@ -8,7 +8,8 @@ export const MOCK_DRIVERS: Driver[] = [
   {
     id: 'd1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5',
     carrierId: CARRIER_ID_1,
-    name: 'Marcus Johnson',
+    firstName: 'Marcus',
+    lastName: 'Johnson',
     email: 'marcus.johnson@example.com',
     phone: '(214) 555-0142',
     cdlNumber: 'TX-CDL-8834210',
@@ -37,7 +38,8 @@ export const MOCK_DRIVERS: Driver[] = [
   {
     id: 'd2a2a2a2-b3b3-c4c4-d5d5-e6e6e6e6e6e6',
     carrierId: CARRIER_ID_1,
-    name: 'Sarah Mitchell',
+    firstName: 'Sarah',
+    lastName: 'Mitchell',
     email: 'sarah.mitchell@example.com',
     phone: '(404) 555-0278',
     cdlNumber: 'GA-CDL-5521087',
@@ -64,7 +66,8 @@ export const MOCK_DRIVERS: Driver[] = [
   {
     id: 'd3a3a3a3-b4b4-c5c5-d6d6-e7e7e7e7e7e7',
     carrierId: CARRIER_ID_2,
-    name: 'James Rivera',
+    firstName: 'James',
+    lastName: 'Rivera',
     email: 'j.rivera@example.com',
     phone: '(312) 555-0391',
     cdlNumber: 'IL-CDL-7743902',
@@ -93,7 +96,8 @@ export const MOCK_DRIVERS: Driver[] = [
   {
     id: 'd4a4a4a4-b5b5-c6c6-d7d7-e8e8e8e8e8e8',
     carrierId: CARRIER_ID_2,
-    name: 'Robert Chen',
+    firstName: 'Robert',
+    lastName: 'Chen',
     email: null,
     phone: '(916) 555-0455',
     cdlNumber: 'CA-CDL-3310458',
@@ -117,7 +121,8 @@ export const MOCK_DRIVERS: Driver[] = [
   {
     id: 'd5a5a5a5-b6b6-c7c7-d8d8-e9e9e9e9e9e9',
     carrierId: CARRIER_ID_3,
-    name: 'Angela Washington',
+    firstName: 'Angela',
+    lastName: 'Washington',
     email: 'a.washington@example.com',
     phone: '(901) 555-0512',
     cdlNumber: 'TN-CDL-6629134',
@@ -147,7 +152,8 @@ export const MOCK_DRIVERS: Driver[] = [
   {
     id: 'd6a6a6a6-b7b7-c8c8-d9d9-eaeaeaeaeaea',
     carrierId: CARRIER_ID_3,
-    name: 'Travis Coleman',
+    firstName: 'Travis',
+    lastName: 'Coleman',
     email: 'travis.coleman@example.com',
     phone: '(602) 555-0634',
     cdlNumber: 'AZ-CDL-9917265',

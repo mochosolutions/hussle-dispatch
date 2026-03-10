@@ -52,3 +52,49 @@ export const updateVehicle = async (
 export const deleteVehicle = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/vehicles/${id}`);
 };
+
+export const assignDriver = async (
+  vehicleId: string,
+  driverId: string,
+): Promise<{ vehicle: Vehicle }> => {
+  const response = await axiosInstance.patch<GetVehicleResponse>(
+    `/vehicles/${vehicleId}/assign-driver`,
+    { driverId },
+  );
+  return { vehicle: response.data.data };
+};
+
+export const unassignDriver = async (vehicleId: string): Promise<{ vehicle: Vehicle }> => {
+  const response = await axiosInstance.patch<GetVehicleResponse>(
+    `/vehicles/${vehicleId}/unassign-driver`,
+  );
+  return { vehicle: response.data.data };
+};
+
+export interface VehicleLoad {
+  id: string;
+  referenceNumber: string;
+  origin: string;
+  destination: string;
+  status: string;
+  rate: string;
+  miles: number;
+  pickupDate: string;
+  deliveryDate: string | null;
+}
+
+interface GetVehicleLoadsResponse {
+  data: VehicleLoad[];
+  meta: PaginationMeta;
+}
+
+export const getVehicleLoads = async (
+  vehicleId: string,
+  params?: { page?: number; limit?: number },
+): Promise<{ data: VehicleLoad[]; meta: PaginationMeta }> => {
+  const response = await axiosInstance.get<GetVehicleLoadsResponse>(
+    `/vehicles/${vehicleId}/loads`,
+    { params },
+  );
+  return response.data;
+};

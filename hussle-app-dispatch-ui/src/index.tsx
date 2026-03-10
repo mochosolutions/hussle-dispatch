@@ -15,7 +15,7 @@ enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
       <ReduxProvider store={store}>
-        <RouterProvider router={router} />
+        <RouterProvider router={router} future={{ v7_startTransition: true }} />
       </ReduxProvider>
     </React.StrictMode>,
   );

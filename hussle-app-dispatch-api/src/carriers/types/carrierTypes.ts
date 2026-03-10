@@ -86,6 +86,19 @@ export interface CarrierWithAssets extends CarrierWithCounts {
   vehicles: VehicleWithExpenses[];
 }
 
+export interface CarrierServiceOutput extends Omit<Carrier, 'partnerSplitPercent'> {
+  driverCount: number;
+  vehicleCount: number;
+  onboardingComplete: boolean;
+  insuranceWarning: InsuranceWarning | null;
+  partnerSplitPercent?: Carrier['partnerSplitPercent'];
+}
+
+export interface CarrierWithAssetsServiceOutput extends CarrierServiceOutput {
+  drivers: Driver[];
+  vehicles: VehicleWithExpenses[];
+}
+
 export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   driverCount: number;
   vehicleCount: number;
@@ -128,10 +141,36 @@ export interface CarrierRepositoryPort {
 }
 
 export interface LoadRepositoryPort {
-  findBlockingLoadIds(carrierId: string, statuses: LoadStatus[], limit: number): Promise<string[]>;
+  findBlockingLoadIds(carrierId: string, statuses: readonly LoadStatus[], limit: number): Promise<string[]>;
 }
 
 export interface ListCarriersResult {
   data: CarrierWithCounts[];
   meta: PaginationMeta;
+}
+
+export interface ListCarriersServiceResult {
+  data: CarrierServiceOutput[];
+  meta: PaginationMeta;
+}
+
+export interface CarrierNoteInput {
+  text: string;
+  authorId?: string;
+  authorName?: string;
+}
+
+export interface CarrierNoteResponse {
+  id: string;
+  carrierId: string;
+  text: string;
+  authorId: string | null;
+  authorName: string | null;
+  createdAt: Date;
+}
+
+export interface CarrierNoteRepositoryPort {
+  createNote(carrierId: string, input: CarrierNoteInput): Promise<CarrierNoteResponse>;
+  listNotes(carrierId: string, skip: number, take: number): Promise<CarrierNoteResponse[]>;
+  countNotes(carrierId: string): Promise<number>;
 }

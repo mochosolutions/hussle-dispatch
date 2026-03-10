@@ -1,4 +1,5 @@
 import type { ParsedQs } from 'qs';
+import type { LoadHistoryResult } from '@/shared/loadQueries';
 import type {
   CreateVehicleInput,
   ListVehiclesResult,
@@ -39,10 +40,33 @@ export interface DeleteVehicleServiceInput {
   role: string;
 }
 
+export interface AssignDriverServiceInput {
+  id: string;
+  organizationId: string;
+  role: string;
+  driverId: string;
+}
+
+export interface UnassignDriverServiceInput {
+  id: string;
+  organizationId: string;
+  role: string;
+}
+
+export interface GetVehicleLoadHistoryServiceInput {
+  id: string;
+  organizationId: string;
+  role: string;
+  query: ParsedQs;
+}
+
 export interface VehicleService {
   createVehicle(input: CreateVehicleServiceInput): Promise<VehicleWithExpenses>;
   listVehicles(input: ListVehiclesServiceInput): Promise<ListVehiclesResult>;
   getVehicleById(input: GetVehicleByIdServiceInput): Promise<VehicleWithExpenses>;
   updateVehicle(input: UpdateVehicleServiceInput): Promise<VehicleWithExpenses>;
   deleteVehicle(input: DeleteVehicleServiceInput): Promise<void>;
+  assignDriver(input: AssignDriverServiceInput): Promise<VehicleWithExpenses>;
+  unassignDriver(input: UnassignDriverServiceInput): Promise<VehicleWithExpenses>;
+  getLoadHistory(input: GetVehicleLoadHistoryServiceInput): Promise<LoadHistoryResult>;
 }

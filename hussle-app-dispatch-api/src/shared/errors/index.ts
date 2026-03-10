@@ -8,3 +8,5 @@ export { NotFoundError, ValidationError, ConflictError, ActiveLoadsConflictError
 export { AuthRequestError } from './authError';
 
 export { RequestValidationError } from './requestValidationError';
+
+export { GoneError } from './goneError';

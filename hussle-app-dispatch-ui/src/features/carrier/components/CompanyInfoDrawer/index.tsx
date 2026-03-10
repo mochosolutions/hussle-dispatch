@@ -1,9 +1,8 @@
 import React from 'react';
-import { Formik, Form, useFormikContext } from 'formik';
-import { Box, Typography, Button, Divider, Grid, Stack, CircularProgress } from '@mui/material';
+import { Divider, Grid, Stack, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { TextField, EmailField } from '../../../../mocho/components';
-import { EditDrawer } from '../../components/EditDrawer';
+import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { companyInfoSchema } from '../../validators/fleetSchema';
 import { selectCarrierById } from '../../store/selectors/carrierSelectors';
 import { updateCarrierRequest } from '../../store/reducers';
@@ -21,73 +20,32 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
     return null;
   }
 
-  return (
-    <Formik
-      initialValues={{
-        name: carrier.name,
-        mcNumber: carrier.mcNumber ?? '',
-        dotNumber: carrier.dotNumber ?? '',
-        phone: carrier.phone ?? '',
-        email: carrier.email ?? '',
-        address: carrier.address ?? '',
-        city: carrier.city ?? '',
-        state: carrier.state ?? '',
-        zip: carrier.zip ?? '',
-      }}
-      validationSchema={companyInfoSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        dispatch(updateCarrierRequest({ id: carrierId, data: values }));
-        setSubmitting(false);
-        onClose();
-      }}
-      enableReinitialize
-    >
-      <CompanyInfoDrawerContent carrierName={carrier.name} onClose={onClose} />
-    </Formik>
-  );
-};
-
-interface CompanyInfoDrawerContentProps {
-  carrierName: string;
-  onClose: () => void;
-}
-
-const CompanyInfoDrawerContent: React.FC<CompanyInfoDrawerContentProps> = ({
-  carrierName,
-  onClose,
-}) => {
-  const { values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting, isValid, dirty } =
-    useFormikContext<Record<string, unknown>>();
-
-  const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
-
-  const footer = (
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form="edit-company-info"
-        variant="contained"
-        disabled={!isValid || !dirty || isSubmitting}
-        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-      >
-        {isSubmitting ? 'Saving\u2026' : 'Save Changes'}
-      </Button>
-    </Box>
-  );
+  const initialValues = {
+    name: carrier.name,
+    mcNumber: carrier.mcNumber ?? '',
+    dotNumber: carrier.dotNumber ?? '',
+    ein: carrier.ein ?? '',
+    phone: carrier.phone ?? '',
+    email: carrier.email ?? '',
+    address: carrier.address ?? '',
+    city: carrier.city ?? '',
+    state: carrier.state ?? '',
+    zip: carrier.zip ?? '',
+  };
 
   return (
-    <EditDrawer
+    <FormDrawer
       open
-      title="Edit Company Information"
       onClose={onClose}
-      subtitle={carrierName}
-      isDirty={dirty}
-      footer={footer}
+      title="Edit Company Information"
+      subtitle={carrier.name}
+      initialValues={initialValues}
+      validationSchema={companyInfoSchema}
+      onSubmit={(values) => {
+        dispatch(updateCarrierRequest({ id: carrierId, data: values }));
+      }}
     >
-      <Form id="edit-company-info">
+      {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <Typography
             variant="subtitle2"
@@ -101,25 +59,26 @@ const CompanyInfoDrawerContent: React.FC<CompanyInfoDrawerContentProps> = ({
           >
             Company Details
           </Typography>
-          <TextField name="name" label="Legal Name" formik={formikProps} />
+          <TextField name="name" label="Legal Name" formik={formik} />
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <TextField name="mcNumber" label="MC Number" formik={formikProps} />
+              <TextField name="mcNumber" label="MC Number" formik={formik} />
             </Grid>
             <Grid item xs={6}>
-              <TextField name="dotNumber" label="DOT Number" formik={formikProps} />
+              <TextField name="dotNumber" label="DOT Number" formik={formik} />
             </Grid>
           </Grid>
-          <TextField name="address" label="Address" formik={formikProps} />
+          <TextField name="ein" label="EIN" formik={formik} />
+          <TextField name="address" label="Address" formik={formik} />
           <Grid container spacing={2}>
             <Grid item xs={5}>
-              <TextField name="city" label="City" formik={formikProps} />
+              <TextField name="city" label="City" formik={formik} />
             </Grid>
             <Grid item xs={3}>
-              <TextField name="state" label="State" formik={formikProps} />
+              <TextField name="state" label="State" formik={formik} />
             </Grid>
             <Grid item xs={4}>
-              <TextField name="zip" label="ZIP" formik={formikProps} />
+              <TextField name="zip" label="ZIP" formik={formik} />
             </Grid>
           </Grid>
 
@@ -135,18 +94,18 @@ const CompanyInfoDrawerContent: React.FC<CompanyInfoDrawerContentProps> = ({
               letterSpacing: 0.5,
             }}
           >
-            Contact
+            Primary Contact
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <TextField name="phone" label="Phone" formik={formikProps} />
+              <TextField name="phone" label="Phone" formik={formik} />
             </Grid>
             <Grid item xs={6}>
-              <EmailField name="email" label="Email" formik={formikProps} />
+              <EmailField name="email" label="Email" formik={formik} />
             </Grid>
           </Grid>
         </Stack>
-      </Form>
-    </EditDrawer>
+      )}
+    </FormDrawer>
   );
 };

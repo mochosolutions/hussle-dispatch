@@ -464,7 +464,16 @@ export const remove = async (id: string) => {
 
 ## Form Patterns
 
-### Stack: Formik + Yup + BaseFieldWrapper
+### Stack: Formik + Yup + Mocho Form Fields
+
+**Always use form-field components from `@mocho/ui`** when building forms. Import them via:
+```typescript
+import { TextField, SelectField, EmailField, SubmitButton } from '@mocho/ui/components/form-fields';
+```
+
+Available fields: `TextField`, `EmailField`, `PasswordField`, `PasswordFieldWithStrength`, `PasswordFieldWithChecklist`, `ConfirmPasswordField`, `OTPField`, `CheckboxField`, `SelectField`, `TypeaheadField`, `DateField`, `TimeField`, `CharCounterField`, `MultiSelectChipField`, `DateTimePickerField`, `ImageUploadField`, `DocumentImageUploadField`, `DeferredImageUploadField`, `RichTextEditorField`, `SubmitButton`, `SecondaryButton`, `FormLink`, `TermsNotice`, `FormError`, `HelperText`, `BaseFieldWrapper`.
+
+Before creating a new form field component, check if one already exists in this library. Only create a new field if none of the existing ones can handle the use case.
 
 **1. Define schema + derive types:**
 ```typescript
@@ -668,6 +677,7 @@ export default FeatureIndexPage;
 - **Skip `PageWrapper`** — all pages need ErrorBoundary + loading states
 - **Add a second UI component library** — MUI v5 + Ant Design icons only
 - **Create standalone form inputs** — all form fields compose `BaseFieldWrapper` and receive `formik` prop
+- **Create new form field components without checking `@mocho/ui/components/form-fields` first** — use existing mocho form fields
 - **Use `getByTestId` in tests** — prefer accessibility queries
 - **Use React Hook Form, Zustand, or Jotai** — Formik + Yup for forms, Redux for state
 - **Use `moment`** — legacy dependency. Use `date-fns` for all date operations.

@@ -21,7 +21,8 @@ const noGoZoneSchema = Yup.object({
 
 const createBodySchema = Yup.object({
   carrierId: Yup.string().uuid('carrierId must be a valid uuid').required('carrierId is required'),
-  name: Yup.string().trim().required('name is required'),
+  firstName: Yup.string().trim().required('firstName is required'),
+  lastName: Yup.string().trim().required('lastName is required'),
   phone: optionalTrimmed,
   email: Yup.string().trim().email('email must be valid').notRequired(),
   cdlNumber: optionalTrimmed,
@@ -43,7 +44,8 @@ const createBodySchema = Yup.object({
 const updateBodySchema = createBodySchema
   .shape({
     carrierId: Yup.string().uuid('carrierId must be a valid uuid').notRequired(),
-    name: Yup.string().trim().notRequired(),
+    firstName: Yup.string().trim().notRequired(),
+    lastName: Yup.string().trim().notRequired(),
   })
   .test('has-any-field', 'At least one field must be provided', (value) => {
     if (value === undefined) {
@@ -78,5 +80,15 @@ export const listDriversValidator = Yup.object({
 export const driverIdParamValidator = Yup.object({
   params: Yup.object({
     id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+});
+
+export const driverLoadHistoryValidator = Yup.object({
+  params: Yup.object({
+    id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+  query: Yup.object({
+    page: Yup.number().integer().min(1).notRequired(),
+    limit: Yup.number().integer().min(1).max(100).notRequired(),
   }),
 });

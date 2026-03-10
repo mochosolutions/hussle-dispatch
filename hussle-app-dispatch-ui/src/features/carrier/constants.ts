@@ -54,10 +54,20 @@ export const CARRIER_TYPE_OPTIONS = [
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
 ];
 
-export const CARRIER_DETAIL_TAB_ITEMS: { key: string; label: string; count?: number }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'assets', label: 'Drivers & Vehicles' },
-  { key: 'loadHistory', label: 'Load History', count: 42 },
-  { key: 'documents', label: 'Documents', count: 3 },
-  // { key: 'billing', label: 'Billing', count: 3 },
+export const CARRIER_DETAIL_TAB_ITEMS: { key: string; label: string }[] = [
+  { key: 'general', label: 'General' },
+  { key: 'dispatchTerms', label: 'Dispatch Terms' },
+  { key: 'onboarding', label: 'Onboarding' },
+  { key: 'drivers', label: 'Drivers' },
+  { key: 'vehicles', label: 'Vehicles' },
+  { key: 'loadHistory', label: 'Load History' },
+  { key: 'documents', label: 'Documents' },
+  { key: 'notes', label: 'Notes' },
 ];
+
+export const ONBOARDING_ITEMS = [
+  { key: 'dispatchAgreementOnFile', label: 'Dispatch Agreement' },
+  { key: 'insuranceCertOnFile', label: 'Certificate of Insurance' },
+  { key: 'w9OnFile', label: 'W-9' },
+  { key: 'carrierPacketOnFile', label: 'Carrier Packet' },
+] as const;

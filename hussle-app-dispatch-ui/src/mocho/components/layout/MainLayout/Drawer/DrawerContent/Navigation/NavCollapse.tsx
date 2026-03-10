@@ -138,13 +138,13 @@ const NavCollapse = ({
   };
 
   // Sync open/selected state with parent selection tracking
+  // Only auto-open the matching section; never force-close others
   useEffect(() => {
     if (selected === selectedItems) {
       if (level === 1) {
         setOpen(true);
       }
     } else if (level === selectedLevel) {
-      setOpen(false);
       if (!miniMenuOpened && !drawerOpen && !selected) {
         setSelected(null);
       }
@@ -173,7 +173,6 @@ const NavCollapse = ({
 
   // menu collapse for sub-levels
   useEffect(() => {
-    setOpen(false);
     if (!miniMenuOpened) {
       setSelected(null);
     }

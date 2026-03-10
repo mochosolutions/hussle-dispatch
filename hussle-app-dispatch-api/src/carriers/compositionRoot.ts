@@ -19,6 +19,7 @@ export const createCarriersModule = ({
   const carrierService = createCarrierService({
     carrierRepository: repositories,
     loadRepository: repositories,
+    noteRepository: repositories,
   });
 
   const controllers = createCarrierControllers({

@@ -1,18 +1,31 @@
 import { takeLatest } from 'redux-saga/effects';
 import { fetchCarriersSaga } from './fetchCarriersSaga';
 import { carrierPageSlice } from '../reducers/carrierNewPageSlice';
-export const { actions: carrierPageActions } = carrierPageSlice;
 import { fetchCarrierDetailsSaga } from './fetchCarrierDetailsSaga';
-// import { fetchCarrierOnboardingSaga } from './fetchCarrierOnboardingSaga';
 import { createCarrierSaga } from './createCarrierSaga';
-// import { updateCarrierSaga } from './updateCarrierSaga';
-// import { deleteCarrierSaga } from './deleteCarrierSaga';
+import { updateCarrierSaga } from './updateCarrierSaga';
+import { fetchCarrierNotesSaga } from './fetchCarrierNotesSaga';
+import { createCarrierNoteSaga } from './createCarrierNoteSaga';
+import { fetchCarrierDriversSaga } from './fetchCarrierDriversSaga';
+import { fetchCarrierVehiclesSaga } from './fetchCarrierVehiclesSaga';
+import {
+  fetchCarrierNotesRequest,
+  createCarrierNoteRequest,
+} from '../reducers/carrierNotesSlice';
+import {
+  fetchCarrierDriversRequest,
+  fetchCarrierVehiclesRequest,
+} from '../reducers/carrierDetailActions';
+
+export const { actions: carrierPageActions } = carrierPageSlice;
 
 export function* carrierSagaWatcher(): Generator {
   yield takeLatest(carrierPageActions.fetchAllRequest.type, fetchCarriersSaga);
   yield takeLatest(carrierPageActions.fetchByIdRequest.type, fetchCarrierDetailsSaga);
-  // yield takeLatest(fetchCarrierOnboardingRequest.type, fetchCarrierOnboardingSaga);
   yield takeLatest(carrierPageActions.createRequest.type, createCarrierSaga);
-  // yield takeLatest(updateCarrierRequest.type, updateCarrierSaga);
-  // yield takeLatest(deleteCarrierRequest.type, deleteCarrierSaga);
+  yield takeLatest(carrierPageActions.updateRequest.type, updateCarrierSaga);
+  yield takeLatest(fetchCarrierNotesRequest.type, fetchCarrierNotesSaga);
+  yield takeLatest(createCarrierNoteRequest.type, createCarrierNoteSaga);
+  yield takeLatest(fetchCarrierDriversRequest.type, fetchCarrierDriversSaga);
+  yield takeLatest(fetchCarrierVehiclesRequest.type, fetchCarrierVehiclesSaga);
 }

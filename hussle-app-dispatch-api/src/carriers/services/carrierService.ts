@@ -1,5 +1,6 @@
 import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
-import { LOAD_STATUSES } from '@/shared/constants/loadStatuses';
+import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
+import { CARRIER_BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import {
   ActiveLoadsConflictError,
   ForbiddenError,
@@ -9,26 +10,29 @@ import {
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
+  CarrierNoteRepositoryPort,
   CarrierRepositoryPort,
+  CarrierServiceOutput,
+  CarrierWithAssets,
+  CarrierWithAssetsServiceOutput,
   CarrierWithCounts,
+  InsuranceWarning,
   LoadRepositoryPort,
 } from '../types/carrierTypes';
 import type {
   CarrierService,
+  CreateCarrierNoteServiceInput,
   CreateCarrierServiceInput,
   CreateCarrierWithAssetsServiceInput,
   DeleteCarrierServiceInput,
   GetCarrierByIdServiceInput,
   GetCarrierOnboardingServiceInput,
+  ListCarrierNotesServiceInput,
   ListCarriersServiceInput,
   UpdateCarrierServiceInput,
 } from '../types/carrierServiceTypes';
 
-const OWNER_OPERATOR_ROLE = 'owner_operator';
-
 const listSortableFields = ['createdAt', 'updatedAt', 'name', 'insuranceExpiry'] as const;
-
-const blockedDeleteStatuses = LOAD_STATUSES.filter((status) => status !== 'PAID');
 
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
@@ -50,9 +54,74 @@ const getSafeSortField = (field: string): (typeof listSortableFields)[number] =>
   return 'createdAt';
 };
 
+const isAdminRole = (role: string): boolean => role === 'admin';
+
+const daysUntil = (date: Date): number => {
+  const now = new Date();
+  const millis = date.getTime() - now.getTime();
+  return Math.ceil(millis / (1000 * 60 * 60 * 24));
+};
+
+const getInsuranceWarning = (insuranceExpiry: Date | null): InsuranceWarning | null => {
+  if (insuranceExpiry === null) {
+    return null;
+  }
+
+  const daysRemaining = daysUntil(insuranceExpiry);
+  if (daysRemaining < 0) {
+    return 'EXPIRED';
+  }
+  if (daysRemaining <= 7) {
+    return '7_DAY';
+  }
+  if (daysRemaining <= 30) {
+    return '30_DAY';
+  }
+  return null;
+};
+
+const enrichCarrier = (carrier: CarrierWithCounts, role: string): CarrierServiceOutput => {
+  const onboarding = checkCarrierOnboarding({
+    carrierType: carrier.type,
+    dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
+    insuranceCertOnFile: carrier.insuranceCertOnFile,
+    insuranceExpiry: carrier.insuranceExpiry,
+    w9OnFile: carrier.w9OnFile,
+  });
+
+  const { partnerSplitPercent: _partnerSplitPercent, ...carrierWithoutPartnerSplit } = carrier;
+
+  const base: CarrierServiceOutput = {
+    ...carrierWithoutPartnerSplit,
+    driverCount: carrier._count.drivers,
+    vehicleCount: carrier._count.vehicles,
+    onboardingComplete: onboarding.allowed,
+    insuranceWarning: getInsuranceWarning(carrier.insuranceExpiry),
+  };
+
+  if (!isAdminRole(role)) {
+    return base;
+  }
+
+  return {
+    ...base,
+    partnerSplitPercent: carrier.partnerSplitPercent,
+  };
+};
+
+const enrichCarrierWithAssets = (
+  carrier: CarrierWithAssets,
+  role: string,
+): CarrierWithAssetsServiceOutput => ({
+  ...enrichCarrier(carrier, role),
+  drivers: carrier.drivers,
+  vehicles: carrier.vehicles,
+});
+
 interface CarrierServiceDeps {
   carrierRepository: CarrierRepositoryPort;
   loadRepository: LoadRepositoryPort;
+  noteRepository: CarrierNoteRepositoryPort;
 }
 
 const findCarrierOrThrow = async (
@@ -72,7 +141,8 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     assertOwnerOperatorIsBlocked(role);
     assertCarrierTypeSupported(input.type);
 
-    return deps.carrierRepository.create(organizationId, input);
+    const carrier = await deps.carrierRepository.create(organizationId, input);
+    return enrichCarrier(carrier, role);
   },
 
   createCarrierWithAssets: async ({
@@ -83,11 +153,12 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     assertOwnerOperatorIsBlocked(role);
     assertCarrierTypeSupported(input.type);
 
-    return deps.carrierRepository.createWithAssets(organizationId, {
+    const carrier = await deps.carrierRepository.createWithAssets(organizationId, {
       carrier: input,
       drivers: input.drivers,
       vehicles: input.vehicles,
     });
+    return enrichCarrierWithAssets(carrier, role);
   },
 
   listCarriers: async ({ query, organizationId, filters, role }: ListCarriersServiceInput) => {
@@ -96,7 +167,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     const params = parsePaginationParams(query);
     const sort = getSafeSortField(params.sort);
 
-    return paginateQuery(
+    const result = await paginateQuery(
       { ...params, sort },
       {
         findMany: ({ skip, take, orderBy }) =>
@@ -114,11 +185,17 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
           }),
       },
     );
+
+    return {
+      data: result.data.map((carrier) => enrichCarrier(carrier, role)),
+      meta: result.meta,
+    };
   },
 
   getCarrierById: async ({ id, organizationId, role }: GetCarrierByIdServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
-    return findCarrierOrThrow(id, organizationId, deps);
+    const carrier = await findCarrierOrThrow(id, organizationId, deps);
+    return enrichCarrier(carrier, role);
   },
 
   updateCarrier: async ({ id, organizationId, input, role }: UpdateCarrierServiceInput) => {
@@ -129,7 +206,8 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     }
 
     await findCarrierOrThrow(id, organizationId, deps);
-    return deps.carrierRepository.update(id, input);
+    const carrier = await deps.carrierRepository.update(id, input);
+    return enrichCarrier(carrier, role);
   },
 
   deleteCarrier: async ({ id, organizationId, role }: DeleteCarrierServiceInput) => {
@@ -139,7 +217,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
 
     const blockingLoadIds = await deps.loadRepository.findBlockingLoadIds(
       id,
-      blockedDeleteStatuses,
+      CARRIER_BLOCKING_DELETE_STATUSES,
       10,
     );
 
@@ -168,5 +246,35 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       insuranceExpiry: carrier.insuranceExpiry,
       w9OnFile: carrier.w9OnFile,
     });
+  },
+
+  listNotes: async ({ carrierId, organizationId, role, query }: ListCarrierNotesServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    await findCarrierOrThrow(carrierId, organizationId, deps);
+
+    const params = parsePaginationParams(query);
+    const skip = (params.page - 1) * params.limit;
+
+    const [notes, total] = await Promise.all([
+      deps.noteRepository.listNotes(carrierId, skip, params.limit),
+      deps.noteRepository.countNotes(carrierId),
+    ]);
+
+    const meta = {
+      page: params.page,
+      limit: params.limit,
+      total,
+      totalPages: Math.ceil(total / params.limit),
+      hasMore: params.page < Math.ceil(total / params.limit),
+    };
+
+    return { data: notes, meta };
+  },
+
+  createNote: async ({ carrierId, organizationId, role, input }: CreateCarrierNoteServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    await findCarrierOrThrow(carrierId, organizationId, deps);
+
+    return deps.noteRepository.createNote(carrierId, input);
   },
 });

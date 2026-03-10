@@ -16,6 +16,8 @@ export {
   deleteVehicleRequest,
   deleteVehicleSuccess,
   deleteVehicleFailure,
+  assignDriverRequest,
+  unassignDriverRequest,
 } from './vehiclePageSlice';
 
 export {

@@ -1,4 +1,4 @@
-export { LOAD_STATUSES } from './loadStatuses';
+export { LOAD_STATUSES, BLOCKING_DELETE_STATUSES, CARRIER_BLOCKING_DELETE_STATUSES } from './loadStatuses';
 export type { LoadStatus } from './loadStatuses';
 
 export { KANBAN_GROUPS } from './kanbanGroups';

@@ -86,3 +86,22 @@ export const vehicleIdParamValidator = Yup.object({
     id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
   }),
 });
+
+export const assignDriverValidator = Yup.object({
+  params: Yup.object({
+    id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+  body: Yup.object({
+    driverId: Yup.string().uuid('driverId must be a valid uuid').required('driverId is required'),
+  }),
+});
+
+export const loadHistoryValidator = Yup.object({
+  params: Yup.object({
+    id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+  query: Yup.object({
+    page: Yup.number().integer().min(1).notRequired(),
+    limit: Yup.number().integer().min(1).max(100).notRequired(),
+  }),
+});

@@ -8,9 +8,19 @@ import morgan from 'morgan';
 import { rootAuthRouter } from './auth';
 import { carriersRouter } from './carriers';
 // import { contactsRouter } from './contacts';
+import { documentsRouter } from './documents';
 import { driversRouter } from './drivers';
+import { loadsRouter } from './loads';
+import { placesRouter } from './places';
 import { vehiclesRouter } from './vehicles';
+import { loadIntelRouter } from './load-intel';
+import { invoicesRouter } from './invoices';
+import { dashboardRouter } from './dashboard';
+import { env } from './config/env';
 import { errorHandler } from './shared/middleware/errorHandler';
+import { createStorageProvider } from './shared/storage';
+import { mountLocalStorageRoutes } from './shared/storage/localStorageRoutes';
+import { logger } from './shared/utils/logger';
 
 /**
  * JSON replacer that serializes Decimal.js instances as strings.
@@ -59,8 +69,27 @@ export const createApp = (): express.Application => {
   // // Feature routes mount here (added by each feature story)
   app.use('/api/v1/carriers', carriersRouter);
   // app.use('/api/v1/contacts', contactsRouter);
+  app.use('/api/v1/documents', documentsRouter);
   app.use('/api/v1/drivers', driversRouter);
+  app.use('/api/v1/places', placesRouter);
+  app.use('/api/v1/loads', loadsRouter);
   app.use('/api/v1/vehicles', vehiclesRouter);
+  app.use('/api/v1/load-intel', loadIntelRouter);
+  app.use('/api/v1/invoices', invoicesRouter);
+  app.use('/api/v1/dashboard', dashboardRouter);
+
+  // Local storage file-serving route (dev/test only)
+  if (env.STORAGE_BACKEND === 'local') {
+    const storageProvider = createStorageProvider(
+      {
+        backend: 'local',
+        basePath: env.STORAGE_LOCAL_PATH,
+        baseUrl: '/api/v1/storage',
+      },
+      logger,
+    );
+    mountLocalStorageRoutes(app, storageProvider);
+  }
 
   // Centralized error handler — must be last
   app.use(errorHandler);

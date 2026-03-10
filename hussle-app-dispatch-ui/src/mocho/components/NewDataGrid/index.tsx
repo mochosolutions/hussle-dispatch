@@ -1,46 +1,44 @@
 import React from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { ClientSideRowModelModule, ModuleRegistry } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-material.css';
 import { useTheme } from '@mui/material/styles';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import type { ColDef, GridOptions } from 'ag-grid-community';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
-
-interface AgGridTableProps {
-  columnDefs: any[];
-  rowData: any[];
-  defaultColDef?: any;
-  gridOptions?: any;
-  loading?: boolean; // New prop for loading state
-  error?: boolean; // New prop for error state
-  noDataMessage?: string; // Custom no data message
-  loadingComponent?: React.ReactNode; // Custom loading component
-  errorComponent?: React.ReactNode; // Custom error component
-  noDataComponent?: React.ReactNode; // Custom no data component
-  footerComponent?: React.ReactNode; // Optional footer rendered below grid
-  showRowCountFooter?: boolean; // Show built-in row count footer
-  totalRowCount?: number; // Total rows available (for filtered views)
-  rowCountLabel?: string; // Label suffix (e.g. carriers, rows)
+interface AgGridTableProps<TData> {
+  columnDefs: ColDef<TData>[];
+  rowData: TData[];
+  defaultColDef?: ColDef<TData>;
+  gridOptions?: GridOptions<TData>;
+  loading?: boolean;
+  error?: boolean;
+  noDataMessage?: string;
+  loadingComponent?: React.ReactNode;
+  errorComponent?: React.ReactNode;
+  noDataComponent?: React.ReactNode;
+  footerComponent?: React.ReactNode;
+  showRowCountFooter?: boolean;
+  totalRowCount?: number;
+  rowCountLabel?: string;
 }
 
-const AgGridTable: React.FC<AgGridTableProps> = ({
+const AgGridTable = <TData,>({
   columnDefs,
   rowData,
   defaultColDef,
   gridOptions,
-  loading = false, // default state
-  error = false, // default state
-  noDataMessage = 'No data available', // default message
-  loadingComponent, // optional custom loading component
-  errorComponent, // optional custom error component
-  noDataComponent, // optional custom no data component
-  footerComponent, // optional footer component
+  loading = false,
+  error = false,
+  noDataMessage = 'No data available',
+  loadingComponent,
+  errorComponent,
+  noDataComponent,
+  footerComponent,
   showRowCountFooter = false,
   totalRowCount,
   rowCountLabel = 'rows',
-}) => {
+}: AgGridTableProps<TData>) => {
   const theme = useTheme();
   const displayData = !loading && !error && rowData.length === 0 ? [] : rowData;
   const resolvedDomLayout = gridOptions?.domLayout ?? 'normal';
@@ -113,7 +111,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
 
         {/* Render the grid if there's data */}
         {!loading && !error && displayData.length > 0 && (
-          <AgGridReact
+          <AgGridReact<TData>
             columnDefs={columnDefs}
             rowData={displayData}
             defaultColDef={defaultColDef}

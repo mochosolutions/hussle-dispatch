@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import {
   Stack,
   TextField,
@@ -18,6 +19,7 @@ import type { ActionsCellConfig } from '@mocho/ui/components';
 import { fetchVehiclesRequest } from '../../store/reducers';
 import {
   selectAllVehicles,
+  selectVehicleKpis,
   selectVehicleListLoading,
 } from '../../store/selectors/vehicleSelectors';
 import {
@@ -29,11 +31,14 @@ import { VehicleCreateDialog } from '../../components/VehicleCreateDialog';
 
 type VehicleTab = 'all' | 'OWNED' | 'LEASED';
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
+const VehicleStatusCellRenderer = ({ data }: { data: Vehicle }) => {
+  const color = data.isActive ? 'success' : 'default';
+  const label = data.isActive ? 'Active' : 'Inactive';
+
+  return (
+    <Chip label={label} size="small" color={color} variant="outlined" sx={{ fontWeight: 600 }} />
+  );
+};
 
 const VehicleListPage = () => {
   const [activeTab, setActiveTab] = useState<VehicleTab>('all');
@@ -113,29 +118,46 @@ const VehicleListPage = () => {
       {
         headerName: 'Type',
         field: 'type',
-        minWidth: 140,
+        minWidth: 120,
         cellRenderer: VehicleTypeCellRenderer,
-      },
-      {
-        headerName: 'Make/Model',
-        field: 'make',
-        minWidth: 160,
-        valueGetter: (params: { data: Vehicle }) => {
-          const { make, model } = params.data;
-          return `${make ?? ''} ${model ?? ''}`.trim();
-        },
-      },
-      {
-        headerName: 'Ownership',
-        field: 'ownership',
-        minWidth: 140,
-        cellRenderer: VehicleOwnershipCellRenderer,
       },
       {
         headerName: 'Carrier',
         field: 'carrierId',
-        minWidth: 140,
+        minWidth: 120,
         valueGetter: () => '\u2014',
+      },
+      {
+        headerName: 'Ownership',
+        field: 'ownership',
+        minWidth: 120,
+        cellRenderer: VehicleOwnershipCellRenderer,
+      },
+      {
+        headerName: 'Assigned Driver',
+        field: 'driverId',
+        minWidth: 140,
+        valueGetter: (params: { data: Vehicle }) => {
+          if (!params.data.driverId) {
+            return '\u2014';
+          }
+          return 'Assigned';
+        },
+      },
+      {
+        headerName: 'Year/Make/Model',
+        field: 'make',
+        minWidth: 180,
+        valueGetter: (params: { data: Vehicle }) => {
+          const { year, make, model } = params.data;
+          return [year, make, model].filter(Boolean).join(' ') || '\u2014';
+        },
+      },
+      {
+        headerName: 'Status',
+        field: 'isActive',
+        minWidth: 110,
+        cellRenderer: VehicleStatusCellRenderer,
       },
       {
         headerName: '',
@@ -157,34 +179,7 @@ const VehicleListPage = () => {
     return vehicles.filter((vehicle) => vehicle.ownership === activeTab);
   }, [vehicles, activeTab]);
 
-  const kpiData = useMemo(() => {
-    const activeCount = vehicles.filter((vehicle) => vehicle.isActive).length;
-    const carrierCount = 0;
-    const totalRevenue = 0;
-
-    return [
-      {
-        label: 'Total Vehicles',
-        value: String(vehicles.length),
-        subtitle: `${activeCount} active`,
-      },
-      {
-        label: 'Active Vehicles',
-        value: String(activeCount),
-        subtitle: 'Currently in service',
-      },
-      {
-        label: 'Carrier Count',
-        value: String(carrierCount),
-        subtitle: 'Placeholder',
-      },
-      {
-        label: 'Revenue',
-        value: currencyFormatter.format(totalRevenue),
-        subtitle: 'Placeholder',
-      },
-    ];
-  }, [vehicles]);
+  const kpiData = useSelector(selectVehicleKpis);
 
   const tabOptions = useMemo(
     () => [

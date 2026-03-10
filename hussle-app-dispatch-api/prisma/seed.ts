@@ -30,6 +30,7 @@ const runSeed = async (): Promise<void> => {
     create: {
       name: 'Demo Dispatch Co.',
       slug: 'demo-org',
+      email: 'admin@demodispatch.example',
     },
   });
 
@@ -80,6 +81,9 @@ const runSeed = async (): Promise<void> => {
       type: 'COMPANY_ASSET',
       mcNumber: 'MC-123456',
       dotNumber: '7654321',
+      primaryContactName: 'Tom Bradley',
+      primaryContactPhone: '555-100-9000',
+      primaryContactEmail: 'tom@demofleet.example',
       dispatchFeePercent: 10,
       partnerSplitPercent: 50,
       city: 'Charlotte',
@@ -96,7 +100,8 @@ const runSeed = async (): Promise<void> => {
     create: {
       id: 'seed-driver-company-1',
       carrierId: companyCarrier.id,
-      name: 'John Smith',
+      firstName: 'John',
+      lastName: 'Smith',
       phone: '555-100-0001',
       cdlState: 'NC',
       homeBaseCity: 'Charlotte',
@@ -131,7 +136,8 @@ const runSeed = async (): Promise<void> => {
     create: {
       id: 'seed-driver-company-2',
       carrierId: companyCarrier.id,
-      name: 'Robert Johnson',
+      firstName: 'Robert',
+      lastName: 'Johnson',
       phone: '555-100-0002',
       cdlState: 'GA',
       homeBaseCity: 'Atlanta',
@@ -378,6 +384,9 @@ const runSeed = async (): Promise<void> => {
       dotNumber: '1122334',
       phone: '555-300-0001',
       email: 'dispatch@independenttrucking.example',
+      primaryContactName: 'Maria Garcia',
+      primaryContactPhone: '555-200-0001',
+      primaryContactEmail: 'mgarcia@example.com',
       city: 'Dallas',
       state: 'TX',
       dispatchFeePercent: 8,
@@ -401,7 +410,8 @@ const runSeed = async (): Promise<void> => {
     create: {
       id: 'seed-driver-external-1',
       carrierId: externalCarrier.id,
-      name: 'Maria Garcia',
+      firstName: 'Maria',
+      lastName: 'Garcia',
       phone: '555-200-0001',
       email: 'mgarcia@example.com',
       cdlState: 'TX',
@@ -524,6 +534,62 @@ const runSeed = async (): Promise<void> => {
   }
 
   process.stdout.write(`EXTERNAL_CARRIER: ${externalCarrier.name} (fully onboarded)\n`);
+
+  // ---------------------------------------------------------------------------
+  // Driver-Vehicle assignments (1:1)
+  // ---------------------------------------------------------------------------
+  await prisma.vehicle.update({
+    where: { id: 'seed-vehicle-company-1' },
+    data: { driverId: 'seed-driver-company-1' },
+  });
+
+  await prisma.vehicle.update({
+    where: { id: 'seed-vehicle-company-2' },
+    data: { driverId: 'seed-driver-company-2' },
+  });
+
+  await prisma.vehicle.update({
+    where: { id: 'seed-vehicle-external-1' },
+    data: { driverId: 'seed-driver-external-1' },
+  });
+
+  process.stdout.write('Driver-Vehicle assignments: 3 assignments created\n');
+
+  // ---------------------------------------------------------------------------
+  // CarrierNotes — sample notes for each carrier
+  // ---------------------------------------------------------------------------
+  await prisma.carrierNote.deleteMany({
+    where: {
+      carrierId: { in: [companyCarrier.id, externalCarrier.id] },
+    },
+  });
+
+  await prisma.carrierNote.createMany({
+    data: [
+      {
+        carrierId: companyCarrier.id,
+        text: 'Carrier prefers Southeast regional lanes. Good communication.',
+        authorName: 'System',
+      },
+      {
+        carrierId: companyCarrier.id,
+        text: 'Insurance renewed through 2027. All docs current.',
+        authorName: 'System',
+      },
+      {
+        carrierId: externalCarrier.id,
+        text: 'Fully onboarded. Dispatch agreement signed 2025-06-15.',
+        authorName: 'System',
+      },
+      {
+        carrierId: externalCarrier.id,
+        text: 'Driver Maria prefers long-haul Midwest runs from TX origin.',
+        authorName: 'System',
+      },
+    ],
+  });
+
+  process.stdout.write('CarrierNotes: sample notes created\n');
 
   // ---------------------------------------------------------------------------
   // Contacts — BROKER, SHIPPER, CONSIGNEE

@@ -153,7 +153,8 @@ export interface DriverNoGoZone {
 export interface Driver {
   id: string;
   carrierId: string | null;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string | null;
   phone: string | null;
   cdlNumber: string | null;
@@ -177,7 +178,8 @@ export interface Driver {
 
 export interface CreateDriverInput {
   carrierId?: string | null;
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string | null;
   phone?: string | null;
   cdlNumber?: string | null;
@@ -198,7 +200,8 @@ export interface CreateDriverInput {
 
 export interface UpdateDriverInput {
   carrierId?: string | null;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string | null;
   phone?: string | null;
   cdlNumber?: string | null;
@@ -220,6 +223,7 @@ export interface UpdateDriverInput {
 export interface Vehicle {
   id: string;
   carrierId: string | null;
+  driverId: string | null;
   unitNumber: string;
   make: string | null;
   model: string | null;
@@ -344,6 +348,18 @@ export interface UpdateContactInput {
   notes?: string | null;
 }
 
+export interface CarrierNote {
+  id: string;
+  carrierId: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+}
+
+export interface CreateCarrierNoteInput {
+  content: string;
+}
+
 export type LookupStatus = 'idle' | 'searching' | 'found' | 'not_found';
 
 export type CreateMode = 'full' | 'quick';
@@ -372,7 +388,8 @@ export interface VehicleFormEntry {
  */
 export interface DriverFormEntry {
   localId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   cdlNumber: string;
   cdlExpiry: string;

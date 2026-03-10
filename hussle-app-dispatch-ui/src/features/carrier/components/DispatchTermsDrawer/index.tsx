@@ -1,11 +1,10 @@
 import React from 'react';
-import { Formik, Form, useFormikContext } from 'formik';
-import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { TextField, CheckboxField } from '../../../../mocho/components';
-import { EditDrawer } from '../../components/EditDrawer';
+import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { dispatchTermsSchema } from '../../validators/fleetSchema';
-import { selectCarrierById } from '../../store/selectors/carrierSelectors';
+import { selectCarrierById, selectUserRole } from '../../store/selectors/carrierSelectors';
 import { updateCarrierRequest } from '../../store/reducers/carrierNewPageSlice';
 
 interface DispatchTermsDrawerProps {
@@ -19,73 +18,31 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
 }) => {
   const dispatch = useDispatch();
   const carrier = useSelector(selectCarrierById(carrierId));
+  const userRole = useSelector(selectUserRole);
+  const isDispatcher = userRole === 'DISPATCHER' || userRole === 'dispatcher';
 
   if (!carrier) {
     return null;
   }
 
   return (
-    <Formik
+    <FormDrawer
+      open
+      onClose={onClose}
+      title="Edit Dispatch Terms"
+      subtitle={carrier.name}
       initialValues={{
         dispatchFeePercent: carrier.dispatchFeePercent,
+        partnerSplitPercent: carrier.partnerSplitPercent ?? '',
         feeIncludesAccessorials: carrier.feeIncludesAccessorials,
         dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       }}
       validationSchema={dispatchTermsSchema}
       onSubmit={(values) => {
         dispatch(updateCarrierRequest({ id: carrierId, data: values }));
-        onClose();
       }}
-      enableReinitialize
     >
-      <DispatchTermsDrawerContent carrierName={carrier.name} partnerSplitPercent={carrier.partnerSplitPercent} onClose={onClose} />
-    </Formik>
-  );
-};
-
-interface DispatchTermsDrawerContentProps {
-  carrierName: string;
-  partnerSplitPercent: string | null | undefined;
-  onClose: () => void;
-}
-
-const DispatchTermsDrawerContent: React.FC<DispatchTermsDrawerContentProps> = ({
-  carrierName,
-  partnerSplitPercent,
-  onClose,
-}) => {
-  const { values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting, isValid, dirty } =
-    useFormikContext<Record<string, unknown>>();
-
-  const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
-
-  const footer = (
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form="edit-dispatch-terms"
-        variant="contained"
-        disabled={!isValid || !dirty || isSubmitting}
-        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-      >
-        {isSubmitting ? 'Saving\u2026' : 'Save Changes'}
-      </Button>
-    </Box>
-  );
-
-  return (
-    <EditDrawer
-      open
-      onClose={onClose}
-      title="Edit Dispatch Terms"
-      subtitle={carrierName}
-      isDirty={dirty}
-      footer={footer}
-    >
-      <Form id="edit-dispatch-terms">
+      {(formikProps) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <TextField
             name="dispatchFeePercent"
@@ -94,9 +51,20 @@ const DispatchTermsDrawerContent: React.FC<DispatchTermsDrawerContentProps> = ({
             formik={formikProps}
           />
 
-          <Typography variant="body2" color="text.secondary">
-            Partner Split: {partnerSplitPercent ?? '—'}% (admin-managed)
-          </Typography>
+          {!isDispatcher && (
+            <TextField
+              name="partnerSplitPercent"
+              label="Partner Split %"
+              type="number"
+              formik={formikProps}
+            />
+          )}
+
+          {isDispatcher && (
+            <Typography variant="body2" color="text.secondary">
+              Partner split is managed by administrators.
+            </Typography>
+          )}
 
           <CheckboxField
             name="feeIncludesAccessorials"
@@ -110,7 +78,7 @@ const DispatchTermsDrawerContent: React.FC<DispatchTermsDrawerContentProps> = ({
             formik={formikProps}
           />
         </Stack>
-      </Form>
-    </EditDrawer>
+      )}
+    </FormDrawer>
   );
 };

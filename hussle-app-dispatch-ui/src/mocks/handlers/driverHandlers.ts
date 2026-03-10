@@ -26,7 +26,8 @@ export const driverHandlers = [
     const created: Driver = {
       id: `driver-${Date.now()}`,
       carrierId: null,
-      name: '',
+      firstName: '',
+      lastName: '',
       email: null,
       phone: null,
       cdlNumber: null,

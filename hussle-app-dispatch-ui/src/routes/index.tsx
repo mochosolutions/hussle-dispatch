@@ -9,6 +9,8 @@ import VehicleRoutes from 'features/vehicle/routes/vehicleRoutes';
 import DriverRoutes from 'features/driver/routes/driverRoutes';
 import InvoiceRoutes from 'features/invoices/routes/InvoiceRoutes';
 import LoadIntelligenceRoutes from 'features/loadintelligence/routes/LoadIntelligence';
+import PlaceRoutes from 'features/place/routes/placeRoutes';
+import LoadRoutes from 'features/load/routes/loadRoutes';
 import App from '../App';
 export const routes: RouteObject[] = [
   {
@@ -17,12 +19,14 @@ export const routes: RouteObject[] = [
       LoginRoutes,
       DashboardRoutes,
       DispatchBoardRoutes,
+      LoadRoutes,
       // FleetRoutes,
       CarrierRoutes,
       VehicleRoutes,
       DriverRoutes,
       InvoiceRoutes,
       LoadIntelligenceRoutes,
+      PlaceRoutes,
 
       // {
       //   path: '*',
@@ -32,6 +36,14 @@ export const routes: RouteObject[] = [
   },
 ];
 
-const router = createBrowserRouter(routes);
+const router = createBrowserRouter(routes, {
+  future: {
+    v7_fetcherPersist: true,
+    v7_normalizeFormMethod: true,
+    v7_partialHydration: true,
+    v7_relativeSplatPath: true,
+    v7_skipActionErrorRevalidation: true,
+  },
+});
 
 export default router;

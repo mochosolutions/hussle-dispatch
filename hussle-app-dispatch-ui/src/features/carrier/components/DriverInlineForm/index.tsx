@@ -22,7 +22,8 @@ export const DriverInlineForm = ({
   return (
     <Formik
       initialValues={{
-        name: initial?.name ?? '',
+        firstName: initial?.firstName ?? '',
+        lastName: initial?.lastName ?? '',
         phone: initial?.phone ?? '',
         cdlNumber: initial?.cdlNumber ?? '',
         cdlExpiry: initial?.cdlExpiry ?? '',
@@ -32,7 +33,8 @@ export const DriverInlineForm = ({
       onSubmit={(values) => {
         onSave({
           localId: initial?.localId ?? `d-${Date.now()}`,
-          name: values.name,
+          firstName: values.firstName,
+          lastName: values.lastName,
           phone: values.phone,
           cdlNumber: values.cdlNumber ?? '',
           cdlExpiry: values.cdlExpiry ?? '',
@@ -56,8 +58,11 @@ export const DriverInlineForm = ({
           }}
         >
           <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={12}>
-              <TextField name="name" label="Driver Name" placeholder="Full name" formik={formikProps} />
+            <Grid item xs={6}>
+              <TextField name="firstName" label="First Name" placeholder="First name" formik={formikProps} />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField name="lastName" label="Last Name" placeholder="Last name" formik={formikProps} />
             </Grid>
           </Grid>
 

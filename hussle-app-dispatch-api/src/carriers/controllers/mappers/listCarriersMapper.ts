@@ -2,7 +2,7 @@ import { CarrierType } from '@prisma/client';
 import type { Request } from 'express';
 import type { CarrierListFilters } from '../../types/carrierTypes';
 import type { ListCarriersServiceInput } from '../../types/carrierServiceTypes';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
 const parseCarrierType = (value: unknown): CarrierType | undefined => {
   if (typeof value !== 'string') {

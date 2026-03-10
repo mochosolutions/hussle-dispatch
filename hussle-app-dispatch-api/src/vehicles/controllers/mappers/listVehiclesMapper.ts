@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import type { ListVehiclesServiceInput } from '../../types/vehicleServiceTypes';
 import type { VehicleListFilters } from '../../types/vehicleTypes';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
 export const listVehiclesMapper = (req: Request): ListVehiclesServiceInput => {
   const context = getRequestContextMapper(req);

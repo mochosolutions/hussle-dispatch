@@ -4,6 +4,7 @@ export const companyInfoSchema = Yup.object().shape({
   name: Yup.string().required('Legal name is required').min(2, 'Min 2 characters'),
   mcNumber: Yup.string().required('MC number is required').min(5, 'Min 5 characters'),
   dotNumber: Yup.string(),
+  ein: Yup.string(),
   phone: Yup.string().required('Phone is required'),
   email: Yup.string().email('Invalid email'),
   address: Yup.string(),

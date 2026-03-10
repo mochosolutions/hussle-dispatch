@@ -75,3 +75,26 @@ export const carrierIdParamValidator = Yup.object({
     id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
   }),
 });
+
+export const carrierNotesParamValidator = Yup.object({
+  params: Yup.object({
+    carrierId: Yup.string()
+      .uuid('carrierId must be a valid uuid')
+      .required('carrierId is required'),
+  }),
+  query: Yup.object({
+    page: Yup.number().integer().min(1).notRequired(),
+    limit: Yup.number().integer().min(1).max(100).notRequired(),
+  }),
+});
+
+export const createCarrierNoteValidator = Yup.object({
+  params: Yup.object({
+    carrierId: Yup.string()
+      .uuid('carrierId must be a valid uuid')
+      .required('carrierId is required'),
+  }),
+  body: Yup.object({
+    text: Yup.string().trim().min(1, 'text must not be empty').required('text is required'),
+  }),
+});

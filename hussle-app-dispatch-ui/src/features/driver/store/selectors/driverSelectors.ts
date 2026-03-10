@@ -51,6 +51,39 @@ export const selectDriversByCarrierId = (carrierId: string) =>
     (drivers) => drivers.filter((driver) => driver.carrierId === carrierId),
   );
 
+interface DriverKpiItem {
+  label: string;
+  value: string;
+  subtitle: string;
+}
+
+export const selectDriverKpis = createSelector([selectAllDrivers], (drivers): DriverKpiItem[] => {
+  const availableCount = drivers.filter((driver) => driver.isAvailable).length;
+
+  return [
+    {
+      label: 'Total Drivers',
+      value: String(drivers.length),
+      subtitle: `${availableCount} available`,
+    },
+    {
+      label: 'Available Drivers',
+      value: String(availableCount),
+      subtitle: 'Ready for dispatch',
+    },
+    {
+      label: 'Active Loads',
+      value: '\u2014',
+      subtitle: 'Currently on the road',
+    },
+    {
+      label: 'Avg Days Out',
+      value: '\u2014',
+      subtitle: 'Average per trip',
+    },
+  ];
+});
+
 export const selectDriverWithCarrier = (driverId: string) =>
   createSelector(
     [

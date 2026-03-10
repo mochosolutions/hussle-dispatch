@@ -5,6 +5,7 @@ import type { DriverControllers } from '../controllers/driverController';
 import {
   createDriverValidator,
   driverIdParamValidator,
+  driverLoadHistoryValidator,
   listDriversValidator,
   updateDriverValidator,
 } from '../validators/driverValidators';
@@ -31,6 +32,12 @@ export const createDriversRouter = (controllers: DriverControllers): express.Rou
     requireAuth,
     validateRequest(driverIdParamValidator),
     controllers.deleteDriver,
+  );
+  router.get(
+    '/:id/loads',
+    requireAuth,
+    validateRequest(driverLoadHistoryValidator),
+    controllers.getLoadHistory,
   );
 
   return router;

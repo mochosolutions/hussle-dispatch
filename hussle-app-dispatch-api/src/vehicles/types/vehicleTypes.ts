@@ -92,6 +92,9 @@ export interface VehicleRepositoryPort {
   update(id: string, input: UpdateVehicleDataInput): Promise<VehicleWithExpenses>;
   replaceExpenses(vehicleId: string, expenses: VehicleExpenseInput[]): Promise<void>;
   softDelete(id: string, deletedAt: Date): Promise<void>;
+  assignDriver(vehicleId: string, driverId: string): Promise<VehicleWithExpenses>;
+  unassignDriver(vehicleId: string): Promise<VehicleWithExpenses>;
+  findByDriverId(driverId: string): Promise<VehicleWithExpenses | null>;
 }
 
 export interface CarrierRepositoryPort {
@@ -101,7 +104,7 @@ export interface CarrierRepositoryPort {
 export interface LoadRepositoryPort {
   findBlockingLoadIdsByVehicle(
     vehicleId: string,
-    statuses: LoadStatus[],
+    statuses: readonly LoadStatus[],
     limit: number,
   ): Promise<string[]>;
 }
@@ -109,6 +112,10 @@ export interface LoadRepositoryPort {
 export interface ListVehiclesResult {
   data: VehicleWithExpenses[];
   meta: PaginationMeta;
+}
+
+export interface DriverQueryPort {
+  findById(driverId: string, organizationId: string): Promise<{ id: string; carrierId: string } | null>;
 }
 
 export type VehicleResponse = Vehicle & {

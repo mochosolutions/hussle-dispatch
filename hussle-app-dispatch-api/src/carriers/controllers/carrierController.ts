@@ -3,11 +3,17 @@ import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { CarrierService } from '../types/carrierServiceTypes';
 import { createCarrierMapper } from './mappers/createCarrierMapper';
+import { createCarrierNoteMapper } from './mappers/createCarrierNoteMapper';
 import { createCarrierWithAssetsMapper } from './mappers/createCarrierWithAssetsMapper';
 import { getRequiredCarrierIdMapper } from './mappers/getRequiredCarrierIdMapper';
-import { getRequestContextMapper } from './mappers/getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
+import { listCarrierNotesMapper } from './mappers/listCarrierNotesMapper';
 import { listCarriersMapper } from './mappers/listCarriersMapper';
 import { updateCarrierMapper } from './mappers/updateCarrierMapper';
+import {
+  toCarrierNoteListResponse,
+  toCarrierNoteResponse,
+} from './transformers/carrierNoteTransformer';
 import {
   toCarrierListEnvelope,
   toCarrierResponse,
@@ -26,25 +32,27 @@ export interface CarrierControllers {
   updateCarrier: RequestHandler;
   deleteCarrier: RequestHandler;
   getCarrierOnboarding: RequestHandler;
+  listNotes: RequestHandler;
+  createNote: RequestHandler;
 }
 
 export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierControllers => ({
   createCarrier: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = createCarrierMapper(req);
     const carrier = await deps.carrierService.createCarrier(serviceInput);
-    sendSingle(res, toCarrierResponse(carrier, serviceInput.role), 201);
+    sendSingle(res, toCarrierResponse(carrier), 201);
   },
 
   createCarrierWithAssets: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = createCarrierWithAssetsMapper(req);
     const carrier = await deps.carrierService.createCarrierWithAssets(serviceInput);
-    sendSingle(res, toCarrierWithAssetsResponse(carrier, serviceInput.role), 201);
+    sendSingle(res, toCarrierWithAssetsResponse(carrier), 201);
   },
 
   listCarriers: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = listCarriersMapper(req);
     const result = await deps.carrierService.listCarriers(serviceInput);
-    const response = toCarrierListEnvelope(result.data, serviceInput.role, result.meta);
+    const response = toCarrierListEnvelope(result.data, result.meta);
     sendList(res, { data: response.data, meta: response.meta });
   },
 
@@ -55,13 +63,13 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
       ...context,
       id,
     });
-    sendSingle(res, toCarrierResponse(carrier, context.role));
+    sendSingle(res, toCarrierResponse(carrier));
   },
 
   updateCarrier: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = updateCarrierMapper(req);
     const carrier = await deps.carrierService.updateCarrier(serviceInput);
-    sendSingle(res, toCarrierResponse(carrier, serviceInput.role));
+    sendSingle(res, toCarrierResponse(carrier));
   },
 
   deleteCarrier: async (req: Request, res: Response): Promise<void> => {
@@ -82,5 +90,18 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
       id,
     });
     sendSingle(res, onboarding);
+  },
+
+  listNotes: async (req: Request, res: Response): Promise<void> => {
+    const serviceInput = listCarrierNotesMapper(req);
+    const result = await deps.carrierService.listNotes(serviceInput);
+    const response = toCarrierNoteListResponse(result.data);
+    sendList(res, { data: response, meta: result.meta });
+  },
+
+  createNote: async (req: Request, res: Response): Promise<void> => {
+    const serviceInput = createCarrierNoteMapper(req);
+    const note = await deps.carrierService.createNote(serviceInput);
+    sendSingle(res, toCarrierNoteResponse(note), 201);
   },
 });

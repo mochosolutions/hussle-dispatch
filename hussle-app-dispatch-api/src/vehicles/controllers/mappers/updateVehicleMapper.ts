@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import type { UpdateVehicleInput } from '../../types/vehicleTypes';
 import type { UpdateVehicleServiceInput } from '../../types/vehicleServiceTypes';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 import { getRequiredVehicleIdMapper } from './getRequiredVehicleIdMapper';
 
 export const updateVehicleMapper = (req: Request): UpdateVehicleServiceInput => {

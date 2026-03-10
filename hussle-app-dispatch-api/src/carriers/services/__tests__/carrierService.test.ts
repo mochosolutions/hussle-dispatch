@@ -62,9 +62,16 @@ describe('carrierService', () => {
     findBlockingLoadIds: jest.fn(),
   };
 
+  const mockNoteRepository = {
+    createNote: jest.fn(),
+    listNotes: jest.fn(),
+    countNotes: jest.fn(),
+  };
+
   const carrierService = createCarrierService({
     carrierRepository: mockCarrierRepository,
     loadRepository: mockLoadRepository,
+    noteRepository: mockNoteRepository,
   });
 
   beforeEach(() => {
@@ -97,7 +104,7 @@ describe('carrierService', () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
-  it('returns carrier counts from repository in getCarrierById', async () => {
+  it('returns enriched carrier with counts and no partnerSplitPercent for non-admin role', async () => {
     mockCarrierRepository.findById.mockResolvedValue(buildCarrier());
 
     const result = await carrierService.getCarrierById({
@@ -106,12 +113,14 @@ describe('carrierService', () => {
       role: 'dispatcher',
     });
 
-    expect(result.partnerSplitPercent).toEqual(new Decimal('50.00'));
-    expect(result._count.drivers).toBe(2);
-    expect(result._count.vehicles).toBe(1);
+    expect(result.partnerSplitPercent).toBeUndefined();
+    expect(result.driverCount).toBe(2);
+    expect(result.vehicleCount).toBe(1);
+    expect(result.onboardingComplete).toBe(true);
+    expect(result.insuranceWarning).toBeNull();
   });
 
-  it('returns repository carrier fields in getCarrierById', async () => {
+  it('returns partnerSplitPercent for admin role in getCarrierById', async () => {
     mockCarrierRepository.findById.mockResolvedValue(buildCarrier());
 
     const result = await carrierService.getCarrierById({

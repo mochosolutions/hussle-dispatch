@@ -18,6 +18,7 @@ import type { CarrierListItem } from '../../types';
 import { fetchCarriersRequest } from '../../store/reducers/carrierNewPageSlice';
 import {
   selectAllCarriers,
+  selectCarrierKpis,
   selectCarrierListLoading,
 } from '../../store/selectors/carrierSelectors';
 import {
@@ -36,12 +37,6 @@ const TYPE_OPTIONS = [
 ];
 
 type CarrierTab = 'all' | 'company' | 'external';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
 
 const CarrierListPage = () => {
   const [activeTab, setActiveTab] = useState<CarrierTab>('all');
@@ -177,35 +172,7 @@ const CarrierListPage = () => {
     [actionsConfig],
   );
 
-  const kpiData = useMemo(() => {
-    const activeCount = carriers.filter((carrier) => carrier.onboardingComplete).length;
-    const totalDrivers = carriers.reduce((sum, carrier) => sum + carrier.driverCount, 0);
-    const totalVehicles = carriers.reduce((sum, carrier) => sum + carrier.vehicleCount, 0);
-    const totalRevenue = carriers.reduce((sum, carrier) => sum + 0, 0);
-
-    return [
-      {
-        label: 'Total Carriers',
-        value: String(carriers.length),
-        subtitle: `${activeCount} active`,
-      },
-      {
-        label: 'Total Drivers',
-        value: String(totalDrivers),
-        subtitle: 'Across all carriers',
-      },
-      {
-        label: 'Total Vehicles',
-        value: String(totalVehicles),
-        subtitle: 'Across all carriers',
-      },
-      {
-        label: 'Lifetime Revenue',
-        value: currencyFormatter.format(totalRevenue),
-        subtitle: 'All carriers combined',
-      },
-    ];
-  }, [carriers]);
+  const kpiData = useSelector(selectCarrierKpis);
 
   const tabOptions = useMemo(
     () => [

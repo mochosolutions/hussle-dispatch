@@ -1,5 +1,7 @@
-import { LOAD_STATUSES } from '@/shared/constants/loadStatuses';
+import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
+import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/shared/errors';
+import type { LoadQueryPort } from '@/shared/loadQueries';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
   CarrierRepositoryPort,
@@ -12,25 +14,12 @@ import type {
   DeleteDriverServiceInput,
   DriverService,
   GetDriverByIdServiceInput,
+  GetDriverLoadHistoryServiceInput,
   ListDriversServiceInput,
   UpdateDriverServiceInput,
 } from '../types/driverServiceTypes';
 
-const OWNER_OPERATOR_ROLE = 'owner_operator';
-
-const listSortableFields = ['createdAt', 'updatedAt', 'name', 'cdlExpiry', 'currentState'] as const;
-
-const blockingDeleteStatuses = LOAD_STATUSES.filter((status) =>
-  [
-    'QUOTED',
-    'BOOKED',
-    'DISPATCHED',
-    'EN_ROUTE_PICKUP',
-    'AT_PICKUP',
-    'IN_TRANSIT',
-    'AT_DELIVERY',
-  ].includes(status),
-);
+const listSortableFields = ['createdAt', 'updatedAt', 'firstName', 'lastName', 'cdlExpiry', 'currentState'] as const;
 
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
@@ -50,6 +39,7 @@ interface DriverServiceDeps {
   driverRepository: DriverRepositoryPort;
   carrierRepository: CarrierRepositoryPort;
   loadRepository: LoadRepositoryPort;
+  loadQueryPort: LoadQueryPort;
 }
 
 const assertCarrierExists = async (
@@ -132,7 +122,7 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
 
     const blockingLoadIds = await deps.loadRepository.findBlockingLoadIdsByDriver(
       id,
-      blockingDeleteStatuses,
+      BLOCKING_DELETE_STATUSES,
       10,
     );
 
@@ -143,5 +133,12 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
     }
 
     await deps.driverRepository.softDelete(id, new Date());
+  },
+
+  getLoadHistory: async ({ id, organizationId, role, query }: GetDriverLoadHistoryServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    await findDriverOrThrow(id, organizationId, deps);
+
+    return deps.loadQueryPort.getLoadsByDriverId(id, query);
   },
 });

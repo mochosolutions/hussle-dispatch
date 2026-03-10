@@ -308,6 +308,9 @@ model Carrier {
   city                        String?
   state                       String?
   zip                         String?
+  primaryContactName          String?
+  primaryContactPhone         String?
+  primaryContactEmail         String?
   dispatchFeePercent          Decimal       @default(10.00) @db.Decimal(5, 2)
   partnerSplitPercent         Decimal       @default(50.00) @db.Decimal(5, 2)
   feeIncludesAccessorials     Boolean       @default(false)
@@ -333,6 +336,7 @@ model Carrier {
   loads                       Load[]
   invoices                    Invoice[]
   documents                   Document[]    @relation("CarrierDocuments")
+  carrierNotes                CarrierNote[]
 
   @@index([managedByOrgId])
 }
@@ -369,30 +373,32 @@ model Contact {
 }
 
 model Driver {
-  id             String    @id @default(uuid())
-  carrierId      String
-  name           String
-  phone          String?
-  email          String?
-  cdlNumber      String?
-  cdlState       String?
-  cdlExpiry      DateTime?
-  availableHours Decimal?  @db.Decimal(4, 1)
-  currentCity    String?
-  currentState   String?
-  homeBaseCity   String?
-  homeBaseState  String?
-  maxDaysOut     Int?      @default(5)
-  preferredLanes Json?
-  noGoZones      Json?
-  isAvailable    Boolean   @default(true)
-  status         String    @default("active")
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-  carrier        Carrier   @relation(fields: [carrierId], references: [id])
-  loads          Load[]
+  id              String    @id @default(uuid())
+  carrierId       String
+  firstName       String
+  lastName        String
+  phone           String?
+  email           String?
+  cdlNumber       String?
+  cdlState        String?
+  cdlExpiry       DateTime?
+  availableHours  Decimal?  @db.Decimal(4, 1)
+  currentCity     String?
+  currentState    String?
+  homeBaseCity    String?
+  homeBaseState   String?
+  maxDaysOut      Int?      @default(5)
+  preferredLanes  Json?
+  noGoZones       Json?
+  isAvailable     Boolean   @default(true)
+  status          String    @default("active")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  carrier         Carrier   @relation(fields: [carrierId], references: [id])
+  loads           Load[]
+  assignedVehicle Vehicle?
 
   @@index([carrierId])
 }
@@ -400,6 +406,7 @@ model Driver {
 model Vehicle {
   id                    String           @id @default(uuid())
   carrierId             String
+  driverId              String?          @unique
   unitNumber            String
   type                  EquipmentType
   ownership             VehicleOwnership @default(OWNED)
@@ -421,6 +428,7 @@ model Vehicle {
   updatedAt             DateTime         @updatedAt
   deletedAt             DateTime?
   carrier               Carrier          @relation(fields: [carrierId], references: [id])
+  driver                Driver?          @relation(fields: [driverId], references: [id])
   loads                 Load[]
   expenses              TruckExpense[]
 
@@ -692,4 +700,16 @@ model OrgSettings {
   sesFromEmail              String?
   companyLogoUrl            String?
   organization              Organization @relation(fields: [organizationId], references: [id])
+}
+
+model CarrierNote {
+  id         String   @id @default(uuid())
+  carrierId  String
+  text       String
+  authorId   String?
+  authorName String?
+  createdAt  DateTime @default(now())
+  carrier    Carrier  @relation(fields: [carrierId], references: [id])
+
+  @@index([carrierId])
 }

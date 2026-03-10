@@ -73,7 +73,13 @@ const buildListWhere = (
   if (filters.search !== undefined && filters.search.length > 0) {
     where.OR = [
       {
-        name: {
+        firstName: {
+          contains: filters.search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        lastName: {
           contains: filters.search,
           mode: 'insensitive',
         },
@@ -157,7 +163,7 @@ export const driverRepositoryPrisma = (
         driverId,
         deletedAt: null,
         status: {
-          in: statuses,
+          in: [...statuses],
         },
       },
       select: {

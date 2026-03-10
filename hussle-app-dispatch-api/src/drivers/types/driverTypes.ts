@@ -15,7 +15,8 @@ export interface NoGoZoneInput {
 
 export interface CreateDriverInput {
   carrierId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
   email?: string;
   cdlNumber?: string;
@@ -36,7 +37,8 @@ export interface CreateDriverInput {
 
 export interface UpdateDriverInput {
   carrierId?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   email?: string;
   cdlNumber?: string;
@@ -87,7 +89,7 @@ export interface CarrierRepositoryPort {
 export interface LoadRepositoryPort {
   findBlockingLoadIdsByDriver(
     driverId: string,
-    statuses: LoadStatus[],
+    statuses: readonly LoadStatus[],
     limit: number,
   ): Promise<string[]>;
 }

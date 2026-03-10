@@ -4,7 +4,7 @@ import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { ContactService } from '../types/contactServiceTypes';
 import { createContactMapper } from './mappers/createContactMapper';
 import { getRequiredContactIdMapper } from './mappers/getRequiredContactIdMapper';
-import { getRequestContextMapper } from './mappers/getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 import { listContactsMapper } from './mappers/listContactsMapper';
 import { updateContactMapper } from './mappers/updateContactMapper';
 import { toContactListEnvelope, toContactResponse } from './transformers/contactTransformer';

@@ -5,7 +5,8 @@ import { createDriverService } from '../driverService';
 const buildDriver = () => ({
   id: '0e1d0809-f323-4698-9dc2-f84bf8e6a968',
   carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
-  name: 'Terry Driver',
+  firstName: 'Terry',
+  lastName: 'Driver',
   phone: '555-555-1000',
   email: 'driver@example.com',
   cdlNumber: 'CDL12345',
@@ -57,10 +58,16 @@ describe('driverService', () => {
     findBlockingLoadIdsByDriver: jest.fn(),
   };
 
+  const mockLoadQueryPort = {
+    getLoadsByDriverId: jest.fn(),
+    getLoadsByVehicleId: jest.fn(),
+  };
+
   const driverService = createDriverService({
     driverRepository: mockDriverRepository,
     carrierRepository: mockCarrierRepository,
     loadRepository: mockLoadRepository,
+    loadQueryPort: mockLoadQueryPort,
   });
 
   beforeEach(() => {
@@ -74,7 +81,8 @@ describe('driverService', () => {
         role: 'owner_operator',
         input: {
           carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
-          name: 'Blocked Driver',
+          firstName: 'Blocked',
+          lastName: 'Driver',
         },
       }),
     ).rejects.toBeInstanceOf(ForbiddenError);
@@ -89,7 +97,8 @@ describe('driverService', () => {
         role: 'admin',
         input: {
           carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
-          name: 'New Driver',
+          firstName: 'New',
+          lastName: 'Driver',
         },
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -104,7 +113,8 @@ describe('driverService', () => {
       role: 'dispatcher',
     });
 
-    expect(result.name).toBe('Terry Driver');
+    expect(result.firstName).toBe('Terry');
+    expect(result.lastName).toBe('Driver');
     expect(result.availableHours).toEqual(new Decimal('9.5'));
   });
 

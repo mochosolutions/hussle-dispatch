@@ -15,7 +15,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ag-grid-community/react": "^32.0.0",
     "@ant-design/icons": "^5.3.7",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
@@ -25,6 +24,7 @@
     "@mui/material": "^5.15.21",
     "@mui/system": "^5.15.20",
     "@mui/x-date-pickers": "^7.11.1",
+    "@react-pdf/renderer": "^4.3.2",
     "@reduxjs/toolkit": "^2.2.6",
     "@tanstack/react-query": "^5.51.3",
     "@tanstack/react-table": "^8.19.3",
@@ -36,8 +36,6 @@
     "@tiptap/react": "^3.9.1",
     "@tiptap/starter-kit": "^3.9.1",
     "@types/node": "^16.18.104",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
     "ag-grid-community": "^32.2.0",
     "ag-grid-react": "^32.2.0",
     "axios": "^1.7.2",

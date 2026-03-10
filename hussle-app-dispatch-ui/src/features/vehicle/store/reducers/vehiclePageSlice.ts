@@ -1,4 +1,5 @@
 import type { RootState } from 'store';
+import { createAction } from '@reduxjs/toolkit';
 import { createCrudSlice, createCrudSelectors } from '@mocho/ui/redux';
 
 export const vehiclePageSlice = createCrudSlice({
@@ -27,3 +28,12 @@ export const {
   deleteSuccess: deleteVehicleSuccess,
   deleteFailure: deleteVehicleFailure,
 } = vehiclePageSlice.actions;
+
+// Custom actions for driver assignment
+export const assignDriverRequest = createAction<{ vehicleId: string; driverId: string }>(
+  'vehicle/assignDriverRequest',
+);
+
+export const unassignDriverRequest = createAction<{ vehicleId: string }>(
+  'vehicle/unassignDriverRequest',
+);

@@ -1,214 +1,385 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Box, Stack, TextField } from '@mui/material';
-import { MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
-
-import type { ColDef, RowClickedEvent } from 'ag-grid-community';
-import type { LoadFilters, MockLoad } from '../types';
-import { MOCK_DRIVERS, MOCK_LOADS } from '../mockData';
-import { getScoreTier } from '../getScoreTier';
-import { useDrawerActions } from '../../ui/hooks/useDrawerActions';
-import { LoadIntelligenceHeader } from '../components/LoadIntelligenceHeader';
+import { useEffect, useCallback, useMemo } from 'react';
 import {
-  SingleScoreCellRenderer,
-  OriginCellRenderer,
-  DestinationCellRenderer,
-  EquipmentCellRenderer,
-  RateCellRenderer,
-  MilesRateCellRenderer,
-  CustomerCellRenderer,
-  SourceBadgeCellRenderer,
-} from '../components/LoadIntelligenceCellRenderers';
+  Box,
+  Button,
+  Chip,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import type { SelectChangeEvent } from '@mui/material';
+import { PageHeader, PageWrapper } from '@mocho/ui/components';
+import { useSelector, useDispatch } from 'store';
+import { useDrawerActions } from '../../ui/hooks/useDrawerActions';
+import {
+  fetchFeedRequest,
+  setFilters,
+  setSortBy,
+} from '../store/reducers';
+import {
+  selectFeedItems,
+  selectFeedFilters,
+  selectFeedStats,
+  selectFeedLoading,
+  selectFeedHasMore,
+  selectFeedSortBy,
+} from '../store/selectors/intelSelectors';
+import { IntelCard } from '../components/IntelCard';
+import type {
+  EquipmentType,
+  FeedSortBy,
+  MarketStrength,
+  ScoreTier,
+  SourceType,
+} from '../types';
 
-const DEFAULT_FILTERS: LoadFilters = { score: 'All', source: 'All', equipment: 'All' };
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
-const columnDefs: ColDef<MockLoad>[] = [
-  {
-    colId: 'score',
-    headerName: 'Score',
-    cellRenderer: SingleScoreCellRenderer,
-    flex: 1.4,
-    minWidth: 120,
-  },
-  {
-    colId: 'origin',
-    headerName: 'ORIGIN',
-    cellRenderer: OriginCellRenderer,
-    flex: 1.8,
-    minWidth: 150,
-  },
-  {
-    colId: 'destination',
-    headerName: 'DEST',
-    cellRenderer: DestinationCellRenderer,
-    flex: 1.8,
-    minWidth: 150,
-  },
-  {
-    field: 'equipmentType',
-    headerName: 'EQUIP',
-    cellRenderer: EquipmentCellRenderer,
-    flex: 0.8,
-    minWidth: 80,
-  },
-  { colId: 'rate', headerName: 'RATE', cellRenderer: RateCellRenderer, flex: 1.2, minWidth: 100 },
-  {
-    colId: 'miles',
-    headerName: 'MILES',
-    cellRenderer: MilesRateCellRenderer,
-    flex: 0.8,
-    minWidth: 80,
-  },
-  {
-    colId: 'customer',
-    headerName: 'CUSTOMER',
-    cellRenderer: CustomerCellRenderer,
-    flex: 1.8,
-    minWidth: 150,
-  },
-  {
-    colId: 'source',
-    headerName: 'Load Source',
-    cellRenderer: SourceBadgeCellRenderer,
-    flex: 1.4,
-    minWidth: 120,
-  },
+const SCORE_OPTIONS: { label: string; value: ScoreTier }[] = [
+  { label: 'All Scores', value: 'All' },
+  { label: 'Elite (80+)', value: 'Elite' },
+  { label: 'Strong (60-79)', value: 'Strong' },
+  { label: 'Fair (40-59)', value: 'Fair' },
+  { label: 'Weak (<40)', value: 'Weak' },
 ];
 
-const defaultColDef: ColDef<MockLoad> = {
-  sortable: true,
-  resizable: true,
-  filter: false,
+const EQUIPMENT_OPTIONS: { label: string; value: EquipmentType | '' }[] = [
+  { label: 'All Equipment', value: '' },
+  { label: 'Dry Van', value: 'DV' },
+  { label: 'Reefer', value: 'RF' },
+  { label: 'Flatbed', value: 'FB' },
+  { label: 'Step Deck', value: 'SD' },
+];
+
+const MARKET_OPTIONS: { label: string; value: MarketStrength | 'All' }[] = [
+  { label: 'All Markets', value: 'All' },
+  { label: 'Hot', value: 'Hot' },
+  { label: 'Balanced', value: 'Balanced' },
+  { label: 'Soft', value: 'Soft' },
+  { label: 'Dead', value: 'Dead' },
+];
+
+const RATE_OPTIONS: { label: string; value: 'yes' | 'no' | 'all' }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Has Rate', value: 'yes' },
+  { label: 'No Rate', value: 'no' },
+];
+
+const SOURCE_OPTIONS: { label: string; value: SourceType | 'All' }[] = [
+  { label: 'All Sources', value: 'All' },
+  { label: 'DAT', value: 'DAT' },
+  { label: 'Manual', value: 'Manual' },
+  { label: 'Bulk', value: 'Bulk' },
+];
+
+const SORT_OPTIONS: { label: string; value: FeedSortBy }[] = [
+  { label: 'Score', value: 'score' },
+  { label: 'Chain Score', value: 'chainScore' },
+  { label: 'Rate', value: 'rate' },
+  { label: 'Miles', value: 'miles' },
+  { label: 'Pickup Date', value: 'pickupDate' },
+];
+
+const SOURCE_TYPES: SourceType[] = ['DAT', 'Bulk', 'Manual'];
+
+const SOURCE_CHIP_COLORS: Record<SourceType, string> = {
+  DAT: 'primary.main',
+  Bulk: 'warning.main',
+  Manual: 'text.secondary',
 };
 
-// TODO: Wire to actual logic
-const onCreateLoad = () => {
-  // placeholder
-};
-const onAddManually = () => {
-  // placeholder
-};
+// ---------------------------------------------------------------------------
+// Page Component
+// ---------------------------------------------------------------------------
 
 const LoadIntelligencePage = () => {
-  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<LoadFilters>(DEFAULT_FILTERS);
+  const dispatch = useDispatch();
   const { openDrawer } = useDrawerActions();
 
-  const handleRowClicked = useCallback(
-    (event: RowClickedEvent<MockLoad>) => {
-      if (event.data) {
-        openDrawer('loadDetail', { loadId: event.data.id });
-      }
+  const feedItems = useSelector(selectFeedItems);
+  const filters = useSelector(selectFeedFilters);
+  const stats = useSelector(selectFeedStats);
+  const isLoading = useSelector(selectFeedLoading);
+  const hasMore = useSelector(selectFeedHasMore);
+  const sortBy = useSelector(selectFeedSortBy);
+
+  useEffect(() => {
+    dispatch(fetchFeedRequest({}));
+  }, [dispatch]);
+
+  const handleManualEntry = useCallback(() => {
+    openDrawer('manualEntry', {});
+  }, [openDrawer]);
+
+  const handleLoadMore = useCallback(() => {
+    const nextPage = (stats ? Math.ceil(feedItems.length / 25) : 0) + 1;
+    dispatch(fetchFeedRequest({ page: nextPage }));
+  }, [dispatch, feedItems.length, stats]);
+
+  const handleScoreChange = useCallback(
+    (event: SelectChangeEvent) => {
+      dispatch(setFilters({ scoreTier: event.target.value as ScoreTier }));
     },
-    [openDrawer],
+    [dispatch],
   );
 
-  const filteredLoads = useMemo(() => {
-    let result = MOCK_LOADS;
+  const handleEquipmentChange = useCallback(
+    (event: SelectChangeEvent) => {
+      const value = event.target.value;
+      dispatch(
+        setFilters({
+          equipmentTypes: value ? [value as EquipmentType] : [],
+        }),
+      );
+    },
+    [dispatch],
+  );
 
-    if (filters.source !== 'All') {
-      result = result.filter((load) => load.source.type === filters.source);
-    }
+  const handleMarketChange = useCallback(
+    (event: SelectChangeEvent) => {
+      dispatch(setFilters({ marketStrength: event.target.value as MarketStrength | 'All' }));
+    },
+    [dispatch],
+  );
 
-    if (filters.score !== 'All') {
-      result = result.filter((load) => getScoreTier(load.score).label === filters.score);
-    }
+  const handleRateChange = useCallback(
+    (event: SelectChangeEvent) => {
+      dispatch(setFilters({ hasRate: event.target.value as 'yes' | 'no' | 'all' }));
+    },
+    [dispatch],
+  );
 
-    if (filters.equipment !== 'All') {
-      result = result.filter((load) => load.equipmentType === filters.equipment);
-    }
+  const handleSourceChange = useCallback(
+    (event: SelectChangeEvent) => {
+      dispatch(setFilters({ source: event.target.value as SourceType | 'All' }));
+    },
+    [dispatch],
+  );
 
-    // Driver filter is a no-op for now
-    return result;
-  }, [filters]);
+  const handleSortChange = useCallback(
+    (event: SelectChangeEvent) => {
+      dispatch(setSortBy(event.target.value as FeedSortBy));
+    },
+    [dispatch],
+  );
+
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      dispatch(setFilters({ search: event.target.value }));
+    },
+    [dispatch],
+  );
+
+  const currentEquipment = useMemo(
+    () => (filters.equipmentTypes.length === 1 ? filters.equipmentTypes[0] : ''),
+    [filters.equipmentTypes],
+  );
 
   return (
-    <PageWrapper isLoading={false} errorContext="LoadIntelligencePage" sx={{ gap: 2 }}>
-      <PageHeader title="Load Intelligence" />
-      {/* <LoadIntelligenceHeader
-        onCreateLoad={onCreateLoad}
-        onAddManually={onAddManually}
-        drivers={MOCK_DRIVERS}
-        selectedDriverId={selectedDriverId}
-        onDriverSelect={setSelectedDriverId}
-        loads={filteredLoads}
-        filters={filters}
-        onFilterChange={setFilters}
-      /> */}
+    <PageWrapper isLoading={isLoading && feedItems.length === 0} errorContext="LoadIntelligencePage">
+      <PageHeader
+        title="Load Intelligence"
+        headerActions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleManualEntry}>
+            Manual Entry
+          </Button>
+        }
+      />
 
+      {/* Stats Bar */}
       <Box
         sx={{
           display: 'flex',
-          flexDirection: 'column',
-          flex: 1,
-          minHeight: 0,
-          // p: 3,
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          px: 2,
+          py: 1,
+          bgcolor: 'background.paper',
+          borderRadius: 1,
+          border: 1,
+          borderColor: 'divider',
+          mb: 2,
         }}
       >
-        <MainCard
-          content={false}
-          sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-        >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-        >
-          {/* <Tabs
-            value={activeTab}
-            onChange={(_event, value: CarrierTab) => setActiveTab(value)}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            sx={{ minHeight: 40 }}
-          >
-            {tabOptions.map((tabOption) => (
-              <Tab
-                key={tabOption.key}
-                value={tabOption.key}
-                label={
-                  <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
-                    <Chip label={tabOption.count} size="small" />
-                  </Stack>
-                }
-                sx={{ minHeight: 40 }}
-              />
-            ))}
-          </Tabs> */}
-          <Box>
-            <TextField
-              // value={searchQuery}
-              // onChange={handleSearchChange}
-              placeholder="Search by name, MC#, email..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Box>
-        </Stack>
-
-          <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-            <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
-              <NewDataGrid
-                columnDefs={columnDefs}
-                rowData={filteredLoads}
-                defaultColDef={defaultColDef}
-                showRowCountFooter
-                totalRowCount={filteredLoads.length}
-                rowCountLabel="loads"
-                noDataMessage="No loads found"
-                gridOptions={{
-                  domLayout: 'normal',
-                  suppressCellFocus: true,
-                  headerHeight: 44,
-                  rowHeight: 68,
-                  onRowClicked: handleRowClicked,
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {stats ? `${stats.totalLoads} loads from ${stats.sourceCount} sources` : 'Loading...'}
+          </Typography>
+          {stats &&
+            SOURCE_TYPES.map((sourceType) => (
+              <Chip
+                key={sourceType}
+                label={`${sourceType}: ${stats.sourceCounts[sourceType] ?? 0}`}
+                size="small"
+                sx={{
+                  color: SOURCE_CHIP_COLORS[sourceType],
+                  bgcolor: 'grey.100',
+                  fontWeight: 500,
                 }}
               />
-            </Box>
-          </Box>
-        </MainCard>
+            ))}
+        </Stack>
       </Box>
+
+      {/* Filter Bar */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 1.5,
+          alignItems: 'center',
+          mb: 2,
+        }}
+      >
+        <TextField
+          value={filters.search}
+          onChange={handleSearchChange}
+          placeholder="Search loads..."
+          size="small"
+          sx={{ width: { xs: '100%', md: 220 } }}
+        />
+
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel id="score-filter-label">Score Tier</InputLabel>
+          <Select
+            labelId="score-filter-label"
+            value={filters.scoreTier}
+            label="Score Tier"
+            onChange={handleScoreChange}
+          >
+            {SCORE_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel id="equipment-filter-label">Equipment</InputLabel>
+          <Select
+            labelId="equipment-filter-label"
+            value={currentEquipment}
+            label="Equipment"
+            onChange={handleEquipmentChange}
+          >
+            {EQUIPMENT_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 130 }}>
+          <InputLabel id="market-filter-label">Market</InputLabel>
+          <Select
+            labelId="market-filter-label"
+            value={filters.marketStrength}
+            label="Market"
+            onChange={handleMarketChange}
+          >
+            {MARKET_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 110 }}>
+          <InputLabel id="rate-filter-label">Rate</InputLabel>
+          <Select
+            labelId="rate-filter-label"
+            value={filters.hasRate}
+            label="Rate"
+            onChange={handleRateChange}
+          >
+            {RATE_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 130 }}>
+          <InputLabel id="source-filter-label">Source</InputLabel>
+          <Select
+            labelId="source-filter-label"
+            value={filters.source}
+            label="Source"
+            onChange={handleSourceChange}
+          >
+            {SOURCE_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel id="sort-label">Sort By</InputLabel>
+          <Select
+            labelId="sort-label"
+            value={sortBy}
+            label="Sort By"
+            onChange={handleSortChange}
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* Feed List */}
+      <Stack spacing={2} sx={{ pb: 4 }}>
+        {feedItems.map((item) => (
+          <IntelCard key={item.id} item={item} />
+        ))}
+
+        {feedItems.length === 0 && !isLoading && (
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 8,
+              bgcolor: 'background.paper',
+              borderRadius: 1,
+              border: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="h6" color="text.secondary">
+              No loads found
+            </Typography>
+            <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+              Try adjusting your filters or add a manual entry
+            </Typography>
+          </Box>
+        )}
+
+        {hasMore && feedItems.length > 0 && (
+          <Button
+            variant="outlined"
+            onClick={handleLoadMore}
+            disabled={isLoading}
+            sx={{ alignSelf: 'center', px: 6 }}
+          >
+            {isLoading ? 'Loading...' : 'Load More'}
+          </Button>
+        )}
+      </Stack>
     </PageWrapper>
   );
 };

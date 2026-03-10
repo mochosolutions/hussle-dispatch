@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { createLoadQueries } from '@/shared/loadQueries';
 import { createDriverControllers } from './controllers/driverController';
 import type { DriverControllers } from './controllers/driverController';
 import { driverRepositoryPrisma } from './repositories/driverRepositoryPrisma';
@@ -15,11 +16,13 @@ export const createDriversModule = ({
   controllers: DriverControllers;
 } => {
   const repositories = driverRepositoryPrisma(prismaClient);
+  const loadQueryPort = createLoadQueries(prismaClient);
 
   const driverService = createDriverService({
     driverRepository: repositories,
     carrierRepository: repositories,
     loadRepository: repositories,
+    loadQueryPort,
   });
 
   const controllers = createDriverControllers({

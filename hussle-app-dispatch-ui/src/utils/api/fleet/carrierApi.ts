@@ -3,7 +3,9 @@ import type {
   Carrier,
   CarrierListItem,
   CarrierOnboardingStatus,
+  CarrierNote,
   CreateCarrierInput,
+  CreateCarrierNoteInput,
   UpdateCarrierInput,
   Driver,
   Vehicle,
@@ -71,6 +73,76 @@ export const getCarrierOnboarding = async (
   );
   return { onboarding: response.data.data };
 };
+
+// ---------------------------------------------------------------------------
+// Carrier Notes
+// ---------------------------------------------------------------------------
+
+interface GetCarrierNotesResponse {
+  data: CarrierNote[];
+}
+
+interface CreateCarrierNoteResponse {
+  data: CarrierNote;
+}
+
+export const getCarrierNotes = async (
+  carrierId: string,
+): Promise<{ notes: CarrierNote[] }> => {
+  const response = await axiosInstance.get<GetCarrierNotesResponse>(
+    `/carriers/${carrierId}/notes`,
+  );
+  return { notes: response.data.data };
+};
+
+export const createCarrierNote = async (
+  carrierId: string,
+  data: CreateCarrierNoteInput,
+): Promise<{ note: CarrierNote }> => {
+  const response = await axiosInstance.post<CreateCarrierNoteResponse>(
+    `/carriers/${carrierId}/notes`,
+    data,
+  );
+  return { note: response.data.data };
+};
+
+// ---------------------------------------------------------------------------
+// Carrier Drivers & Vehicles (scoped to carrier)
+// ---------------------------------------------------------------------------
+
+interface GetCarrierDriversResponse {
+  data: Driver[];
+  meta: PaginationMeta;
+}
+
+interface GetCarrierVehiclesResponse {
+  data: Vehicle[];
+  meta: PaginationMeta;
+}
+
+export const getCarrierDrivers = async (
+  carrierId: string,
+): Promise<{ data: Driver[] }> => {
+  const response = await axiosInstance.get<GetCarrierDriversResponse>(
+    `/drivers`,
+    { params: { carrierId } },
+  );
+  return { data: response.data.data };
+};
+
+export const getCarrierVehicles = async (
+  carrierId: string,
+): Promise<{ data: Vehicle[] }> => {
+  const response = await axiosInstance.get<GetCarrierVehiclesResponse>(
+    `/vehicles`,
+    { params: { carrierId } },
+  );
+  return { data: response.data.data };
+};
+
+// ---------------------------------------------------------------------------
+// Carrier With Assets (create flow)
+// ---------------------------------------------------------------------------
 
 export interface CreateCarrierWithAssetsInput extends CreateCarrierInput {
   drivers?: CreateDriverInput[];

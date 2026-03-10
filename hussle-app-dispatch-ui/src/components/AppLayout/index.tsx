@@ -11,7 +11,7 @@ import {
 import type { NavItemType } from '@mocho/ui/types';
 import type { ComponentProps } from 'react';
 import { Outlet, useMatches } from 'react-router-dom';
-import { House, Van, BarChart3 } from 'lucide-react';
+import { House, Van, BarChart3, Truck, FileText, Contact, MapPinCheckIcon } from 'lucide-react';
 
 // Camera
 
@@ -29,6 +29,13 @@ const menuItems: NavItemType[] = [
         icon: <House size={24} />,
       },
       {
+        id: 'dispatch-board',
+        title: 'Dispatch Board',
+        type: 'item',
+        url: '/loads',
+        icon: <Truck size={24} />,
+      },
+      {
         id: 'load-intelligence',
         title: 'Load Intelligence',
         type: 'item',
@@ -39,24 +46,34 @@ const menuItems: NavItemType[] = [
         id: 'fleet',
         title: 'Fleet Management',
         type: 'collapse',
-        // url: '/carriers',
         icon: <Van size={24} />,
         children: [
           { id: 'carriers', title: 'Carriers', type: 'item', url: '/carriers' },
           { id: 'vehicles', title: 'Vehicles', type: 'item', url: '/vehicles' },
           { id: 'drivers', title: 'Drivers', type: 'item', url: '/drivers' },
-          //   { id: 'contacts', title: 'Contacts', type: 'item', url: '/fleet/contacts' },
         ],
       },
-      // { id: 'dispatch-board', title: 'Dispatch Board', type: 'item', url: '/dispatch-board' },
-      // {
-      //   id: 'create-load',
-      //   title: 'Create Load',
-      //   type: 'item',
-      //   url: '/dispatch-board/create-load',
-      // },
-
-      // { id: 'invoices', title: 'Invoices', type: 'item', url: '/invoices' },
+      {
+        id: 'contacts',
+        title: 'Contacts',
+        type: 'item',
+        url: '/contacts',
+        icon: <Contact size={24} />,
+      },
+      {
+        id: 'places',
+        title: 'Places',
+        type: 'item',
+        url: '/places',
+        icon: <MapPinCheckIcon size={24} />,
+      },
+      {
+        id: 'invoices',
+        title: 'Invoices',
+        type: 'item',
+        url: '/invoices',
+        icon: <FileText size={24} />,
+      },
     ],
   },
 ];
@@ -163,14 +180,37 @@ const AppLayout = () => {
         <LayoutDrawer
           logo="/vite.svg"
           menuItems={menuItems}
-          paperStyles={
-            {
-              // backgroundColor: 'primary.dark',
-            }
-          }
+          paperStyles={{
+            backgroundColor: 'primary.dark',
+            color: 'grey.300',
+            '& .MuiTypography-h6': {
+              color: 'grey.300',
+            },
+            '& .MuiListItemIcon-root': {
+              color: 'grey.400',
+            },
+            '& .MuiListItemButton-root:hover': {
+              backgroundColor: 'primary.900',
+            },
+            '& .MuiListItemButton-root.Mui-selected': {
+              backgroundColor: 'primary.900',
+              '& .MuiTypography-h6': {
+                color: 'common.white',
+              },
+              '& .MuiListItemIcon-root': {
+                color: 'primary.light',
+              },
+              '&:hover': {
+                backgroundColor: 'primary.900',
+              },
+            },
+            '& .MuiTypography-caption': {
+              color: 'grey.400',
+            },
+          }}
           headerStyles={{
             borderBottom: 1,
-            borderColor: 'divider',
+            borderColor: 'primary.900',
             px: 2,
           }}
           footer={

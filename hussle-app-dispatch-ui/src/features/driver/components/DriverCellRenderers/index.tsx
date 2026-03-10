@@ -1,12 +1,13 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
 
 import type { Driver } from 'features/carrier/types';
+import getDriverDisplayName from 'utils/getDriverDisplayName';
 
 import { DRIVER_STATUS_LABELS } from '../../constants';
 
 export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
-  const nameParts = data.name.split(' ');
-  const initials = [nameParts[0]?.charAt(0), nameParts[nameParts.length - 1]?.charAt(0)]
+  const displayName = getDriverDisplayName(data);
+  const initials = [data.firstName.charAt(0), data.lastName.charAt(0)]
     .filter(Boolean)
     .map((c) => c.toUpperCase())
     .join('');
@@ -43,7 +44,7 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
           color="primary.main"
           sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
         >
-          {data.name}
+          {displayName}
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {data.cdlNumber ? `CDL# ${data.cdlNumber}` : '\u2014'}

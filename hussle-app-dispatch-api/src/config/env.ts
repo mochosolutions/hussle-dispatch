@@ -14,6 +14,7 @@ export const env = {
   NODE_ENV: getEnv('NODE_ENV', 'development') as 'development' | 'production' | 'test',
   DATABASE_URL: requireEnv('DATABASE_URL'),
   REDIS_URL: getEnv('REDIS_URL', 'redis://localhost:6379'),
+  RABBITMQ_URL: getEnv('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672'),
   JWT_SECRET: getEnv('JWT_SECRET', ''),
   REFRESH_SECRET: getEnv('REFRESH_SECRET', ''),
   COGNITO_CLIENT_ID: getEnv('COGNITO_CLIENT_ID', ''),
@@ -23,4 +24,6 @@ export const env = {
   AWS_ACCESS_KEY_ID: getEnv('AWS_ACCESS_KEY_ID', ''),
   AWS_SECRET_ACCESS_KEY: getEnv('AWS_SECRET_ACCESS_KEY', ''),
   SES_FROM_EMAIL: getEnv('SES_FROM_EMAIL', ''),
+  STORAGE_BACKEND: getEnv('STORAGE_BACKEND', 'local') as 'local' | 's3',
+  STORAGE_LOCAL_PATH: getEnv('STORAGE_LOCAL_PATH', './storage'),
 } as const;

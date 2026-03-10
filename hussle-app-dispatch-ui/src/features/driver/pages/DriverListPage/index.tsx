@@ -9,19 +9,24 @@ import {
   Tab,
   Chip,
   Button,
+  MenuItem,
 } from '@mui/material';
 import { ActionsCell, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
 import type { Driver } from 'features/carrier/types';
-import { fetchDriversRequest } from '../../store/reducers';
+import { selectAllCarriers } from 'features/carrier/store/selectors/carrierSelectors';
+import { fetchDriversRequest, setCarrierIdFilter } from '../../store/reducers';
 import {
   selectAllDrivers,
+  selectDriverKpis,
   selectDriverListLoading,
 } from '../../store/selectors/driverSelectors';
 import {
   DriverNameCellRenderer,
   DriverStatusCellRenderer,
+  DriverLocationCellRenderer,
+  DriverCarrierCellRenderer,
 } from '../../components/DriverCellRenderers';
 import { DriverCreateDialog } from '../../components/DriverCreateDialog';
 
@@ -31,10 +36,13 @@ const DriverListPage = () => {
   const [activeTab, setActiveTab] = useState<DriverTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedCarrierId, setSelectedCarrierId] = useState('all');
   const dispatch = useDispatch();
 
   const drivers = useSelector(selectAllDrivers);
   const isLoading = useSelector(selectDriverListLoading);
+  const carriers = useSelector(selectAllCarriers);
+  const kpiData = useSelector(selectDriverKpis);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,11 +66,29 @@ const DriverListPage = () => {
             page: 1,
             limit: 25,
             search: query,
+            carrierId: selectedCarrierId !== 'all' ? selectedCarrierId : undefined,
           }),
         );
       }, 300);
     },
-    [dispatch],
+    [dispatch, selectedCarrierId],
+  );
+
+  const handleCarrierFilterChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const carrierId = event.target.value;
+      setSelectedCarrierId(carrierId);
+      dispatch(setCarrierIdFilter(carrierId));
+      dispatch(
+        fetchDriversRequest({
+          page: 1,
+          limit: 25,
+          search: searchQuery,
+          carrierId: carrierId !== 'all' ? carrierId : undefined,
+        }),
+      );
+    },
+    [dispatch, searchQuery],
   );
 
   const handleOpenCreate = useCallback(() => {
@@ -74,14 +100,20 @@ const DriverListPage = () => {
   }, []);
 
   const filteredDrivers = useMemo(() => {
+    let filtered = drivers;
+
+    if (selectedCarrierId !== 'all') {
+      filtered = filtered.filter((driver) => driver.carrierId === selectedCarrierId);
+    }
+
     if (activeTab === 'available') {
-      return drivers.filter((driver) => driver.isAvailable === true);
+      return filtered.filter((driver) => driver.isAvailable === true);
     }
     if (activeTab === 'unavailable') {
-      return drivers.filter((driver) => driver.isAvailable === false);
+      return filtered.filter((driver) => driver.isAvailable === false);
     }
-    return drivers;
-  }, [drivers, activeTab]);
+    return filtered;
+  }, [drivers, activeTab, selectedCarrierId]);
 
   const actionsConfig = useMemo<ActionsCellConfig<Driver>>(
     () => ({
@@ -96,7 +128,7 @@ const DriverListPage = () => {
     () => [
       {
         headerName: 'Driver',
-        field: 'name',
+        field: 'firstName',
         minWidth: 160,
         flex: 1.5,
         cellRenderer: DriverNameCellRenderer,
@@ -107,9 +139,22 @@ const DriverListPage = () => {
         minWidth: 130,
       },
       {
-        headerName: 'CDL#',
-        field: 'cdlNumber',
+        headerName: 'Carrier',
+        field: 'carrierId',
         minWidth: 130,
+        cellRenderer: DriverCarrierCellRenderer,
+      },
+      {
+        headerName: 'Status',
+        field: 'isAvailable',
+        minWidth: 120,
+        cellRenderer: DriverStatusCellRenderer,
+      },
+      {
+        headerName: 'Location',
+        field: 'currentCity',
+        minWidth: 150,
+        cellRenderer: DriverLocationCellRenderer,
       },
       {
         headerName: 'Home Base',
@@ -124,16 +169,11 @@ const DriverListPage = () => {
         },
       },
       {
-        headerName: 'Status',
-        field: 'isAvailable',
-        minWidth: 120,
-        cellRenderer: DriverStatusCellRenderer,
-      },
-      {
-        headerName: 'Carrier',
-        field: 'carrierId',
+        headerName: 'Hours Available',
+        field: 'availableHours',
         minWidth: 130,
-        valueGetter: () => '\u2014',
+        valueGetter: (params: { data: Driver }) =>
+          params.data.availableHours ? `${params.data.availableHours}h` : '\u2014',
       },
       {
         headerName: '',
@@ -147,33 +187,6 @@ const DriverListPage = () => {
     ],
     [actionsConfig],
   );
-
-  const kpiData = useMemo(() => {
-    const availableCount = drivers.filter((driver) => driver.isAvailable).length;
-
-    return [
-      {
-        label: 'Total Drivers',
-        value: String(drivers.length),
-        subtitle: `${availableCount} available`,
-      },
-      {
-        label: 'Available Drivers',
-        value: String(availableCount),
-        subtitle: 'Ready for dispatch',
-      },
-      {
-        label: 'Active Loads',
-        value: '\u2014',
-        subtitle: 'Currently on the road',
-      },
-      {
-        label: 'Avg Days Out',
-        value: '\u2014',
-        subtitle: 'Average per trip',
-      },
-    ];
-  }, [drivers]);
 
   const tabOptions = useMemo(
     () => [
@@ -271,7 +284,22 @@ const DriverListPage = () => {
               />
             ))}
           </Tabs>
-          <Box>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <TextField
+              select
+              value={selectedCarrierId}
+              onChange={handleCarrierFilterChange}
+              label="Carrier"
+              size="small"
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="all">All Carriers</MenuItem>
+              {carriers.map((carrier) => (
+                <MenuItem key={carrier.id} value={carrier.id}>
+                  {carrier.name}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               value={searchQuery}
               onChange={handleSearchChange}
@@ -279,7 +307,7 @@ const DriverListPage = () => {
               size="small"
               sx={{ width: { xs: '100%', lg: 320 } }}
             />
-          </Box>
+          </Stack>
         </Stack>
 
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>

@@ -2,7 +2,7 @@ import type { Request } from 'express';
 import { ContactType } from '@prisma/client';
 import type { ContactListFilters } from '../../types/contactTypes';
 import type { ListContactsServiceInput } from '../../types/contactServiceTypes';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
 const toContactType = (value: unknown): ContactType | undefined => {
   if (value === ContactType.BROKER) {
