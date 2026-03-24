@@ -1,0 +1,22 @@
+{
+  "name": "@hussle/emails",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "email dev",
+    "build": "tsc",
+    "build:watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.36",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "react-email": "^3.0.6",
+    "typescript": "^5.7.3"
+  }
+}
