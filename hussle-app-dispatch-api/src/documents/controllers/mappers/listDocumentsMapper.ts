@@ -1,7 +1,6 @@
 import type { Request } from 'express';
-import type { DocumentType } from '@prisma/client';
 import { UnauthorizedError } from '@/shared/errors';
-import type { ListDocumentsInput } from '../../types/documentTypes';
+import type { DocumentEntityType, ListDocumentsInput } from '../../types/documentTypes';
 
 export const listDocumentsMapper = (req: Request): ListDocumentsInput => {
   const organizationId = req.organizationId;
@@ -10,17 +9,19 @@ export const listDocumentsMapper = (req: Request): ListDocumentsInput => {
   }
 
   const query = req.query as {
-    loadId?: string;
-    carrierId?: string;
-    type?: DocumentType;
+    entityType?: DocumentEntityType;
+    entityId?: string;
+    type?: string;
+    expiringBefore?: string;
     includeArchived?: string;
   };
 
   return {
     organizationId,
-    loadId: query.loadId,
-    carrierId: query.carrierId,
+    entityType: query.entityType,
+    entityId: query.entityId,
     type: query.type,
+    expiringBefore: query.expiringBefore ? new Date(query.expiringBefore) : undefined,
     includeArchived: query.includeArchived === 'true',
   };
 };

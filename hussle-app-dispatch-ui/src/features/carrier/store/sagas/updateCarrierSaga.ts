@@ -18,7 +18,7 @@ export function* updateCarrierSaga(
 
     const response = (yield call(updateCarrier, id, data)) as SagaReturnType<typeof updateCarrier>;
 
-    yield put(carrierActions.updateOne({ id, changes: response.carrier }));
+    yield put(carrierActions.updateOne({ id, changes: response }));
     yield put(updateCarrierSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Carrier updated', { variant: 'success' });

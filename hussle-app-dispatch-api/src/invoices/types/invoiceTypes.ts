@@ -4,6 +4,7 @@ import type {
   InvoiceStatus,
   Load,
   Carrier,
+  Customer,
   AccessorialCharge,
 } from '@prisma/client';
 
@@ -12,26 +13,30 @@ import type {
 // ---------------------------------------------------------------------------
 
 export interface InvoiceWithRelations extends Invoice {
-  load: Load;
+  load: Load & { accessorialCharges: AccessorialCharge[] };
   carrier: Carrier | null;
+  customer: Customer | null;
 }
 
 export interface InvoiceListItem {
   id: string;
   loadId: string;
   carrierId: string | null;
+  customerId: string | null;
   invoiceNumber: string;
   type: InvoiceType;
   subtotal: unknown; // Decimal
   accessorials: unknown; // Decimal
   totalAmount: unknown; // Decimal
   paymentTerms: string;
+  paymentTermsDays: number;
   dueDate: Date;
   missingSignedBol: boolean;
   status: InvoiceStatus;
   sentAt: Date | null;
   paidAt: Date | null;
   paidAmount: unknown | null; // Decimal
+  approvedAt: Date | null;
   createdAt: Date;
   load: {
     id: string;
@@ -42,6 +47,10 @@ export interface InvoiceListItem {
     id: string;
     name: string;
   } | null;
+  customer: {
+    id: string;
+    companyName: string;
+  } | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +60,7 @@ export interface InvoiceListItem {
 export interface CreateInvoiceInput {
   loadId: string;
   carrierId?: string;
+  customerId?: string;
   invoiceNumber: string;
   type: InvoiceType;
   subtotal: number;
@@ -102,7 +112,10 @@ export interface InvoiceRepoPort {
     status: InvoiceStatus,
     extra?: Record<string, unknown>,
   ): Promise<InvoiceWithRelations>;
+  findManyByLoadId(loadId: string): Promise<InvoiceWithRelations[]>;
   delete(id: string): Promise<void>;
+  countByStatus(organizationId: string, status: string): Promise<number>;
+  findNonVoidByLoadId(loadId: string): Promise<InvoiceWithRelations | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +130,7 @@ export interface InvoiceLoadQueryPort {
     organizationId: string;
     loadNumber: string;
     carrierId: string | null;
+    customerId: string | null;
     vehicleId: string | null;
     customerRate: unknown | null; // Decimal
     carrierRate: unknown | null; // Decimal
@@ -128,12 +142,74 @@ export interface InvoiceLoadQueryPort {
       name: string;
       type: string;
     } | null;
-    broker: {
+    customer: {
       id: string;
-      paymentTerms: string;
+      paymentTerms: string | null;
       paymentTermsDays: number;
     } | null;
     accessorialCharges: AccessorialCharge[];
   } | null>;
   updateLoadStatus(loadId: string, status: string): Promise<void>;
+  findLoadWithStops(loadId: string): Promise<{
+    id: string;
+    organizationId: string;
+    loadNumber: string;
+    externalRefNumber: string | null;
+    equipmentType: string | null;
+    commodity: string | null;
+    weight: number | null;
+    totalMiles: number | null;
+    customerRate: unknown | null;
+    carrierRate: unknown | null;
+    status: string;
+    carrier: {
+      id: string;
+      name: string;
+      type: string;
+      address: string | null;
+      city: string | null;
+      state: string | null;
+      zip: string | null;
+      phone: string | null;
+      email: string | null;
+      mcNumber: string | null;
+      billingMethod: string;
+      factoringCompanyName: string | null;
+      factoringCompanyEmail: string | null;
+      factoringSubmissionMethod: string | null;
+      factoringAdvanceRate: unknown | null;
+      factoringFeePercent: unknown | null;
+      factoringNoa: string | null;
+      outboundEmailMode: string;
+      replyToEmail: string | null;
+    } | null;
+    customer: {
+      id: string;
+      companyName: string;
+      email: string | null;
+      address: string | null;
+      city: string | null;
+      state: string | null;
+      zip: string | null;
+      paymentTerms: string | null;
+      paymentTermsDays: number;
+    } | null;
+    stops: {
+      type: string;
+      sequence: number;
+      facilityName: string | null;
+      city: string | null;
+      state: string | null;
+      appointmentDate: Date | null;
+      arrivalTime: Date | null;
+      departureTime: Date | null;
+    }[];
+    accessorialCharges: {
+      id: string;
+      type: string;
+      description: string | null;
+      amount: unknown;
+      approvalStatus: string;
+    }[];
+  } | null>;
 }

@@ -1,14 +1,19 @@
 import * as Yup from 'yup';
 
+const stateCodeValidator = Yup.string()
+  .trim()
+  .uppercase()
+  .matches(/^[A-Z]{2}$/, 'Must be a 2-letter state code');
+
 const laneSchema = Yup.object({
-  originState: Yup.string().required('Origin state is required').trim(),
-  destState: Yup.string().required('Destination state is required').trim(),
+  originState: stateCodeValidator.required('Origin state is required'),
+  destState: stateCodeValidator.required('Destination state is required'),
   originCity: Yup.string().nullable().trim(),
   destCity: Yup.string().nullable().trim(),
 });
 
 const noGoZoneSchema = Yup.object({
-  state: Yup.string().required('State is required').trim(),
+  state: stateCodeValidator.required('State is required'),
   city: Yup.string().nullable().trim(),
 });
 

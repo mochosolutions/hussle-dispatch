@@ -17,7 +17,7 @@ import {
   SelectField,
   CheckboxField,
 } from '../../../../mocho/components';
-import { EditDrawer } from '../../../carrier/components/EditDrawer';
+import { EditDrawer } from 'components/EditDrawer';
 import { placeSchema } from '../../validators/placeSchema';
 import type { PlaceFormValues } from '../../validators/placeSchema';
 import { selectPlaceById } from '../../store/selectors/placeSelectors';
@@ -131,6 +131,11 @@ const PlaceInfoDrawerContent: React.FC<PlaceInfoDrawerContentProps> = ({
 
   const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
 
+  let submitLabel = isEditMode ? 'Save Changes' : 'Create Place';
+  if (isSubmitting) {
+    submitLabel = 'Saving\u2026';
+  }
+
   const facilityTypeData = FACILITY_TYPE_OPTIONS.map((opt) => ({
     value: opt.value,
     label: opt.label,
@@ -153,7 +158,7 @@ const PlaceInfoDrawerContent: React.FC<PlaceInfoDrawerContentProps> = ({
         disabled={!isValid || !dirty || isSubmitting}
         startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
       >
-        {isSubmitting ? 'Saving\u2026' : isEditMode ? 'Save Changes' : 'Create Place'}
+        {submitLabel}
       </Button>
     </Box>
   );

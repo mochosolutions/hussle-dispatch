@@ -1,3 +1,4 @@
+import type { Driver } from '@prisma/client';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/shared/errors';
@@ -6,7 +7,6 @@ import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
   CarrierRepositoryPort,
   DriverRepositoryPort,
-  DriverResponse,
   LoadRepositoryPort,
 } from '../types/driverTypes';
 import type {
@@ -57,7 +57,7 @@ const findDriverOrThrow = async (
   id: string,
   organizationId: string,
   deps: DriverServiceDeps,
-): Promise<DriverResponse> => {
+): Promise<Driver> => {
   const driver = await deps.driverRepository.findById(id, organizationId);
   if (driver === null) {
     throw new NotFoundError('Driver not found.');

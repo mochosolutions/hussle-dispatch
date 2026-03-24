@@ -19,6 +19,7 @@ export const weeklyGrossQueryPrisma = (
         id: true,
         unitNumber: true,
         carrier: { select: { name: true } },
+        driver: { select: { firstName: true, lastName: true } },
       },
     }),
 
@@ -26,29 +27,31 @@ export const weeklyGrossQueryPrisma = (
     vehicleId: string,
     weekStart: Date,
     weekEnd: Date,
-  ): Promise<Decimal> => {
-    const result = await prisma.load.aggregate({
-      where: {
-        vehicleId,
-        status: { in: [...REVENUE_STATUSES] },
-        updatedAt: {
-          gte: weekStart,
-          lte: weekEnd,
-        },
-        deletedAt: null,
+  ): Promise<{ revenue: Decimal; loadCount: number }> => {
+    const whereClause = {
+      vehicleId,
+      status: { in: [...REVENUE_STATUSES] },
+      updatedAt: {
+        gte: weekStart,
+        lte: weekEnd,
       },
-      _sum: {
-        customerRate: true,
-      },
-    });
+      deletedAt: null,
+    };
 
-    const sum = result._sum.customerRate;
+    const [aggregateResult, loadCount] = await Promise.all([
+      prisma.load.aggregate({
+        where: whereClause,
+        _sum: { customerRate: true },
+      }),
+      prisma.load.count({ where: whereClause }),
+    ]);
 
-    if (sum === null || sum === undefined) {
-      return new Decimal(0);
-    }
+    const sum = aggregateResult._sum.customerRate;
+    const revenue = sum === null || sum === undefined
+      ? new Decimal(0)
+      : new Decimal(sum.toString());
 
-    return new Decimal(sum.toString());
+    return { revenue, loadCount };
   },
 
   getWeeklyGrossTarget: async (organizationId: string): Promise<Decimal> => {

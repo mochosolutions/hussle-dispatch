@@ -14,14 +14,6 @@ export function* updateVehicleSaga(
 ): Generator {
   try {
     const { id, data } = action.payload;
-    const useMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-
-    if (useMock) {
-      yield put(vehicleActions.updateOne({ id, changes: data }));
-      yield put(updateVehicleSuccess({ id }));
-      yield call(enqueueSnackbar, 'Vehicle updated', { variant: 'success' });
-      return;
-    }
 
     const response = (yield call(
       updateVehicle,
@@ -29,7 +21,7 @@ export function* updateVehicleSaga(
       data,
     )) as SagaReturnType<typeof updateVehicle>;
 
-    yield put(vehicleActions.updateOne({ id, changes: response.vehicle }));
+    yield put(vehicleActions.updateOne({ id, changes: response }));
     yield put(updateVehicleSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Vehicle updated', { variant: 'success' });

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
-import type { CreateAuditLogInput } from '../../../audit/types/auditTypes';
+import type { CreateAuditLogInput } from '../../types/auditLogPort';
 import { UnauthorizedError } from '@/shared/errors';
 import { decodeToken } from '@/shared/utils/cognito';
 import { AuthStatus } from '@/shared/constants/authConstants';

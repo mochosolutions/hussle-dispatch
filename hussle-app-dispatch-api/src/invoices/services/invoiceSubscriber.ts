@@ -24,27 +24,23 @@ export const initializeInvoiceSubscriber = async (
     logger: deps.logger,
   };
 
-  await deps.eventBus.subscribe('load.delivered', async (payload: unknown) => {
-    const eventPayload = payload as { loadId: string };
-
+  await deps.eventBus.subscribe('load.delivered', 'invoices-service', async (data) => {
     try {
-      await generateFromDelivery(eventPayload.loadId, generationDeps);
+      await generateFromDelivery(data.loadId, generationDeps);
     } catch (error: unknown) {
       deps.logger.error('Failed to generate invoice from delivery event', {
-        loadId: eventPayload.loadId,
+        loadId: data.loadId,
         error: error instanceof Error ? error.message : String(error),
       });
     }
   });
 
-  await deps.eventBus.subscribe('load.tonu', async (payload: unknown) => {
-    const eventPayload = payload as { loadId: string };
-
+  await deps.eventBus.subscribe('load.tonu', 'invoices-service', async (data) => {
     try {
-      await generateTonuInvoice(eventPayload.loadId, generationDeps);
+      await generateTonuInvoice(data.loadId, generationDeps);
     } catch (error: unknown) {
       deps.logger.error('Failed to generate TONU invoice from event', {
-        loadId: eventPayload.loadId,
+        loadId: data.loadId,
         error: error instanceof Error ? error.message : String(error),
       });
     }

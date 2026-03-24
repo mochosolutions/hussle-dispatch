@@ -4,6 +4,7 @@ import type { DocumentService } from '../types/documentServiceTypes';
 import { presignMapper } from './mappers/presignMapper';
 import { confirmMapper } from './mappers/confirmMapper';
 import { listDocumentsMapper } from './mappers/listDocumentsMapper';
+import { documentIdMapper } from './mappers/documentIdMapper';
 import { toDocumentResponse, toDocumentListResponse } from './transformers/documentTransformer';
 
 interface DocumentControllerDeps {
@@ -14,6 +15,10 @@ export interface DocumentControllers {
   presign: RequestHandler;
   confirm: RequestHandler;
   list: RequestHandler;
+  getById: RequestHandler;
+  download: RequestHandler;
+  archive: RequestHandler;
+  bulkDownload: RequestHandler;
 }
 
 export const createDocumentControllers = (deps: DocumentControllerDeps): DocumentControllers => ({
@@ -33,5 +38,23 @@ export const createDocumentControllers = (deps: DocumentControllerDeps): Documen
     const input = listDocumentsMapper(req);
     const documents = await deps.documentService.list(input);
     sendList(res, { data: toDocumentListResponse(documents), meta: { page: 1, limit: documents.length, total: documents.length, totalPages: 1, hasMore: false } });
+  },
+
+  getById: async (req: Request, res: Response): Promise<void> => {
+    const input = documentIdMapper(req);
+    const document = await deps.documentService.getById(input);
+    sendSingle(res, toDocumentResponse(document));
+  },
+
+  download: async (req: Request, res: Response): Promise<void> => {
+    const input = documentIdMapper(req);
+    const url = await deps.documentService.getDownloadUrl(input);
+    sendSingle(res, { url });
+  },
+
+  archive: async (req: Request, res: Response): Promise<void> => {
+    const input = documentIdMapper(req);
+    const document = await deps.documentService.archive(input);
+    sendSingle(res, toDocumentResponse(document));
   },
 });

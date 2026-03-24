@@ -7,26 +7,34 @@ import type {
 } from '../types/invoiceTypes';
 
 const INVOICE_DETAIL_INCLUDE = {
-  load: true,
+  load: {
+    include: {
+      accessorialCharges: true,
+    },
+  },
   carrier: true,
+  customer: true,
 } as const;
 
 const INVOICE_LIST_SELECT = {
   id: true,
   loadId: true,
   carrierId: true,
+  customerId: true,
   invoiceNumber: true,
   type: true,
   subtotal: true,
   accessorials: true,
   totalAmount: true,
   paymentTerms: true,
+  paymentTermsDays: true,
   dueDate: true,
   missingSignedBol: true,
   status: true,
   sentAt: true,
   paidAt: true,
   paidAmount: true,
+  approvedAt: true,
   createdAt: true,
   load: {
     select: {
@@ -39,6 +47,12 @@ const INVOICE_LIST_SELECT = {
     select: {
       id: true,
       name: true,
+    },
+  },
+  customer: {
+    select: {
+      id: true,
+      companyName: true,
     },
   },
 } as const;
@@ -79,6 +93,7 @@ export const invoiceRepositoryPrisma = (
       data: {
         loadId: data.loadId,
         carrierId: data.carrierId,
+        customerId: data.customerId,
         invoiceNumber: data.invoiceNumber,
         type: data.type,
         subtotal: data.subtotal,
@@ -101,6 +116,12 @@ export const invoiceRepositoryPrisma = (
 
   findByLoadId: async (loadId) =>
     prisma.invoice.findFirst({
+      where: { loadId },
+      include: INVOICE_DETAIL_INCLUDE,
+    }),
+
+  findManyByLoadId: async (loadId) =>
+    prisma.invoice.findMany({
       where: { loadId },
       include: INVOICE_DETAIL_INCLUDE,
     }),
@@ -129,6 +150,23 @@ export const invoiceRepositoryPrisma = (
   delete: async (id) => {
     await prisma.invoice.delete({ where: { id } });
   },
+
+  countByStatus: async (organizationId, status) =>
+    prisma.invoice.count({
+      where: {
+        load: { organizationId },
+        status: status as InvoiceStatus,
+      },
+    }),
+
+  findNonVoidByLoadId: async (loadId) =>
+    prisma.invoice.findFirst({
+      where: {
+        loadId,
+        status: { not: 'VOID' as InvoiceStatus },
+      },
+      include: INVOICE_DETAIL_INCLUDE,
+    }),
 });
 
 export const invoiceLoadQueryPrisma = (
@@ -142,6 +180,7 @@ export const invoiceLoadQueryPrisma = (
         organizationId: true,
         loadNumber: true,
         carrierId: true,
+        customerId: true,
         vehicleId: true,
         customerRate: true,
         carrierRate: true,
@@ -151,8 +190,8 @@ export const invoiceLoadQueryPrisma = (
         carrier: {
           select: { id: true, name: true, type: true },
         },
-        broker: {
-          select: { id: true, paymentTerms: true, paymentTermsDays: true },
+        customer: {
+          select: { id: true, companyName: true, paymentTerms: true, paymentTermsDays: true },
         },
         accessorialCharges: true,
       },
@@ -164,4 +203,80 @@ export const invoiceLoadQueryPrisma = (
       data: { status: status as LoadStatus },
     });
   },
+
+  findLoadWithStops: async (loadId) =>
+    prisma.load.findUnique({
+      where: { id: loadId },
+      select: {
+        id: true,
+        organizationId: true,
+        loadNumber: true,
+        externalRefNumber: true,
+        equipmentType: true,
+        commodity: true,
+        weight: true,
+        totalMiles: true,
+        customerRate: true,
+        carrierRate: true,
+        status: true,
+        carrier: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            address: true,
+            city: true,
+            state: true,
+            zip: true,
+            phone: true,
+            email: true,
+            mcNumber: true,
+            billingMethod: true,
+            factoringCompanyName: true,
+            factoringCompanyEmail: true,
+            factoringSubmissionMethod: true,
+            factoringAdvanceRate: true,
+            factoringFeePercent: true,
+            factoringNoa: true,
+            outboundEmailMode: true,
+            replyToEmail: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            companyName: true,
+            email: true,
+            address: true,
+            city: true,
+            state: true,
+            zip: true,
+            paymentTerms: true,
+            paymentTermsDays: true,
+          },
+        },
+        stops: {
+          select: {
+            type: true,
+            sequence: true,
+            facilityName: true,
+            city: true,
+            state: true,
+            appointmentDate: true,
+            arrivalTime: true,
+            departureTime: true,
+          },
+          orderBy: { sequence: 'asc' },
+        },
+        accessorialCharges: {
+          select: {
+            id: true,
+            type: true,
+            description: true,
+            amount: true,
+            approvalStatus: true,
+          },
+        },
+      },
+    }),
 });

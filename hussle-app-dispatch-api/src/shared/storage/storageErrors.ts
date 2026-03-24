@@ -28,6 +28,20 @@ export class StorageWriteError extends CustomError {
   }
 }
 
+export class StorageReadError extends CustomError {
+  statusCode = 500;
+  readonly code = 'STORAGE_READ_ERROR';
+
+  constructor(key: string, reason: string) {
+    super(`Failed to read storage file "${key}": ${reason}`);
+    Object.setPrototypeOf(this, StorageReadError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
 export class StorageDeleteError extends CustomError {
   statusCode = 500;
   readonly code = 'STORAGE_DELETE_ERROR';

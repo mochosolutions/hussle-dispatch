@@ -9,6 +9,8 @@ const AuthForgotPassword = Loadable(lazy(() => import('features/auth/pages/forgo
 const AuthResetPassword = Loadable(lazy(() => import('features/auth/pages/reset-password')));
 const AuthCodeVerification = Loadable(lazy(() => import('features/auth/pages/code-verification')));
 const AuthChangePassword = Loadable(lazy(() => import('features/auth/pages/force-change-password')));
+const AuthTerms = Loadable(lazy(() => import('features/auth/pages/terms')));
+const AuthPrivacy = Loadable(lazy(() => import('features/auth/pages/privacy')));
 
 const LoginRoutes = {
   path: '/',
@@ -44,6 +46,14 @@ const LoginRoutes = {
               <AuthChangePassword />
             </PasswordChangeGuard>
           ),
+        },
+        {
+          path: 'terms',
+          element: <AuthTerms />,
+        },
+        {
+          path: 'privacy',
+          element: <AuthPrivacy />,
         },
       ],
     },

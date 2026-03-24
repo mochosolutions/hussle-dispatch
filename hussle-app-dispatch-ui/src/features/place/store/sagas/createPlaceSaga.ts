@@ -21,7 +21,7 @@ export function* createPlaceSaga(
       data,
     )) as SagaReturnType<typeof createPlace>;
 
-    yield put(placeActions.addOne(response.place));
+    yield put(placeActions.addOne(response));
     yield put(createPlaceSuccess({}));
 
     yield call(enqueueSnackbar, 'Place created', { variant: 'success' });

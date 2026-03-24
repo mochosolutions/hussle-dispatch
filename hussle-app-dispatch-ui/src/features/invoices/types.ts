@@ -8,9 +8,10 @@ export type InvoiceStatus =
   | 'SENT'
   | 'PARTIALLY_PAID'
   | 'PAID'
+  | 'OVERDUE'
   | 'VOID';
 
-export type InvoiceType = 'carrier' | 'broker';
+export type InvoiceType = 'CUSTOMER' | 'DISPATCH_FEE';
 
 export type PaymentMethod = 'ACH' | 'CHECK' | 'WIRE' | 'CREDIT_CARD' | 'OTHER';
 
@@ -31,25 +32,31 @@ export interface InvoiceAccessorial {
 export interface InvoiceListItem {
   id: string;
   invoiceNumber: string;
-  invoiceType: InvoiceType;
+  type: InvoiceType;
   status: InvoiceStatus;
-  loadId: string | null;
-  loadNumber: string | null;
-  carrierId: string | null;
-  carrierName: string | null;
-  subtotal: number;
-  accessorialsTotal: number;
-  grandTotal: number;
+  load: { id: string; loadNumber: string; status: string } | null;
+  carrier: { id: string; name: string } | null;
+  subtotal: string;
+  accessorials: string;
+  totalAmount: string;
   dueDate: string;
-  missingBol: boolean;
+  missingSignedBol: boolean;
   createdAt: string;
   updatedAt: string;
+  sentTo?: string | null;
+  paidAmount?: string | null;
+}
+
+export interface InvoiceCounts {
+  draft: number;
 }
 
 export interface InvoiceDetail extends InvoiceListItem {
-  invoiceDate: string;
+  invoiceDate?: string;
   paymentTerms: string;
-  billTo: {
+  paymentTermsDays?: number;
+  approvedAt?: string;
+  billTo?: {
     name: string;
     address: string;
     city: string;
@@ -58,12 +65,17 @@ export interface InvoiceDetail extends InvoiceListItem {
     phone?: string;
     email?: string;
   } | null;
-  lineItems: InvoiceLineItem[];
-  accessorials: InvoiceAccessorial[];
+  lineItems?: InvoiceLineItem[];
+  accessorialItems: InvoiceAccessorial[];
   notes: string | null;
-  recipientEmail: string | null;
-  paidAmount: number;
-  payments: InvoicePayment[];
+  payments?: InvoicePayment[];
+  pdfUrl: string | null;
+  billingMethod: string | null;
+  deliveryMethod: string | null;
+  sentToEmail: string | null;
+  factoringAdvance: string | null;
+  factoringFeeAmount: string | null;
+  reserveAmount: string | null;
 }
 
 export interface InvoicePayment {

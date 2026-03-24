@@ -1,4 +1,4 @@
-import type { Carrier, CarrierType, LoadStatus, Driver } from '@prisma/client';
+import type { Carrier, CarrierType, LoadStatus, Driver, BillingMethod, FactoringSubmission, EmailMode } from '@prisma/client';
 import type { SortOrder } from '@/shared/pagination';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import type { CreateDriverInput } from '@/drivers/types/driverTypes';
@@ -7,6 +7,7 @@ import type { CreateVehicleInput, VehicleWithExpenses } from '@/vehicles/types/v
 export interface CreateCarrierInput {
   name: string;
   type: CarrierType;
+  carrierOrgId?: string;
   mcNumber?: string;
   dotNumber?: string;
   ein?: string;
@@ -31,6 +32,18 @@ export interface CreateCarrierInput {
   authorityStatus?: string;
   status?: string;
   notes?: string;
+  primaryContactName?: string;
+  primaryContactPhone?: string;
+  primaryContactEmail?: string;
+  billingMethod?: BillingMethod;
+  factoringCompanyName?: string;
+  factoringCompanyEmail?: string;
+  factoringSubmissionMethod?: FactoringSubmission;
+  factoringAdvanceRate?: string | number;
+  factoringFeePercent?: string | number;
+  factoringNoa?: string;
+  outboundEmailMode?: EmailMode;
+  replyToEmail?: string;
 }
 
 export interface CreateCarrierWithAssetsInput extends CreateCarrierInput {
@@ -65,6 +78,18 @@ export interface UpdateCarrierInput {
   authorityStatus?: string;
   status?: string;
   notes?: string;
+  primaryContactName?: string;
+  primaryContactPhone?: string;
+  primaryContactEmail?: string;
+  billingMethod?: BillingMethod;
+  factoringCompanyName?: string;
+  factoringCompanyEmail?: string;
+  factoringSubmissionMethod?: FactoringSubmission;
+  factoringAdvanceRate?: string | number;
+  factoringFeePercent?: string | number;
+  factoringNoa?: string;
+  outboundEmailMode?: EmailMode;
+  replyToEmail?: string;
 }
 
 export interface CarrierListFilters {
@@ -100,6 +125,7 @@ export interface CarrierWithAssetsServiceOutput extends CarrierServiceOutput {
 }
 
 export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
+  organizationId: string;
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;

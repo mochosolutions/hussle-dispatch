@@ -10,7 +10,7 @@ export function* fetchChainsSaga(
   try {
     const response = (yield call(getChains, id, vehicleId)) as SagaReturnType<typeof getChains>;
 
-    const chain = response.chains.length > 0 ? response.chains[0] : null;
+    const chain = response.length > 0 ? response[0] : null;
 
     yield put(fetchChainsSuccess({ id, chain }));
   } catch (error: unknown) {

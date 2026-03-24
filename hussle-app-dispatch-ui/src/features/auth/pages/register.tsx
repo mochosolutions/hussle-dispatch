@@ -11,9 +11,10 @@ const Register = () => {
     <AuthWrapper>
       <AuthFormWrapper
         title="Register an Account"
-        subTitle="Enter your email and password to login"
+        subTitle="Enter your details to create an account"
         error={hasError}
         errorTitle="There seems to be an issue with the credentials you provided"
+        actionLink={{ label: 'Already have an account? Sign in', to: '/login' }}
       >
         <AuthRegisterForm />
       </AuthFormWrapper>

@@ -107,6 +107,23 @@ export const vehicleRepositoryPrisma = (
       include: includeExpenses,
     }),
 
+  createExpense: (vehicleId, expense) =>
+    prisma.truckExpense.create({
+      data: {
+        vehicleId,
+        category: expense.category,
+        expenseKey: expense.expenseKey,
+        label: expense.label,
+        monthlyAmount: expense.monthlyAmount ?? 0,
+      },
+    }),
+
+  findExpensesByVehicleId: (vehicleId) =>
+    prisma.truckExpense.findMany({
+      where: { vehicleId },
+      orderBy: { createdAt: 'desc' },
+    }),
+
   replaceExpenses: async (vehicleId, expenses) => {
     await prisma.truckExpense.deleteMany({
       where: {

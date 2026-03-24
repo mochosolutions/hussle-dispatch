@@ -18,7 +18,7 @@ export function* submitManualEntrySaga(
       typeof submitManualEntry
     >;
 
-    yield put(submitManualEntrySuccess({ item: response.item }));
+    yield put(submitManualEntrySuccess({ item: response }));
     yield call(enqueueSnackbar, 'Manual entry added', { variant: 'success' });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to submit manual entry';

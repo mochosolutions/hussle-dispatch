@@ -3,6 +3,7 @@ import type { SortOrder } from '@/shared/pagination';
 
 export interface CreatePlaceInput {
   contactId?: string;
+  customerId?: string;
   name: string;
   address?: string;
   address2?: string;
@@ -29,6 +30,7 @@ export interface CreatePlaceInput {
 
 export interface UpdatePlaceInput {
   contactId?: string | null;
+  customerId?: string | null;
   name?: string;
   address?: string;
   address2?: string;
@@ -58,6 +60,7 @@ export interface PlaceListFilters {
   facilityType?: FacilityType;
   state?: string;
   contactId?: string;
+  customerId?: string;
 }
 
 export interface PlaceQueryInput {
@@ -118,6 +121,7 @@ export interface PlaceResponse {
   id: string;
   organizationId: string;
   contactId: string | null;
+  customerId: string | null;
   name: string;
   address: string | null;
   address2: string | null;
@@ -140,6 +144,7 @@ export interface PlaceResponse {
   ppeRequired: boolean;
   notes: string | null;
   status: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }

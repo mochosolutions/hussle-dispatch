@@ -9,54 +9,47 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
-  Grid,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { format } from 'date-fns';
-import MainCard from 'components/MainCard';
-import { PageHeader } from 'components/PageHeader';
-import { PageWrapper } from 'components/PageWrapper';
+import { DataGuard, PageWrapper } from '@mocho/ui/components';
+import { DetailLayout } from 'components/DetailLayout';
+import SectionCard from 'components/SectionCard';
+import { KpiCell, DetailRow, SectionLabel, LinkText, Body, BodyMuted } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
 import {
   fetchInvoiceDetailsRequest,
   deleteInvoiceRequest,
   approveInvoiceRequest,
   sendInvoiceRequest,
+  voidInvoiceRequest,
+  downloadPacketRequest,
+  previewPdfRequest,
+  markPaidRequest,
 } from '../store/reducers';
 import {
   selectInvoiceById,
   selectInvoiceDetailLoading,
 } from '../store/selectors/invoiceSelectors';
-import { INVOICE_STATUS_LABELS, INVOICE_STATUS_COLORS } from '../constants';
-import { downloadInvoicePdf } from '../components/InvoicePdfTemplate/generateInvoicePdf';
-import { PaymentDrawer } from '../components/PaymentDrawer';
 import type { InvoiceDetail, InvoiceStatus } from '../types';
-import type { InvoiceData } from '../types/invoiceTypes';
 
 // ---------------------------------------------------------------------------
-// Style constants
+// Tab definitions
 // ---------------------------------------------------------------------------
 
-const SECTION_LABEL_SX = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-  mb: 1,
-} as const;
-
-const LABEL_SX = { color: 'text.secondary', fontSize: '0.75rem' } as const;
-const VALUE_SX = { fontWeight: 600, fontSize: '0.875rem' } as const;
+const INVOICE_DETAIL_TABS = [
+  { label: 'Overview', value: 'overview' },
+  { label: 'Documents', value: 'documents' },
+  { label: 'Activity', value: 'activity' },
+] as const;
 
 // ---------------------------------------------------------------------------
 // Currency formatter
@@ -69,69 +62,6 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 // ---------------------------------------------------------------------------
-// InfoRow helper
-// ---------------------------------------------------------------------------
-
-interface InfoRowProps {
-  label: string;
-  value: string | number | null | undefined;
-}
-
-const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
-  <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5 }}>
-    <Typography sx={LABEL_SX}>{label}</Typography>
-    <Typography sx={VALUE_SX}>{value ?? '\u2014'}</Typography>
-  </Stack>
-);
-
-// ---------------------------------------------------------------------------
-// Map InvoiceDetail to InvoiceData for PDF generation
-// ---------------------------------------------------------------------------
-
-const mapToPdfData = (invoice: InvoiceDetail): InvoiceData => ({
-  invoiceNumber: invoice.invoiceNumber,
-  invoiceDate: invoice.invoiceDate,
-  dueDate: invoice.dueDate,
-  paymentTerms: invoice.paymentTerms as InvoiceData['paymentTerms'],
-  invoiceType: invoice.invoiceType,
-  billTo: {
-    name: invoice.billTo?.name ?? '',
-    address: {
-      street: invoice.billTo?.address ?? '',
-      city: invoice.billTo?.city ?? '',
-      state: invoice.billTo?.state ?? '',
-      zip: invoice.billTo?.zip ?? '',
-    },
-    phone: invoice.billTo?.phone,
-    email: invoice.billTo?.email,
-  },
-  orgSettings: {
-    companyName: 'Hussle Dispatch',
-    address: { street: '', city: '', state: '', zip: '' },
-  },
-  loadDetails: {
-    loadNumber: invoice.loadNumber ?? '',
-    route: '',
-    pickupDate: '',
-    deliveryDate: '',
-  },
-  lineItems: invoice.lineItems.map((li) => ({
-    description: li.description,
-    quantity: li.quantity,
-    rate: li.rate,
-    amount: li.amount,
-  })),
-  accessorials: invoice.accessorials.map((acc) => ({
-    description: acc.description,
-    amount: acc.amount,
-  })),
-  subtotal: invoice.subtotal,
-  accessorialsTotal: invoice.accessorialsTotal,
-  grandTotal: invoice.grandTotal,
-  notes: invoice.notes ?? undefined,
-});
-
-// ---------------------------------------------------------------------------
 // Invoice Detail Page
 // ---------------------------------------------------------------------------
 
@@ -140,19 +70,35 @@ const InvoiceDetailPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const invoice = useSelector(
-    selectInvoiceById(invoiceId ?? ''),
-  ) as (InvoiceDetail & Record<string, unknown>) | undefined;
-  const isLoading = useSelector(selectInvoiceDetailLoading(invoiceId ?? ''));
+  const rawInvoice = useSelector(selectInvoiceById(invoiceId ?? ''));
+  const isDetailLoading = useSelector(selectInvoiceDetailLoading(invoiceId ?? ''));
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false);
+  // Track whether the detail fetch for this invoiceId has completed at least once.
+  const [fetchedId, setFetchedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (invoiceId) {
+      setFetchedId(null);
       dispatch(fetchInvoiceDetailsRequest({ id: invoiceId }));
     }
   }, [dispatch, invoiceId]);
+
+  useEffect(() => {
+    if (!isDetailLoading && invoiceId && fetchedId !== invoiceId) {
+      setFetchedId(invoiceId);
+    }
+  }, [isDetailLoading, invoiceId, fetchedId]);
+
+  const detailReady = fetchedId === invoiceId;
+  const hasDetailShape = rawInvoice !== undefined && 'accessorialItems' in rawInvoice;
+  const invoice = detailReady && hasDetailShape ? (rawInvoice as InvoiceDetail) : undefined;
+  const isLoading = !detailReady;
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendEmail, setSendEmail] = useState('');
+  const [markPaidDialogOpen, setMarkPaidDialogOpen] = useState(false);
 
   const handleBack = useCallback(() => {
     navigate('/invoices');
@@ -171,28 +117,53 @@ const InvoiceDetailPage = () => {
     setDeleteDialogOpen(false);
   }, [dispatch, invoiceId]);
 
-  const handleSendInvoice = useCallback(async () => {
-    if (!invoice || !invoiceId) {
+  const handleVoid = useCallback(() => {
+    if (invoiceId) {
+      dispatch(voidInvoiceRequest({ id: invoiceId }));
+    }
+  }, [dispatch, invoiceId]);
+
+  const handleSendInvoice = useCallback(() => {
+    if (!invoiceId || !sendEmail) {
       return;
     }
+    dispatch(sendInvoiceRequest({ id: invoiceId, recipientEmail: sendEmail }));
+    setSendDialogOpen(false);
+  }, [dispatch, invoiceId, sendEmail]);
 
-    if (!invoice.recipientEmail) {
-      // No recipient: download PDF manually
-      const pdfData = mapToPdfData(invoice as InvoiceDetail);
-      await downloadInvoicePdf(pdfData);
+  const handleOpenSend = useCallback(() => {
+    setSendEmail(invoice?.sentToEmail ?? invoice?.sentTo ?? '');
+    setSendDialogOpen(true);
+  }, [invoice]);
+
+  const handleMarkPaid = useCallback(() => {
+    if (!invoiceId || !invoice) {
       return;
     }
+    dispatch(
+      markPaidRequest({
+        id: invoiceId,
+        payment: {
+          amount: Number(invoice.totalAmount) - Number(invoice.paidAmount ?? '0'),
+          method: 'ACH',
+          paidAt: new Date().toISOString(),
+        },
+      }),
+    );
+    setMarkPaidDialogOpen(false);
+  }, [dispatch, invoiceId, invoice]);
 
-    dispatch(sendInvoiceRequest({ id: invoiceId, recipientEmail: invoice.recipientEmail }));
-  }, [dispatch, invoice, invoiceId]);
+  const handlePreviewPdf = useCallback(() => {
+    if (invoiceId) {
+      dispatch(previewPdfRequest({ id: invoiceId }));
+    }
+  }, [dispatch, invoiceId]);
 
-  const handleOpenPayment = useCallback(() => {
-    setPaymentDrawerOpen(true);
-  }, []);
-
-  const handleClosePayment = useCallback(() => {
-    setPaymentDrawerOpen(false);
-  }, []);
+  const handleDownloadPacket = useCallback(() => {
+    if (invoiceId) {
+      dispatch(downloadPacketRequest({ id: invoiceId }));
+    }
+  }, [dispatch, invoiceId]);
 
   const isOverdue = useMemo(() => {
     if (!invoice) {
@@ -205,376 +176,447 @@ const InvoiceDetailPage = () => {
   }, [invoice]);
 
   // ---------------------------------------------------------------------------
-  // Action buttons per status
+  // Action buttons (status-dependent)
   // ---------------------------------------------------------------------------
 
-  const renderActions = useCallback(() => {
-    if (!invoice) {
-      return null;
-    }
-
-    const status = invoice.status as InvoiceStatus;
-
-    const actions: React.ReactNode[] = [
-      <Button
-        key="back"
-        variant="text"
-        startIcon={<ArrowBackIcon />}
-        onClick={handleBack}
-      >
-        Back
-      </Button>,
-      <Chip
-        key="status"
-        label={INVOICE_STATUS_LABELS[status]}
-        variant="outlined"
-        sx={{
-          fontWeight: 700,
-          color: INVOICE_STATUS_COLORS[status],
-          borderColor: INVOICE_STATUS_COLORS[status],
-        }}
-      />,
-    ];
-
-    if (status === 'DRAFT') {
-      actions.push(
-        <Button key="approve" variant="contained" onClick={handleApprove}>
-          Approve
+  const renderActions = useCallback(
+    (inv: InvoiceDetail) => {
+      const status = inv.status as InvoiceStatus;
+      const buttons: React.ReactNode[] = [
+        <Button key="preview" variant="outlined" size="small" onClick={handlePreviewPdf}>
+          Preview PDF
         </Button>,
-        <Button
-          key="delete"
-          variant="outlined"
-          color="error"
-          onClick={() => setDeleteDialogOpen(true)}
-        >
-          Delete
+        <Button key="packet" variant="outlined" size="small" onClick={handleDownloadPacket}>
+          Download Packet
         </Button>,
-      );
-    }
+      ];
 
-    if (status === 'APPROVED') {
-      actions.push(
-        <Button key="send" variant="contained" onClick={handleSendInvoice}>
-          {invoice.recipientEmail ? 'Generate PDF & Send' : 'Download PDF'}
-        </Button>,
-      );
-    }
+      if (status === 'DRAFT') {
+        buttons.push(
+          <Button key="approve" variant="contained" size="small" onClick={handleApprove}>
+            Approve
+          </Button>,
+          <Button key="void" variant="outlined" size="small" color="warning" onClick={handleVoid}>
+            Void
+          </Button>,
+        );
+      }
 
-    if (status === 'SENT' || status === 'PARTIALLY_PAID') {
-      actions.push(
-        <Button key="markPaid" variant="contained" onClick={handleOpenPayment}>
-          Mark Paid
-        </Button>,
-      );
-    }
+      if (status === 'APPROVED') {
+        buttons.push(
+          <Button key="send" variant="contained" size="small" onClick={handleOpenSend}>
+            Send Invoice
+          </Button>,
+          <Button key="void" variant="outlined" size="small" color="warning" onClick={handleVoid}>
+            Void
+          </Button>,
+        );
+      }
 
-    return (
-      <Stack direction="row" spacing={1} alignItems="center">
-        {actions}
-      </Stack>
-    );
-  }, [invoice, handleBack, handleApprove, handleSendInvoice, handleOpenPayment]);
+      if (status === 'SENT' || status === 'PARTIALLY_PAID') {
+        buttons.push(
+          <Button
+            key="markPaid"
+            variant="contained"
+            size="small"
+            onClick={() => setMarkPaidDialogOpen(true)}
+          >
+            Mark Paid
+          </Button>,
+        );
+      }
+
+      return <>{buttons}</>;
+    },
+    [handlePreviewPdf, handleDownloadPacket, handleApprove, handleVoid, handleOpenSend],
+  );
 
   // ---------------------------------------------------------------------------
-  // Not found state
+  // Summary KPI cells
   // ---------------------------------------------------------------------------
 
-  if (!invoice && !isLoading) {
-    return (
-      <PageWrapper errorContext="InvoiceDetailPage">
-        <PageHeader
-          title="Invoice Not Found"
-          headerActions={
-            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBack}>
-              Back
-            </Button>
-          }
-        />
-        <MainCard>
-          <Typography variant="body1" color="text.secondary">
-            The requested invoice could not be found.
-          </Typography>
-        </MainCard>
-      </PageWrapper>
-    );
-  }
+  const renderSummary = useCallback(
+    (inv: InvoiceDetail) => {
+      const carrierName = inv.carrier?.name ?? '\u2014';
+      const loadNumber = inv.load?.loadNumber ?? '\u2014';
+      const dueDate = inv.dueDate ? format(new Date(inv.dueDate), 'MMM dd, yyyy') : '\u2014';
+      const termsSub = inv.paymentTerms ?? undefined;
+      const grandTotal = currencyFormatter.format(Number(inv.totalAmount ?? '0'));
+      const billingMethod = inv.billingMethod ?? '\u2014';
+      const hasBol = !inv.missingSignedBol;
 
-  const invoiceDetail = invoice as InvoiceDetail | undefined;
+      return (
+        <>
+          <KpiCell
+            label="Carrier / Broker"
+            value={
+              inv.carrier ? (
+                <Typography
+                  component={RouterLink}
+                  to={`/carriers/${inv.carrier.id}`}
+                  variant="body1"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'primary.main',
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  {carrierName}
+                </Typography>
+              ) : (
+                '\u2014'
+              )
+            }
+          />
+          <KpiCell
+            label="Load #"
+            value={
+              inv.load ? (
+                <Typography
+                  component={RouterLink}
+                  to={`/loads/${inv.load.id}`}
+                  variant="body1"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'primary.main',
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' },
+                  }}
+                >
+                  {loadNumber}
+                </Typography>
+              ) : (
+                '\u2014'
+              )
+            }
+          />
+          <KpiCell label="Due Date" value={dueDate} sub={termsSub} />
+          <KpiCell
+            label="Grand Total"
+            value={grandTotal}
+            valueProps={{ color: 'success.main' }}
+          />
+          <KpiCell label="Billing Method" value={billingMethod} />
+          <KpiCell
+            label="BOL Status"
+            value={hasBol ? 'Present' : 'Missing'}
+            valueProps={{ color: hasBol ? 'success.main' : 'error.main' }}
+          />
+        </>
+      );
+    },
+    [],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Derived values for totals
+  // ---------------------------------------------------------------------------
+
+  const subtotalNum = Number(invoice?.subtotal ?? '0');
+  const accessorialsNum = Number(invoice?.accessorials ?? '0');
+  const totalAmountNum = Number(invoice?.totalAmount ?? '0');
+  const paidAmount = Number(invoice?.paidAmount ?? '0');
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
     <PageWrapper isLoading={isLoading} errorContext="InvoiceDetailPage">
-      {invoiceDetail && (
-        <>
-          <PageHeader
-            title={invoiceDetail.invoiceNumber}
-            headerActions={renderActions()}
-          />
-
-          {/* Missing BOL warning */}
-          {invoiceDetail.missingBol && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              Bill of Lading (BOL) is missing for this invoice. Please upload the BOL before
-              sending.
-            </Alert>
-          )}
-
-          {/* Overdue warning */}
-          {isOverdue && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              This invoice is overdue. Due date was{' '}
-              {format(new Date(invoiceDetail.dueDate), 'MMM dd, yyyy')}.
-            </Alert>
-          )}
-
-          <Grid container spacing={2}>
-            {/* Left Column */}
-            <Grid item xs={12} lg={8}>
-              {/* Invoice Info */}
-              <MainCard sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                  Invoice Info
-                </Typography>
-                <InfoRow label="Invoice Number" value={invoiceDetail.invoiceNumber} />
-                <InfoRow label="Type" value={invoiceDetail.invoiceType} />
-                <InfoRow
-                  label="Invoice Date"
-                  value={
-                    invoiceDetail.invoiceDate
-                      ? format(new Date(invoiceDetail.invoiceDate), 'MMM dd, yyyy')
-                      : null
-                  }
-                />
-                <InfoRow
-                  label="Due Date"
-                  value={
-                    invoiceDetail.dueDate
-                      ? format(new Date(invoiceDetail.dueDate), 'MMM dd, yyyy')
-                      : null
-                  }
-                />
-                <InfoRow label="Payment Terms" value={invoiceDetail.paymentTerms} />
-              </MainCard>
-
-              {/* Bill To */}
-              <MainCard sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                  Bill To
-                </Typography>
-                {invoiceDetail.billTo ? (
-                  <>
-                    <InfoRow label="Name" value={invoiceDetail.billTo.name} />
-                    <InfoRow label="Address" value={invoiceDetail.billTo.address} />
-                    <InfoRow
-                      label="City/State/Zip"
-                      value={`${invoiceDetail.billTo.city}, ${invoiceDetail.billTo.state} ${invoiceDetail.billTo.zip}`}
-                    />
-                    <InfoRow label="Phone" value={invoiceDetail.billTo.phone} />
-                    <InfoRow label="Email" value={invoiceDetail.billTo.email} />
-                  </>
-                ) : (
-                  <Typography variant="body2" color="text.disabled">
-                    No billing information
-                  </Typography>
-                )}
-              </MainCard>
-
-              {/* Load Reference */}
-              {invoiceDetail.loadNumber && (
-                <MainCard sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                    Load Reference
-                  </Typography>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography sx={LABEL_SX}>Load Number</Typography>
-                    <Typography
-                      component={RouterLink}
-                      to={`/loads/${invoiceDetail.loadId}`}
-                      sx={{ ...VALUE_SX, color: 'primary.main', textDecoration: 'none' }}
-                    >
-                      {invoiceDetail.loadNumber}
-                    </Typography>
-                  </Stack>
-                </MainCard>
+      <DataGuard
+        data={invoice}
+        emptyComponent={<Typography p={4}>Invoice not found.</Typography>}
+      >
+        {(inv) => (
+          <>
+            <DetailLayout
+              id={inv.invoiceNumber}
+              status={inv.status}
+              breadcrumb={{ label: 'Invoices', href: '/invoices' }}
+              onBack={handleBack}
+              actions={renderActions(inv)}
+              summary={renderSummary(inv)}
+              tabs={INVOICE_DETAIL_TABS}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            >
+              {/* Alerts */}
+              {inv.missingSignedBol && (
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                  Signed Bill of Lading (BOL) was missing at time of invoice generation.
+                </Alert>
+              )}
+              {isOverdue && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  This invoice is overdue. Due date was{' '}
+                  {format(new Date(inv.dueDate), 'MMM dd, yyyy')}.
+                </Alert>
               )}
 
-              {/* Line Items */}
-              <MainCard sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                  Line Items
-                </Typography>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Description</TableCell>
-                      <TableCell align="right">Qty</TableCell>
-                      <TableCell align="right">Rate</TableCell>
-                      <TableCell align="right">Amount</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {invoiceDetail.lineItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell align="right">{item.quantity}</TableCell>
-                        <TableCell align="right">{currencyFormatter.format(item.rate)}</TableCell>
-                        <TableCell align="right">
-                          {currencyFormatter.format(item.amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </MainCard>
-
-              {/* Accessorials */}
-              {invoiceDetail.accessorials.length > 0 && (
-                <MainCard sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                    Accessorials
-                  </Typography>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Description</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {invoiceDetail.accessorials.map((acc) => (
-                        <TableRow key={acc.id}>
-                          <TableCell>{acc.description}</TableCell>
-                          <TableCell align="right">
-                            {currencyFormatter.format(acc.amount)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </MainCard>
-              )}
-            </Grid>
-
-            {/* Right Column */}
-            <Grid item xs={12} lg={4}>
-              {/* Totals */}
-              <MainCard sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                  Totals
-                </Typography>
-                <InfoRow
-                  label="Subtotal"
-                  value={currencyFormatter.format(invoiceDetail.subtotal)}
-                />
-                <InfoRow
-                  label="Accessorials"
-                  value={currencyFormatter.format(invoiceDetail.accessorialsTotal)}
-                />
-                <Divider sx={{ my: 1 }} />
-                <InfoRow
-                  label="Grand Total"
-                  value={currencyFormatter.format(invoiceDetail.grandTotal)}
-                />
-                {invoiceDetail.paidAmount > 0 && (
-                  <>
-                    <InfoRow
-                      label="Paid"
-                      value={currencyFormatter.format(invoiceDetail.paidAmount)}
-                    />
-                    <InfoRow
-                      label="Balance Due"
-                      value={currencyFormatter.format(
-                        invoiceDetail.grandTotal - invoiceDetail.paidAmount,
+              {/* Overview tab */}
+              {activeTab === 'overview' && (
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 320px' },
+                    gap: 3,
+                  }}
+                >
+                  {/* Left column */}
+                  <Stack spacing={3}>
+                    {/* Invoice Information */}
+                    <SectionCard title="Invoice Information">
+                      <DetailRow label="Invoice Number" value={inv.invoiceNumber} />
+                      <DetailRow label="Type" value={inv.type} />
+                      <DetailRow
+                        label="Created"
+                        value={format(new Date(inv.createdAt), 'MMM dd, yyyy')}
+                      />
+                      <DetailRow
+                        label="Due Date"
+                        value={format(new Date(inv.dueDate), 'MMM dd, yyyy')}
+                      />
+                      <DetailRow label="Payment Terms" value={inv.paymentTerms} />
+                      {inv.billingMethod && (
+                        <DetailRow label="Billing Method" value={inv.billingMethod} />
                       )}
-                    />
-                  </>
-                )}
-              </MainCard>
+                      {inv.deliveryMethod && (
+                        <DetailRow label="Delivery Method" value={inv.deliveryMethod} />
+                      )}
+                      {inv.sentToEmail && (
+                        <DetailRow label="Sent To" value={inv.sentToEmail} noBorder />
+                      )}
+                    </SectionCard>
 
-              {/* Payment History */}
-              {invoiceDetail.payments.length > 0 && (
-                <MainCard sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                    Payment History
-                  </Typography>
-                  <Stack spacing={1}>
-                    {invoiceDetail.payments.map((payment) => (
-                      <Box
-                        key={payment.id}
-                        sx={{
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          p: 1.5,
-                        }}
-                      >
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {currencyFormatter.format(payment.amount)}
-                          </Typography>
-                          <Chip
-                            label={payment.method}
-                            size="small"
-                            variant="outlined"
-                            sx={{ height: 20, fontSize: '0.6875rem' }}
+                    {/* Load Reference */}
+                    <SectionCard title="Load Reference">
+                      {inv.load ? (
+                        <>
+                          <DetailRow
+                            label="Load Number"
+                            value={
+                              <Typography
+                                component={RouterLink}
+                                to={`/loads/${inv.load.id}`}
+                                variant="body1"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: 'primary.main',
+                                  textDecoration: 'none',
+                                  '&:hover': { textDecoration: 'underline' },
+                                }}
+                              >
+                                {inv.load.loadNumber}
+                              </Typography>
+                            }
                           />
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary">
-                          {format(new Date(payment.paidAt), 'MMM dd, yyyy')}
-                        </Typography>
-                        {payment.reference && (
-                          <Typography
-                            variant="caption"
-                            color="text.disabled"
-                            sx={{ display: 'block' }}
-                          >
-                            Ref: {payment.reference}
-                          </Typography>
-                        )}
-                      </Box>
-                    ))}
+                          <DetailRow label="Load Status" value={inv.load.status} />
+                          <DetailRow label="Pickup Date" value={'\u2014'} />
+                          <DetailRow label="Delivery Date" value={'\u2014'} />
+                          <DetailRow label="Route" value={'\u2014'} noBorder />
+                        </>
+                      ) : (
+                        <BodyMuted sx={{ p: 2 }}>No load associated.</BodyMuted>
+                      )}
+                    </SectionCard>
+
+                    {/* Carrier */}
+                    <SectionCard title="Carrier">
+                      {inv.carrier ? (
+                        <DetailRow label="Name" value={inv.carrier.name} noBorder />
+                      ) : (
+                        <BodyMuted sx={{ p: 2 }}>No carrier associated.</BodyMuted>
+                      )}
+                    </SectionCard>
+
+                    {/* Accessorials */}
+                    {(inv.accessorialItems?.length ?? 0) > 0 && (
+                      <SectionCard title="Accessorials">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Description</TableCell>
+                              <TableCell align="right">Amount</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {(inv.accessorialItems ?? []).map((acc) => (
+                              <TableRow key={acc.id}>
+                                <TableCell>{acc.description ?? acc.id}</TableCell>
+                                <TableCell align="right">
+                                  {currencyFormatter.format(Number(acc.amount))}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </SectionCard>
+                    )}
                   </Stack>
-                </MainCard>
+
+                  {/* Right column */}
+                  <Stack spacing={3}>
+                    {/* Totals */}
+                    <SectionCard title="Totals">
+                      <DetailRow
+                        label="Subtotal"
+                        value={currencyFormatter.format(subtotalNum)}
+                      />
+                      <DetailRow
+                        label="Accessorials"
+                        value={currencyFormatter.format(accessorialsNum)}
+                      />
+                      <DetailRow
+                        label="Grand Total"
+                        value={currencyFormatter.format(totalAmountNum)}
+                        valueColor="success.main"
+                        sx={{ bgcolor: 'grey.50', fontWeight: 700 }}
+                        noBorder={paidAmount === 0}
+                      />
+                      {paidAmount > 0 && (
+                        <>
+                          <DetailRow
+                            label="Paid"
+                            value={currencyFormatter.format(paidAmount)}
+                          />
+                          <DetailRow
+                            label="Balance Due"
+                            value={currencyFormatter.format(totalAmountNum - paidAmount)}
+                            noBorder
+                          />
+                        </>
+                      )}
+                    </SectionCard>
+
+                    {/* Document Checklist */}
+                    <SectionCard title="Document Checklist">
+                      <Stack spacing={1.5} sx={{ p: 2 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Body>Rate Confirmation</Body>
+                          <Chip label="Present" size="small" color="success" variant="outlined" />
+                        </Stack>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Body>Bill of Lading (BOL)</Body>
+                          {inv.missingSignedBol ? (
+                            <Chip label="Missing" size="small" color="error" variant="outlined" />
+                          ) : (
+                            <Chip label="Present" size="small" color="success" variant="outlined" />
+                          )}
+                        </Stack>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Body>Proof of Delivery (POD)</Body>
+                          <Chip label="\u2014" size="small" variant="outlined" />
+                        </Stack>
+                      </Stack>
+                    </SectionCard>
+
+                    {/* Notes */}
+                    <SectionCard title="Notes">
+                      {inv.notes ? (
+                        <Body sx={{ p: 2 }}>{inv.notes}</Body>
+                      ) : (
+                        <BodyMuted sx={{ p: 2 }}>No notes.</BodyMuted>
+                      )}
+                    </SectionCard>
+                  </Stack>
+                </Box>
               )}
 
-              {/* Notes */}
-              {invoiceDetail.notes && (
-                <MainCard sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-                    Notes
-                  </Typography>
-                  <Typography variant="body2">{invoiceDetail.notes}</Typography>
-                </MainCard>
+              {/* Documents tab */}
+              {activeTab === 'documents' && (
+                <SectionCard title="Documents">
+                  {inv.pdfUrl ? (
+                    <Stack spacing={1} sx={{ p: 2 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        href={inv.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View PDF
+                      </Button>
+                    </Stack>
+                  ) : (
+                    <BodyMuted sx={{ p: 2 }}>No documents available.</BodyMuted>
+                  )}
+                </SectionCard>
               )}
-            </Grid>
-          </Grid>
 
-          {/* Delete Confirmation Dialog */}
-          <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-            <DialogTitle>Delete Invoice</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Are you sure you want to delete invoice {invoiceDetail.invoiceNumber}? This action
-                cannot be undone.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleDelete} color="error" variant="contained">
-                Delete
-              </Button>
-            </DialogActions>
-          </Dialog>
+              {/* Activity tab */}
+              {activeTab === 'activity' && (
+                <SectionCard title="Activity">
+                  <BodyMuted sx={{ p: 2 }}>No activity recorded yet.</BodyMuted>
+                </SectionCard>
+              )}
+            </DetailLayout>
 
-          {/* Payment Drawer */}
-          {paymentDrawerOpen && (
-            <PaymentDrawer
-              invoiceId={invoiceDetail.id}
-              balanceDue={invoiceDetail.grandTotal - invoiceDetail.paidAmount}
-              onClose={handleClosePayment}
-            />
-          )}
-        </>
-      )}
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+              <DialogTitle>Delete Invoice</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  Are you sure you want to delete invoice {inv.invoiceNumber}? This action cannot
+                  be undone.
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleDelete} color="error" variant="contained">
+                  Delete
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Send Invoice Dialog */}
+            <Dialog open={sendDialogOpen} onClose={() => setSendDialogOpen(false)}>
+              <DialogTitle>Send Invoice</DialogTitle>
+              <DialogContent>
+                <DialogContentText sx={{ mb: 2 }}>
+                  This will generate a PDF with all load documents and send it to the recipient.
+                </DialogContentText>
+                <TextField
+                  autoFocus
+                  fullWidth
+                  label="Recipient Email"
+                  type="email"
+                  value={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.value)}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setSendDialogOpen(false)}>Cancel</Button>
+                <Button
+                  onClick={handleSendInvoice}
+                  variant="contained"
+                  disabled={!sendEmail}
+                >
+                  Send
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Mark Paid Dialog */}
+            <Dialog open={markPaidDialogOpen} onClose={() => setMarkPaidDialogOpen(false)}>
+              <DialogTitle>Mark Invoice as Paid</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  This will record full payment of{' '}
+                  {currencyFormatter.format(totalAmountNum - paidAmount)} for invoice{' '}
+                  {inv.invoiceNumber}. Are you sure?
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setMarkPaidDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleMarkPaid} variant="contained" color="success">
+                  Confirm Payment
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </>
+        )}
+      </DataGuard>
     </PageWrapper>
   );
 };

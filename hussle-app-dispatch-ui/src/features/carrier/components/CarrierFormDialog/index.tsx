@@ -1,31 +1,20 @@
 import type React from 'react';
-import { useFormik } from 'formik';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Grid,
-  Typography,
-  Divider,
-} from '@mui/material';
+import { Grid, Typography, Divider, Stack } from '@mui/material';
 import {
   CheckboxField,
   DateField,
-  LoadingButton,
   SelectField,
   TextField,
 } from '@mocho/ui/components';
 import type { Carrier } from '../../types';
 import { carrierEditSchema } from '../../validators/carrierSchema';
 import type { CarrierEditFormValues } from '../../validators/carrierSchema';
+import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 
-interface CarrierFormDialogProps {
+interface CarrierFormDrawerProps {
   open: boolean;
   onClose: () => void;
   carrier?: Carrier;
-  isLoading: boolean;
   onSubmit: (values: CarrierEditFormValues) => void;
 }
 
@@ -35,201 +24,172 @@ const TYPE_OPTIONS = [
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
 ];
 
-export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
+const sectionLabelSx = {
+  color: 'text.secondary',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  fontSize: '0.6875rem',
+  letterSpacing: 0.5,
+} as const;
+
+export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
   open,
   onClose,
   carrier,
-  isLoading,
   onSubmit,
 }) => {
   const isEditMode = carrier !== undefined;
 
-  const formik = useFormik({
-    enableReinitialize: true,
-    initialValues: {
-      name: carrier?.name ?? '',
-      type: carrier?.type ?? 'EXTERNAL_CARRIER',
-      mcNumber: carrier?.mcNumber ?? '',
-      dotNumber: carrier?.dotNumber ?? '',
-      phone: carrier?.phone ?? '',
-      email: carrier?.email ?? '',
-      address: carrier?.address ?? '',
-      city: carrier?.city ?? '',
-      state: carrier?.state ?? '',
-      zip: carrier?.zip ?? '',
-      dispatchFeePercent: carrier?.dispatchFeePercent ?? '10',
-      partnerSplitPercent: carrier?.partnerSplitPercent ?? '50',
-      feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
-      dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
-      insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
-      w9OnFile: carrier?.w9OnFile ?? false,
-      carrierPacketOnFile: carrier?.carrierPacketOnFile ?? false,
-      insuranceExpiry: carrier?.insuranceExpiry ? new Date(carrier.insuranceExpiry) : null,
-      notes: carrier?.notes ?? '',
-    },
-    validationSchema: carrierEditSchema,
-    onSubmit: (values) => {
-      onSubmit(values);
-    },
-  });
-
-  const handleClose = () => {
-    formik.resetForm();
-    onClose();
+  const initialValues = {
+    name: carrier?.name ?? '',
+    type: carrier?.type ?? 'EXTERNAL_CARRIER',
+    mcNumber: carrier?.mcNumber ?? '',
+    dotNumber: carrier?.dotNumber ?? '',
+    phone: carrier?.phone ?? '',
+    email: carrier?.email ?? '',
+    address: carrier?.address ?? '',
+    city: carrier?.city ?? '',
+    state: carrier?.state ?? '',
+    zip: carrier?.zip ?? '',
+    dispatchFeePercent: carrier?.dispatchFeePercent ?? 10,
+    partnerSplitPercent: carrier?.partnerSplitPercent ?? 50,
+    feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
+    dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
+    insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
+    w9OnFile: carrier?.w9OnFile ?? false,
+    carrierPacketOnFile: carrier?.carrierPacketOnFile ?? false,
+    insuranceExpiry: carrier?.insuranceExpiry ? new Date(carrier.insuranceExpiry) : null,
+    notes: carrier?.notes ?? '',
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>{isEditMode ? 'Edit Carrier' : 'Add Carrier'}</DialogTitle>
-
-      <DialogContent dividers>
-        <form id="carrier-form" onSubmit={formik.handleSubmit} noValidate>
+    <FormDrawer
+      open={open}
+      onClose={onClose}
+      title={isEditMode ? 'Edit Carrier' : 'Add Carrier'}
+      subtitle={carrier?.name}
+      initialValues={initialValues}
+      validationSchema={carrierEditSchema}
+      onSubmit={(values) => {
+        onSubmit(values);
+      }}
+      saveLabel={isEditMode ? 'Save Changes' : 'Add Carrier'}
+      savingLabel={isEditMode ? 'Saving…' : 'Creating…'}
+    >
+      {(formik) => (
+        <Stack spacing={2.5} sx={{ p: 3 }}>
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Basic Info
+          </Typography>
           <Grid container spacing={2}>
-            {/* Basic Info */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                Basic Info
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
-
             <Grid item xs={12} md={8}>
               <TextField name="name" label="Name" formik={formik} required />
             </Grid>
-
             <Grid item xs={12} md={4}>
               <SelectField name="type" label="Type" data={TYPE_OPTIONS} formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+          </Grid>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
               <TextField name="mcNumber" label="MC Number" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={6}>
               <TextField name="dotNumber" label="DOT Number" formik={formik} />
             </Grid>
+          </Grid>
 
-            {/* Contact */}
-            <Grid item xs={12} sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                Contact
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
+          <Divider />
 
-            <Grid item xs={12} md={6}>
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Contact
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
               <TextField name="phone" label="Phone" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={6}>
               <TextField name="email" label="Email" formik={formik} />
             </Grid>
-
-            <Grid item xs={12}>
-              <TextField name="address" label="Address" formik={formik} />
-            </Grid>
-
-            <Grid item xs={12} md={5}>
+          </Grid>
+          <TextField name="address" label="Address" formik={formik} />
+          <Grid container spacing={2}>
+            <Grid item xs={5}>
               <TextField name="city" label="City" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={4}>
+            <Grid item xs={4}>
               <TextField name="state" label="State" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={3}>
+            <Grid item xs={3}>
               <TextField name="zip" label="ZIP" formik={formik} />
             </Grid>
+          </Grid>
 
-            {/* Financial */}
-            <Grid item xs={12} sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                Financial
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
+          <Divider />
+
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Financial
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={4}>
+              <TextField name="dispatchFeePercent" label="Dispatch Fee %" type="number" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={4}>
-              <TextField name="dispatchFeePercent" label="Dispatch Fee %" formik={formik} />
+            <Grid item xs={4}>
+              <TextField name="partnerSplitPercent" label="Partner Split %" type="number" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={4}>
-              <TextField name="partnerSplitPercent" label="Partner Split %" formik={formik} />
-            </Grid>
-
-            <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center' }}>
               <CheckboxField
                 name="feeIncludesAccessorials"
                 label="Fee Includes Accessorials"
                 formik={formik}
               />
             </Grid>
+          </Grid>
 
-            {/* Onboarding */}
-            <Grid item xs={12} sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                Onboarding
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
+          <Divider />
 
-            <Grid item xs={12} md={6}>
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Onboarding
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
               <CheckboxField
                 name="dispatchAgreementOnFile"
                 label="Dispatch Agreement on File"
                 formik={formik}
               />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={6}>
               <CheckboxField
                 name="insuranceCertOnFile"
                 label="Insurance Certificate on File"
                 formik={formik}
               />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={6}>
               <CheckboxField name="w9OnFile" label="W-9 on File" formik={formik} />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={6}>
               <CheckboxField
                 name="carrierPacketOnFile"
                 label="Carrier Packet on File"
                 formik={formik}
               />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={6}>
               <DateField name="insuranceExpiry" label="Insurance Expiry" formik={formik} />
             </Grid>
-
-            {/* Notes */}
-            <Grid item xs={12} sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                Notes
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField name="notes" label="Notes" formik={formik} />
-            </Grid>
           </Grid>
-        </form>
-      </DialogContent>
 
-      <DialogActions>
-        <Button onClick={handleClose} color="inherit" variant="outlined">
-          Cancel
-        </Button>
-        <LoadingButton type="submit" form="carrier-form" variant="contained" loading={isLoading}>
-          {isEditMode ? 'Save Changes' : 'Add Carrier'}
-        </LoadingButton>
-      </DialogActions>
-    </Dialog>
+          <Divider />
+
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Notes
+          </Typography>
+          <TextField name="notes" label="Notes" formik={formik} />
+        </Stack>
+      )}
+    </FormDrawer>
   );
 };
 
-export default CarrierFormDialog;
+export default CarrierFormDrawer;

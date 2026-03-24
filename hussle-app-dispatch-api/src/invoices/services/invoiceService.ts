@@ -21,20 +21,20 @@ import type {
   MarkPaidServiceInput,
 } from '../types/invoiceServiceTypes';
 
-interface NotificationPort {
-  sendEmail(params: {
-    to: string;
-    from: string;
+interface InvoiceEmailPort {
+  sendInvoiceEmail(input: {
+    invoiceId: string;
+    recipientEmail: string;
+    replyToEmail?: string;
+    fromEmail: string;
     subject: string;
-    html: string;
-    attachments?: { filename: string; content: string }[];
   }): Promise<void>;
 }
 
 interface InvoiceServiceDeps {
   invoiceRepo: InvoiceRepoPort;
   loadQuery: InvoiceLoadQueryPort;
-  notificationService: NotificationPort;
+  invoiceEmailService: InvoiceEmailPort;
   logger: Logger;
 }
 
@@ -128,23 +128,28 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
       throw new ValidationError('Only APPROVED invoices can be sent');
     }
 
-    // Send notification (logging in dev)
-    await deps.notificationService.sendEmail({
-      to: email,
-      from: 'invoices@dispatch.app',
-      subject: `Invoice ${invoice.invoiceNumber}`,
-      html: `<p>Please find attached invoice ${invoice.invoiceNumber} for load ${invoice.load.loadNumber}.</p>`,
+    // Send invoice email with PDF + load document attachments
+    await deps.invoiceEmailService.sendInvoiceEmail({
+      invoiceId: id,
+      recipientEmail: email,
+      fromEmail: 'invoices@fleetcommand.app',
+      subject: `Invoice from ${invoice.carrier?.name ?? 'Carrier'} — Load #${invoice.load.loadNumber}`,
     });
 
-    const updated = await deps.invoiceRepo.updateStatus(id, 'SENT', {
-      sentAt: new Date(),
-      sentTo: email,
-    });
+    // Status update happens inside invoiceEmailService, re-fetch
+    const updated = await deps.invoiceRepo.findById(id);
 
-    deps.logger.info('Invoice sent', { invoiceId: id, email });
+    if (updated === null) {
+      throw new NotFoundError('Invoice not found after send');
+    }
+
+    deps.logger.info('Invoice sent with PDF + attachments', { invoiceId: id, email });
 
     return updated;
   },
+
+  getDraftCount: async (organizationId: string): Promise<number> =>
+    deps.invoiceRepo.countByStatus(organizationId, 'DRAFT'),
 
   markPaid: async ({ id, amount, method, reference, date }) => {
     const invoice = await deps.invoiceRepo.findById(id);

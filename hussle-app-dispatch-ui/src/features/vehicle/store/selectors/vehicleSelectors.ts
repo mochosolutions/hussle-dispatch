@@ -79,7 +79,8 @@ export const selectVehicleKpis = createSelector(
   [selectAllVehicles],
   (vehicles): VehicleKpiItem[] => {
     const activeCount = vehicles.filter((vehicle) => vehicle.isActive).length;
-    const carrierCount = 0;
+    const carrierIds = new Set(vehicles.map((v) => v.carrierId).filter(Boolean));
+    const carrierCount = carrierIds.size;
     const totalRevenue = 0;
 
     return [
@@ -96,16 +97,22 @@ export const selectVehicleKpis = createSelector(
       {
         label: 'Carrier Count',
         value: String(carrierCount),
-        subtitle: 'Placeholder',
+        subtitle: 'Unique carriers',
       },
       {
         label: 'Revenue',
         value: currencyFormatter.format(totalRevenue),
-        subtitle: 'Placeholder',
+        subtitle: 'Total lifetime revenue',
       },
     ];
   },
 );
+
+export const selectVehicleLoadHistory = (vehicleId: string) => (state: RootState) =>
+  state.pages.vehicleLoadHistory.loadsByVehicleId[vehicleId] ?? [];
+
+export const selectVehicleLoadHistoryLoading = (vehicleId: string) => (state: RootState) =>
+  state.pages.vehicleLoadHistory.loading[`fetch:${vehicleId}`] === 'Pending';
 
 export const selectDriversByCarrierId = (carrierId: string | null) =>
   createSelector(
@@ -115,3 +122,26 @@ export const selectDriversByCarrierId = (carrierId: string | null) =>
       return drivers.filter((driver) => driver.carrierId === carrierId);
     },
   );
+
+// ---------------------------------------------------------------------------
+// List page filtering selectors
+// ---------------------------------------------------------------------------
+
+export type VehicleTab = 'all' | 'OWNED' | 'LEASED';
+
+export const selectFilteredVehicles = (activeTab: VehicleTab) =>
+  createSelector([selectAllVehicles], (vehicles) => {
+    if (activeTab === 'all') {
+      return [...vehicles];
+    }
+    return vehicles.filter((vehicle) => vehicle.ownership === activeTab);
+  });
+
+export const selectVehicleTabCounts = createSelector(
+  [selectAllVehicles],
+  (vehicles) => ({
+    all: vehicles.length,
+    OWNED: vehicles.filter((vehicle) => vehicle.ownership === 'OWNED').length,
+    LEASED: vehicles.filter((vehicle) => vehicle.ownership === 'LEASED').length,
+  }),
+);

@@ -1,6 +1,6 @@
 import type { LoadIntelRedis } from '../../types/loadIntelTypes';
 
-interface LoadIntelResponse {
+export interface LoadIntelResponse {
   loadHash: string;
   orgId: string;
   bestScore: number;

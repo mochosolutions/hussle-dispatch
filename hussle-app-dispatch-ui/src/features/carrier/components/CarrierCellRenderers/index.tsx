@@ -1,5 +1,13 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
-import type { CarrierListItem } from '../../types';
+import { StatusBadge } from 'components/Statusbadge';
+import { TwoLineCell } from 'components/Typography';
+import type { CarrierListItem, CarrierType } from '../../types';
+
+export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
+  COMPANY_ASSET: 'Company Asset',
+  OWNER_OPERATOR: 'Owner Operator',
+  EXTERNAL_CARRIER: 'External Carrier',
+};
 
 export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => {
   const initials = data.name
@@ -8,12 +16,12 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
     .map((word) => word.charAt(0).toUpperCase())
     .join('');
   return (
-    // <Stack direction="column" justifyContent="center" sx={{ height: '100%' }}>
-    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.5 }}>
+    <Stack direction="row" gap={1.5} alignItems="center" sx={{ py: 0.5 }}>
       <Box
         sx={{
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
+          flexShrink: 0,
           borderRadius: 1,
           backgroundColor: data.type === 'COMPANY_ASSET' ? 'primary.lighter' : 'success.lighter',
           color: data.type === 'COMPANY_ASSET' ? 'primary.main' : 'success.main',
@@ -36,8 +44,6 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
       >
         <Typography
           variant="subtitle2"
-          color="primary.main"
-          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
         >
           {data.name}
         </Typography>
@@ -50,12 +56,10 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
 };
 
 export const CarrierTypeCellRenderer = ({ value }: { value: CarrierListItem['type'] }) => {
-  const isCompanyAsset = value === 'COMPANY_ASSET';
-  const label = isCompanyAsset ? 'Company Asset' : 'External Carrier';
-  const color = isCompanyAsset ? 'secondary' : 'info';
+  const label = CARRIER_TYPE_LABELS[value] ?? 'Unknown';
 
   return (
-    <Chip label={label} size="small" color={color} variant="outlined" sx={{ fontWeight: 600 }} />
+    <StatusBadge status={value} label={label} size="small" />
   );
 };
 
@@ -75,39 +79,35 @@ export const CarrierOnboardingTypeCellRenderer = ({ data }: { data: CarrierListI
 };
 
 export const CarrierContactCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  const name = data.primaryContactName;
+  const email = data.primaryContactEmail;
+
+  if (!name && !email) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        —
+      </Typography>
+    );
+  }
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        py: 0.5,
-      }}
-    >
-      <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-        {data.email}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {data.phone}
-      </Typography>
-    </Box>
+    <TwoLineCell
+      primary={name ?? '—'}
+      secondary={email ?? ''}
+    />
   );
 };
 
-export const CarrierStatusCellRenderer = ({ data }: { data: CarrierListItem }) => {
-  const status = 'UNKNOWN';
-  const chipColor: 'success' | 'warning' | 'info' | 'default' = 'default';
+import { CARRIER_STATUS_COLORS, CARRIER_STATUS_LABELS } from '../../constants';
 
-  //   if (status === 'ACTIVE') {
-  //     chipColor = 'success';
-  //   } else if (status === 'PENDING') {
-  //     chipColor = 'warning';
-  //   } else if (status === 'ONBOARDING') {
-  //     chipColor = 'info';
-  //   }
+export const CarrierStatusCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  const status = data.status ?? 'DRAFT';
+  const chipColor = CARRIER_STATUS_COLORS[status] ?? 'default';
+  const label = CARRIER_STATUS_LABELS[status] ?? status;
 
   return (
     <Chip
-      label={status.charAt(0) + status.slice(1).toLowerCase()}
+      label={label}
       size="small"
       color={chipColor}
       variant="filled"

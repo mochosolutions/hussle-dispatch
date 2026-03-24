@@ -20,6 +20,7 @@ const buildListWhere = (
     facilityType?: PlaceQueryInput['filters']['facilityType'];
     state?: string;
     contactId?: string;
+    customerId?: string;
     OR?: {
       name?: { contains: string; mode: 'insensitive' };
       city?: { contains: string; mode: 'insensitive' };
@@ -40,6 +41,10 @@ const buildListWhere = (
 
   if (filters.contactId !== undefined && filters.contactId.length > 0) {
     where.contactId = filters.contactId;
+  }
+
+  if (filters.customerId !== undefined && filters.customerId.length > 0) {
+    where.customerId = filters.customerId;
   }
 
   if (filters.search !== undefined && filters.search.length > 0) {

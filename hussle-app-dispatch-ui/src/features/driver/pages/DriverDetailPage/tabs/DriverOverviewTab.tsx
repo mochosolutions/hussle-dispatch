@@ -1,10 +1,11 @@
-import { Box, Button, Card, Chip, Grid, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Grid, Stack, Typography } from '@mui/material';
 
 import { EmptyState } from '@mocho/ui/components';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { Driver } from 'features/carrier/types';
 import { FieldRow } from 'features/carrier/components/FieldRow';
 import { EditableSectionHeader } from 'features/carrier/components/EditableSectionHeader';
+import SectionCard from 'components/SectionCard';
 
 interface DriverWithCarrierInfo extends Driver {
   carrierName: string | null;
@@ -34,11 +35,10 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
   <Grid container spacing={2.5} sx={{ p: 3, maxWidth: 1200 }}>
     {/* Left Column -- Driver Information */}
     <Grid item xs={4}>
-      <Card>
-        <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <EditableSectionHeader title="Driver Information" onEdit={onEditInfo} />
-        </Box>
-        <Box sx={{ px: 3, py: 2 }}>
+      <SectionCard
+        title={<EditableSectionHeader title="Driver Information" onEdit={onEditInfo} />}
+      >
+        <Box sx={{ px: 1.5, py: 1 }}>
           <FieldRow label="Full Name" value={getDriverDisplayName(d)} />
           <FieldRow label="Phone" value={d.phone} />
           <FieldRow label="Email" value={d.email} isLink />
@@ -53,25 +53,17 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
             value={d.dispatchFeePercent !== null ? `${d.dispatchFeePercent}%` : '\u2014'}
           />
         </Box>
-      </Card>
+      </SectionCard>
     </Grid>
 
     {/* Center Column -- Performance + Weekly Gross */}
     <Grid item xs={5}>
       <Stack spacing={2}>
-        <Card>
-          <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-            >
-              Performance (All Time)
-            </Typography>
-          </Box>
+        <SectionCard title="Performance (All Time)">
           <Box
             sx={{
-              px: 3,
-              py: 2.5,
+              px: 1.5,
+              py: 1,
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 2,
@@ -102,21 +94,13 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
               </Box>
             ))}
           </Box>
-        </Card>
+        </SectionCard>
 
-        <Card>
-          <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-            >
-              Weekly Gross History
-            </Typography>
-          </Box>
-          <Box sx={{ px: 3, py: 4 }}>
+        <SectionCard title="Weekly Gross History">
+          <Box sx={{ px: 1.5, py: 2 }}>
             <EmptyState title="No load history data available" />
           </Box>
-        </Card>
+        </SectionCard>
       </Stack>
     </Grid>
 
@@ -124,14 +108,14 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
     <Grid item xs={3}>
       <Stack spacing={2}>
         {/* Status & Location */}
-        <Card>
-          <Box sx={{ px: 2.5, py: 2 }}>
+        <SectionCard
+          title={
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                mb: 1.5,
+                width: '100%',
               }}
             >
               <Typography
@@ -154,6 +138,9 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
                 Edit
               </Button>
             </Box>
+          }
+        >
+          <Box sx={{ px: 1, py: 0.5 }}>
             {[
               {
                 label: 'Status',
@@ -194,7 +181,7 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
               </Box>
             ))}
           </Box>
-        </Card>
+        </SectionCard>
 
         {/* Find Matching Loads */}
         <Button variant="contained" color="success" disabled fullWidth>
@@ -202,34 +189,21 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
         </Button>
 
         {/* Upcoming Load */}
-        <Card>
-          <Box sx={{ px: 2.5, py: 2 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-                fontSize: '0.6875rem',
-                color: 'text.disabled',
-                mb: 1.5,
-              }}
-            >
-              Upcoming Load
-            </Typography>
+        <SectionCard title="Upcoming Load">
+          <Box sx={{ px: 1, py: 1 }}>
             <EmptyState title="No upcoming load" />
           </Box>
-        </Card>
+        </SectionCard>
 
         {/* Preferences Snapshot */}
-        <Card>
-          <Box sx={{ px: 2.5, py: 2 }}>
+        <SectionCard
+          title={
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                mb: 1.5,
+                width: '100%',
               }}
             >
               <Typography
@@ -252,7 +226,9 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
                 Edit
               </Button>
             </Box>
-
+          }
+        >
+          <Box sx={{ px: 1, py: 0.5 }}>
             <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
               Preferred Lanes
             </Typography>
@@ -320,7 +296,7 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
               </Typography>
             </Box>
           </Box>
-        </Card>
+        </SectionCard>
       </Stack>
     </Grid>
   </Grid>

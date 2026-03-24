@@ -1,10 +1,11 @@
-import type { CarrierListItem, CarrierOnboardingStatus } from 'features/carrier/types';
+import type { CarrierListItem, CarrierNote, CarrierOnboardingStatus } from 'features/carrier/types';
 
 export const mockCarriers: CarrierListItem[] = [
   {
     id: 'carrier-001',
     name: 'Acme Freight LLC',
     type: 'COMPANY_ASSET',
+    status: 'ACTIVE',
     mcNumber: 'MC-123456',
     dotNumber: '1234567',
     ein: '12-3456789',
@@ -35,6 +36,7 @@ export const mockCarriers: CarrierListItem[] = [
     id: 'carrier-002',
     name: "Mike's Owner Op",
     type: 'OWNER_OPERATOR',
+    status: 'DRAFT',
     mcNumber: 'MC-654321',
     dotNumber: '7654321',
     ein: null,
@@ -65,6 +67,7 @@ export const mockCarriers: CarrierListItem[] = [
     id: 'carrier-003',
     name: 'FastFreight External',
     type: 'EXTERNAL_CARRIER',
+    status: 'DRAFT',
     mcNumber: null,
     dotNumber: null,
     ein: null,
@@ -124,4 +127,32 @@ export const mockOnboardingStatuses: Record<string, CarrierOnboardingStatus> = {
     insuranceExpiry: null,
     insuranceWarning: null,
   },
+};
+
+export const mockCarrierNotes: Record<string, CarrierNote[]> = {
+  'carrier-001': [
+    {
+      id: 'note-001',
+      carrierId: 'carrier-001',
+      content: 'Renewed insurance cert — new expiry 2027-01-15.',
+      authorName: 'Jane Doe',
+      createdAt: '2026-01-10T08:00:00.000Z',
+    },
+    {
+      id: 'note-002',
+      carrierId: 'carrier-001',
+      content: 'Completed onboarding and signed dispatch agreement.',
+      authorName: 'Jane Doe',
+      createdAt: '2025-06-01T10:00:00.000Z',
+    },
+  ],
+  'carrier-002': [
+    {
+      id: 'note-003',
+      carrierId: 'carrier-002',
+      content: 'Missing W-9 and carrier packet — follow up next week.',
+      authorName: 'Jane Doe',
+      createdAt: '2026-03-15T14:00:00.000Z',
+    },
+  ],
 };

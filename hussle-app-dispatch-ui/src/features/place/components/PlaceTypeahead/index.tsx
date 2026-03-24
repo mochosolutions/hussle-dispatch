@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Autocomplete,
+  Button,
   TextField,
   Box,
   Typography,
   Chip,
-  IconButton,
   CircularProgress,
+  Divider,
+  Paper,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import type { PaperProps } from '@mui/material';
+import { BaseFieldWrapper } from 'mocho/components/form-fields/BaseFieldWrapper';
 import type { Place } from '../../types';
 import { typeaheadPlaces } from 'utils/api/places/placeApi';
 import { PlaceInfoDrawer } from '../PlaceInfoDrawer';
@@ -21,9 +24,12 @@ interface PlaceTypeaheadProps {
   onChange: (place: Place | null) => void;
   onAutoFill?: (place: Place) => void;
   disabled?: boolean;
+  name?: string;
   label?: string;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
+  placeholder?: string;
 }
 
 const FACILITY_TYPE_LABELS: Record<string, string> = {
@@ -38,17 +44,19 @@ const FACILITY_TYPE_LABELS: Record<string, string> = {
   OTHER: 'Other',
 };
 
-const formatOptionLabel = (place: Place): string =>
-  `${place.name} — ${place.city}, ${place.state}`;
+const formatOptionLabel = (place: Place): string => `${place.name} — ${place.city}, ${place.state}`;
 
 export const PlaceTypeahead: React.FC<PlaceTypeaheadProps> = ({
   value,
   onChange,
   onAutoFill,
   disabled = false,
+  name = 'placeId',
   label = 'Place',
+  onBlur,
   error = false,
   helperText,
+  placeholder = 'Search place by name or city',
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState<Place[]>([]);
@@ -108,6 +116,7 @@ export const PlaceTypeahead: React.FC<PlaceTypeaheadProps> = ({
 
   const handleSelectionChange = useCallback(
     (_event: React.SyntheticEvent, newValue: Place | null) => {
+      setInputValue(newValue ? formatOptionLabel(newValue) : '');
       onChange(newValue);
       if (newValue && onAutoFill) {
         onAutoFill(newValue);
@@ -124,32 +133,78 @@ export const PlaceTypeahead: React.FC<PlaceTypeaheadProps> = ({
     setCreateDrawerOpen(false);
   }, []);
 
+  useEffect(() => {
+    if (value === null) {
+      setInputValue('');
+      return;
+    }
+
+    setInputValue(formatOptionLabel(value));
+  }, [value]);
+
+  const ActionPaper: React.FC<PaperProps> = (paperProps) => {
+    const { children, ...rest } = paperProps;
+
+    return (
+      <Paper {...rest}>
+        {children}
+        <Divider />
+        <Box sx={{ p: 1 }}>
+          <Button
+            fullWidth
+            size="small"
+            variant="text"
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={handleOpenCreateDrawer}
+          >
+            Add New Place
+          </Button>
+        </Box>
+      </Paper>
+    );
+  };
+
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+      <BaseFieldWrapper
+        name={name}
+        label={label}
+        error={error ? helperText : undefined}
+        touched={error}
+        helperText={!error ? helperText : undefined}
+      >
         <Autocomplete<Place, false, false, false>
           value={value}
           onChange={handleSelectionChange}
           inputValue={inputValue}
-          onInputChange={(_event, newInputValue) => setInputValue(newInputValue)}
+          onInputChange={(_event, newInputValue, reason) => {
+            if (reason === 'reset') {
+              return;
+            }
+
+            setInputValue(newInputValue);
+          }}
           options={options}
           getOptionLabel={formatOptionLabel}
           isOptionEqualToValue={(option, val) => option.id === val.id}
           loading={loading}
+          PaperComponent={ActionPaper}
           noOptionsText={
-            inputValue.length < MIN_CHARS
-              ? 'Type at least 2 characters'
-              : 'No places found'
+            inputValue.length < MIN_CHARS ? 'Type at least 2 characters' : 'No places found'
           }
           disabled={disabled}
           fullWidth
           renderInput={(params) => (
             <TextField
               {...params}
-              label={label}
+              id={name}
+              placeholder={placeholder}
               size="small"
+              fullWidth
               error={error}
-              helperText={helperText}
+              onBlur={onBlur}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (
@@ -188,22 +243,10 @@ export const PlaceTypeahead: React.FC<PlaceTypeaheadProps> = ({
               </Box>
             </Box>
           )}
-          sx={{ flex: 1 }}
         />
-        <IconButton
-          onClick={handleOpenCreateDrawer}
-          disabled={disabled}
-          size="small"
-          aria-label="Create new place"
-          sx={{ mt: 0.25 }}
-        >
-          <AddIcon fontSize="small" />
-        </IconButton>
-      </Box>
+      </BaseFieldWrapper>
 
-      {createDrawerOpen && (
-        <PlaceInfoDrawer onClose={handleCloseCreateDrawer} />
-      )}
+      {createDrawerOpen && <PlaceInfoDrawer onClose={handleCloseCreateDrawer} />}
     </>
   );
 };

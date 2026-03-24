@@ -137,6 +137,7 @@ interface SingleScorePanelProps {
 
 const SingleScorePanel: React.FC<SingleScorePanelProps> = ({ item }) => {
   const { score, scoreBreakdown, bestTruck, minBookRate } = item;
+  const breakdown = scoreBreakdown ?? { cpm: 0, market: 0, driverFit: 0 };
 
   return (
     <Box sx={{ flex: 1, p: 1.5 }}>
@@ -147,9 +148,9 @@ const SingleScorePanel: React.FC<SingleScorePanelProps> = ({ item }) => {
         <ScoreIndicator score={score} />
         <Box sx={{ flex: 1 }}>
           <Stack spacing={0.5}>
-            <ScoreBar label="CPM" value={scoreBreakdown.cpm} max={40} />
-            <ScoreBar label="Market" value={scoreBreakdown.market} max={30} />
-            <ScoreBar label="Fit" value={scoreBreakdown.driverFit} max={30} />
+            <ScoreBar label="CPM" value={breakdown.cpm} max={40} />
+            <ScoreBar label="Market" value={breakdown.market} max={30} />
+            <ScoreBar label="Fit" value={breakdown.driverFit} max={30} />
           </Stack>
         </Box>
       </Stack>
@@ -211,7 +212,9 @@ interface ChainScorePanelProps {
 }
 
 const ChainScorePanel: React.FC<ChainScorePanelProps> = ({ item }) => {
-  const { chain, chainScore, chainCount } = item;
+  const chain = item.chain ?? null;
+  const chainScore = item.chainScore ?? null;
+  const chainCount = item.chainCount ?? 0;
 
   if (chainCount === 0 && !chain) {
     return (
@@ -368,8 +371,10 @@ export const IntelCard: React.FC<IntelCardProps> = ({ item }) => {
   const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(false);
 
-  const marketColor = MARKET_COLORS[item.marketStrength] ?? MARKET_COLORS.Balanced;
-  const sourceColor = SOURCE_COLORS[item.source.type] ?? SOURCE_COLORS.Manual;
+  const marketStrength = item.marketStrength ?? 'Balanced';
+  const sourceType = item.source?.type ?? 'Manual';
+  const marketColor = MARKET_COLORS[marketStrength] ?? MARKET_COLORS.Balanced;
+  const sourceColor = SOURCE_COLORS[sourceType] ?? SOURCE_COLORS.Manual;
 
   const handleToggleExpand = useCallback(() => {
     if (!expanded && item.truckBreakdown.length === 0) {
@@ -421,7 +426,7 @@ export const IntelCard: React.FC<IntelCardProps> = ({ item }) => {
         {/* Badges & Rate */}
         <Stack direction="row" spacing={1} alignItems="center">
           <Chip
-            label={item.marketStrength}
+            label={marketStrength}
             size="small"
             sx={{
               color: marketColor.color,
@@ -431,7 +436,7 @@ export const IntelCard: React.FC<IntelCardProps> = ({ item }) => {
             }}
           />
           <Chip
-            label={item.source.type}
+            label={sourceType}
             size="small"
             sx={{
               color: sourceColor.color,
@@ -481,7 +486,7 @@ export const IntelCard: React.FC<IntelCardProps> = ({ item }) => {
           <Button variant="contained" size="small" onClick={handleBookLoad}>
             Book This Load
           </Button>
-          {(item.chainCount > 0 || item.chain !== null) && (
+          {((item.chainCount ?? 0) > 0 || item.chain !== null) && (
             <Button variant="outlined" size="small" onClick={handleBookChain}>
               Book Chain
             </Button>

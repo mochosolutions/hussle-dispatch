@@ -1,6 +1,64 @@
 import { Box, Typography } from '@mui/material';
+import { differenceInCalendarDays, format, parse } from 'date-fns';
+import type { Carrier } from '../../types';
 
-export const CarrierKPI = (c) => {
+interface CarrierKPIProps {
+  /** Carrier from selectFormattedCarrierById — dates are pre-formatted as MM/dd/yyyy */
+  c: Carrier;
+}
+
+interface KpiItem {
+  label: string;
+  primary: string;
+  secondary: string;
+  color?: 'success.main' | 'error.main' | 'text.primary';
+}
+
+const SELECTOR_DATE_FORMAT = 'MM/dd/yyyy';
+
+const buildInsuranceKpi = (insuranceExpiry: string | null): KpiItem => {
+  if (!insuranceExpiry) {
+    return { label: 'COI EXPIRES', primary: '\u2014', secondary: '' };
+  }
+
+  const expiryDate = parse(insuranceExpiry, SELECTOR_DATE_FORMAT, new Date());
+  const daysRemaining = differenceInCalendarDays(expiryDate, new Date());
+  const formattedDate = format(expiryDate, 'MMM d, yyyy');
+
+  if (daysRemaining < 0) {
+    return { label: 'COI EXPIRES', primary: formattedDate, secondary: 'Expired', color: 'error.main' };
+  }
+
+  return {
+    label: 'COI EXPIRES',
+    primary: formattedDate,
+    secondary: `${daysRemaining} days remaining`,
+    color: daysRemaining > 30 ? 'success.main' : undefined,
+  };
+};
+
+export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c }) => {
+  const kpiItems: KpiItem[] = [
+    { label: 'MC / DOT', primary: c.mcNumber ?? '\u2014', secondary: c.dotNumber ?? '\u2014' },
+    { label: 'CONTACT', primary: c.phone ?? '\u2014', secondary: c.email ?? '\u2014' },
+    {
+      label: 'DISPATCH FEE',
+      primary: c.dispatchFeePercent ? `${c.dispatchFeePercent}%` : '\u2014',
+      secondary: c.partnerSplitPercent ? `${c.partnerSplitPercent}% partner split` : '',
+    },
+    {
+      label: 'DRIVERS',
+      primary: '\u2014',
+      secondary: '',
+    },
+    {
+      label: 'LIFETIME REVENUE',
+      primary: '\u2014',
+      secondary: '',
+    },
+    buildInsuranceKpi(c.insuranceExpiry),
+  ];
+
   return (
     <Box
       sx={{
@@ -12,28 +70,7 @@ export const CarrierKPI = (c) => {
         bgcolor: 'grey.50',
       }}
     >
-      {[
-        { label: 'MC / DOT', primary: c.mcNumber, secondary: c.dotNumber },
-        { label: 'CONTACT', primary: c.phone ?? '—', secondary: c.email ?? '—' },
-        {
-          label: 'DISPATCH FEE',
-          primary: `${c.dispatchFeePercent}%`,
-          secondary: c.partnerSplitPercent ? `${c.partnerSplitPercent}% partner split` : '',
-        },
-        { label: 'DRIVERS', primary: '2', secondary: '1 available, 1 at delivery' },
-        {
-          label: 'LIFETIME REVENUE',
-          primary: '$12,800',
-          secondary: '8 loads',
-          highlight: true,
-        },
-        {
-          label: 'COI EXPIRES',
-          primary: 'Aug 30, 2026',
-          secondary: '152 days remaining',
-          highlightGreen: true,
-        },
-      ].map((kpi, i) => (
+      {kpiItems.map((kpi, i) => (
         <Box
           key={kpi.label}
           sx={{
@@ -59,7 +96,7 @@ export const CarrierKPI = (c) => {
             variant="body2"
             sx={{
               fontWeight: 700,
-              color: kpi.highlight || kpi.highlightGreen ? 'success.main' : 'text.primary',
+              color: kpi.color ?? 'text.primary',
               mt: 0.5,
             }}
           >

@@ -1,5 +1,6 @@
 import type { LoadStatus } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
+import type { EventMap } from '@/shared/messaging/eventMap';
 import type { Logger } from '@/shared/utils/logger';
 import {
   NotFoundError,
@@ -11,13 +12,14 @@ import {
   validateTransition,
   TRANSITION_SIDE_EFFECTS,
 } from '@/shared/stateMachine';
-import type { LoadRepoPort } from '../types/loadTypes';
+import type { LoadRepoPort, LoadWithRelations } from '../types/loadTypes';
 import type {
   TransitionStatusInput,
   StatusTransitionResponse,
   StatusTransitionWarning,
   LoadStatusRepoPort,
 } from '../types/loadStatusTypes';
+import { calculateAndPersistFinancials } from './calculateFinancials';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -33,6 +35,7 @@ interface SideEffectDeps {
   loadStatusRepo: LoadStatusRepoPort;
   eventBus: EventBus;
   logger: Logger;
+  load: LoadWithRelations;
 }
 
 const executeSideEffects = async (
@@ -46,8 +49,7 @@ const executeSideEffects = async (
     switch (effect) {
       case 'CALCULATE_FINANCIALS':
         deps.logger.info('Side effect: calculate financials', { loadId, targetStatus });
-        // Financials are calculated via the existing load update flow.
-        // This hook is a placeholder for future auto-calculation integration.
+        await calculateAndPersistFinancials(loadId, deps);
         break;
 
       case 'FREEZE_FINANCIALS':
@@ -56,7 +58,7 @@ const executeSideEffects = async (
         break;
 
       case 'AUTO_GENERATE_INVOICE':
-        deps.logger.info('Side effect: auto-generate invoice (pending)', { loadId, targetStatus });
+        deps.logger.info('Side effect: auto-generate invoice (via domain event)', { loadId, targetStatus });
         // Invoice generation will be wired in a future story.
         break;
 
@@ -80,32 +82,67 @@ const executeSideEffects = async (
 
 interface PublishDomainEventsInput {
   loadId: string;
+  organizationId: string;
+  loadNumber: string;
+  fromStatus: LoadStatus | null;
   targetStatus: LoadStatus;
+  customerId: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
   eventBus: EventBus;
   logger: Logger;
 }
 
 const publishDomainEvents = async (input: PublishDomainEventsInput): Promise<void> => {
-  const { loadId, targetStatus, eventBus, logger: log } = input;
+  const {
+    loadId,
+    organizationId,
+    loadNumber,
+    fromStatus,
+    targetStatus,
+    customerId,
+    contactEmail,
+    contactPhone,
+    eventBus,
+    logger: log,
+  } = input;
 
-  const eventMap: Partial<Record<LoadStatus, string>> = {
+  const safePublish = async <K extends keyof EventMap>(
+    eventName: K,
+    data: EventMap[K],
+  ): Promise<void> => {
+    await eventBus.publish(eventName, data).catch((error: unknown) => {
+      log.error('Failed to publish domain event', {
+        eventName,
+        loadId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  };
+
+  // Always emit the generic status change event (for notifications)
+  await safePublish('load.status.changed', {
+    loadId,
+    organizationId,
+    loadNumber,
+    fromStatus: fromStatus as string | null,
+    toStatus: targetStatus as string,
+    customerId,
+    contactEmail,
+    contactPhone,
+  });
+
+  // Emit specific lifecycle events
+  const lifecycleMap: Partial<Record<LoadStatus, keyof EventMap>> = {
     DELIVERED: 'load.delivered',
     TONU: 'load.tonu',
     CANCELED: 'load.canceled',
   };
 
-  const eventName = eventMap[targetStatus];
+  const lifecycleEvent = lifecycleMap[targetStatus];
 
-  if (eventName !== undefined) {
-    await eventBus.publish(eventName, { loadId, status: targetStatus }).catch(
-      (error: unknown) => {
-        log.error('Failed to publish domain event', {
-          eventName,
-          loadId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      },
-    );
+  if (lifecycleEvent !== undefined) {
+    await safePublish(lifecycleEvent, { loadId, status: targetStatus as string });
   }
 };
 
@@ -207,6 +244,7 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
       loadStatusRepo: deps.loadStatusRepo,
       eventBus: deps.eventBus,
       logger: deps.logger,
+      load,
     });
 
     // 5. Update the load status
@@ -224,7 +262,13 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
     // 7. Publish domain events (fire-and-forget)
     await publishDomainEvents({
       loadId,
+      organizationId,
+      loadNumber: load.loadNumber,
+      fromStatus: currentStatus,
       targetStatus,
+      customerId: load.customerId ?? null,
+      contactEmail: load.contact?.email ?? null,
+      contactPhone: load.contact?.phone ?? null,
       eventBus: deps.eventBus,
       logger: deps.logger,
     });

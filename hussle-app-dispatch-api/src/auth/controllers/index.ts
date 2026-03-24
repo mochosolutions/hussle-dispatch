@@ -36,7 +36,9 @@ import type {
 import type { CreateOrganizationInput, Organization } from '../types/organizationTypes';
 import type { SignupOrgInput, SignupOrgResult } from '../types/signupOrgTypes';
 import type { Invite } from '../types/invite';
-import type { CreateAuditLogInput } from '../../audit/types/auditTypes';
+import type { EventBus } from '@/shared/messaging/eventBus';
+import type { Logger } from '@/shared/utils/logger';
+import type { CreateAuditLogInput } from '../types/auditLogPort';
 
 interface OrgControllerRepoDeps {
   createOrganization: (data: CreateOrganizationInput) => Promise<Organization>;
@@ -120,6 +122,9 @@ interface AuthControllerFactoryDeps {
   };
   signupOrganization: (data: SignupOrgInput) => Promise<SignupOrgResult>;
   allowedRoles: string[];
+  eventBus: EventBus;
+  logger: Logger;
+  config: { defaultOrgRole: string };
 }
 
 export interface AuthControllers {
@@ -162,6 +167,9 @@ export const createAuthControllers = ({
   transactionManager,
   signupOrganization,
   allowedRoles,
+  eventBus,
+  logger,
+  config,
 }: AuthControllerFactoryDeps): AuthControllers => {
   const getAuthProvider = async () => {
     const { clientId, userPoolId } = await getClientId();
@@ -170,9 +178,11 @@ export const createAuthControllers = ({
 
   return {
     signupOrgController: createSignupOrgController({
-      auditLogRepo,
       tokenProviderInstance: signupTokenProviderInstance,
       signupOrganization,
+      eventBus,
+      logger,
+      config,
     }),
     loginController: createLoginController({
       membershipRepo,

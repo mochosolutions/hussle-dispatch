@@ -1,0 +1,528 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  CircularProgress,
+  Alert,
+  Stack,
+  Chip,
+  Divider,
+  Skeleton,
+} from '@mui/material';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import type { DriverPortalLoad } from 'utils/api/driver-portal/driverPortalApi';
+import {
+  getLoadSummary,
+  advanceStatus,
+  checkIn,
+} from 'utils/api/driver-portal/driverPortalApi';
+import type { ChipColor } from 'types/chipColor';
+import type { DriverPortalStatus } from '../../types';
+import { DriverDocumentUpload } from '../../components/DriverDocumentUpload';
+import { DriverLocationButton } from '../../components/DriverLocationButton';
+
+// Status display names
+const STATUS_LABELS: Record<string, string> = {
+  DISPATCHED: 'Dispatched',
+  EN_ROUTE_PICKUP: 'En Route to Pickup',
+  AT_PICKUP: 'At Pickup',
+  IN_TRANSIT: 'In Transit',
+  AT_DELIVERY: 'At Delivery',
+  DELIVERED: 'Delivered',
+  INVOICE_PENDING: 'Delivered',
+  INVOICED: 'Delivered',
+  PAID: 'Delivered',
+};
+
+// Next status in the driver flow
+const NEXT_STATUS: Record<string, string> = {
+  DISPATCHED: 'EN_ROUTE_PICKUP',
+  EN_ROUTE_PICKUP: 'AT_PICKUP',
+  AT_PICKUP: 'IN_TRANSIT',
+  IN_TRANSIT: 'AT_DELIVERY',
+  AT_DELIVERY: 'DELIVERED',
+};
+
+const NEXT_STATUS_BUTTON_LABELS: Record<string, string> = {
+  DISPATCHED: 'Start Route to Pickup',
+  EN_ROUTE_PICKUP: 'Arrived at Pickup',
+  AT_PICKUP: 'Loaded \u2014 Start Transit',
+  IN_TRANSIT: 'Arrived at Delivery',
+  AT_DELIVERY: 'Mark Delivered',
+};
+
+const STATUS_COLORS: Record<string, ChipColor> = {
+  DISPATCHED: 'info',
+  EN_ROUTE_PICKUP: 'info',
+  AT_PICKUP: 'warning',
+  IN_TRANSIT: 'primary',
+  AT_DELIVERY: 'warning',
+  DELIVERED: 'success',
+};
+
+const TERMINAL_STATUSES = new Set([
+  'DELIVERED',
+  'INVOICE_PENDING',
+  'INVOICED',
+  'PAID',
+  'CANCELED',
+  'TONU',
+]);
+
+const isTerminalStatus = (status: string): boolean => TERMINAL_STATUSES.has(status);
+
+const DOC_UPLOAD_STATUSES = new Set(['AT_PICKUP', 'IN_TRANSIT', 'AT_DELIVERY', 'DELIVERED']);
+const POD_UPLOAD_STATUSES = new Set(['AT_DELIVERY', 'DELIVERED']);
+
+// Utility to capture GPS
+const captureLocation = (): Promise<{ latitude: number; longitude: number } | null> =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+      () => resolve(null),
+      { timeout: 5000, enableHighAccuracy: false },
+    );
+  });
+
+// Axios error type guard
+interface AxiosLikeError {
+  response?: {
+    status: number;
+    data?: {
+      errors?: { message: string }[];
+    };
+  };
+}
+
+const isAxiosError = (err: unknown): err is AxiosLikeError =>
+  typeof err === 'object' && err !== null && 'response' in err;
+
+// FE-003: Error layout component
+interface ErrorLayoutProps {
+  title: string;
+  message: string;
+  onRetry?: () => void;
+}
+
+const ErrorLayout: React.FC<ErrorLayoutProps> = ({ title, message, onRetry }) => (
+  <Box
+    sx={{ maxWidth: 480, mx: 'auto', px: 3, py: 8, textAlign: 'center', minHeight: '100vh', bgcolor: 'grey.50' }}
+  >
+    <LocalShippingIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+    <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
+      {title}
+    </Typography>
+    <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+      {message}
+    </Typography>
+    {onRetry && (
+      <Button variant="contained" onClick={onRetry} sx={{ py: 1.5, px: 4 }}>
+        Try Again
+      </Button>
+    )}
+  </Box>
+);
+
+// FE-003: Loading skeleton
+const LoadingSkeleton: React.FC = () => (
+  <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, py: 3, minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+      <Skeleton variant="circular" width={24} height={24} />
+      <Skeleton variant="text" width={140} />
+      <Skeleton variant="rounded" width={80} height={24} />
+    </Stack>
+    <Skeleton variant="rounded" height={56} sx={{ mb: 3 }} />
+    <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
+    <Skeleton variant="rounded" height={120} sx={{ mb: 2 }} />
+    <Skeleton variant="rounded" height={160} />
+  </Box>
+);
+
+const DriverPortalPage = () => {
+  const { token } = useParams<{ token: string }>();
+  const [load, setLoad] = useState<DriverPortalLoad | null>(null);
+  const [portalStatus, setPortalStatus] = useState<DriverPortalStatus>('loading');
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [checkInSubmitting, setCheckInSubmitting] = useState(false);
+  const [checkInSuccess, setCheckInSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLoad = useCallback(async () => {
+    if (!token) {
+      setPortalStatus('invalid');
+      return;
+    }
+
+    try {
+      const data = await getLoadSummary(token);
+      setLoad(data);
+      setPortalStatus(isTerminalStatus(data.status) ? 'delivered' : 'ready');
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 401) {
+        const message = err.response?.data?.errors?.[0]?.message ?? '';
+        if (message.includes('expired')) {
+          setPortalStatus('expired');
+        } else if (message.includes('revoked')) {
+          setPortalStatus('revoked');
+        } else {
+          setPortalStatus('invalid');
+        }
+      } else {
+        setPortalStatus('error');
+      }
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchLoad();
+  }, [fetchLoad]);
+
+  const handleAdvanceStatus = async () => {
+    if (!token || !load) {
+      return;
+    }
+    const nextStatus = NEXT_STATUS[load.status];
+    if (!nextStatus) {
+      return;
+    }
+
+    setStatusUpdating(true);
+    setError(null);
+
+    try {
+      // Auto-capture GPS on status transition
+      const coords = await captureLocation();
+      if (coords) {
+        await checkIn(token, {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          status: nextStatus,
+        });
+      }
+
+      await advanceStatus(token, nextStatus);
+      await fetchLoad();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update status');
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    if (!token || !notes.trim()) {
+      return;
+    }
+
+    setCheckInSubmitting(true);
+    setCheckInSuccess(false);
+
+    try {
+      const coords = await captureLocation();
+      await checkIn(token, {
+        notes: notes.trim(),
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      });
+      setNotes('');
+      setCheckInSuccess(true);
+      setTimeout(() => setCheckInSuccess(false), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to submit note');
+    } finally {
+      setCheckInSubmitting(false);
+    }
+  };
+
+  // -- Error/loading states (FE-003) --
+
+  if (portalStatus === 'loading') {
+    return <LoadingSkeleton />;
+  }
+
+  if (portalStatus === 'expired') {
+    return (
+      <ErrorLayout
+        title="Link Expired"
+        message="This driver portal link has expired. Please contact your dispatcher for a new link."
+      />
+    );
+  }
+
+  if (portalStatus === 'revoked') {
+    return (
+      <ErrorLayout
+        title="Link Revoked"
+        message="This driver portal link is no longer active. Please contact your dispatcher."
+      />
+    );
+  }
+
+  if (portalStatus === 'invalid') {
+    return (
+      <ErrorLayout
+        title="Invalid Link"
+        message="This link is not valid. Please check the link or contact your dispatcher."
+      />
+    );
+  }
+
+  if (portalStatus === 'error') {
+    return (
+      <ErrorLayout
+        title="Something Went Wrong"
+        message="We couldn't load the page. Please try again."
+        onRetry={fetchLoad}
+      />
+    );
+  }
+
+  if (!load) {
+    return null;
+  }
+
+  const nextStatus = NEXT_STATUS[load.status];
+  const showDocUpload = DOC_UPLOAD_STATUSES.has(load.status);
+  const showBolUpload = DOC_UPLOAD_STATUSES.has(load.status);
+  const showPodUpload = POD_UPLOAD_STATUSES.has(load.status);
+
+  return (
+    <Box
+      sx={{ maxWidth: 480, mx: 'auto', px: 2, py: 3, minHeight: '100vh', bgcolor: 'grey.50' }}
+    >
+      {/* Header */}
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+        <LocalShippingIcon color="primary" />
+        <Typography variant="h6" fontWeight={700}>
+          Load {load.loadNumber}
+        </Typography>
+        <Chip
+          label={STATUS_LABELS[load.status] ?? load.status}
+          color={STATUS_COLORS[load.status] ?? 'default'}
+          size="small"
+        />
+      </Stack>
+
+      {/* Driver greeting */}
+      {load.driver && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Hi {load.driver.firstName}, here are your load details.
+        </Typography>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Status action button */}
+      {nextStatus && portalStatus !== 'delivered' && (
+        <Button
+          variant="contained"
+          size="large"
+          fullWidth
+          onClick={handleAdvanceStatus}
+          disabled={statusUpdating}
+          sx={{ mb: 3, py: 2, fontSize: '1.1rem', fontWeight: 600 }}
+        >
+          {statusUpdating ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            NEXT_STATUS_BUTTON_LABELS[load.status]
+          )}
+        </Button>
+      )}
+
+      {portalStatus === 'delivered' && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          This load has been delivered. Thank you!
+        </Alert>
+      )}
+
+      {/* Stops timeline */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+            Stops
+          </Typography>
+          <Stack spacing={2}>
+            {load.stops.map((stop) => (
+              <Box key={stop.id}>
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <LocationOnIcon
+                    sx={{
+                      color: stop.type === 'PICKUP' ? 'primary.main' : 'success.main',
+                      mt: 0.3,
+                    }}
+                    fontSize="small"
+                  />
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      {stop.type === 'PICKUP' ? 'Pickup' : 'Delivery'}
+                      {stop.facilityName ? ` \u2014 ${stop.facilityName}` : ''}
+                    </Typography>
+                    {stop.address && (
+                      <Typography variant="body2" color="text.secondary">
+                        {stop.address}
+                      </Typography>
+                    )}
+                    <Typography variant="body2" color="text.secondary">
+                      {[stop.city, stop.state, stop.zip].filter(Boolean).join(', ')}
+                    </Typography>
+                    {stop.appointmentDate && (
+                      <Typography variant="caption" color="text.secondary">
+                        Appt: {stop.appointmentDate}
+                        {stop.appointmentTime ? ` at ${stop.appointmentTime}` : ''}
+                      </Typography>
+                    )}
+                    {stop.contactName && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Contact: {stop.contactName}
+                        {stop.contactPhone ? ` \u2014 ${stop.contactPhone}` : ''}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Load info */}
+      {(load.equipmentType || load.commodity || load.weight) && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              Load Info
+            </Typography>
+            <Stack spacing={0.5}>
+              {load.equipmentType && (
+                <Typography variant="body2">
+                  Equipment: {load.equipmentType.replace(/_/g, ' ')}
+                </Typography>
+              )}
+              {load.commodity && (
+                <Typography variant="body2">Commodity: {load.commodity}</Typography>
+              )}
+              {load.weight && (
+                <Typography variant="body2">
+                  Weight: {load.weight.toLocaleString()} lbs
+                </Typography>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Driver instructions */}
+      {load.driverInstructions && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              Instructions
+            </Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+              {load.driverInstructions}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Location sharing (FE-002) */}
+      {portalStatus !== 'delivered' && token && <DriverLocationButton token={token} />}
+
+      {/* Notes / Check-in form */}
+      {portalStatus !== 'delivered' && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+              <NoteAddIcon fontSize="small" color="action" />
+              <Typography variant="subtitle2" fontWeight={600}>
+                Add Note / ETA Update
+              </Typography>
+            </Stack>
+            <TextField
+              multiline
+              rows={3}
+              fullWidth
+              placeholder="Enter notes or ETA update..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              size="small"
+              sx={{ mb: 1.5 }}
+            />
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={handleCheckIn}
+              disabled={checkInSubmitting || !notes.trim()}
+              sx={{ py: 1.2 }}
+            >
+              {checkInSubmitting ? <CircularProgress size={20} /> : 'Submit Note'}
+            </Button>
+            {checkInSuccess && (
+              <Alert severity="success" sx={{ mt: 1 }}>
+                Note submitted successfully
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Document uploads (FE-002) */}
+      {showDocUpload && token && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+              Document Upload
+            </Typography>
+            {showBolUpload && (
+              <DriverDocumentUpload
+                token={token}
+                documentType="BOL_SIGNED"
+                label="Bill of Lading (BOL)"
+                sx={{ mb: showPodUpload ? 2 : 0 }}
+              />
+            )}
+            {showPodUpload && (
+              <>
+                {showBolUpload && <Divider sx={{ my: 2 }} />}
+                <DriverDocumentUpload
+                  token={token}
+                  documentType="POD"
+                  label="Proof of Delivery (POD)"
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Footer */}
+      <Typography
+        variant="caption"
+        color="text.disabled"
+        sx={{ display: 'block', textAlign: 'center', mt: 3 }}
+      >
+        Powered by Hussle Dispatch
+      </Typography>
+    </Box>
+  );
+};
+
+export default DriverPortalPage;

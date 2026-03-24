@@ -12,37 +12,29 @@ const selectIntelPage = (state: RootState): IntelPageState => state.pages.intel;
 // Feed items
 // ---------------------------------------------------------------------------
 
-export const selectFeedItems = createSelector(
-  [selectIntelPage],
-  (page): LoadIntelFeedItem[] => page.feedItems,
-);
+export const selectFeedItems = (state: RootState): LoadIntelFeedItem[] =>
+  selectIntelPage(state).feedItems;
 
 // ---------------------------------------------------------------------------
 // Filters
 // ---------------------------------------------------------------------------
 
-export const selectFeedFilters = createSelector(
-  [selectIntelPage],
-  (page): FeedFilters => page.filters,
-);
+export const selectFeedFilters = (state: RootState): FeedFilters =>
+  selectIntelPage(state).filters;
 
 // ---------------------------------------------------------------------------
 // Sort
 // ---------------------------------------------------------------------------
 
-export const selectFeedSortBy = createSelector(
-  [selectIntelPage],
-  (page): FeedSortBy => page.sortBy,
-);
+export const selectFeedSortBy = (state: RootState): FeedSortBy =>
+  selectIntelPage(state).sortBy;
 
 // ---------------------------------------------------------------------------
 // Stats
 // ---------------------------------------------------------------------------
 
-export const selectFeedStats = createSelector(
-  [selectIntelPage],
-  (page): FeedStats | null => page.stats,
-);
+export const selectFeedStats = (state: RootState): FeedStats | null =>
+  selectIntelPage(state).stats;
 
 // ---------------------------------------------------------------------------
 // Pagination

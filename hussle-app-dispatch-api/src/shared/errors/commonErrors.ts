@@ -67,6 +67,32 @@ export class ActiveLoadsConflictError extends CustomError {
   }
 }
 
+export interface AssignmentBlocker {
+  code: string;
+  message: string;
+  field?: string;
+  blockingLoadIds?: string[];
+}
+
+export class AssignmentValidationError extends CustomError {
+  statusCode = 422;
+  readonly code = 'ASSIGNMENT_BLOCKED';
+  readonly blockers: AssignmentBlocker[];
+
+  constructor(message: string, blockers: AssignmentBlocker[]) {
+    super(message);
+    this.blockers = blockers;
+    Object.setPrototypeOf(this, AssignmentValidationError.prototype);
+  }
+
+  serializeErrors() {
+    return this.blockers.map((blocker) => ({
+      message: blocker.message,
+      field: blocker.field,
+    }));
+  }
+}
+
 export class UnauthorizedError extends CustomError {
   statusCode = 401;
   readonly code = 'UNAUTHORIZED';
@@ -121,9 +147,7 @@ export class OnboardingBlockError extends CustomError {
   readonly missingDocuments: string[];
 
   constructor(carrierName: string, missingDocuments: string[]) {
-    super(
-      `${carrierName} missing: ${missingDocuments.join(', ')}. Complete onboarding first.`,
-    );
+    super(`${carrierName} missing: ${missingDocuments.join(', ')}. Complete onboarding first.`);
     this.missingDocuments = missingDocuments;
     Object.setPrototypeOf(this, OnboardingBlockError.prototype);
   }
@@ -207,5 +231,4 @@ export class SequenceError extends CustomError {
   }
 }
 
-export const isCustomError = (error: unknown): error is CustomError =>
-  error instanceof CustomError;
+export const isCustomError = (error: unknown): error is CustomError => error instanceof CustomError;

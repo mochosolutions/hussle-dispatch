@@ -41,3 +41,19 @@ export const uploadRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const geocodingRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 30,
+  message: 'Too many address search requests, please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const mapTileRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 200,
+  message: 'Too many map tile requests, please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});

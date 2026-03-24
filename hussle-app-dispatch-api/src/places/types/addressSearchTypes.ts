@@ -1,0 +1,23 @@
+export interface AddressSearchInput {
+  organizationId: string;
+  query: string;
+  limit: number;
+}
+
+export interface AddressSearchResult {
+  source: 'SAVED' | 'EXTERNAL';
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  lat: number | null;
+  lng: number | null;
+  facilityType: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  appointmentRequired: boolean;
+  lumperRequired: boolean;
+  ppeRequired: boolean;
+}

@@ -54,3 +54,35 @@ export const markPaidSuccess = createAction<{ id: string }>('invoice/markPaidSuc
 export const markPaidFailure = createAction<{ id: string; error: string }>(
   'invoice/markPaidFailure',
 );
+
+export const createFromLoadRequest = createAction<{ loadId: string }>(
+  'invoice/createFromLoadRequest',
+);
+export const createFromLoadSuccess = createAction<{ id: string }>('invoice/createFromLoadSuccess');
+export const createFromLoadFailure = createAction<{ error: string }>(
+  'invoice/createFromLoadFailure',
+);
+
+export const voidInvoiceRequest = createAction<{ id: string }>('invoice/voidInvoiceRequest');
+export const voidInvoiceSuccess = createAction<{ id: string }>('invoice/voidInvoiceSuccess');
+export const voidInvoiceFailure = createAction<{ id: string; error: string }>(
+  'invoice/voidInvoiceFailure',
+);
+
+export const downloadPacketRequest = createAction<{ id: string }>('invoice/downloadPacketRequest');
+export const downloadPacketSuccess = createAction<{ id: string }>('invoice/downloadPacketSuccess');
+export const downloadPacketFailure = createAction<{ id: string; error: string }>(
+  'invoice/downloadPacketFailure',
+);
+
+export const previewPdfRequest = createAction<{ id: string }>('invoice/previewPdfRequest');
+export const previewPdfSuccess = createAction<{ id: string }>('invoice/previewPdfSuccess');
+export const previewPdfFailure = createAction<{ id: string; error: string }>(
+  'invoice/previewPdfFailure',
+);
+
+export const fetchCountsRequest = createAction('invoice/fetchCountsRequest');
+export const fetchCountsSuccess = createAction<{ counts: { draft: number } }>(
+  'invoice/fetchCountsSuccess',
+);
+export const fetchCountsFailure = createAction<{ error: string }>('invoice/fetchCountsFailure');

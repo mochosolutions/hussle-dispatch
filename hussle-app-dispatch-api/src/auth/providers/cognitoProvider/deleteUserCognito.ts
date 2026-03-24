@@ -1,5 +1,5 @@
 import { logger } from '@/shared/utils/logger';
-import { deleteUserFromCognito, deleteUsersBySubArray } from '@/shared/utils/cognito';
+import { deleteUserBySub, deleteUsersBySubArray } from '@/shared/utils/cognito';
 import { AuthRequestError } from '@/shared/errors/authError';
 import type { DeleteUserCognitoDeps } from '../../types/authProviderTypes';
 
@@ -10,14 +10,14 @@ export const deleteUserCognito = async (id: string, deps: DeleteUserCognitoDeps)
       logger.error('User pool ID is required for deleting user');
       throw new AuthRequestError('Failed to delete user');
     }
-    await deleteUserFromCognito({
-      username: id,
+    await deleteUserBySub({
+      subId: id,
       client,
       userPoolId,
     });
     logger.info('User deleted from Cognito', { id });
     return { id };
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error in deleteUserCognito', { error });
     throw new AuthRequestError('Failed to delete user');
   }

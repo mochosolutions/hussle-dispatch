@@ -1,5 +1,6 @@
 import type { PopupComponentMap } from '../../mocho/types/popup';
 import { CompanyInfoDrawer } from '../carrier/components/CompanyInfoDrawer';
+import { CarrierNoteDrawer } from '../carrier/components/CarrierNoteDrawer';
 import { DispatchTermsDrawer } from '../carrier/components/DispatchTermsDrawer';
 import { DriverInfoDrawer } from '../driver/components/DriverInfoDrawer';
 import { DriverPreferencesDrawer } from '../driver/components/DriverPreferencesDrawer';
@@ -13,10 +14,17 @@ import { VehicleTargetsDrawer } from '../vehicle/components/VehicleTargetsDrawer
 import { LoadRouteDrawer } from '../load/components/LoadRouteDrawer';
 import { LoadCargoDrawer } from '../load/components/LoadCargoDrawer';
 import { LoadAssignmentDrawer } from '../load/components/LoadAssignmentDrawer';
+import { CustomerCompanyInfoDrawer } from '../customer/components/CustomerCompanyInfoDrawer';
+import { VehicleCreateDrawer } from '../vehicle/components/VehicleCreateDialog';
+import { DriverCreateDrawer } from '../driver/components/DriverCreateDialog';
+import { CarrierFormDrawer } from '../carrier/components/CarrierFormDialog';
+import { ContactInfoDrawer } from '../contact/components/ContactInfoDrawer';
 
 const drawerRegistry: PopupComponentMap = {
   carrierCompanyInfo: CompanyInfoDrawer,
+  customerCompanyInfo: CustomerCompanyInfoDrawer,
   carrierDispatchTerms: DispatchTermsDrawer,
+  carrierNote: CarrierNoteDrawer,
   vehicleInfo: VehicleInfoDrawer,
   vehicleExpenses: VehicleExpenseDrawer,
   vehicleTargets: VehicleTargetsDrawer,
@@ -29,6 +37,10 @@ const drawerRegistry: PopupComponentMap = {
   loadRoute: LoadRouteDrawer,
   loadCargo: LoadCargoDrawer,
   loadAssignment: LoadAssignmentDrawer,
+  vehicleCreate: VehicleCreateDrawer,
+  driverCreate: DriverCreateDrawer,
+  carrierForm: CarrierFormDrawer,
+  contactCreate: ContactInfoDrawer,
 };
 
 export default drawerRegistry;

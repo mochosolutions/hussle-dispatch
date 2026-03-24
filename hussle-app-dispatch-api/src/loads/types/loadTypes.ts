@@ -8,6 +8,7 @@ import type {
   Driver,
   Vehicle,
   Contact,
+  Customer,
   EquipmentType,
   LoadStatus,
   StopType,
@@ -55,13 +56,12 @@ export interface AccessorialChargeInput {
 // ---------------------------------------------------------------------------
 
 export interface CreateLoadInput {
-  carrierId?: string;
-  driverId?: string;
-  vehicleId?: string;
-  brokerId?: string;
-  shipperId?: string;
-  consigneeId?: string;
-  brokerRefNumber?: string;
+  carrierId?: string | null;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  contactId?: string | null;
+  customerId?: string | null;
+  externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isHazmat?: boolean;
   isTarp?: boolean;
@@ -88,13 +88,12 @@ export interface CreateLoadInput {
 }
 
 export interface UpdateLoadInput {
-  carrierId?: string;
-  driverId?: string;
-  vehicleId?: string;
-  brokerId?: string;
-  shipperId?: string;
-  consigneeId?: string;
-  brokerRefNumber?: string;
+  carrierId?: string | null;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  contactId?: string | null;
+  customerId?: string | null;
+  externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isHazmat?: boolean;
   isTarp?: boolean;
@@ -127,6 +126,7 @@ export interface UpdateLoadInput {
 export interface LoadListFilters {
   status?: LoadStatus[];
   carrierId?: string;
+  customerId?: string;
   equipmentType?: EquipmentType;
   search?: string;
   dateFrom?: Date;
@@ -153,9 +153,8 @@ export interface LoadWithRelations extends Load {
   carrier: Carrier | null;
   driver: Driver | null;
   vehicle: Vehicle | null;
-  broker: Contact | null;
-  shipper: Contact | null;
-  consignee: Contact | null;
+  contact: Contact | null;
+  customer: Customer | null;
   statusHistory: LoadStatusHistory[];
   checkCalls: CheckCall[];
   accessorialCharges: AccessorialCharge[];
@@ -165,6 +164,8 @@ export interface LoadListItem extends Load {
   stops: Stop[];
   carrier: Pick<Carrier, 'id' | 'name'> | null;
   driver: Pick<Driver, 'id' | 'firstName' | 'lastName'> | null;
+  contact: Pick<Contact, 'id' | 'firstName' | 'lastName' | 'email' | 'phone'> | null;
+  customer: Pick<Customer, 'id' | 'companyName'> | null;
   _count: {
     accessorialCharges: number;
   };
@@ -242,21 +243,64 @@ export interface LoadDocument {
   createdAt: Date;
 }
 
+export interface LoadAssignmentInput {
+  carrierId?: string | null;
+  driverId?: string | null;
+  vehicleId?: string | null;
+}
+
+export interface LoadAssignmentWarning {
+  code: string;
+  message: string;
+  field?: string;
+  detail?: string;
+}
+
+export interface AssignLoadResult {
+  load: LoadWithRelations;
+  warnings: LoadAssignmentWarning[];
+}
+
 // ---------------------------------------------------------------------------
 // Repo port
 // ---------------------------------------------------------------------------
 
 export interface LoadRepoPort {
-  create(organizationId: string, loadNumber: string, input: CreateLoadInput): Promise<LoadWithRelations>;
+  create(
+    organizationId: string,
+    loadNumber: string,
+    input: CreateLoadInput,
+  ): Promise<LoadWithRelations>;
   findById(id: string, organizationId: string): Promise<LoadWithRelations | null>;
   list(input: ListLoadsRepositoryInput): Promise<LoadListItem[]>;
   count(input: LoadQueryInput): Promise<number>;
   update(id: string, input: UpdateLoadInput): Promise<LoadWithRelations>;
+  findBlockingLoadIdsByDriver(
+    driverId: string,
+    statuses: readonly LoadStatus[],
+    limit: number,
+    excludeLoadId?: string,
+  ): Promise<string[]>;
+  findBlockingLoadIdsByVehicle(
+    vehicleId: string,
+    statuses: readonly LoadStatus[],
+    limit: number,
+    excludeLoadId?: string,
+  ): Promise<string[]>;
   softDelete(id: string, deletedAt: Date): Promise<void>;
-  createCheckCall(loadId: string, calledByUserId: string, input: CreateCheckCallInput): Promise<CheckCallWithUser>;
+  createCheckCall(
+    loadId: string,
+    calledByUserId: string,
+    input: CreateCheckCallInput,
+  ): Promise<CheckCallWithUser>;
   listCheckCalls(loadId: string): Promise<CheckCallWithUser[]>;
   listStatusHistory(loadId: string): Promise<StatusHistoryWithUser[]>;
   listDocuments(loadId: string, organizationId: string): Promise<LoadDocument[]>;
+  findLastDeliveryCoordinates(
+    driverId: string,
+    organizationId: string,
+  ): Promise<{ lat: number; lng: number } | null>;
+  findFirstPickupCoordinates(loadId: string): Promise<{ lat: number; lng: number } | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -265,4 +309,49 @@ export interface LoadRepoPort {
 
 export interface OrgSettingsQueryPort {
   getProhibitedCommodities(organizationId: string): Promise<string[]>;
+}
+
+export interface CarrierAssignmentQueryPort {
+  findDispatchableById(
+    carrierId: string,
+    organizationId: string,
+  ): Promise<{
+    id: string;
+    name: string;
+    type: 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
+    dispatchAgreementOnFile: boolean;
+    insuranceCertOnFile: boolean;
+    insuranceExpiry: Date | null;
+    w9OnFile: boolean;
+  } | null>;
+}
+
+export interface DriverAssignmentQueryPort {
+  findAssignableById(
+    driverId: string,
+    organizationId: string,
+  ): Promise<{
+    id: string;
+    carrierId: string;
+    firstName: string;
+    lastName: string;
+    isAvailable: boolean;
+  } | null>;
+}
+
+export interface VehicleAssignmentQueryPort {
+  findAssignableById(
+    vehicleId: string,
+    organizationId: string,
+  ): Promise<{
+    id: string;
+    carrierId: string;
+    unitNumber: string;
+    driverId: string | null;
+    isActive: boolean;
+  } | null>;
+}
+
+export interface CustomerQueryPort {
+  findById(id: string, organizationId: string): Promise<{ id: string } | null>;
 }

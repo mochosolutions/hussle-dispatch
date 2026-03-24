@@ -37,6 +37,24 @@ export const UPLOAD_STATUS = {
 
 export type UploadStatus = (typeof UPLOAD_STATUS)[keyof typeof UPLOAD_STATUS];
 
+/**
+ * Polymorphic entity types that documents can be attached to.
+ */
+export const DOCUMENT_ENTITY_TYPES = ['load', 'carrier', 'driver', 'vehicle'] as const;
+export type DocumentEntityType = (typeof DOCUMENT_ENTITY_TYPES)[number];
+
+/**
+ * Flexible metadata for compliance and domain-specific document fields.
+ */
+export interface DocumentMetadata {
+  licenseNumber?: string;
+  issuingState?: string;
+  cdlClass?: string;
+  policyNumber?: string;
+  issuingAuthority?: string;
+  [key: string]: unknown;
+}
+
 // ---------------------------------------------------------------------------
 // Service input / output types
 // ---------------------------------------------------------------------------
@@ -45,10 +63,12 @@ export interface PresignInput {
   organizationId: string;
   fileName: string;
   mimeType: string;
-  loadId?: string;
-  carrierId?: string;
+  entityType: DocumentEntityType;
+  entityId: string;
   type: DocumentType;
   uploadedByUserId?: string;
+  expiresAt?: string;
+  metadata?: DocumentMetadata;
 }
 
 export interface PresignResult {
@@ -60,20 +80,38 @@ export interface PresignResult {
 export interface ConfirmInput {
   documentId: string;
   organizationId: string;
+  expiresAt?: string;
+  metadata?: DocumentMetadata;
 }
 
 export interface ListDocumentsInput {
   organizationId: string;
-  loadId?: string;
-  carrierId?: string;
-  type?: DocumentType;
+  entityType?: DocumentEntityType;
+  entityId?: string;
+  type?: string;
+  expiringBefore?: Date;
   includeArchived?: boolean;
+}
+
+export interface GetDocumentInput {
+  id: string;
+  organizationId: string;
+}
+
+export interface DownloadDocumentInput {
+  id: string;
+  organizationId: string;
+}
+
+export interface ArchiveDocumentInput {
+  id: string;
+  organizationId: string;
 }
 
 export interface DocumentListItem {
   id: string;
-  loadId: string | null;
-  carrierId: string | null;
+  entityType: string;
+  entityId: string;
   type: DocumentType;
   fileName: string;
   fileSize: number | null;
@@ -81,6 +119,8 @@ export interface DocumentListItem {
   uploadStatus: string;
   isArchived: boolean;
   uploadedByUserId: string | null;
+  expiresAt: Date | null;
+  metadata: Record<string, unknown> | null;
   createdAt: Date;
 }
 
@@ -90,8 +130,8 @@ export interface DocumentListItem {
 
 export interface CreateDocumentData {
   organizationId: string;
-  loadId?: string;
-  carrierId?: string;
+  entityType: string;
+  entityId: string;
   type: DocumentType;
   fileName: string;
   mimeType: string;
@@ -99,17 +139,35 @@ export interface CreateDocumentData {
   s3Url: string;
   uploadStatus: string;
   uploadedByUserId?: string;
+  expiresAt?: Date;
+  metadata?: Record<string, unknown>;
 }
 
 export interface DocumentRepoPort {
   create(data: CreateDocumentData): Promise<Document>;
   findById(id: string, organizationId: string): Promise<Document | null>;
+  findManyByIds(ids: string[], organizationId: string): Promise<Document[]>;
   updateUploadStatus(id: string, status: string): Promise<Document>;
-  archiveByLoadAndType(loadId: string, type: DocumentType, excludeId: string): Promise<number>;
+  archiveByEntityAndType(
+    entityType: string,
+    entityId: string,
+    type: DocumentType,
+    excludeId: string,
+  ): Promise<number>;
+  archive(id: string): Promise<Document>;
   findMany(filters: ListDocumentsInput): Promise<Document[]>;
-  updateLoadTimestamp(
-    loadId: string,
-    field: 'rateConReceivedAt' | 'bolUnsignedAt' | 'bolSignedAt',
-    timestamp: Date,
-  ): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Bulk operations
+// ---------------------------------------------------------------------------
+
+export interface BulkDownloadInput {
+  organizationId: string;
+  documentIds: string[];
+}
+
+export interface BulkDownloadResult {
+  downloads: Array<{ documentId: string; fileName: string; presignedUrl: string }>;
+  errors: Array<{ documentId: string; reason: string }>;
 }

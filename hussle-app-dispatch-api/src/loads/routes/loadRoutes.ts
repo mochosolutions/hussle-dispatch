@@ -3,8 +3,11 @@ import type { RequestHandler } from 'express';
 import { requireAuth, requireRole } from '@/middleware/auth';
 import { ROLES } from '@/config/roles';
 import { validateRequest } from '@/shared/middleware/validateRequest';
+import type { AccessorialControllers } from '../controllers/accessorialController';
 import type { LoadControllers } from '../controllers/loadController';
+import type { StopControllers } from '../controllers/stopController';
 import {
+  assignLoadValidator,
   createCheckCallValidator,
   createLoadValidator,
   listLoadsValidator,
@@ -12,13 +15,30 @@ import {
   updateLoadValidator,
   transitionStatusValidator,
 } from '../validators/loadValidators';
+import {
+  createAccessorialSchema,
+  deleteAccessorialSchema,
+  listAccessorialsSchema,
+  updateAccessorialSchema,
+} from '../validators/accessorialValidators';
+import { updateApprovalSchema } from '../validators/accessorialApprovalValidator';
+import {
+  createStopSchema,
+  deleteStopSchema,
+  reorderStopsSchema,
+  updateStopSchema,
+} from '../validators/stopValidators';
 
 export interface LoadRouterControllers extends LoadControllers {
   transitionStatus: RequestHandler;
   getWeeklyGross: RequestHandler;
 }
 
-export const createLoadsRouter = (controllers: LoadRouterControllers): express.Router => {
+export const createLoadsRouter = (
+  controllers: LoadRouterControllers,
+  stopControllers: StopControllers,
+  accessorialControllers: AccessorialControllers,
+): express.Router => {
   const router = express.Router();
 
   router.post(
@@ -29,12 +49,7 @@ export const createLoadsRouter = (controllers: LoadRouterControllers): express.R
     controllers.createLoad,
   );
 
-  router.get(
-    '/',
-    requireAuth,
-    validateRequest(listLoadsValidator),
-    controllers.listLoads,
-  );
+  router.get('/', requireAuth, validateRequest(listLoadsValidator), controllers.listLoads);
 
   // Weekly gross tracker — must be before /:id to avoid param conflict
   router.get(
@@ -44,11 +59,45 @@ export const createLoadsRouter = (controllers: LoadRouterControllers): express.R
     controllers.getWeeklyGross,
   );
 
+  // Accessorial by-id routes — must be before /:id to avoid param conflict
   router.get(
-    '/:id',
+    '/accessorials/:id',
     requireAuth,
-    validateRequest(loadIdParamValidator),
-    controllers.getLoadById,
+    accessorialControllers.get,
+  );
+
+  router.patch(
+    '/accessorials/:id',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(updateAccessorialSchema),
+    accessorialControllers.update,
+  );
+
+  router.delete(
+    '/accessorials/:id',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(deleteAccessorialSchema),
+    accessorialControllers.remove,
+  );
+
+  router.patch(
+    '/accessorials/:id/approval',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(updateApprovalSchema),
+    accessorialControllers.updateApproval,
+  );
+
+  router.get('/:id', requireAuth, validateRequest(loadIdParamValidator), controllers.getLoadById);
+
+  router.patch(
+    '/:id/assignment',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(assignLoadValidator),
+    controllers.assignLoad,
   );
 
   router.patch(
@@ -102,6 +151,64 @@ export const createLoadsRouter = (controllers: LoadRouterControllers): express.R
     requireAuth,
     validateRequest(loadIdParamValidator),
     controllers.listLoadDocuments,
+  );
+
+  // --- Stop sub-routes ---
+
+  router.post(
+    '/:loadId/stops',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(createStopSchema),
+    stopControllers.create,
+  );
+
+  router.get(
+    '/:loadId/stops',
+    requireAuth,
+    stopControllers.list,
+  );
+
+  // Reorder must be before /:loadId/stops/:stopId to avoid 'reorder' matching :stopId
+  router.patch(
+    '/:loadId/stops/reorder',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(reorderStopsSchema),
+    stopControllers.reorder,
+  );
+
+  router.patch(
+    '/:loadId/stops/:stopId',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(updateStopSchema),
+    stopControllers.update,
+  );
+
+  router.delete(
+    '/:loadId/stops/:stopId',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(deleteStopSchema),
+    stopControllers.remove,
+  );
+
+  // --- Accessorial sub-routes ---
+
+  router.post(
+    '/:loadId/accessorials',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(createAccessorialSchema),
+    accessorialControllers.create,
+  );
+
+  router.get(
+    '/:loadId/accessorials',
+    requireAuth,
+    validateRequest(listAccessorialsSchema),
+    accessorialControllers.list,
   );
 
   return router;

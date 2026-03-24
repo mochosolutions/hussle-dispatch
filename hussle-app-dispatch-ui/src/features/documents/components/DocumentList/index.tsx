@@ -14,11 +14,7 @@ import {
   Typography,
   Collapse,
 } from '@mui/material';
-import {
-  CloudUploadOutlined,
-  EyeOutlined,
-  DownloadOutlined,
-} from '@ant-design/icons';
+import { CloudUploadOutlined, EyeOutlined, DownloadOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 
 import { listDocuments } from 'utils/api/documents/documentApi';
@@ -40,7 +36,10 @@ const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   OTHER: 'Other',
 };
 
-const DOCUMENT_TYPE_COLORS: Record<DocumentType, 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default'> = {
+const DOCUMENT_TYPE_COLORS: Record<
+  DocumentType,
+  'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default'
+> = {
   BOL: 'primary',
   POD: 'success',
   RATE_CONFIRMATION: 'info',
@@ -99,13 +98,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const handleUploadComplete = useCallback(
-    (document: Document) => {
-      setDocuments((prev) => [document, ...prev]);
-      setShowUpload(false);
-    },
-    [],
-  );
+  const handleUploadComplete = useCallback((document: Document) => {
+    setDocuments((prev) => [document, ...prev]);
+    setShowUpload(false);
+  }, []);
 
   const handleToggleUpload = useCallback(() => {
     setShowUpload((prev) => !prev);
@@ -126,12 +122,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <Box>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 1.5 }}
-      >
+      {/* <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
         <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
           Documents
         </Typography>
@@ -143,15 +134,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         >
           {showUpload ? 'Cancel' : 'Upload'}
         </Button>
-      </Stack>
+      </Stack> */}
 
       <Collapse in={showUpload}>
         <Box sx={{ mb: 2 }}>
           <DocumentUpload
-            loadId={loadId}
-            carrierId={carrierId}
-            documentType={defaultUploadType}
-            onUploadComplete={handleUploadComplete}
+            context={loadId ? 'load-detail' : 'carrier-detail'}
+            entityType={loadId ? 'load' : 'carrier'}
+            entityId={(loadId ?? carrierId) as string}
+            onUploadComplete={() => fetchDocuments()}
           />
         </Box>
       </Collapse>
@@ -193,7 +184,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                      {doc.filename}
+                      {doc.fileName}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -205,15 +196,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                       <IconButton
                         size="small"
-                        onClick={() => handleViewDocument(doc.url)}
-                        aria-label={`View ${doc.filename}`}
+                        onClick={() => handleViewDocument(doc.s3Url)}
+                        aria-label={`View ${doc.fileName}`}
                       >
                         <EyeOutlined />
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => handleDownloadDocument(doc.url, doc.filename)}
-                        aria-label={`Download ${doc.filename}`}
+                        onClick={() => handleDownloadDocument(doc.s3Url, doc.fileName)}
+                        aria-label={`Download ${doc.fileName}`}
                       >
                         <DownloadOutlined />
                       </IconButton>

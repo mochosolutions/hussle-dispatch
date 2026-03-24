@@ -9,6 +9,7 @@ import type {
 export const toCarrierResponse = (carrier: CarrierServiceOutput): CarrierResponse => {
   const response: CarrierResponse = {
     ...carrier,
+    organizationId: carrier.managedByOrgId,
   };
   return response;
 };

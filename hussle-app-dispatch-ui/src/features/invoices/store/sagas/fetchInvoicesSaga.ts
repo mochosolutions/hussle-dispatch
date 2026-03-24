@@ -16,12 +16,12 @@ export function* fetchInvoicesSaga(action: PayloadAction<InvoiceFilters>): Gener
       action.payload,
     )) as SagaReturnType<typeof getInvoices>;
 
-    yield put(invoiceActions.setAll(response.data));
+    yield put(invoiceActions.setAll(response.data ?? []));
     yield put(
       fetchInvoicesSuccess({
-        total: response.meta.total,
-        page: response.meta.page,
-        limit: response.meta.limit,
+        total: response.meta?.total ?? 0,
+        page: response.meta?.page ?? 1,
+        limit: response.meta?.limit ?? 25,
       }),
     );
   } catch (error: unknown) {

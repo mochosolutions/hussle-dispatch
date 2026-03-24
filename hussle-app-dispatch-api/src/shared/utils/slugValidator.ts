@@ -87,3 +87,31 @@ export const generateSlug = (input: string): string =>
     .replace(/^-|-$/g, '');
 
 export const getReservedSlugs = (): string[] => [...RESERVED_SLUGS];
+
+const MAX_SLUG_SUFFIX = 100;
+
+/**
+ * Given a base slug and a list of existing slugs with the same prefix,
+ * returns the next available slug. Appends -2, -3, etc. if the base is taken.
+ * Returns null if all suffixes up to MAX_SLUG_SUFFIX are exhausted.
+ */
+export const resolveUniqueSlug = (
+  baseSlug: string,
+  existingSlugs: string[],
+): string | null => {
+  if (!existingSlugs.includes(baseSlug)) {
+    return baseSlug;
+  }
+
+  const existingSet = new Set(existingSlugs);
+  let i = 2;
+  while (i <= MAX_SLUG_SUFFIX) {
+    const candidate = `${baseSlug}-${i}`;
+    if (!existingSet.has(candidate)) {
+      return candidate;
+    }
+    i += 1;
+  }
+
+  return null;
+};

@@ -16,10 +16,8 @@ export interface LoadAtFacilityResponse {
   carrierId: string | null;
   driverId: string | null;
   vehicleId: string | null;
-  brokerId: string | null;
-  shipperId: string | null;
-  consigneeId: string | null;
-  brokerRefNumber: string | null;
+  contactId: string | null;
+  externalRefNumber: string | null;
   equipmentType: string | null;
   commodity: string | null;
   weight: number | null;
@@ -40,10 +38,8 @@ export const toLoadAtFacilityResponse = (load: Load): LoadAtFacilityResponse => 
   carrierId: load.carrierId,
   driverId: load.driverId,
   vehicleId: load.vehicleId,
-  brokerId: load.brokerId,
-  shipperId: load.shipperId,
-  consigneeId: load.consigneeId,
-  brokerRefNumber: load.brokerRefNumber,
+  contactId: load.contactId,
+  externalRefNumber: load.externalRefNumber,
   equipmentType: load.equipmentType,
   commodity: load.commodity,
   weight: load.weight,

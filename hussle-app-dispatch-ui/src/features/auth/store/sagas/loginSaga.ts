@@ -1,4 +1,5 @@
 import {call, put} from 'redux-saga/effects';
+import { isAxiosError } from 'axios';
 import axiosPrivate from 'utils/axios';
 import {
   loginRequest,
@@ -25,10 +26,7 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
 
     const {user, session, status, accessibleOrgs} = loginResponse?.data || {};
 
-    console.log('Login Response', loginResponse);
-
     if (status === 'CHALLENGE_REQUIRED') {
-      console.log('CHALLENGE_REQUIRED BLCOkxs', navigate);
       yield put(
         forceChangePasswordSessionInit({
           user,
@@ -40,8 +38,6 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
 
       return;
     } else if (status === 'UNCONFIRMED') {
-      console.log('Account not verified - redirecting to verification', navigate);
-
       // Set user email in state for verification page
       yield put(codeConfirmationInit({email: user.email}));
 
@@ -49,9 +45,6 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
       yield call(navigate, '/code-verification');
       return;
     }
-
-    console.log('Resolved navigate function:', navigate);
-    console.log('REMEMBER ME', rememberMe);
 
     if (rememberMe) {
       localStorage.setItem('rememberMe', JSON.stringify(true));
@@ -77,8 +70,13 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
       // Internal admin navigation
       yield call(navigate, redirectUrl);
     }
-  } catch (error) {
-    console.error('Error logging in user', error);
-    yield put(loginFailure());
+  } catch (error: unknown) {
+    let errorMessage = 'Login failed';
+    if (isAxiosError(error)) {
+      errorMessage = error.response?.data?.message ?? 'Login failed';
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    yield put(loginFailure({ error: errorMessage }));
   }
 }

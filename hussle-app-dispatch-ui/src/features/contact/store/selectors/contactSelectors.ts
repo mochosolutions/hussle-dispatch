@@ -25,6 +25,9 @@ export const selectContactUpdateLoading = (id: string) => (state: RootState) =>
 export const selectContactDeleteLoading = (id: string) => (state: RootState) =>
   state.pages.contacts.loading[`delete:${id}`] === LoadingState.Pending;
 
+export const selectContactDetailLoading = (id: string) => (state: RootState) =>
+  state.pages.contacts.loading[`getById:${id}`] === LoadingState.Pending;
+
 export const selectFormattedContactById = (id: string | undefined) =>
   createSelector(
     [(state: RootState) => (id ? contactSelectors.selectById(state, id) : undefined)],

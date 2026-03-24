@@ -4,8 +4,6 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
-  Chip,
   Grid,
   IconButton,
   MenuItem,
@@ -13,16 +11,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import SaveOutlined from '@ant-design/icons/SaveOutlined';
 import SearchOutlined from '@ant-design/icons/SearchOutlined';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import { MainCard } from '@mocho/ui/components';
+import SectionCard from 'components/SectionCard';
+import { DetailRow } from 'components/Typography';
 import { useDispatch } from 'store';
 import type { VehicleExpense } from 'features/carrier/types';
-import { EditableSectionHeader } from 'features/carrier/components/EditableSectionHeader';
+import EditIcon from '@mui/icons-material/Edit';
 import { FieldRow } from 'features/carrier/components/FieldRow';
 import {
-  updateVehicleRequest,
   assignDriverRequest,
   unassignDriverRequest,
 } from '../../../store/reducers';
@@ -66,25 +63,13 @@ interface VehicleOverviewTabProps {
   onOpenInfoDrawer: () => void;
 }
 
-const WEEKLY_GROSS_DATA: WeeklyGross[] = [
-  { week: 'Jan 20', amount: 4200 },
-  { week: 'Jan 27', amount: 5100 },
-  { week: 'Feb 3', amount: 3800 },
-  { week: 'Feb 10', amount: 5400 },
-  { week: 'Feb 17', amount: 4700 },
-  { week: 'Feb 24', amount: 3900 },
-];
+const WEEKLY_GROSS_DATA: WeeklyGross[] = [];
 
 const currencyCompact = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   maximumFractionDigits: 0,
 });
-
-const parseNumber = (value: string): number => {
-  const parsed = Number.parseInt(value.replace(/[^0-9]/g, ''), 10);
-  return Number.isNaN(parsed) ? 0 : parsed;
-};
 
 export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
   vehicle: v,
@@ -93,91 +78,44 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
 }) => {
   const dispatch = useDispatch();
 
-  // CPM inline editor state
-  const [targetMiles, setTargetMiles] = useState(v.monthlyMilesTarget ?? 10000);
-  const [workingDays, setWorkingDays] = useState(v.workingDaysPerMonth ?? 22);
-  const [expenses, setExpenses] = useState<Record<string, number>>(() => {
+  // Driver assignment state
+  const [selectedDriverId, setSelectedDriverId] = useState('');
+
+  const costSummary = useMemo(() => {
     const expenseMap: Record<string, number> = {};
     v.expenses.forEach((exp) => {
       expenseMap[exp.expenseKey] = parseFloat(exp.monthlyAmount);
     });
-    return expenseMap;
-  });
-  const [isSaved, setIsSaved] = useState(false);
 
-  // Driver assignment state
-  const [selectedDriverId, setSelectedDriverId] = useState('');
-
-  const expensesByCategory = useMemo(() => {
-    const grouped: Record<string, VehicleExpense[]> = {
-      FIXED: [],
-      VARIABLE: [],
-      SERVICE: [],
-    };
-    v.expenses.forEach((exp) => {
-      const cat = exp.category;
-      if (grouped[cat]) {
-        grouped[cat].push(exp);
-      }
-    });
-    return grouped;
-  }, [v.expenses]);
-
-  const totals = useMemo(() => {
-    const sumCategory = (items: VehicleExpense[]) =>
-      items.reduce((sum, item) => sum + (expenses[item.expenseKey] ?? 0), 0);
-
-    const totalFixed = sumCategory(expensesByCategory.FIXED);
-    const totalVariable = sumCategory(expensesByCategory.VARIABLE);
-    const totalService = sumCategory(expensesByCategory.SERVICE);
-    const monthlyTotal = totalFixed + totalVariable + totalService;
+    const monthlyTotal = v.expenses.reduce(
+      (sum, exp) => sum + (expenseMap[exp.expenseKey] ?? 0),
+      0,
+    );
+    const targetMiles = v.monthlyMilesTarget ?? 0;
+    const workingDays = v.workingDaysPerMonth ?? 0;
     const cpm = targetMiles > 0 ? monthlyTotal / targetMiles : 0;
     const dailyMin = workingDays > 0 ? monthlyTotal / workingDays : 0;
     const weeklyMin = dailyMin * (workingDays > 0 ? Math.min(workingDays / 4.33, 7) : 5);
     const minBookRate = Math.round(cpm * 1000 * 1.15);
 
-    return { totalFixed, totalVariable, totalService, monthlyTotal, cpm, dailyMin, weeklyMin, minBookRate };
-  }, [expenses, expensesByCategory, targetMiles, workingDays]);
+    return { monthlyTotal, cpm, dailyMin, weeklyMin, minBookRate };
+  }, [v.expenses, v.monthlyMilesTarget, v.workingDaysPerMonth]);
 
-  const categorySections = useMemo(
-    () =>
-      [
-        { key: 'FIXED', label: 'Fixed Costs (monthly)', total: totals.totalFixed },
-        { key: 'VARIABLE', label: 'Variable Costs (monthly)', total: totals.totalVariable },
-        { key: 'SERVICE', label: 'Service / Wage', total: totals.totalService },
-      ] as const,
-    [totals.totalFixed, totals.totalVariable, totals.totalService],
-  );
+  const hasExpenseData = v.expenses.length > 0;
 
-  const revenueAverage = useMemo(
-    () =>
-      Math.round(
-        WEEKLY_GROSS_DATA.reduce((sum, item) => sum + item.amount, 0) / WEEKLY_GROSS_DATA.length,
-      ),
-    [],
-  );
+  const revenueAverage = useMemo(() => {
+    if (WEEKLY_GROSS_DATA.length === 0) return 0;
+    return Math.round(
+      WEEKLY_GROSS_DATA.reduce((sum, item) => sum + item.amount, 0) / WEEKLY_GROSS_DATA.length,
+    );
+  }, []);
 
   const maxWeeklyValue = useMemo(
     () => Math.max(...WEEKLY_GROSS_DATA.map((item) => item.amount), 5000) * 1.15,
     [],
   );
 
-  const handleExpenseChange = useCallback((key: string, value: number) => {
-    setExpenses((previous) => ({ ...previous, [key]: value }));
-    setIsSaved(false);
-  }, []);
-
-  const handleSave = useCallback(() => {
-    const expenseUpdates = v.expenses.map((exp) => ({
-      category: exp.category,
-      expenseKey: exp.expenseKey,
-      label: exp.label,
-      monthlyAmount: expenses[exp.expenseKey] ?? 0,
-    }));
-    dispatch(updateVehicleRequest({ id: v.id, data: { expenses: expenseUpdates } }));
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
-  }, [dispatch, expenses, v.id, v.expenses]);
+  const hasRevenueData = WEEKLY_GROSS_DATA.length > 0;
 
   const handleAssignDriver = useCallback(() => {
     if (selectedDriverId) {
@@ -196,35 +134,42 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
       <Grid item xs={12} lg={9}>
         <Stack spacing={2}>
           {/* Vehicle Information Card */}
-          <Card>
-            <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <EditableSectionHeader title="Vehicle Information" onEdit={onOpenInfoDrawer} />
-            </Box>
-            <Box sx={{ px: 3, py: 2 }}>
-              <Grid container>
-                <Grid item xs={6}>
-                  <FieldRow label="Unit #" value={v.unitNumber} />
-                  <FieldRow label="VIN" value={v.vin} />
-                  <FieldRow
-                    label="License Plate"
-                    value={
-                      v.licensePlate
-                        ? `${v.licensePlateState ? `${v.licensePlateState} ` : ''}${v.licensePlate}`
-                        : null
-                    }
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <FieldRow
-                    label="Year/Make/Model"
-                    value={`${v.year ?? ''} ${v.make ?? ''} ${v.model ?? ''}`.trim() || null}
-                  />
-                  <FieldRow label="Ownership" value={OWNERSHIP_LABELS[v.ownership]} />
-                  <FieldRow label="Equipment Type" value={VEHICLE_TYPE_LABELS[v.type]} />
-                </Grid>
+          <SectionCard
+            title="Vehicle Information"
+            actions={
+              <IconButton
+                aria-label="Edit vehicle information"
+                size="small"
+                onClick={onOpenInfoDrawer}
+                sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
+              >
+                <EditIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            }
+          >
+            <Grid container>
+              <Grid item xs={6}>
+                <FieldRow label="Unit #" value={v.unitNumber} />
+                <FieldRow label="VIN" value={v.vin} />
+                <FieldRow
+                  label="License Plate"
+                  value={
+                    v.licensePlate
+                      ? `${v.licensePlateState ? `${v.licensePlateState} ` : ''}${v.licensePlate}`
+                      : null
+                  }
+                />
               </Grid>
-            </Box>
-          </Card>
+              <Grid item xs={6}>
+                <FieldRow
+                  label="Year/Make/Model"
+                  value={`${v.year ?? ''} ${v.make ?? ''} ${v.model ?? ''}`.trim() || null}
+                />
+                <FieldRow label="Ownership" value={OWNERSHIP_LABELS[v.ownership]} />
+                <FieldRow label="Equipment Type" value={VEHICLE_TYPE_LABELS[v.type]} />
+              </Grid>
+            </Grid>
+          </SectionCard>
 
           {/* Emergency / Roadside */}
           {(v.emergencyContactName ?? v.emergencyContactPhone) && (
@@ -242,212 +187,33 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
 
           {/* Warranty / Notes */}
           {v.warrantyInfo && (
-            <Card sx={{ px: 3, py: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                Warranty / Notes
-              </Typography>
+            <SectionCard title="Warranty / Notes">
               <Typography variant="body2" color="text.secondary">
                 {v.warrantyInfo}
               </Typography>
-            </Card>
+            </SectionCard>
           )}
 
-          {/* CPM Expense Editor */}
-          <MainCard sx={{ height: '100%' }}>
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              justifyContent="space-between"
-              alignItems={{ xs: 'flex-start', md: 'center' }}
-              sx={{ mb: 2 }}
-            >
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="h5">CPM Expense Editor</Typography>
-                <Chip label="KEY FEATURE" color="primary" size="small" />
-              </Stack>
-              <Typography variant="caption" color="text.secondary">
-                Drives min book rates
-              </Typography>
-            </Stack>
-
-            {categorySections.map((section) => (
-              <Box
-                key={section.key}
-                sx={{
-                  mb: 1.5,
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  justifyContent="space-between"
-                  alignItems={{ xs: 'flex-start', sm: 'center' }}
-                  sx={{
-                    px: 1.5,
-                    py: 1,
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ textTransform: 'uppercase' }}
-                  >
-                    {section.label}
-                  </Typography>
-                  <Typography variant="subtitle2">
-                    {currencyCompact.format(section.total)}
-                  </Typography>
-                </Stack>
-
-                <Stack>
-                  {expensesByCategory[section.key].map((item) => (
-                    <Stack
-                      key={item.expenseKey}
-                      direction={{ xs: 'column', sm: 'row' }}
-                      alignItems={{ xs: 'flex-start', sm: 'center' }}
-                      justifyContent="space-between"
-                      spacing={1}
-                      sx={{
-                        px: 1.5,
-                        py: 1,
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        '&:last-of-type': { borderBottom: 0 },
-                      }}
-                    >
-                      <Stack direction="row" spacing={0.75} alignItems="center">
-                        <Typography variant="body2">{item.label}</Typography>
-                      </Stack>
-                      <TextField
-                        size="small"
-                        value={(expenses[item.expenseKey] ?? 0).toLocaleString()}
-                        onChange={(event) => {
-                          handleExpenseChange(item.expenseKey, parseNumber(event.target.value));
-                        }}
-                        sx={{ width: { xs: '100%', sm: 140 } }}
-                        InputProps={{
-                          startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
-                          inputProps: {
-                            style: {
-                              textAlign: 'right',
-                              fontWeight: 600,
-                            },
-                          },
-                        }}
-                      />
-                    </Stack>
-                  ))}
-                </Stack>
-              </Box>
-            ))}
-
-            {/* Monthly Total */}
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              justifyContent="space-between"
-              spacing={1}
-              sx={{
-                mb: 2,
-                mt: 1,
-                pt: 1,
-                borderTop: 2,
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="h5">Monthly Total</Typography>
-              <Typography variant="h4">{currencyCompact.format(totals.monthlyTotal)}</Typography>
-            </Stack>
-
-            {/* Target inputs */}
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Target Miles / Month"
-                  size="small"
-                  fullWidth
-                  value={targetMiles.toLocaleString()}
-                  onChange={(event) => {
-                    setTargetMiles(parseNumber(event.target.value));
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Working Days / Month"
-                  size="small"
-                  fullWidth
-                  value={String(workingDays)}
-                  onChange={(event) => {
-                    setWorkingDays(parseNumber(event.target.value));
-                  }}
-                />
-              </Grid>
-            </Grid>
-
-            {/* Guards */}
-            {targetMiles === 0 && (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                Set miles target to calculate CPM. Division by zero is prevented.
-              </Alert>
-            )}
-            {workingDays === 0 && (
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                Set working days to calculate daily minimum revenue.
-              </Alert>
-            )}
-
-            {/* Computed values */}
-            <MainCard
-              sx={{
-                bgcolor: 'primary.lighter',
-                borderColor: 'primary.light',
-                mb: 2,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{ textTransform: 'uppercase', color: 'primary.main' }}
-              >
-                Calculated &mdash; Auto-computed
-              </Typography>
-              <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    Cost Per Mile
-                  </Typography>
-                  <Typography variant="h4">${totals.cpm.toFixed(2)}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    Daily Min Revenue
-                  </Typography>
-                  <Typography variant="h4">${totals.dailyMin.toFixed(2)}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    Weekly Min Revenue
-                  </Typography>
-                  <Typography variant="h4">${totals.weeklyMin.toFixed(2)}</Typography>
-                </Grid>
-              </Grid>
-            </MainCard>
-
-            {/* Save button */}
-            <Stack direction="row" justifyContent="flex-end">
-              <Button
-                variant="contained"
-                startIcon={isSaved ? undefined : <SaveOutlined />}
-                color={isSaved ? 'success' : 'primary'}
-                onClick={handleSave}
-              >
-                {isSaved ? 'Saved' : 'Save Expenses'}
-              </Button>
-            </Stack>
-          </MainCard>
+          {/* Cost Summary (read-only) */}
+          <SectionCard title="Cost Summary">
+            <DetailRow
+              label="Monthly Cost"
+              value={hasExpenseData ? currencyCompact.format(costSummary.monthlyTotal) : '\u2014'}
+            />
+            <DetailRow
+              label="CPM"
+              value={hasExpenseData && costSummary.cpm > 0 ? `$${costSummary.cpm.toFixed(2)}` : '\u2014'}
+            />
+            <DetailRow
+              label="Daily Min"
+              value={hasExpenseData && costSummary.dailyMin > 0 ? `$${costSummary.dailyMin.toFixed(2)}` : '\u2014'}
+            />
+            <DetailRow
+              label="Weekly Min"
+              value={hasExpenseData && costSummary.weeklyMin > 0 ? `$${costSummary.weeklyMin.toFixed(2)}` : '\u2014'}
+              noBorder
+            />
+          </SectionCard>
         </Stack>
       </Grid>
 
@@ -455,91 +221,103 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
       <Grid item xs={12} lg={3}>
         <Stack spacing={2}>
           {/* Revenue Performance */}
-          <MainCard>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 1.5 }}
-            >
-              <Typography variant="h5">Revenue Performance</Typography>
+          <SectionCard
+            title="Revenue Performance"
+            actions={
               <Typography variant="caption" color="text.secondary">
                 Last 6 weeks
               </Typography>
-            </Stack>
+            }
+          >
 
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="flex-end"
-              sx={{
-                height: 118,
-                borderBottom: 1,
-                borderColor: 'divider',
-                pb: 1,
-              }}
-            >
-              {WEEKLY_GROSS_DATA.map((item) => {
-                const height = (item.amount / maxWeeklyValue) * 100;
-                const isAboveTarget = item.amount >= 5000;
+            {hasRevenueData ? (
+              <>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="flex-end"
+                  sx={{
+                    height: 118,
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    pb: 1,
+                  }}
+                >
+                  {WEEKLY_GROSS_DATA.map((item) => {
+                    const height = (item.amount / maxWeeklyValue) * 100;
+                    const isAboveTarget = item.amount >= 5000;
 
-                return (
-                  <Box key={item.week} sx={{ flex: 1 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        textAlign: 'center',
-                        color: isAboveTarget ? 'success.main' : 'warning.main',
-                        mb: 0.5,
-                      }}
-                    >
-                      ${(item.amount / 1000).toFixed(1)}K
+                    return (
+                      <Box key={item.week} sx={{ flex: 1 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: 'block',
+                            textAlign: 'center',
+                            color: isAboveTarget ? 'success.main' : 'warning.main',
+                            mb: 0.5,
+                          }}
+                        >
+                          ${(item.amount / 1000).toFixed(1)}K
+                        </Typography>
+                        <Box
+                          sx={{
+                            borderRadius: 1,
+                            width: '100%',
+                            height: `${Math.max(height, 4)}%`,
+                            bgcolor: isAboveTarget ? 'success.main' : 'warning.main',
+                          }}
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.5 }}
+                        >
+                          {item.week}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    p: 1.25,
+                    borderRadius: 1,
+                    bgcolor: 'grey.100',
+                  }}
+                >
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" color="text.secondary">
+                      6-week avg:
                     </Typography>
-                    <Box
-                      sx={{
-                        borderRadius: 1,
-                        width: '100%',
-                        height: `${Math.max(height, 4)}%`,
-                        bgcolor: isAboveTarget ? 'success.main' : 'warning.main',
-                      }}
-                    />
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mt: 0.5 }}
-                    >
-                      {item.week}
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {currencyCompact.format(revenueAverage)}
                     </Typography>
-                  </Box>
-                );
-              })}
-            </Stack>
-
-            <Box
-              sx={{
-                mt: 1.5,
-                p: 1.25,
-                borderRadius: 1,
-                bgcolor: 'grey.100',
-              }}
-            >
-              <Stack direction="row" justifyContent="space-between">
+                  </Stack>
+                </Box>
+              </>
+            ) : (
+              <Box
+                sx={{
+                  height: 118,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderBottom: 1,
+                  borderColor: 'divider',
+                }}
+              >
                 <Typography variant="body2" color="text.secondary">
-                  6-week avg:
+                  No revenue data yet
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  {currencyCompact.format(revenueAverage)}
-                </Typography>
-              </Stack>
-            </Box>
-          </MainCard>
+              </Box>
+            )}
+          </SectionCard>
 
           {/* Current Assignment */}
-          <MainCard>
-            <Typography variant="h5" sx={{ mb: 2 }}>
-              Current Assignment
-            </Typography>
+          <SectionCard title="Current Assignment">
             <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
               <Avatar
                 sx={{
@@ -654,26 +432,26 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
             >
               Find Matching Loads
             </Button>
-          </MainCard>
+          </SectionCard>
 
           {/* Min Book Rate */}
-          <MainCard
+          <SectionCard
+            title="Min Book Rate"
             sx={{
               bgcolor: 'primary.lighter',
               borderColor: 'primary.light',
             }}
           >
-            <Typography variant="h5">Min Book Rate</Typography>
             <Typography variant="h2" sx={{ mt: 1 }}>
-              {currencyCompact.format(totals.minBookRate)}
+              {currencyCompact.format(costSummary.minBookRate)}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              ${totals.cpm.toFixed(2)} CPM + 15% margin
+              ${costSummary.cpm.toFixed(2)} CPM + 15% margin
             </Typography>
             <Alert severity="info" sx={{ mt: 1.5 }}>
               Used in Load Intelligence scoring to filter out unprofitable loads.
             </Alert>
-          </MainCard>
+          </SectionCard>
         </Stack>
       </Grid>
     </Grid>

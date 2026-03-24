@@ -33,7 +33,7 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
       subtitle={carrier.name}
       initialValues={{
         dispatchFeePercent: carrier.dispatchFeePercent,
-        partnerSplitPercent: carrier.partnerSplitPercent ?? '',
+        partnerSplitPercent: carrier.partnerSplitPercent ?? undefined,
         feeIncludesAccessorials: carrier.feeIncludesAccessorials,
         dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       }}

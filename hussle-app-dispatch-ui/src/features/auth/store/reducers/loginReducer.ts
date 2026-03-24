@@ -26,11 +26,11 @@ export const loginReducer = {
     state.rememberMe = rememberMe;
     state.initAttempted = true;
   },
-  loginFailure: (state: AuthState) => {
+  loginFailure: (state: AuthState, action: PayloadAction<{ error: string }>) => {
     setRejected(state, {
       loadingKey: 'login',
       errorKey: 'login',
-      failureMessage: 'Login failed',
+      failureMessage: action.payload.error,
     });
     state.isLoggedIn = false;
     state.user = defaultUserProfileState;

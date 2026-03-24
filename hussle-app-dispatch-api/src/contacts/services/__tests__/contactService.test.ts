@@ -1,25 +1,15 @@
-import Decimal from 'decimal.js';
-import { ContactType } from '@prisma/client';
 import { NotFoundError } from '@/shared/errors';
 import { createContactService } from '../contactService';
 
 const buildContact = () => ({
   id: '22178e81-128e-4ef4-9c17-195a7c835266',
   organizationId: '94df87f4-18bb-41e8-9de6-f2f337251e4e',
-  type: ContactType.BROKER,
-  companyName: 'Atlas Logistics',
-  contactName: 'Jamie Atlas',
+  customerId: null,
+  role: 'Load Planner',
+  firstName: 'Jamie',
+  lastName: 'Atlas',
   phone: '555-000-1111',
   email: 'jamie@atlas.test',
-  mcNumber: 'MC123456',
-  address: '100 Main St',
-  city: 'Dallas',
-  state: 'TX',
-  zip: '75001',
-  paymentTerms: 'net_30',
-  paymentTermsDays: 30,
-  quickPayDiscount: new Decimal('2.50'),
-  carrierPacketSentAt: null,
   notes: null,
   createdAt: new Date('2026-03-01T00:00:00.000Z'),
   updatedAt: new Date('2026-03-01T00:00:00.000Z'),
@@ -51,16 +41,18 @@ describe('contactService', () => {
     const result = await contactService.createContact({
       organizationId: '94df87f4-18bb-41e8-9de6-f2f337251e4e',
       input: {
-        type: ContactType.BROKER,
-        companyName: 'Atlas Logistics',
+        firstName: 'Jamie',
+        lastName: 'Atlas',
+        role: 'Load Planner',
       },
     });
 
     expect(mockContactRepository.create).toHaveBeenCalledWith(
       '94df87f4-18bb-41e8-9de6-f2f337251e4e',
       expect.objectContaining({
-        type: ContactType.BROKER,
-        companyName: 'Atlas Logistics',
+        firstName: 'Jamie',
+        lastName: 'Atlas',
+        role: 'Load Planner',
       }),
     );
     expect(result.id).toBe('22178e81-128e-4ef4-9c17-195a7c835266');
@@ -74,9 +66,7 @@ describe('contactService', () => {
     await contactService.listContacts({
       organizationId: '94df87f4-18bb-41e8-9de6-f2f337251e4e',
       query: { page: '1', limit: '25', sort: 'unknownField', order: 'asc' },
-      filters: {
-        type: ContactType.BROKER,
-      },
+      filters: {},
     });
 
     expect(mockContactRepository.list).toHaveBeenCalledWith(
@@ -91,14 +81,14 @@ describe('contactService', () => {
     mockContactRepository.findById.mockResolvedValue(contact);
     mockContactRepository.update.mockResolvedValue({
       ...contact,
-      companyName: 'Atlas Updated',
+      firstName: 'James',
     });
 
     const result = await contactService.updateContact({
       id: '22178e81-128e-4ef4-9c17-195a7c835266',
       organizationId: '94df87f4-18bb-41e8-9de6-f2f337251e4e',
       input: {
-        companyName: 'Atlas Updated',
+        firstName: 'James',
       },
     });
 
@@ -106,7 +96,7 @@ describe('contactService', () => {
       '22178e81-128e-4ef4-9c17-195a7c835266',
       '94df87f4-18bb-41e8-9de6-f2f337251e4e',
     );
-    expect(result.companyName).toBe('Atlas Updated');
+    expect(result.firstName).toBe('James');
   });
 
   it('gets contact by id within organization scope', async () => {
@@ -148,7 +138,7 @@ describe('contactService', () => {
         id: '22178e81-128e-4ef4-9c17-195a7c835266',
         organizationId: '94df87f4-18bb-41e8-9de6-f2f337251e4e',
         input: {
-          companyName: 'Atlas Updated',
+          firstName: 'James',
         },
       }),
     ).rejects.toBeInstanceOf(NotFoundError);

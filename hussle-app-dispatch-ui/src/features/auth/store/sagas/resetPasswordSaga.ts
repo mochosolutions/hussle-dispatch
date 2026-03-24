@@ -2,43 +2,41 @@ import {call, put, select} from 'redux-saga/effects';
 import axiosPrivate from 'utils/axios';
 import {getNavigate} from 'utils/getNavigate';
 import {
+  initiatePasswordResetRequest,
   initiatePasswordResetSuccess,
   initiatePasswordResetFailure,
+  confirmPasswordResetRequest,
   confirmPasswordResetSuccess,
   confirmPasswordResetFailure,
 } from '../authSlice';
 
 import {currentUserEmailSelector} from '../selectors';
 
-export function* initiatePasswordResetSaga(action) {
+export function* initiatePasswordResetSaga(
+  action: ReturnType<typeof initiatePasswordResetRequest>,
+) {
   try {
     const {email} = action.payload;
     const navigate = yield call(getNavigate);
 
-    const response = yield call(axiosPrivate.post, '/auth/password/reset', {
+    yield call(axiosPrivate.post, '/auth/password/reset', {
       email,
     });
 
-    console.log('initiatePasswordResetSaga Response', response);
-
     yield put(initiatePasswordResetSuccess({email}));
-    yield call(navigate, '/reset-password');
-  } catch (error: any) {
+    yield call(navigate, '/reset-password', { state: { email } });
+  } catch (error: unknown) {
     yield put(initiatePasswordResetFailure());
   }
 }
 
-export function* confirmPasswordResetSaga(action) {
+export function* confirmPasswordResetSaga(
+  action: ReturnType<typeof confirmPasswordResetRequest>,
+) {
   try {
     const email = yield select(currentUserEmailSelector);
     const {confirmationCode, newPassword} = action.payload;
     const navigate = yield call(getNavigate);
-
-    console.log('confirmPasswordResetSaga', {
-      email,
-      confirmationCode,
-      newPassword,
-    });
 
     yield call(axiosPrivate.post, '/auth/password/reset/confirm', {
       email,
@@ -48,7 +46,7 @@ export function* confirmPasswordResetSaga(action) {
 
     yield put(confirmPasswordResetSuccess());
     yield call(navigate, '/login');
-  } catch (error: any) {
+  } catch (error: unknown) {
     yield put(confirmPasswordResetFailure());
   }
 }

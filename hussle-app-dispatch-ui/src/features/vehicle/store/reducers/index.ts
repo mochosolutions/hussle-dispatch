@@ -26,3 +26,11 @@ export {
   vehicleReducer,
   vehicleSelectors,
 } from './vehicleEntitySlice';
+
+export {
+  fetchVehicleLoadHistoryRequest,
+  fetchVehicleLoadHistorySuccess,
+  fetchVehicleLoadHistoryFailure,
+} from './vehicleLoadHistorySlice';
+
+export { default as vehicleLoadHistoryReducer } from './vehicleLoadHistorySlice';

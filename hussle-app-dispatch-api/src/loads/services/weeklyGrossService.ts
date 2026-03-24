@@ -1,4 +1,3 @@
-import Decimal from 'decimal.js';
 import type {
   GetWeeklyGrossInput,
   WeeklyGrossItem,
@@ -53,7 +52,7 @@ export const createWeeklyGrossService = (
     const items: WeeklyGrossItem[] = [];
 
     for (const vehicle of vehicles) {
-      const revenue = await deps.weeklyGrossQuery.getWeeklyRevenue(
+      const { revenue, loadCount } = await deps.weeklyGrossQuery.getWeeklyRevenue(
         vehicle.id,
         weekStart,
         weekEnd,
@@ -63,10 +62,16 @@ export const createWeeklyGrossService = (
         ? 0
         : revenue.div(target).mul(100).toDecimalPlaces(1).toNumber();
 
+      const driverName = vehicle.driver
+        ? `${vehicle.driver.firstName} ${vehicle.driver.lastName}`.trim()
+        : null;
+
       items.push({
         vehicleId: vehicle.id,
         unitNumber: vehicle.unitNumber,
         carrierName: vehicle.carrier.name,
+        driverName,
+        loadCount,
         revenue,
         target,
         percent,

@@ -1,5 +1,7 @@
 import type { ParsedQs } from 'qs';
 import type {
+  AssignLoadResult,
+  LoadAssignmentInput,
   CreateLoadInput,
   UpdateLoadInput,
   LoadListFilters,
@@ -37,6 +39,13 @@ export interface UpdateLoadServiceInput {
   role: string;
 }
 
+export interface AssignLoadServiceInput {
+  id: string;
+  organizationId: string;
+  input: LoadAssignmentInput;
+  role: string;
+}
+
 export interface DeleteLoadServiceInput {
   id: string;
   organizationId: string;
@@ -70,6 +79,7 @@ export interface LoadService {
   listLoads(input: ListLoadsServiceInput): Promise<ListLoadsResult>;
   getLoadById(input: GetLoadByIdServiceInput): Promise<LoadWithRelations>;
   updateLoad(input: UpdateLoadServiceInput): Promise<LoadWithRelations>;
+  assignLoad(input: AssignLoadServiceInput): Promise<AssignLoadResult>;
   deleteLoad(input: DeleteLoadServiceInput): Promise<void>;
   createCheckCall(input: CreateCheckCallServiceInput): Promise<CheckCallWithUser>;
   listCheckCalls(input: ListCheckCallsServiceInput): Promise<CheckCallWithUser[]>;

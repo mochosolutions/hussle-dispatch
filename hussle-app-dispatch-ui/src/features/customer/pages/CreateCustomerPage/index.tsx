@@ -1,0 +1,265 @@
+import { useCallback, forwardRef } from 'react';
+import { useNavigate } from 'react-router';
+import { useFormik } from 'formik';
+import { Box, Button, Card, Divider, Grid, Stack, Typography } from '@mui/material';
+
+import { useDispatch } from 'store';
+import { PageWrapper } from '@mocho/ui/components';
+import { InnerPageHeader } from '../../../../components/InnerPageHeader';
+import { TextField } from '../../../../mocho/components/form-fields/TextField';
+import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
+import { CharCounterField } from '../../../../mocho/components/form-fields/CharCounterField';
+import { EmailField } from '../../../../mocho/components/form-fields/EmailField';
+import { useFormRef } from '../../../../mocho/hooks/useFormRef';
+import { useFormHandle } from '../../../../mocho/hooks/useFormHandle';
+import { useDirtyFormBlocker } from '../../../../mocho/forms/hooks/useDirtyFormBlocker';
+import { useModalActions } from '../../../ui/hooks/useModalActions';
+import { createCustomerRequest } from '../../store/reducers/customerPageSlice';
+import { customerSchema } from '../../validators/customerSchema';
+import { CUSTOMER_TYPE_OPTIONS, PAYMENT_TERMS_OPTIONS } from '../../constants';
+import type { CustomerFormValues } from '../../validators/customerSchema';
+import type { CreateCustomerPayload } from '../../types';
+import type { FormHandle, FormStateChangeCallback } from '../../../../mocho/types/form';
+
+// ---------------------------------------------------------------------------
+// Section card — reusable within this page
+// ---------------------------------------------------------------------------
+
+interface SectionCardProps {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}
+
+const SectionCard = ({ title, subtitle, children }: SectionCardProps) => (
+  <Card sx={{ mb: 2 }}>
+    <Box sx={{ px: 3, py: 2 }}>
+      <Typography
+        variant="subtitle1"
+        sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
+      >
+        {title}
+      </Typography>
+      {subtitle && (
+        <Typography variant="caption" sx={{ display: 'block', mt: 0.25 }}>
+          {subtitle}
+        </Typography>
+      )}
+    </Box>
+    <Divider />
+    <Box sx={{ px: 3, py: 2.5 }}>{children}</Box>
+  </Card>
+);
+
+// ---------------------------------------------------------------------------
+// Customer create form
+// ---------------------------------------------------------------------------
+
+const customerInitialValues: CustomerFormValues = {
+  companyName: '',
+  type: 'BROKER',
+  mcNumber: '',
+  dotNumber: '',
+  phone: '',
+  email: '',
+  website: '',
+  address: '',
+  city: '',
+  state: '',
+  zip: '',
+  paymentTerms: 'Net 30',
+  paymentTermsDays: 30,
+  quickPayDiscount: '',
+  notes: '',
+  status: 'ACTIVE',
+};
+
+interface CustomerCreateFormProps {
+  onSubmit: (values: CustomerFormValues) => void;
+  onStateChange?: FormStateChangeCallback;
+}
+
+const CustomerCreateForm = forwardRef<FormHandle, CustomerCreateFormProps>(
+  ({ onSubmit, onStateChange }, ref) => {
+    const formik = useFormik<CustomerFormValues>({
+      initialValues: customerInitialValues,
+      validationSchema: customerSchema,
+      validateOnBlur: true,
+      validateOnChange: true,
+      onSubmit: (values) => {
+        onSubmit(values);
+      },
+    });
+
+    useFormHandle({ ref, formik, onStateChange });
+
+    return (
+      <form onSubmit={formik.handleSubmit}>
+        <Box sx={{ maxWidth: 720, mx: 'auto', px: 4, py: 3 }}>
+          <SectionCard title="Company Information" subtitle="Customer details and classification">
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  name="companyName"
+                  label="Company Name"
+                  placeholder="Enter company name"
+                  formik={formik}
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <SelectField
+                  name="type"
+                  label="Customer Type"
+                  data={CUSTOMER_TYPE_OPTIONS}
+                  formik={formik}
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField name="mcNumber" label="MC Number" placeholder="MC-0000000" formik={formik} />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField name="dotNumber" label="DOT Number" placeholder="DOT number" formik={formik} />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField name="phone" label="Phone" placeholder="(555) 123-4567" formik={formik} />
+              </Grid>
+              <Grid item xs={6}>
+                <EmailField name="email" label="Email" formik={formik} />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField name="website" label="Website" placeholder="https://example.com" formik={formik} />
+              </Grid>
+            </Grid>
+          </SectionCard>
+
+          <SectionCard title="Address" subtitle="Primary business address">
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField name="address" label="Street Address" placeholder="123 Main St" formik={formik} />
+              </Grid>
+              <Grid item xs={5}>
+                <TextField name="city" label="City" placeholder="City" formik={formik} />
+              </Grid>
+              <Grid item xs={3}>
+                <TextField name="state" label="State" placeholder="ST" formik={formik} />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField name="zip" label="ZIP Code" placeholder="12345" formik={formik} />
+              </Grid>
+            </Grid>
+          </SectionCard>
+
+          <SectionCard title="Billing" subtitle="Payment terms and quick pay settings">
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <SelectField
+                  name="paymentTerms"
+                  label="Payment Terms"
+                  data={PAYMENT_TERMS_OPTIONS}
+                  formik={formik}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  name="quickPayDiscount"
+                  label="Quick Pay Discount (%)"
+                  placeholder="e.g. 3"
+                  formik={formik}
+                />
+              </Grid>
+            </Grid>
+          </SectionCard>
+
+          <SectionCard title="Notes" subtitle="Optional notes about this customer">
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <CharCounterField
+                  name="notes"
+                  label="Notes"
+                  placeholder="e.g. Preferred lanes, special requirements..."
+                  maxLength={500}
+                  rows={3}
+                  formik={formik}
+                />
+              </Grid>
+            </Grid>
+          </SectionCard>
+        </Box>
+      </form>
+    );
+  },
+);
+
+CustomerCreateForm.displayName = 'CustomerCreateForm';
+
+// ---------------------------------------------------------------------------
+// Page component
+// ---------------------------------------------------------------------------
+
+const CreateCustomerPage = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { formRef, formState, handleFormStateChange, submitForm } = useFormRef();
+  const { openModal } = useModalActions();
+
+  useDirtyFormBlocker({
+    isDirty: formState.isDirty,
+    isSubmitting: formState.isSubmitting,
+    onBlock: (blocker) => {
+      openModal('dirtyFormConfirm', {
+        onConfirm: () => blocker.proceed?.(),
+        onCancel: () => blocker.reset?.(),
+      });
+    },
+  });
+
+  const handleSubmit = useCallback(
+    (values: CustomerFormValues) => {
+      const payload: CreateCustomerPayload = {
+        ...values,
+        mcNumber: values.mcNumber || null,
+        dotNumber: values.dotNumber || null,
+        phone: values.phone || null,
+        email: values.email || null,
+        website: values.website || null,
+        address: values.address || null,
+        city: values.city || null,
+        state: values.state || null,
+        zip: values.zip || null,
+        quickPayDiscount: values.quickPayDiscount || null,
+        notes: values.notes || null,
+      };
+      dispatch(createCustomerRequest({ data: payload }));
+    },
+    [dispatch],
+  );
+
+  return (
+    <PageWrapper errorContext="CreateCustomerPage">
+      <InnerPageHeader
+        onBack={() => navigate('/customers')}
+        backLabel="Customers"
+        title="Add New Customer"
+        actions={
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" onClick={() => navigate('/customers')}>
+              Cancel
+            </Button>
+            <Button variant="contained" onClick={submitForm} disabled={formState.isSubmitting}>
+              {formState.isSubmitting ? 'Creating...' : 'Create Customer'}
+            </Button>
+          </Stack>
+        }
+      />
+      <CustomerCreateForm
+        ref={formRef}
+        onSubmit={handleSubmit}
+        onStateChange={handleFormStateChange}
+      />
+    </PageWrapper>
+  );
+};
+
+export default CreateCustomerPage;

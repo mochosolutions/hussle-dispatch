@@ -21,7 +21,7 @@ export function* createContactSaga(
       data,
     )) as SagaReturnType<typeof createContact>;
 
-    yield put(contactActions.addOne(response.contact));
+    yield put(contactActions.addOne(response));
     yield put(createContactSuccess({}));
 
     yield call(enqueueSnackbar, 'Contact created', { variant: 'success' });

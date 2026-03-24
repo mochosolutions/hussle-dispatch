@@ -2,7 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { invoiceSelectors } from '../reducers/invoiceEntitySlice';
-import type { InvoiceListItem, InvoiceStatus } from '../../types';
+import type { InvoiceCounts, InvoiceListItem, InvoiceStatus } from '../../types';
 
 // ---------------------------------------------------------------------------
 // Entity selectors
@@ -39,11 +39,23 @@ export const selectInvoiceStatusCounts = createSelector(
       SENT: 0,
       PARTIALLY_PAID: 0,
       PAID: 0,
+      OVERDUE: 0,
       VOID: 0,
     };
 
+    const now = new Date();
     invoices.forEach((invoice) => {
-      counts[invoice.status] += 1;
+      if (invoice.status in counts) {
+        counts[invoice.status] += 1;
+      }
+      // Count overdue invoices (SENT or PARTIALLY_PAID with past due date)
+      if (
+        invoice.status !== 'PAID' &&
+        invoice.status !== 'VOID' &&
+        new Date(invoice.dueDate) < now
+      ) {
+        counts.OVERDUE += 1;
+      }
     });
 
     return counts;
@@ -76,3 +88,53 @@ export const selectInvoicesWithOverdueFlag = createSelector(
     }));
   },
 );
+
+// ---------------------------------------------------------------------------
+// Invoice counts selector
+// ---------------------------------------------------------------------------
+
+export const selectInvoiceCounts = (state: RootState): InvoiceCounts | null =>
+  state.pages.invoiceCounts.counts;
+
+export const selectInvoiceDraftCount = (state: RootState): number =>
+  state.pages.invoiceCounts.counts?.draft ?? 0;
+
+// ---------------------------------------------------------------------------
+// List page filtering selectors
+// ---------------------------------------------------------------------------
+
+export interface InvoiceListFilters {
+  selectedStatuses: InvoiceStatus[];
+  overdueOnly: boolean;
+  missingBolOnly: boolean;
+  searchQuery: string;
+}
+
+export const selectFilteredInvoices = (filters: InvoiceListFilters) =>
+  createSelector([selectInvoicesWithOverdueFlag], (invoices) => {
+    let result = invoices;
+
+    if (filters.selectedStatuses.length > 0) {
+      result = result.filter((inv) => filters.selectedStatuses.includes(inv.status));
+    }
+
+    if (filters.overdueOnly) {
+      result = result.filter((inv) => inv.isOverdue);
+    }
+
+    if (filters.missingBolOnly) {
+      result = result.filter((inv) => inv.missingSignedBol);
+    }
+
+    if (filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase();
+      result = result.filter(
+        (inv) =>
+          inv.invoiceNumber.toLowerCase().includes(query) ||
+          (inv.load?.loadNumber.toLowerCase().includes(query) ?? false) ||
+          (inv.carrier?.name.toLowerCase().includes(query) ?? false),
+      );
+    }
+
+    return result;
+  });

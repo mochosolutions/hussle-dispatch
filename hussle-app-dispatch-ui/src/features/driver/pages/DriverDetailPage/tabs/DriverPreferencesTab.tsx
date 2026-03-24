@@ -1,9 +1,10 @@
-import { Box, Button, Card, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
 import { EmptyState } from '@mocho/ui/components';
 import type { Driver } from 'features/carrier/types';
 import { FieldRow } from 'features/carrier/components/FieldRow';
+import SectionCard from 'components/SectionCard';
 
 interface DriverWithCarrier extends Driver {
   carrierName: string | null;
@@ -33,16 +34,8 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
       </Box>
 
       {/* Preferred Lanes */}
-      <Card>
-        <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-          >
-            Preferred Lanes
-          </Typography>
-        </Box>
-        <Box sx={{ px: 3, py: 2 }}>
+      <SectionCard title="Preferred Lanes">
+        <Box sx={{ px: 1.5, py: 1 }}>
           {d.preferredLanes.length > 0 ? (
             <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
               <Box component="thead">
@@ -87,19 +80,11 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
             <EmptyState title="No preferred lanes configured" />
           )}
         </Box>
-      </Card>
+      </SectionCard>
 
       {/* No-Go Zones */}
-      <Card>
-        <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-          >
-            No-Go Zones
-          </Typography>
-        </Box>
-        <Box sx={{ px: 3, py: 2 }}>
+      <SectionCard title="No-Go Zones">
+        <Box sx={{ px: 1.5, py: 1 }}>
           {d.noGoZones.length > 0 ? (
             <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
               <Box component="thead">
@@ -140,14 +125,14 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
             <EmptyState title="No no-go zones configured" />
           )}
         </Box>
-      </Card>
+      </SectionCard>
 
       {/* Max Days Out */}
-      <Card>
-        <Box sx={{ px: 3, py: 2 }}>
+      <SectionCard title="General Preferences">
+        <Box sx={{ px: 1.5, py: 1 }}>
           <FieldRow label="Max Days Out" value={d.maxDaysOut ?? '\u2014'} />
         </Box>
-      </Card>
+      </SectionCard>
     </Stack>
   </Box>
 );

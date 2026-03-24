@@ -36,6 +36,7 @@ export const listLoadsMapper = (req: Request): ListLoadsServiceInput => {
   const filters: LoadListFilters = {
     status: parseStatusFilter(req.query['status']),
     carrierId: typeof req.query['carrierId'] === 'string' ? req.query['carrierId'] : undefined,
+    customerId: typeof req.query['customerId'] === 'string' ? req.query['customerId'] : undefined,
     equipmentType: parseEquipmentType(req.query['equipmentType']),
     search: typeof req.query['search'] === 'string' ? req.query['search'] : undefined,
     dateFrom: parseDate(req.query['dateFrom']),

@@ -22,7 +22,7 @@ export function* markPaidSaga(action: ReturnType<typeof markPaidRequest>): Gener
 
     const response = (yield call(markPaid, id, paymentInput)) as SagaReturnType<typeof markPaid>;
 
-    yield put(invoiceActions.upsertOne(response.invoice));
+    yield put(invoiceActions.upsertOne(response));
     yield put(markPaidSuccess({ id }));
     yield call(enqueueSnackbar, 'Payment recorded', { variant: 'success' });
   } catch (error: unknown) {

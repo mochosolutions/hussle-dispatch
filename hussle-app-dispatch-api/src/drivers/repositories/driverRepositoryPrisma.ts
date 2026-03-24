@@ -108,11 +108,29 @@ export const driverRepositoryPrisma = (
           deletedAt: null,
         },
       },
+      include: {
+        loads: {
+          where: {
+            deletedAt: null,
+            status: {
+              in: ['BOOKED', 'DISPATCHED', 'IN_TRANSIT', 'AT_PICKUP', 'AT_DELIVERY'],
+            },
+          },
+        },
+      },
     }),
 
   list: ({ organizationId, filters, skip, take, orderBy }: ListDriversRepositoryInput) =>
     prisma.driver.findMany({
       where: buildListWhere(organizationId, filters),
+      include: {
+        carrier: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       skip,
       take,
       orderBy,

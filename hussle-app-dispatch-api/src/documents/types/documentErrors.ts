@@ -41,17 +41,3 @@ export class DocumentAlreadyConfirmedError extends CustomError {
     return [{ message: this.message }];
   }
 }
-
-export class DocumentMissingAssociationError extends CustomError {
-  statusCode = 400;
-  readonly code = 'DOCUMENT_MISSING_ASSOCIATION';
-
-  constructor() {
-    super('Document must be associated with either a loadId or a carrierId');
-    Object.setPrototypeOf(this, DocumentMissingAssociationError.prototype);
-  }
-
-  serializeErrors() {
-    return [{ message: this.message }];
-  }
-}

@@ -18,20 +18,33 @@ export const documentRepositoryPrisma = (
       where: { id, organizationId },
     }),
 
+  findManyByIds: (ids: string[], organizationId: string) =>
+    prisma.document.findMany({
+      where: { id: { in: ids }, organizationId },
+    }),
+
   updateUploadStatus: (id: string, status: string) =>
     prisma.document.update({
       where: { id },
       data: { uploadStatus: status },
     }),
 
-  archiveByLoadAndType: async (
-    loadId: string,
+  archive: (id: string) =>
+    prisma.document.update({
+      where: { id },
+      data: { isArchived: true },
+    }),
+
+  archiveByEntityAndType: async (
+    entityType: string,
+    entityId: string,
     type: DocumentType,
     excludeId: string,
   ): Promise<number> => {
     const result = await prisma.document.updateMany({
       where: {
-        loadId,
+        entityType,
+        entityId,
         type,
         id: { not: excludeId },
         isArchived: false,
@@ -42,28 +55,25 @@ export const documentRepositoryPrisma = (
   },
 
   findMany: (filters: ListDocumentsInput) => {
-    const where: {
-      organizationId: string;
-      loadId?: string;
-      carrierId?: string;
-      type?: DocumentType;
-      uploadStatus: string;
-      isArchived?: boolean;
-    } = {
+    const where: Record<string, unknown> = {
       organizationId: filters.organizationId,
       uploadStatus: 'confirmed',
     };
 
-    if (filters.loadId !== undefined) {
-      where.loadId = filters.loadId;
+    if (filters.entityType !== undefined) {
+      where.entityType = filters.entityType;
     }
 
-    if (filters.carrierId !== undefined) {
-      where.carrierId = filters.carrierId;
+    if (filters.entityId !== undefined) {
+      where.entityId = filters.entityId;
     }
 
     if (filters.type !== undefined) {
       where.type = filters.type;
+    }
+
+    if (filters.expiringBefore !== undefined) {
+      where.expiresAt = { lte: filters.expiringBefore };
     }
 
     if (filters.includeArchived !== true) {
@@ -73,17 +83,6 @@ export const documentRepositoryPrisma = (
     return prisma.document.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-    });
-  },
-
-  updateLoadTimestamp: async (
-    loadId: string,
-    field: 'rateConReceivedAt' | 'bolUnsignedAt' | 'bolSignedAt',
-    timestamp: Date,
-  ): Promise<void> => {
-    await prisma.load.update({
-      where: { id: loadId },
-      data: { [field]: timestamp },
     });
   },
 });

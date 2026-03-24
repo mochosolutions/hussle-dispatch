@@ -50,7 +50,7 @@ export function* createCarrierSaga(
 
     // Optimistically add with actual driver/vehicle counts — the refetch below will replace it
     const carrierListItem: CarrierListItem = {
-      ...response.carrier,
+      ...response,
       driverCount: mappedDrivers.length,
       vehicleCount: mappedVehicles.length,
       onboardingComplete: false,

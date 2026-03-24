@@ -16,7 +16,7 @@ export function* approveInvoiceSaga(
   try {
     const response = (yield call(approveInvoice, id)) as SagaReturnType<typeof approveInvoice>;
 
-    yield put(invoiceActions.upsertOne(response.invoice));
+    yield put(invoiceActions.upsertOne(response));
     yield put(approveInvoiceSuccess({ id }));
     yield call(enqueueSnackbar, 'Invoice approved', { variant: 'success' });
   } catch (error: unknown) {

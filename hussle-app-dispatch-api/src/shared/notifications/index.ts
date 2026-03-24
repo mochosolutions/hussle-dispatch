@@ -1,3 +1,7 @@
 export type { NotificationService } from './notificationService';
+export type { SmsService } from './smsService';
 export { createConsoleNotificationService } from './consoleNotificationService';
-export { createNotificationService } from './notificationServiceFactory';
+export { createConsoleSmsService } from './consoleSmsService';
+export { createSesNotificationService } from './sesNotificationService';
+export { createSmtpNotificationService } from './smtpNotificationService';
+export { createNotificationService, createSmsService } from './notificationServiceFactory';

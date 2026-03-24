@@ -2,7 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { Box, Typography, Chip, Avatar, Card, CardContent, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { KANBAN_GROUPS, STATUS_LABELS, STATUS_COLORS } from '../../constants';
+import { StatusBadge } from 'components/Statusbadge';
+import { KANBAN_GROUPS, STATUS_LABELS } from '../../constants';
+import { InvoiceReadinessBadge } from '../InvoiceReadinessBadge';
 import type { LoadListItem, KanbanGroup } from '../../types';
 
 // ---------------------------------------------------------------------------
@@ -16,30 +18,6 @@ const KANBAN_COLUMN_COLORS: Record<KanbanGroup, string> = {
   DELIVERED: '#a855f7',
   COMPLETE: '#6b7280',
   ISSUES: '#ef4444',
-};
-
-// ---------------------------------------------------------------------------
-// Status Badge
-// ---------------------------------------------------------------------------
-
-const StatusBadge: React.FC<{ status: string; label: string }> = ({ status, label }) => {
-  const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS] ?? 'text.secondary';
-
-  return (
-    <Chip
-      label={label}
-      size="small"
-      sx={{
-        fontWeight: 600,
-        fontSize: '0.6875rem',
-        height: 22,
-        color,
-        borderColor: color,
-        bgcolor: 'transparent',
-      }}
-      variant="outlined"
-    />
-  );
 };
 
 // ---------------------------------------------------------------------------
@@ -84,7 +62,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
         cursor: 'pointer',
         borderLeft: `3px solid ${columnColor}`,
         transition: 'box-shadow 0.15s, transform 0.15s',
-        '&:hover': { boxShadow: 2, transform: 'translateY(-1px)' },
+        '&:hover': { boxShadow: 2 },
       }}
       onClick={handleClick}
     >
@@ -95,10 +73,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
           <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>
             {load.loadNumber}
           </Typography>
-          <StatusBadge
-            status={load.status}
-            label={STATUS_LABELS[load.status] ?? load.status}
-          />
+          <StatusBadge status={load.status} />
         </Box>
 
         <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
@@ -112,6 +87,12 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
             variant="outlined"
             sx={{ fontSize: '0.6875rem', height: 20, mb: 1 }}
           />
+        )}
+
+        {load.invoiceReadiness && load.invoiceReadiness !== 'NOT_READY' && (
+          <Box sx={{ mb: 1 }}>
+            <InvoiceReadinessBadge readiness={load.invoiceReadiness} />
+          </Box>
         )}
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -213,28 +194,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
         />
       </Box>
 
-      {!collapsed && (
+      {!collapsed && loads.length > 0 && (
         <Box sx={{ flex: 1, overflow: 'auto', pr: 0.5 }}>
           {loads.map((load) => (
             <KanbanCard key={load.id} load={load} />
           ))}
-          {loads.length === 0 && (
-            <Box
-              sx={{
-                py: 4,
-                textAlign: 'center',
-                border: 1,
-                borderStyle: 'dashed',
-                borderColor: 'divider',
-                borderRadius: 1,
-                bgcolor: 'grey.50',
-              }}
-            >
-              <Typography variant="caption" color="text.disabled">
-                No loads
-              </Typography>
-            </Box>
-          )}
         </Box>
       )}
 
@@ -253,7 +217,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           onClick={handleToggle}
         >
           <Typography variant="caption" color="text.disabled">
-            {loads.length} loads (click to expand)
+            {loads.length === 0 ? 'No' : loads.length} loads (click to expand)
           </Typography>
         </Box>
       )}
@@ -265,18 +229,81 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
 // Mobile Card List
 // ---------------------------------------------------------------------------
 
-const MobileCardList: React.FC<{ loads: LoadListItem[] }> = ({ loads }) => (
-  <Box sx={{ pb: 2 }}>
-    {loads.map((load) => (
-      <KanbanCard key={load.id} load={load} />
-    ))}
-    {loads.length === 0 && (
+const MobileCardList: React.FC<{ loadsByGroup: Record<KanbanGroup, LoadListItem[]> }> = ({
+  loadsByGroup,
+}) => {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const totalLoads = KANBAN_GROUPS.reduce((sum, g) => sum + loadsByGroup[g.key].length, 0);
+
+  const handleToggle = useCallback((key: string) => {
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  if (totalLoads === 0) {
+    return (
       <Typography variant="body2" color="text.disabled" sx={{ textAlign: 'center', py: 4 }}>
         No loads match your filters
       </Typography>
-    )}
-  </Box>
-);
+    );
+  }
+
+  return (
+    <Box sx={{ pb: 2 }}>
+      {KANBAN_GROUPS.map((group) => {
+        const loads = loadsByGroup[group.key];
+        if (loads.length === 0) {
+          return null;
+        }
+        const color = KANBAN_COLUMN_COLORS[group.key];
+        const isCollapsed = collapsed[group.key] ?? false;
+
+        return (
+          <Box key={group.key} sx={{ mb: 2 }}>
+            <Box
+              onClick={() => handleToggle(group.key)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 1,
+                px: 0.5,
+                cursor: 'pointer',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: color,
+                  flexShrink: 0,
+                }}
+              />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  fontSize: '0.75rem',
+                }}
+              >
+                {group.label}
+              </Typography>
+              <Chip
+                label={loads.length}
+                size="small"
+                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600, bgcolor: 'grey.100' }}
+              />
+            </Box>
+            {!isCollapsed &&
+              loads.map((load) => <KanbanCard key={load.id} load={load} />)}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Kanban Board (public export)
@@ -291,8 +318,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loadsByGroup }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   if (isMobile) {
-    const allLoads = KANBAN_GROUPS.flatMap((group) => loadsByGroup[group.key]);
-    return <MobileCardList loads={allLoads} />;
+    return <MobileCardList loadsByGroup={loadsByGroup} />;
   }
 
   return (
@@ -303,7 +329,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loadsByGroup }) => {
           groupKey={group.key}
           label={group.label}
           loads={loadsByGroup[group.key]}
-          defaultCollapsed={group.key === 'COMPLETE'}
+          defaultCollapsed={false}
         />
       ))}
     </Box>

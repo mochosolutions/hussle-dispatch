@@ -71,4 +71,5 @@ export interface InvoiceService {
   approveInvoice(input: ApproveInvoiceServiceInput): Promise<InvoiceWithRelations>;
   sendInvoice(input: SendInvoiceServiceInput): Promise<InvoiceWithRelations>;
   markPaid(input: MarkPaidServiceInput): Promise<InvoiceWithRelations>;
+  getDraftCount(organizationId: string): Promise<number>;
 }

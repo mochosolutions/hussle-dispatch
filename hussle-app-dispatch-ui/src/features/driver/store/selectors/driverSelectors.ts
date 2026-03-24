@@ -84,6 +84,38 @@ export const selectDriverKpis = createSelector([selectAllDrivers], (drivers): Dr
   ];
 });
 
+// ---------------------------------------------------------------------------
+// List page filtering selectors
+// ---------------------------------------------------------------------------
+
+export type DriverTab = 'all' | 'available' | 'unavailable';
+
+export const selectFilteredDrivers = (activeTab: DriverTab, carrierId: string) =>
+  createSelector([selectAllDrivers], (drivers) => {
+    let filtered = drivers;
+
+    if (carrierId !== 'all') {
+      filtered = filtered.filter((driver) => driver.carrierId === carrierId);
+    }
+
+    if (activeTab === 'available') {
+      return filtered.filter((driver) => driver.isAvailable === true);
+    }
+    if (activeTab === 'unavailable') {
+      return filtered.filter((driver) => driver.isAvailable === false);
+    }
+    return filtered;
+  });
+
+export const selectDriverTabCounts = createSelector(
+  [selectAllDrivers],
+  (drivers) => ({
+    all: drivers.length,
+    available: drivers.filter((driver) => driver.isAvailable === true).length,
+    unavailable: drivers.filter((driver) => driver.isAvailable === false).length,
+  }),
+);
+
 export const selectDriverWithCarrier = (driverId: string) =>
   createSelector(
     [

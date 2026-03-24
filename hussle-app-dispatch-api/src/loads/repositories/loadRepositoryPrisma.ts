@@ -1,9 +1,12 @@
-import type { PrismaClient } from '@prisma/client';
+import type { LoadStatus, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type {
+  CarrierAssignmentQueryPort,
+  DriverAssignmentQueryPort,
   LoadRepoPort,
   LoadQueryInput,
   OrgSettingsQueryPort,
+  VehicleAssignmentQueryPort,
 } from '../types/loadTypes';
 
 const LOAD_DETAIL_INCLUDE = {
@@ -13,9 +16,8 @@ const LOAD_DETAIL_INCLUDE = {
   carrier: true,
   driver: true,
   vehicle: true,
-  broker: true,
-  shipper: true,
-  consignee: true,
+  contact: true,
+  customer: true,
   statusHistory: {
     orderBy: { createdAt: 'desc' as const },
   },
@@ -37,15 +39,18 @@ const LOAD_LIST_INCLUDE = {
   driver: {
     select: { id: true, firstName: true, lastName: true },
   },
+  contact: {
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+  },
+  customer: {
+    select: { id: true, companyName: true },
+  },
   _count: {
     select: { accessorialCharges: true },
   },
 } as const;
 
-const buildListWhere = (
-  organizationId: string,
-  filters: LoadQueryInput['filters'],
-) => {
+const buildListWhere = (organizationId: string, filters: LoadQueryInput['filters']) => {
   const where: Record<string, unknown> = {
     organizationId,
     deletedAt: null,
@@ -57,6 +62,10 @@ const buildListWhere = (
 
   if (filters.carrierId !== undefined) {
     where['carrierId'] = filters.carrierId;
+  }
+
+  if (filters.customerId !== undefined) {
+    where['customerId'] = filters.customerId;
   }
 
   if (filters.equipmentType !== undefined) {
@@ -77,7 +86,7 @@ const buildListWhere = (
   if (filters.search !== undefined && filters.search.length > 0) {
     where['OR'] = [
       { loadNumber: { contains: filters.search, mode: 'insensitive' } },
-      { brokerRefNumber: { contains: filters.search, mode: 'insensitive' } },
+      { externalRefNumber: { contains: filters.search, mode: 'insensitive' } },
       { carrier: { name: { contains: filters.search, mode: 'insensitive' } } },
       { stops: { some: { city: { contains: filters.search, mode: 'insensitive' } } } },
     ];
@@ -86,9 +95,21 @@ const buildListWhere = (
   return where;
 };
 
-export const loadRepositoryPrisma = (
-  prisma: PrismaClient | PrismaTransaction,
-): LoadRepoPort => ({
+const buildBlockingLoadWhere = <T extends string | undefined>(
+  field: 'driverId' | 'vehicleId',
+  entityId: string,
+  statuses: readonly LoadStatus[],
+  excludeLoadId?: T,
+) => ({
+  [field]: entityId,
+  deletedAt: null,
+  status: {
+    in: [...statuses],
+  },
+  ...(excludeLoadId !== undefined ? { id: { not: excludeLoadId } } : {}),
+});
+
+export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): LoadRepoPort => ({
   create: async (organizationId, loadNumber, input) => {
     const { stops, accessorialCharges, ...loadData } = input;
 
@@ -223,6 +244,30 @@ export const loadRepositoryPrisma = (
     });
   },
 
+  findBlockingLoadIdsByDriver: async (driverId, statuses, limit, excludeLoadId) => {
+    const loads = await prisma.load.findMany({
+      where: buildBlockingLoadWhere('driverId', driverId, statuses, excludeLoadId),
+      select: {
+        id: true,
+      },
+      take: limit,
+    });
+
+    return loads.map((load) => load.id);
+  },
+
+  findBlockingLoadIdsByVehicle: async (vehicleId, statuses, limit, excludeLoadId) => {
+    const loads = await prisma.load.findMany({
+      where: buildBlockingLoadWhere('vehicleId', vehicleId, statuses, excludeLoadId),
+      select: {
+        id: true,
+      },
+      take: limit,
+    });
+
+    return loads.map((load) => load.id);
+  },
+
   softDelete: async (id, deletedAt) => {
     await prisma.load.update({
       where: { id },
@@ -276,6 +321,81 @@ export const loadRepositoryPrisma = (
     });
   },
 
+  findFirstPickupCoordinates: async (loadId) => {
+    const stop = await prisma.stop.findFirst({
+      where: {
+        loadId,
+        type: 'PICKUP',
+      },
+      orderBy: { sequence: 'asc' },
+      select: {
+        place: {
+          select: { latitude: true, longitude: true },
+        },
+      },
+    });
+
+    if (stop === null) {
+      return null;
+    }
+
+    const place = stop.place;
+
+    if (place === null || place.latitude === null || place.longitude === null) {
+      return null;
+    }
+
+    return {
+      lat: Number(place.latitude),
+      lng: Number(place.longitude),
+    };
+  },
+
+  findLastDeliveryCoordinates: async (driverId, organizationId) => {
+    const lastDeliveredLoad = await prisma.load.findFirst({
+      where: {
+        driverId,
+        organizationId,
+        deletedAt: null,
+        status: { in: ['DELIVERED', 'INVOICE_PENDING', 'INVOICED', 'PAID'] },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        stops: {
+          where: { type: 'DELIVERY' },
+          orderBy: { sequence: 'desc' },
+          take: 1,
+          select: {
+            place: {
+              select: { latitude: true, longitude: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (lastDeliveredLoad === null) {
+      return null;
+    }
+
+    const lastDeliveryStop = lastDeliveredLoad.stops[0];
+
+    if (lastDeliveryStop === undefined) {
+      return null;
+    }
+
+    const place = lastDeliveryStop.place;
+
+    if (place === null || place.latitude === null || place.longitude === null) {
+      return null;
+    }
+
+    return {
+      lat: Number(place.latitude),
+      lng: Number(place.longitude),
+    };
+  },
+
   listDocuments: async (loadId, organizationId) => {
     return prisma.document.findMany({
       where: {
@@ -310,5 +430,77 @@ export const orgSettingsQueryPrisma = (
     });
 
     return settings?.prohibitedCommodities ?? [];
+  },
+});
+
+export const carrierAssignmentQueryPrisma = (
+  prisma: PrismaClient | PrismaTransaction,
+): CarrierAssignmentQueryPort => ({
+  findDispatchableById: async (carrierId, organizationId) => {
+    return prisma.carrier.findFirst({
+      where: {
+        id: carrierId,
+        managedByOrgId: organizationId,
+        status: 'active',
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        dispatchAgreementOnFile: true,
+        insuranceCertOnFile: true,
+        insuranceExpiry: true,
+        w9OnFile: true,
+      },
+    });
+  },
+});
+
+export const driverAssignmentQueryPrisma = (
+  prisma: PrismaClient | PrismaTransaction,
+): DriverAssignmentQueryPort => ({
+  findAssignableById: async (driverId, organizationId) => {
+    return prisma.driver.findFirst({
+      where: {
+        id: driverId,
+        deletedAt: null,
+        carrier: {
+          managedByOrgId: organizationId,
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        carrierId: true,
+        firstName: true,
+        lastName: true,
+        isAvailable: true,
+      },
+    });
+  },
+});
+
+export const vehicleAssignmentQueryPrisma = (
+  prisma: PrismaClient | PrismaTransaction,
+): VehicleAssignmentQueryPort => ({
+  findAssignableById: async (vehicleId, organizationId) => {
+    return prisma.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+        deletedAt: null,
+        carrier: {
+          managedByOrgId: organizationId,
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        carrierId: true,
+        unitNumber: true,
+        driverId: true,
+        isActive: true,
+      },
+    });
   },
 });

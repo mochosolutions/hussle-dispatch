@@ -1,6 +1,7 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { enqueueSnackbar } from 'notistack';
+import { isAxiosError } from 'axios';
 import { updateLoad } from 'utils/api/loads/loadApi';
 import type { UpdateLoadInput } from '../../types';
 import {
@@ -16,13 +17,11 @@ export function* updateLoadSaga(
   try {
     const { id, data } = action.payload;
 
-    const response = (yield call(updateLoad, id, data)) as SagaReturnType<typeof updateLoad>;
-
-    const { load } = response;
+    const load = (yield call(updateLoad, id, data)) as SagaReturnType<typeof updateLoad>;
 
     // Map detail back to list item fields for entity store
-    const origin = load.stops.find((s) => s.type === 'PICKUP');
-    const deliveries = load.stops.filter((s) => s.type === 'DELIVERY');
+    const origin = (load.stops ?? []).find((s) => s.type === 'PICKUP');
+    const deliveries = (load.stops ?? []).filter((s) => s.type === 'DELIVERY');
     const lastDelivery = deliveries[deliveries.length - 1];
 
     yield put(
@@ -56,6 +55,19 @@ export function* updateLoadSaga(
 
     yield call(enqueueSnackbar, 'Load updated', { variant: 'success' });
   } catch (error: unknown) {
+    // Parse structured blocker errors from assignment validation (422)
+    if (isAxiosError(error) && error.response?.status === 422) {
+      const blockers = error.response.data?.blockers;
+      if (Array.isArray(blockers) && blockers.length > 0) {
+        const blockerMessages = blockers
+          .map((b: { message: string }) => b.message)
+          .join('\n');
+        yield put(updateLoadFailure({ error: blockerMessages }));
+        yield call(enqueueSnackbar, blockerMessages, { variant: 'error' });
+        return;
+      }
+    }
+
     const errorMessage = error instanceof Error ? error.message : 'Failed to update load';
     yield put(updateLoadFailure({ error: errorMessage }));
     yield call(enqueueSnackbar, errorMessage, { variant: 'error' });

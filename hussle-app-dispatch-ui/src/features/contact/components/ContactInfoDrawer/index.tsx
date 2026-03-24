@@ -4,22 +4,17 @@ import {
   Box,
   Typography,
   Button,
-  Divider,
   Grid,
   Stack,
   CircularProgress,
-  MenuItem,
 } from '@mui/material';
 import { useDispatch } from 'store';
 import { TextField, EmailField } from '../../../../mocho/components';
-import { EditDrawer } from 'features/carrier/components/EditDrawer';
+import { EditDrawer } from 'components/EditDrawer';
+import { CustomerAutocomplete } from 'features/customer/components/CustomerAutocomplete';
 import { contactSchema } from '../../validators/contactSchema';
 import type { Contact, CreateContactInput, UpdateContactInput } from '../../types';
-import {
-  createContactRequest,
-  updateContactRequest,
-} from '../../store/reducers/contactPageSlice';
-import { CONTACT_TYPE_OPTIONS, PAYMENT_TERMS_OPTIONS } from '../../constants';
+import { createContactRequest, updateContactRequest } from '../../store/reducers/contactPageSlice';
 
 interface ContactInfoDrawerProps {
   contact?: Contact;
@@ -34,24 +29,20 @@ const sectionHeaderSx = {
   letterSpacing: 0.5,
 } as const;
 
-export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, onClose }) => {
+export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({
+  contact,
+  onClose,
+}) => {
   const dispatch = useDispatch();
   const isEditing = Boolean(contact);
 
   const initialValues = {
-    companyName: contact?.companyName ?? '',
-    type: contact?.type ?? ('' as const),
-    contactName: contact?.contactName ?? '',
+    customerId: contact?.customerId ?? '',
+    role: contact?.role ?? '',
+    firstName: contact?.firstName ?? '',
+    lastName: contact?.lastName ?? '',
     phone: contact?.phone ?? '',
     email: contact?.email ?? '',
-    mcNumber: contact?.mcNumber ?? '',
-    address: contact?.address ?? '',
-    city: contact?.city ?? '',
-    state: contact?.state ?? '',
-    zip: contact?.zip ?? '',
-    paymentTerms: contact?.paymentTerms ?? 'Net 30',
-    paymentTermsDays: contact?.paymentTermsDays ?? 30,
-    quickPayDiscount: contact?.quickPayDiscount ?? '',
     notes: contact?.notes ?? '',
   };
 
@@ -61,37 +52,23 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
   ) => {
     if (isEditing && contact) {
       const updateData: UpdateContactInput = {
-        companyName: values.companyName,
-        contactName: values.contactName || null,
-        type: values.type || undefined,
-        mcNumber: values.mcNumber || null,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        customerId: values.customerId || null,
+        role: values.role || null,
         email: values.email || null,
         phone: values.phone || null,
-        address: values.address || null,
-        city: values.city || null,
-        state: values.state || null,
-        zip: values.zip || null,
-        paymentTerms: values.paymentTerms,
-        paymentTermsDays: values.paymentTermsDays,
-        quickPayDiscount: values.quickPayDiscount || null,
         notes: values.notes || null,
       };
       dispatch(updateContactRequest({ id: contact.id, data: updateData }));
     } else {
       const createData: CreateContactInput = {
-        companyName: values.companyName,
-        type: values.type,
-        contactName: values.contactName || null,
-        mcNumber: values.mcNumber || null,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        customerId: values.customerId || null,
+        role: values.role || null,
         email: values.email || null,
         phone: values.phone || null,
-        address: values.address || null,
-        city: values.city || null,
-        state: values.state || null,
-        zip: values.zip || null,
-        paymentTerms: values.paymentTerms,
-        paymentTermsDays: values.paymentTermsDays,
-        quickPayDiscount: values.quickPayDiscount || null,
         notes: values.notes || null,
       };
       dispatch(createContactRequest({ data: createData }));
@@ -99,6 +76,10 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
     setSubmitting(false);
     onClose();
   };
+
+  const contactName = contact
+    ? [contact.firstName, contact.lastName].filter(Boolean).join(' ')
+    : undefined;
 
   return (
     <Formik
@@ -109,7 +90,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
     >
       <ContactInfoDrawerContent
         isEditing={isEditing}
-        contactName={contact?.companyName}
+        contactName={contactName}
         onClose={onClose}
       />
     </Formik>
@@ -141,6 +122,11 @@ const ContactInfoDrawerContent: React.FC<ContactInfoDrawerContentProps> = ({
 
   const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
 
+  let submitLabel = isEditing ? 'Save Changes' : 'Create Contact';
+  if (isSubmitting) {
+    submitLabel = 'Saving\u2026';
+  }
+
   const footer = (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
       <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
@@ -153,7 +139,7 @@ const ContactInfoDrawerContent: React.FC<ContactInfoDrawerContentProps> = ({
         disabled={!isValid || !dirty || isSubmitting}
         startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
       >
-        {isSubmitting ? 'Saving\u2026' : isEditing ? 'Save Changes' : 'Create Contact'}
+        {submitLabel}
       </Button>
     </Box>
   );
@@ -173,23 +159,28 @@ const ContactInfoDrawerContent: React.FC<ContactInfoDrawerContentProps> = ({
             Contact Details
           </Typography>
 
-          <TextField name="companyName" label="Company Name" formik={formikProps} required />
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField name="firstName" label="First Name" formik={formikProps} required />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField name="lastName" label="Last Name" formik={formikProps} required />
+            </Grid>
+          </Grid>
 
-          <TextField
-            name="type"
-            label="Type"
-            formik={formikProps}
-            select
-            required
-          >
-            {CONTACT_TYPE_OPTIONS.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
+          <CustomerAutocomplete
+            value={values.customerId as string}
+            onChange={(customerId) => {
+              void setFieldValue('customerId', customerId);
+            }}
+            onBlur={handleBlur}
+            name="customerId"
+            label="Customer"
+            error={Boolean(touched.customerId && errors.customerId)}
+            helperText={touched.customerId ? (errors.customerId as string | undefined) : undefined}
+          />
 
-          <TextField name="contactName" label="Contact Name" formik={formikProps} />
+          <TextField name="role" label="Role" formik={formikProps} placeholder="e.g. dispatch, billing, warehouse manager" />
 
           <Grid container spacing={2}>
             <Grid item xs={6}>
@@ -200,78 +191,11 @@ const ContactInfoDrawerContent: React.FC<ContactInfoDrawerContentProps> = ({
             </Grid>
           </Grid>
 
-          <TextField name="mcNumber" label="MC #" formik={formikProps} />
-
-          <Divider sx={{ my: 0.5 }} />
-
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>
-            Address
-          </Typography>
-
-          <TextField name="address" label="Address" formik={formikProps} />
-
-          <Grid container spacing={2}>
-            <Grid item xs={5}>
-              <TextField name="city" label="City" formik={formikProps} />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField name="state" label="State" formik={formikProps} />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField name="zip" label="ZIP" formik={formikProps} />
-            </Grid>
-          </Grid>
-
-          <Divider sx={{ my: 0.5 }} />
-
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>
-            Payment
-          </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField
-                name="paymentTerms"
-                label="Payment Terms"
-                formik={formikProps}
-                select
-              >
-                {PAYMENT_TERMS_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                name="paymentTermsDays"
-                label="Days"
-                formik={formikProps}
-                type="number"
-              />
-            </Grid>
-          </Grid>
-
-          <TextField
-            name="quickPayDiscount"
-            label="Quick Pay Discount (%)"
-            formik={formikProps}
-          />
-
-          <Divider sx={{ my: 0.5 }} />
-
           <Typography variant="subtitle2" sx={sectionHeaderSx}>
             Notes
           </Typography>
 
-          <TextField
-            name="notes"
-            label="Notes"
-            formik={formikProps}
-            multiline
-            minRows={3}
-          />
+          <TextField name="notes" label="Notes" formik={formikProps} multiline minRows={3} />
         </Stack>
       </Form>
     </EditDrawer>

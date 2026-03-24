@@ -1,64 +1,41 @@
-import {createSelector} from "@reduxjs/toolkit";
-import {authSelector} from "./authSelector";
+import { createSelector } from '@reduxjs/toolkit';
+import type { RootState } from '../../../../store';
+import { authSelector } from './authSelector';
 
-export const confirmationStatusSelector = createSelector(
-  authSelector,
-  (authState) => authState?.confirmationStatus,
-);
+export const confirmationStatusSelector = (state: RootState) =>
+  authSelector(state)?.confirmationStatus;
 
-export const rememberMeSelector = createSelector(
-  authSelector,
-  (authState) => authState?.rememberMe
-);
+export const rememberMeSelector = (state: RootState) =>
+  authSelector(state)?.rememberMe;
 
 export const isLoginPageLoadingSelector = createSelector(
   authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.login ?? "";
-    return loadingState === "Pending";
-  }
+  (auth) => (auth?.loading.login ?? '') === 'Pending',
 );
 
 export const loginPageErrorSelector = createSelector(
   authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.login ?? "";
-    return loadingState === "Rejected";
-  }
+  (auth) => (auth?.loading.login ?? '') === 'Rejected',
 );
 
 export const forceChangePasswordPageErrorSelector = createSelector(
   authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.forceChangePassword.login ?? "";
-    return loadingState === "Rejected";
-  }
+  (auth) => (auth?.forceChangePassword.login ?? '') === 'Rejected',
 );
 
-export const isInitializedSelector = createSelector(
-  authSelector,
-  (authState) => authState?.isInitializing,
-);
+export const isInitializedSelector = (state: RootState) =>
+  authSelector(state)?.isInitializing;
 
-export const userSessionSelector = createSelector(
-  authSelector,
-  (authState) => authState?.session,
-);
+export const userSessionSelector = (state: RootState) =>
+  authSelector(state)?.session;
 
-export const forceChangePasswordSelector = createSelector(
-  authSelector,
-  (authState) => authState?.forceChangePassword,
-);
+export const forceChangePasswordSelector = (state: RootState) =>
+  authSelector(state)?.forceChangePassword;
 
 export const isForceChangePasswordLoadingSelector = createSelector(
   authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.login ?? '';
-    return loadingState === 'Pending';
-  }
+  (auth) => (auth?.loading.login ?? '') === 'Pending',
 );
 
-export const selectIsLoggedIn = createSelector(
-  authSelector,
-  (authState) => authState?.isLoggedIn,
-);
+export const selectIsLoggedIn = (state: RootState) =>
+  authSelector(state)?.isLoggedIn;

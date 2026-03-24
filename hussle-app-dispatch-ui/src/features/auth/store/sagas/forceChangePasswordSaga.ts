@@ -19,7 +19,6 @@ export function* handleForceChangePassword(action) {
     const user = yield select(currentUserSelector);
     const rememberMe = yield select(rememberMeSelector);
 
-    console.log('user', user);
     const userEmail = user?.email || '';
 
     if (!session) throw new Error('No session found for password change.');
@@ -35,8 +34,6 @@ export function* handleForceChangePassword(action) {
       },
     );
 
-    console.log('Password change response', response);
-
     if (rememberMe) {
       localStorage.setItem('rememberMe', JSON.stringify(true));
     } else {
@@ -46,7 +43,6 @@ export function* handleForceChangePassword(action) {
     const userSession = response?.data?.session;
     const orgs = response?.data?.accessibleOrgs || [];
 
-    console.log('handleForceChangePassword - password changed successfully');
     yield put(
       loginSuccess({
         user,
@@ -56,12 +52,10 @@ export function* handleForceChangePassword(action) {
     );
 
     const navigate = yield call(getNavigate);
-    console.log('Calling navigate');
     yield call(navigate, '/');
     // yield delay(3000);
     yield put(forceChangePasswordSuccess({session: userSession}));
-  } catch (error) {
-    console.error('Error changing password', error);
+  } catch (_error: unknown) {
     yield put(forceChangePasswordFailure());
   }
 }

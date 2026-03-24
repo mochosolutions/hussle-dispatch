@@ -1,4 +1,5 @@
 import { BadRequestError } from '@mocho/common';
+import { OrganizationStatus } from '../../constants/enums';
 import { InvitationStatus } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/utils/logger';
@@ -68,7 +69,7 @@ export const inviteUserService = async (
 
   const organization = await deps.findOneOrganizationByFilter({
     id: organizationId,
-    status: 'active',
+    status: OrganizationStatus.ACTIVE,
   });
 
   logger.info('Organization lookup complete', { organizationId });

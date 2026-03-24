@@ -3,7 +3,23 @@
  * Each extends CustomError from @mocho/common.
  */
 
-export { NotFoundError, ValidationError, ConflictError, ActiveLoadsConflictError, UnauthorizedError, ForbiddenError, InvalidTransitionError, OnboardingBlockError, ProhibitedCommodityError, InsuranceExpiredError, ConcurrentEditError, OwnerOperatorNotSupportedError, SequenceError, isCustomError } from './commonErrors';
+export {
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  ActiveLoadsConflictError,
+  AssignmentValidationError,
+  UnauthorizedError,
+  ForbiddenError,
+  InvalidTransitionError,
+  OnboardingBlockError,
+  ProhibitedCommodityError,
+  InsuranceExpiredError,
+  ConcurrentEditError,
+  OwnerOperatorNotSupportedError,
+  SequenceError,
+  isCustomError,
+} from './commonErrors';
 
 export { AuthRequestError } from './authError';
 

@@ -9,11 +9,12 @@ export const VehicleUnitCellRenderer = ({ data }: { data: Vehicle }) => {
   const details = [data.year, data.make, data.model].filter(Boolean).join(' ');
 
   return (
-    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.5 }}>
+    <Stack direction="row" alignItems="center" sx={{ py: 0.5, gap: 1.5 }}>
       <Box
         sx={{
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
+          flexShrink: 0,
           borderRadius: 1,
           backgroundColor: 'primary.lighter',
           color: 'primary.main',

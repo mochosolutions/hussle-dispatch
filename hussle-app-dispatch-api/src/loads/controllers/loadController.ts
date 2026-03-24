@@ -6,13 +6,11 @@ import { createLoadMapper } from './mappers/createLoadMapper';
 import { getRequiredLoadIdMapper } from './mappers/getRequiredLoadIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 import { listLoadsMapper } from './mappers/listLoadsMapper';
+import { assignLoadMapper } from './mappers/assignLoadMapper';
 import { updateLoadMapper } from './mappers/updateLoadMapper';
 import { createCheckCallMapper } from './mappers/createCheckCallMapper';
 import { loadSubResourceMapper } from './mappers/loadSubResourceMapper';
-import {
-  toLoadDetailResponse,
-  toLoadListEnvelope,
-} from './transformers/loadTransformer';
+import { toLoadDetailResponse, toLoadListEnvelope } from './transformers/loadTransformer';
 import { toCheckCallResponse, toCheckCallListResponse } from './transformers/checkCallTransformer';
 import { toStatusHistoryListResponse } from './transformers/statusHistoryTransformer';
 import { toLoadDocumentListResponse } from './transformers/loadDocumentTransformer';
@@ -26,6 +24,7 @@ export interface LoadControllers {
   listLoads: RequestHandler;
   getLoadById: RequestHandler;
   updateLoad: RequestHandler;
+  assignLoad: RequestHandler;
   deleteLoad: RequestHandler;
   createCheckCall: RequestHandler;
   listCheckCalls: RequestHandler;
@@ -61,6 +60,15 @@ export const createLoadControllers = (deps: LoadControllerDeps): LoadControllers
     const serviceInput = updateLoadMapper(req);
     const load = await deps.loadService.updateLoad(serviceInput);
     sendSingle(res, toLoadDetailResponse(load));
+  },
+
+  assignLoad: async (req: Request, res: Response): Promise<void> => {
+    const serviceInput = assignLoadMapper(req);
+    const result = await deps.loadService.assignLoad(serviceInput);
+    sendSingle(res, {
+      load: toLoadDetailResponse(result.load),
+      warnings: result.warnings,
+    });
   },
 
   deleteLoad: async (req: Request, res: Response): Promise<void> => {

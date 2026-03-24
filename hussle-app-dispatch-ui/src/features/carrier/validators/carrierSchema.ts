@@ -10,7 +10,7 @@ export const carrierSchema = Yup.object({
   type: Yup.mixed<CarrierType>()
     .oneOf(['COMPANY_ASSET', 'OWNER_OPERATOR', 'EXTERNAL_CARRIER'])
     .required('Type is required'),
-  mcNumber: Yup.string().required('MC number is required').min(5, 'Min 5 characters'),
+  mcNumber: Yup.string().min(5, 'Min 5 characters').default(''),
   dotNumber: Yup.string().default(''),
   phone: Yup.string().required('Phone is required').min(10, 'Enter a valid phone'),
   email: Yup.string().email('Invalid email').default(''),
@@ -36,8 +36,8 @@ export const carrierEditSchema = Yup.object({
   city: Yup.string(),
   state: Yup.string(),
   zip: Yup.string(),
-  dispatchFeePercent: Yup.string(),
-  partnerSplitPercent: Yup.string(),
+  dispatchFeePercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').notRequired(),
+  partnerSplitPercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').notRequired(),
   feeIncludesAccessorials: Yup.boolean(),
   dispatchAgreementOnFile: Yup.boolean(),
   insuranceCertOnFile: Yup.boolean(),

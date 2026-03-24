@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { Loadable } from '@mocho/ui/components';
 import AppLayout from '../../../components/AppLayout';
+import { PersistLogin, AuthGuard } from 'components/ProtectedRoute';
 
 // const CarrierIndexPage = Loadable(lazy(() => import('../pages/CarrierIndex')));
 const CarrierListPage = Loadable(lazy(() => import('../pages/CarrierListPage')));
@@ -9,12 +10,24 @@ const CarrierDetailPage = Loadable(lazy(() => import('features/carrier/pages/Car
 
 const carrierRoutes = {
   breadcrumbs: false,
-  element: <AppLayout />,
+  element: (
+    <PersistLogin>
+      <AuthGuard>
+        <AppLayout />
+      </AuthGuard>
+    </PersistLogin>
+  ),
   path: '/carriers',
   children: [
     {
       index: true,
       element: <CarrierListPage />,
+      handle: {
+        mainContentProps: {
+          container: false,
+          contentPadding: 0,
+        },
+      },
     },
     {
       path: 'create',

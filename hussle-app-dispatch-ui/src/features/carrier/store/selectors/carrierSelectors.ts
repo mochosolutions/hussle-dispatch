@@ -85,6 +85,37 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
+// ---------------------------------------------------------------------------
+// List page filtering selectors
+// ---------------------------------------------------------------------------
+
+export type CarrierTab = 'all' | 'active' | 'inactive' | 'onboarding';
+
+export const selectFilteredCarriers = (activeTab: CarrierTab) =>
+  createSelector([selectAllCarriers], (carriers) => {
+    if (activeTab === 'all') {
+      return [...carriers];
+    }
+    if (activeTab === 'active') {
+      return carriers.filter((carrier) => carrier.status === 'ACTIVE');
+    }
+    if (activeTab === 'inactive') {
+      return carriers.filter((carrier) => carrier.status !== 'ACTIVE');
+    }
+    // onboarding
+    return carriers.filter((carrier) => !carrier.onboardingComplete);
+  });
+
+export const selectCarrierTabCounts = createSelector(
+  [selectAllCarriers],
+  (carriers) => ({
+    all: carriers.length,
+    active: carriers.filter((carrier) => carrier.status === 'ACTIVE').length,
+    inactive: carriers.filter((carrier) => carrier.status !== 'ACTIVE').length,
+    onboarding: carriers.filter((carrier) => !carrier.onboardingComplete).length,
+  }),
+);
+
 export const selectCarrierKpis = createSelector(
   [selectAllCarriers],
   (carriers): CarrierKpiItem[] => {

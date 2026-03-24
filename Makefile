@@ -205,7 +205,7 @@ tf-plan-backend:
 		exit 1; \
 	fi
 	@$(CHDIR_BACKEND) init -input=false -input=false -var-file=../stages/$(ENV).tfvars
-	@$(CHDIR_BACKEND) plan -input=false -var-file=../stages/$(ENV).tfvars -auto-approve
+	@$(CHDIR_BACKEND) plan -input=false -var-file=../stages/$(ENV).tfvars
 
 tf-apply-backend:
 	@echo "$(BLUE)🚀 Provisioning remote state backend (S3 + DynamoDB)...$(NC)"

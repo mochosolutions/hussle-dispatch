@@ -10,7 +10,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import * as Yup from 'yup';
-import { EditDrawer } from 'features/carrier/components/EditDrawer';
+import { EditDrawer } from 'components/EditDrawer';
 import { useDispatch } from 'store';
 import { markPaidRequest } from '../../store/reducers';
 import { PAYMENT_METHOD_OPTIONS } from '../../constants';

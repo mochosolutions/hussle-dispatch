@@ -1,3 +1,5 @@
+import type { DocumentType } from 'features/documents/types';
+
 // Derived from loads API contract (openapi spec + API transformers)
 // Decimal fields are represented as string (API serializes Decimal as string/unknown)
 
@@ -32,7 +34,7 @@ export type EquipmentType =
 
 export type StopType = 'PICKUP' | 'DELIVERY' | 'STOP_OFF' | 'DROP_HOOK' | 'LIVE_UNLOAD';
 
-export type BoardView = 'kanban' | 'table';
+export type BoardView = 'kanban' | 'table' | 'map' | 'driver' | 'intel';
 
 export type KanbanGroup = 'NEW' | 'BOOKED' | 'ACTIVE' | 'DELIVERED' | 'COMPLETE' | 'ISSUES';
 
@@ -85,13 +87,7 @@ export interface StopInput {
 // Accessorial charges
 // ---------------------------------------------------------------------------
 
-export type AccessorialType =
-  | 'DETENTION'
-  | 'LAYOVER'
-  | 'LUMPER'
-  | 'TARP'
-  | 'TONU'
-  | 'OTHER';
+export type AccessorialType = 'DETENTION' | 'LAYOVER' | 'LUMPER' | 'TARP' | 'TONU' | 'OTHER';
 
 export interface AccessorialCharge {
   id: string;
@@ -134,6 +130,11 @@ export interface LoadListItem {
   originState: string | null;
   destinationCity: string | null;
   destinationState: string | null;
+  customerName: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  invoiceReadiness: string;
   accessorialChargeCount: number;
   createdAt: string;
   updatedAt: string;
@@ -150,10 +151,10 @@ export interface LoadDetail {
   carrierId: string | null;
   driverId: string | null;
   vehicleId: string | null;
-  brokerId: string | null;
-  shipperId: string | null;
-  consigneeId: string | null;
-  brokerRefNumber: string | null;
+  contactId: string | null;
+  customerId: string | null;
+  customer: { id: string; companyName: string } | null;
+  externalRefNumber: string | null;
   equipmentType: string | null;
   isHazmat: boolean;
   isTarp: boolean;
@@ -170,6 +171,7 @@ export interface LoadDetail {
   partnerSplit: string | null;
   ratePerMile: string | null;
   status: LoadStatus;
+  invoiceReadiness: string;
   rateConReceivedAt: string | null;
   bolUnsignedAt: string | null;
   bolSignedAt: string | null;
@@ -181,9 +183,14 @@ export interface LoadDetail {
   carrier: { id: string; name: string } | null;
   driver: { id: string; firstName: string; lastName: string } | null;
   vehicle: { id: string; unitNumber: string; type: string } | null;
-  broker: { id: string; companyName: string } | null;
-  shipper: { id: string; companyName: string } | null;
-  consignee: { id: string; companyName: string } | null;
+  contact: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    email: string | null;
+    role: string | null;
+  } | null;
   statusHistory: StatusHistoryEntry[];
   checkCalls: CheckCallSummary[];
   accessorialCharges: AccessorialCharge[];
@@ -197,10 +204,9 @@ export interface CreateLoadInput {
   carrierId?: string;
   driverId?: string;
   vehicleId?: string;
-  brokerId?: string;
-  shipperId?: string;
-  consigneeId?: string;
-  brokerRefNumber?: string;
+  contactId?: string;
+  customerId?: string;
+  externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isHazmat?: boolean;
   isTarp?: boolean;
@@ -227,10 +233,9 @@ export interface UpdateLoadInput {
   carrierId?: string;
   driverId?: string;
   vehicleId?: string;
-  brokerId?: string;
-  shipperId?: string;
-  consigneeId?: string;
-  brokerRefNumber?: string;
+  contactId?: string;
+  customerId?: string;
+  externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isHazmat?: boolean;
   isTarp?: boolean;
@@ -260,6 +265,7 @@ export interface UpdateLoadInput {
 export interface LoadFilters {
   status?: LoadStatus[];
   carrierId?: string;
+  carrierName?: string;
   equipmentType?: EquipmentType;
   search?: string;
   dateFrom?: string;
@@ -307,6 +313,49 @@ export interface CreateCheckCallInput {
 }
 
 // ---------------------------------------------------------------------------
+// Type guard — distinguishes LoadDetail from LoadListItem in the shared entity adapter
+// ---------------------------------------------------------------------------
+
+export const isLoadDetail = (
+  entity: LoadListItem | LoadDetail,
+): entity is LoadDetail => Array.isArray((entity as LoadDetail).stops);
+
+// ---------------------------------------------------------------------------
+// Formatted load summary (pre-computed display values for LoadSummaryBar)
+// ---------------------------------------------------------------------------
+
+export interface SummaryStopInfo {
+  facilityName: string;
+  address: string;
+  schedule: string;
+  cityState: string;
+  dateTime: string;
+  isCompleted: boolean;
+}
+
+export interface FormattedLoadSummary {
+  pickup: SummaryStopInfo;
+  delivery: SummaryStopInfo;
+  load: {
+    routeLabel: string;
+    miles: string;
+    cargo: string;
+    rate: string;
+    ratePerMile: string;
+  };
+  driver: {
+    name: string;
+    carrier: string;
+    vehicle: string;
+    equipment: string;
+  };
+}
+
+export interface FormattedLoadDetail extends LoadDetail {
+  summary: FormattedLoadSummary;
+}
+
+// ---------------------------------------------------------------------------
 // Status history
 // ---------------------------------------------------------------------------
 
@@ -326,7 +375,7 @@ export interface StatusHistoryEntry {
 // ---------------------------------------------------------------------------
 
 export interface TransitionStatusInput {
-  targetStatus: LoadStatus;
+  status: LoadStatus;
   notes?: string;
   overrideWarnings?: boolean;
 }
@@ -347,4 +396,116 @@ export interface StatusTransitionResponse {
   load?: LoadDetail;
   warnings?: StatusTransitionWarning[];
   error?: StatusTransitionError;
+}
+
+// ---------------------------------------------------------------------------
+// Create Load — modal and sidebar types
+// ---------------------------------------------------------------------------
+
+export interface LoadTemplate {
+  key: string;
+  label: string;
+  description: string;
+  placeIds: string[];
+  rate?: number;
+  brokerRef?: string;
+}
+
+export interface SelectedDriverInfo {
+  id: string;
+  name: string;
+  type: 'owner_operator' | 'company';
+  minRpm?: number;
+  mpg?: number;
+  cpm?: number;
+  minEarnings?: number;
+}
+
+export interface CommoditySummary {
+  id: string;
+  stopIndex: number;
+  description: string;
+  weight: string;
+}
+
+export interface IntelPrefill {
+  originCity?: string;
+  originState?: string;
+  destinationCity?: string;
+  destinationState?: string;
+  rate?: number | null;
+  miles?: number | null;
+  equipmentType?: string;
+  brokerName?: string | null;
+  pickupDate?: string | null;
+  minBookRate?: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Create Load — queued document (collected before entity exists)
+// ---------------------------------------------------------------------------
+
+export interface QueuedDocument {
+  clientId: string;
+  file: File;
+  documentType: DocumentType;
+}
+
+// ---------------------------------------------------------------------------
+// Notification types
+// ---------------------------------------------------------------------------
+
+export interface NotificationOverride {
+  id: string;
+  loadId: string;
+  trigger: string;
+  channel: string;
+  enabled: boolean;
+  recipientEmail: string | null;
+  recipientPhone: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationLogEntry {
+  id: string;
+  loadId: string;
+  trigger: string;
+  channel: string;
+  recipientEmail: string | null;
+  recipientPhone: string | null;
+  subject: string | null;
+  status: string;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Intel pre-fill
+// ---------------------------------------------------------------------------
+
+export interface IntelLocationState {
+  intelPrefill?: IntelPrefill;
+  intelLoadId?: string;
+  backhaulData?: {
+    route: string;
+    rate: number | null;
+    brokerName: string | null;
+    pickupDate: string | null;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Financial summary — emitted from CreateLoadForm for the KPI summary bar
+// ---------------------------------------------------------------------------
+
+export interface FinancialSummary {
+  customerRate: number;
+  grossMargin: number;
+  marginPct: number;
+  ratePerMile: number;
+  totalMiles: number;
+  minBookRate: number | null;
+  avgCostPerMile: number | null;
+  carrierPay: number;
 }

@@ -2,7 +2,7 @@ import * as Yup from 'yup';
 
 export const companyInfoSchema = Yup.object().shape({
   name: Yup.string().required('Legal name is required').min(2, 'Min 2 characters'),
-  mcNumber: Yup.string().required('MC number is required').min(5, 'Min 5 characters'),
+  mcNumber: Yup.string().min(5, 'Min 5 characters'),
   dotNumber: Yup.string(),
   ein: Yup.string(),
   phone: Yup.string().required('Phone is required'),
@@ -14,7 +14,7 @@ export const companyInfoSchema = Yup.object().shape({
 });
 
 export const dispatchTermsSchema = Yup.object().shape({
-  dispatchFeePercent: Yup.string().required('Required'),
+  dispatchFeePercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').required('Required'),
   feeIncludesAccessorials: Yup.boolean(),
   dispatchAgreementOnFile: Yup.boolean(),
   dispatchAgreementSignedAt: Yup.string().nullable(),

@@ -3,17 +3,23 @@
 // ---------------------------------------------------------------------------
 
 export interface DashboardKpis {
-  activeLoads: {
-    total: number;
-    byStatus: Record<string, number>;
+  kanbanCounts: {
+    NEW: number;
+    BOOKED: number;
+    ACTIVE: number;
+    DELIVERED: number;
+    COMPLETE: number;
+    ISSUES: number;
   };
-  weeklyRevenue: number;
-  monthlyRevenue: number;
-  dispatchFees: number;
-  partnerSplit: number;
+  revenue: {
+    revenueThisWeek: string;
+    revenueThisMonth: string;
+    dispatchFeesThisMonth: string;
+    partnerSplitThisMonth: string | null;
+  };
   overdueInvoices: {
     count: number;
-    total: number;
+    total: string;
   };
 }
 
@@ -21,6 +27,7 @@ export interface WeeklyGrossItem {
   vehicleId: string;
   unitNumber: string;
   driverName: string | null;
+  carrierName: string;
   revenue: number;
   target: number;
   loadCount: number;

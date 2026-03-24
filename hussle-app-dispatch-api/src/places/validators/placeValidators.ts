@@ -12,6 +12,7 @@ const createBodySchema = Yup.object({
   city: Yup.string().trim().required('city is required'),
   state: Yup.string().trim().required('state is required'),
   contactId: Yup.string().uuid('contactId must be a valid uuid').notRequired(),
+  customerId: Yup.string().uuid('customerId must be a valid uuid').notRequired(),
   address: optionalTrimmed,
   address2: optionalTrimmed,
   zip: optionalTrimmed,
@@ -72,6 +73,7 @@ export const listPlacesValidator = Yup.object({
     facilityType: Yup.mixed<FacilityType>().oneOf(facilityTypeValues).notRequired(),
     state: Yup.string().trim().notRequired(),
     contactId: Yup.string().uuid('contactId must be a valid uuid').notRequired(),
+    customerId: Yup.string().uuid('customerId must be a valid uuid').notRequired(),
     search: Yup.string().trim().notRequired(),
   }),
 });

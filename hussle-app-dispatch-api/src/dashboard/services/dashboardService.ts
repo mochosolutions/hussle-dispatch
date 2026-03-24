@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import { randomUUID } from 'node:crypto';
 import { ROLES } from '../../config/roles';
 import { KANBAN_GROUPS } from '../../shared/constants/kanbanGroups';
 import type {
@@ -130,6 +131,7 @@ export const createDashboardService = (
 
   getAttentionItems: async ({ organizationId }) => {
     const items: AttentionItem[] = [];
+    const now = new Date().toISOString();
 
     const [
       exceptionsLoads,
@@ -149,61 +151,73 @@ export const createDashboardService = (
 
     for (const load of exceptionsLoads) {
       items.push({
-        type: 'LOAD_EXCEPTION',
-        severity: 'critical',
-        message: `Load ${load.loadNumber} is in EXCEPTION status`,
-        entityId: load.id,
-        entityType: 'load',
+        id: randomUUID(),
+        category: 'EXCEPTIONS',
+        title: `Load ${load.loadNumber} in EXCEPTION`,
+        subtitle: null,
+        linkTo: `/loads/${load.id}`,
+        severity: 'error',
+        createdAt: now,
       });
     }
 
     for (const invoice of overdueInvoices) {
       items.push({
-        type: 'INVOICE_OVERDUE',
-        severity: 'critical',
-        message: `Invoice ${invoice.invoiceNumber} is past due (${invoice.dueDate.toISOString().split('T')[0]})`,
-        entityId: invoice.id,
-        entityType: 'invoice',
+        id: randomUUID(),
+        category: 'OVERDUE_INVOICES',
+        title: `Invoice ${invoice.invoiceNumber} past due`,
+        subtitle: `Due ${invoice.dueDate.toISOString().split('T')[0]}`,
+        linkTo: `/invoices/${invoice.id}`,
+        severity: 'error',
+        createdAt: now,
       });
     }
 
     for (const load of loadsWithoutRateCon) {
       items.push({
-        type: 'MISSING_RATE_CON',
+        id: randomUUID(),
+        category: 'MISSING_RATE_CON',
+        title: `Load ${load.loadNumber} missing rate con`,
+        subtitle: null,
+        linkTo: `/loads/${load.id}`,
         severity: 'warning',
-        message: `Load ${load.loadNumber} is missing rate confirmation`,
-        entityId: load.id,
-        entityType: 'load',
+        createdAt: now,
       });
     }
 
     for (const invoice of invoicesMissingBol) {
       items.push({
-        type: 'MISSING_BOL',
+        id: randomUUID(),
+        category: 'MISSING_BOL',
+        title: `Invoice ${invoice.invoiceNumber} missing signed BOL`,
+        subtitle: null,
+        linkTo: `/invoices/${invoice.id}`,
         severity: 'warning',
-        message: `Invoice ${invoice.invoiceNumber} is missing signed BOL`,
-        entityId: invoice.id,
-        entityType: 'invoice',
+        createdAt: now,
       });
     }
 
     for (const carrier of expiringInsurance) {
       items.push({
-        type: 'INSURANCE_EXPIRING',
+        id: randomUUID(),
+        category: 'EXPIRING_INSURANCE',
+        title: `${carrier.name} insurance expiring`,
+        subtitle: `Expires ${carrier.insuranceExpiry.toISOString().split('T')[0]}`,
+        linkTo: `/carriers/${carrier.id}`,
         severity: 'warning',
-        message: `${carrier.name} insurance expires ${carrier.insuranceExpiry.toISOString().split('T')[0]}`,
-        entityId: carrier.id,
-        entityType: 'carrier',
+        createdAt: now,
       });
     }
 
     for (const load of bookedPickupToday) {
       items.push({
-        type: 'PICKUP_TODAY_NOT_DISPATCHED',
-        severity: 'critical',
-        message: `Load ${load.loadNumber} has pickup today but is still in BOOKED status`,
-        entityId: load.id,
-        entityType: 'load',
+        id: randomUUID(),
+        category: 'UNCONFIRMED_PICKUPS',
+        title: `Load ${load.loadNumber} pickup today, still BOOKED`,
+        subtitle: null,
+        linkTo: `/loads/${load.id}`,
+        severity: 'error',
+        createdAt: now,
       });
     }
 

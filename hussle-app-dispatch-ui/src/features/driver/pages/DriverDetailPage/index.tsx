@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 
-import { EmptyState, DataGuard, PageWrapper } from '@mocho/ui/components';
+import { DataGuard, PageWrapper } from '@mocho/ui/components';
+import { DetailLayout } from 'components/DetailLayout';
+import { DocumentUpload } from 'features/documents/components/DocumentUpload';
 import { useDispatch, useSelector } from 'store';
+import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { UpdateDriverInput } from 'features/carrier/types';
 import { fetchDriverDetailsRequest, updateDriverRequest } from '../../store/reducers';
 import {
@@ -13,7 +17,8 @@ import {
 import { DriverInfoDrawer } from '../../components/DriverInfoDrawer';
 import { DriverPreferencesDrawer } from '../../components/DriverPreferencesDrawer';
 import { DriverLocationDrawer } from '../../components/DriverLocationDrawer';
-import { DriverDetailHeader } from './DriverDetailHeader';
+import { DriverKPI } from '../../components/DriverKPI';
+import { DRIVER_TABS } from '../../constants';
 import DriverLoadHistoryTab from './tabs/DriverLoadHistoryTab';
 import { DriverPreferencesTab } from './tabs/DriverPreferencesTab';
 import { DriverOverviewTab } from './tabs/DriverOverviewTab';
@@ -22,7 +27,8 @@ const DriverDetailPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-  const driver = useSelector(selectDriverWithCarrier(id ?? ''));
+  const driverSelector = useMemo(() => selectDriverWithCarrier(id ?? ''), [id]);
+  const driver = useSelector(driverSelector);
   const isLoading = useSelector(selectDriverDetailLoading(id ?? ''));
   const [activeTab, setActiveTab] = useState('overview');
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
@@ -44,6 +50,10 @@ const DriverDetailPage = () => {
     [dispatch, id],
   );
 
+  const handleBack = () => {
+    navigate('/drivers');
+  };
+
   return (
     <PageWrapper isLoading={isLoading}>
       <DataGuard
@@ -51,16 +61,26 @@ const DriverDetailPage = () => {
         emptyComponent={<Typography sx={{ p: 4 }}>Driver not found.</Typography>}
       >
         {(d) => (
-          <>
-            <DriverDetailHeader
-              driver={d}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onBackClick={() => navigate('/drivers')}
-              onEditClick={() => setInfoDrawerOpen(true)}
-            />
-
-            {/* Tab Content */}
+          <DetailLayout
+            id={getDriverDisplayName(d)}
+            status={`DRIVER_${(d.status ?? 'ACTIVE').toUpperCase()}`}
+            breadcrumb={{ label: 'Drivers', href: '/drivers' }}
+            onBack={handleBack}
+            actions={
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={() => setInfoDrawerOpen(true)}
+                sx={{ color: 'common.white', borderColor: 'grey.500' }}
+              >
+                Edit
+              </Button>
+            }
+            summary={<DriverKPI driver={d} />}
+            tabs={DRIVER_TABS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          >
             {activeTab === 'overview' && (
               <DriverOverviewTab
                 driver={d}
@@ -78,32 +98,36 @@ const DriverDetailPage = () => {
             )}
             {activeTab === 'documents' && (
               <Box sx={{ p: 3 }}>
-                <EmptyState title="Documents coming soon" />
+                <DocumentUpload context="driver-profile" entityType="driver" entityId={id ?? ''} />
               </Box>
             )}
-
-            {/* Drawers */}
-            <DriverInfoDrawer
-              open={infoDrawerOpen}
-              onClose={() => setInfoDrawerOpen(false)}
-              data={d}
-              onSave={handleSaveDriver}
-            />
-            <DriverPreferencesDrawer
-              open={preferencesDrawerOpen}
-              onClose={() => setPreferencesDrawerOpen(false)}
-              data={d}
-              onSave={handleSaveDriver}
-            />
-            <DriverLocationDrawer
-              open={locationDrawerOpen}
-              onClose={() => setLocationDrawerOpen(false)}
-              data={d}
-              onSave={handleSaveDriver}
-            />
-          </>
+          </DetailLayout>
         )}
       </DataGuard>
+
+      {/* Drawers rendered outside DetailLayout to avoid scroll containment */}
+      {driver && (
+        <>
+          <DriverInfoDrawer
+            open={infoDrawerOpen}
+            onClose={() => setInfoDrawerOpen(false)}
+            data={driver}
+            onSave={handleSaveDriver}
+          />
+          <DriverPreferencesDrawer
+            open={preferencesDrawerOpen}
+            onClose={() => setPreferencesDrawerOpen(false)}
+            data={driver}
+            onSave={handleSaveDriver}
+          />
+          <DriverLocationDrawer
+            open={locationDrawerOpen}
+            onClose={() => setLocationDrawerOpen(false)}
+            data={driver}
+            onSave={handleSaveDriver}
+          />
+        </>
+      )}
     </PageWrapper>
   );
 };

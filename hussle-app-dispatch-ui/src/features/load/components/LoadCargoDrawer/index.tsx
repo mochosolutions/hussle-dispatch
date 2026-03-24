@@ -4,34 +4,16 @@ import {
   Button,
   Grid,
   Stack,
-  Typography,
   CircularProgress,
 } from '@mui/material';
 import { Formik, Form, useFormikContext } from 'formik';
 import * as Yup from 'yup';
 import { TextField, SelectField, CheckboxField } from '@mocho/ui/components';
-import { EditDrawer } from 'features/carrier/components/EditDrawer';
+import { EditDrawer, DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
 import { updateLoadRequest } from '../../store/reducers';
 import type { LoadDetail } from '../../types';
-
-const SECTION_LABEL_SX = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
-
-const EQUIPMENT_OPTIONS = [
-  { label: 'Dry Van', value: 'DRY_VAN' },
-  { label: 'Reefer', value: 'REEFER' },
-  { label: 'Flatbed', value: 'FLATBED' },
-  { label: 'Step Deck', value: 'STEP_DECK' },
-  { label: 'Box Truck', value: 'BOX_TRUCK' },
-  { label: 'Hotshot', value: 'HOTSHOT' },
-  { label: 'Power Only', value: 'POWER_ONLY' },
-];
+import { EQUIPMENT_OPTIONS } from '../../constants';
 
 const cargoSchema = Yup.object().shape({
   equipmentType: Yup.string(),
@@ -131,10 +113,8 @@ const LoadCargoDrawerContent: React.FC<LoadCargoDrawerContentProps> = ({ loadNum
     >
       <Form id="load-cargo-form">
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-            Cargo Details
-          </Typography>
-          <SelectField
+          <DrawerSection label="Cargo Details">
+            <SelectField
             name="equipmentType"
             label="Equipment Type"
             data={EQUIPMENT_OPTIONS}
@@ -153,6 +133,7 @@ const LoadCargoDrawerContent: React.FC<LoadCargoDrawerContentProps> = ({ loadNum
             <CheckboxField name="isHazmat" label="Hazmat" formik={formikProps} />
             <CheckboxField name="isTarp" label="Tarp Required" formik={formikProps} />
           </Stack>
+          </DrawerSection>
         </Stack>
       </Form>
     </EditDrawer>

@@ -32,6 +32,8 @@ import type {
   MembershipFilter,
   MembershipWithUser,
 } from '../types/membershipTypes';
+import { OrganizationStatus } from '../constants/enums';
+import type { AuthEnumConfig } from '../types/authEnumConfig';
 
 interface PrismaMembershipWithOrg {
   id: string;
@@ -69,16 +71,23 @@ interface PrismaMembershipWithUser {
 
 /**
  * Format Prisma Membership to API Membership (dates to strings, populate organization data)
+ * Accepts optional enumConfig for project-specific enum defaults.
  */
-export const formatMembership = (membership: PrismaMembershipWithOrg): Membership => {
+export const formatMembership = (
+  membership: PrismaMembershipWithOrg,
+  enumConfig?: AuthEnumConfig,
+): Membership => {
   try {
     const { id, userId, organizationId, organization, role, status, createdAt, updatedAt } =
       membership;
 
+    const defaultTier = enumConfig?.subscriptionTier.default ?? 'TRIAL';
+
     const orgName = organization?.name || 'Unknown Organization';
     const orgSlug = organization?.slug || '';
-    const orgSubscriptionTier = organization?.subscriptionTier || 'free';
-    const orgStatus = organization?.status || 'inactive';
+    const orgSubscriptionTier = organization?.subscriptionTier || defaultTier;
+    const orgStatus = Object.values(OrganizationStatus).find((s) => s === organization?.status)
+      ?? OrganizationStatus.PENDING;
 
     return {
       role,
@@ -122,7 +131,8 @@ export const formatMembershipUsers = (membership: PrismaMembershipWithUser): Mem
 
 export const membershipRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
-  tenantId?: string
+  tenantId?: string,
+  enumConfig?: AuthEnumConfig,
 ) => {
   const baseRepository = repositoryFactoryPrisma<PrismaMembership>({ prisma, modelName: 'membership', tenantId });
 
@@ -154,7 +164,7 @@ export const membershipRepositoryPrisma = (
           throw new BadRequestError('Membership creation failed');
         }
 
-        return formatMembership(created);
+        return formatMembership(created, enumConfig);
       } catch (error) {
         logger.error('Error creating membership', { error });
         throw new BadRequestError('Error creating membership');
@@ -187,7 +197,7 @@ export const membershipRepositoryPrisma = (
           },
         });
 
-        return membership ? formatMembership(membership) : null;
+        return membership ? formatMembership(membership, enumConfig) : null;
       } catch (error) {
         logger.error('Error finding membership by filter', { error });
         throw new BadRequestError('Error finding membership');
@@ -267,7 +277,7 @@ export const membershipRepositoryPrisma = (
           return null;
         }
 
-        return memberships.map(formatMembership);
+        return memberships.map((m) => formatMembership(m, enumConfig));
       } catch (error) {
         logger.error('Error finding memberships by user ID', { error });
         throw new BadRequestError('Error finding memberships');
@@ -303,7 +313,7 @@ export const membershipRepositoryPrisma = (
           return [];
         }
 
-        return memberships.map(formatMembership);
+        return memberships.map((m) => formatMembership(m, enumConfig));
       } catch (error) {
         logger.error('Error listing memberships', { error });
         throw new BadRequestError('Error listing memberships');
@@ -339,7 +349,7 @@ export const membershipRepositoryPrisma = (
           },
         });
 
-        return formatMembership(updated);
+        return formatMembership(updated, enumConfig);
       } catch (error) {
         logger.error('Error updating membership', { error });
         throw new BadRequestError('Error updating membership');
@@ -378,7 +388,7 @@ export const membershipRepositoryPrisma = (
           },
         });
 
-        return updatedMemberships.map(formatMembership);
+        return updatedMemberships.map((m) => formatMembership(m, enumConfig));
       } catch (error) {
         logger.error('Error updating memberships', { error });
         throw new BadRequestError('Error updating memberships');
@@ -415,7 +425,7 @@ export const membershipRepositoryPrisma = (
           },
         });
 
-        return formatMembership(deletedMembership);
+        return formatMembership(deletedMembership, enumConfig);
       } catch (error) {
         logger.error('Error deleting membership', { error });
         throw new BadRequestError('Error deleting membership');

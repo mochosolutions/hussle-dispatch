@@ -1,3 +1,5 @@
-export type { EventBus, EventHandler, DomainEvent, DomainEventName } from './eventBus';
+export type { EventBus, PublishOptions } from './eventBus';
+export type { EventMap } from './eventMap';
 export { createRabbitMqEventBus } from './rabbitMqEventBus';
 export { createInMemoryEventBus } from './inMemoryEventBus';
+export { sharedEventBus } from './sharedEventBus';

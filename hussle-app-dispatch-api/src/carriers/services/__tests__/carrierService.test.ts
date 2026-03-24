@@ -36,7 +36,16 @@ const buildCarrier = () => ({
   onboardingFlowId: null,
   onboardingStatus: null,
   authorityStatus: 'active',
-  status: 'active',
+  billingMethod: 'DIRECT',
+  factoringCompanyName: null,
+  factoringCompanyEmail: null,
+  factoringSubmissionMethod: null,
+  factoringAdvanceRate: null,
+  factoringFeePercent: null,
+  factoringNoa: null,
+  outboundEmailMode: 'MANUAL',
+  replyToEmail: null,
+  status: 'ACTIVE',
   notes: null,
   createdAt: new Date('2026-03-01T00:00:00.000Z'),
   updatedAt: new Date('2026-03-01T00:00:00.000Z'),
@@ -179,5 +188,96 @@ describe('carrierService', () => {
       '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
       expect.any(Date),
     );
+  });
+
+  describe('createCarrier', () => {
+    it('creates carrier and returns enriched output for admin role', async () => {
+      mockCarrierRepository.create.mockResolvedValue(buildCarrier());
+
+      const result = await carrierService.createCarrier({
+        organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        input: {
+          name: 'Blue Bird Logistics',
+          type: CarrierType.EXTERNAL_CARRIER,
+        },
+        role: 'admin',
+      });
+
+      expect(mockCarrierRepository.create).toHaveBeenCalledWith(
+        'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        { name: 'Blue Bird Logistics', type: CarrierType.EXTERNAL_CARRIER },
+      );
+      expect(result.driverCount).toBe(2);
+      expect(result.vehicleCount).toBe(1);
+      expect(result.onboardingComplete).toBe(true);
+      expect(result.insuranceWarning).toBeNull();
+      expect(result.partnerSplitPercent).toEqual(new Decimal('50.00'));
+    });
+  });
+
+  describe('createCarrierWithAssets', () => {
+    const buildCarrierWithAssets = () => ({
+      ...buildCarrier(),
+      drivers: [{ id: 'drv-1', name: 'John Doe' }],
+      vehicles: [{ id: 'veh-1', unitNumber: 'T-100' }],
+    });
+
+    it('creates carrier with drivers and vehicles for admin role', async () => {
+      mockCarrierRepository.createWithAssets.mockResolvedValue(buildCarrierWithAssets());
+
+      const result = await carrierService.createCarrierWithAssets({
+        organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        input: {
+          name: 'Blue Bird Logistics',
+          type: CarrierType.EXTERNAL_CARRIER,
+          drivers: [{ firstName: 'John', lastName: 'Doe' }],
+          vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
+        },
+        role: 'admin',
+      });
+
+      expect(mockCarrierRepository.createWithAssets).toHaveBeenCalledWith(
+        'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        {
+          carrier: {
+            name: 'Blue Bird Logistics',
+            type: CarrierType.EXTERNAL_CARRIER,
+            drivers: [{ firstName: 'John', lastName: 'Doe' }],
+            vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
+          },
+          drivers: [{ firstName: 'John', lastName: 'Doe' }],
+          vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
+        },
+      );
+      expect(result.drivers).toHaveLength(1);
+      expect(result.vehicles).toHaveLength(1);
+      expect(result.partnerSplitPercent).toEqual(new Decimal('50.00'));
+    });
+
+    it('blocks owner_operator role', async () => {
+      await expect(
+        carrierService.createCarrierWithAssets({
+          organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+          input: {
+            name: 'Blocked Carrier',
+            type: CarrierType.EXTERNAL_CARRIER,
+          },
+          role: 'owner_operator',
+        }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    });
+
+    it('rejects OWNER_OPERATOR carrier type', async () => {
+      await expect(
+        carrierService.createCarrierWithAssets({
+          organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+          input: {
+            name: 'Unsupported Carrier',
+            type: CarrierType.OWNER_OPERATOR,
+          },
+          role: 'admin',
+        }),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
   });
 });

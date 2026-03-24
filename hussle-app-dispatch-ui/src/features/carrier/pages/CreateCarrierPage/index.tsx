@@ -5,6 +5,8 @@ import { useDispatch } from 'store';
 import { PageWrapper } from '@mocho/ui/components';
 import { InnerPageHeader } from 'components/InnerPageHeader';
 import { useFormRef } from '../../../../mocho/hooks/useFormRef';
+import { useDirtyFormBlocker } from '../../../../mocho/forms/hooks/useDirtyFormBlocker';
+import { useModalActions } from '../../../ui/hooks/useModalActions';
 import { createCarrierRequest } from '../../store/reducers/carrierNewPageSlice';
 import { CarrierCreateForm } from '../../components/CarrierCreateForm';
 import type { CarrierCreateFormWithAssets } from '../../components/CarrierCreateForm';
@@ -13,6 +15,18 @@ const CreateCarrierPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { formRef, formState, handleFormStateChange, submitForm } = useFormRef();
+  const { openModal } = useModalActions();
+
+  useDirtyFormBlocker({
+    isDirty: formState.isDirty,
+    isSubmitting: formState.isSubmitting,
+    onBlock: (blocker) => {
+      openModal('dirtyFormConfirm', {
+        onConfirm: () => blocker.proceed?.(),
+        onCancel: () => blocker.reset?.(),
+      });
+    },
+  });
 
   const handleSubmit = useCallback(
     (values: CarrierCreateFormWithAssets) => {

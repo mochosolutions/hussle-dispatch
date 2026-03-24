@@ -35,12 +35,22 @@ export interface DashboardKpis {
 // Attention item types
 // ---------------------------------------------------------------------------
 
+export type AttentionCategory =
+  | 'EXCEPTIONS'
+  | 'OVERDUE_INVOICES'
+  | 'MISSING_RATE_CON'
+  | 'MISSING_BOL'
+  | 'EXPIRING_INSURANCE'
+  | 'UNCONFIRMED_PICKUPS';
+
 export interface AttentionItem {
-  type: string;
-  severity: 'critical' | 'warning' | 'info';
-  message: string;
-  entityId: string;
-  entityType: string;
+  id: string;
+  category: AttentionCategory;
+  title: string;
+  subtitle: string | null;
+  linkTo: string;
+  severity: 'error' | 'warning' | 'info';
+  createdAt: string;
 }
 
 // ---------------------------------------------------------------------------

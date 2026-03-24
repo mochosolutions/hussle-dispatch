@@ -153,8 +153,22 @@ else
   exit 1
 fi
 
-# Note: Prisma Client is already generated and copied from builder stage
-# It's located at /usr/app/generated/prisma (source code imports from '../../generated/prisma')
+# ============================================
+# Regenerate Prisma client if schema changed (dev only)
+# In dev mode, the named volume persists node_modules independently
+# of the host. When schema.prisma changes, the client becomes stale.
+# ============================================
+if [ "$DEV_MODE" = "true" ]; then
+  SCHEMA_HASH=$(md5sum prisma/schema.prisma | cut -d' ' -f1)
+  if [ ! -f node_modules/.schema_hash ] || [ "$(cat node_modules/.schema_hash)" != "$SCHEMA_HASH" ]; then
+    echo "Schema changed, regenerating Prisma client..."
+    npx prisma generate
+    echo "$SCHEMA_HASH" > node_modules/.schema_hash
+    echo "✓ Prisma client regenerated"
+  else
+    echo "✓ Prisma client up to date"
+  fi
+fi
 
 # ============================================
 # Optional: Migrate local images to S3

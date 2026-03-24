@@ -26,9 +26,9 @@ model Organization {
   website          String?
   logo             String?
   vertical         OrganizationVertical @default(LOGISTICS)
-  role             OrganizationRole     @default(BROKER)
+  role             OrganizationRole     @default(CARRIER)
   status           OrganizationStatus   @default(PENDING)
-  subscriptionTier SubscriptionTier     @default(FREE)
+  subscriptionTier SubscriptionTier     @default(TRIAL)
   deleted          Boolean              @default(false)
   deletedAt        DateTime?
   customFields     Json?
@@ -44,21 +44,21 @@ model Organization {
   places           Place[]
   documents        Document[]
   orgSettings      OrgSettings?
-
+  customers        Customer[]
   @@index([slug])
   @@index([deleted, status])
 }
 
 model User {
-  id                 String             @id @default(uuid())
-  externalId         String             @unique
-  email              String             @unique
+  id                 String              @id @default(uuid())
+  externalId         String              @unique
+  email              String              @unique
   firstName          String
   lastName           String
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  memberships        Membership[]       @relation("UserMemberships")
-  invitedMemberships Membership[]       @relation("InvitedBy")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  memberships        Membership[]        @relation("UserMemberships")
+  invitedMemberships Membership[]        @relation("InvitedBy")
   invitations        Invitation[]
   statusChanges      LoadStatusHistory[]
   checkCalls         CheckCall[]
@@ -134,6 +134,7 @@ enum OrganizationVertical {
 enum OrganizationRole {
   BROKER
   CARRIER
+  DISPATCH_COMPANY
   SHIPPER
 }
 
@@ -144,9 +145,10 @@ enum OrganizationStatus {
 }
 
 enum SubscriptionTier {
-  FREE
+  TRIAL
+  LAUNCH
   PRO
-  ENTERPRISE
+  ELITE
 }
 
 enum InvitationStatus {
@@ -162,12 +164,6 @@ enum CarrierType {
   EXTERNAL_CARRIER
 }
 
-enum ContactType {
-  BROKER
-  SHIPPER
-  CONSIGNEE
-  FACTORING
-}
 
 enum EquipmentType {
   DRY_VAN
@@ -260,6 +256,65 @@ enum AccessorialType {
   OTHER
 }
 
+enum CarrierStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DRAFT
+}
+
+enum DriverStatus {
+  ACTIVE
+  ON_LOAD
+  INACTIVE
+  OFF_DUTY
+}
+
+enum BillingMethod {
+  DIRECT
+  FACTORED
+}
+
+enum FactoringSubmission {
+  EMAIL
+  PORTAL
+}
+
+enum EmailMode {
+  PLATFORM
+  MANUAL
+}
+
+enum InvoiceWorkflow {
+  AUTO_SEND
+  AUTO_REVIEW
+}
+
+enum ApprovalStatus {
+  NONE
+  PENDING
+  APPROVED
+  DISPUTED
+}
+
+enum InvoiceReadiness {
+  NOT_READY
+  AWAITING_DOCUMENTS
+  READY
+  INVOICE_CREATED
+}
+
+enum CustomerType {
+  BROKER
+  DIRECT_SHIPPER
+  THREE_PL
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum InvoiceType {
   CUSTOMER
   DISPATCH_FEE
@@ -275,6 +330,17 @@ enum InvoiceStatus {
   VOID
 }
 
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationTrigger {
+  STATUS_CHANGE
+  CHECK_CALL
+  DOCUMENT_UPLOADED
+}
+
 enum DocumentType {
   BROKER_RATE_CON
   BOL_UNSIGNED
@@ -286,6 +352,13 @@ enum DocumentType {
   INVOICE
   LUMPER_RECEIPT
   SCALE_TICKET
+  POD
+  HAZMAT
+  LOA
+  DETENTION
+  LICENSE
+  REGISTRATION
+  INSPECTION_CERT
   OTHER
 }
 
@@ -294,82 +367,82 @@ enum DocumentType {
 // ---------------------------------------------------------------------------
 
 model Carrier {
-  id                          String        @id @default(uuid())
-  managedByOrgId              String
-  carrierOrgId                String?
-  name                        String
-  type                        CarrierType   @default(EXTERNAL_CARRIER)
-  mcNumber                    String?
-  dotNumber                   String?
-  ein                         String?
-  phone                       String?
-  email                       String?
-  address                     String?
-  city                        String?
-  state                       String?
-  zip                         String?
-  primaryContactName          String?
-  primaryContactPhone         String?
-  primaryContactEmail         String?
-  dispatchFeePercent          Decimal       @default(10.00) @db.Decimal(5, 2)
-  partnerSplitPercent         Decimal       @default(50.00) @db.Decimal(5, 2)
-  feeIncludesAccessorials     Boolean       @default(false)
-  ownerOpPayPercent           Decimal?      @db.Decimal(5, 2)
-  dispatchAgreementOnFile     Boolean       @default(false)
-  dispatchAgreementSignedAt   DateTime?
-  insuranceCertOnFile         Boolean       @default(false)
-  insuranceExpiry             DateTime?
-  w9OnFile                    Boolean       @default(false)
-  carrierPacketOnFile         Boolean       @default(false)
-  onboardingFlowId            String?
-  onboardingStatus            String?
-  authorityStatus             String?       @default("active")
-  status                      String        @default("active")
-  notes                       String?
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
-  deletedAt                   DateTime?
-  managedByOrg                Organization  @relation("ManagedCarriers", fields: [managedByOrgId], references: [id])
-  carrierOrg                  Organization? @relation("CarrierOrg", fields: [carrierOrgId], references: [id])
-  drivers                     Driver[]
-  vehicles                    Vehicle[]
-  loads                       Load[]
-  invoices                    Invoice[]
-  documents                   Document[]    @relation("CarrierDocuments")
-  carrierNotes                CarrierNote[]
+  id                        String        @id @default(uuid())
+  managedByOrgId            String
+  carrierOrgId              String?
+  name                      String
+  type                      CarrierType   @default(EXTERNAL_CARRIER)
+  mcNumber                  String?
+  dotNumber                 String?
+  ein                       String?
+  phone                     String?
+  email                     String?
+  address                   String?
+  city                      String?
+  state                     String?
+  zip                       String?
+  primaryContactName        String?
+  primaryContactPhone       String?
+  primaryContactEmail       String?
+  dispatchFeePercent        Decimal       @default(10.00) @db.Decimal(5, 2)
+  partnerSplitPercent       Decimal       @default(50.00) @db.Decimal(5, 2)
+  feeIncludesAccessorials   Boolean       @default(false)
+  ownerOpPayPercent         Decimal?      @db.Decimal(5, 2)
+  dispatchAgreementOnFile   Boolean       @default(false)
+  dispatchAgreementSignedAt DateTime?
+  insuranceCertOnFile       Boolean       @default(false)
+  insuranceExpiry           DateTime?
+  w9OnFile                  Boolean       @default(false)
+  carrierPacketOnFile       Boolean       @default(false)
+  onboardingFlowId          String?
+  onboardingStatus          String?
+  authorityStatus           String?       @default("active")
+  billingMethod             BillingMethod @default(DIRECT)
+  factoringCompanyName      String?
+  factoringCompanyEmail     String?
+  factoringSubmissionMethod FactoringSubmission?
+  factoringAdvanceRate      Decimal?      @db.Decimal(5, 4)
+  factoringFeePercent       Decimal?      @db.Decimal(5, 4)
+  factoringNoa              String?       @db.Text
+  outboundEmailMode         EmailMode     @default(MANUAL)
+  replyToEmail              String?
+  status                    CarrierStatus @default(ACTIVE)
+  notes                     String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  deletedAt                 DateTime?
+  managedByOrg              Organization  @relation("ManagedCarriers", fields: [managedByOrgId], references: [id])
+  carrierOrg                Organization? @relation("CarrierOrg", fields: [carrierOrgId], references: [id])
+  drivers                   Driver[]
+  vehicles                  Vehicle[]
+  loads                     Load[]
+  invoices                  Invoice[]
+  carrierNotes              CarrierNote[]
 
   @@index([managedByOrgId])
 }
 
 model Contact {
-  id                  String        @id @default(uuid())
-  organizationId      String
-  type                ContactType
-  companyName         String
-  contactName         String?
-  phone               String?
-  email               String?
-  mcNumber            String?
-  address             String?
-  city                String?
-  state               String?
-  zip                 String?
-  paymentTerms        String        @default("net_30")
-  paymentTermsDays    Int           @default(30)
-  quickPayDiscount    Decimal?      @db.Decimal(5, 2)
-  carrierPacketSentAt DateTime?
-  notes               String?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  deletedAt           DateTime?
-  organization        Organization  @relation(fields: [organizationId], references: [id])
-  loadsAsBroker       Load[]        @relation("LoadBroker")
-  loadsAsShipper      Load[]        @relation("LoadShipper")
-  loadsAsConsignee    Load[]        @relation("LoadConsignee")
-  stopsAsFacility     Stop[]
-  places              Place[]
+  id             String       @id @default(uuid())
+  organizationId String
+  customerId     String?
+  role           String?
+  firstName      String
+  lastName       String
+  phone          String?
+  email          String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  loadsAsContact Load[]       @relation("LoadContact")
+  stopsAsFacility Stop[]
+  places         Place[]
 
   @@index([organizationId])
+  @@index([customerId])
 }
 
 model Driver {
@@ -391,7 +464,7 @@ model Driver {
   preferredLanes  Json?
   noGoZones       Json?
   isAvailable     Boolean   @default(true)
-  status          String    @default("active")
+  status          DriverStatus @default(ACTIVE)
   notes           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -399,7 +472,6 @@ model Driver {
   carrier         Carrier   @relation(fields: [carrierId], references: [id])
   loads           Load[]
   assignedVehicle Vehicle?
-
   @@index([carrierId])
 }
 
@@ -431,7 +503,6 @@ model Vehicle {
   driver                Driver?          @relation(fields: [driverId], references: [id])
   loads                 Load[]
   expenses              TruckExpense[]
-
   @@index([carrierId])
 }
 
@@ -450,62 +521,65 @@ model TruckExpense {
 }
 
 model Load {
-  id                  String         @id @default(uuid())
-  organizationId      String
-  loadNumber          String
-  carrierId           String?
-  driverId            String?
-  vehicleId           String?
-  brokerId            String?
-  shipperId           String?
-  consigneeId         String?
-  brokerRefNumber     String?
-  equipmentType       EquipmentType?
-  isHazmat            Boolean        @default(false)
-  isTarp              Boolean        @default(false)
-  isTeamDriver        Boolean        @default(false)
-  commodity           String?
-  weight              Int?
-  pieceCount          Int?
-  loadedMiles         Int?
-  deadheadMiles       Int?
-  totalMiles          Int?
-  customerRate        Decimal?       @db.Decimal(10, 2)
-  carrierRate         Decimal?       @db.Decimal(10, 2)
-  dispatchFee         Decimal?       @db.Decimal(10, 2)
-  partnerSplit        Decimal?       @db.Decimal(10, 2)
-  ratePerMile         Decimal?       @db.Decimal(6, 2)
-  status              LoadStatus     @default(QUOTED)
-  rateConReceivedAt   DateTime?
-  bolUnsignedAt       DateTime?
-  bolSignedAt         DateTime?
-  dispatcherNotes     String?
-  driverInstructions  String?
-  scrapedLoadId       String?
-  plannedNextLoadRef  Json?
-  createdByUserId     String?
-  updatedByUserId     String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  deletedAt           DateTime?
-  organization        Organization       @relation(fields: [organizationId], references: [id])
-  carrier             Carrier?           @relation(fields: [carrierId], references: [id])
-  driver              Driver?            @relation(fields: [driverId], references: [id])
-  vehicle             Vehicle?           @relation(fields: [vehicleId], references: [id])
-  broker              Contact?           @relation("LoadBroker", fields: [brokerId], references: [id])
-  shipper             Contact?           @relation("LoadShipper", fields: [shipperId], references: [id])
-  consignee           Contact?           @relation("LoadConsignee", fields: [consigneeId], references: [id])
-  stops               Stop[]
-  statusHistory       LoadStatusHistory[]
-  checkCalls          CheckCall[]
-  accessorialCharges  AccessorialCharge[]
-  invoices            Invoice[]
-  documents           Document[]
+  id                 String              @id @default(uuid())
+  organizationId     String
+  loadNumber         String
+  carrierId          String?
+  driverId           String?
+  vehicleId          String?
+  contactId          String?
+  customerId         String?
+  externalRefNumber  String?
+  equipmentType      EquipmentType?
+  isHazmat           Boolean             @default(false)
+  isTarp             Boolean             @default(false)
+  isTeamDriver       Boolean             @default(false)
+  commodity          String?
+  weight             Int?
+  pieceCount         Int?
+  loadedMiles        Int?
+  deadheadMiles      Int?
+  totalMiles         Int?
+  customerRate       Decimal?            @db.Decimal(10, 2)
+  carrierRate        Decimal?            @db.Decimal(10, 2)
+  dispatchFee        Decimal?            @db.Decimal(10, 2)
+  partnerSplit       Decimal?            @db.Decimal(10, 2)
+  ratePerMile        Decimal?            @db.Decimal(6, 2)
+  status             LoadStatus          @default(QUOTED)
+  invoiceReadiness   InvoiceReadiness    @default(NOT_READY)
+  rateConReceivedAt  DateTime?
+  bolUnsignedAt      DateTime?
+  bolSignedAt        DateTime?
+  dispatcherNotes    String?
+  driverInstructions String?
+  scrapedLoadId      String?
+  plannedNextLoadRef Json?
+  createdByUserId    String?
+  updatedByUserId    String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  carrier            Carrier?            @relation(fields: [carrierId], references: [id])
+  driver             Driver?             @relation(fields: [driverId], references: [id])
+  vehicle            Vehicle?            @relation(fields: [vehicleId], references: [id])
+  contact            Contact?            @relation("LoadContact", fields: [contactId], references: [id])
+  customer           Customer?           @relation(fields: [customerId], references: [id])
+  stops              Stop[]
+  statusHistory      LoadStatusHistory[]
+  checkCalls         CheckCall[]
+  accessorialCharges       AccessorialCharge[]
+  invoices                 Invoice[]
+  notificationOverrides    LoadNotificationOverride[]
+  trackingTokens           LoadTrackingToken[]
+  notificationLogs         NotificationLog[]
 
   @@unique([organizationId, loadNumber])
   @@index([organizationId])
   @@index([status])
   @@index([carrierId])
+  @@index([contactId])
+  @@index([customerId])
 }
 
 model Stop {
@@ -542,6 +616,7 @@ model Place {
   id                  String        @id @default(uuid())
   organizationId      String
   contactId           String?
+  customerId          String?
   name                String
   address             String?
   address2            String?
@@ -569,11 +644,13 @@ model Place {
   deletedAt           DateTime?
   organization        Organization  @relation(fields: [organizationId], references: [id])
   contact             Contact?      @relation(fields: [contactId], references: [id])
+  customer            Customer?     @relation(fields: [customerId], references: [id])
   stops               Stop[]
 
   @@index([organizationId])
   @@index([organizationId, city, state])
   @@index([contactId])
+  @@index([customerId])
 }
 
 model LoadStatusHistory {
@@ -617,9 +694,14 @@ model AccessorialCharge {
   amount          Decimal         @db.Decimal(10, 2)
   billTo          String          @default("customer")
   isAutoGenerated Boolean         @default(false)
+  approvalStatus  ApprovalStatus  @default(NONE)
+  approvalSource  String?
+  approvalNotes   String?
+  documentId      String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   load            Load            @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  document        Document?       @relation(fields: [documentId], references: [id])
 
   @@index([loadId])
 }
@@ -628,6 +710,7 @@ model Invoice {
   id               String        @id @default(uuid())
   loadId           String
   carrierId        String?
+  customerId       String?
   invoiceNumber    String        @unique
   type             InvoiceType
   subtotal         Decimal       @db.Decimal(10, 2)
@@ -644,7 +727,15 @@ model Invoice {
   paidAmount       Decimal?      @db.Decimal(10, 2)
   paymentMethod    String?
   paymentReference String?
-  pdfUrl           String?
+  pdfUrl              String?
+  billingMethod       BillingMethod?
+  deliveryMethod      String?
+  sentToEmail         String?
+  factoringAdvance    Decimal?      @db.Decimal(10, 2)
+  factoringFeeAmount  Decimal?      @db.Decimal(10, 2)
+  reserveAmount       Decimal?      @db.Decimal(10, 2)
+  advanceReceivedAt   DateTime?
+  reserveReleasedAt   DateTime?
   createdByUserId  String?
   approvedByUserId String?
   approvedAt       DateTime?
@@ -653,16 +744,18 @@ model Invoice {
   updatedAt        DateTime      @updatedAt
   load             Load          @relation(fields: [loadId], references: [id])
   carrier          Carrier?      @relation(fields: [carrierId], references: [id])
+  customer         Customer?     @relation(fields: [customerId], references: [id])
 
   @@index([loadId])
   @@index([status])
+  @@index([customerId])
 }
 
 model Document {
   id               String       @id @default(uuid())
   organizationId   String
-  loadId           String?
-  carrierId        String?
+  entityType       String
+  entityId         String
   type             DocumentType
   fileName         String
   fileSize         Int?
@@ -673,13 +766,15 @@ model Document {
   isArchived       Boolean      @default(false)
   uploadedByUserId String?
   notes            String?
-  createdAt        DateTime     @default(now())
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  load             Load?        @relation(fields: [loadId], references: [id])
-  carrier          Carrier?     @relation("CarrierDocuments", fields: [carrierId], references: [id])
+  expiresAt        DateTime?
+  metadata         Json?
+  createdAt             DateTime            @default(now())
+  organization          Organization        @relation(fields: [organizationId], references: [id])
+  accessorialCharges    AccessorialCharge[]
 
-  @@index([loadId])
-  @@index([carrierId])
+  @@index([entityType, entityId])
+  @@index([organizationId, type])
+  @@index([organizationId, expiresAt])
   @@index([organizationId])
 }
 
@@ -699,6 +794,7 @@ model OrgSettings {
   loadIntelEmailAddress     String?
   sesFromEmail              String?
   companyLogoUrl            String?
+  invoiceWorkflow           InvoiceWorkflow @default(AUTO_REVIEW)
   organization              Organization @relation(fields: [organizationId], references: [id])
 }
 
@@ -713,3 +809,113 @@ model CarrierNote {
 
   @@index([carrierId])
 }
+
+model Customer {
+  id               String         @id @default(uuid())
+  organizationId   String
+  type             CustomerType
+  companyName      String
+  mcNumber         String?
+  dotNumber        String?
+  phone            String?
+  email            String?
+  website          String?
+  address          String?
+  city             String?
+  state            String?
+  zip              String?
+  paymentTerms     String?
+  paymentTermsDays Int            @default(30)
+  quickPayDiscount    Decimal?       @db.Decimal(5, 2)
+  carrierPacketSentAt DateTime?
+  notes               String?
+  status           CustomerStatus @default(ACTIVE)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deleted          Boolean        @default(false)
+  deletedAt        DateTime?
+  organization     Organization   @relation(fields: [organizationId], references: [id])
+  contacts         Contact[]
+  loads            Load[]
+  places           Place[]
+  invoices         Invoice[]
+
+  notificationSettings CustomerNotificationSettings[]
+
+  @@index([organizationId])
+  @@index([organizationId, companyName])
+}
+
+// ---------------------------------------------------------------------------
+// Notification Models
+// ---------------------------------------------------------------------------
+
+model CustomerNotificationSettings {
+  id              String                @id @default(uuid())
+  customerId      String
+  trigger         NotificationTrigger
+  channel         NotificationChannel
+  enabled         Boolean               @default(true)
+  recipientEmail  String?
+  recipientPhone  String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  customer        Customer              @relation(fields: [customerId], references: [id])
+
+  @@unique([customerId, trigger, channel])
+  @@index([customerId])
+}
+
+model LoadNotificationOverride {
+  id              String                @id @default(uuid())
+  loadId          String
+  trigger         NotificationTrigger
+  channel         NotificationChannel
+  enabled         Boolean
+  recipientEmail  String?
+  recipientPhone  String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  load            Load                  @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  @@unique([loadId, trigger, channel])
+  @@index([loadId])
+}
+
+enum TrackingTokenType {
+  CUSTOMER
+  DRIVER
+}
+
+model LoadTrackingToken {
+  id          String             @id @default(uuid())
+  loadId      String
+  token       String             @unique
+  type        TrackingTokenType  @default(CUSTOMER)
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime           @default(now())
+  load        Load               @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([loadId])
+}
+
+model NotificationLog {
+  id              String              @id @default(uuid())
+  loadId          String
+  trigger         NotificationTrigger
+  channel         NotificationChannel
+  recipientEmail  String?
+  recipientPhone  String?
+  subject         String?
+  status          String              @default("sent")
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+  load            Load                @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  @@index([loadId])
+  @@index([loadId, trigger])
+}
+

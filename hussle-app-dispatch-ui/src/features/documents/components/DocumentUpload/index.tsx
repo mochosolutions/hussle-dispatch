@@ -1,22 +1,46 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
-  Typography,
-  LinearProgress,
   Button,
-  IconButton,
+  Checkbox,
+  LinearProgress,
+  MenuItem,
+  Select,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
   alpha,
 } from '@mui/material';
 import {
   CloudUploadOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  DeleteOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
-import type { Document, DocumentType, UploadStatus } from '../../types';
-import { presignDocument, confirmDocument } from 'utils/api/documents/documentApi';
+import { format } from 'date-fns';
+import type { SelectChangeEvent } from '@mui/material';
 
-const DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+import {
+  presignDocument,
+  confirmDocument,
+  listDocuments,
+  bulkDownload,
+} from 'utils/api/documents/documentApi';
+import type {
+  Document,
+  DocumentEntityType,
+  DocumentMetadata,
+  DocumentType,
+  UploadStatus,
+} from '../../types';
+import type { DocumentContext } from '../../constants';
+import { DOC_TYPE_CONFIG, DOCUMENT_CONTEXTS } from '../../constants';
+
+const DEFAULT_MAX_SIZE = 10 * 1024 * 1024;
 const DEFAULT_ACCEPTED_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -34,11 +58,27 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+const METADATA_FIELD_LABELS: Record<string, string> = {
+  licenseNumber: 'License Number',
+  issuingState: 'Issuing State',
+  cdlClass: 'CDL Class',
+  policyNumber: 'Policy Number',
+  issuingAuthority: 'Issuing Authority',
+};
+
+export interface DocumentUploadProps {
+  context: DocumentContext;
+  entityType: DocumentEntityType;
+  entityId: string;
+  onUploadComplete?: () => void;
+}
+
 interface UploadState {
   status: UploadStatus;
   progress: number;
   error: string | null;
   filename: string | null;
+  selectedFile: File | null;
 }
 
 const INITIAL_UPLOAD_STATE: UploadState = {
@@ -46,178 +86,211 @@ const INITIAL_UPLOAD_STATE: UploadState = {
   progress: 0,
   error: null,
   filename: null,
+  selectedFile: null,
 };
 
-export interface DocumentUploadProps {
-  /** Load ID to associate the document with */
-  loadId?: string;
-  /** Carrier ID to associate the document with */
-  carrierId?: string;
-  /** Document type classification */
-  documentType: DocumentType;
-  /** Callback fired when upload completes successfully */
-  onUploadComplete: (document: Document) => void;
-  /** Accepted MIME types (defaults to PDF + common image formats) */
-  acceptedTypes?: string[];
-  /** Maximum file size in bytes (defaults to 10 MB) */
-  maxSize?: number;
-}
-
-/**
- * DocumentUpload provides a drag-and-drop file upload zone that handles
- * the full presigned-URL upload flow: presign -> upload to storage -> confirm.
- */
 export const DocumentUpload: React.FC<DocumentUploadProps> = ({
-  loadId,
-  carrierId,
-  documentType,
+  context,
+  entityType,
+  entityId,
   onUploadComplete,
-  acceptedTypes = DEFAULT_ACCEPTED_TYPES,
-  maxSize = DEFAULT_MAX_SIZE,
 }) => {
+  const allowedTypes = DOCUMENT_CONTEXTS[context];
+  const [selectedDocType, setSelectedDocType] = useState<DocumentType>(allowedTypes[0]);
   const [uploadState, setUploadState] = useState<UploadState>(INITIAL_UPLOAD_STATE);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const [expiresAt, setExpiresAt] = useState('');
+  const [metadata, setMetadata] = useState<DocumentMetadata>({});
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
 
-  const formatAcceptedTypes = useCallback(
-    (): string =>
-      acceptedTypes
-        .map((type) => {
-          const ext = type.split('/')[1];
-          if (ext === 'jpeg') {
-            return 'JPG';
+  const docTypeConfig = DOC_TYPE_CONFIG[selectedDocType];
+  const isCompliance = docTypeConfig.compliance;
+  const metadataFields = 'metadataFields' in docTypeConfig ? docTypeConfig.metadataFields : [];
+
+  const fetchDocuments = useCallback(async () => {
+    setIsLoadingDocs(true);
+    try {
+      const result = await listDocuments({ entityType, entityId });
+      setDocuments(result.data);
+    } catch {
+      // Empty list shown on error
+    } finally {
+      setIsLoadingDocs(false);
+    }
+  }, [entityType, entityId]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  const validateFile = useCallback((file: File): string | null => {
+    if (!DEFAULT_ACCEPTED_TYPES.includes(file.type)) {
+      return `File type "${file.type}" is not accepted. Accepted: PDF, JPG, PNG, WEBP`;
+    }
+    if (file.size > DEFAULT_MAX_SIZE) {
+      return `File size (${formatFileSize(file.size)}) exceeds maximum of ${formatFileSize(DEFAULT_MAX_SIZE)}`;
+    }
+    return null;
+  }, []);
+
+  const performUpload = useCallback(async (file: File) => {
+    const validationError = validateFile(file);
+    if (validationError) {
+      setUploadState({
+        status: 'error',
+        progress: 0,
+        error: validationError,
+        filename: file.name,
+        selectedFile: null,
+      });
+      return;
+    }
+
+    setUploadState({
+      status: 'presigning',
+      progress: 0,
+      error: null,
+      filename: file.name,
+      selectedFile: null,
+    });
+
+    try {
+      const presignInput = {
+        fileName: file.name,
+        mimeType: file.type,
+        type: selectedDocType,
+        entityType,
+        entityId,
+        ...(isCompliance && expiresAt ? { expiresAt } : {}),
+        ...(isCompliance && Object.keys(metadata).length > 0 ? { metadata } : {}),
+      };
+
+      const { presign } = await presignDocument(presignInput);
+
+      setUploadState((prev) => ({ ...prev, status: 'uploading' }));
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhrRef.current = xhr;
+
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            setUploadState((prev) => ({ ...prev, progress: percentComplete }));
           }
-          return ext?.toUpperCase() ?? type;
-        })
-        .join(', '),
-    [acceptedTypes],
-  );
-
-  const validateFile = useCallback(
-    (file: File): string | null => {
-      if (!acceptedTypes.includes(file.type)) {
-        return `File type "${file.type}" is not accepted. Accepted types: ${formatAcceptedTypes()}`;
-      }
-      if (file.size > maxSize) {
-        return `File size (${formatFileSize(file.size)}) exceeds maximum of ${formatFileSize(maxSize)}`;
-      }
-      return null;
-    },
-    [acceptedTypes, formatAcceptedTypes, maxSize],
-  );
-
-  const uploadFile = useCallback(
-    async (file: File) => {
-      // Validate
-      const validationError = validateFile(file);
-      if (validationError) {
-        setUploadState({
-          status: 'error',
-          progress: 0,
-          error: validationError,
-          filename: file.name,
         });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${String(xhr.status)}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload cancelled'));
+        });
+
+        xhr.open('PUT', presign.presignedUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      });
+
+      xhrRef.current = null;
+
+      setUploadState((prev) => ({ ...prev, status: 'confirming', progress: 100 }));
+
+      const confirmInput = {
+        ...(isCompliance && expiresAt ? { expiresAt } : {}),
+        ...(isCompliance && Object.keys(metadata).length > 0 ? { metadata } : {}),
+      };
+
+      const { document: uploaded } = await confirmDocument(
+        presign.documentId,
+        Object.keys(confirmInput).length > 0 ? confirmInput : undefined,
+      );
+
+      setDocuments((prev) => [uploaded, ...prev]);
+      setUploadState(INITIAL_UPLOAD_STATE);
+      setExpiresAt('');
+      setMetadata({});
+      onUploadComplete?.();
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Upload cancelled') {
+        setUploadState(INITIAL_UPLOAD_STATE);
         return;
       }
 
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+
       setUploadState({
-        status: 'presigning',
+        status: 'error',
+        progress: 0,
+        error: errorMessage,
+        filename: file.name,
+        selectedFile: null,
+      });
+    }
+  }, [
+    validateFile,
+    selectedDocType,
+    entityType,
+    entityId,
+    isCompliance,
+    expiresAt,
+    metadata,
+    onUploadComplete,
+  ]);
+
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const validationError = validateFile(file);
+    if (validationError) {
+      setUploadState({
+        status: 'error',
+        progress: 0,
+        error: validationError,
+        filename: file.name,
+        selectedFile: null,
+      });
+      return;
+    }
+
+    if (isCompliance) {
+      setUploadState({
+        status: 'idle',
         progress: 0,
         error: null,
         filename: file.name,
+        selectedFile: file,
       });
+    } else {
+      performUpload(file);
+    }
+  }, [validateFile, isCompliance, performUpload]);
 
-      try {
-        // Step 1: Get presigned URL
-        const { presign } = await presignDocument({
-          filename: file.name,
-          mimeType: file.type,
-          size: file.size,
-          documentType,
-          loadId,
-          carrierId,
-        });
-
-        // Step 2: Upload to presigned URL with progress tracking
-        setUploadState((prev) => ({ ...prev, status: 'uploading' }));
-
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhrRef.current = xhr;
-
-          xhr.upload.addEventListener('progress', (event) => {
-            if (event.lengthComputable) {
-              const percentComplete = Math.round((event.loaded / event.total) * 100);
-              setUploadState((prev) => ({ ...prev, progress: percentComplete }));
-            }
-          });
-
-          xhr.addEventListener('load', () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve();
-            } else {
-              reject(new Error(`Upload failed with status ${String(xhr.status)}`));
-            }
-          });
-
-          xhr.addEventListener('error', () => {
-            reject(new Error('Network error during upload'));
-          });
-
-          xhr.addEventListener('abort', () => {
-            reject(new Error('Upload cancelled'));
-          });
-
-          xhr.open('PUT', presign.presignedUrl, true);
-          xhr.setRequestHeader('Content-Type', file.type);
-          xhr.send(file);
-        });
-
-        xhrRef.current = null;
-
-        // Step 3: Confirm upload
-        setUploadState((prev) => ({ ...prev, status: 'confirming', progress: 100 }));
-
-        const { document } = await confirmDocument(presign.documentId);
-
-        setUploadState({
-          status: 'complete',
-          progress: 100,
-          error: null,
-          filename: file.name,
-        });
-
-        onUploadComplete(document);
-      } catch (error: unknown) {
-        if (error instanceof Error && error.message === 'Upload cancelled') {
-          setUploadState(INITIAL_UPLOAD_STATE);
-          return;
-        }
-
-        const errorMessage =
-          error instanceof Error ? error.message : 'An unexpected error occurred';
-
-        setUploadState({
-          status: 'error',
-          progress: 0,
-          error: errorMessage,
-          filename: file.name,
-        });
-      }
-    },
-    [validateFile, carrierId, documentType, loadId, onUploadComplete],
-  );
-
-  const handleFileSelect = useCallback(
-    (files: FileList | null) => {
-      const file = files?.[0];
-      if (file) {
-        uploadFile(file);
-      }
-    },
-    [uploadFile],
-  );
+  const handleConfirmAndUpload = useCallback(() => {
+    if (uploadState.selectedFile) {
+      performUpload(uploadState.selectedFile);
+    }
+  }, [uploadState.selectedFile, performUpload]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -231,26 +304,19 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      setIsDragOver(false);
-      handleFileSelect(event.dataTransfer.files);
-    },
-    [handleFileSelect],
-  );
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+    handleFileSelect(event.dataTransfer.files);
+  }, [handleFileSelect]);
 
-  const handleInputChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileSelect(event.target.files);
-      // Reset input so the same file can be re-selected
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    },
-    [handleFileSelect],
-  );
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileSelect(event.target.files);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [handleFileSelect]);
 
   const handleBrowseClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -260,175 +326,332 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     setUploadState(INITIAL_UPLOAD_STATE);
   }, []);
 
-  const handleCancel = useCallback(() => {
-    xhrRef.current?.abort();
-    xhrRef.current = null;
+  const handleDocTypeChange = useCallback((event: SelectChangeEvent<DocumentType>) => {
+    setSelectedDocType(event.target.value as DocumentType);
+    setExpiresAt('');
+    setMetadata({});
     setUploadState(INITIAL_UPLOAD_STATE);
   }, []);
 
-  const { status, progress, error, filename } = uploadState;
+  const handleMetadataChange = useCallback((field: string, value: string) => {
+    setMetadata((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  // Idle state: drop zone
-  if (status === 'idle') {
-    return (
-      <Box
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        sx={{
-          border: '2px dashed',
-          borderColor: isDragOver ? 'primary.main' : 'divider',
-          borderRadius: 2,
-          p: 4,
-          textAlign: 'center',
-          cursor: 'pointer',
-          backgroundColor: isDragOver
-            ? (theme) => alpha(theme.palette.primary.main, 0.04)
-            : 'background.paper',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            borderColor: 'primary.light',
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.02),
-          },
-        }}
-        onClick={handleBrowseClick}
-        role="button"
-        aria-label={`Upload ${documentType} document`}
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            handleBrowseClick();
-          }
-        }}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={acceptedTypes.join(',')}
-          onChange={handleInputChange}
-          style={{ display: 'none' }}
-          aria-hidden="true"
-        />
-        <CloudUploadOutlined style={{ fontSize: 40, color: '#8c8c8c' }} />
-        <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>
-          Drag & drop a file here, or click to browse
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
-          {formatAcceptedTypes()} — Max {formatFileSize(maxSize)}
-        </Typography>
-      </Box>
+  const handleToggleDocSelect = useCallback((docId: string) => {
+    setSelectedDocIds((prev) =>
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId],
     );
-  }
+  }, []);
 
-  // Uploading / presigning / confirming state: progress bar
-  if (status === 'presigning' || status === 'uploading' || status === 'confirming') {
-    let statusLabel = `Uploading... ${String(progress)}%`;
-    if (status === 'presigning') {
-      statusLabel = 'Preparing upload...';
-    } else if (status === 'confirming') {
-      statusLabel = 'Confirming...';
+  const handleToggleAllDocs = useCallback(() => {
+    if (selectedDocIds.length === documents.length) {
+      setSelectedDocIds([]);
+    } else {
+      setSelectedDocIds(documents.map((doc) => doc.id));
+    }
+  }, [selectedDocIds.length, documents]);
+
+  const handleBulkDownload = useCallback(async () => {
+    if (selectedDocIds.length === 0) {
+      return;
     }
 
-    return (
-      <Box
-        sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          p: 3,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
-            {filename}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={handleCancel}
-            aria-label="Cancel upload"
-            sx={{ ml: 1 }}
-          >
-            <DeleteOutlined />
-          </IconButton>
-        </Box>
-        <LinearProgress
-          variant={status === 'uploading' ? 'determinate' : 'indeterminate'}
-          value={status === 'uploading' ? progress : undefined}
-          sx={{ borderRadius: 1, height: 6 }}
-        />
-        <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
-          {statusLabel}
-        </Typography>
-      </Box>
-    );
-  }
+    setIsDownloading(true);
+    try {
+      const result = await bulkDownload(selectedDocIds);
+      result.downloads.forEach((download) => {
+        window.open(download.presignedUrl, '_blank', 'noopener,noreferrer');
+      });
+      setSelectedDocIds([]);
+    } catch {
+      // Download errors handled silently — user can retry
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [selectedDocIds]);
 
-  // Success state
-  if (status === 'complete') {
-    return (
-      <Box
-        sx={{
-          border: '1px solid',
-          borderColor: 'success.light',
-          borderRadius: 2,
-          p: 3,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          backgroundColor: (theme) => alpha(theme.palette.success.main, 0.04),
-        }}
-      >
-        <CheckCircleOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
-            {filename}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'success.main' }}>
-            Upload complete
-          </Typography>
-        </Box>
-        <IconButton
-          size="small"
-          onClick={handleRetry}
-          aria-label="Upload another file"
-        >
-          <DeleteOutlined />
-        </IconButton>
-      </Box>
-    );
-  }
+  const { status, progress, error, filename, selectedFile } = uploadState;
 
-  // Error state
+  const isUploading = status === 'presigning' || status === 'uploading' || status === 'confirming';
+
   return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'error.light',
-        borderRadius: 2,
-        p: 3,
-        backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-        <CloseCircleOutlined style={{ fontSize: 24, color: '#ff4d4f', marginTop: 2 }} />
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+    <Stack spacing={3}>
+      {/* Document type selector */}
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Document Type
+        </Typography>
+        <Select<DocumentType>
+          value={selectedDocType}
+          onChange={handleDocTypeChange}
+          size="small"
+          fullWidth
+          disabled={isUploading}
+        >
+          {allowedTypes.map((docType) => (
+            <MenuItem key={docType} value={docType}>
+              {DOC_TYPE_CONFIG[docType].label}
+            </MenuItem>
+          ))}
+        </Select>
+      </Box>
+
+      {/* File upload area */}
+      {status === 'idle' && !selectedFile && (
+        <Box
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleBrowseClick}
+          role="button"
+          aria-label={`Upload ${DOC_TYPE_CONFIG[selectedDocType].label} document`}
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              handleBrowseClick();
+            }
+          }}
+          sx={{
+            border: '2px dashed',
+            borderColor: isDragOver ? 'primary.main' : 'divider',
+            borderRadius: 2,
+            p: 4,
+            textAlign: 'center',
+            cursor: 'pointer',
+            backgroundColor: isDragOver
+              ? (theme) => alpha(theme.palette.primary.main, 0.04)
+              : 'background.paper',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              borderColor: 'primary.light',
+              backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.02),
+            },
+          }}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={DEFAULT_ACCEPTED_TYPES.join(',')}
+            onChange={handleInputChange}
+            style={{ display: 'none' }}
+            aria-hidden="true"
+          />
+          <CloudUploadOutlined style={{ fontSize: 40, color: '#8c8c8c' }} />
+          <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>
+            Drag & drop a file here, or click to browse
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
+            PDF, JPG, PNG, WEBP — Max {formatFileSize(DEFAULT_MAX_SIZE)}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Compliance metadata form — shown after file selection for compliance doc types */}
+      {status === 'idle' && selectedFile && isCompliance && (
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 3,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500, mb: 2 }}>
+            {filename} — Complete details before uploading
+          </Typography>
+
+          <Stack spacing={2}>
+            <TextField
+              label="Expiration Date"
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              size="small"
+              fullWidth
+              slotProps={{
+                inputLabel: { shrink: true },
+              }}
+            />
+
+            {metadataFields.map((field) => (
+              <TextField
+                key={field}
+                label={METADATA_FIELD_LABELS[field] ?? field}
+                value={(metadata as Record<string, string>)[field] ?? ''}
+                onChange={(e) => handleMetadataChange(field, e.target.value)}
+                size="small"
+                fullWidth
+              />
+            ))}
+
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleConfirmAndUpload}
+              >
+                Upload
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleRetry}
+              >
+                Cancel
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      )}
+
+      {/* Upload progress */}
+      {isUploading && (
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 3,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }} noWrap>
+            {filename}
+          </Typography>
+          <LinearProgress
+            variant={status === 'uploading' ? 'determinate' : 'indeterminate'}
+            value={status === 'uploading' ? progress : undefined}
+            sx={{ borderRadius: 1, height: 6 }}
+          />
+          <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
+            {status === 'presigning' && 'Preparing upload...'}
+            {status === 'uploading' && `Uploading... ${String(progress)}%`}
+            {status === 'confirming' && 'Confirming...'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Error state */}
+      {status === 'error' && (
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'error.light',
+            borderRadius: 2,
+            p: 3,
+            backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
+          }}
+        >
           <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
             {filename}
           </Typography>
-          <Typography variant="caption" sx={{ color: 'error.main', display: 'block', mt: 0.5 }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'error.main', display: 'block', mt: 0.5 }}
+            role="alert"
+          >
             {error}
           </Typography>
+          <Button variant="outlined" size="small" onClick={handleRetry} sx={{ mt: 2 }}>
+            Try Again
+          </Button>
         </Box>
+      )}
+
+      {/* Document list */}
+      <Box>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+          <Typography variant="subtitle2">Documents</Typography>
+          {selectedDocIds.length > 0 && (
+            <Button
+              size="small"
+              startIcon={<DownloadOutlined />}
+              onClick={handleBulkDownload}
+              disabled={isDownloading}
+            >
+              {isDownloading ? 'Downloading...' : `Download Selected (${String(selectedDocIds.length)})`}
+            </Button>
+          )}
+        </Stack>
+
+        {isLoadingDocs && (
+          <Typography variant="caption" color="text.disabled">
+            Loading documents...
+          </Typography>
+        )}
+
+        {!isLoadingDocs && documents.length === 0 && (
+          <Typography variant="caption" color="text.disabled">
+            No documents uploaded yet
+          </Typography>
+        )}
+
+        {documents.length > 0 && (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={selectedDocIds.length === documents.length && documents.length > 0}
+                      indeterminate={
+                        selectedDocIds.length > 0 && selectedDocIds.length < documents.length
+                      }
+                      onChange={handleToggleAllDocs}
+                      aria-label="Select all documents"
+                    />
+                  </TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>File Name</TableCell>
+                  <TableCell>Uploaded</TableCell>
+                  <TableCell>Expires</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {documents.map((doc) => (
+                  <TableRow key={doc.id} hover>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        checked={selectedDocIds.includes(doc.id)}
+                        onChange={() => handleToggleDocSelect(doc.id)}
+                        aria-label={`Select ${doc.fileName}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                        {DOC_TYPE_CONFIG[doc.type].label}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                        {doc.fileName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="text.secondary">
+                        {format(new Date(doc.createdAt), 'MMM d, yyyy')}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="text.secondary">
+                        {doc.expiresAt
+                          ? format(new Date(doc.expiresAt), 'MMM d, yyyy')
+                          : ''}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Box>
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={handleRetry}
-        sx={{ mt: 2 }}
-      >
-        Try Again
-      </Button>
-    </Box>
+    </Stack>
   );
 };
+
+export default DocumentUpload;

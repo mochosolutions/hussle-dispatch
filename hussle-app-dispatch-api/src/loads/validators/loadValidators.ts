@@ -7,6 +7,17 @@ const stopTypeValues = Object.values(StopType);
 const accessorialTypeValues = Object.values(AccessorialType);
 
 const optionalTrimmed = Yup.string().trim().notRequired();
+const optionalUuid = Yup.string()
+  .trim()
+  .transform((_value, originalValue) => {
+    if (originalValue === '') {
+      return null;
+    }
+    return originalValue;
+  })
+  .nullable()
+  .uuid()
+  .notRequired();
 
 const stopSchema = Yup.object({
   type: Yup.mixed<StopType>()
@@ -39,13 +50,12 @@ const accessorialChargeSchema = Yup.object({
 });
 
 const createBodySchema = Yup.object({
-  carrierId: Yup.string().uuid().notRequired(),
-  driverId: Yup.string().uuid().notRequired(),
-  vehicleId: Yup.string().uuid().notRequired(),
-  brokerId: Yup.string().uuid().notRequired(),
-  shipperId: Yup.string().uuid().notRequired(),
-  consigneeId: Yup.string().uuid().notRequired(),
-  brokerRefNumber: optionalTrimmed,
+  carrierId: optionalUuid,
+  driverId: optionalUuid,
+  vehicleId: optionalUuid,
+  contactId: optionalUuid,
+  customerId: optionalUuid,
+  externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
     .notRequired(),
@@ -79,13 +89,12 @@ const createBodySchema = Yup.object({
 });
 
 const updateBodySchema = Yup.object({
-  carrierId: Yup.string().uuid().notRequired(),
-  driverId: Yup.string().uuid().notRequired(),
-  vehicleId: Yup.string().uuid().notRequired(),
-  brokerId: Yup.string().uuid().notRequired(),
-  shipperId: Yup.string().uuid().notRequired(),
-  consigneeId: Yup.string().uuid().notRequired(),
-  brokerRefNumber: optionalTrimmed,
+  carrierId: optionalUuid,
+  driverId: optionalUuid,
+  vehicleId: optionalUuid,
+  contactId: optionalUuid,
+  customerId: optionalUuid,
+  externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
     .notRequired(),
@@ -131,6 +140,23 @@ export const updateLoadValidator = Yup.object({
   }),
 });
 
+export const assignLoadValidator = Yup.object({
+  body: Yup.object({
+    carrierId: optionalUuid,
+    driverId: optionalUuid,
+    vehicleId: optionalUuid,
+  }).test('has-any-assignment-field', 'At least one assignment field must be provided', (value) => {
+    if (value === undefined) {
+      return false;
+    }
+
+    return Object.keys(value).length > 0;
+  }),
+  params: Yup.object({
+    id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+});
+
 export const listLoadsValidator = Yup.object({
   query: Yup.object({
     page: Yup.number().integer().min(1).notRequired(),
@@ -139,6 +165,7 @@ export const listLoadsValidator = Yup.object({
     order: Yup.string().oneOf(['asc', 'desc']).notRequired(),
     status: Yup.string().trim().notRequired(),
     carrierId: Yup.string().uuid().notRequired(),
+    customerId: Yup.string().uuid().notRequired(),
     equipmentType: Yup.mixed<EquipmentType>().oneOf(equipmentTypeValues).notRequired(),
     search: Yup.string().trim().notRequired(),
     dateFrom: Yup.date().notRequired(),

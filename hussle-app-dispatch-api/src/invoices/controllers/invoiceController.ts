@@ -28,6 +28,7 @@ export interface InvoiceControllers {
   approveInvoice: RequestHandler;
   sendInvoice: RequestHandler;
   markPaid: RequestHandler;
+  getCounts: RequestHandler;
 }
 
 export const createInvoiceControllers = (
@@ -73,5 +74,11 @@ export const createInvoiceControllers = (
     const input = markPaidMapper(req);
     const invoice = await deps.invoiceService.markPaid(input);
     sendSingle(res, toInvoiceDetailResponse(invoice));
+  },
+
+  getCounts: async (req: Request, res: Response): Promise<void> => {
+    const organizationId = req.organizationId ?? '';
+    const draftCount = await deps.invoiceService.getDraftCount(organizationId);
+    sendSingle(res, { draft: draftCount });
   },
 });

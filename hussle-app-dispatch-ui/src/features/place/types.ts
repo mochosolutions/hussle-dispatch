@@ -7,6 +7,13 @@ export type FacilityType =
   | 'PORT'
   | 'RAIL_YARD'
   | 'DROP_YARD'
+  | 'TRUCK_STOP'
+  | 'RETAIL'
+  | 'FARM'
+  | 'CONSTRUCTION_SITE'
+  | 'MILITARY'
+  | 'GOVERNMENT'
+  | 'RESIDENTIAL'
   | 'OTHER';
 
 export type DockType = 'DOCK_HIGH' | 'GROUND_LEVEL' | 'BOTH' | 'NONE';
@@ -95,4 +102,22 @@ export interface PaginationMeta {
   total: number;
   totalPages: number;
   hasMore: boolean;
+}
+
+export interface AddressSearchResult {
+  source: 'SAVED' | 'EXTERNAL';
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  lat: number | null;
+  lng: number | null;
+  facilityType: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  appointmentRequired: boolean;
+  lumperRequired: boolean;
+  ppeRequired: boolean;
 }

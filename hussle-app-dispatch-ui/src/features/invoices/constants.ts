@@ -1,3 +1,4 @@
+import type { ChipColor } from 'types/chipColor';
 import type { InvoiceStatus, InvoiceType } from './types';
 
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
@@ -6,21 +7,23 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   SENT: 'Sent',
   PARTIALLY_PAID: 'Partially Paid',
   PAID: 'Paid',
+  OVERDUE: 'Overdue',
   VOID: 'Void',
 };
 
-export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, string> = {
-  DRAFT: '#757575',
-  APPROVED: '#1976d2',
-  SENT: '#0288d1',
-  PARTIALLY_PAID: '#ed6c02',
-  PAID: '#2e7d32',
-  VOID: '#d32f2f',
+export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, ChipColor> = {
+  DRAFT: 'default',
+  APPROVED: 'info',
+  SENT: 'primary',
+  PARTIALLY_PAID: 'warning',
+  PAID: 'success',
+  OVERDUE: 'error',
+  VOID: 'default',
 };
 
 export const INVOICE_TYPE_LABELS: Record<InvoiceType, string> = {
-  carrier: 'Carrier',
-  broker: 'Broker',
+  CUSTOMER: 'Customer',
+  DISPATCH_FEE: 'Dispatch Fee',
 };
 
 export const INVOICE_STATUS_OPTIONS: InvoiceStatus[] = [
@@ -29,6 +32,7 @@ export const INVOICE_STATUS_OPTIONS: InvoiceStatus[] = [
   'SENT',
   'PARTIALLY_PAID',
   'PAID',
+  'OVERDUE',
   'VOID',
 ];
 

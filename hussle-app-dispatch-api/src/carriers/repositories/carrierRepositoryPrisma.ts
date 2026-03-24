@@ -117,7 +117,7 @@ export const carrierRepositoryPrisma = (
       data: {
         managedByOrgId: organizationId,
         ...input,
-      },
+      } as Prisma.CarrierUncheckedCreateInput,
       include: selectWithCounts,
     }),
 
@@ -137,7 +137,7 @@ export const carrierRepositoryPrisma = (
         data: {
           managedByOrgId: organizationId,
           ...payload.carrier,
-        },
+        } as Prisma.CarrierUncheckedCreateInput,
         include: selectWithCounts,
       });
 
@@ -225,7 +225,7 @@ export const carrierRepositoryPrisma = (
       },
       data: {
         ...input,
-      },
+      } as Prisma.CarrierUncheckedUpdateInput,
       include: selectWithCounts,
     }),
 

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import type Redis from 'ioredis';
 import { logger } from '@/shared/utils/logger';
+import { OrganizationStatus } from '@/auth/constants/enums';
 
 export interface AuthPayload {
   userId: string;
@@ -24,10 +25,7 @@ const resolveJwtSecret = (): string => {
   return secret;
 };
 
-export const createAppAuthMiddleware = (options: {
-  redis: Redis;
-  jwtSecret?: string;
-}) => {
+export const createAppAuthMiddleware = (options: { redis: Redis; jwtSecret?: string }) => {
   const { redis: redisClient, jwtSecret = resolveJwtSecret() } = options;
 
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -40,7 +38,7 @@ export const createAppAuthMiddleware = (options: {
       });
 
       if (!token) {
-        res.status(401).json({ error: 'Missing authentication token' });
+        res.status(401).json({ errors: [{ message: 'Missing authentication token' }] });
         return;
       }
 
@@ -57,7 +55,7 @@ export const createAppAuthMiddleware = (options: {
       });
 
       if (!sessionRaw) {
-        res.status(401).json({ error: 'Session expired or not found' });
+        res.status(401).json({ errors: [{ message: 'Session expired or not found' }] });
         return;
       }
 
@@ -68,12 +66,12 @@ export const createAppAuthMiddleware = (options: {
           sessionId,
           correlationId: req.correlationId,
         });
-        res.status(401).json({ error: 'Session has been revoked' });
+        res.status(401).json({ errors: [{ message: 'Session has been revoked' }] });
         return;
       }
 
-      if (decoded.orgStatus !== 'active') {
-        res.status(403).json({ error: 'Organization is suspended or inactive' });
+      if (decoded.orgStatus !== OrganizationStatus.ACTIVE) {
+        res.status(403).json({ errors: [{ message: 'Organization is suspended or inactive' }] });
         return;
       }
 
@@ -86,7 +84,7 @@ export const createAppAuthMiddleware = (options: {
         error: err instanceof Error ? err.message : 'Unknown error',
         correlationId: req.correlationId,
       });
-      res.status(401).json({ error: 'Invalid app token' });
+      res.status(401).json({ errors: [{ message: 'Invalid app token' }] });
     }
   };
 };

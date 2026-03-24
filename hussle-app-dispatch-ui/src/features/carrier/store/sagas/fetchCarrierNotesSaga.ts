@@ -18,7 +18,7 @@ export function* fetchCarrierNotesSaga(
       carrierId,
     )) as SagaReturnType<typeof getCarrierNotes>;
 
-    yield put(fetchCarrierNotesSuccess({ carrierId, notes: response.notes }));
+    yield put(fetchCarrierNotesSuccess({ carrierId, notes: response }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load carrier notes';

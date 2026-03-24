@@ -4,8 +4,10 @@ interface WeeklyGrossItemResponse {
   vehicleId: string;
   unitNumber: string;
   carrierName: string;
-  revenue: string;
-  target: string;
+  driverName: string | null;
+  loadCount: number;
+  revenue: number;
+  target: number;
   percent: number;
 }
 
@@ -16,7 +18,9 @@ export const toWeeklyGrossResponse = (
     vehicleId: item.vehicleId,
     unitNumber: item.unitNumber,
     carrierName: item.carrierName,
-    revenue: item.revenue.toFixed(2),
-    target: item.target.toFixed(2),
+    driverName: item.driverName,
+    loadCount: item.loadCount,
+    revenue: Number(item.revenue.toFixed(2)),
+    target: Number(item.target.toFixed(2)),
     percent: item.percent,
   }));

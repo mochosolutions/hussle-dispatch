@@ -1,9 +1,11 @@
+import type { TruckExpense } from '@prisma/client';
 import type { ParsedQs } from 'qs';
 import type { LoadHistoryResult } from '@/shared/loadQueries';
 import type {
   CreateVehicleInput,
   ListVehiclesResult,
   UpdateVehicleInput,
+  VehicleExpenseInput,
   VehicleListFilters,
   VehicleWithExpenses,
 } from './vehicleTypes';
@@ -60,6 +62,19 @@ export interface GetVehicleLoadHistoryServiceInput {
   query: ParsedQs;
 }
 
+export interface CreateExpenseServiceInput {
+  vehicleId: string;
+  organizationId: string;
+  role: string;
+  input: VehicleExpenseInput;
+}
+
+export interface ListExpensesServiceInput {
+  vehicleId: string;
+  organizationId: string;
+  role: string;
+}
+
 export interface VehicleService {
   createVehicle(input: CreateVehicleServiceInput): Promise<VehicleWithExpenses>;
   listVehicles(input: ListVehiclesServiceInput): Promise<ListVehiclesResult>;
@@ -69,4 +84,6 @@ export interface VehicleService {
   assignDriver(input: AssignDriverServiceInput): Promise<VehicleWithExpenses>;
   unassignDriver(input: UnassignDriverServiceInput): Promise<VehicleWithExpenses>;
   getLoadHistory(input: GetVehicleLoadHistoryServiceInput): Promise<LoadHistoryResult>;
+  createExpense(input: CreateExpenseServiceInput): Promise<TruckExpense>;
+  listExpenses(input: ListExpensesServiceInput): Promise<TruckExpense[]>;
 }

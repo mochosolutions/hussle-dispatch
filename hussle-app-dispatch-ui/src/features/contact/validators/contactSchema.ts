@@ -1,23 +1,13 @@
 import * as Yup from 'yup';
 import type { InferType } from 'yup';
-import type { ContactType } from '../types';
 
 export const contactSchema = Yup.object({
-  companyName: Yup.string().required('Company name is required').min(2, 'Min 2 characters'),
-  type: Yup.mixed<ContactType>()
-    .oneOf(['BROKER', 'SHIPPER', 'CONSIGNEE', 'FACTORING'], 'Invalid contact type')
-    .required('Type is required'),
-  contactName: Yup.string().default(''),
+  customerId: Yup.string().uuid('Invalid customer ID').default(''),
+  role: Yup.string().trim().default(''),
+  firstName: Yup.string().trim().min(3, 'First name must be at least 3 characters').required('First name is required'),
+  lastName: Yup.string().trim().min(3, 'Last name must be at least 3 characters').required('Last name is required'),
   phone: Yup.string().default(''),
   email: Yup.string().email('Invalid email').default(''),
-  mcNumber: Yup.string().default(''),
-  address: Yup.string().default(''),
-  city: Yup.string().default(''),
-  state: Yup.string().default(''),
-  zip: Yup.string().default(''),
-  paymentTerms: Yup.string().default('Net 30'),
-  paymentTermsDays: Yup.number().min(0, 'Must be 0 or greater').default(30),
-  quickPayDiscount: Yup.string().default(''),
   notes: Yup.string().default(''),
 }).required();
 

@@ -136,7 +136,7 @@ export const dashboardQueryPrisma = (
       where: {
         managedByOrgId: organizationId,
         insuranceExpiry: { lte: cutoff },
-        status: 'active',
+        status: 'ACTIVE',
         deletedAt: null,
       },
       select: { id: true, name: true, insuranceExpiry: true },

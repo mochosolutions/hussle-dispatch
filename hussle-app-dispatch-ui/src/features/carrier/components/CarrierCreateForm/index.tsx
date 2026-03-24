@@ -40,7 +40,7 @@ import type { FormHandle, FormStateChangeCallback } from '../../../../mocho/type
 
 const isCreateMode = (value: string): value is CreateMode => value === 'full' || value === 'quick';
 const isSubmitStatus = (value: string): value is SubmitStatus =>
-  value === 'active' || value === 'pending';
+  value === 'ACTIVE' || value === 'PENDING';
 
 export interface CarrierCreateFormWithAssets extends CarrierFormValues {
   drivers: DriverFormEntry[];
@@ -66,7 +66,7 @@ interface CarrierCreateFormProps {
 const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
   ({ onSubmit, onStateChange }, ref) => {
     const [mcLookup, setMcLookup] = useState<LookupStatus>('idle');
-    const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('active');
+    const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('ACTIVE');
     const [vehicles, setVehicles] = useState<VehicleFormEntry[]>([]);
     const [drivers, setDrivers] = useState<DriverFormEntry[]>([]);
     const [showVehicleForm, setShowVehicleForm] = useState(false);
@@ -429,23 +429,23 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                   },
                 }}
               >
-                <ToggleButton value="active">
+                <ToggleButton value="ACTIVE">
                   <Typography
                     variant="caption"
                     sx={{
                       fontWeight: 600,
-                      color: submitStatus === 'active' ? 'success.main' : 'text.disabled',
+                      color: submitStatus === 'ACTIVE' ? 'success.main' : 'text.disabled',
                     }}
                   >
-                    ● Approved
+                    ● Active
                   </Typography>
                 </ToggleButton>
-                <ToggleButton value="pending">
+                <ToggleButton value="PENDING">
                   <Typography
                     variant="caption"
                     sx={{
                       fontWeight: 600,
-                      color: submitStatus === 'pending' ? 'warning.main' : 'text.disabled',
+                      color: submitStatus === 'PENDING' ? 'warning.main' : 'text.disabled',
                     }}
                   >
                     ● Pending Review

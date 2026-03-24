@@ -29,8 +29,8 @@ export const SuccessView = ({
 
   if (mode === 'quick') {
     statusLabel = 'Draft';
-  } else if (submitStatus === 'active') {
-    statusLabel = 'Approved';
+  } else if (submitStatus === 'ACTIVE') {
+    statusLabel = 'Active';
   }
 
   return (

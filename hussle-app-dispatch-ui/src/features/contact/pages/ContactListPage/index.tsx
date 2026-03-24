@@ -4,72 +4,183 @@ import {
   Stack,
   TextField,
   Box,
-  Typography,
-  Tabs,
-  Tab,
-  Chip,
   Button,
+  Grid,
+  Select,
   MenuItem,
+  OutlinedInput,
+  InputLabel,
+  Chip,
+  Typography,
 } from '@mui/material';
-import type { ICellRendererParams } from 'ag-grid-community';
-import { MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
+import type { SelectChangeEvent } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
+import { MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
+import { KpiCell } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
-import type { Contact, ContactType } from '../../types';
+import type { Contact } from '../../types';
 import { fetchContactsRequest } from '../../store/reducers/contactPageSlice';
 import {
-  selectAllContacts,
   selectContactListLoading,
+  selectAllContacts,
 } from '../../store/selectors/contactSelectors';
-import { CONTACT_TYPE_LABELS, CONTACT_TYPE_COLORS } from '../../constants';
 import { ContactInfoDrawer } from '../../components/ContactInfoDrawer';
 
-const TYPE_FILTER_OPTIONS = [
-  { value: 'all', label: 'All Types' },
-  { value: 'BROKER', label: 'Broker' },
-  { value: 'SHIPPER', label: 'Shipper' },
-  { value: 'CONSIGNEE', label: 'Consignee' },
-  { value: 'FACTORING', label: 'Factoring' },
-];
+const getInitials = (firstName: string, lastName: string): string => {
+  const first = firstName?.charAt(0) ?? '';
+  const last = lastName?.charAt(0) ?? '';
+  return `${first}${last}`.toUpperCase();
+};
 
-type ContactTab = 'all' | 'BROKER' | 'SHIPPER' | 'CONSIGNEE' | 'FACTORING';
+const capitalize = (s: string | null): string => {
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
-const ContactTypeBadge = (params: ICellRendererParams<Contact>) => {
-  const contactType = params.value as ContactType | undefined;
-  if (!contactType) {
-    return null;
+const ContactNameCellRenderer = (params: { data?: Contact }) => {
+  const c = params.data;
+  if (!c) return null;
+  const fullName = [c.firstName, c.lastName].filter(Boolean).join(' ');
+  const initials = getInitials(c.firstName, c.lastName);
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
+      <Box
+        sx={{
+          width: 32,
+          height: 32,
+          borderRadius: '50%',
+          bgcolor: 'primary.lighter',
+          color: 'primary.main',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+      >
+        {initials}
+      </Box>
+      <Box>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+          {fullName}
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
+const RoleCellRenderer = (params: { value?: string | null }) => {
+  if (!params.value) return null;
+  return (
+    <Box
+      sx={{
+        px: 1.5,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor: 'grey.100',
+        color: 'text.secondary',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        display: 'inline-block',
+        textTransform: 'capitalize',
+      }}
+    >
+      {params.value}
+    </Box>
+  );
+};
+
+interface ContactWithCustomer extends Contact {
+  customer?: { companyName?: string } | null;
+}
+
+const PhoneCellRenderer = (params: { value?: string | null }) => {
+  const theme = useTheme();
+  if (!params.value) return null;
+  return (
+    <a
+      href={`tel:${params.value}`}
+      style={{
+        color: theme.palette.primary.main,
+        fontWeight: 600,
+        textDecoration: 'none',
+      }}
+    >
+      {params.value}
+    </a>
+  );
+};
+
+const EmailCellRenderer = (params: { value?: string | null }) => {
+  const theme = useTheme();
+  if (!params.value) return null;
+  return (
+    <a
+      href={`mailto:${params.value}`}
+      style={{
+        color: theme.palette.primary.main,
+        textDecoration: 'none',
+      }}
+    >
+      {params.value}
+    </a>
+  );
+};
+
+const CustomerCellRenderer = (params: { data?: ContactWithCustomer }) => {
+  const contact = params.data;
+  if (!contact) return null;
+
+  const companyName = contact.customer?.companyName;
+
+  if (companyName) {
+    return (
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        {companyName}
+      </Typography>
+    );
   }
+
   return (
     <Chip
-      label={CONTACT_TYPE_LABELS[contactType]}
-      color={CONTACT_TYPE_COLORS[contactType] as 'primary' | 'success' | 'warning' | 'info'}
+      label="Independent"
       size="small"
-      variant="outlined"
+      sx={{
+        bgcolor: 'grey.200',
+        color: 'text.secondary',
+        fontSize: '0.7rem',
+        fontWeight: 600,
+        height: 22,
+      }}
     />
   );
 };
 
-const ContactLocationRenderer = (params: ICellRendererParams<Contact>) => {
-  const { city, state } = params.data ?? {};
-  if (!city && !state) {
-    return '';
-  }
-  return [city, state].filter(Boolean).join(', ');
-};
+const ROLE_OPTIONS = [
+  { value: 'all', label: 'All Roles' },
+  { value: 'dispatch', label: 'Dispatch' },
+  { value: 'billing', label: 'Billing' },
+  { value: 'warehouse manager', label: 'Warehouse Manager' },
+  { value: 'logistics', label: 'Logistics' },
+  { value: 'accounting', label: 'Accounting' },
+];
 
 const ContactListPage = () => {
-  const [activeTab, setActiveTab] = useState<ContactTab>('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | undefined>(undefined);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const contacts = useSelector(selectAllContacts);
   const isLoading = useSelector(selectContactListLoading);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Initial fetch
   useEffect(() => {
     dispatch(fetchContactsRequest({ page: 1, limit: 25 }));
   }, [dispatch]);
@@ -89,30 +200,16 @@ const ContactListPage = () => {
             page: 1,
             limit: 25,
             search: query,
-            type: typeFilter === 'all' ? undefined : typeFilter,
           }),
         );
       }, 300);
     },
-    [dispatch, typeFilter],
+    [dispatch],
   );
 
-  const handleTabChange = useCallback(
-    (_event: React.SyntheticEvent, value: ContactTab) => {
-      setActiveTab(value);
-      const type = value === 'all' ? undefined : value;
-      setTypeFilter(value);
-      dispatch(
-        fetchContactsRequest({
-          page: 1,
-          limit: 25,
-          search: searchQuery,
-          type,
-        }),
-      );
-    },
-    [dispatch, searchQuery],
-  );
+  const handleRoleChange = useCallback((event: SelectChangeEvent) => {
+    setRoleFilter(event.target.value);
+  }, []);
 
   const handleOpenCreate = useCallback(() => {
     setEditingContact(undefined);
@@ -124,89 +221,117 @@ const ContactListPage = () => {
     setDrawerOpen(true);
   }, []);
 
+  const handleRowClicked = useCallback(
+    (params: { data?: Contact }) => {
+      if (params.data) {
+        navigate(`/contacts/${params.data.id}`);
+      }
+    },
+    [navigate],
+  );
+
   const handleDrawerClose = useCallback(() => {
     setDrawerOpen(false);
     setEditingContact(undefined);
   }, []);
 
-  const filteredContacts = useMemo(() => {
-    if (activeTab === 'all') {
-      return contacts;
-    }
-    return contacts.filter((c) => c.type === activeTab);
-  }, [contacts, activeTab]);
+  const contacts = useSelector(selectAllContacts);
 
-  const tabOptions = useMemo(
+  const filteredContacts = useMemo(() => {
+    if (roleFilter === 'all') return contacts;
+    return contacts.filter((c) => c.role === roleFilter);
+  }, [contacts, roleFilter]);
+
+  const roleCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    contacts.forEach((c) => {
+      const role = c.role ?? 'unassigned';
+      counts[role] = (counts[role] ?? 0) + 1;
+    });
+    return counts;
+  }, [contacts]);
+
+  const kpiItems = useMemo(
     () => [
-      { key: 'all' as const, label: 'All', count: contacts.length },
       {
-        key: 'BROKER' as const,
-        label: 'Brokers',
-        count: contacts.filter((c) => c.type === 'BROKER').length,
+        label: 'Total Contacts',
+        value: String(contacts.length),
+        subtitle: `${Object.keys(roleCounts).length} roles`,
       },
-      {
-        key: 'SHIPPER' as const,
-        label: 'Shippers',
-        count: contacts.filter((c) => c.type === 'SHIPPER').length,
-      },
-      {
-        key: 'CONSIGNEE' as const,
-        label: 'Consignees',
-        count: contacts.filter((c) => c.type === 'CONSIGNEE').length,
-      },
-      {
-        key: 'FACTORING' as const,
-        label: 'Factoring',
-        count: contacts.filter((c) => c.type === 'FACTORING').length,
-      },
+      ...Object.entries(roleCounts)
+        .slice(0, 3)
+        .map(([role, count]) => ({
+          label: capitalize(role),
+          value: String(count),
+          subtitle: `${role} contacts`,
+        })),
     ],
-    [contacts],
+    [contacts.length, roleCounts],
   );
 
   const columnDefs = useMemo(
     () => [
       {
-        headerName: 'Company',
-        field: 'companyName' as const,
-        minWidth: 180,
+        headerName: 'Name',
+        minWidth: 200,
         flex: 1.5,
+        valueGetter: (params: { data?: Contact }) =>
+          [params.data?.firstName, params.data?.lastName].filter(Boolean).join(' ') || '',
+        cellRenderer: ContactNameCellRenderer,
       },
       {
-        headerName: 'Type',
-        field: 'type' as const,
-        minWidth: 120,
-        cellRenderer: ContactTypeBadge,
-      },
-      {
-        headerName: 'Contact',
-        field: 'contactName' as const,
-        minWidth: 140,
+        headerName: 'Role',
+        field: 'role' as const,
+        minWidth: 160,
         flex: 1,
+        cellRenderer: RoleCellRenderer,
       },
       {
         headerName: 'Phone',
         field: 'phone' as const,
-        minWidth: 130,
+        minWidth: 140,
+        cellRenderer: PhoneCellRenderer,
       },
       {
         headerName: 'Email',
         field: 'email' as const,
-        minWidth: 180,
+        minWidth: 200,
         flex: 1,
+        cellRenderer: EmailCellRenderer,
       },
       {
-        headerName: 'Payment Terms',
-        field: 'paymentTerms' as const,
-        minWidth: 130,
+        headerName: 'Customer',
+        minWidth: 160,
+        flex: 1,
+        cellRenderer: CustomerCellRenderer,
       },
       {
-        headerName: 'Location',
-        field: 'city' as const,
-        minWidth: 140,
-        cellRenderer: ContactLocationRenderer,
+        headerName: '',
+        field: 'actions' as const,
+        minWidth: 80,
+        maxWidth: 80,
+        sortable: false,
+        cellRenderer: (params: { data?: Contact }) => {
+          if (!params.data) return null;
+          return (
+            <Button
+              size="small"
+              variant="text"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (params.data) {
+                  handleOpenEdit(params.data);
+                }
+              }}
+              sx={{ minWidth: 'auto', fontWeight: 600, fontSize: '0.75rem' }}
+            >
+              Edit
+            </Button>
+          );
+        },
       },
     ],
-    [],
+    [handleOpenEdit],
   );
 
   const defaultColDef = useMemo(
@@ -222,9 +347,9 @@ const ContactListPage = () => {
 
   return (
     <PageWrapper isLoading={false} errorContext="ContactListPage" sx={{ gap: 2 }}>
-      <PageHeader
+      <ListLayout
         title="Contacts"
-        headerActions={
+        primaryAction={
           <Stack direction="row" spacing={1}>
             <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
@@ -232,83 +357,95 @@ const ContactListPage = () => {
             </Button>
           </Stack>
         }
-      />
-
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
       >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            sx={{ minHeight: 40 }}
-          >
-            {tabOptions.map((tabOption) => (
-              <Tab
-                key={tabOption.key}
-                value={tabOption.key}
-                label={
-                  <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
-                    <Chip label={tabOption.count} size="small" />
-                  </Stack>
-                }
-                sx={{ minHeight: 40 }}
-              />
-            ))}
-          </Tabs>
-          <Box>
-            <TextField
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search by company, contact name..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Box>
-        </Stack>
+        <Grid container spacing={2} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}>
+          {kpiItems.map((kpiItem) => (
+            <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
+              <MainCard sx={{ height: '100%' }}>
+                <KpiCell label={kpiItem.label} value={kpiItem.value} sub={kpiItem.subtitle} />
+              </MainCard>
+            </Grid>
+          ))}
+        </Grid>
 
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box
-            sx={{
-              minHeight: { xs: 300, md: 420 },
-              flex: 1,
-            }}
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: 3,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}
+        >
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={filteredContacts}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={filteredContacts.length}
-              rowCountLabel="contacts"
-              noDataMessage="No contacts found"
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: false,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 52,
-                onRowClicked: (event) => {
-                  if (event.data) {
-                    handleOpenEdit(event.data as Contact);
-                  }
-                },
-              }}
-              loading={isLoading}
-            />
-          </Box>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              spacing={2}
+              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Box>
+                <InputLabel sx={{ fontSize: '0.75rem', mb: 0.5 }}>Role</InputLabel>
+                <Select
+                  value={roleFilter}
+                  onChange={handleRoleChange}
+                  input={<OutlinedInput size="small" />}
+                  sx={{ minWidth: 160 }}
+                >
+                  {ROLE_OPTIONS.map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                      {opt.value === 'all' ? ` (${contacts.length})` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
+              <Box>
+                <InputLabel sx={{ fontSize: '0.75rem', mb: 0.5 }}>Search</InputLabel>
+                <TextField
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search by name, email..."
+                  size="small"
+                  sx={{ width: { xs: '100%', lg: 320 } }}
+                />
+              </Box>
+            </Stack>
+
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box
+                sx={{
+                  minHeight: { xs: 300, md: 420 },
+                  flex: 1,
+                }}
+              >
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={filteredContacts}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={filteredContacts.length}
+                  rowCountLabel="contacts"
+                  noDataMessage="No contacts found"
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: false,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 52,
+                    onRowClicked: handleRowClicked,
+                  }}
+                  loading={isLoading}
+                />
+              </Box>
+            </Box>
+          </MainCard>
         </Box>
-      </MainCard>
+      </ListLayout>
 
       {drawerOpen && (
         <ContactInfoDrawer contact={editingContact} onClose={handleDrawerClose} />

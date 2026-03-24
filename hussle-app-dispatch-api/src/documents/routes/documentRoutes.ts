@@ -5,7 +5,9 @@ import type { DocumentControllers } from '../controllers/documentController';
 import {
   presignValidator,
   confirmValidator,
+  documentIdValidator,
   listDocumentsValidator,
+  bulkDownloadValidator,
 } from '../validators/documentValidators';
 
 export const createDocumentRoutes = (controllers: DocumentControllers): express.Router => {
@@ -30,6 +32,34 @@ export const createDocumentRoutes = (controllers: DocumentControllers): express.
     requireAuth,
     validateRequest(listDocumentsValidator),
     controllers.list,
+  );
+
+  router.get(
+    '/:id',
+    requireAuth,
+    validateRequest(documentIdValidator),
+    controllers.getById,
+  );
+
+  router.get(
+    '/:id/download',
+    requireAuth,
+    validateRequest(documentIdValidator),
+    controllers.download,
+  );
+
+  router.patch(
+    '/:id/archive',
+    requireAuth,
+    validateRequest(documentIdValidator),
+    controllers.archive,
+  );
+
+  router.post(
+    '/bulk-download',
+    requireAuth,
+    validateRequest(bulkDownloadValidator),
+    controllers.bulkDownload,
   );
 
   return router;

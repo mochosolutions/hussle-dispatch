@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -9,13 +10,22 @@ import {
   Typography,
   Stack,
   Alert,
+  Checkbox,
+  FormControlLabel,
   CircularProgress,
-  Chip,
 } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import { StatusBadge } from 'components/Statusbadge';
 import { useDispatch } from 'store';
 import { transitionLoadStatusRequest } from '../../store/reducers';
 import { STATUS_LABELS } from '../../constants';
 import type { LoadStatus, StatusTransitionWarning } from '../../types';
+
+interface PrerequisiteCheck {
+  label: string;
+  met: boolean;
+}
 
 interface StatusChangeDialogProps {
   open: boolean;
@@ -25,10 +35,12 @@ interface StatusChangeDialogProps {
   currentStatus: LoadStatus;
   targetStatus: LoadStatus;
   warnings?: StatusTransitionWarning[];
+  prerequisites?: PrerequisiteCheck[];
   isLoading?: boolean;
 }
 
 const NOTES_REQUIRED_STATUSES: LoadStatus[] = ['EXCEPTION', 'CANCELED', 'TONU'];
+const DESTRUCTIVE_STATUSES: LoadStatus[] = ['CANCELED', 'EXCEPTION', 'TONU'];
 
 export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   open,
@@ -38,27 +50,34 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   currentStatus,
   targetStatus,
   warnings = [],
+  prerequisites = [],
   isLoading = false,
 }) => {
   const dispatch = useDispatch();
   const [notes, setNotes] = useState('');
+  const [warningAcknowledged, setWarningAcknowledged] = useState(false);
 
+  const hasUnmetPrereqs = prerequisites.some((p) => !p.met);
   const isNotesRequired = NOTES_REQUIRED_STATUSES.includes(targetStatus);
-  const isConfirmDisabled = isLoading || (isNotesRequired && notes.trim().length === 0);
+  const isConfirmDisabled =
+    isLoading ||
+    hasUnmetPrereqs ||
+    (isNotesRequired && notes.trim().length === 0) ||
+    (warnings.length > 0 && !warningAcknowledged);
 
   const handleConfirm = useCallback(() => {
     dispatch(
       transitionLoadStatusRequest({
         loadId,
         input: {
-          targetStatus,
+          status: targetStatus,
           notes: notes.trim() || undefined,
-          overrideWarnings: warnings.length > 0,
+          overrideWarnings: warningAcknowledged,
         },
       }),
     );
     onClose();
-  }, [dispatch, loadId, targetStatus, notes, warnings, onClose]);
+  }, [dispatch, loadId, targetStatus, notes, warningAcknowledged, onClose]);
 
   const handleNotesChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,20 +94,44 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Chip
-              label={STATUS_LABELS[currentStatus]}
-              size="small"
-              variant="outlined"
-            />
+            <StatusBadge status={currentStatus} />
             <Typography variant="body2" color="text.secondary">
               &rarr;
             </Typography>
-            <Chip
-              label={STATUS_LABELS[targetStatus]}
-              size="small"
-              color="primary"
-            />
+            <StatusBadge status={targetStatus} />
           </Stack>
+
+          {DESTRUCTIVE_STATUSES.includes(targetStatus) && (
+            <Alert severity="error">
+              This action cannot be easily reversed. The load will be marked
+              as {STATUS_LABELS[targetStatus]}.
+            </Alert>
+          )}
+
+          {prerequisites.length > 0 && (
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
+                Prerequisites
+              </Typography>
+              <Stack spacing={0.5}>
+                {prerequisites.map((prereq) => (
+                  <Box key={prereq.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    {prereq.met ? (
+                      <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                    ) : (
+                      <RadioButtonUncheckedIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                    )}
+                    <Typography
+                      variant="body2"
+                      color={prereq.met ? 'text.secondary' : 'error.main'}
+                    >
+                      {prereq.label}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          )}
 
           {warnings.length > 0 && (
             <Stack spacing={1}>
@@ -104,6 +147,17 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
                   )}
                 </Alert>
               ))}
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={warningAcknowledged}
+                    onChange={(e) => setWarningAcknowledged(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label="I understand these warnings and want to proceed"
+                sx={{ mt: 0.5 }}
+              />
             </Stack>
           )}
 

@@ -6,37 +6,68 @@
  */
 
 export type DocumentType =
-  | 'BOL'
-  | 'POD'
-  | 'RATE_CONFIRMATION'
-  | 'INSURANCE'
+  | 'BROKER_RATE_CON'
+  | 'BOL_UNSIGNED'
+  | 'BOL_SIGNED'
+  | 'LUMPER_RECEIPT'
+  | 'SCALE_TICKET'
   | 'INVOICE'
+  | 'DISPATCH_AGREEMENT'
+  | 'INSURANCE_CERT'
   | 'W9'
-  | 'CARRIER_AGREEMENT'
+  | 'CARRIER_PACKET'
+  | 'POD'
+  | 'HAZMAT'
+  | 'LOA'
+  | 'DETENTION'
+  | 'LICENSE'
+  | 'REGISTRATION'
+  | 'INSPECTION_CERT'
   | 'OTHER';
+
+export type DocumentEntityType = 'load' | 'carrier' | 'driver' | 'vehicle';
 
 export type UploadStatus = 'idle' | 'presigning' | 'uploading' | 'confirming' | 'complete' | 'error';
 
 export interface Document {
   id: string;
-  loadId?: string;
-  carrierId?: string;
-  documentType: DocumentType;
-  filename: string;
-  mimeType: string;
-  size: number;
-  url: string;
+  organizationId: string;
+  entityType: DocumentEntityType;
+  entityId: string;
+  type: DocumentType;
+  fileName: string;
+  fileSize: number | null;
+  mimeType: string | null;
+  s3Url: string;
+  uploadStatus: string;
+  isArchived: boolean;
+  notes: string | null;
+  expiresAt: string | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
-  updatedAt: string;
+}
+
+export interface DocumentMetadata {
+  licenseNumber?: string;
+  issuingState?: string;
+  cdlClass?: string;
+  policyNumber?: string;
+  issuingAuthority?: string;
+}
+
+export interface BulkDownloadResult {
+  downloads: Array<{ documentId: string; fileName: string; presignedUrl: string }>;
+  errors: Array<{ documentId: string; reason: string }>;
 }
 
 export interface PresignInput {
-  filename: string;
+  fileName: string;
   mimeType: string;
-  size: number;
-  documentType: DocumentType;
-  loadId?: string;
-  carrierId?: string;
+  type: DocumentType;
+  entityType: DocumentEntityType;
+  entityId: string;
+  expiresAt?: string;
+  metadata?: DocumentMetadata;
 }
 
 export interface PresignResponse {
@@ -44,10 +75,16 @@ export interface PresignResponse {
   documentId: string;
 }
 
+export interface ConfirmDocumentInput {
+  expiresAt?: string;
+  metadata?: DocumentMetadata;
+}
+
 export interface ListDocumentsParams {
-  loadId?: string;
-  carrierId?: string;
-  documentType?: DocumentType;
+  entityType?: DocumentEntityType;
+  entityId?: string;
+  type?: DocumentType;
+  expiringBefore?: string;
   page?: number;
   limit?: number;
 }

@@ -44,6 +44,7 @@ import { logger } from '@/shared/utils/logger';
 import type { PrismaTransaction } from '@/config/database';
 // TODO: Refactor to use tenantRepositoryFactory or remove baseRepository dependency
 import { repositoryFactoryPrisma } from '@/shared/utils/repositoryFactoryPrisma';
+import { MembershipStatus } from '../constants/enums';
 import type { CreateUserInput, User, UserFilter, UserWithMemberships } from '../types/user';
 import { formatMembership } from './membershipRepositoryPrisma';
 
@@ -164,7 +165,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
           where: { id },
           include: {
             memberships: {
-              where: { deleted: false, status: 'active' },
+              where: { deleted: false, status: MembershipStatus.ACTIVE },
               include: {
                 organization: {
                   select: {
@@ -185,7 +186,7 @@ export const userRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction) =
 
         return {
           ...formatUser(user),
-          memberships: user.memberships.map(formatMembership),
+          memberships: user.memberships.map((m) => formatMembership(m)),
         };
       } catch (error) {
         logger.error('Error finding user by ID with memberships', { error });

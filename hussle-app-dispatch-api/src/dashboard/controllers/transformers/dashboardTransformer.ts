@@ -36,20 +36,24 @@ export const toKpisResponse = (kpis: DashboardKpis): KpisResponse => ({
 });
 
 interface AttentionItemResponse {
-  type: string;
+  id: string;
+  category: string;
+  title: string;
+  subtitle: string | null;
+  linkTo: string;
   severity: string;
-  message: string;
-  entityId: string;
-  entityType: string;
+  createdAt: string;
 }
 
 export const toAttentionItemsResponse = (
   items: AttentionItem[],
 ): AttentionItemResponse[] =>
   items.map((item) => ({
-    type: item.type,
+    id: item.id,
+    category: item.category,
+    title: item.title,
+    subtitle: item.subtitle,
+    linkTo: item.linkTo,
     severity: item.severity,
-    message: item.message,
-    entityId: item.entityId,
-    entityType: item.entityType,
+    createdAt: item.createdAt,
   }));

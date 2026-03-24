@@ -1,16 +1,19 @@
 import { prisma } from '@/shared/prisma';
-import { createInMemoryEventBus } from '@/shared/messaging';
+import { sharedEventBus } from '@/shared/messaging/sharedEventBus';
 import { logger } from '@/shared/utils/logger';
 import { createLoadsModule } from './compositionRoot';
 import { createLoadsRouter } from './routes/loadRoutes';
 
-// TODO: Replace with shared eventBus instance when module wiring is centralized
-const eventBus = createInMemoryEventBus();
-
 const loadsModule = createLoadsModule({
   prismaClient: prisma,
-  eventBus,
+  eventBus: sharedEventBus,
   logger,
 });
 
-export const loadsRouter = createLoadsRouter(loadsModule.controllers);
+export const loadsRouter = createLoadsRouter(
+  loadsModule.controllers,
+  loadsModule.stopControllers,
+  loadsModule.accessorialControllers,
+);
+
+export const loadStatusService = loadsModule.loadStatusService;

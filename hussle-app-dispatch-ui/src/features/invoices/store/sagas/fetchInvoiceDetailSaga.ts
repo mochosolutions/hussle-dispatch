@@ -16,7 +16,7 @@ export function* fetchInvoiceDetailSaga(
   try {
     const response = (yield call(getInvoice, id)) as SagaReturnType<typeof getInvoice>;
 
-    yield put(invoiceActions.upsertOne(response.invoice));
+    yield put(invoiceActions.upsertOne(response));
     yield put(fetchInvoiceDetailsSuccess({ id }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load invoice details';

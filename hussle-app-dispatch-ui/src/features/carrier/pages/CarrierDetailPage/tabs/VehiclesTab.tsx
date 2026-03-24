@@ -13,7 +13,8 @@ interface VehiclesTabProps {
 
 export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
   const dispatch = useDispatch();
-  const vehicles = useSelector(selectVehiclesByCarrierId(carrierId));
+  const vehiclesSelector = useMemo(() => selectVehiclesByCarrierId(carrierId), [carrierId]);
+  const vehicles = useSelector(vehiclesSelector);
 
   useEffect(() => {
     dispatch(fetchCarrierVehiclesRequest({ carrierId }));

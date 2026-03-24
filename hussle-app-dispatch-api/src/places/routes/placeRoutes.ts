@@ -2,7 +2,7 @@ import express from 'express';
 import { requireAuth, requireRole } from '@/middleware/auth';
 import { ROLES } from '@/config/roles';
 import { validateRequest } from '@/shared/middleware/validateRequest';
-import type { PlaceControllers } from '../controllers/placeController';
+import type { PlaceModuleControllers } from '../compositionRoot';
 import {
   createPlaceValidator,
   listPlacesValidator,
@@ -11,8 +11,11 @@ import {
   typeaheadValidator,
   updatePlaceValidator,
 } from '../validators/placeValidators';
+import { addressSearchValidator } from '../validators/addressSearchValidator';
+import { routeDistanceValidator } from '../validators/routeDistanceValidator';
+import { geocodingRateLimiter } from '@/shared/middleware/rateLimiter';
 
-export const createPlacesRouter = (controllers: PlaceControllers): express.Router => {
+export const createPlacesRouter = (controllers: PlaceModuleControllers): express.Router => {
   const router = express.Router();
 
   router.post(
@@ -28,6 +31,20 @@ export const createPlacesRouter = (controllers: PlaceControllers): express.Route
     requireAuth,
     validateRequest(typeaheadValidator),
     controllers.typeahead,
+  );
+  router.get(
+    '/address-search',
+    requireAuth,
+    geocodingRateLimiter,
+    validateRequest(addressSearchValidator),
+    controllers.addressSearch,
+  );
+  router.post(
+    '/route-distance',
+    requireAuth,
+    geocodingRateLimiter,
+    validateRequest(routeDistanceValidator),
+    controllers.routeDistance,
   );
   router.get(
     '/:id',

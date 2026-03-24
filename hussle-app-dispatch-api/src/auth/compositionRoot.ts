@@ -1,5 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type Redis from 'ioredis';
+import type { EventBus } from '@/shared/messaging/eventBus';
+import type { Logger } from '@/shared/utils/logger';
 import { createAuthControllers, type AuthControllers } from './controllers';
 import { PrismaTransactionManager, type PrismaTransaction } from '@/shared/prisma';
 import { getClientId } from '@/shared/utils/cognito';
@@ -12,8 +14,11 @@ import { userRepositoryPrisma } from './repositories/userRepositoryPrisma';
 import { tokenProvider } from './providers/tokenProvider';
 import { signupOrganizationUseCase } from './services';
 import type { SignupOrgInput, SignupOrgResult } from './types/signupOrgTypes';
-import { auditLogRepositoryPrisma } from '../audit/repositories/auditLogRepositoryPrisma';
-import type { CreateAuditLogInput } from '../audit/types/auditTypes';
+import type { AuthEnumConfig } from './types/authEnumConfig';
+import { createSignupOrgValidator } from './validators/signupOrgValidator';
+import { createUpdateOrganizationValidator } from './validators';
+import { createBulkOrgValidators } from './validators/bulkOrgValidator';
+import type { AuditLogPort } from './types/auditLogPort';
 
 interface AuthModuleConfig {
   allowedRoles: string[];
@@ -24,52 +29,67 @@ interface AuthModuleDeps {
   prismaClient: PrismaClient;
   redisClient: Redis;
   config: AuthModuleConfig;
+  enumConfig: AuthEnumConfig;
+  eventBus: EventBus;
+  logger: Logger;
+  auditLogRepo: AuditLogPort;
+}
+
+export interface AuthModuleValidators {
+  signupRequestObjValidator: ReturnType<typeof createSignupOrgValidator>['signupRequestObjValidator'];
+  updateOrganizationValidator: ReturnType<typeof createUpdateOrganizationValidator>;
+  bulkOrgValidators: ReturnType<typeof createBulkOrgValidators>;
 }
 
 export const createAuthModule = ({
   prismaClient,
   redisClient,
   config,
+  enumConfig,
+  eventBus,
+  logger,
+  auditLogRepo,
 }: AuthModuleDeps): {
   controllers: AuthControllers;
+  validators: AuthModuleValidators;
 } => {
   const transactionManager = new PrismaTransactionManager();
+
+  // Create validators from enum config
+  const { signupRequestObjValidator } = createSignupOrgValidator(enumConfig);
+  const updateOrgValidator = createUpdateOrganizationValidator(enumConfig);
+  const bulkOrgValidators = createBulkOrgValidators(enumConfig);
 
   const tokenProviderInstance = tokenProvider({ client: redisClient });
   const loginTokenProviderInstance = tokenProvider({ client: redisClient, singleSession: true });
   const signupTokenProviderInstance = tokenProvider({ client: redisClient });
   const refreshTokenProviderInstance = tokenProvider({ client: redisClient });
 
-  const auditLogRepo = {
-    create: (organizationId: string, input: CreateAuditLogInput) =>
-      auditLogRepositoryPrisma(prismaClient, organizationId).create(input),
-  };
-
   const orgRepo = {
     createOrganization: (
       ...args: Parameters<ReturnType<typeof organizationRepositoryPrisma>['createOrganization']>
-    ) => organizationRepositoryPrisma(prismaClient).createOrganization(...args),
+    ) => organizationRepositoryPrisma(prismaClient, undefined, enumConfig).createOrganization(...args),
     findAllOrganizations: (
       ...args: Parameters<ReturnType<typeof organizationRepositoryPrisma>['findAllOrganizations']>
-    ) => organizationRepositoryPrisma(prismaClient).findAllOrganizations(...args),
+    ) => organizationRepositoryPrisma(prismaClient, undefined, enumConfig).findAllOrganizations(...args),
     findOrganizationById: (
       ...args: Parameters<ReturnType<typeof organizationRepositoryPrisma>['findOrganizationById']>
-    ) => organizationRepositoryPrisma(prismaClient).findOrganizationById(...args),
+    ) => organizationRepositoryPrisma(prismaClient, undefined, enumConfig).findOrganizationById(...args),
     updateOrganization: (
       ...args: Parameters<ReturnType<typeof organizationRepositoryPrisma>['updateOrganization']>
-    ) => organizationRepositoryPrisma(prismaClient).updateOrganization(...args),
+    ) => organizationRepositoryPrisma(prismaClient, undefined, enumConfig).updateOrganization(...args),
     deleteOrganization: (
       ...args: Parameters<ReturnType<typeof organizationRepositoryPrisma>['deleteOrganization']>
-    ) => organizationRepositoryPrisma(prismaClient).deleteOrganization(...args),
+    ) => organizationRepositoryPrisma(prismaClient, undefined, enumConfig).deleteOrganization(...args),
   };
 
   const membershipRepo = {
     createMembership: (
       organizationId: string,
       data: Parameters<ReturnType<typeof membershipRepositoryPrisma>['create']>[0],
-    ) => membershipRepositoryPrisma(prismaClient, organizationId).create(data),
+    ) => membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).create(data),
     findMembershipByUserAndOrganization: (organizationId: string, userId: string) =>
-      membershipRepositoryPrisma(prismaClient, organizationId).findOneByFilter({
+      membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).findOneByFilter({
         userId,
         organizationId,
       }),
@@ -77,22 +97,23 @@ export const createAuthModule = ({
       const result = await membershipRepositoryPrisma(
         prismaClient,
         organizationId,
+        enumConfig,
       ).findMembershipByOrg();
 
       return result ?? [];
     },
     deleteMembership: (organizationId: string, membershipId: string) =>
-      membershipRepositoryPrisma(prismaClient, organizationId).deleteMembership(membershipId),
+      membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).deleteMembership(membershipId),
     updateMembership: (
       organizationId: string,
       membershipId: string,
       data: Parameters<ReturnType<typeof membershipRepositoryPrisma>['updateMembership']>[1],
     ) =>
-      membershipRepositoryPrisma(prismaClient, organizationId).updateMembership(membershipId, data),
+      membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).updateMembership(membershipId, data),
     findMembershipsByFilter: (organizationId: string, filter: Record<string, unknown>) =>
-      membershipRepositoryPrisma(prismaClient, organizationId).findMembershipsByFilter(filter),
+      membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).findMembershipsByFilter(filter),
     findMembershipsByUserId: (userId: string) =>
-      membershipRepositoryPrisma(prismaClient).findMembershipsByUserId(userId),
+      membershipRepositoryPrisma(prismaClient, undefined, enumConfig).findMembershipsByUserId(userId),
   };
 
   const inviteRepo = {
@@ -135,10 +156,18 @@ export const createAuthModule = ({
       authProvider,
       transactionManager,
       organizationRepository: {
-        create: (signupPayload, tx: PrismaTransaction) => {
-          const txOrgRepo = organizationRepositoryPrisma(tx);
-          return txOrgRepo.createOrganizationWithUserMembership(signupPayload);
-        },
+        create: (input, tx: PrismaTransaction) =>
+          organizationRepositoryPrisma(tx, undefined, enumConfig).createOrganization(input),
+        findSlugsWithPrefix: (slugPrefix: string) =>
+          organizationRepositoryPrisma(prismaClient, undefined, enumConfig).findSlugsWithPrefix(slugPrefix),
+      },
+      userRepository: {
+        create: (input, tx: PrismaTransaction) =>
+          userRepositoryPrisma(tx).createUser(input),
+      },
+      membershipRepository: {
+        create: (input, tx: PrismaTransaction) =>
+          membershipRepositoryPrisma(tx, undefined, enumConfig).create(input),
       },
       config: { defaultOrgRole: config.defaultOrgRole },
     });
@@ -157,7 +186,16 @@ export const createAuthModule = ({
     transactionManager,
     signupOrganization,
     allowedRoles: config.allowedRoles,
+    eventBus,
+    logger,
+    config: { defaultOrgRole: config.defaultOrgRole },
   });
 
-  return { controllers };
+  const validators: AuthModuleValidators = {
+    signupRequestObjValidator,
+    updateOrganizationValidator: updateOrgValidator,
+    bulkOrgValidators,
+  };
+
+  return { controllers, validators };
 };

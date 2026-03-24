@@ -22,6 +22,7 @@ export const listPlacesMapper = (req: Request): ListPlacesServiceInput => {
     facilityType: parseFacilityType(req.query['facilityType']),
     state: typeof req.query['state'] === 'string' ? req.query['state'] : undefined,
     contactId: typeof req.query['contactId'] === 'string' ? req.query['contactId'] : undefined,
+    customerId: typeof req.query['customerId'] === 'string' ? req.query['customerId'] : undefined,
   };
 
   return {

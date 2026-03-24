@@ -13,15 +13,6 @@ export function* deleteVehicleSaga(action: ReturnType<typeof deleteVehicleReques
   const { id } = action.payload;
 
   try {
-    const useMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-
-    if (useMock) {
-      yield put(vehicleActions.removeOne(id));
-      yield put(deleteVehicleSuccess({ id }));
-      yield call(enqueueSnackbar, 'Vehicle deleted', { variant: 'success' });
-      return;
-    }
-
     yield call(deleteVehicle, id);
 
     yield put(vehicleActions.removeOne(id));

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router';
 import { store } from 'store';
 import CarrierListPage from '../CarrierListPage';
 
@@ -28,11 +29,13 @@ jest.mock('@mocho/ui/components', () => ({
 
 const renderWithProviders = () =>
   render(
-    <Provider store={store}>
-      <ThemeProvider theme={createTheme()}>
-        <CarrierListPage />
-      </ThemeProvider>
-    </Provider>,
+    <MemoryRouter>
+      <Provider store={store}>
+        <ThemeProvider theme={createTheme()}>
+          <CarrierListPage />
+        </ThemeProvider>
+      </Provider>
+    </MemoryRouter>,
   );
 
 describe('CarrierListPage', () => {
@@ -51,9 +54,8 @@ describe('CarrierListPage', () => {
     expect(screen.getByTestId('data-grid')).toBeInTheDocument();
   });
 
-  it('renders the type filter dropdown', () => {
+  it('renders carrier tabs', () => {
     renderWithProviders();
-    // Select element rendered by MUI Select
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
 });

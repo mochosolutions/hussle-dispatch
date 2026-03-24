@@ -5,6 +5,7 @@ import {
   createCheckCallRequest,
   createCheckCallSuccess,
   createCheckCallFailure,
+  fetchLoadDetailsRequest,
 } from '../reducers/loadPageSlice';
 
 export function* createCheckCallSaga(
@@ -16,6 +17,7 @@ export function* createCheckCallSaga(
     (yield call(createCheckCall, loadId, data)) as SagaReturnType<typeof createCheckCall>;
 
     yield put(createCheckCallSuccess({ loadId }));
+    yield put(fetchLoadDetailsRequest({ id: loadId }));
     yield call(enqueueSnackbar, 'Check call created', { variant: 'success' });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create check call';

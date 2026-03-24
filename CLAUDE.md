@@ -50,6 +50,7 @@
 - Styling: MUI `sx` prop exclusively — no CSS modules, Tailwind, or styled-components
 - Forms: Formik + Yup validation, discriminated union field types in DynamicForm
 - Shared components from `@mocho/ui` — check REGISTRY-mocho-ui.md before creating new ones
+- Dirty Form Blocking: ALL drawer/form components must use `useDirtyFormBlocker` from `@mocho/ui/forms`. Closing a drawer with unsaved changes must show a confirmation dialog. Follow the carrier CompanyInfoDrawer pattern as reference.
 
 ## Testing Patterns
 - Framework: Jest + React Testing Library

@@ -1,5 +1,11 @@
 import Decimal from 'decimal.js';
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
+import {
+  ActiveLoadsConflictError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '@/shared/errors';
 import { createVehicleService } from '../vehicleService';
 
 const buildVehicle = () => ({
@@ -40,6 +46,14 @@ const buildVehicle = () => ({
   ],
 });
 
+const buildDriver = (
+  overrides?: Partial<{ id: string; carrierId: string; isAvailable: boolean }>,
+) => ({
+  id: overrides?.id ?? 'driver-1',
+  carrierId: overrides?.carrierId ?? '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
+  isAvailable: overrides?.isAvailable ?? true,
+});
+
 describe('vehicleService', () => {
   const mockVehicleRepository = {
     create: jest.fn(),
@@ -48,6 +62,8 @@ describe('vehicleService', () => {
     count: jest.fn(),
     update: jest.fn(),
     replaceExpenses: jest.fn(),
+    createExpense: jest.fn(),
+    findExpensesByVehicleId: jest.fn(),
     softDelete: jest.fn(),
     assignDriver: jest.fn(),
     unassignDriver: jest.fn(),
@@ -59,7 +75,9 @@ describe('vehicleService', () => {
   };
 
   const mockLoadRepository = {
+    findBlockingLoadIdsByDriver: jest.fn(),
     findBlockingLoadIdsByVehicle: jest.fn(),
+    countActiveByVehicleIds: jest.fn(),
   };
 
   const mockDriverQueryPort = {
@@ -87,6 +105,9 @@ describe('vehicleService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLoadRepository.findBlockingLoadIdsByDriver.mockResolvedValue([]);
+    mockLoadRepository.findBlockingLoadIdsByVehicle.mockResolvedValue([]);
+    mockLoadRepository.countActiveByVehicleIds.mockResolvedValue(new Map());
   });
 
   it('blocks owner_operator role from creating vehicles', async () => {
@@ -196,5 +217,76 @@ describe('vehicleService', () => {
         role: 'admin',
       }),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('atomically switches a driver from another idle vehicle', async () => {
+    const targetVehicle = {
+      ...buildVehicle(),
+      id: 'target-vehicle',
+      driverId: null,
+      unitNumber: 'TRK-009',
+    };
+    const currentVehicle = {
+      ...buildVehicle(),
+      id: 'current-vehicle',
+      driverId: 'driver-1',
+      unitNumber: 'TRK-002',
+    };
+
+    mockVehicleRepository.findById.mockResolvedValue(targetVehicle);
+    mockDriverQueryPort.findById.mockResolvedValue(buildDriver());
+    mockVehicleRepository.findByDriverId.mockResolvedValue(currentVehicle);
+    mockTransactionManager.runInTransaction.mockImplementation(async (operation) => operation({}));
+    mockVehicleRepository.assignDriver.mockResolvedValue({
+      ...targetVehicle,
+      driverId: 'driver-1',
+    });
+
+    const result = await vehicleService.assignDriver({
+      id: 'target-vehicle',
+      organizationId: 'org-1',
+      role: 'admin',
+      driverId: 'driver-1',
+    });
+
+    expect(mockVehicleRepository.unassignDriver).toHaveBeenCalledWith('current-vehicle');
+    expect(mockVehicleRepository.assignDriver).toHaveBeenCalledWith('target-vehicle', 'driver-1');
+    expect(result.driverId).toBe('driver-1');
+  });
+
+  it('blocks driver reassignment when active loads exist on an affected asset', async () => {
+    mockVehicleRepository.findById.mockResolvedValue(buildVehicle());
+    mockDriverQueryPort.findById.mockResolvedValue(buildDriver());
+    mockVehicleRepository.findByDriverId.mockResolvedValue({
+      ...buildVehicle(),
+      id: 'existing-vehicle',
+      driverId: 'driver-1',
+    });
+    mockLoadRepository.findBlockingLoadIdsByVehicle.mockResolvedValue(['load-77']);
+
+    await expect(
+      vehicleService.assignDriver({
+        id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+        organizationId: 'org-1',
+        role: 'admin',
+        driverId: 'driver-1',
+      }),
+    ).rejects.toBeInstanceOf(ActiveLoadsConflictError);
+  });
+
+  it('blocks unassigning a driver when active loads exist', async () => {
+    mockVehicleRepository.findById.mockResolvedValue({
+      ...buildVehicle(),
+      driverId: 'driver-1',
+    });
+    mockLoadRepository.findBlockingLoadIdsByDriver.mockResolvedValue(['load-12']);
+
+    await expect(
+      vehicleService.unassignDriver({
+        id: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+        organizationId: 'org-1',
+        role: 'admin',
+      }),
+    ).rejects.toBeInstanceOf(ActiveLoadsConflictError);
   });
 });

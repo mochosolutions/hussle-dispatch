@@ -1,13 +1,7 @@
-import { useMemo } from 'react';
-import { Box, Chip, Grid, Stack, Typography } from '@mui/material';
+import { Box, Chip, CircularProgress, Typography } from '@mui/material';
 import { EmptyState, MainCard } from '@mocho/ui/components';
+import { VEHICLE_LOAD_STATUS_COLORS } from '../../../constants';
 import type { VehicleLoad } from 'utils/api/fleet/vehicleApi';
-
-const currencyCompact = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
 
 const currencyFull = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -17,59 +11,23 @@ const currencyFull = new Intl.NumberFormat('en-US', {
 
 interface VehicleLoadHistoryTabProps {
   vehicleLoads: VehicleLoad[];
+  isLoading?: boolean;
 }
 
-export const VehicleLoadHistoryTab: React.FC<VehicleLoadHistoryTabProps> = ({ vehicleLoads }) => {
-  const loadMetrics = useMemo(() => {
-    const totalLoads = vehicleLoads.length;
-    const deliveredLoads = vehicleLoads.filter((load) => load.status === 'DELIVERED');
-    const totalRevenue = deliveredLoads.reduce(
-      (sum, load) => sum + parseFloat(load.rate),
-      0,
+export const VehicleLoadHistoryTab: React.FC<VehicleLoadHistoryTabProps> = ({
+  vehicleLoads,
+  isLoading = false,
+}) => {
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
     );
-    const totalMiles = deliveredLoads.reduce((sum, load) => sum + load.miles, 0);
-    const avgRpm = totalMiles > 0 ? totalRevenue / totalMiles : 0;
-
-    return { totalLoads, totalRevenue, totalMiles, avgRpm };
-  }, [vehicleLoads]);
+  }
 
   return (
-    <Stack spacing={2}>
-      {/* Performance Metrics */}
-      <Grid container spacing={2}>
-        {[
-          {
-            label: 'Total Loads',
-            value: String(loadMetrics.totalLoads),
-          },
-          {
-            label: 'Total Revenue',
-            value: currencyCompact.format(loadMetrics.totalRevenue),
-          },
-          {
-            label: 'Total Miles',
-            value: loadMetrics.totalMiles.toLocaleString(),
-          },
-          {
-            label: 'Avg RPM',
-            value: `$${loadMetrics.avgRpm.toFixed(2)}`,
-          },
-        ].map((metric) => (
-          <Grid key={metric.label} item xs={12} sm={6} md={3}>
-            <MainCard>
-              <Typography variant="caption" color="text.secondary">
-                {metric.label}
-              </Typography>
-              <Typography variant="h4" sx={{ mt: 0.5 }}>
-                {metric.value}
-              </Typography>
-            </MainCard>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Load History DataGrid */}
-      <MainCard content={false}>
+    <MainCard content={false}>
         <Box sx={{ minHeight: 300 }}>
           {vehicleLoads.length > 0 ? (
             <Box sx={{ height: 400 }}>
@@ -127,12 +85,6 @@ export const VehicleLoadHistoryTab: React.FC<VehicleLoadHistoryTabProps> = ({ ve
                       load.miles > 0
                         ? `$${(rate / load.miles).toFixed(2)}`
                         : '\u2014';
-                    const statusColorMap: Record<string, 'success' | 'warning' | 'info' | 'default'> = {
-                      DELIVERED: 'success',
-                      IN_TRANSIT: 'warning',
-                      BOOKED: 'info',
-                    };
-
                     return [
                       <Typography
                         key={`${load.id}-ref`}
@@ -181,7 +133,7 @@ export const VehicleLoadHistoryTab: React.FC<VehicleLoadHistoryTabProps> = ({ ve
                           label={load.status.replace('_', ' ')}
                           size="small"
                           color={
-                            statusColorMap[load.status] ?? 'default'
+                            VEHICLE_LOAD_STATUS_COLORS[load.status] ?? 'default'
                           }
                           variant="outlined"
                           sx={{ fontWeight: 600, fontSize: '0.675rem' }}
@@ -251,7 +203,6 @@ export const VehicleLoadHistoryTab: React.FC<VehicleLoadHistoryTabProps> = ({ ve
             />
           )}
         </Box>
-      </MainCard>
-    </Stack>
+    </MainCard>
   );
 };

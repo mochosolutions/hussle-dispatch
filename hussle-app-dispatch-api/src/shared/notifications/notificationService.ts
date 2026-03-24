@@ -2,12 +2,19 @@
  * Notification service interface.
  * Implementations: consoleNotificationService (dev), SES (future production).
  */
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer | string;
+  contentType?: string;
+}
+
 export interface NotificationService {
   sendEmail(params: {
     to: string;
     from: string;
+    replyTo?: string;
     subject: string;
     html: string;
-    attachments?: { filename: string; content: string }[];
+    attachments?: EmailAttachment[];
   }): Promise<void>;
 }

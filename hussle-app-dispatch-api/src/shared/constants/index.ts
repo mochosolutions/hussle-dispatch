@@ -4,7 +4,11 @@ export type { LoadStatus } from './loadStatuses';
 export { KANBAN_GROUPS } from './kanbanGroups';
 export type { KanbanGroup, KanbanGroupMap, KanbanGroupKey } from './kanbanGroups';
 
-export { ADMIN_ONLY_TRANSITIONS, NOTES_REQUIRED_TRANSITIONS } from './stateMachine';
+export {
+  ADMIN_ONLY_TRANSITIONS,
+  DRIVER_ALLOWED_TRANSITIONS,
+  NOTES_REQUIRED_TRANSITIONS,
+} from './stateMachine';
 
 export { EQUIPMENT_TYPES } from './equipmentTypes';
 export type { EquipmentType } from './equipmentTypes';
@@ -15,8 +19,6 @@ export type { FacilityType, DockType } from './facilityTypes';
 export { DOCUMENT_TYPES } from './documentTypes';
 export type { DocumentType } from './documentTypes';
 
-export { CONTACT_TYPES } from './contactTypes';
-export type { ContactType } from './contactTypes';
 
 export { PROHIBITED_COMMODITIES_DEFAULT } from './commodities';
 

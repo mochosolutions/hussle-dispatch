@@ -16,7 +16,7 @@ export function* fetchPlaceDetailsSaga(
   try {
     const response = (yield call(getPlace, id)) as SagaReturnType<typeof getPlace>;
 
-    yield put(placeActions.upsertOne(response.place));
+    yield put(placeActions.upsertOne(response));
     yield put(fetchPlaceDetailsSuccess({ id }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load place details';

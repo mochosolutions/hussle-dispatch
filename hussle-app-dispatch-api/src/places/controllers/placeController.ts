@@ -2,21 +2,29 @@ import type { Request, Response } from 'express';
 import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { PlaceService } from '../types/placeServiceTypes';
+import type { AddressSearchInput, AddressSearchResult } from '../types/addressSearchTypes';
 import { createPlaceMapper } from './mappers/createPlaceMapper';
 import { getRequiredPlaceIdMapper } from './mappers/getRequiredPlaceIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 import { listPlacesMapper } from './mappers/listPlacesMapper';
 import { loadsAtFacilityMapper } from './mappers/loadsAtFacilityMapper';
 import { typeaheadMapper } from './mappers/typeaheadMapper';
+import { addressSearchMapper } from './mappers/addressSearchMapper';
 import { updatePlaceMapper } from './mappers/updatePlaceMapper';
 import {
   toPlaceListEnvelope,
   toPlaceResponse,
 } from './transformers/placeTransformer';
 import { toLoadsAtFacilityEnvelope } from './transformers/loadAtFacilityTransformer';
+import { toAddressSearchResponse } from './transformers/addressSearchTransformer';
+
+interface AddressSearchService {
+  search(input: AddressSearchInput): Promise<AddressSearchResult[]>;
+}
 
 interface PlaceControllerDeps {
   placeService: PlaceService;
+  addressSearchService: AddressSearchService;
 }
 
 export interface PlaceControllers {
@@ -26,6 +34,7 @@ export interface PlaceControllers {
   updatePlace: RequestHandler;
   deletePlace: RequestHandler;
   typeahead: RequestHandler;
+  addressSearch: RequestHandler;
   loadsAtFacility: RequestHandler;
 }
 
@@ -73,6 +82,12 @@ export const createPlaceControllers = (deps: PlaceControllerDeps): PlaceControll
     const serviceInput = typeaheadMapper(req);
     const data = await deps.placeService.typeahead(serviceInput);
     sendSingle(res, data);
+  },
+
+  addressSearch: async (req: Request, res: Response): Promise<void> => {
+    const serviceInput = addressSearchMapper(req);
+    const results = await deps.addressSearchService.search(serviceInput);
+    sendSingle(res, toAddressSearchResponse(results));
   },
 
   loadsAtFacility: async (req: Request, res: Response): Promise<void> => {

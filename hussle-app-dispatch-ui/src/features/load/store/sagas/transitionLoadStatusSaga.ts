@@ -39,8 +39,8 @@ export function* transitionLoadStatusSaga(
     // Success — update entity in store
     if (response.load) {
       const { load } = response;
-      const origin = load.stops.find((s) => s.type === 'PICKUP');
-      const deliveries = load.stops.filter((s) => s.type === 'DELIVERY');
+      const origin = (load.stops ?? []).find((s) => s.type === 'PICKUP');
+      const deliveries = (load.stops ?? []).filter((s) => s.type === 'DELIVERY');
       const lastDelivery = deliveries[deliveries.length - 1];
 
       const changes: Partial<LoadListItem> = {
@@ -68,7 +68,7 @@ export function* transitionLoadStatusSaga(
       yield put(loadActions.updateOne({ id: loadId, changes }));
     }
 
-    yield put(transitionLoadStatusSuccess({ loadId, newStatus: input.targetStatus }));
+    yield put(transitionLoadStatusSuccess({ loadId, newStatus: input.status }));
     yield call(enqueueSnackbar, 'Status updated', { variant: 'success' });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to transition status';

@@ -25,7 +25,7 @@ export type UserProfile = {
 export type Tenant = {
   role: string;
   status: string;
-  memebershipId: string;
+  membershipId: string;
   userId: string;
   orgName: string;
   orgSubscriptionTier: string;
@@ -61,7 +61,10 @@ export interface SignupParams {
   password: string;
   firstName: string;
   lastName: string;
-  name: string;
+  orgName: string;
+  orgRole?: string;
+  mcNumber?: string;
+  dotNumber?: string;
 }
 
 export interface CodeConfirmationParams {

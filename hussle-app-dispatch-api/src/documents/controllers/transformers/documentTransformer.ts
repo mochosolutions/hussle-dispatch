@@ -1,9 +1,9 @@
-import type { Document } from '@prisma/client';
+import type { DocumentListItem } from '../../types/documentTypes';
 
 export interface DocumentResponse {
   id: string;
-  loadId: string | null;
-  carrierId: string | null;
+  entityType: string;
+  entityId: string;
   type: string;
   fileName: string;
   fileSize: number | null;
@@ -11,6 +11,8 @@ export interface DocumentResponse {
   uploadStatus: string;
   isArchived: boolean;
   uploadedByUserId: string | null;
+  expiresAt: string | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -20,19 +22,21 @@ export interface PresignResponse {
   expiresIn: number;
 }
 
-export const toDocumentResponse = (document: Document): DocumentResponse => ({
-  id: document.id,
-  loadId: document.loadId,
-  carrierId: document.carrierId,
-  type: document.type,
-  fileName: document.fileName,
-  fileSize: document.fileSize,
-  mimeType: document.mimeType,
-  uploadStatus: document.uploadStatus,
-  isArchived: document.isArchived,
-  uploadedByUserId: document.uploadedByUserId,
-  createdAt: document.createdAt.toISOString(),
+export const toDocumentResponse = (item: DocumentListItem): DocumentResponse => ({
+  id: item.id,
+  entityType: item.entityType,
+  entityId: item.entityId,
+  type: item.type,
+  fileName: item.fileName,
+  fileSize: item.fileSize,
+  mimeType: item.mimeType,
+  uploadStatus: item.uploadStatus,
+  isArchived: item.isArchived,
+  uploadedByUserId: item.uploadedByUserId,
+  expiresAt: item.expiresAt ? item.expiresAt.toISOString() : null,
+  metadata: item.metadata ?? null,
+  createdAt: item.createdAt.toISOString(),
 });
 
-export const toDocumentListResponse = (documents: Document[]): DocumentResponse[] =>
-  documents.map(toDocumentResponse);
+export const toDocumentListResponse = (items: DocumentListItem[]): DocumentResponse[] =>
+  items.map(toDocumentResponse);

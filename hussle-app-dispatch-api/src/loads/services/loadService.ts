@@ -1,16 +1,31 @@
+import type { EventBus } from '@/shared/messaging/eventBus';
 import {
+  AssignmentValidationError,
   NotFoundError,
   ProhibitedCommodityError,
   ValidationError,
 } from '@/shared/errors';
+import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
+import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import { generateSequenceNumber } from '@/shared/sequenceGenerator';
+import { calculateRoadDistance } from '@/shared/utils/distanceCalculator';
+import type { Logger } from '@/shared/utils/logger';
+import { calculateAndPersistFinancials } from './calculateFinancials';
+import type { LoadStatusRepoPort } from '../types/loadStatusTypes';
 import type {
+  CarrierAssignmentQueryPort,
+  CustomerQueryPort,
+  DriverAssignmentQueryPort,
+  LoadAssignmentInput,
+  LoadAssignmentWarning,
   LoadRepoPort,
   LoadWithRelations,
   OrgSettingsQueryPort,
+  VehicleAssignmentQueryPort,
 } from '../types/loadTypes';
 import type {
+  AssignLoadServiceInput,
   CreateCheckCallServiceInput,
   CreateLoadServiceInput,
   DeleteLoadServiceInput,
@@ -55,6 +70,9 @@ const FINANCIAL_FIELDS = [
   'ratePerMile',
 ] as const;
 
+const ASSIGNMENT_FIELD_NAMES = ['carrierId', 'driverId', 'vehicleId'] as const;
+const MAX_BLOCKING_LOAD_IDS = 10;
+
 const getSafeSortField = (field: string): (typeof listSortableFields)[number] => {
   const matched = listSortableFields.find((allowedField) => allowedField === field);
   if (matched !== undefined) {
@@ -88,12 +106,30 @@ const checkProhibitedCommodity = async (
   const prohibited = await orgSettingsQuery.getProhibitedCommodities(organizationId);
   const lowerCommodity = commodity.toLowerCase().trim();
 
-  const match = prohibited.find(
-    (item) => lowerCommodity.includes(item.toLowerCase()),
-  );
+  const match = prohibited.find((item) => lowerCommodity.includes(item.toLowerCase()));
 
   if (match !== undefined) {
     throw new ProhibitedCommodityError(commodity);
+  }
+};
+
+const validateCustomerExists = async (
+  customerId: string | null | undefined,
+  organizationId: string,
+  customerQuery: CustomerQueryPort | undefined,
+): Promise<void> => {
+  if (customerId === undefined || customerId === null) {
+    return;
+  }
+
+  if (customerQuery === undefined) {
+    return;
+  }
+
+  const customer = await customerQuery.findById(customerId, organizationId);
+
+  if (customer === null) {
+    throw new NotFoundError('Customer not found.');
   }
 };
 
@@ -105,9 +141,7 @@ const assertFinancialsNotChanged = (
     return;
   }
 
-  const changedFinancials = FINANCIAL_FIELDS.filter(
-    (field) => input[field] !== undefined,
-  );
+  const changedFinancials = FINANCIAL_FIELDS.filter((field) => input[field] !== undefined);
 
   if (changedFinancials.length > 0) {
     throw new ValidationError(
@@ -119,7 +153,272 @@ const assertFinancialsNotChanged = (
 interface LoadServiceDeps {
   loadRepository: LoadRepoPort;
   orgSettingsQuery: OrgSettingsQueryPort;
+  carrierAssignmentQuery: CarrierAssignmentQueryPort;
+  driverAssignmentQuery: DriverAssignmentQueryPort;
+  vehicleAssignmentQuery: VehicleAssignmentQueryPort;
+  customerQuery?: CustomerQueryPort;
+  loadStatusRepo?: Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>;
+  eventBus?: EventBus;
+  logger?: Logger;
 }
+
+interface ResolvedAssignmentState {
+  carrierId: string | null;
+  driverId: string | null;
+  vehicleId: string | null;
+}
+
+const normalizeAssignmentValue = (value: string | null | undefined): string | null | undefined => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+  if (trimmedValue.length === 0) {
+    return null;
+  }
+
+  return trimmedValue;
+};
+
+const getNormalizedAssignmentInput = (input: LoadAssignmentInput): LoadAssignmentInput => ({
+  carrierId: normalizeAssignmentValue(input.carrierId),
+  driverId: normalizeAssignmentValue(input.driverId),
+  vehicleId: normalizeAssignmentValue(input.vehicleId),
+});
+
+const hasAssignmentInput = (input: LoadAssignmentInput): boolean =>
+  ASSIGNMENT_FIELD_NAMES.some((fieldName) => input[fieldName] !== undefined);
+
+const resolveAssignmentState = (
+  currentState: ResolvedAssignmentState,
+  input: LoadAssignmentInput,
+): ResolvedAssignmentState => {
+  if (input.carrierId === null) {
+    return {
+      carrierId: null,
+      driverId: input.driverId === undefined ? null : input.driverId,
+      vehicleId: input.vehicleId === undefined ? null : input.vehicleId,
+    };
+  }
+
+  return {
+    carrierId: input.carrierId === undefined ? currentState.carrierId : input.carrierId,
+    driverId: input.driverId === undefined ? currentState.driverId : input.driverId,
+    vehicleId: input.vehicleId === undefined ? currentState.vehicleId : input.vehicleId,
+  };
+};
+
+const getCurrentAssignmentState = (load: LoadWithRelations): ResolvedAssignmentState => ({
+  carrierId: load.carrierId,
+  driverId: load.driverId,
+  vehicleId: load.vehicleId,
+});
+
+const validateAssignmentState = async (
+  assignment: ResolvedAssignmentState,
+  organizationId: string,
+  loadId: string | undefined,
+  deps: LoadServiceDeps,
+): Promise<LoadAssignmentWarning[]> => {
+  const blockers: {
+    code: string;
+    message: string;
+    field?: string;
+    blockingLoadIds?: string[];
+  }[] = [];
+  const warnings: LoadAssignmentWarning[] = [];
+
+  let carrier: {
+    id: string;
+    name: string;
+    type: 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
+    dispatchAgreementOnFile: boolean;
+    insuranceCertOnFile: boolean;
+    insuranceExpiry: Date | null;
+    w9OnFile: boolean;
+  } | null = null;
+
+  let driver: {
+    id: string;
+    carrierId: string;
+    firstName: string;
+    lastName: string;
+    isAvailable: boolean;
+  } | null = null;
+
+  let vehicle: {
+    id: string;
+    carrierId: string;
+    unitNumber: string;
+    driverId: string | null;
+    isActive: boolean;
+  } | null = null;
+
+  if (
+    (assignment.driverId !== null || assignment.vehicleId !== null) &&
+    assignment.carrierId === null
+  ) {
+    blockers.push({
+      code: 'CARRIER_REQUIRED',
+      field: 'carrierId',
+      message: 'Carrier is required when assigning a driver or vehicle.',
+    });
+  }
+
+  if (assignment.carrierId !== null) {
+    carrier = await deps.carrierAssignmentQuery.findDispatchableById(
+      assignment.carrierId,
+      organizationId,
+    );
+
+    if (carrier === null) {
+      blockers.push({
+        code: 'CARRIER_NOT_DISPATCHABLE',
+        field: 'carrierId',
+        message: 'Selected carrier is not dispatchable by this organization.',
+      });
+    }
+  }
+
+  if (assignment.driverId !== null) {
+    driver = await deps.driverAssignmentQuery.findAssignableById(
+      assignment.driverId,
+      organizationId,
+    );
+
+    if (driver === null) {
+      blockers.push({
+        code: 'DRIVER_NOT_FOUND',
+        field: 'driverId',
+        message: 'Selected driver was not found for this organization.',
+      });
+    }
+  }
+
+  if (assignment.vehicleId !== null) {
+    vehicle = await deps.vehicleAssignmentQuery.findAssignableById(
+      assignment.vehicleId,
+      organizationId,
+    );
+
+    if (vehicle === null) {
+      blockers.push({
+        code: 'VEHICLE_NOT_FOUND',
+        field: 'vehicleId',
+        message: 'Selected vehicle was not found for this organization.',
+      });
+    }
+  }
+
+  if (carrier !== null) {
+    const onboardingResult = checkCarrierOnboarding({
+      carrierType: carrier.type,
+      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
+      insuranceCertOnFile: carrier.insuranceCertOnFile,
+      insuranceExpiry: carrier.insuranceExpiry,
+      w9OnFile: carrier.w9OnFile,
+    });
+
+    if (!onboardingResult.allowed) {
+      blockers.push({
+        code: 'CARRIER_ONBOARDING_INCOMPLETE',
+        field: 'carrierId',
+        message: `${carrier.name} cannot be assigned until onboarding is complete.`,
+      });
+    }
+  }
+
+  if (carrier !== null && driver !== null && driver.carrierId !== carrier.id) {
+    blockers.push({
+      code: 'DRIVER_CARRIER_MISMATCH',
+      field: 'driverId',
+      message: 'Driver must belong to the selected carrier.',
+    });
+  }
+
+  if (carrier !== null && vehicle !== null && vehicle.carrierId !== carrier.id) {
+    blockers.push({
+      code: 'VEHICLE_CARRIER_MISMATCH',
+      field: 'vehicleId',
+      message: 'Vehicle must belong to the selected carrier.',
+    });
+  }
+
+  if (driver !== null && !driver.isAvailable) {
+    blockers.push({
+      code: 'DRIVER_UNAVAILABLE',
+      field: 'driverId',
+      message: `${driver.firstName} ${driver.lastName} is not available for dispatch.`,
+    });
+  }
+
+  if (vehicle !== null && !vehicle.isActive) {
+    blockers.push({
+      code: 'VEHICLE_UNAVAILABLE',
+      field: 'vehicleId',
+      message: `Vehicle ${vehicle.unitNumber} is not active for dispatch.`,
+    });
+  }
+
+  if (vehicle !== null) {
+    const blockingLoadIds = await deps.loadRepository.findBlockingLoadIdsByVehicle(
+      vehicle.id,
+      BLOCKING_DELETE_STATUSES,
+      MAX_BLOCKING_LOAD_IDS,
+      loadId,
+    );
+
+    if (blockingLoadIds.length > 0) {
+      warnings.push({
+        code: 'VEHICLE_ACTIVE_LOADS',
+        field: 'vehicleId',
+        message: `Vehicle ${vehicle.unitNumber} is currently assigned to ${String(blockingLoadIds.length)} active load(s).`,
+        detail: 'Assignment is allowed — dispatch will proceed with the vehicle on multiple loads.',
+      });
+    }
+  }
+
+  if (
+    driver !== null &&
+    vehicle !== null &&
+    vehicle.driverId !== null &&
+    vehicle.driverId !== driver.id
+  ) {
+    warnings.push({
+      code: 'VEHICLE_HOME_DRIVER_MISMATCH',
+      field: 'vehicleId',
+      message: `Vehicle ${vehicle.unitNumber} has a different default fleet pairing.`,
+      detail: 'Load assignment is allowed because dispatch assignment is tracked on the load.',
+    });
+  }
+
+  if (blockers.length > 0) {
+    throw new AssignmentValidationError('Load assignment blocked.', blockers);
+  }
+
+  return warnings;
+};
+
+const calculateDeadheadMiles = async (
+  driverId: string,
+  loadId: string,
+  organizationId: string,
+  loadRepository: LoadRepoPort,
+): Promise<number | null> => {
+  const [lastDeliveryCoords, firstPickupCoords] = await Promise.all([
+    loadRepository.findLastDeliveryCoordinates(driverId, organizationId),
+    loadRepository.findFirstPickupCoordinates(loadId),
+  ]);
+
+  if (lastDeliveryCoords === null || firstPickupCoords === null) {
+    return null;
+  }
+
+  const distance = calculateRoadDistance(lastDeliveryCoords, firstPickupCoords);
+
+  return Math.round(distance);
+};
 
 const findLoadOrThrow = async (
   id: string,
@@ -135,17 +434,29 @@ const findLoadOrThrow = async (
 
 export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
   createLoad: async ({ organizationId, input }: CreateLoadServiceInput) => {
+    const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
+    const shouldValidateAssignment = hasAssignmentInput(normalizedAssignmentInput);
+    const resolvedAssignment = resolveAssignmentState(
+      { carrierId: null, driverId: null, vehicleId: null },
+      normalizedAssignmentInput,
+    );
+
     validateStops(input.stops);
 
-    await checkProhibitedCommodity(
-      input.commodity,
-      organizationId,
-      deps.orgSettingsQuery,
-    );
+    await checkProhibitedCommodity(input.commodity, organizationId, deps.orgSettingsQuery);
+
+    await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
+
+    if (shouldValidateAssignment) {
+      await validateAssignmentState(resolvedAssignment, organizationId, undefined, deps);
+    }
 
     const loadNumber = await generateSequenceNumber('LOAD', organizationId);
 
-    return deps.loadRepository.create(organizationId, loadNumber, input);
+    return deps.loadRepository.create(organizationId, loadNumber, {
+      ...input,
+      ...resolvedAssignment,
+    });
   },
 
   listLoads: async ({ query, organizationId, filters }: ListLoadsServiceInput) => {
@@ -178,22 +489,82 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
   updateLoad: async ({ id, organizationId, input }: UpdateLoadServiceInput) => {
     const existing = await findLoadOrThrow(id, organizationId, deps);
+    const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
+    const shouldValidateAssignment = hasAssignmentInput(normalizedAssignmentInput);
 
     assertFinancialsNotChanged(existing.status, input as Record<string, unknown>);
 
     if (input.commodity !== undefined) {
-      await checkProhibitedCommodity(
-        input.commodity,
-        organizationId,
-        deps.orgSettingsQuery,
-      );
+      await checkProhibitedCommodity(input.commodity, organizationId, deps.orgSettingsQuery);
     }
+
+    await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
 
     if (input.stops !== undefined) {
       validateStops(input.stops);
     }
 
-    return deps.loadRepository.update(id, input);
+    if (!shouldValidateAssignment) {
+      return deps.loadRepository.update(id, input);
+    }
+
+    const resolvedAssignment = resolveAssignmentState(
+      getCurrentAssignmentState(existing),
+      normalizedAssignmentInput,
+    );
+
+    await validateAssignmentState(resolvedAssignment, organizationId, id, deps);
+
+    return deps.loadRepository.update(id, {
+      ...input,
+      ...resolvedAssignment,
+    });
+  },
+
+  assignLoad: async ({ id, organizationId, input }: AssignLoadServiceInput) => {
+    const existing = await findLoadOrThrow(id, organizationId, deps);
+    const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
+    const resolvedAssignment = resolveAssignmentState(
+      getCurrentAssignmentState(existing),
+      normalizedAssignmentInput,
+    );
+
+    const warnings = await validateAssignmentState(resolvedAssignment, organizationId, id, deps);
+
+    let deadheadMiles: number | undefined;
+
+    if (resolvedAssignment.driverId !== null) {
+      const calculated = await calculateDeadheadMiles(
+        resolvedAssignment.driverId,
+        id,
+        organizationId,
+        deps.loadRepository,
+      );
+
+      if (calculated !== null) {
+        deadheadMiles = calculated;
+      }
+    }
+
+    const load = await deps.loadRepository.update(id, {
+      ...resolvedAssignment,
+      ...(deadheadMiles !== undefined ? { deadheadMiles } : {}),
+    });
+
+    if (
+      load.carrierId !== null &&
+      load.customerRate !== null &&
+      deps.loadStatusRepo !== undefined &&
+      deps.logger !== undefined
+    ) {
+      await calculateAndPersistFinancials(id, {
+        load,
+        loadStatusRepo: deps.loadStatusRepo,
+        logger: deps.logger,
+      });
+    }
+
+    return { load, warnings };
   },
 
   deleteLoad: async ({ id, organizationId }: DeleteLoadServiceInput) => {
@@ -201,9 +572,38 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
     await deps.loadRepository.softDelete(id, new Date());
   },
 
-  createCheckCall: async ({ loadId, organizationId, userId, input }: CreateCheckCallServiceInput) => {
-    await findLoadOrThrow(loadId, organizationId, deps);
-    return deps.loadRepository.createCheckCall(loadId, userId, input);
+  createCheckCall: async ({
+    loadId,
+    organizationId,
+    userId,
+    input,
+  }: CreateCheckCallServiceInput) => {
+    const load = await findLoadOrThrow(loadId, organizationId, deps);
+    const checkCall = await deps.loadRepository.createCheckCall(loadId, userId, input);
+
+    if (deps.eventBus !== undefined) {
+      deps.eventBus
+        .publish('load.checkcall.logged', {
+          loadId,
+          organizationId,
+          loadNumber: load.loadNumber,
+          checkCallId: checkCall.id,
+          customerId: load.customerId ?? null,
+          contactEmail: load.contact?.email ?? null,
+          contactPhone: load.contact?.phone ?? null,
+          location: input.location ?? null,
+          status: input.status ?? null,
+          eta: input.eta?.toISOString() ?? null,
+        })
+        .catch((error: unknown) => {
+          deps.logger?.error('Failed to publish check call event', {
+            loadId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+    }
+
+    return checkCall;
   },
 
   listCheckCalls: async ({ loadId, organizationId }: ListCheckCallsServiceInput) => {

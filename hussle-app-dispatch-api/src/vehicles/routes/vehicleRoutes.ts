@@ -3,6 +3,10 @@ import { requireAuth } from '@/middleware/auth';
 import { validateRequest } from '@/shared/middleware/validateRequest';
 import type { VehicleControllers } from '../controllers/vehicleController';
 import {
+  createExpenseValidator,
+  listExpensesValidator,
+} from '../validators/expenseValidators';
+import {
   assignDriverValidator,
   createVehicleValidator,
   listVehiclesValidator,
@@ -51,6 +55,18 @@ export const createVehiclesRouter = (controllers: VehicleControllers): express.R
     requireAuth,
     validateRequest(loadHistoryValidator),
     controllers.getLoadHistory,
+  );
+  router.post(
+    '/:id/expenses',
+    requireAuth,
+    validateRequest(createExpenseValidator),
+    controllers.createExpense,
+  );
+  router.get(
+    '/:id/expenses',
+    requireAuth,
+    validateRequest(listExpensesValidator),
+    controllers.listExpenses,
   );
 
   return router;

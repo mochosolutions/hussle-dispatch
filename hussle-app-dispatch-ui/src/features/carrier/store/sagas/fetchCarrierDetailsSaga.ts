@@ -26,7 +26,7 @@ export function* fetchCarrierDetailsSaga(
       driverCount: existing?.driverCount ?? 0,
       vehicleCount: existing?.vehicleCount ?? 0,
       onboardingComplete: existing?.onboardingComplete ?? false,
-      ...response.carrier,
+      ...response,
     };
 
     yield put(carrierActions.upsertOne(carrierListItem));

@@ -17,7 +17,7 @@ export function* fetchCarrierDriversSaga(
       carrierId,
     )) as SagaReturnType<typeof getCarrierDrivers>;
 
-    yield put(driverActions.setAll(response.data));
+    yield put(driverActions.upsertMany(response));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load carrier drivers';

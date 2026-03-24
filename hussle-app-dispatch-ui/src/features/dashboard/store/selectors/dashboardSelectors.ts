@@ -20,6 +20,11 @@ export const selectKpisLoading = (state: RootState) =>
 export const selectWeeklyGrossLoading = (state: RootState) =>
   state.pages.dashboard.loading['weeklyGross'] === 'Pending';
 
+export const selectWeeklyGrossFetched = (state: RootState) => {
+  const status = state.pages.dashboard.loading['weeklyGross'];
+  return status === 'Fulfilled' || status === 'Rejected';
+};
+
 export const selectAttentionItemsLoading = (state: RootState) =>
   state.pages.dashboard.loading['attentionItems'] === 'Pending';
 

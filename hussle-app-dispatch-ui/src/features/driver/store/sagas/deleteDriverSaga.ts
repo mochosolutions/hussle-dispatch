@@ -15,14 +15,6 @@ export function* deleteDriverSaga(action: DeleteDriverAction): Generator {
   const { id } = action.payload;
 
   try {
-    const useMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-    if (useMock) {
-      yield put(driverActions.removeOne(id));
-      yield put(deleteDriverSuccess({ id }));
-      yield call(enqueueSnackbar, 'Driver deleted', { variant: 'success' });
-      return;
-    }
-
     yield call(deleteDriver, id);
 
     yield put(driverActions.removeOne(id));

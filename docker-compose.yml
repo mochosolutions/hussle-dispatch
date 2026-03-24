@@ -1,33 +1,28 @@
 services:
-  # dispatch-ui:
-  #   build:
-  #     context: ./hussle-app-dispatch-ui
-  #     dockerfile: Dockerfile.dev
-  #   ports:
-  #     - "5173:5173"
-  #   volumes:
-  #     - ./hussle-app-dispatch-ui/src:/app/hussle-app-dispatch-ui/src
-  #     - ./hussle-app-dispatch-ui/public:/app/hussle-app-dispatch-ui/public
-  #     - ./hussle-app-dispatch-ui/index.html:/app/hussle-app-dispatch-ui/index.html
-  #     - ./hussle-app-dispatch-ui/vite.config.ts:/app/hussle-app-dispatch-ui/vite.config.ts
-  #     - ./hussle-app-dispatch-ui/tsconfig.json:/app/hussle-app-dispatch-ui/tsconfig.json
-  #     - ./hussle-app-dispatch-ui/tsconfig.app.json:/app/hussle-app-dispatch-ui/tsconfig.app.json
-  #     - ./hussle-app-dispatch-ui/tsconfig.node.json:/app/hussle-app-dispatch-ui/tsconfig.node.json
-  #     - ./mocho-ui/src:/app/mocho-ui/src
-  #   working_dir: /app/hussle-app-dispatch-ui
-  #   command: npx vite --host 0.0.0.0 --force
-  #   environment:
-  #     - CHOKIDAR_USEPOLLING=true
+  dispatch-ui:
+    build:
+      context: ./hussle-app-dispatch-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./hussle-app-dispatch-ui:/usr/app
+      - /usr/app/node_modules
+    command: npx vite --host 0.0.0.0 --force
+    environment:
+      - CHOKIDAR_USEPOLLING=true
   dispatch-api:
     build:
       context: ./hussle-app-dispatch-api
       dockerfile: Dockerfile.dev
     ports:
       - "3001:3001"
-    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev --db-name "$${DB_NAME}"'
+    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev'
     volumes:
       - ./hussle-app-dispatch-api:/usr/app
-      - api-node_modules:/usr/app/node_modules
+      - /usr/app/node_modules
+    env_file:
+      - ./hussle-app-dispatch-api/.env
     depends_on:
       hussle-app-redis:
         condition: service_healthy
@@ -35,17 +30,8 @@ services:
         condition: service_healthy
       hussle-app-rabbitmq:
         condition: service_healthy
-    environment:
-      - DB_NAME=hussle_dispatch
-      - DATABASE_URL=postgresql://postgres:postgres@hussle-app-postgres:5432/hussle_dispatch
-      - REDIS_URL=redis://hussle-app-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@hussle-app-rabbitmq:5672
-      - PORT=3001
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=300
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -102,9 +88,40 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: hussle-app-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@local.dev
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      - hussle-app-postgres
+
+  hussle-emails:
+    build:
+      context: ./hussle-emails
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./hussle-emails:/usr/app
+      - /usr/app/node_modules
+    environment:
+      - HOST=0.0.0.0
+    command: npx email dev --port 3000
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: hussle-app-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   redis-data:
   rabbitmq-data:
-  api-node_modules:
   # redisinsight-data:

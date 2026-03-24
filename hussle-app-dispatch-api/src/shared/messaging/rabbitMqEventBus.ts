@@ -2,21 +2,84 @@
  * RabbitMQ implementation of EventBus.
  * Uses a topic exchange for routing domain events by name.
  * Handles automatic reconnection on connection loss.
+ * Retries failed messages up to 3 times via x-death header tracking.
  */
-import type { Channel, ChannelModel } from 'amqplib';
+import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 import amqplib from 'amqplib';
 
 import type { Logger } from '../utils/logger';
-import type { EventBus, EventHandler } from './eventBus';
+import type { EventBus, PublishOptions } from './eventBus';
+import type { EventMap } from './eventMap';
 
 const EXCHANGE_NAME = 'fleet-command.events';
 const EXCHANGE_TYPE = 'topic';
 const RECONNECT_DELAY_MS = 5000;
+const MAX_RETRIES = 3;
 
 interface PendingSubscription {
   event: string;
-  handler: EventHandler;
+  queueGroup: string;
+  handler: (data: unknown) => Promise<void>;
 }
+
+/**
+ * Typed error for when the EventBus channel is not available.
+ */
+class EventBusNotConnectedError extends Error {
+  readonly code = 'EVENT_BUS_NOT_CONNECTED';
+
+  constructor() {
+    super('EventBus is not connected to RabbitMQ');
+    Object.setPrototypeOf(this, EventBusNotConnectedError.prototype);
+  }
+}
+
+/**
+ * Typed error for unsupported publish options.
+ */
+class DelayedPublishNotSupportedError extends Error {
+  readonly code = 'DELAYED_PUBLISH_NOT_SUPPORTED';
+
+  constructor() {
+    super('Delayed publishing is not yet supported by RabbitMQ EventBus');
+    Object.setPrototypeOf(this, DelayedPublishNotSupportedError.prototype);
+  }
+}
+
+/**
+ * Type guard for x-death entries with a numeric count field.
+ */
+const isXDeathWithCount = (
+  value: unknown,
+): value is { count: number } => {
+  if (typeof value !== 'object' || value === null || !('count' in value)) {
+    return false;
+  }
+  return typeof value.count === 'number';
+};
+
+/**
+ * Extracts the retry count from a message's x-death header.
+ * Returns 0 if the header is absent or malformed.
+ */
+const getRetryCount = (msg: ConsumeMessage): number => {
+  const headers = msg.properties.headers;
+  if (!headers) {
+    return 0;
+  }
+
+  const xDeath = headers['x-death'];
+  if (!Array.isArray(xDeath) || xDeath.length === 0) {
+    return 0;
+  }
+
+  const firstEntry: unknown = xDeath[0];
+  if (isXDeathWithCount(firstEntry)) {
+    return firstEntry.count;
+  }
+
+  return 0;
+};
 
 export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus => {
   let channelModel: ChannelModel | null = null;
@@ -45,7 +108,7 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     // Re-register pending subscriptions after reconnect
     const subscriptionsToRestore = [...pendingSubscriptions];
     for (const sub of subscriptionsToRestore) {
-      await bindAndConsume(sub.event, sub.handler);
+      await bindAndConsume(sub.event, sub.queueGroup, sub.handler);
     }
   };
 
@@ -65,9 +128,13 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     return channel;
   };
 
-  const bindAndConsume = async (event: string, handler: EventHandler): Promise<void> => {
+  const bindAndConsume = async (
+    event: string,
+    queueGroup: string,
+    handler: (data: unknown) => Promise<void>,
+  ): Promise<void> => {
     const ch = ensureChannel();
-    const queueName = `fleet-command.${event}`;
+    const queueName = `fleet-command.${queueGroup}.${event}`;
     await ch.assertQueue(queueName, { durable: true });
     await ch.bindQueue(queueName, EXCHANGE_NAME, event);
 
@@ -92,25 +159,64 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
           ch.ack(msg);
         })
         .catch((error: unknown) => {
-          logger.error('Event handler failed', { event, error: String(error) });
-          ch.nack(msg, false, false);
+          const retryCount = getRetryCount(msg);
+
+          if (retryCount < MAX_RETRIES) {
+            logger.warn('Event handler failed, requeueing for retry', {
+              event,
+              retryCount: retryCount + 1,
+              maxRetries: MAX_RETRIES,
+              error: String(error),
+            });
+            ch.nack(msg, false, true);
+          } else {
+            logger.error('Event handler failed after max retries, discarding message', {
+              event,
+              retryCount,
+              maxRetries: MAX_RETRIES,
+              error: String(error),
+              payload: content,
+            });
+            ch.nack(msg, false, false);
+          }
         });
     });
   };
 
-  const publish = async (event: string, payload: unknown): Promise<void> => {
+  const publish = async <K extends keyof EventMap>(
+    event: K,
+    data: EventMap[K],
+    options?: PublishOptions,
+  ): Promise<void> => {
+    if (options?.delay !== undefined) {
+      throw new DelayedPublishNotSupportedError();
+    }
+
     const ch = ensureChannel();
-    const message = Buffer.from(JSON.stringify(payload), 'utf-8');
-    ch.publish(EXCHANGE_NAME, event, message, {
+    const message = Buffer.from(JSON.stringify(data), 'utf-8');
+    ch.publish(EXCHANGE_NAME, String(event), message, {
       persistent: true,
       contentType: 'application/json',
     });
-    logger.info('Event published', { event });
+    logger.info('Event published', { event: String(event) });
   };
 
-  const subscribe = async (event: string, handler: EventHandler): Promise<void> => {
-    pendingSubscriptions.push({ event, handler });
-    await bindAndConsume(event, handler);
+  const subscribe = async <K extends keyof EventMap>(
+    event: K,
+    queueGroup: string,
+    handler: (data: EventMap[K]) => Promise<void>,
+  ): Promise<void> => {
+    // Wrap the typed handler to accept unknown — the contract guarantees
+    // the payload shape matches EventMap[K] at publish time.
+    const wrappedHandler = (data: unknown): Promise<void> => handler(data as EventMap[K]);
+    pendingSubscriptions.push({
+      event: String(event),
+      queueGroup,
+      handler: wrappedHandler,
+    });
+    if (channel) {
+      await bindAndConsume(String(event), queueGroup, wrappedHandler);
+    }
   };
 
   const close = async (): Promise<void> => {
@@ -134,15 +240,3 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
 
   return { publish, subscribe, close };
 };
-
-/**
- * Typed error for when the EventBus channel is not available.
- */
-class EventBusNotConnectedError extends Error {
-  readonly code = 'EVENT_BUS_NOT_CONNECTED';
-
-  constructor() {
-    super('EventBus is not connected to RabbitMQ');
-    Object.setPrototypeOf(this, EventBusNotConnectedError.prototype);
-  }
-}

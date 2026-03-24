@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import { createLoadStatusService } from '../services/loadStatusService';
 import type { LoadStatusService } from '../services/loadStatusService';
 import type { LoadRepoPort, LoadWithRelations } from '../types/loadTypes';
@@ -14,10 +15,8 @@ const createMockLoad = (overrides: Partial<LoadWithRelations> = {}): LoadWithRel
   carrierId: null,
   driverId: null,
   vehicleId: null,
-  brokerId: null,
-  shipperId: null,
-  consigneeId: null,
-  brokerRefNumber: null,
+  contactId: null,
+  externalRefNumber: null,
   equipmentType: null,
   isHazmat: false,
   isTarp: false,
@@ -45,12 +44,11 @@ const createMockLoad = (overrides: Partial<LoadWithRelations> = {}): LoadWithRel
   carrier: null,
   driver: null,
   vehicle: null,
-  broker: null,
-  shipper: null,
-  consignee: null,
+  contact: null,
   statusHistory: [],
   checkCalls: [],
   accessorialCharges: [],
+  invoiceReadiness: 'NOT_READY',
   ...overrides,
 } as LoadWithRelations);
 
@@ -62,12 +60,22 @@ const createMockDeps = () => {
     count: jest.fn(),
     update: jest.fn(),
     softDelete: jest.fn(),
+    createCheckCall: jest.fn(),
+    listCheckCalls: jest.fn(),
+    listStatusHistory: jest.fn(),
+    listDocuments: jest.fn(),
+    findBlockingLoadIdsByDriver: jest.fn(),
+    findBlockingLoadIdsByVehicle: jest.fn(),
+    findLastDeliveryCoordinates: jest.fn(),
+    findFirstPickupCoordinates: jest.fn(),
   };
 
   const loadStatusRepo: jest.Mocked<LoadStatusRepoPort> = {
     updateStatus: jest.fn(),
     createStatusHistory: jest.fn(),
     createAccessorialCharge: jest.fn(),
+    sumAccessorialCharges: jest.fn().mockResolvedValue('0'),
+    updateFinancials: jest.fn(),
   };
 
   const eventBus: jest.Mocked<EventBus> = {
@@ -120,6 +128,142 @@ describe('loadStatusService', () => {
         changedByUserId: 'user-1',
         notes: undefined,
       });
+    });
+
+    it('calculates and persists financials when transitioning to BOOKED', async () => {
+      const carrier = {
+        id: 'carrier-1',
+        managedByOrgId: 'org-1',
+        carrierOrgId: null,
+        name: 'Test Carrier',
+        type: 'EXTERNAL_CARRIER' as const,
+        status: 'active',
+        mcNumber: null,
+        dotNumber: null,
+        ein: null,
+        phone: null,
+        email: null,
+        address: null,
+        city: null,
+        state: null,
+        zip: null,
+        notes: null,
+        primaryContactName: null,
+        primaryContactPhone: null,
+        primaryContactEmail: null,
+        dispatchFeePercent: new Decimal('10.00'),
+        partnerSplitPercent: new Decimal('50.00'),
+        feeIncludesAccessorials: false,
+        ownerOpPayPercent: null,
+        dispatchAgreementOnFile: true,
+        dispatchAgreementSignedAt: null,
+        insuranceCertOnFile: true,
+        insuranceExpiry: null,
+        w9OnFile: true,
+        carrierPacketOnFile: false,
+        onboardingFlowId: null,
+        onboardingStatus: null,
+        authorityStatus: 'active',
+        billingMethod: 'DIRECT',
+        factoringCompanyName: null,
+        factoringCompanyEmail: null,
+        factoringSubmissionMethod: null,
+        factoringAdvanceRate: null,
+        factoringFeePercent: null,
+        factoringNoa: null,
+        outboundEmailMode: 'MANUAL',
+        replyToEmail: null,
+        isActive: true,
+        deletedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const load = createMockLoad({
+        status: 'QUOTED',
+        carrierId: 'carrier-1',
+        carrier: carrier as LoadWithRelations['carrier'],
+        customerRate: new Decimal('5000.00'),
+        loadedMiles: 1000,
+      });
+      deps.loadRepository.findById.mockResolvedValue(load);
+      deps.loadStatusRepo.sumAccessorialCharges.mockResolvedValue('200.00');
+      deps.loadStatusRepo.updateStatus.mockResolvedValue(
+        createMockLoad({ status: 'BOOKED', carrierId: 'carrier-1' }),
+      );
+
+      await service.transitionStatus({
+        loadId: 'load-1',
+        organizationId: 'org-1',
+        targetStatus: 'BOOKED',
+        userId: 'user-1',
+        userRole: 'admin',
+      });
+
+      expect(deps.loadStatusRepo.updateFinancials).toHaveBeenCalledWith('load-1', {
+        dispatchFee: '500.00',
+        partnerSplit: '250.00',
+        ratePerMile: '5.00',
+      });
+    });
+
+    it('skips financial calculation when no carrier is assigned', async () => {
+      const load = createMockLoad({
+        status: 'QUOTED',
+        carrierId: 'carrier-1',
+        carrier: null,
+        customerRate: new Decimal('5000.00'),
+      });
+      deps.loadRepository.findById.mockResolvedValue(load);
+      deps.loadStatusRepo.updateStatus.mockResolvedValue(
+        createMockLoad({ status: 'BOOKED', carrierId: 'carrier-1' }),
+      );
+
+      await service.transitionStatus({
+        loadId: 'load-1',
+        organizationId: 'org-1',
+        targetStatus: 'BOOKED',
+        userId: 'user-1',
+        userRole: 'admin',
+      });
+
+      expect(deps.loadStatusRepo.updateFinancials).not.toHaveBeenCalled();
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+        'Skipping financial calculation — no carrier assigned',
+        { loadId: 'load-1' },
+      );
+    });
+
+    it('skips financial calculation when no customer rate is set', async () => {
+      const load = createMockLoad({
+        status: 'QUOTED',
+        carrierId: 'carrier-1',
+        carrier: {
+          id: 'carrier-1',
+          type: 'EXTERNAL_CARRIER',
+          dispatchFeePercent: { toString: () => '10.00' },
+          partnerSplitPercent: { toString: () => '50.00' },
+          feeIncludesAccessorials: false,
+        } as LoadWithRelations['carrier'],
+        customerRate: null,
+      });
+      deps.loadRepository.findById.mockResolvedValue(load);
+      deps.loadStatusRepo.updateStatus.mockResolvedValue(
+        createMockLoad({ status: 'BOOKED', carrierId: 'carrier-1' }),
+      );
+
+      await service.transitionStatus({
+        loadId: 'load-1',
+        organizationId: 'org-1',
+        targetStatus: 'BOOKED',
+        userId: 'user-1',
+        userRole: 'admin',
+      });
+
+      expect(deps.loadStatusRepo.updateFinancials).not.toHaveBeenCalled();
+      expect(deps.logger.warn).toHaveBeenCalledWith(
+        'Skipping financial calculation — no customer rate set',
+        { loadId: 'load-1' },
+      );
     });
 
     it('throws NotFoundError when load does not exist', async () => {
@@ -181,7 +325,7 @@ describe('loadStatusService', () => {
       ).rejects.toThrow(ValidationError);
     });
 
-    it('returns warnings when dispatching without rate con and not overriding', async () => {
+    it('throws ValidationError when dispatching without rate con', async () => {
       const load = createMockLoad({
         status: 'BOOKED',
         carrierId: 'carrier-1',
@@ -191,21 +335,19 @@ describe('loadStatusService', () => {
       });
       deps.loadRepository.findById.mockResolvedValue(load);
 
-      const result = await service.transitionStatus({
-        loadId: 'load-1',
-        organizationId: 'org-1',
-        targetStatus: 'DISPATCHED',
-        userId: 'user-1',
-        userRole: 'admin',
-        overrideWarnings: false,
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.warnings).toBeDefined();
-      expect(result.warnings?.[0]?.message).toBe('No broker rate con on file');
+      await expect(
+        service.transitionStatus({
+          loadId: 'load-1',
+          organizationId: 'org-1',
+          targetStatus: 'DISPATCHED',
+          userId: 'user-1',
+          userRole: 'admin',
+          overrideWarnings: false,
+        }),
+      ).rejects.toThrow(ValidationError);
     });
 
-    it('proceeds when dispatching without rate con and overriding warnings', async () => {
+    it('throws ValidationError when dispatching without rate con even with overrideWarnings', async () => {
       const load = createMockLoad({
         status: 'BOOKED',
         carrierId: 'carrier-1',
@@ -214,20 +356,17 @@ describe('loadStatusService', () => {
         rateConReceivedAt: null,
       });
       deps.loadRepository.findById.mockResolvedValue(load);
-      deps.loadStatusRepo.updateStatus.mockResolvedValue(
-        createMockLoad({ status: 'DISPATCHED' }),
-      );
 
-      const result = await service.transitionStatus({
-        loadId: 'load-1',
-        organizationId: 'org-1',
-        targetStatus: 'DISPATCHED',
-        userId: 'user-1',
-        userRole: 'admin',
-        overrideWarnings: true,
-      });
-
-      expect(result.success).toBe(true);
+      await expect(
+        service.transitionStatus({
+          loadId: 'load-1',
+          organizationId: 'org-1',
+          targetStatus: 'DISPATCHED',
+          userId: 'user-1',
+          userRole: 'admin',
+          overrideWarnings: true,
+        }),
+      ).rejects.toThrow(ValidationError);
     });
 
     it('requires carrierId for BOOKED transition', async () => {
@@ -296,7 +435,7 @@ describe('loadStatusService', () => {
     });
 
     it('publishes load.delivered event when transitioning to DELIVERED', async () => {
-      const load = createMockLoad({ status: 'AT_DELIVERY' });
+      const load = createMockLoad({ status: 'AT_DELIVERY', bolSignedAt: new Date() });
       deps.loadRepository.findById.mockResolvedValue(load);
       deps.loadStatusRepo.updateStatus.mockResolvedValue(
         createMockLoad({ status: 'DELIVERED' }),

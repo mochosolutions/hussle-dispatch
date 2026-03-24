@@ -17,7 +17,7 @@ export function* fetchCarrierVehiclesSaga(
       carrierId,
     )) as SagaReturnType<typeof getCarrierVehicles>;
 
-    yield put(vehicleActions.setAll(response.data));
+    yield put(vehicleActions.upsertMany(response));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load carrier vehicles';

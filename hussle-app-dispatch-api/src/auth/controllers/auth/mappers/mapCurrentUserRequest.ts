@@ -14,6 +14,7 @@ export const mapCurrentUserRequest = (req: Request): CurrentUserInput | null => 
       email: authenticatedUser.email ?? '',
       role: authenticatedUser.role,
       organizationId: authenticatedUser.organizationId,
+      orgSlug: authenticatedUser.orgSlug,
     },
   };
 };

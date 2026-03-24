@@ -1,9 +1,8 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 
 import type { Driver } from 'features/carrier/types';
+import { StatusCell } from 'components/Statusbadge';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
-
-import { DRIVER_STATUS_LABELS } from '../../constants';
 
 export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
   const displayName = getDriverDisplayName(data);
@@ -13,11 +12,11 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
     .join('');
 
   return (
-    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.5 }}>
+    <Stack direction="row" alignItems="center" sx={{ py: 0.5, gap: 1.5 }}>
       <Box
         sx={{
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
           borderRadius: '50%',
           backgroundColor: 'primary.lighter',
           color: 'primary.main',
@@ -56,12 +55,12 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
 
 export const DriverStatusCellRenderer = ({ data }: { data: Driver }) => {
   if (data.isAvailable) {
-    return <Chip label="Available" size="small" color="success" variant="filled" />;
+    return <StatusCell status="DRIVER_AVAILABLE" />;
   }
 
-  const label = DRIVER_STATUS_LABELS[data.status] ?? 'Unavailable';
+  const statusKey = data.status === 'on_load' ? 'DRIVER_ON_LOAD' : 'DRIVER_UNAVAILABLE';
 
-  return <Chip label={label} size="small" color="default" variant="filled" />;
+  return <StatusCell status={statusKey} />;
 };
 
 export const DriverLocationCellRenderer = ({ data }: { data: Driver }) => {

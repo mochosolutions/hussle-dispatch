@@ -1,7 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import { enqueueSnackbar } from 'notistack';
 import { getLoad } from 'utils/api/loads/loadApi';
-import type { LoadListItem } from '../../types';
 import {
   fetchLoadDetailsRequest,
   fetchLoadDetailsSuccess,
@@ -15,41 +14,12 @@ export function* fetchLoadDetailSaga(
   const { id } = action.payload;
 
   try {
-    const response = (yield call(getLoad, id)) as SagaReturnType<typeof getLoad>;
+    const load = (yield call(getLoad, id)) as SagaReturnType<typeof getLoad>;
 
-    const { load } = response;
-
-    // Map LoadDetail to LoadListItem for entity store
-    const origin = load.stops.find((s) => s.type === 'PICKUP');
-    const deliveries = load.stops.filter((s) => s.type === 'DELIVERY');
-    const lastDelivery = deliveries[deliveries.length - 1];
-
-    const loadListItem: LoadListItem = {
-      id: load.id,
-      loadNumber: load.loadNumber,
-      status: load.status,
-      equipmentType: load.equipmentType,
-      commodity: load.commodity,
-      customerRate: load.customerRate,
-      carrierRate: load.carrierRate,
-      totalMiles: load.totalMiles,
-      ratePerMile: load.ratePerMile,
-      carrierId: load.carrierId,
-      carrierName: load.carrier?.name ?? null,
-      driverId: load.driverId,
-      driverName: load.driver
-        ? `${load.driver.firstName} ${load.driver.lastName}`
-        : null,
-      originCity: origin?.city ?? null,
-      originState: origin?.state ?? null,
-      destinationCity: lastDelivery?.city ?? null,
-      destinationState: lastDelivery?.state ?? null,
-      accessorialChargeCount: load.accessorialCharges.length,
-      createdAt: load.createdAt,
-      updatedAt: load.updatedAt,
-    };
-
-    yield put(loadActions.upsertOne(loadListItem));
+    // Store the full LoadDetail in the entity adapter. The adapter is typed as
+    // LoadListItem, but we upsert the full detail shape so that the detail page
+    // can access relations (stops, carrier, driver, etc.) via a type assertion.
+    yield put(loadActions.upsertOne(load));
     yield put(fetchLoadDetailsSuccess({ id }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load load details';

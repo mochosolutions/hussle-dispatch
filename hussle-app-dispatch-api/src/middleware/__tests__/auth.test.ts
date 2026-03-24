@@ -20,7 +20,7 @@ describe('requireRole', () => {
       userId: 'user-1',
       organizationId: 'org-1',
       orgSlug: 'test-org',
-      orgStatus: 'active',
+      orgStatus: 'ACTIVE',
       membershipId: 'mem-1',
       role,
       refreshTokenHash: '',

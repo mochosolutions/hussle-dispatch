@@ -1,7 +1,13 @@
 import type { PrismaTransaction } from '@/config/database';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
+import {
+  ActiveLoadsConflictError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '@/shared/errors';
 import type { LoadQueryPort } from '@/shared/loadQueries';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
@@ -15,10 +21,12 @@ import type {
 } from '../types/vehicleTypes';
 import type {
   AssignDriverServiceInput,
+  CreateExpenseServiceInput,
   CreateVehicleServiceInput,
   DeleteVehicleServiceInput,
   GetVehicleByIdServiceInput,
   GetVehicleLoadHistoryServiceInput,
+  ListExpensesServiceInput,
   ListVehiclesServiceInput,
   UnassignDriverServiceInput,
   UpdateVehicleServiceInput,
@@ -34,6 +42,8 @@ const listSortableFields = [
   'make',
   'model',
 ] as const;
+
+const MAX_BLOCKING_LOAD_IDS = 10;
 
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
@@ -116,6 +126,42 @@ const toUpdateVehicleData = (
   notes: input.notes,
 });
 
+const getUniqueIds = (values: (string | null | undefined)[]): string[] =>
+  Array.from(
+    new Set(values.filter((value): value is string => value !== null && value !== undefined)),
+  );
+
+const findBlockingReassignmentLoadIds = async (
+  driverIds: string[],
+  vehicleIds: string[],
+  deps: VehicleServiceDeps,
+): Promise<string[]> => {
+  const driverLoadIds = await Promise.all(
+    driverIds.map((driverId) =>
+      deps.loadRepository.findBlockingLoadIdsByDriver(
+        driverId,
+        BLOCKING_DELETE_STATUSES,
+        MAX_BLOCKING_LOAD_IDS,
+      ),
+    ),
+  );
+
+  const vehicleLoadIds = await Promise.all(
+    vehicleIds.map((vehicleId) =>
+      deps.loadRepository.findBlockingLoadIdsByVehicle(
+        vehicleId,
+        BLOCKING_DELETE_STATUSES,
+        MAX_BLOCKING_LOAD_IDS,
+      ),
+    ),
+  );
+
+  return Array.from(new Set([...driverLoadIds.flat(), ...vehicleLoadIds.flat()])).slice(
+    0,
+    MAX_BLOCKING_LOAD_IDS,
+  );
+};
+
 export const createVehicleService = (deps: VehicleServiceDeps): VehicleService => ({
   createVehicle: async ({ organizationId, role, input }: CreateVehicleServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
@@ -130,7 +176,7 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
     const params = parsePaginationParams(query);
     const sort = getSafeSortField(params.sort);
 
-    return paginateQuery(
+    const result = await paginateQuery(
       { ...params, sort },
       {
         findMany: ({ skip, take, orderBy }) =>
@@ -148,6 +194,18 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
           }),
       },
     );
+
+    const vehicleIds = result.data.map((vehicle) => vehicle.id);
+    const activeLoadCounts = vehicleIds.length > 0
+      ? await deps.loadRepository.countActiveByVehicleIds(vehicleIds, organizationId)
+      : new Map<string, number>();
+
+    const enrichedData = result.data.map((vehicle) => ({
+      ...vehicle,
+      activeLoadCount: activeLoadCounts.get(vehicle.id) ?? 0,
+    }));
+
+    return { data: enrichedData, meta: result.meta };
   },
 
   getVehicleById: async ({ id, organizationId, role }: GetVehicleByIdServiceInput) => {
@@ -225,13 +283,36 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
 
     const existingVehicle = await deps.vehicleRepository.findByDriverId(driverId);
 
-    if (existingVehicle !== null) {
-      throw new ConflictError(
-        `Driver is already assigned to vehicle ${existingVehicle.unitNumber} (${existingVehicle.id}).`,
+    if (existingVehicle !== null && existingVehicle.id === id) {
+      return vehicle;
+    }
+
+    const blockingLoadIds = await findBlockingReassignmentLoadIds(
+      getUniqueIds([driver.id, vehicle.driverId]),
+      getUniqueIds([vehicle.id, existingVehicle?.id]),
+      deps,
+    );
+
+    if (blockingLoadIds.length > 0) {
+      throw new ActiveLoadsConflictError(
+        'Vehicle-driver reassignment is blocked by active loads.',
+        blockingLoadIds,
       );
     }
 
-    return deps.vehicleRepository.assignDriver(id, driverId);
+    return deps.transactionManager.runInTransaction(async (tx) => {
+      const txVehicleRepository = deps.vehicleRepositoryFactory(tx);
+
+      if (existingVehicle !== null && existingVehicle.id !== id) {
+        await txVehicleRepository.unassignDriver(existingVehicle.id);
+      }
+
+      if (vehicle.driverId !== null && vehicle.driverId !== driverId) {
+        await txVehicleRepository.unassignDriver(id);
+      }
+
+      return txVehicleRepository.assignDriver(id, driverId);
+    });
   },
 
   unassignDriver: async ({ id, organizationId, role }: UnassignDriverServiceInput) => {
@@ -243,13 +324,50 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
       throw new ValidationError('Vehicle does not have an assigned driver.');
     }
 
+    const blockingLoadIds = await findBlockingReassignmentLoadIds(
+      [vehicle.driverId],
+      [vehicle.id],
+      deps,
+    );
+
+    if (blockingLoadIds.length > 0) {
+      throw new ActiveLoadsConflictError(
+        'Vehicle-driver unassignment is blocked by active loads.',
+        blockingLoadIds,
+      );
+    }
+
     return deps.vehicleRepository.unassignDriver(id);
   },
 
-  getLoadHistory: async ({ id, organizationId, role, query }: GetVehicleLoadHistoryServiceInput) => {
+  getLoadHistory: async ({
+    id,
+    organizationId,
+    role,
+    query,
+  }: GetVehicleLoadHistoryServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
     await findVehicleOrThrow(id, organizationId, deps);
 
     return deps.loadQueryPort.getLoadsByVehicleId(id, query);
+  },
+
+  createExpense: async ({
+    vehicleId,
+    organizationId,
+    role,
+    input,
+  }: CreateExpenseServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    await findVehicleOrThrow(vehicleId, organizationId, deps);
+
+    return deps.vehicleRepository.createExpense(vehicleId, input);
+  },
+
+  listExpenses: async ({ vehicleId, organizationId, role }: ListExpensesServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    await findVehicleOrThrow(vehicleId, organizationId, deps);
+
+    return deps.vehicleRepository.findExpensesByVehicleId(vehicleId);
   },
 });

@@ -88,32 +88,34 @@ export interface LoadMarket {
 
 export interface LoadIntelFeedItem {
   id: string;
-  externalId?: string;
   score: number;
-  scoreMode: 'star' | 'diamond';
-  scoreBreakdown: ScoreBreakdown;
-  chainScore: number | null;
-  chainCount: number;
-  chain: ChainResult | null;
-  status: string;
   rate: number | null;
   minBookRate: number | null;
   miles: number;
   equipmentType: EquipmentType;
-  source: LoadSource;
   origin: Location;
   destination: Location;
-  carrier: LoadCarrier;
-  customer: LoadCustomer;
-  market: LoadMarket;
-  destinationMarket: LoadMarket;
-  marketStrength: MarketStrength;
-  pickupStops: number;
-  dropStops: number;
   pickupDate: string;
-  vsMinimum: number | null;
   bestTruck: TruckScore | null;
   truckBreakdown: TruckScore[];
+
+  // Fields not yet provided by backend -- optional for MVP
+  externalId?: string | null;
+  scoreMode?: 'star' | 'diamond' | null;
+  scoreBreakdown?: ScoreBreakdown | null;
+  chainScore?: number | null;
+  chainCount?: number | null;
+  chain?: ChainResult | null;
+  status?: string | null;
+  source?: LoadSource | null;
+  carrier?: LoadCarrier | null;
+  customer?: LoadCustomer | null;
+  market?: LoadMarket | null;
+  destinationMarket?: LoadMarket | null;
+  marketStrength?: MarketStrength | null;
+  pickupStops?: unknown[];
+  dropStops?: unknown[];
+  vsMinimum?: number | null;
 }
 
 // ---------------------------------------------------------------------------

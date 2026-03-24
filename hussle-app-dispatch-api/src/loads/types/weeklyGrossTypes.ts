@@ -7,6 +7,8 @@ export interface WeeklyGrossItem {
   vehicleId: string;
   unitNumber: string;
   carrierName: string;
+  driverName: string | null;
+  loadCount: number;
   revenue: Decimal;
   target: Decimal;
   percent: number;
@@ -29,12 +31,13 @@ export interface WeeklyGrossQueryPort {
       id: string;
       unitNumber: string;
       carrier: { name: string };
+      driver: { firstName: string; lastName: string } | null;
     }[]
   >;
   getWeeklyRevenue(
     vehicleId: string,
     weekStart: Date,
     weekEnd: Date,
-  ): Promise<Decimal>;
+  ): Promise<{ revenue: Decimal; loadCount: number }>;
   getWeeklyGrossTarget(organizationId: string): Promise<Decimal>;
 }

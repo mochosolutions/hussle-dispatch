@@ -4,39 +4,43 @@ import {
   Stack,
   TextField,
   Box,
-  Typography,
   Grid,
-  Tabs,
-  Tab,
-  Chip,
+  Select,
+  MenuItem,
   Button,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ActionsCell, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
+import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import type { ActionsCellConfig } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
+import { KpiCell } from 'components/Typography';
+import { StatusBadge } from 'components/Statusbadge';
 import { useDispatch, useSelector } from 'store';
 import type { Vehicle } from 'features/carrier/types';
-import type { ActionsCellConfig } from '@mocho/ui/components';
+import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { fetchVehiclesRequest } from '../../store/reducers';
 import {
-  selectAllVehicles,
   selectVehicleKpis,
   selectVehicleListLoading,
+  selectFilteredVehicles,
 } from '../../store/selectors/vehicleSelectors';
+import type { VehicleTab } from '../../store/selectors/vehicleSelectors';
 import {
   VehicleUnitCellRenderer,
   VehicleTypeCellRenderer,
   VehicleOwnershipCellRenderer,
 } from '../../components/VehicleCellRenderers';
-import { VehicleCreateDialog } from '../../components/VehicleCreateDialog';
+import { VehicleCreateDrawer } from '../../components/VehicleCreateDialog';
 
-type VehicleTab = 'all' | 'OWNED' | 'LEASED';
 
 const VehicleStatusCellRenderer = ({ data }: { data: Vehicle }) => {
-  const color = data.isActive ? 'success' : 'default';
-  const label = data.isActive ? 'Active' : 'Inactive';
+  const status = data.isActive ? 'VEHICLE_ACTIVE' : 'VEHICLE_INACTIVE';
 
   return (
-    <Chip label={label} size="small" color={color} variant="outlined" sx={{ fontWeight: 600 }} />
+    <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+      <StatusBadge status={status} size="small" />
+    </Box>
   );
 };
 
@@ -47,7 +51,6 @@ const VehicleListPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const vehicles = useSelector(selectAllVehicles);
   const isLoading = useSelector(selectVehicleListLoading);
 
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,6 +99,8 @@ const VehicleListPage = () => {
     [navigate],
   );
 
+  const carrierEntities = useSelector(carrierSelectors.selectEntities);
+
   const actionsConfig = useMemo<ActionsCellConfig<Vehicle>>(
     () => ({
       showView: true,
@@ -125,7 +130,12 @@ const VehicleListPage = () => {
         headerName: 'Carrier',
         field: 'carrierId',
         minWidth: 120,
-        valueGetter: () => '\u2014',
+        valueGetter: (params: { data: Vehicle }) => {
+          if (!params.data.carrierId) {
+            return '\u2014';
+          }
+          return carrierEntities[params.data.carrierId]?.name ?? params.data.carrierId;
+        },
       },
       {
         headerName: 'Ownership',
@@ -134,7 +144,7 @@ const VehicleListPage = () => {
         cellRenderer: VehicleOwnershipCellRenderer,
       },
       {
-        headerName: 'Assigned Driver',
+        headerName: 'Driver',
         field: 'driverId',
         minWidth: 140,
         valueGetter: (params: { data: Vehicle }) => {
@@ -169,38 +179,23 @@ const VehicleListPage = () => {
         cellRendererParams: { config: actionsConfig },
       },
     ],
-    [actionsConfig],
+    [actionsConfig, carrierEntities],
   );
 
-  const filteredVehicles = useMemo(() => {
-    if (activeTab === 'all') {
-      return vehicles;
-    }
-    return vehicles.filter((vehicle) => vehicle.ownership === activeTab);
-  }, [vehicles, activeTab]);
+  const filteredSelector = useMemo(() => selectFilteredVehicles(activeTab), [activeTab]);
+  const filteredVehicles = useSelector(filteredSelector);
 
   const kpiData = useSelector(selectVehicleKpis);
 
-  const tabOptions = useMemo(
-    () => [
-      {
-        key: 'all',
-        label: 'All',
-        count: vehicles.length,
-      },
-      {
-        key: 'OWNED',
-        label: 'Owned',
-        count: vehicles.filter((vehicle) => vehicle.ownership === 'OWNED').length,
-      },
-      {
-        key: 'LEASED',
-        label: 'Leased',
-        count: vehicles.filter((vehicle) => vehicle.ownership === 'LEASED').length,
-      },
-    ],
-    [vehicles],
-  );
+  const handleTabChange = useCallback((event: SelectChangeEvent<VehicleTab>) => {
+    setActiveTab(event.target.value as VehicleTab);
+  }, []);
+
+  const filterOptions = [
+    { value: 'all' as const, label: 'All Vehicles' },
+    { value: 'OWNED' as const, label: 'Owned' },
+    { value: 'LEASED' as const, label: 'Leased' },
+  ];
 
   const defaultColDef = useMemo(
     () => ({
@@ -215,9 +210,9 @@ const VehicleListPage = () => {
 
   return (
     <PageWrapper isLoading={false} errorContext="VehicleListPage" sx={{ gap: 2 }}>
-      <PageHeader
+      <ListLayout
         title="Vehicles"
-        headerActions={
+        primaryAction={
           <Stack direction="row" spacing={1}>
             <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
@@ -225,99 +220,84 @@ const VehicleListPage = () => {
             </Button>
           </Stack>
         }
-      />
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {kpiData.map((kpiItem) => (
-          <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
-            <MainCard sx={{ height: '100%' }}>
-              <Typography variant="caption" color="text.secondary">
-                {kpiItem.label}
-              </Typography>
-              <Typography variant="h4" color="text.primary" sx={{ mt: 0.5 }}>
-                {kpiItem.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {kpiItem.subtitle}
-              </Typography>
-            </MainCard>
-          </Grid>
-        ))}
-      </Grid>
-
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
       >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={(_event, value: VehicleTab) => setActiveTab(value)}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            sx={{ minHeight: 40 }}
-          >
-            {tabOptions.map((tabOption) => (
-              <Tab
-                key={tabOption.key}
-                value={tabOption.key}
-                label={
-                  <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
-                    <Chip label={tabOption.count} size="small" />
-                  </Stack>
-                }
-                sx={{ minHeight: 40 }}
-              />
-            ))}
-          </Tabs>
-          <Box>
-            <TextField
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search by unit#, make, model..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Box>
-        </Stack>
+        <Grid container spacing={2} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}>
+          {kpiData.map((kpiItem) => (
+            <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
+              <MainCard sx={{ height: '100%' }}>
+                <KpiCell label={kpiItem.label} value={kpiItem.value} sub={kpiItem.subtitle} />
+              </MainCard>
+            </Grid>
+          ))}
+        </Grid>
 
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box
-            sx={{
-              minHeight: { xs: 300, md: 420 },
-              flex: 1,
-            }}
+        <Box sx={{ px: { xs: 2, sm: 3 }, pb: 3, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={filteredVehicles}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={filteredVehicles.length}
-              rowCountLabel="vehicles"
-              noDataMessage="No vehicles found"
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: false,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 62,
-                onRowClicked: handleRowClicked,
-              }}
-              loading={isLoading}
-            />
-          </Box>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              justifyContent="space-between"
+              spacing={2}
+              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Select<VehicleTab>
+                value={activeTab}
+                onChange={handleTabChange}
+                size="small"
+                sx={{ minWidth: 160 }}
+              >
+                {filterOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Box>
+                <TextField
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search by unit#, make, model..."
+                  size="small"
+                  sx={{ width: { xs: '100%', lg: 320 } }}
+                />
+              </Box>
+            </Stack>
+
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box
+                sx={{
+                  minHeight: { xs: 300, md: 420 },
+                  flex: 1,
+                }}
+              >
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={filteredVehicles}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={filteredVehicles.length}
+                  rowCountLabel="vehicles"
+                  noDataMessage="No vehicles found"
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: false,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 62,
+                    onRowClicked: handleRowClicked,
+                  }}
+                  loading={isLoading}
+                />
+              </Box>
+            </Box>
+          </MainCard>
         </Box>
-      </MainCard>
+      </ListLayout>
 
-      <VehicleCreateDialog open={createDialogOpen} onClose={handleCloseCreate} />
+      {createDialogOpen && <VehicleCreateDrawer onClose={handleCloseCreate} />}
     </PageWrapper>
   );
 };

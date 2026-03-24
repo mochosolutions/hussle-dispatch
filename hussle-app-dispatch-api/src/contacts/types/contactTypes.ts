@@ -1,44 +1,28 @@
-import type { Contact, ContactType, Prisma } from '@prisma/client';
+import type { Contact, Prisma } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 
 export interface CreateContactInput {
-  type: ContactType;
-  companyName: string;
-  contactName?: string;
+  customerId?: string | null;
+  role?: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
   email?: string;
-  mcNumber?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  paymentTerms?: string;
-  paymentTermsDays?: number;
-  quickPayDiscount?: string | number;
-  carrierPacketSentAt?: Date;
   notes?: string;
 }
 
 export interface UpdateContactInput {
-  type?: ContactType;
-  companyName?: string;
-  contactName?: string;
+  customerId?: string | null;
+  role?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   email?: string;
-  mcNumber?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  paymentTerms?: string;
-  paymentTermsDays?: number;
-  quickPayDiscount?: string | number;
-  carrierPacketSentAt?: Date;
   notes?: string;
 }
 
 export interface ContactListFilters {
-  type?: ContactType;
+  customerId?: string;
   search?: string;
 }
 

@@ -2,24 +2,22 @@
  * EventBus abstraction for publishing and subscribing to domain events.
  * Implementations: RabbitMqEventBus (production), InMemoryEventBus (tests).
  */
+import type { EventMap } from './eventMap';
 
-export type DomainEventName =
-  | 'load.status.changed'
-  | 'load.delivered'
-  | 'load.canceled'
-  | 'load.tonu';
-
-export interface DomainEvent {
-  readonly name: DomainEventName;
-  readonly occurredAt: Date;
-  readonly correlationId?: string;
-  readonly payload: Record<string, unknown>;
+export interface PublishOptions {
+  delay?: number; // ms — deferred delivery (not yet implemented)
 }
 
-export type EventHandler = (payload: unknown) => Promise<void>;
-
 export interface EventBus {
-  publish(event: string, payload: unknown): Promise<void>;
-  subscribe(event: string, handler: EventHandler): Promise<void>;
+  publish<K extends keyof EventMap>(
+    event: K,
+    data: EventMap[K],
+    options?: PublishOptions,
+  ): Promise<void>;
+  subscribe<K extends keyof EventMap>(
+    event: K,
+    queueGroup: string,
+    handler: (data: EventMap[K]) => Promise<void>,
+  ): Promise<void>;
   close(): Promise<void>;
 }

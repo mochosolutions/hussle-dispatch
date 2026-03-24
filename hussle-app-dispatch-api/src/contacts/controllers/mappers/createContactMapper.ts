@@ -5,7 +5,11 @@ import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMappe
 
 export const createContactMapper = (req: Request): CreateContactServiceInput => {
   const context = getRequestContextMapper(req);
-  const input: CreateContactInput = req.body;
+  const input: CreateContactInput = {
+    ...req.body,
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+  };
 
   return {
     ...context,

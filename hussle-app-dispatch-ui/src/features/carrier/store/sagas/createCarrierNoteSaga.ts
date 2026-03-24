@@ -20,7 +20,7 @@ export function* createCarrierNoteSaga(
       data,
     )) as SagaReturnType<typeof createCarrierNote>;
 
-    yield put(createCarrierNoteSuccess({ carrierId, note: response.note }));
+    yield put(createCarrierNoteSuccess({ carrierId, note: response }));
     yield call(enqueueSnackbar, 'Note added', { variant: 'success' });
   } catch (error: unknown) {
     const errorMessage =

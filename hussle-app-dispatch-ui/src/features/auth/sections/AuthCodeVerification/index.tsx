@@ -38,8 +38,8 @@ const AuthCodeVerification = () => {
             confirmationCode: values.confirmationCode,
           }),
         );
-      } catch (err) {
-        console.error(err);
+      } catch (_err: unknown) {
+        // Error handled by saga
       }
     },
   });

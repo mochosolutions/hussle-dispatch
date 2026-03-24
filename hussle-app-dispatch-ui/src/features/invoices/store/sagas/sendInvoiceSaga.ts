@@ -18,7 +18,7 @@ export function* sendInvoiceSaga(
       recipientEmail,
     })) as SagaReturnType<typeof sendInvoice>;
 
-    yield put(invoiceActions.upsertOne(response.invoice));
+    yield put(invoiceActions.upsertOne(response));
     yield put(sendInvoiceSuccess({ id }));
     yield call(enqueueSnackbar, 'Invoice sent successfully', { variant: 'success' });
   } catch (error: unknown) {

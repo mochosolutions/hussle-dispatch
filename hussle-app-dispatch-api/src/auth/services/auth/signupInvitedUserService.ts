@@ -1,5 +1,7 @@
 import type { PrismaTransaction } from '@/shared/prisma';
 import { logger } from '@/shared/utils/logger';
+import { MembershipStatus } from '../../constants/enums';
+import { ROLES } from '@/config/roles';
 import { NotFoundError } from '@/shared/errors';
 import type { CreateMembershipInput, Membership } from '../../types/membershipTypes';
 import type { Organization } from '../../types/organizationTypes';
@@ -110,8 +112,8 @@ export const signupInvitedUserUseCase = async (
         {
           userId: user.id,
           organizationId,
-          role: 'admin',
-          status: 'active',
+          role: ROLES.ADMIN,
+          status: MembershipStatus.ACTIVE,
         },
         tx
       );

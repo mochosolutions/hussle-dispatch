@@ -8,7 +8,9 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { PageWrapper, PageHeader, MainCard } from '@mocho/ui/components';
+import { PageWrapper, MainCard } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
+import { KpiCell, SectionLabel } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
 import { fetchDashboardRequest } from '../store/sagas/dashboardSagaWatcher';
 import {
@@ -32,32 +34,6 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
   maximumFractionDigits: 0,
 });
-
-// ---------------------------------------------------------------------------
-// KPI Card
-// ---------------------------------------------------------------------------
-
-interface KpiCardProps {
-  label: string;
-  value: string;
-  subtitle?: string;
-}
-
-const KpiCard: React.FC<KpiCardProps> = ({ label, value, subtitle }) => (
-  <MainCard sx={{ height: '100%' }}>
-    <Typography variant="caption" color="text.secondary">
-      {label}
-    </Typography>
-    <Typography variant="h4" color="text.primary" sx={{ mt: 0.5 }}>
-      {value}
-    </Typography>
-    {subtitle && (
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {subtitle}
-      </Typography>
-    )}
-  </MainCard>
-);
 
 // ---------------------------------------------------------------------------
 // Weekly Gross Bar
@@ -159,37 +135,43 @@ const DashboardPage = () => {
       return [];
     }
 
-    const statusBreakdown = Object.entries(kpis.activeLoads.byStatus)
-      .map(([status, count]) => `${count} ${status}`)
+    const activeTotal = (kpis?.kanbanCounts?.NEW ?? 0) + (kpis?.kanbanCounts?.BOOKED ?? 0)
+      + (kpis?.kanbanCounts?.ACTIVE ?? 0) + (kpis?.kanbanCounts?.ISSUES ?? 0);
+
+    const kanbanBreakdown = Object.entries(kpis?.kanbanCounts ?? {})
+      .filter(([, count]) => count > 0)
+      .map(([group, count]) => `${count} ${group}`)
       .join(', ');
+
+    const overdueTotal = Number(kpis?.overdueInvoices?.total ?? 0);
 
     return [
       {
         label: 'Active Loads',
-        value: String(kpis.activeLoads.total),
-        subtitle: statusBreakdown || undefined,
+        value: String(activeTotal),
+        sub: kanbanBreakdown || undefined,
       },
       {
         label: 'Weekly Revenue',
-        value: currencyFormatter.format(kpis.weeklyRevenue),
+        value: currencyFormatter.format(Number(kpis?.revenue?.revenueThisWeek ?? 0)),
       },
       {
         label: 'Monthly Revenue',
-        value: currencyFormatter.format(kpis.monthlyRevenue),
+        value: currencyFormatter.format(Number(kpis?.revenue?.revenueThisMonth ?? 0)),
       },
       {
         label: 'Dispatch Fees',
-        value: currencyFormatter.format(kpis.dispatchFees),
+        value: currencyFormatter.format(Number(kpis?.revenue?.dispatchFeesThisMonth ?? 0)),
       },
       {
         label: 'Partner Split',
-        value: currencyFormatter.format(kpis.partnerSplit),
+        value: currencyFormatter.format(Number(kpis?.revenue?.partnerSplitThisMonth ?? 0)),
       },
       {
         label: 'Overdue Invoices',
-        value: String(kpis.overdueInvoices.count),
-        subtitle: kpis.overdueInvoices.total > 0
-          ? currencyFormatter.format(kpis.overdueInvoices.total)
+        value: String(kpis?.overdueInvoices?.count ?? 0),
+        sub: overdueTotal > 0
+          ? currencyFormatter.format(overdueTotal)
           : undefined,
       },
     ];
@@ -206,150 +188,129 @@ const DashboardPage = () => {
   const activeCategories = useMemo(
     () =>
       CATEGORY_ORDER.filter(
-        (cat) => attentionByCategory[cat].length > 0,
+        (cat) => (attentionByCategory[cat]?.length ?? 0) > 0,
       ),
     [attentionByCategory],
   );
 
   return (
     <PageWrapper isLoading={isLoading} errorContext="DashboardPage" sx={{ gap: 2 }}>
-      <PageHeader title="Dashboard" subtitle="Fleet Command Dispatch" />
-
-      {/* KPI Cards */}
-      <Grid container spacing={2}>
-        {kpiCards.map((card) => (
-          <Grid key={card.label} item xs={12} sm={6} md={4} xl={2}>
-            <KpiCard label={card.label} value={card.value} subtitle={card.subtitle} />
-          </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={2}>
-        {/* Weekly Gross Tracker */}
-        <Grid item xs={12} lg={8}>
-          <MainCard>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                color: 'text.secondary',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                fontSize: '0.6875rem',
-                letterSpacing: 0.5,
-                mb: 2,
-              }}
-            >
-              Weekly Gross Tracker
-            </Typography>
-            {weeklyGross.length > 0 ? (
-              <Stack spacing={2}>
-                {weeklyGross.map((item) => (
-                  <GrossBar key={item.vehicleId} item={item} maxRevenue={maxRevenue} />
-                ))}
-              </Stack>
-            ) : (
-              <Typography variant="body2" color="text.disabled">
-                No weekly gross data available
-              </Typography>
-            )}
-          </MainCard>
+      <ListLayout title="Dashboard">
+        {/* KPI Cards */}
+        <Grid container spacing={2} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}>
+          {kpiCards.map((card) => (
+            <Grid key={card.label} item xs={12} sm={6} md={4} xl={2}>
+              <MainCard sx={{ height: '100%' }}>
+                <KpiCell label={card.label} value={card.value} sub={card.sub} />
+              </MainCard>
+            </Grid>
+          ))}
         </Grid>
 
-        {/* Attention Items */}
-        <Grid item xs={12} lg={4}>
-          <MainCard>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  fontSize: '0.6875rem',
-                  letterSpacing: 0.5,
-                }}
-              >
-                Needs Attention
-              </Typography>
-              {totalAttentionCount > 0 && (
-                <Chip
-                  label={totalAttentionCount}
-                  size="small"
-                  color="warning"
-                  sx={{ fontWeight: 700 }}
-                />
-              )}
-            </Stack>
-
-            {totalAttentionCount === 0 ? (
-              <Box
-                sx={{
-                  py: 4,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  All clear &mdash; no items need attention
+        <Grid container spacing={2} sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
+          {/* Weekly Gross Tracker */}
+          <Grid item xs={12} lg={8}>
+            <MainCard>
+              <SectionLabel sx={{ mb: 2 }}>Weekly Gross Tracker</SectionLabel>
+              {weeklyGross.length > 0 ? (
+                <Stack spacing={2}>
+                  {weeklyGross.map((item) => (
+                    <GrossBar key={item.vehicleId} item={item} maxRevenue={maxRevenue} />
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.disabled">
+                  No weekly gross data available
                 </Typography>
-              </Box>
-            ) : (
-              <Stack spacing={2}>
-                {activeCategories.map((category) => {
-                  const items = attentionByCategory[category];
-                  return (
-                    <Box key={category}>
-                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: 700, textTransform: 'uppercase' }}
-                        >
-                          {ATTENTION_CATEGORY_LABELS[category]}
-                        </Typography>
-                        <Chip
-                          label={items.length}
-                          size="small"
-                          color={items.some((i) => i.severity === 'error') ? 'error' : 'warning'}
-                          sx={{ height: 18, fontSize: '0.6875rem' }}
-                        />
-                      </Stack>
-                      <Stack spacing={0.5}>
-                        {items.map((item) => (
-                          <Box
-                            key={item.id}
-                            component={RouterLink}
-                            to={item.linkTo}
-                            sx={{
-                              display: 'block',
-                              textDecoration: 'none',
-                              color: 'inherit',
-                              p: 1,
-                              borderRadius: 1,
-                              border: 1,
-                              borderColor: 'divider',
-                              '&:hover': {
-                                bgcolor: 'action.hover',
-                              },
-                            }}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {item.title}
-                            </Typography>
-                            {item.subtitle && (
-                              <Typography variant="caption" color="text.secondary">
-                                {item.subtitle}
-                              </Typography>
-                            )}
-                          </Box>
-                        ))}
-                      </Stack>
-                    </Box>
-                  );
-                })}
+              )}
+            </MainCard>
+          </Grid>
+
+          {/* Attention Items */}
+          <Grid item xs={12} lg={4}>
+            <MainCard>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <SectionLabel>Needs Attention</SectionLabel>
+                {totalAttentionCount > 0 && (
+                  <Chip
+                    label={totalAttentionCount}
+                    size="small"
+                    color="warning"
+                    sx={{ fontWeight: 700 }}
+                  />
+                )}
               </Stack>
-            )}
-          </MainCard>
+
+              {totalAttentionCount === 0 ? (
+                <Box
+                  sx={{
+                    py: 4,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    All clear &mdash; no items need attention
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2}>
+                  {activeCategories.map((category) => {
+                    const items = attentionByCategory[category];
+                    return (
+                      <Box key={category}>
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ fontWeight: 700, textTransform: 'uppercase' }}
+                          >
+                            {ATTENTION_CATEGORY_LABELS[category]}
+                          </Typography>
+                          <Chip
+                            label={items.length}
+                            size="small"
+                            color={items.some((i) => i.severity === 'error') ? 'error' : 'warning'}
+                            sx={{ height: 18, fontSize: '0.6875rem' }}
+                          />
+                        </Stack>
+                        <Stack spacing={0.5}>
+                          {items.map((item) => (
+                            <Box
+                              key={item.id}
+                              component={RouterLink}
+                              to={item.linkTo}
+                              sx={{
+                                display: 'block',
+                                textDecoration: 'none',
+                                color: 'inherit',
+                                p: 1,
+                                borderRadius: 1,
+                                border: 1,
+                                borderColor: 'divider',
+                                '&:hover': {
+                                  bgcolor: 'action.hover',
+                                },
+                              }}
+                            >
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {item.title}
+                              </Typography>
+                              {item.subtitle && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.subtitle}
+                                </Typography>
+                              )}
+                            </Box>
+                          ))}
+                        </Stack>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
+            </MainCard>
+          </Grid>
         </Grid>
-      </Grid>
+      </ListLayout>
     </PageWrapper>
   );
 };

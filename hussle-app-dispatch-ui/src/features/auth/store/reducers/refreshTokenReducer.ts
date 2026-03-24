@@ -1,10 +1,11 @@
-import {PayloadAction} from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { AuthState } from '../authSlice';
 
 export const refreshTokenReducer = {
-  refreshTokenSuccess: (state, action: PayloadAction<Record<string, never>>) => {
+  refreshTokenSuccess: (_state: AuthState, _action: PayloadAction<Record<string, never>>) => {
     // Token refresh handled by cookies - no state update needed
   },
-  refreshTokenFailure: (state) => {
+  refreshTokenFailure: (state: AuthState) => {
     state.isLoggedIn = false;
   },
 };

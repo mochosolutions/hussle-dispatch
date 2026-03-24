@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import type { SelectChangeEvent } from '@mui/material';
-import { PageHeader, PageWrapper } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
 import { useSelector, useDispatch } from 'store';
 import { useDrawerActions } from '../../ui/hooks/useDrawerActions';
 import {
@@ -183,34 +183,35 @@ const LoadIntelligencePage = () => {
   );
 
   return (
-    <PageWrapper isLoading={isLoading && feedItems.length === 0} errorContext="LoadIntelligencePage">
-      <PageHeader
-        title="Load Intelligence"
-        headerActions={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleManualEntry}>
-            Manual Entry
-          </Button>
-        }
-      />
-
+    <ListLayout
+      title="Load Intelligence"
+      primaryAction={
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleManualEntry}>
+          Manual Entry
+        </Button>
+      }
+    >
       {/* Stats Bar */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          px: 2,
+          px: { xs: 2, sm: 3 },
           py: 1,
           bgcolor: 'background.paper',
           borderRadius: 1,
           border: 1,
           borderColor: 'divider',
-          mb: 2,
+          mt: 2,
+          mx: { xs: 2, sm: 3 },
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1.5}>
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {stats ? `${stats.totalLoads} loads from ${stats.sourceCount} sources` : 'Loading...'}
+            {stats && `${stats.totalLoads ?? 0} loads from ${stats.sourceCount ?? 0} sources`}
+            {!stats && isLoading && 'Loading...'}
+            {!stats && !isLoading && '0 loads from 0 sources'}
           </Typography>
           {stats &&
             SOURCE_TYPES.map((sourceType) => (
@@ -235,7 +236,8 @@ const LoadIntelligencePage = () => {
           flexWrap: 'wrap',
           gap: 1.5,
           alignItems: 'center',
-          mb: 2,
+          px: { xs: 2, sm: 3 },
+          pt: 2,
         }}
       >
         <TextField
@@ -344,7 +346,7 @@ const LoadIntelligencePage = () => {
       </Box>
 
       {/* Feed List */}
-      <Stack spacing={2} sx={{ pb: 4 }}>
+      <Stack spacing={2} sx={{ px: { xs: 2, sm: 3 }, pt: 2, pb: 4 }}>
         {feedItems.map((item) => (
           <IntelCard key={item.id} item={item} />
         ))}
@@ -380,7 +382,7 @@ const LoadIntelligencePage = () => {
           </Button>
         )}
       </Stack>
-    </PageWrapper>
+    </ListLayout>
   );
 };
 

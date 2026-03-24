@@ -22,7 +22,7 @@ function* fetchKpisSaga(): Generator {
   try {
     yield put(fetchKpisRequest());
     const response = (yield call(getKpis)) as SagaReturnType<typeof getKpis>;
-    yield put(fetchKpisSuccess(response.kpis));
+    yield put(fetchKpisSuccess(response));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load KPIs';
     yield put(fetchKpisFailure({ error: errorMessage }));
@@ -33,7 +33,7 @@ function* fetchWeeklyGrossSaga(): Generator {
   try {
     yield put(fetchWeeklyGrossRequest());
     const response = (yield call(getWeeklyGross)) as SagaReturnType<typeof getWeeklyGross>;
-    yield put(fetchWeeklyGrossSuccess(response.weeklyGross ?? []));
+    yield put(fetchWeeklyGrossSuccess(response ?? []));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load weekly gross';
     yield put(fetchWeeklyGrossFailure({ error: errorMessage }));
@@ -44,7 +44,7 @@ function* fetchAttentionItemsSaga(): Generator {
   try {
     yield put(fetchAttentionItemsRequest());
     const response = (yield call(getAttentionItems)) as SagaReturnType<typeof getAttentionItems>;
-    yield put(fetchAttentionItemsSuccess(response.attentionItems ?? []));
+    yield put(fetchAttentionItemsSuccess(response ?? []));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load attention items';

@@ -14,21 +14,13 @@ export function* updateDriverSaga(action: UpdateDriverAction): Generator {
   const { id, data } = action.payload;
 
   try {
-    const useMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-    if (useMock) {
-      yield put(driverActions.updateOne({ id, changes: data }));
-      yield put(updateDriverSuccess({ id }));
-      yield call(enqueueSnackbar, 'Driver updated', { variant: 'success' });
-      return;
-    }
-
     const response = (yield call(
       updateDriver,
       id,
       data,
     )) as SagaReturnType<typeof updateDriver>;
 
-    yield put(driverActions.updateOne({ id, changes: response.driver }));
+    yield put(driverActions.updateOne({ id, changes: response }));
     yield put(updateDriverSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Driver updated', { variant: 'success' });

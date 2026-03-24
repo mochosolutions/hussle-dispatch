@@ -99,6 +99,7 @@ export const createSessionRedis = async (
       userId,
       organizationId,
       orgSlug,
+      orgStatus,
       membershipId,
       role,
       sessionId,

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { CustomError } from '@mocho/common';
-import { ActiveLoadsConflictError } from '@/shared/errors';
+import { ActiveLoadsConflictError, AssignmentValidationError } from '@/shared/errors';
 import { logger } from '@/shared/utils/logger';
 
 export const errorHandler = (
@@ -22,6 +22,19 @@ export const errorHandler = (
     return;
   }
 
+  if (error instanceof AssignmentValidationError) {
+    logger.warn('Handled error', {
+      type: error.constructor.name,
+      statusCode: error.statusCode,
+      message: error.message,
+    });
+    res.status(error.statusCode).json({
+      errors: error.serializeErrors(),
+      blockers: error.blockers,
+    });
+    return;
+  }
+
   if (error instanceof CustomError) {
     logger.warn('Handled error', {
       type: error.constructor.name,
@@ -31,6 +44,11 @@ export const errorHandler = (
     res.status(error.statusCode).json({
       errors: error.serializeErrors(),
     });
+    return;
+  }
+
+  if (error instanceof SyntaxError && 'body' in error) {
+    res.status(400).json({ errors: [{ message: 'Malformed JSON in request body' }] });
     return;
   }
 

@@ -3,7 +3,7 @@ import { Formik, Form, useFormikContext } from 'formik';
 import { Box, Button, CircularProgress, Grid, Stack, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { TextField, SelectField, DateField } from '@mocho/ui/components';
-import { EditDrawer } from '../../../carrier/components/EditDrawer';
+import { EditDrawer } from 'components/EditDrawer';
 import { manualEntrySchema } from '../../validators/manualEntrySchema';
 import type { ManualEntryFormValues } from '../../validators/manualEntrySchema';
 import { submitManualEntryRequest } from '../../store/reducers';

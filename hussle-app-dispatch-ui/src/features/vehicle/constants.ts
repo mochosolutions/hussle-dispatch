@@ -1,3 +1,4 @@
+import type { ChipColor } from 'types/chipColor';
 import type { VehicleType, VehicleOwnership } from 'features/carrier/types';
 
 export const VEHICLE_TABS = [
@@ -34,4 +35,10 @@ export const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
 export const OWNERSHIP_LABELS: Record<VehicleOwnership, string> = {
   OWNED: 'Owned',
   LEASED: 'Leased',
+};
+
+export const VEHICLE_LOAD_STATUS_COLORS: Record<string, ChipColor> = {
+  DELIVERED: 'success',
+  IN_TRANSIT: 'primary',
+  BOOKED: 'info',
 };

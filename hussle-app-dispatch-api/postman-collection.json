@@ -1,0 +1,1996 @@
+{
+  "info": {
+    "name": "Hussle Dispatch API",
+    "description": "Complete API collection for hussle-app-dispatch-api. Base URL: http://localhost:3001",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "carrierId", "value": "{{carrierId}}" },
+    { "key": "driverId", "value": "{{driverId}}" },
+    { "key": "vehicleId", "value": "{{vehicleId}}" },
+    { "key": "loadId", "value": "{{loadId}}" },
+    { "key": "placeId", "value": "{{placeId}}" },
+    { "key": "contactId", "value": "{{contactId}}" },
+    { "key": "customerId", "value": "{{customerId}}" },
+    { "key": "stopId", "value": "{{stopId}}" },
+    { "key": "accessorialId", "value": "{{accessorialId}}" },
+    { "key": "deliveryPlaceId", "value": "{{deliveryPlaceId}}" },
+    { "key": "documentId", "value": "{{documentId}}" },
+    { "key": "invoiceId", "value": "{{invoiceId}}" },
+    { "key": "loadIntelId", "value": "{{loadIntelId}}" }
+  ],
+  "item": [
+    {
+      "name": "MVP Test Flow",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "01. Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    pm.test('Login successful', function () {",
+                      "        pm.response.to.have.status(200);",
+                      "    });",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"apps@mochosolutions.com\",\n  \"password\": \"S!imefather2025\"\n}"
+                }
+              }
+            },
+            {
+              "name": "02. Get Current User",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fleet Setup",
+          "item": [
+            {
+              "name": "03. Create Carrier",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('carrierId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('carrierId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/carriers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Swift Transport LLC\",\n  \"type\": \"COMPANY\",\n  \"mcNumber\": \"MC-123456\",\n  \"dotNumber\": \"DOT-789012\",\n  \"phone\": \"+15551234567\",\n  \"email\": \"dispatch@swifttransport.com\",\n  \"address\": \"123 Trucking Way\",\n  \"city\": \"Dallas\",\n  \"state\": \"TX\",\n  \"zip\": \"75201\",\n  \"dispatchFeePercent\": 5,\n  \"dispatchAgreementOnFile\": false,\n  \"insuranceCertOnFile\": false,\n  \"w9OnFile\": false\n}"
+                }
+              }
+            },
+            {
+              "name": "04. List Carriers",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/carriers?page=1&limit=25",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "carriers"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "25" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "05. Create Driver",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('driverId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('driverId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/drivers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "drivers"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"carrierId\": \"{{carrierId}}\",\n  \"firstName\": \"Mike\",\n  \"lastName\": \"Johnson\",\n  \"phone\": \"+15559876543\",\n  \"email\": \"mike.j@swifttransport.com\",\n  \"cdlNumber\": \"CDL-TX-12345\",\n  \"cdlState\": \"TX\",\n  \"availableHours\": 10,\n  \"currentCity\": \"Dallas\",\n  \"currentState\": \"TX\",\n  \"homeBaseCity\": \"Dallas\",\n  \"homeBaseState\": \"TX\",\n  \"maxDaysOut\": 14,\n  \"isAvailable\": true,\n  \"preferredLanes\": [\n    { \"originState\": \"TX\", \"destState\": \"CA\", \"originCity\": \"Dallas\", \"destCity\": \"Los Angeles\" }\n  ],\n  \"noGoZones\": [\n    { \"state\": \"NY\", \"city\": \"New York\" }\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "06. Create Vehicle",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('vehicleId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('vehicleId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/vehicles", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"carrierId\": \"{{carrierId}}\",\n  \"unitNumber\": \"TRUCK-001\",\n  \"type\": \"DRY_VAN\",\n  \"year\": 2022,\n  \"make\": \"Freightliner\",\n  \"model\": \"Cascadia\",\n  \"vin\": \"1FUJHHDR5NLAB1234\",\n  \"licensePlate\": \"ABC1234\",\n  \"licensePlateState\": \"TX\",\n  \"monthlyGrossTarget\": 25000,\n  \"monthlyMilesTarget\": 10000,\n  \"workingDaysPerMonth\": 22,\n  \"isActive\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "07. Assign Driver to Vehicle",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/assign-driver", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}", "assign-driver"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"driverId\": \"{{driverId}}\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contacts & Customers",
+          "item": [
+            {
+              "name": "08. Create Broker Contact",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('contactId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('contactId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/contacts", "host": ["{{baseUrl}}"], "path": ["api", "v1", "contacts"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"BROKER\",\n  \"companyName\": \"TQL Logistics\",\n  \"contactName\": \"Sarah Wilson\",\n  \"phone\": \"+15557778888\",\n  \"email\": \"sarah@tql.com\",\n  \"address\": \"500 Broker Pkwy\",\n  \"city\": \"Cincinnati\",\n  \"state\": \"OH\",\n  \"zip\": \"45202\",\n  \"paymentTerms\": \"Net 30\",\n  \"paymentTermsDays\": 30\n}"
+                }
+              }
+            },
+            {
+              "name": "09. Create Customer",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('customerId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('customerId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/customers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "customers"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"SHIPPER\",\n  \"companyName\": \"Acme Manufacturing\",\n  \"phone\": \"+15551230000\",\n  \"email\": \"shipping@acme.com\",\n  \"address\": \"1000 Factory Rd\",\n  \"city\": \"Chicago\",\n  \"state\": \"IL\",\n  \"zip\": \"60601\",\n  \"paymentTerms\": \"Net 30\",\n  \"paymentTermsDays\": 30,\n  \"status\": \"ACTIVE\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Places",
+          "item": [
+            {
+              "name": "10. Create Pickup Place",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('placeId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('placeId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/places", "host": ["{{baseUrl}}"], "path": ["api", "v1", "places"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Dallas Distribution Center\",\n  \"address\": \"100 Industrial Blvd\",\n  \"city\": \"Dallas\",\n  \"state\": \"TX\",\n  \"zip\": \"75201\",\n  \"latitude\": 32.7767,\n  \"longitude\": -96.7970,\n  \"facilityType\": \"WAREHOUSE\",\n  \"operatingHours\": \"Mon-Fri 6AM-6PM\",\n  \"receivingHours\": \"Mon-Fri 7AM-4PM\",\n  \"appointmentRequired\": true,\n  \"dockType\": \"DOCK_HIGH\",\n  \"contactName\": \"Warehouse Manager\",\n  \"contactPhone\": \"+15551112222\",\n  \"contactEmail\": \"receiving@dallasdc.com\",\n  \"checkInProcedures\": \"Check in at gate, show BOL\",\n  \"lumperRequired\": false,\n  \"ppeRequired\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "11. Create Delivery Place",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('deliveryPlaceId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('deliveryPlaceId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/places", "host": ["{{baseUrl}}"], "path": ["api", "v1", "places"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Houston Warehouse\",\n  \"address\": \"200 Commerce St\",\n  \"city\": \"Houston\",\n  \"state\": \"TX\",\n  \"zip\": \"77001\",\n  \"latitude\": 29.7604,\n  \"longitude\": -95.3698,\n  \"facilityType\": \"WAREHOUSE\",\n  \"operatingHours\": \"Mon-Fri 7AM-5PM\",\n  \"receivingHours\": \"Mon-Fri 8AM-4PM\",\n  \"appointmentRequired\": true,\n  \"dockType\": \"DOCK_HIGH\",\n  \"contactName\": \"Receiving Dept\",\n  \"contactPhone\": \"+15553334444\",\n  \"contactEmail\": \"receiving@houstonwh.com\",\n  \"checkInProcedures\": \"Check in at front office\",\n  \"lumperRequired\": false,\n  \"ppeRequired\": true\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Load Lifecycle",
+          "item": [
+            {
+              "name": "12. Create Load with Stops",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('loadId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('loadId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"carrierId\": \"{{carrierId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"contactId\": \"{{contactId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"brokerRefNumber\": \"BRK-2026-001\",\n  \"equipmentType\": \"DRY_VAN\",\n  \"commodity\": \"Electronics\",\n  \"weight\": 42000,\n  \"loadedMiles\": 450,\n  \"deadheadMiles\": 30,\n  \"totalMiles\": 480,\n  \"customerRate\": 2500,\n  \"carrierRate\": 2200,\n  \"ratePerMile\": 5.56,\n  \"stops\": [\n    {\n      \"type\": \"PICKUP\",\n      \"sequence\": 0,\n      \"facilityName\": \"Dallas Distribution Center\",\n      \"address\": \"100 Industrial Blvd\",\n      \"city\": \"Dallas\",\n      \"state\": \"TX\",\n      \"zip\": \"75201\",\n      \"appointmentDate\": \"2026-03-15\",\n      \"appointmentTime\": \"08:00\",\n      \"contactName\": \"John Smith\",\n      \"contactPhone\": \"+15551112222\"\n    },\n    {\n      \"type\": \"STOP_OFF\",\n      \"sequence\": 1,\n      \"facilityName\": \"Midway Distribution\",\n      \"address\": \"300 Halfway Ave\",\n      \"city\": \"Waco\",\n      \"state\": \"TX\",\n      \"zip\": \"76701\",\n      \"appointmentDate\": \"2026-03-15\",\n      \"appointmentTime\": \"12:00\",\n      \"contactName\": \"Bob\",\n      \"contactPhone\": \"+15559990000\"\n    },\n    {\n      \"type\": \"DELIVERY\",\n      \"sequence\": 2,\n      \"facilityName\": \"Houston Warehouse\",\n      \"address\": \"200 Commerce St\",\n      \"city\": \"Houston\",\n      \"state\": \"TX\",\n      \"zip\": \"77001\",\n      \"appointmentDate\": \"2026-03-16\",\n      \"appointmentTime\": \"14:00\",\n      \"contactName\": \"Jane Doe\",\n      \"contactPhone\": \"+15553334444\"\n    }\n  ],\n  \"accessorialCharges\": [\n    {\n      \"type\": \"DETENTION\",\n      \"description\": \"Estimated detention at pickup\",\n      \"amount\": 150,\n      \"billTo\": \"customer\"\n    }\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "13. Get Load Detail",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}"] }
+              }
+            },
+            {
+              "name": "14. Status → BOOKED",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"BOOKED\"\n}"
+                }
+              }
+            },
+            {
+              "name": "15. Status → DISPATCHED",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"DISPATCHED\",\n  \"notes\": \"Driver confirmed\"\n}"
+                }
+              }
+            },
+            {
+              "name": "16. Status → EN_ROUTE_PICKUP",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"EN_ROUTE_PICKUP\"\n}"
+                }
+              }
+            },
+            {
+              "name": "17. Check Call at Waco",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/check-calls", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "check-calls"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"location\": \"Waco, TX\",\n  \"latitude\": 31.5493,\n  \"longitude\": -97.1467,\n  \"status\": \"On schedule\",\n  \"eta\": \"2026-03-15T12:00:00Z\",\n  \"notes\": \"Approaching Waco stop-off\",\n  \"brokerNotified\": true,\n  \"brokerNotes\": \"Notified broker via email\"\n}"
+                }
+              }
+            },
+            {
+              "name": "18. Status → AT_PICKUP",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"AT_PICKUP\"\n}"
+                }
+              }
+            },
+            {
+              "name": "19. Status → IN_TRANSIT",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"IN_TRANSIT\"\n}"
+                }
+              }
+            },
+            {
+              "name": "20. Check Call Midway",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/check-calls", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "check-calls"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"location\": \"Huntsville, TX\",\n  \"latitude\": 30.7235,\n  \"longitude\": -95.5508,\n  \"status\": \"On schedule\",\n  \"eta\": \"2026-03-16T14:00:00Z\",\n  \"notes\": \"Midway to Houston, smooth traffic\",\n  \"brokerNotified\": true,\n  \"brokerNotes\": \"ETA confirmed with broker\"\n}"
+                }
+              }
+            },
+            {
+              "name": "21. Status → AT_DELIVERY",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"AT_DELIVERY\"\n}"
+                }
+              }
+            },
+            {
+              "name": "22. Status → DELIVERED",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"DELIVERED\",\n  \"notes\": \"POD signed\"\n}"
+                }
+              }
+            },
+            {
+              "name": "23. Get Status History",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status-history", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status-history"] }
+              }
+            },
+            {
+              "name": "24. Get Weekly Gross",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/weekly-gross", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "weekly-gross"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invoices",
+          "item": [
+            {
+              "name": "25. List Invoices",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.length > 0) {",
+                      "        pm.collectionVariables.set('invoiceId', json.data[0].id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/invoices",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "invoices"]
+                }
+              }
+            },
+            {
+              "name": "26. Approve Invoice",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}", "approve"] }
+              }
+            },
+            {
+              "name": "27. Mark Invoice Paid",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/mark-paid", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}", "mark-paid"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 2650,\n  \"method\": \"ACH\",\n  \"reference\": \"ACH-20260315-001\",\n  \"date\": \"2026-03-15\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "28. Dashboard KPIs",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/dashboard/kpis", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "kpis"] }
+              }
+            },
+            {
+              "name": "29. Attention Items",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/dashboard/attention-items", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "attention-items"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verification",
+          "item": [
+            {
+              "name": "30. Logout",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"] }
+              }
+            },
+            {
+              "name": "31. Verify Unauthorized",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Should return 401 after logout', function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup (Create Org)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/signup", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "signup"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"StrongPass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"orgName\": \"Acme Trucking\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Confirm Signup",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/signup/confirm", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "signup", "confirm"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"confirmationCode\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Resend Confirmation Code",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/signup/resend-code", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "signup", "resend-code"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Password Challenge",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/signup/challenge", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "signup", "challenge"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"NewStrongPass123!\",\n  \"session\": \"session-token-from-login-challenge\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auth cookie is set automatically via httpOnly cookie",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Login successful', function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/token/refresh", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "token", "refresh"] }
+          }
+        },
+        {
+          "name": "Switch Organization",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/switch-org", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "switch-org"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"org-uuid-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/password/reset", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "password", "reset"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Confirm Password Reset",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/password/reset/confirm", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "password", "reset", "confirm"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"confirmationCode\": \"123456\",\n  \"newPassword\": \"NewStrongPass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Carriers",
+      "item": [
+        {
+          "name": "Create Carrier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('carrierId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('carrierId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/carriers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Swift Transport LLC\",\n  \"type\": \"COMPANY\",\n  \"mcNumber\": \"MC-123456\",\n  \"dotNumber\": \"DOT-789012\",\n  \"phone\": \"+15551234567\",\n  \"email\": \"dispatch@swifttransport.com\",\n  \"address\": \"123 Trucking Way\",\n  \"city\": \"Dallas\",\n  \"state\": \"TX\",\n  \"zip\": \"75201\",\n  \"dispatchFeePercent\": 5,\n  \"dispatchAgreementOnFile\": false,\n  \"insuranceCertOnFile\": false,\n  \"w9OnFile\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "List Carriers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/carriers?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "carriers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "sort", "value": "name", "disabled": true },
+                { "key": "order", "value": "asc", "disabled": true },
+                { "key": "type", "value": "COMPANY", "disabled": true },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Carrier by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/carriers/{{carrierId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers", "{{carrierId}}"] }
+          }
+        },
+        {
+          "name": "Update Carrier",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/carriers/{{carrierId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers", "{{carrierId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dispatchFeePercent\": 6,\n  \"insuranceCertOnFile\": true,\n  \"w9OnFile\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Carrier",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/carriers/{{carrierId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers", "{{carrierId}}"] }
+          }
+        },
+        {
+          "name": "Get Carrier Onboarding",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/carriers/{{carrierId}}/onboarding", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers", "{{carrierId}}", "onboarding"] }
+          }
+        },
+        {
+          "name": "List Carrier Notes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/carriers/{{carrierId}}/notes?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "carriers", "{{carrierId}}", "notes"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Carrier Note",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/carriers/{{carrierId}}/notes", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carriers", "{{carrierId}}", "notes"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Carrier confirmed availability for next week loads.\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        {
+          "name": "Create Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('driverId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('driverId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/drivers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "drivers"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carrierId\": \"{{carrierId}}\",\n  \"firstName\": \"Mike\",\n  \"lastName\": \"Johnson\",\n  \"phone\": \"+15559876543\",\n  \"email\": \"mike.j@swifttransport.com\",\n  \"cdlNumber\": \"CDL-TX-12345\",\n  \"cdlState\": \"TX\",\n  \"availableHours\": 10,\n  \"currentCity\": \"Dallas\",\n  \"currentState\": \"TX\",\n  \"homeBaseCity\": \"Dallas\",\n  \"homeBaseState\": \"TX\",\n  \"maxDaysOut\": 14,\n  \"isAvailable\": true,\n  \"preferredLanes\": [\n    { \"originState\": \"TX\", \"destState\": \"CA\", \"originCity\": \"Dallas\", \"destCity\": \"Los Angeles\" }\n  ],\n  \"noGoZones\": [\n    { \"state\": \"NY\", \"city\": \"New York\" }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "List Drivers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "carrierId", "value": "", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "sort", "value": "firstName", "disabled": true },
+                { "key": "order", "value": "asc", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Driver by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/drivers/{{driverId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "drivers", "{{driverId}}"] }
+          }
+        },
+        {
+          "name": "Update Driver",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/drivers/{{driverId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "drivers", "{{driverId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availableHours\": 8,\n  \"currentCity\": \"Houston\",\n  \"currentState\": \"TX\",\n  \"isAvailable\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Driver",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/drivers/{{driverId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "drivers", "{{driverId}}"] }
+          }
+        },
+        {
+          "name": "Get Driver Load History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers/{{driverId}}/loads?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers", "{{driverId}}", "loads"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "Create Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('vehicleId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('vehicleId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carrierId\": \"{{carrierId}}\",\n  \"unitNumber\": \"TRUCK-001\",\n  \"type\": \"DRY_VAN\",\n  \"year\": 2022,\n  \"make\": \"Freightliner\",\n  \"model\": \"Cascadia\",\n  \"vin\": \"1FUJHHDR5NLAB1234\",\n  \"licensePlate\": \"ABC1234\",\n  \"licensePlateState\": \"TX\",\n  \"monthlyGrossTarget\": 25000,\n  \"monthlyMilesTarget\": 10000,\n  \"workingDaysPerMonth\": 22,\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "List Vehicles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "carrierId", "value": "", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "sort", "value": "unitNumber", "disabled": true },
+                { "key": "order", "value": "asc", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}"] }
+          }
+        },
+        {
+          "name": "Update Vehicle",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monthlyGrossTarget\": 28000,\n  \"expenses\": [\n    {\n      \"category\": \"FUEL\",\n      \"expenseKey\": \"fuel-monthly\",\n      \"label\": \"Monthly Fuel\",\n      \"monthlyAmount\": 3500\n    },\n    {\n      \"category\": \"INSURANCE\",\n      \"expenseKey\": \"insurance-monthly\",\n      \"label\": \"Monthly Insurance\",\n      \"monthlyAmount\": 1200\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Vehicle",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}"] }
+          }
+        },
+        {
+          "name": "Assign Driver to Vehicle",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/assign-driver", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}", "assign-driver"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driverId\": \"{{driverId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Unassign Driver from Vehicle",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/unassign-driver", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}", "unassign-driver"] }
+          }
+        },
+        {
+          "name": "Get Vehicle Load History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/loads?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}", "loads"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Vehicle Expense",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/expenses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "vehicles", "{{vehicleId}}", "expenses"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"FUEL\",\n  \"expenseKey\": \"fuel-monthly\",\n  \"label\": \"Monthly Fuel\",\n  \"monthlyAmount\": 3500\n}"
+            }
+          }
+        },
+        {
+          "name": "List Vehicle Expenses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/vehicles/{{vehicleId}}/expenses?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "vehicles", "{{vehicleId}}", "expenses"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loads",
+      "item": [
+        {
+          "name": "Create Load",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('loadId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('loadId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carrierId\": \"{{carrierId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"brokerRefNumber\": \"BRK-2026-001\",\n  \"equipmentType\": \"DRY_VAN\",\n  \"commodity\": \"Electronics\",\n  \"weight\": 42000,\n  \"loadedMiles\": 450,\n  \"deadheadMiles\": 30,\n  \"totalMiles\": 480,\n  \"customerRate\": 2500,\n  \"carrierRate\": 2200,\n  \"ratePerMile\": 5.56,\n  \"stops\": [\n    {\n      \"type\": \"PICKUP\",\n      \"sequence\": 0,\n      \"facilityName\": \"Dallas Distribution Center\",\n      \"address\": \"100 Industrial Blvd\",\n      \"city\": \"Dallas\",\n      \"state\": \"TX\",\n      \"zip\": \"75201\",\n      \"appointmentDate\": \"2026-03-15\",\n      \"appointmentTime\": \"08:00\",\n      \"contactName\": \"John Smith\",\n      \"contactPhone\": \"+15551112222\"\n    },\n    {\n      \"type\": \"DELIVERY\",\n      \"sequence\": 1,\n      \"facilityName\": \"Houston Warehouse\",\n      \"address\": \"200 Commerce St\",\n      \"city\": \"Houston\",\n      \"state\": \"TX\",\n      \"zip\": \"77001\",\n      \"appointmentDate\": \"2026-03-16\",\n      \"appointmentTime\": \"14:00\",\n      \"contactName\": \"Jane Doe\",\n      \"contactPhone\": \"+15553334444\"\n    }\n  ],\n  \"accessorialCharges\": [\n    {\n      \"type\": \"DETENTION\",\n      \"description\": \"Estimated detention at pickup\",\n      \"amount\": 150,\n      \"billTo\": \"customer\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "List Loads",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/loads?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "loads"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "status", "value": "", "disabled": true },
+                { "key": "carrierId", "value": "", "disabled": true },
+                { "key": "equipmentType", "value": "", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "dateFrom", "value": "", "disabled": true },
+                { "key": "dateTo", "value": "", "disabled": true },
+                { "key": "sort", "value": "createdAt", "disabled": true },
+                { "key": "order", "value": "desc", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Weekly Gross",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/weekly-gross", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "weekly-gross"] }
+          }
+        },
+        {
+          "name": "Get Load by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}"] }
+          }
+        },
+        {
+          "name": "Update Load",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerRate\": 2600,\n  \"dispatcherNotes\": \"Rate negotiated up by $100\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Transition Load Status",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DISPATCHED\",\n  \"notes\": \"Driver confirmed pickup time\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Load",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}"] }
+          }
+        },
+        {
+          "name": "Create Check Call",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/check-calls", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "check-calls"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location\": \"Waco, TX\",\n  \"latitude\": 31.5493,\n  \"longitude\": -97.1467,\n  \"status\": \"On schedule\",\n  \"eta\": \"2026-03-16T14:00:00Z\",\n  \"notes\": \"Driver reports smooth traffic\",\n  \"brokerNotified\": true,\n  \"brokerNotes\": \"Notified broker via email\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Check Calls",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/check-calls", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "check-calls"] }
+          }
+        },
+        {
+          "name": "Get Load Status History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/status-history", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "status-history"] }
+          }
+        },
+        {
+          "name": "Get Load Documents",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/documents", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "documents"] }
+          }
+        },
+        {
+          "name": "Stops",
+          "item": [
+            {
+              "name": "Add Stop to Load",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('stopId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('stopId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "stops"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STOP_OFF\",\n  \"sequence\": 1,\n  \"facilityName\": \"Midway Distribution\",\n  \"address\": \"300 Halfway Ave\",\n  \"city\": \"Waco\",\n  \"state\": \"TX\",\n  \"zip\": \"76701\",\n  \"appointmentDate\": \"2026-03-15\",\n  \"appointmentTime\": \"12:00\",\n  \"contactName\": \"Bob\",\n  \"contactPhone\": \"+15559990000\"\n}"
+                }
+              }
+            },
+            {
+              "name": "List Load Stops",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/stops", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "stops"] }
+              }
+            },
+            {
+              "name": "Update Stop",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/stops/{{stopId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "stops", "{{stopId}}"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"appointmentTime\": \"13:00\",\n  \"notes\": \"Updated time\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Reorder Stops",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/stops/reorder", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "stops", "reorder"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"stopOrder\": [\n    { \"id\": \"{{stopId}}\", \"sequence\": 0 }\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Stop",
+              "request": {
+                "method": "DELETE",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/stops/{{stopId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "stops", "{{stopId}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accessorials",
+          "item": [
+            {
+              "name": "Add Accessorial",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var json = pm.response.json();",
+                      "    if (json.data && json.data.id) {",
+                      "        pm.collectionVariables.set('accessorialId', json.data.id);",
+                      "    } else if (json.id) {",
+                      "        pm.collectionVariables.set('accessorialId', json.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/accessorials", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "accessorials"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"DETENTION\",\n  \"amount\": 250,\n  \"description\": \"3hr detention at pickup\",\n  \"billTo\": \"customer\"\n}"
+                }
+              }
+            },
+            {
+              "name": "List Load Accessorials",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/{{loadId}}/accessorials", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "{{loadId}}", "accessorials"] }
+              }
+            },
+            {
+              "name": "Get Accessorial",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/accessorials/{{accessorialId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "accessorials", "{{accessorialId}}"] }
+              }
+            },
+            {
+              "name": "Update Accessorial",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/accessorials/{{accessorialId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "accessorials", "{{accessorialId}}"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 300,\n  \"description\": \"4hr detention at pickup\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Accessorial",
+              "request": {
+                "method": "DELETE",
+                "url": { "raw": "{{baseUrl}}/api/v1/loads/accessorials/{{accessorialId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "loads", "accessorials", "{{accessorialId}}"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Places",
+      "item": [
+        {
+          "name": "Create Place",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('placeId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('placeId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/places", "host": ["{{baseUrl}}"], "path": ["api", "v1", "places"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dallas Distribution Center\",\n  \"address\": \"100 Industrial Blvd\",\n  \"city\": \"Dallas\",\n  \"state\": \"TX\",\n  \"zip\": \"75201\",\n  \"latitude\": 32.7767,\n  \"longitude\": -96.7970,\n  \"facilityType\": \"WAREHOUSE\",\n  \"operatingHours\": \"Mon-Fri 6AM-6PM\",\n  \"receivingHours\": \"Mon-Fri 7AM-4PM\",\n  \"appointmentRequired\": true,\n  \"dockType\": \"DOCK_HIGH\",\n  \"contactName\": \"Warehouse Manager\",\n  \"contactPhone\": \"+15551112222\",\n  \"contactEmail\": \"receiving@dallasdc.com\",\n  \"checkInProcedures\": \"Check in at gate, show BOL\",\n  \"lumperRequired\": false,\n  \"ppeRequired\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "List Places",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/places?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "places"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "facilityType", "value": "", "disabled": true },
+                { "key": "state", "value": "", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "sort", "value": "name", "disabled": true },
+                { "key": "order", "value": "asc", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Typeahead Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/places/typeahead?q=dallas&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "places", "typeahead"],
+              "query": [
+                { "key": "q", "value": "dallas" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Place by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/places/{{placeId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "places", "{{placeId}}"] }
+          }
+        },
+        {
+          "name": "Get Loads at Place",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/places/{{placeId}}/loads?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "places", "{{placeId}}", "loads"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Place",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/places/{{placeId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "places", "{{placeId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operatingHours\": \"Mon-Sat 5AM-8PM\",\n  \"notes\": \"Extended hours on Saturdays\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Place",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/places/{{placeId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "places", "{{placeId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Create Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('contactId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('contactId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/contacts", "host": ["{{baseUrl}}"], "path": ["api", "v1", "contacts"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"BROKER\",\n  \"companyName\": \"TQL Logistics\",\n  \"contactName\": \"Sarah Wilson\",\n  \"phone\": \"+15557778888\",\n  \"email\": \"sarah@tql.com\",\n  \"address\": \"500 Broker Pkwy\",\n  \"city\": \"Cincinnati\",\n  \"state\": \"OH\",\n  \"zip\": \"45202\",\n  \"paymentTerms\": \"Net 30\",\n  \"paymentTermsDays\": 30\n}"
+            }
+          }
+        },
+        {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contacts?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "contacts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "sort", "value": "companyName", "disabled": true },
+                { "key": "order", "value": "asc", "disabled": true },
+                { "key": "type", "value": "BROKER", "disabled": true },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contact by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "contacts", "{{contactId}}"] }
+          }
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "contacts", "{{contactId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentTermsDays\": 15,\n  \"quickPayDiscount\": 2.5\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "contacts", "{{contactId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('customerId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('customerId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/customers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "customers"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SHIPPER\",\n  \"companyName\": \"Acme Manufacturing\",\n  \"phone\": \"+15551230000\",\n  \"email\": \"shipping@acme.com\",\n  \"address\": \"1000 Factory Rd\",\n  \"city\": \"Chicago\",\n  \"state\": \"IL\",\n  \"zip\": \"60601\",\n  \"paymentTerms\": \"Net 30\",\n  \"paymentTermsDays\": 30,\n  \"status\": \"ACTIVE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "type", "value": "SHIPPER", "disabled": true },
+                { "key": "status", "value": "ACTIVE", "disabled": true },
+                { "key": "sortBy", "value": "companyName", "disabled": true },
+                { "key": "sortOrder", "value": "asc", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "customers", "{{customerId}}"] }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "customers", "{{customerId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentTermsDays\": 45,\n  \"notes\": \"Premium account\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "customers", "{{customerId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Presign Upload URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('documentId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('documentId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/presign", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "presign"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"rate-confirmation.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"type\": \"RATE_CON\",\n  \"loadId\": \"{{loadId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Confirm Upload",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/confirm", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "confirm"] }
+          }
+        },
+        {
+          "name": "List Documents",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                { "key": "loadId", "value": "", "disabled": true },
+                { "key": "carrierId", "value": "", "disabled": true },
+                { "key": "type", "value": "", "disabled": true },
+                { "key": "includeArchived", "value": "false", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}"] }
+          }
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/download", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "download"] }
+          }
+        },
+        {
+          "name": "Archive Document",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/archive", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "archive"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "invoices"],
+              "query": [
+                { "key": "status", "value": "", "disabled": true },
+                { "key": "type", "value": "", "disabled": true },
+                { "key": "overdue", "value": "false", "disabled": true },
+                { "key": "missingBol", "value": "false", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}"] }
+          }
+        },
+        {
+          "name": "Update Invoice",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subtotal\": 2500,\n  \"accessorials\": 150,\n  \"totalAmount\": 2650,\n  \"paymentTerms\": \"Net 30\",\n  \"paymentTermsDays\": 30,\n  \"dueDate\": \"2026-04-15\",\n  \"notes\": \"Updated with accessorial charges\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Invoice",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}"] }
+          }
+        },
+        {
+          "name": "Approve Invoice",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}", "approve"] }
+          }
+        },
+        {
+          "name": "Send Invoice",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/send", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}", "send"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"billing@broker.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Mark Invoice Paid",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/mark-paid", "host": ["{{baseUrl}}"], "path": ["api", "v1", "invoices", "{{invoiceId}}", "mark-paid"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 2650,\n  \"method\": \"ACH\",\n  \"reference\": \"ACH-20260315-001\",\n  \"date\": \"2026-03-15\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Load Intel",
+      "item": [
+        {
+          "name": "Get Feed",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/load-intel/feed?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "load-intel", "feed"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "25" },
+                { "key": "score", "value": "high", "disabled": true },
+                { "key": "hasRate", "value": "true", "disabled": true },
+                { "key": "equipmentType", "value": "", "disabled": true },
+                { "key": "source", "value": "", "disabled": true },
+                { "key": "includeChains", "value": "true", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Backhaul",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/load-intel/backhaul?fromCity=Houston&fromState=TX&radius=150&earliestPickup=2026-03-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "load-intel", "backhaul"],
+              "query": [
+                { "key": "fromCity", "value": "Houston" },
+                { "key": "fromState", "value": "TX" },
+                { "key": "radius", "value": "150" },
+                { "key": "earliestPickup", "value": "2026-03-15" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Market Data",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/market-data/TX/Dallas", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "market-data", "TX", "Dallas"] }
+          }
+        },
+        {
+          "name": "Store Market Data",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/market-data", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "market-data"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"TX\",\n  \"city\": \"Dallas\",\n  \"loadToTruckRatio\": 3.5\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Manual Load Intel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.collectionVariables.set('loadIntelId', json.data.id);",
+                  "    } else if (json.id) {",
+                  "        pm.collectionVariables.set('loadIntelId', json.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/manual", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "manual"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": { \"city\": \"Dallas\", \"state\": \"TX\" },\n  \"dest\": { \"city\": \"Houston\", \"state\": \"TX\" },\n  \"pickupDate\": \"2026-03-15\",\n  \"equipmentType\": \"DRY_VAN\",\n  \"rate\": 2500,\n  \"miles\": 240,\n  \"broker\": \"TQL Freight\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Ingest Single Load Intel",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/ingest", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "ingest"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"DAT\",\n  \"origin\": { \"city\": \"Dallas\", \"state\": \"TX\" },\n  \"dest\": { \"city\": \"Los Angeles\", \"state\": \"CA\" },\n  \"pickupDate\": \"2026-03-17\",\n  \"equipmentType\": \"DRY_VAN\",\n  \"rate\": 4800,\n  \"loadedMiles\": 1435,\n  \"broker\": { \"name\": \"CH Robinson\", \"mc\": \"MC-128655\" },\n  \"weight\": 38000\n}"
+            }
+          }
+        },
+        {
+          "name": "Ingest Batch Load Intel",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/ingest/batch", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "ingest", "batch"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"source\": \"DAT\",\n    \"origin\": { \"city\": \"Dallas\", \"state\": \"TX\" },\n    \"dest\": { \"city\": \"Chicago\", \"state\": \"IL\" },\n    \"pickupDate\": \"2026-03-18\",\n    \"equipmentType\": \"REEFER\",\n    \"rate\": 3200,\n    \"loadedMiles\": 920\n  },\n  {\n    \"source\": \"TRUCKSTOP\",\n    \"origin\": { \"city\": \"Houston\", \"state\": \"TX\" },\n    \"dest\": { \"city\": \"Atlanta\", \"state\": \"GA\" },\n    \"pickupDate\": \"2026-03-19\",\n    \"equipmentType\": \"FLATBED\",\n    \"rate\": 2800,\n    \"loadedMiles\": 790\n  }\n]"
+            }
+          }
+        },
+        {
+          "name": "Book Load Intel",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/{{loadIntelId}}/book", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "{{loadIntelId}}", "book"] }
+          }
+        },
+        {
+          "name": "Book Load Intel Chain",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/{{loadIntelId}}/book-chain", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "{{loadIntelId}}", "book-chain"] }
+          }
+        },
+        {
+          "name": "Get Load Intel Chains",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/load-intel/{{loadIntelId}}/chains?vehicleId={{vehicleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "load-intel", "{{loadIntelId}}", "chains"],
+              "query": [
+                { "key": "vehicleId", "value": "{{vehicleId}}" },
+                { "key": "limit", "value": "5", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Load Intel by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/{{loadIntelId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "{{loadIntelId}}"] }
+          }
+        },
+        {
+          "name": "Delete Load Intel",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/load-intel/{{loadIntelId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "load-intel", "{{loadIntelId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get KPIs",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/kpis", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "kpis"] }
+          }
+        },
+        {
+          "name": "Get Attention Items",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/dashboard/attention-items", "host": ["{{baseUrl}}"], "path": ["api", "v1", "dashboard", "attention-items"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/settings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "settings"] }
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/api/v1/settings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "settings"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timezone\": \"America/Chicago\",\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

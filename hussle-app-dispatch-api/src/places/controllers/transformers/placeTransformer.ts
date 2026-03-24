@@ -14,6 +14,7 @@ export const toPlaceResponse = (place: Place): PlaceResponse => ({
   id: place.id,
   organizationId: place.organizationId,
   contactId: place.contactId,
+  customerId: place.customerId,
   name: place.name,
   address: place.address,
   address2: place.address2,
@@ -36,8 +37,9 @@ export const toPlaceResponse = (place: Place): PlaceResponse => ({
   ppeRequired: place.ppeRequired,
   notes: place.notes,
   status: place.status,
-  createdAt: place.createdAt,
-  updatedAt: place.updatedAt,
+  createdAt: place.createdAt.toISOString(),
+  updatedAt: place.updatedAt.toISOString(),
+  deletedAt: place.deletedAt?.toISOString() ?? null,
 });
 
 export const toPlaceListResponse = (places: Place[]): PlaceResponse[] =>

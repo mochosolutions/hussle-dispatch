@@ -1,3 +1,4 @@
+import type { ChipColor } from 'types/chipColor';
 import type { VehicleType, CarrierStatus } from './types';
 
 export const EQUIPMENT_OPTIONS: readonly { value: VehicleType; label: string }[] = [
@@ -39,11 +40,25 @@ export const CONTACT_ROLES = [
 
 export const PAYMENT_TERMS_OPTIONS = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Quick Pay'];
 
+export const CARRIER_STATUS_LABELS: Record<CarrierStatus, string> = {
+  ACTIVE: 'Active',
+  PENDING: 'Pending',
+  SUSPENDED: 'Suspended',
+  DRAFT: 'Draft',
+};
+
+export const CARRIER_STATUS_COLORS: Record<CarrierStatus, ChipColor> = {
+  ACTIVE: 'success',
+  PENDING: 'warning',
+  SUSPENDED: 'error',
+  DRAFT: 'default',
+};
+
 export const STATUS_OPTIONS: { value: CarrierStatus; label: string; color: string }[] = [
-  { value: 'approved', label: 'Approved', color: 'success.main' },
-  { value: 'pending', label: 'Pending Review', color: 'warning.main' },
-  { value: 'suspended', label: 'Suspended', color: 'error.main' },
-  { value: 'draft', label: 'Draft', color: 'text.disabled' },
+  { value: 'ACTIVE', label: 'Active', color: 'success.main' },
+  { value: 'PENDING', label: 'Pending Review', color: 'warning.main' },
+  { value: 'SUSPENDED', label: 'Suspended', color: 'error.main' },
+  { value: 'DRAFT', label: 'Draft', color: 'text.disabled' },
 ];
 
 
@@ -54,15 +69,13 @@ export const CARRIER_TYPE_OPTIONS = [
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
 ];
 
-export const CARRIER_DETAIL_TAB_ITEMS: { key: string; label: string }[] = [
-  { key: 'general', label: 'General' },
-  { key: 'dispatchTerms', label: 'Dispatch Terms' },
-  { key: 'onboarding', label: 'Onboarding' },
-  { key: 'drivers', label: 'Drivers' },
-  { key: 'vehicles', label: 'Vehicles' },
-  { key: 'loadHistory', label: 'Load History' },
-  { key: 'documents', label: 'Documents' },
-  { key: 'notes', label: 'Notes' },
+export const CARRIER_DETAIL_TAB_ITEMS: readonly { value: string; label: string }[] = [
+  { value: 'general', label: 'General' },
+  { value: 'drivers', label: 'Drivers' },
+  { value: 'vehicles', label: 'Vehicles' },
+  { value: 'loadHistory', label: 'Load History' },
+  { value: 'documents', label: 'Documents' },
+  { value: 'notes', label: 'Notes' },
 ];
 
 export const ONBOARDING_ITEMS = [

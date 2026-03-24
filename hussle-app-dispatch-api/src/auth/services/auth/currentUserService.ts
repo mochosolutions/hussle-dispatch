@@ -10,6 +10,7 @@ export interface CurrentUserInput {
     email: string;
     role: string;
     organizationId: string;
+    orgSlug: string;
   };
 }
 
@@ -29,6 +30,7 @@ export const currentUserService = async (
     user: {
       ...dbUserWithMemberships,
       organizationId: user.organizationId,
+      orgSlug: user.orgSlug,
       role: user.role,
     },
   };

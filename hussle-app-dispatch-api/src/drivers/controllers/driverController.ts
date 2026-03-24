@@ -8,7 +8,11 @@ import { getRequiredDriverIdMapper } from './mappers/getRequiredDriverIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 import { listDriversMapper } from './mappers/listDriversMapper';
 import { updateDriverMapper } from './mappers/updateDriverMapper';
-import { toDriverListEnvelope, toDriverResponse } from './transformers/driverTransformer';
+import {
+  toDriverDetailResponse,
+  toDriverListEnvelope,
+  toDriverResponse,
+} from './transformers/driverTransformer';
 import {
   toLoadHistoryItemResponse,
   toLoadPerformanceMetricsResponse,
@@ -48,7 +52,7 @@ export const createDriverControllers = (deps: DriverControllerDeps): DriverContr
       ...context,
       id,
     });
-    sendSingle(res, toDriverResponse(driver));
+    sendSingle(res, toDriverDetailResponse(driver));
   },
 
   updateDriver: async (req: Request, res: Response): Promise<void> => {

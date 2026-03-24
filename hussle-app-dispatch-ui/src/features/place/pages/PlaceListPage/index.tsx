@@ -8,16 +8,19 @@ import {
   Button,
   MenuItem,
   Select,
+  InputLabel,
+  OutlinedInput,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import {
   ActionsCell,
   MainCard,
   NewDataGrid,
-  PageHeader,
   PageWrapper,
 } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
 import { useDispatch, useSelector } from 'store';
 import type { PlaceListItem } from '../../types';
 import { fetchPlacesRequest } from '../../store/reducers/placePageSlice';
@@ -31,6 +34,8 @@ import {
   PlaceContactCellRenderer,
   PlaceAppointmentCellRenderer,
   PlaceDockTypeCellRenderer,
+  PlaceVisitsCellRenderer,
+  PlaceLumperCellRenderer,
 } from '../../components/PlaceCellRenderers';
 import { FACILITY_TYPE_OPTIONS } from '../../constants';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
@@ -41,6 +46,7 @@ const PlaceListPage = () => {
   const [facilityTypeFilter, setFacilityTypeFilter] = useState(FILTER_ALL);
   const [searchQuery, setSearchQuery] = useState('');
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
 
   const places = useSelector(selectAllPlaces);
@@ -91,6 +97,15 @@ const PlaceListPage = () => {
     [dispatch, searchQuery],
   );
 
+  const handleRowClicked = useCallback(
+    (params: { data: PlaceListItem }) => {
+      if (params.data) {
+        navigate(`/places/${params.data.id}`);
+      }
+    },
+    [navigate],
+  );
+
   const handleOpenCreate = useCallback(() => {
     openDrawer('placeInfo', { placeId: undefined });
   }, [openDrawer]);
@@ -122,10 +137,19 @@ const PlaceListPage = () => {
         cellRenderer: PlaceFacilityTypeCellRenderer,
       },
       {
-        headerName: 'Contact',
-        field: 'contactName',
-        minWidth: 140,
-        cellRenderer: PlaceContactCellRenderer,
+        headerName: 'Visits',
+        field: 'visitCount',
+        minWidth: 90,
+        maxWidth: 110,
+        cellRenderer: PlaceVisitsCellRenderer,
+        cellStyle: { textAlign: 'center' as const },
+      },
+      {
+        headerName: 'Lumper',
+        field: 'lumperRequired',
+        minWidth: 100,
+        maxWidth: 120,
+        cellRenderer: PlaceLumperCellRenderer,
       },
       {
         headerName: 'Appointment',
@@ -138,6 +162,12 @@ const PlaceListPage = () => {
         field: 'dockType',
         minWidth: 120,
         cellRenderer: PlaceDockTypeCellRenderer,
+      },
+      {
+        headerName: 'Contact',
+        field: 'contactName',
+        minWidth: 160,
+        cellRenderer: PlaceContactCellRenderer,
       },
       {
         headerName: '',
@@ -165,9 +195,9 @@ const PlaceListPage = () => {
 
   return (
     <PageWrapper isLoading={false} errorContext="PlaceListPage" sx={{ gap: 2 }}>
-      <PageHeader
+      <ListLayout
         title="Places"
-        headerActions={
+        primaryAction={
           <Stack direction="row" spacing={1}>
             <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
@@ -175,76 +205,92 @@ const PlaceListPage = () => {
             </Button>
           </Stack>
         }
-      />
-
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
       >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: 3,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Select
-              value={facilityTypeFilter}
-              onChange={handleFacilityTypeFilterChange}
-              size="small"
-              sx={{ minWidth: 180 }}
-            >
-              <MenuItem value={FILTER_ALL}>All Facility Types</MenuItem>
-              {FACILITY_TYPE_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {places.length} places
-            </Typography>
-          </Stack>
-          <Box>
-            <TextField
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search by name, city, state..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Box>
-        </Stack>
-
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box
-            sx={{
-              minHeight: { xs: 300, md: 420 },
-              flex: 1,
-            }}
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={places}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={places.length}
-              rowCountLabel="places"
-              noDataMessage="No places found"
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: true,
-                paginationPageSize: 25,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 62,
-              }}
-              loading={isLoading}
-            />
-          </Box>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              spacing={2}
+              sx={{ px: 2, py: 1.5 }}
+            >
+              <Stack spacing={1}>
+                <InputLabel>Facility Type</InputLabel>
+                <Select
+                  value={facilityTypeFilter}
+                  onChange={handleFacilityTypeFilterChange}
+                  size="small"
+                  sx={{ minWidth: 200 }}
+                >
+                  <MenuItem value={FILTER_ALL}>All Facility Types</MenuItem>
+                  {FACILITY_TYPE_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Stack>
+              <Stack spacing={1}>
+                <InputLabel>Search</InputLabel>
+                <OutlinedInput
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search by name, city, state..."
+                  size="small"
+                  sx={{ width: { xs: '100%', lg: 320 } }}
+                />
+              </Stack>
+              <Typography
+                variant="body2"
+                sx={{ color: 'text.secondary', alignSelf: 'flex-end', pb: 0.5 }}
+              >
+                {places.length} places
+              </Typography>
+            </Stack>
+
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box
+                sx={{
+                  minHeight: { xs: 300, md: 420 },
+                  flex: 1,
+                }}
+              >
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={places}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={places.length}
+                  rowCountLabel="places"
+                  noDataMessage="No places found"
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: true,
+                    paginationPageSize: 25,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 62,
+                    onRowClicked: handleRowClicked,
+                  }}
+                  loading={isLoading}
+                />
+              </Box>
+            </Box>
+          </MainCard>
         </Box>
-      </MainCard>
+      </ListLayout>
     </PageWrapper>
   );
 };

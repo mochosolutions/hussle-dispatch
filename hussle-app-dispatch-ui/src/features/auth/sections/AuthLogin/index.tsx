@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Grid, Stack, Box } from '@mui/material';
 import { useFormik } from 'formik';
 
@@ -18,6 +18,10 @@ import {
   type FormikFieldProps,
 } from 'mocho/components/form-fields';
 
+interface LocationState {
+  from?: { pathname: string };
+}
+
 interface LoginFormValues {
   email: string;
   password: string;
@@ -27,16 +31,20 @@ interface LoginFormValues {
 
 const AuthLogin = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+
+  // Prefer query param returnTo, fall back to router state from AuthGuard redirect
+  const locationState = location.state as LocationState | null;
+  const returnTo = searchParams.get('returnTo') ?? locationState?.from?.pathname ?? null;
   const submitting = useSelector(isLoginPageLoadingSelector);
 
   const formik = useFormik<LoginFormValues>({
     initialValues: {
       email: '',
       password: '',
-      rememberMe: true,
+      rememberMe: false,
       submit: null,
     },
     validationSchema: loginValidation,
@@ -46,12 +54,11 @@ const AuthLogin = () => {
         dispatch(
           loginRequest({
             data: { email, password, rememberMe },
-            navigate,
             returnTo,
           }),
         );
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // Login errors are handled by the saga via loginFailure action
       }
     },
   });
@@ -81,12 +88,12 @@ const AuthLogin = () => {
       <Grid container spacing={3}>
         {/* Email Field */}
         <Grid item xs={12}>
-          <EmailField name="email" label="Email Address" required formik={formikProps} />
+          <EmailField name="email" label="Email Address" autoComplete="email" required formik={formikProps} />
         </Grid>
 
         {/* Password Field */}
         <Grid item xs={12}>
-          <PasswordField name="password" label="Password" required formik={formikProps} />
+          <PasswordField name="password" label="Password" autoComplete="current-password" required formik={formikProps} />
         </Grid>
 
         {/* Remember Me & Create Account Link */}

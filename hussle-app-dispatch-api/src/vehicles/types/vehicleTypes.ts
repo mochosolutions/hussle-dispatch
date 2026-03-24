@@ -2,6 +2,7 @@ import type {
   ExpenseCategory,
   LoadStatus,
   Prisma,
+  TruckExpense,
   Vehicle,
   EquipmentType,
   VehicleOwnership,
@@ -91,6 +92,8 @@ export interface VehicleRepositoryPort {
   count(input: VehicleQueryInput): Promise<number>;
   update(id: string, input: UpdateVehicleDataInput): Promise<VehicleWithExpenses>;
   replaceExpenses(vehicleId: string, expenses: VehicleExpenseInput[]): Promise<void>;
+  createExpense(vehicleId: string, expense: VehicleExpenseInput): Promise<TruckExpense>;
+  findExpensesByVehicleId(vehicleId: string): Promise<TruckExpense[]>;
   softDelete(id: string, deletedAt: Date): Promise<void>;
   assignDriver(vehicleId: string, driverId: string): Promise<VehicleWithExpenses>;
   unassignDriver(vehicleId: string): Promise<VehicleWithExpenses>;
@@ -102,20 +105,36 @@ export interface CarrierRepositoryPort {
 }
 
 export interface LoadRepositoryPort {
+  findBlockingLoadIdsByDriver(
+    driverId: string,
+    statuses: readonly LoadStatus[],
+    limit: number,
+  ): Promise<string[]>;
   findBlockingLoadIdsByVehicle(
     vehicleId: string,
     statuses: readonly LoadStatus[],
     limit: number,
   ): Promise<string[]>;
+  countActiveByVehicleIds(
+    vehicleIds: string[],
+    orgId: string,
+  ): Promise<Map<string, number>>;
+}
+
+export interface VehicleListItem extends VehicleWithExpenses {
+  activeLoadCount: number;
 }
 
 export interface ListVehiclesResult {
-  data: VehicleWithExpenses[];
+  data: VehicleListItem[];
   meta: PaginationMeta;
 }
 
 export interface DriverQueryPort {
-  findById(driverId: string, organizationId: string): Promise<{ id: string; carrierId: string } | null>;
+  findById(
+    driverId: string,
+    organizationId: string,
+  ): Promise<{ id: string; carrierId: string } | null>;
 }
 
 export type VehicleResponse = Vehicle & {

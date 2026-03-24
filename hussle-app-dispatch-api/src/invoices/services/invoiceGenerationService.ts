@@ -22,10 +22,10 @@ export const generateFromDelivery = async (
   deps: InvoiceGenerationDeps,
 ): Promise<void> => {
   // Idempotency guard
-  const existing = await deps.invoiceRepo.findByLoadId(loadId);
+  const existing = await deps.invoiceRepo.findNonVoidByLoadId(loadId);
 
   if (existing !== null) {
-    deps.logger.info('Invoice already exists for load, skipping', { loadId });
+    deps.logger.info('Non-void invoice already exists for load, skipping', { loadId });
     return;
   }
 
@@ -59,9 +59,9 @@ export const generateFromDelivery = async (
   const subtotal = isCompanyAsset ? customerRate : dispatchFee;
   const totalAmount = isCompanyAsset ? subtotal.add(accessorialsTotal) : subtotal;
 
-  // Get payment terms from broker contact
-  const paymentTerms = load.broker?.paymentTerms ?? 'net_30';
-  const paymentTermsDays = load.broker?.paymentTermsDays ?? 30;
+  // Get payment terms from customer, fallback to net_30
+  const paymentTerms = load.customer?.paymentTerms ?? 'net_30';
+  const paymentTermsDays = load.customer?.paymentTermsDays ?? 30;
 
   // Calculate due date
   const dueDate = new Date();
@@ -76,6 +76,7 @@ export const generateFromDelivery = async (
   await deps.invoiceRepo.create({
     loadId: load.id,
     carrierId: load.carrierId ?? undefined,
+    customerId: load.customerId ?? undefined,
     invoiceNumber,
     type: invoiceType,
     subtotal: subtotal.toNumber(),
@@ -109,10 +110,10 @@ export const generateTonuInvoice = async (
   deps: InvoiceGenerationDeps,
 ): Promise<void> => {
   // Idempotency guard
-  const existing = await deps.invoiceRepo.findByLoadId(loadId);
+  const existing = await deps.invoiceRepo.findNonVoidByLoadId(loadId);
 
   if (existing !== null) {
-    deps.logger.info('Invoice already exists for TONU load, skipping', { loadId });
+    deps.logger.info('Non-void invoice already exists for TONU load, skipping', { loadId });
     return;
   }
 
@@ -129,8 +130,8 @@ export const generateTonuInvoice = async (
     ? new Decimal(String(tonuCharge.amount))
     : new Decimal(250);
 
-  const paymentTerms = load.broker?.paymentTerms ?? 'net_30';
-  const paymentTermsDays = load.broker?.paymentTermsDays ?? 30;
+  const paymentTerms = load.customer?.paymentTerms ?? 'net_30';
+  const paymentTermsDays = load.customer?.paymentTermsDays ?? 30;
 
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + paymentTermsDays);
@@ -140,6 +141,7 @@ export const generateTonuInvoice = async (
   await deps.invoiceRepo.create({
     loadId: load.id,
     carrierId: load.carrierId ?? undefined,
+    customerId: load.customerId ?? undefined,
     invoiceNumber,
     type: 'CUSTOMER',
     subtotal: tonuAmount.toNumber(),

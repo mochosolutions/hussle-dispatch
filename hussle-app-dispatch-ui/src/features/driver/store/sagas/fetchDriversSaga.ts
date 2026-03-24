@@ -7,25 +7,11 @@ import {
   fetchDriversFailure,
 } from '../reducers/driverPageSlice';
 import { driverActions } from '../reducers/driverEntitySlice';
-import { MOCK_DRIVERS } from '../../mockData';
 
 type FetchDriversAction = ReturnType<typeof fetchDriversRequest>;
 
 export function* fetchDriversSaga(action: FetchDriversAction): Generator {
   try {
-    const useMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-    if (useMock) {
-      yield put(driverActions.setAll(MOCK_DRIVERS));
-      yield put(
-        fetchDriversSuccess({
-          total: MOCK_DRIVERS.length,
-          page: 1,
-          limit: 25,
-        }),
-      );
-      return;
-    }
-
     const response = (yield call(
       getDrivers,
       action.payload,

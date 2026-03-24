@@ -1,5 +1,9 @@
 import type { LoadStatus } from './constants/loadStatuses';
-import { ADMIN_ONLY_TRANSITIONS, NOTES_REQUIRED_TRANSITIONS } from './constants/stateMachine';
+import {
+  ADMIN_ONLY_TRANSITIONS,
+  DRIVER_ALLOWED_TRANSITIONS,
+  NOTES_REQUIRED_TRANSITIONS,
+} from './constants/stateMachine';
 import { KANBAN_GROUPS } from './constants/kanbanGroups';
 
 export { KANBAN_GROUPS };
@@ -86,6 +90,9 @@ const checkPrerequisites = (toStatus: LoadStatus, load: LoadSnapshot): string | 
     if (!load.vehicleId) {
       return 'Cannot dispatch load: a vehicle must be assigned before dispatching.';
     }
+    if (load.rateConReceivedAt === null || load.rateConReceivedAt === undefined) {
+      return 'Cannot dispatch load: a broker rate confirmation must be on file before dispatching.';
+    }
   }
 
   return null;
@@ -122,6 +129,18 @@ export const validateTransition = (
     };
   }
 
+  // 2b. DRIVER-only check — drivers can only advance through the progress chain
+  if (
+    context.userRole === 'DRIVER' &&
+    !(DRIVER_ALLOWED_TRANSITIONS as readonly string[]).includes(toStatus)
+  ) {
+    return {
+      valid: false,
+      error:
+        'Drivers can only advance load status through: EN_ROUTE_PICKUP, AT_PICKUP, IN_TRANSIT, AT_DELIVERY, DELIVERED',
+    };
+  }
+
   // 3. Notes required check
   if ((NOTES_REQUIRED_TRANSITIONS as readonly string[]).includes(toStatus)) {
     const trimmed = context.notes?.trim() ?? '';
@@ -141,10 +160,6 @@ export const validateTransition = (
 
   // 5. Soft warnings
   const warnings: string[] = [];
-
-  if (toStatus === 'DISPATCHED' && context.load.rateConReceivedAt === null) {
-    warnings.push('No broker rate con on file');
-  }
 
   if (toStatus === 'DELIVERED' && context.load.bolSignedAt === null) {
     warnings.push('No signed BOL on file');

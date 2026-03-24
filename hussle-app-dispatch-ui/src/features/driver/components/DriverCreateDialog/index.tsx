@@ -1,39 +1,26 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Grid,
-  TextField,
-  Typography,
-  Divider,
-} from '@mui/material';
-import { useFormik } from 'formik';
-
+import React from 'react';
+import { Grid, Typography, Divider, Stack } from '@mui/material';
+import { TextField } from '@mocho/ui/components';
 import { useDispatch } from 'store';
 import { createDriverRequest } from '../../store/reducers';
 import { driverInfoSchema } from '../../validators/driverInfoSchema';
+import CarrierAutocomplete from 'features/carrier/components/CarrierAutocomplete';
+import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 
-interface DriverCreateDialogProps {
-  open: boolean;
+interface DriverCreateDrawerProps {
   onClose: () => void;
+  initialCarrierId?: string;
 }
 
-interface DriverCreateFormValues {
-  carrierId: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  cdlNumber: string;
-  cdlState: string;
-  cdlExpiry: string;
-  homeBaseCity: string;
-  homeBaseState: string;
-}
+const sectionLabelSx = {
+  color: 'text.secondary',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  fontSize: '0.6875rem',
+  letterSpacing: 0.5,
+} as const;
 
-const INITIAL_VALUES: DriverCreateFormValues = {
+const INITIAL_VALUES = {
   carrierId: '',
   firstName: '',
   lastName: '',
@@ -46,215 +33,101 @@ const INITIAL_VALUES: DriverCreateFormValues = {
   homeBaseState: '',
 };
 
-const sectionLabelSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
-
-export const DriverCreateDialog: React.FC<DriverCreateDialogProps> = ({ open, onClose }) => {
+export const DriverCreateDrawer: React.FC<DriverCreateDrawerProps> = ({
+  onClose,
+  initialCarrierId,
+}) => {
   const dispatch = useDispatch();
 
-  const formik = useFormik<DriverCreateFormValues>({
-    initialValues: INITIAL_VALUES,
-    validationSchema: driverInfoSchema,
-    onSubmit: (values) => {
-      dispatch(
-        createDriverRequest({
-          data: {
-            ...values,
-            carrierId: values.carrierId || null,
-            homeBaseCity: values.homeBaseCity || null,
-            homeBaseState: values.homeBaseState || null,
-          },
-        }),
-      );
-      onClose();
-    },
-  });
-
-  const handleClose = () => {
-    formik.resetForm();
-    onClose();
-  };
+  const initialValues = initialCarrierId
+    ? { ...INITIAL_VALUES, carrierId: initialCarrierId }
+    : INITIAL_VALUES;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <form onSubmit={formik.handleSubmit}>
-        <DialogTitle>Create Driver</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12}>
-              <TextField
-                id="carrierId"
-                name="carrierId"
-                label="Carrier ID"
-                value={formik.values.carrierId}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                fullWidth
-              />
-            </Grid>
+    <FormDrawer
+      open
+      onClose={onClose}
+      title="Create Driver"
+      initialValues={initialValues}
+      validationSchema={driverInfoSchema}
+      onSubmit={(values) => {
+        dispatch(
+          createDriverRequest({
+            data: {
+              ...values,
+              carrierId: values.carrierId || null,
+              homeBaseCity: values.homeBaseCity || null,
+              homeBaseState: values.homeBaseState || null,
+            },
+          }),
+        );
+      }}
+      saveLabel="Create"
+      savingLabel="Creating…"
+    >
+      {(formik) => (
+        <Stack spacing={2.5} sx={{ p: 3 }}>
+          <CarrierAutocomplete
+            value={formik.values.carrierId}
+            onChange={(carrierId) => {
+              void formik.setFieldValue('carrierId', carrierId);
+            }}
+            onBlur={() => {
+              void formik.setFieldTouched('carrierId', true);
+            }}
+            label="Carrier"
+          />
 
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={sectionLabelSx}>
-                Personal Info
-              </Typography>
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Personal Info
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField name="firstName" label="First Name" formik={formik} required />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="firstName"
-                name="firstName"
-                label="First Name"
-                required
-                value={formik.values.firstName}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.firstName && formik.errors.firstName)}
-                helperText={formik.touched.firstName && formik.errors.firstName}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="lastName"
-                name="lastName"
-                label="Last Name"
-                required
-                value={formik.values.lastName}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.lastName && formik.errors.lastName)}
-                helperText={formik.touched.lastName && formik.errors.lastName}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="phone"
-                name="phone"
-                label="Phone"
-                value={formik.values.phone}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.phone && formik.errors.phone)}
-                helperText={formik.touched.phone && formik.errors.phone}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="email"
-                name="email"
-                label="Email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.email && formik.errors.email)}
-                helperText={formik.touched.email && formik.errors.email}
-                fullWidth
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Divider />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={sectionLabelSx}>
-                CDL Information
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="cdlNumber"
-                name="cdlNumber"
-                label="CDL Number"
-                value={formik.values.cdlNumber}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.cdlNumber && formik.errors.cdlNumber)}
-                helperText={formik.touched.cdlNumber && formik.errors.cdlNumber}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="cdlState"
-                name="cdlState"
-                label="CDL State"
-                value={formik.values.cdlState}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.cdlState && formik.errors.cdlState)}
-                helperText={formik.touched.cdlState && formik.errors.cdlState}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="cdlExpiry"
-                name="cdlExpiry"
-                label="CDL Expiry"
-                type="date"
-                value={formik.values.cdlExpiry}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.cdlExpiry && formik.errors.cdlExpiry)}
-                helperText={formik.touched.cdlExpiry && formik.errors.cdlExpiry}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Divider />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={sectionLabelSx}>
-                Home Base
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="homeBaseCity"
-                name="homeBaseCity"
-                label="City"
-                value={formik.values.homeBaseCity}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.homeBaseCity && formik.errors.homeBaseCity)}
-                helperText={formik.touched.homeBaseCity && formik.errors.homeBaseCity}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                id="homeBaseState"
-                name="homeBaseState"
-                label="State"
-                value={formik.values.homeBaseState}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={Boolean(formik.touched.homeBaseState && formik.errors.homeBaseState)}
-                helperText={formik.touched.homeBaseState && formik.errors.homeBaseState}
-                fullWidth
-              />
+            <Grid item xs={6}>
+              <TextField name="lastName" label="Last Name" formik={formik} required />
             </Grid>
           </Grid>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose} color="inherit">
-            Cancel
-          </Button>
-          <Button type="submit" variant="contained">
-            Create
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField name="phone" label="Phone" formik={formik} />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField name="email" label="Email" formik={formik} />
+            </Grid>
+          </Grid>
+
+          <Divider />
+
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            CDL Information
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField name="cdlNumber" label="CDL Number" formik={formik} />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField name="cdlState" label="CDL State" formik={formik} />
+            </Grid>
+          </Grid>
+          <TextField name="cdlExpiry" label="CDL Expiry" formik={formik} />
+
+          <Divider />
+
+          <Typography variant="subtitle2" sx={sectionLabelSx}>
+            Home Base
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField name="homeBaseCity" label="City" formik={formik} />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField name="homeBaseState" label="State" formik={formik} />
+            </Grid>
+          </Grid>
+        </Stack>
+      )}
+    </FormDrawer>
   );
 };

@@ -11,7 +11,7 @@ describe('switchOrgService', () => {
       orgName: 'Org One',
       orgSlug: 'org-one',
       orgSubscriptionTier: 'pro',
-      orgStatus: 'active',
+      orgStatus: 'ACTIVE',
       role: 'owner',
       status: 'active',
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -24,7 +24,7 @@ describe('switchOrgService', () => {
       orgName: 'Org Two',
       orgSlug: 'org-two',
       orgSubscriptionTier: 'starter',
-      orgStatus: 'active',
+      orgStatus: 'ACTIVE',
       role: 'admin',
       status: 'active',
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -118,7 +118,7 @@ describe('switchOrgService', () => {
       orgSlug: 'org-two',
       orgSubscriptionTier: 'starter',
       membershipId: 'mem-2',
-      orgStatus: 'active',
+      orgStatus: 'ACTIVE',
       role: 'admin',
     });
 

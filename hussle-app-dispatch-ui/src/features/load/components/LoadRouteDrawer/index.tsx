@@ -1,113 +1,113 @@
-import React from 'react';
-import {
-  Box,
-  Button,
-  Stack,
-  Typography,
-  CircularProgress,
-} from '@mui/material';
-import { Formik, Form, useFormikContext } from 'formik';
-import { EditDrawer } from 'features/carrier/components/EditDrawer';
+import React, { useState, useCallback } from 'react';
+import { Box, Button, Stack, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { EditDrawer, DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
-import { updateLoadRequest } from '../../store/reducers';
+import {
+  createStopRequest,
+  updateStopRequest,
+  deleteStopRequest,
+  reorderStopsRequest,
+} from '../../store/reducers';
 import type { LoadDetail, Stop } from '../../types';
-
-const SECTION_LABEL_SX = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
+import type { StopFormValues } from '../../validators/stopSchema';
+import { EditableStopCard } from './EditableStopCard';
 
 interface LoadRouteDrawerProps {
   load: LoadDetail;
   onClose: () => void;
 }
 
-interface StopFormValues {
-  type: string;
-  facilityName: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  appointmentDate: string;
-  appointmentTime: string;
-  contactName: string;
-  contactPhone: string;
-  notes: string;
-}
-
-interface RouteFormValues {
-  stops: StopFormValues[];
-}
-
-const mapStopToForm = (stop: Stop): StopFormValues => ({
-  type: stop.type,
-  facilityName: stop.facilityName ?? '',
-  address: stop.address ?? '',
-  city: stop.city ?? '',
-  state: stop.state ?? '',
-  zip: stop.zip ?? '',
-  appointmentDate: stop.appointmentDate ?? '',
-  appointmentTime: stop.appointmentTime ?? '',
-  contactName: stop.contactName ?? '',
-  contactPhone: stop.contactPhone ?? '',
-  notes: stop.notes ?? '',
-});
-
 export const LoadRouteDrawer: React.FC<LoadRouteDrawerProps> = ({ load, onClose }) => {
   const dispatch = useDispatch();
+  const [addingNew, setAddingNew] = useState(false);
 
-  const initialValues: RouteFormValues = {
-    stops: load.stops.map(mapStopToForm),
-  };
+  const sortedStops = [...(load.stops ?? [])].sort((a, b) => a.sequence - b.sequence);
 
-  const handleSubmit = (values: RouteFormValues) => {
-    dispatch(
-      updateLoadRequest({
-        id: load.id,
-        data: {
-          stops: values.stops.map((stop, index) => ({
-            ...stop,
-            sequence: index,
-            type: stop.type as 'PICKUP' | 'DELIVERY' | 'STOP_OFF' | 'DROP_HOOK' | 'LIVE_UNLOAD',
-          })),
-        },
-      }),
-    );
-    onClose();
-  };
-
-  return (
-    <Formik initialValues={initialValues} onSubmit={handleSubmit} enableReinitialize>
-      <LoadRouteDrawerContent loadNumber={load.loadNumber} onClose={onClose} />
-    </Formik>
+  const handleSaveExisting = useCallback(
+    (stop: Stop) => (values: StopFormValues) => {
+      dispatch(
+        updateStopRequest({
+          loadId: load.id,
+          stopId: stop.id,
+          data: values,
+        }),
+      );
+    },
+    [dispatch, load.id],
   );
-};
 
-interface LoadRouteDrawerContentProps {
-  loadNumber: string;
-  onClose: () => void;
-}
+  const handleCreateStop = useCallback(
+    (values: StopFormValues) => {
+      dispatch(
+        createStopRequest({
+          loadId: load.id,
+          data: {
+            ...values,
+            sequence: sortedStops.length,
+          },
+        }),
+      );
+      setAddingNew(false);
+    },
+    [dispatch, load.id, sortedStops.length],
+  );
 
-const LoadRouteDrawerContent: React.FC<LoadRouteDrawerContentProps> = ({ loadNumber, onClose }) => {
-  const { values, isSubmitting, isValid, dirty } = useFormikContext<RouteFormValues>();
+  const handleDeleteStop = useCallback(
+    (stopId: string) => {
+      dispatch(deleteStopRequest({ loadId: load.id, stopId }));
+    },
+    [dispatch, load.id],
+  );
+
+  const handleMoveUp = useCallback(
+    (index: number) => () => {
+      if (index === 0) return;
+      const current = sortedStops[index];
+      const above = sortedStops[index - 1];
+      dispatch(
+        reorderStopsRequest({
+          loadId: load.id,
+          stopOrder: [
+            { id: current.id, sequence: above.sequence },
+            { id: above.id, sequence: current.sequence },
+          ],
+        }),
+      );
+    },
+    [dispatch, load.id, sortedStops],
+  );
+
+  const handleMoveDown = useCallback(
+    (index: number) => () => {
+      if (index >= sortedStops.length - 1) return;
+      const current = sortedStops[index];
+      const below = sortedStops[index + 1];
+      dispatch(
+        reorderStopsRequest({
+          loadId: load.id,
+          stopOrder: [
+            { id: current.id, sequence: below.sequence },
+            { id: below.id, sequence: current.sequence },
+          ],
+        }),
+      );
+    },
+    [dispatch, load.id, sortedStops],
+  );
+
+  const handleCancelNew = useCallback(() => {
+    setAddingNew(false);
+  }, []);
+
+  const handleAddStop = useCallback(() => {
+    setAddingNew(true);
+  }, []);
 
   const footer = (
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form="load-route-form"
-        variant="contained"
-        disabled={!isValid || !dirty || isSubmitting}
-        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-      >
-        {isSubmitting ? 'Saving...' : 'Save Changes'}
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Button variant="outlined" onClick={onClose}>
+        Done
       </Button>
     </Box>
   );
@@ -116,29 +116,59 @@ const LoadRouteDrawerContent: React.FC<LoadRouteDrawerContentProps> = ({ loadNum
     <EditDrawer
       open
       title="Edit Route"
-      subtitle={loadNumber}
+      subtitle={load.loadNumber}
       onClose={onClose}
-      isDirty={dirty}
+      isDirty={false}
       footer={footer}
     >
-      <Form id="load-route-form">
-        <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
-            Stops ({values.stops.length})
+      <Stack spacing={2.5} sx={{ p: 3 }}>
+        <DrawerSection label={`Stops (${sortedStops.length})`}>
+          <Stack spacing={1.5}>
+            {sortedStops.map((stop, index) => (
+              <EditableStopCard
+                key={stop.id}
+                stop={stop}
+                index={index}
+                isFirst={index === 0}
+                isLast={index === sortedStops.length - 1}
+                onSave={handleSaveExisting(stop)}
+                onDelete={handleDeleteStop}
+                onMoveUp={handleMoveUp(index)}
+                onMoveDown={handleMoveDown(index)}
+              />
+            ))}
+
+            {addingNew && (
+              <EditableStopCard
+                index={sortedStops.length}
+                isFirst={sortedStops.length === 0}
+                isLast
+                isNew
+                onSave={handleCreateStop}
+                onCancelNew={handleCancelNew}
+              />
+            )}
+          </Stack>
+        </DrawerSection>
+
+        {!addingNew && (
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={handleAddStop}
+            fullWidth
+            sx={{ borderStyle: 'dashed' }}
+          >
+            Add Stop
+          </Button>
+        )}
+
+        {sortedStops.length === 0 && !addingNew && (
+          <Typography variant="body2" color="text.disabled" sx={{ textAlign: 'center', py: 2 }}>
+            No stops defined. Add a stop to build the route.
           </Typography>
-          {values.stops.map((_stop, index) => (
-            <Box key={index} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-                Stop {index + 1} - {_stop.type}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {_stop.facilityName && `${_stop.facilityName} - `}
-                {[_stop.city, _stop.state].filter(Boolean).join(', ')}
-              </Typography>
-            </Box>
-          ))}
-        </Stack>
-      </Form>
+        )}
+      </Stack>
     </EditDrawer>
   );
 };

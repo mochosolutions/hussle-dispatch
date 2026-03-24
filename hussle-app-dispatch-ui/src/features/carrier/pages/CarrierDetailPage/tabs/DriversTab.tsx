@@ -12,7 +12,8 @@ interface DriversTabProps {
 
 export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
   const dispatch = useDispatch();
-  const drivers = useSelector(selectDriversByCarrierId(carrierId));
+  const driversSelector = useMemo(() => selectDriversByCarrierId(carrierId), [carrierId]);
+  const drivers = useSelector(driversSelector);
 
   useEffect(() => {
     dispatch(fetchCarrierDriversRequest({ carrierId }));

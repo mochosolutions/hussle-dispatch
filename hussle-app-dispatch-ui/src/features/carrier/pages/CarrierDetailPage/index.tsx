@@ -1,29 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import {
-  Box,
-  Typography,
-  Tab,
-  Tabs,
-  Stack,
-} from '@mui/material';
+import { Alert, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
-import { CarrierDetailTitle } from '../../components/CarrierDetailTitle';
-import { CarrierDetailsActions } from '../../components/CarrierDetailsActions';
+import { DetailLayout } from 'components/DetailLayout';
 import { CarrierKPI } from '../../components/CarrierKPI';
-import { CARRIER_DETAIL_TAB_ITEMS as tabItems } from '../../constants';
+import { CARRIER_DETAIL_TAB_ITEMS } from '../../constants';
 import { selectFormattedCarrierById } from '../../store/selectors/carrierSelectors';
 import {
   fetchCarrierDetailsRequest,
   carrierPageSelectors,
 } from '../../store/reducers/carrierNewPageSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
-import { InnerPageHeader } from '../../../../components/InnerPageHeader';
 import {
   GeneralTab,
-  DispatchTermsTab,
-  OnboardingTab,
   DriversTab,
   VehiclesTab,
   LoadHistoryTab,
@@ -37,7 +27,8 @@ const CarrierDetailEditable: React.FC = () => {
   const dispatch = useDispatch();
   const { openDrawer } = useDrawerActions();
   const { id } = useParams();
-  const carrier = useSelector(selectFormattedCarrierById(id));
+  const carrierSelector = useMemo(() => selectFormattedCarrierById(id), [id]);
+  const carrier = useSelector(carrierSelector);
   const isLoading = useSelector(carrierPageSelectors.selectIsEntityLoading('getById', id ?? ''));
   const isError = useSelector(
     (state) => !!carrierPageSelectors.selectEntityError('getById', id ?? '')(state),
@@ -53,126 +44,44 @@ const CarrierDetailEditable: React.FC = () => {
     navigate('/carriers');
   };
 
-  const renderTabContent = () => {
-    if (!carrier || !id) {
-      return null;
-    }
-
-    if (activeTab === 'general') {
-      return (
-        <GeneralTab
-          carrier={carrier}
-          onEditCompanyInfo={() => openDrawer('carrierCompanyInfo', { carrierId: id })}
-        />
-      );
-    }
-
-    if (activeTab === 'dispatchTerms') {
-      return (
-        <DispatchTermsTab
-          carrier={carrier}
-          onEditTerms={() => openDrawer('carrierDispatchTerms', { carrierId: id })}
-        />
-      );
-    }
-
-    if (activeTab === 'onboarding') {
-      return <OnboardingTab carrier={carrier} />;
-    }
-
-    if (activeTab === 'drivers') {
-      return <DriversTab carrierId={id} />;
-    }
-
-    if (activeTab === 'vehicles') {
-      return <VehiclesTab carrierId={id} />;
-    }
-
-    if (activeTab === 'loadHistory') {
-      return <LoadHistoryTab carrierId={id} />;
-    }
-
-    if (activeTab === 'documents') {
-      return <DocumentsTab carrierId={id} />;
-    }
-
-    if (activeTab === 'notes') {
-      return <NotesTab carrierId={id} />;
-    }
-
-    return null;
-  };
-
   return (
     <PageWrapper isLoading={isLoading} isError={isError} errorContext="CarrierDetailPage">
       <DataGuard data={carrier} emptyComponent={<Typography p={4}>Carrier not found.</Typography>}>
         {(c) => (
-          <>
-            <Box
-              sx={{
-                px: 4,
-                pt: 2,
-                bgcolor: 'background.paper',
-                borderBottom: 1,
-                borderColor: 'divider',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-              }}
-            >
-              <InnerPageHeader
-                onBack={handleBack}
-                backLabel="Carriers"
-                title={
-                  <CarrierDetailTitle
-                    title={c.name}
-                    subTitle="External Carrier"
-                    initials={c.name
-                      .split(' ')
-                      .map((w) => w[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  />
-                }
-                actions={
-                  <CarrierDetailsActions
-                    carrierId={c.id}
-                    handleEdit={() => openDrawer('carrierCompanyInfo', { carrierId: c.id })}
-                  />
-                }
+          <DetailLayout
+            id={c.name}
+            status={`CARRIER_${c.status ?? 'DRAFT'}`}
+            breadcrumb={{ label: 'Carriers', href: '/carriers' }}
+            onBack={handleBack}
+            summary={<CarrierKPI c={c} />}
+            tabs={CARRIER_DETAIL_TAB_ITEMS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          >
+            {c.driverCount === 0 && c.vehicleCount === 0 && (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Get started by adding your first driver and vehicle.
+              </Alert>
+            )}
+
+            {activeTab === 'general' && id && (
+              <GeneralTab
+                carrier={c}
+                onEditCompanyInfo={() => openDrawer('carrierCompanyInfo', { carrierId: id })}
+                onEditTerms={() => openDrawer('carrierDispatchTerms', { carrierId: id })}
               />
+            )}
 
-              <CarrierKPI c={c} />
+            {activeTab === 'drivers' && id && <DriversTab carrierId={id} />}
 
-              <Box sx={{ marginTop: 1 }}>
-                <Tabs
-                  value={activeTab}
-                  onChange={(_event, value: string) => setActiveTab(value)}
-                  variant="scrollable"
-                  allowScrollButtonsMobile
-                  sx={{ minHeight: 44 }}
-                >
-                  {tabItems.map((tab) => (
-                    <Tab
-                      key={tab.key}
-                      value={tab.key}
-                      sx={{ minHeight: 44 }}
-                      label={
-                        <Stack direction="row" spacing={0.75} alignItems="center">
-                          <Typography variant="body2">{tab.label}</Typography>
-                        </Stack>
-                      }
-                    />
-                  ))}
-                </Tabs>
-              </Box>
-            </Box>
+            {activeTab === 'vehicles' && id && <VehiclesTab carrierId={id} />}
 
-            <Box sx={{ p: 3, maxWidth: 1200 }}>
-              {renderTabContent()}
-            </Box>
-          </>
+            {activeTab === 'loadHistory' && id && <LoadHistoryTab carrierId={id} />}
+
+            {activeTab === 'documents' && id && <DocumentsTab carrierId={id} />}
+
+            {activeTab === 'notes' && id && <NotesTab carrierId={id} />}
+          </DetailLayout>
         )}
       </DataGuard>
     </PageWrapper>

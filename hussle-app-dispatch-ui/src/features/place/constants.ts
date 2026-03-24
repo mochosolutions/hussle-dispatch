@@ -9,6 +9,13 @@ export const FACILITY_TYPE_OPTIONS: readonly { value: FacilityType; label: strin
   { value: 'PORT', label: 'Port' },
   { value: 'RAIL_YARD', label: 'Rail Yard' },
   { value: 'DROP_YARD', label: 'Drop Yard' },
+  { value: 'TRUCK_STOP', label: 'Truck Stop' },
+  { value: 'RETAIL', label: 'Retail' },
+  { value: 'FARM', label: 'Farm' },
+  { value: 'CONSTRUCTION_SITE', label: 'Construction Site' },
+  { value: 'MILITARY', label: 'Military' },
+  { value: 'GOVERNMENT', label: 'Government' },
+  { value: 'RESIDENTIAL', label: 'Residential' },
   { value: 'OTHER', label: 'Other' },
 ];
 
@@ -21,6 +28,13 @@ export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
   PORT: 'Port',
   RAIL_YARD: 'Rail Yard',
   DROP_YARD: 'Drop Yard',
+  TRUCK_STOP: 'Truck Stop',
+  RETAIL: 'Retail',
+  FARM: 'Farm',
+  CONSTRUCTION_SITE: 'Construction Site',
+  MILITARY: 'Military',
+  GOVERNMENT: 'Government',
+  RESIDENTIAL: 'Residential',
   OTHER: 'Other',
 };
 

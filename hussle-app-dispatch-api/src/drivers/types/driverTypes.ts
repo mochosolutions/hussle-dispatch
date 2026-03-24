@@ -1,4 +1,4 @@
-import type { Driver, LoadStatus, Prisma } from '@prisma/client';
+import type { Driver, DriverStatus, LoadStatus, Prisma } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 
 export interface PreferredLaneInput {
@@ -31,7 +31,7 @@ export interface CreateDriverInput {
   preferredLanes?: PreferredLaneInput[];
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
-  status?: string;
+  status?: DriverStatus;
   notes?: string;
 }
 
@@ -53,7 +53,7 @@ export interface UpdateDriverInput {
   preferredLanes?: PreferredLaneInput[];
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
-  status?: string;
+  status?: DriverStatus;
   notes?: string;
 }
 
@@ -99,4 +99,20 @@ export interface ListDriversResult {
   meta: PaginationMeta;
 }
 
-export type DriverResponse = Driver;
+export interface ActiveLoadSummary {
+  id: string;
+  loadNumber: string;
+  status: string;
+  equipmentType: string | null;
+  commodity: string | null;
+  customerRate: string | null;
+  totalMiles: number | null;
+}
+
+export type DriverResponse = Driver & {
+  carrierName: string | null;
+};
+
+export type DriverDetailResponse = DriverResponse & {
+  activeLoads: ActiveLoadSummary[];
+};

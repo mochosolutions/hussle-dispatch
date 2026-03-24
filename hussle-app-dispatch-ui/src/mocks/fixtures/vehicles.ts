@@ -1,5 +1,47 @@
 import type { Vehicle } from 'features/carrier/types';
 
+export const mockVehicleLoads: Record<string, Array<{
+  id: string;
+  loadNumber: string;
+  status: string;
+  originCity: string;
+  originState: string;
+  destinationCity: string;
+  destinationState: string;
+  rate: string;
+  pickupDate: string;
+  deliveryDate: string | null;
+}>> = {
+  'vehicle-001': [
+    {
+      id: 'load-001',
+      loadNumber: 'LD-2026-0042',
+      status: 'DELIVERED',
+      originCity: 'Chicago',
+      originState: 'IL',
+      destinationCity: 'Dallas',
+      destinationState: 'TX',
+      rate: '4500.00',
+      pickupDate: '2026-03-18T08:00:00.000Z',
+      deliveryDate: '2026-03-19T16:00:00.000Z',
+    },
+  ],
+  'vehicle-003': [
+    {
+      id: 'load-intransit',
+      loadNumber: 'LD-2026-0054',
+      status: 'IN_TRANSIT',
+      originCity: 'Chicago',
+      originState: 'IL',
+      destinationCity: 'Dallas',
+      destinationState: 'TX',
+      rate: '4500.00',
+      pickupDate: '2026-03-22T08:00:00.000Z',
+      deliveryDate: null,
+    },
+  ],
+};
+
 export const mockVehicles: Vehicle[] = [
   {
     id: 'vehicle-001',

@@ -1,8 +1,10 @@
 import type { PopupComponentMap } from '../../mocho/types/popup';
+import { CreateLoadModal } from '../load/components/CreateLoadModal';
+import { DirtyFormConfirmModal } from './components/DirtyFormConfirmModal';
 
 const modalRegistry: PopupComponentMap = {
-  // Add modal mappings as modal components are created
-  // e.g. dirtyFormConfirm: DirtyFormConfirmModal,
+  createLoadModal: CreateLoadModal,
+  dirtyFormConfirm: DirtyFormConfirmModal,
 };
 
 export default modalRegistry;

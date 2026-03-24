@@ -11,6 +11,7 @@ export const FieldRow: React.FC<{ label: string; value: React.ReactNode; isLink?
     </Typography>
     <Typography
       variant="body2"
+      component="div"
       sx={{ color: isLink ? 'primary.main' : 'text.primary', fontWeight: 500 }}
     >
       {value || '—'}

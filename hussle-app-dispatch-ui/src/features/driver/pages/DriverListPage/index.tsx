@@ -3,34 +3,34 @@ import {
   Stack,
   TextField,
   Box,
-  Typography,
   Grid,
-  Tabs,
-  Tab,
-  Chip,
+  Select,
   Button,
   MenuItem,
 } from '@mui/material';
-import { ActionsCell, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
+import type { SelectChangeEvent } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
+import { KpiCell } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
 import type { Driver } from 'features/carrier/types';
 import { selectAllCarriers } from 'features/carrier/store/selectors/carrierSelectors';
 import { fetchDriversRequest, setCarrierIdFilter } from '../../store/reducers';
 import {
-  selectAllDrivers,
   selectDriverKpis,
   selectDriverListLoading,
+  selectFilteredDrivers,
 } from '../../store/selectors/driverSelectors';
+import type { DriverTab } from '../../store/selectors/driverSelectors';
 import {
   DriverNameCellRenderer,
   DriverStatusCellRenderer,
   DriverLocationCellRenderer,
   DriverCarrierCellRenderer,
 } from '../../components/DriverCellRenderers';
-import { DriverCreateDialog } from '../../components/DriverCreateDialog';
-
-type DriverTab = 'all' | 'available' | 'unavailable';
+import { DriverCreateDrawer } from '../../components/DriverCreateDialog';
 
 const DriverListPage = () => {
   const [activeTab, setActiveTab] = useState<DriverTab>('all');
@@ -38,8 +38,8 @@ const DriverListPage = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedCarrierId, setSelectedCarrierId] = useState('all');
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const drivers = useSelector(selectAllDrivers);
   const isLoading = useSelector(selectDriverListLoading);
   const carriers = useSelector(selectAllCarriers);
   const kpiData = useSelector(selectDriverKpis);
@@ -99,21 +99,20 @@ const DriverListPage = () => {
     setCreateDialogOpen(false);
   }, []);
 
-  const filteredDrivers = useMemo(() => {
-    let filtered = drivers;
+  const handleRowClicked = useCallback(
+    (params: { data: Driver }) => {
+      if (params.data) {
+        navigate(`/drivers/${params.data.id}`);
+      }
+    },
+    [navigate],
+  );
 
-    if (selectedCarrierId !== 'all') {
-      filtered = filtered.filter((driver) => driver.carrierId === selectedCarrierId);
-    }
-
-    if (activeTab === 'available') {
-      return filtered.filter((driver) => driver.isAvailable === true);
-    }
-    if (activeTab === 'unavailable') {
-      return filtered.filter((driver) => driver.isAvailable === false);
-    }
-    return filtered;
-  }, [drivers, activeTab, selectedCarrierId]);
+  const filteredSelector = useMemo(
+    () => selectFilteredDrivers(activeTab, selectedCarrierId),
+    [activeTab, selectedCarrierId],
+  );
+  const filteredDrivers = useSelector(filteredSelector);
 
   const actionsConfig = useMemo<ActionsCellConfig<Driver>>(
     () => ({
@@ -140,7 +139,7 @@ const DriverListPage = () => {
       },
       {
         headerName: 'Carrier',
-        field: 'carrierId',
+        field: 'carrierName',
         minWidth: 130,
         cellRenderer: DriverCarrierCellRenderer,
       },
@@ -188,25 +187,20 @@ const DriverListPage = () => {
     [actionsConfig],
   );
 
-  const tabOptions = useMemo(
+  const statusFilterOptions: { value: DriverTab; label: string }[] = useMemo(
     () => [
-      {
-        key: 'all',
-        label: 'All',
-        count: drivers.length,
-      },
-      {
-        key: 'available',
-        label: 'Available',
-        count: drivers.filter((driver) => driver.isAvailable === true).length,
-      },
-      {
-        key: 'unavailable',
-        label: 'Unavailable',
-        count: drivers.filter((driver) => driver.isAvailable === false).length,
-      },
+      { value: 'all', label: 'All Drivers' },
+      { value: 'available', label: 'Available' },
+      { value: 'unavailable', label: 'Unavailable' },
     ],
-    [drivers],
+    [],
+  );
+
+  const handleStatusFilterChange = useCallback(
+    (event: SelectChangeEvent<DriverTab>) => {
+      setActiveTab(event.target.value as DriverTab);
+    },
+    [],
   );
 
   const defaultColDef = useMemo(
@@ -222,9 +216,9 @@ const DriverListPage = () => {
 
   return (
     <PageWrapper isLoading={false} errorContext="DriverListPage" sx={{ gap: 2 }}>
-      <PageHeader
+      <ListLayout
         title="Drivers"
-        headerActions={
+        primaryAction={
           <Stack direction="row" spacing={1}>
             <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
@@ -232,113 +226,103 @@ const DriverListPage = () => {
             </Button>
           </Stack>
         }
-      />
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {kpiData.map((kpiItem) => (
-          <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
-            <MainCard sx={{ height: '100%' }}>
-              <Typography variant="caption" color="text.secondary">
-                {kpiItem.label}
-              </Typography>
-              <Typography variant="h4" color="text.primary" sx={{ mt: 0.5 }}>
-                {kpiItem.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {kpiItem.subtitle}
-              </Typography>
-            </MainCard>
-          </Grid>
-        ))}
-      </Grid>
-
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
       >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={(_event, value: DriverTab) => setActiveTab(value)}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            sx={{ minHeight: 40 }}
+        <Grid container spacing={2} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}>
+          {kpiData.map((kpiItem) => (
+            <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
+              <MainCard sx={{ height: '100%' }}>
+                <KpiCell
+                  label={kpiItem.label}
+                  value={kpiItem.value}
+                  sub={kpiItem.subtitle}
+                />
+              </MainCard>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Box sx={{ px: { xs: 2, sm: 3 }, pb: 3, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            {tabOptions.map((tabOption) => (
-              <Tab
-                key={tabOption.key}
-                value={tabOption.key}
-                label={
-                  <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
-                    <Chip label={tabOption.count} size="small" />
-                  </Stack>
-                }
-                sx={{ minHeight: 40 }}
-              />
-            ))}
-          </Tabs>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <TextField
-              select
-              value={selectedCarrierId}
-              onChange={handleCarrierFilterChange}
-              label="Carrier"
-              size="small"
-              sx={{ minWidth: 180 }}
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              justifyContent="space-between"
+              spacing={2}
+              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
             >
-              <MenuItem value="all">All Carriers</MenuItem>
-              {carriers.map((carrier) => (
-                <MenuItem key={carrier.id} value={carrier.id}>
-                  {carrier.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search by name, CDL#, phone..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Stack>
-        </Stack>
+              <Select<DriverTab>
+                value={activeTab}
+                onChange={handleStatusFilterChange}
+                size="small"
+                sx={{ minWidth: 160 }}
+              >
+                {statusFilterOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <TextField
+                  select
+                  value={selectedCarrierId}
+                  onChange={handleCarrierFilterChange}
+                  label="Carrier"
+                  size="small"
+                  sx={{ minWidth: 180 }}
+                >
+                  <MenuItem value="all">All Carriers</MenuItem>
+                  {carriers.map((carrier) => (
+                    <MenuItem key={carrier.id} value={carrier.id}>
+                      {carrier.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search by name, CDL#, phone..."
+                  size="small"
+                  sx={{ width: { xs: '100%', lg: 320 } }}
+                />
+              </Stack>
+            </Stack>
 
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box
-            sx={{
-              minHeight: { xs: 300, md: 420 },
-              flex: 1,
-            }}
-          >
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={filteredDrivers}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={filteredDrivers.length}
-              rowCountLabel="drivers"
-              noDataMessage="No drivers found"
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: false,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 62,
-              }}
-              loading={isLoading}
-            />
-          </Box>
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box
+                sx={{
+                  minHeight: { xs: 300, md: 420 },
+                  flex: 1,
+                }}
+              >
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={filteredDrivers}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={filteredDrivers.length}
+                  rowCountLabel="drivers"
+                  noDataMessage="No drivers found"
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: false,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 62,
+                    onRowClicked: handleRowClicked,
+                  }}
+                  loading={isLoading}
+                />
+              </Box>
+            </Box>
+          </MainCard>
         </Box>
-      </MainCard>
+      </ListLayout>
 
-      <DriverCreateDialog open={createDialogOpen} onClose={handleCloseCreate} />
+      {createDialogOpen && <DriverCreateDrawer onClose={handleCloseCreate} />}
     </PageWrapper>
   );
 };

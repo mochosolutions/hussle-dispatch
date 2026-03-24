@@ -1,12 +1,16 @@
 import express from 'express';
 import type { AuthControllers } from '../controllers';
+import type { AuthModuleValidators } from '../compositionRoot';
 import { createUserAuthRouter } from './auth';
 import { createInviteRouter } from './invite';
 import { createOrganizationRouter } from './organization';
 
-export const createRootAuthRouter = (controllers: AuthControllers): express.Router => {
+export const createRootAuthRouter = (
+  controllers: AuthControllers,
+  validators: AuthModuleValidators,
+): express.Router => {
   const rootAuthRouter = express.Router();
-  const userAuthRouter = createUserAuthRouter(controllers);
+  const userAuthRouter = createUserAuthRouter(controllers, validators);
   const organizationRouter = createOrganizationRouter(controllers);
   const inviteRouter = createInviteRouter(controllers);
 
