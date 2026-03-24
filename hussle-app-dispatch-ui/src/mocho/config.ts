@@ -50,7 +50,7 @@ export enum DropzopType {
 // ==============================|| THEME CONFIG ||============================== //
 
 const config: DefaultConfigProps = {
-  fontFamily: `'Public Sans', sans-serif`,
+  fontFamily: `'Plus Jakarta Sans', sans-serif`,
   i18n: 'en',
   menuOrientation: MenuOrientation.VERTICAL,
   miniDrawer: false,

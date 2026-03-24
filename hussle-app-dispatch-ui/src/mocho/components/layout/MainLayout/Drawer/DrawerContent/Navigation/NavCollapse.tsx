@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type ReactNode } from 'react';
+import React, { useCallback, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // material-ui
@@ -90,13 +90,31 @@ const NavCollapse = ({
   const { drawerOpen } = useLayoutState();
   const { menuOrientation } = useConfig();
 
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string | null | undefined>(null);
+  const { pathname } = useLocation();
+
+  // Determine whether any child URL matches the current route
+  const hasActiveChild = (children: NavItemType[] | undefined): boolean => {
+    if (!children) return false;
+    return children.some((child) => {
+      if (child.url === pathname) return true;
+      if (child.children?.length) return hasActiveChild(child.children);
+      return false;
+    });
+  };
+
+  const childIsActive = hasActiveChild(menu.children);
+
+  // Track whether the user has manually toggled this collapse.
+  // When null, the open state follows childIsActive automatically.
+  // When boolean, it represents the user's explicit choice.
+  const [userToggle, setUserToggle] = useState<boolean | null>(null);
+  const open = userToggle ?? childIsActive;
+
   const [anchorEl, setAnchorEl] = useState<
     VirtualElement | (() => VirtualElement) | null | undefined
   >(null);
 
-  const handleClick = (
+  const handleClick = useCallback((
     event:
       | React.MouseEvent<HTMLAnchorElement>
       | React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -105,13 +123,13 @@ const NavCollapse = ({
     setAnchorEl(null);
     setSelectedLevel(level);
     if (drawerOpen) {
-      setOpen(!open);
-      setSelected(!selected ? menu.id : null);
-      setSelectedItems(!selected ? menu.id : '');
+      const nextOpen = !open;
+      setUserToggle(nextOpen);
+      setSelectedItems(nextOpen ? menu.id : '');
     } else {
       setAnchorEl(event?.currentTarget);
     }
-  };
+  }, [drawerOpen, level, menu.id, open, setSelectedItems, setSelectedLevel]);
 
   const handleHover = (
     event:
@@ -120,91 +138,14 @@ const NavCollapse = ({
       | undefined,
   ) => {
     setAnchorEl(event?.currentTarget);
-    if (!drawerOpen) {
-      setSelected(menu.id);
-    }
   };
 
   const miniMenuOpened = Boolean(anchorEl);
 
   const handleClose = () => {
-    setOpen(false);
-    if (!miniMenuOpened) {
-      if (!menu.url) {
-        setSelected(null);
-      }
-    }
+    setUserToggle(false);
     setAnchorEl(null);
   };
-
-  // Sync open/selected state with parent selection tracking
-  // Only auto-open the matching section; never force-close others
-  useEffect(() => {
-    if (selected === selectedItems) {
-      if (level === 1) {
-        setOpen(true);
-      }
-    } else if (level === selectedLevel) {
-      if (!miniMenuOpened && !drawerOpen && !selected) {
-        setSelected(null);
-      }
-      if (drawerOpen) {
-        setSelected(null);
-      }
-    }
-  }, [selectedItems, level, selected, miniMenuOpened, drawerOpen, selectedLevel]);
-
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    if (pathname === menu.url) {
-      setSelected(menu.id);
-    }
-  }, [pathname, menu.url, menu.id]);
-
-  const checkOpenForParent = (child: NavItemType[], id: string) => {
-    child.forEach((item: NavItemType) => {
-      if (item.url === pathname) {
-        setOpen(true);
-        setSelected(id);
-      }
-    });
-  };
-
-  // menu collapse for sub-levels
-  useEffect(() => {
-    if (!miniMenuOpened) {
-      setSelected(null);
-    }
-    if (miniMenuOpened) setAnchorEl(null);
-    if (menu.children) {
-      menu.children.forEach((item: NavItemType) => {
-        if (item.children?.length) {
-          checkOpenForParent(item.children, menu.id ?? '');
-        }
-        if (pathname && pathname.includes('product-details')) {
-          if (item.url && item.url.includes('product-details')) {
-            setSelected(menu.id);
-            setOpen(true);
-          }
-        }
-        if (item.url === pathname) {
-          setSelected(menu.id);
-          setOpen(true);
-        }
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, menu.children]);
-
-  useEffect(() => {
-    if (menu.url === pathname && menu.id) {
-      onActiveItem([menu.id]);
-      setSelected(menu.id);
-      setAnchorEl(null);
-      setOpen(true);
-    }
-  }, [pathname, menu, onActiveItem]);
 
   const navCollapse = menu.children?.map((item) => {
     switch (item.type) {
@@ -241,7 +182,6 @@ const NavCollapse = ({
         );
     }
   });
-  const isSelected = selected === menu.id;
   const borderIcon = level === 1 ? <BorderOutlined style={{ fontSize: '1rem' }} /> : false;
   const iconProp = menu.icon;
   let menuIcon: ReactNode = borderIcon;
@@ -271,7 +211,7 @@ const NavCollapse = ({
         <>
           <ListItemButton
             disableRipple
-            selected={selected === menu.id}
+            selected={childIsActive}
             {...(!drawerOpen && {
               onMouseEnter: handleClick,
               onMouseLeave: handleClose,
@@ -311,7 +251,7 @@ const NavCollapse = ({
                 sx={{
                   minWidth: 28,
                   marginRight: 1,
-                  color: selected === menu.id ? 'primary.main' : textColor,
+                  color: childIsActive ? 'primary.main' : textColor,
                   ...(!drawerOpen && {
                     borderRadius: 1.5,
                     width: 36,
@@ -326,7 +266,7 @@ const NavCollapse = ({
                     },
                   }),
                   ...(!drawerOpen &&
-                    selected === menu.id && {
+                    childIsActive && {
                       bgcolor:
                         theme.palette.mode === ThemeMode.DARK ? 'primary.900' : 'primary.lighter',
                       '&:hover': {
@@ -344,7 +284,7 @@ const NavCollapse = ({
             {(drawerOpen || (!drawerOpen && level !== 1)) && (
               <ListItemText
                 primary={
-                  <Typography variant="h6" color={selected === menu.id ? 'primary' : textColor}>
+                  <Typography variant="h6" color={childIsActive ? 'primary' : textColor}>
                     {menu.title}
                   </Typography>
                 }
@@ -428,7 +368,7 @@ const NavCollapse = ({
           <ListItemButton
             id={`boundary-${popperId}`}
             disableRipple
-            selected={isSelected}
+            selected={childIsActive}
             onMouseEnter={handleHover}
             onMouseLeave={handleClose}
             onClick={handleHover}
@@ -439,7 +379,7 @@ const NavCollapse = ({
               },
             }}
           >
-            <Box onClick={handlerIconLink} sx={FlexBox}>
+            <Box sx={FlexBox}>
               {menuIcon && (
                 <ListItemIcon
                   sx={{
@@ -460,7 +400,7 @@ const NavCollapse = ({
                     '&:hover': { bgcolor: 'transparent' },
                   }}
                 >
-                  <Dot size={4} color={isSelected ? 'primary' : 'secondary'} />
+                  <Dot size={4} color={childIsActive ? 'primary' : 'secondary'} />
                 </ListItemIcon>
               )}
               <ListItemText

@@ -31,22 +31,22 @@ export const getVehicles = async (
   return response.data;
 };
 
-export const getVehicle = async (id: string): Promise<{ vehicle: Vehicle }> => {
+export const getVehicle = async (id: string): Promise<Vehicle> => {
   const response = await axiosInstance.get<GetVehicleResponse>(`/vehicles/${id}`);
-  return { vehicle: response.data.data };
+  return response.data.data;
 };
 
-export const createVehicle = async (data: CreateVehicleInput): Promise<{ vehicle: Vehicle }> => {
+export const createVehicle = async (data: CreateVehicleInput): Promise<Vehicle> => {
   const response = await axiosInstance.post<GetVehicleResponse>('/vehicles', data);
-  return { vehicle: response.data.data };
+  return response.data.data;
 };
 
 export const updateVehicle = async (
   id: string,
   data: UpdateVehicleInput,
-): Promise<{ vehicle: Vehicle }> => {
+): Promise<Vehicle> => {
   const response = await axiosInstance.patch<GetVehicleResponse>(`/vehicles/${id}`, data);
-  return { vehicle: response.data.data };
+  return response.data.data;
 };
 
 export const deleteVehicle = async (id: string): Promise<void> => {
@@ -56,19 +56,19 @@ export const deleteVehicle = async (id: string): Promise<void> => {
 export const assignDriver = async (
   vehicleId: string,
   driverId: string,
-): Promise<{ vehicle: Vehicle }> => {
+): Promise<Vehicle> => {
   const response = await axiosInstance.patch<GetVehicleResponse>(
     `/vehicles/${vehicleId}/assign-driver`,
     { driverId },
   );
-  return { vehicle: response.data.data };
+  return response.data.data;
 };
 
-export const unassignDriver = async (vehicleId: string): Promise<{ vehicle: Vehicle }> => {
+export const unassignDriver = async (vehicleId: string): Promise<Vehicle> => {
   const response = await axiosInstance.patch<GetVehicleResponse>(
     `/vehicles/${vehicleId}/unassign-driver`,
   );
-  return { vehicle: response.data.data };
+  return response.data.data;
 };
 
 export interface VehicleLoad {

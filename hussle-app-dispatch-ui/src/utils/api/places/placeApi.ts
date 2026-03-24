@@ -5,6 +5,7 @@ import type {
   CreatePlaceInput,
   UpdatePlaceInput,
   PaginationMeta,
+  AddressSearchResult,
 } from 'features/place/types';
 
 interface GetPlacesParams {
@@ -36,22 +37,22 @@ export const getPlaces = async (
   return response.data;
 };
 
-export const getPlace = async (id: string): Promise<{ place: Place }> => {
+export const getPlace = async (id: string): Promise<Place> => {
   const response = await axiosInstance.get<GetPlaceResponse>(`/places/${id}`);
-  return { place: response.data.data };
+  return response.data.data;
 };
 
-export const createPlace = async (data: CreatePlaceInput): Promise<{ place: Place }> => {
+export const createPlace = async (data: CreatePlaceInput): Promise<Place> => {
   const response = await axiosInstance.post<GetPlaceResponse>('/places', data);
-  return { place: response.data.data };
+  return response.data.data;
 };
 
 export const updatePlace = async (
   id: string,
   data: UpdatePlaceInput,
-): Promise<{ place: Place }> => {
+): Promise<Place> => {
   const response = await axiosInstance.patch<GetPlaceResponse>(`/places/${id}`, data);
-  return { place: response.data.data };
+  return response.data.data;
 };
 
 export const deletePlace = async (id: string): Promise<void> => {
@@ -61,9 +62,54 @@ export const deletePlace = async (id: string): Promise<void> => {
 export const typeaheadPlaces = async (
   query: string,
   limit = 10,
-): Promise<{ places: PlaceListItem[] }> => {
+): Promise<PlaceListItem[]> => {
   const response = await axiosInstance.get<TypeaheadPlacesResponse>('/places/typeahead', {
     params: { query, limit },
   });
-  return { places: response.data.data };
+  return response.data.data;
+};
+
+interface AddressSearchResponse {
+  data: AddressSearchResult[];
+}
+
+export const searchAddresses = async (
+  query: string,
+  limit = 10,
+): Promise<AddressSearchResult[]> => {
+  const response = await axiosInstance.get<AddressSearchResponse>('/places/address-search', {
+    params: { query, limit },
+  });
+  return response.data.data;
+};
+
+interface RouteDistanceLeg {
+  distanceMiles: number;
+  durationMinutes: number;
+  isEstimated: boolean;
+}
+
+interface RouteDistanceResult {
+  legs: RouteDistanceLeg[];
+  totalMiles: number;
+  totalMinutes: number;
+  isEstimated: boolean;
+}
+
+interface RouteDistanceResponse {
+  data: RouteDistanceResult;
+}
+
+interface Waypoint {
+  lat: number;
+  lng: number;
+}
+
+export const calculateRouteDistance = async (
+  waypoints: Waypoint[],
+): Promise<RouteDistanceResult> => {
+  const response = await axiosInstance.post<RouteDistanceResponse>('/places/route-distance', {
+    waypoints,
+  });
+  return response.data.data;
 };

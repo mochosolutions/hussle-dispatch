@@ -18,6 +18,7 @@ export const EmailField: React.FC<EmailFieldProps> = ({
   placeholder = 'Enter email address',
   disabled = false,
   required = false,
+  autoComplete = 'email',
   formik,
 }) => {
   const error = formik.errors[name] as string | undefined;
@@ -40,6 +41,7 @@ export const EmailField: React.FC<EmailFieldProps> = ({
         onBlur={formik.handleBlur}
         placeholder={placeholder}
         disabled={disabled}
+        autoComplete={autoComplete}
         fullWidth
         error={Boolean(touched && error)}
       />

@@ -19,6 +19,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
   placeholder = 'Enter password',
   required = false,
   enableToggle = true,
+  autoComplete,
   formik,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -50,6 +51,7 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         fullWidth
         error={Boolean(touched && error)}
         endAdornment={

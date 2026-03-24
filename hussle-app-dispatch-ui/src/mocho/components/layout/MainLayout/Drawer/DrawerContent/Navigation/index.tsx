@@ -34,8 +34,7 @@ const Navigation = ({ menuItems }: NavigationProps) => {
     setSelectedID(id);
   }, []);
 
-  const isHorizontal =
-    menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
+  const isHorizontal = menuOrientation === MenuOrientation.HORIZONTAL && !downLG;
 
   const lastItem = isHorizontal ? HORIZONTAL_MAX_ITEM : null;
   let lastItemIndex = menuItems.length - 1;
@@ -45,13 +44,11 @@ const Navigation = ({ menuItems }: NavigationProps) => {
   if (lastItem && lastItem < menuItems.length) {
     lastItemId = menuItems[lastItem - 1].id ?? '';
     lastItemIndex = lastItem - 1;
-    remItems = menuItems
-      .slice(lastItem - 1, menuItems.length)
-      .map((item) => ({
-        title: item.title,
-        elements: item.children,
-        icon: item.icon,
-      }));
+    remItems = menuItems.slice(lastItem - 1, menuItems.length).map((item) => ({
+      title: item.title,
+      elements: item.children,
+      icon: item.icon,
+    }));
   }
 
   const navGroups = menuItems.slice(0, lastItemIndex + 1).map((item) => {
@@ -85,7 +82,7 @@ const Navigation = ({ menuItems }: NavigationProps) => {
   return (
     <Box
       sx={{
-        pt: drawerOpen && !isHorizontal ? 2 : 0,
+        // pt: drawerOpen && !isHorizontal ? 2 : 0,
         '& > ul:first-of-type': { mt: 0 },
         display: isHorizontal ? { xs: 'block', lg: 'flex' } : 'block',
       }}

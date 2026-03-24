@@ -1,7 +1,6 @@
 import axiosInstance from 'utils/axios';
 import type {
   Contact,
-  ContactType,
   CreateContactInput,
   UpdateContactInput,
   PaginationMeta,
@@ -11,7 +10,6 @@ interface GetContactsParams {
   page?: number;
   limit?: number;
   search?: string;
-  type?: ContactType | 'all';
   sort?: string;
   order?: 'asc' | 'desc';
 }
@@ -32,22 +30,22 @@ export const getContacts = async (
   return response.data;
 };
 
-export const getContact = async (id: string): Promise<{ contact: Contact }> => {
+export const getContact = async (id: string): Promise<Contact> => {
   const response = await axiosInstance.get<GetContactResponse>(`/contacts/${id}`);
-  return { contact: response.data.data };
+  return response.data.data;
 };
 
-export const createContact = async (data: CreateContactInput): Promise<{ contact: Contact }> => {
+export const createContact = async (data: CreateContactInput): Promise<Contact> => {
   const response = await axiosInstance.post<GetContactResponse>('/contacts', data);
-  return { contact: response.data.data };
+  return response.data.data;
 };
 
 export const updateContact = async (
   id: string,
   data: UpdateContactInput,
-): Promise<{ contact: Contact }> => {
+): Promise<Contact> => {
   const response = await axiosInstance.patch<GetContactResponse>(`/contacts/${id}`, data);
-  return { contact: response.data.data };
+  return response.data.data;
 };
 
 export const deleteContact = async (id: string): Promise<void> => {

@@ -11,6 +11,6 @@ export const DataGuard = <T,>({
   emptyComponent = null,
   children,
 }: DataGuardProps<T>): ReactNode => {
-  if (data == null) return <>{emptyComponent}</>;
+  if (data === null || data === undefined) return <>{emptyComponent}</>;
   return <>{children(data)}</>;
 };

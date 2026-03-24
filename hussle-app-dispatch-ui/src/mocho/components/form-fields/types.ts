@@ -39,6 +39,7 @@ interface BaseInputFieldProps {
 	placeholder?: string;
 	disabled?: boolean;
 	required?: boolean;
+	autoComplete?: string;
 	formik: FormikFieldProps;
 }
 
@@ -147,6 +148,7 @@ export interface SelectFieldProps {
 	label: string;
 	data: SelectOption[];
 	required?: boolean;
+	placeholder?: string;
 	formik: FormikFieldProps;
 }
 
@@ -169,7 +171,9 @@ export interface TypeaheadFieldProps {
 	actionButtonLabel?: string;
 	onActionButtonClick?: () => void;
 	onInputValueChange?: (value: string) => void;
+	onOptionSelect?: (option: TypeaheadOption | null) => void;
 	renderOptionContent?: (option: TypeaheadOption) => React.ReactNode;
+	startAdornment?: React.ReactNode;
 }
 
 /**

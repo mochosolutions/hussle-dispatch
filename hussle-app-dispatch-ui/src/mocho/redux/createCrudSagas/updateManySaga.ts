@@ -88,7 +88,6 @@ export function createUpdateManySaga<TUpdateInput = unknown>(
 
       // Validate input
       if (!ids || ids.length === 0) {
-        console.log(`No ${entityNamePlural.toLowerCase()} to update`);
         return;
       }
 
@@ -97,15 +96,11 @@ export function createUpdateManySaga<TUpdateInput = unknown>(
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook({ ids, data })) as boolean;
         if (!shouldContinue) {
-          console.log(`Bulk ${entityName.toLowerCase()} update cancelled by user`);
           return;
         }
       } else if (hooks?.beforeUpdateMany) {
         const shouldContinue = (yield* hooks.beforeUpdateMany(ids, data)) as boolean;
         if (!shouldContinue) {
-          console.log(
-            `Bulk ${entityName.toLowerCase()} update cancelled by beforeUpdateMany hook`
-          );
           return;
         }
       }
@@ -140,8 +135,6 @@ export function createUpdateManySaga<TUpdateInput = unknown>(
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`bulkUpdate${entityNamePlural}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message

@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle } from 'react';
+import { useEffect, useImperativeHandle, useRef } from 'react';
 import { useFormik, FormikValues } from 'formik';
 import type { FormHandle, FormState, FormStateChangeCallback } from '../types/form';
 
@@ -39,26 +39,40 @@ export function useFormHandle<TValues extends FormikValues>({
   onStateChange,
   getDirty = () => formik.dirty,
 }: UseFormHandleOptions<TValues>) {
+  // Store getDirty and onStateChange in refs to avoid them as effect deps.
+  // getDirty defaults to `() => formik.dirty` which creates a new function
+  // each render — using it directly as a dep causes an infinite loop:
+  // new getDirty → effect fires → onStateChange → parent setState → re-render → new getDirty
+  const getDirtyRef = useRef(getDirty);
+  getDirtyRef.current = getDirty;
+
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
   useImperativeHandle(
     ref,
     () => ({
       submit: async () => { await formik.submitForm(); },
       reset: () => formik.resetForm(),
+      getValues: () => formik.values as unknown as Record<string, unknown>,
       isSubmitting: formik.isSubmitting,
       isValid: formik.isValid,
-      isDirty: getDirty(),
+      isDirty: getDirtyRef.current(),
     }),
-    [formik.submitForm, formik.resetForm, formik.isSubmitting, formik.isValid, getDirty]
+    [formik.submitForm, formik.resetForm, formik.values, formik.isSubmitting, formik.isValid]
   );
 
+  // Push form state to the page. Only depends on primitive values from formik
+  // to avoid re-firing on every render.
+  const isDirty = getDirtyRef.current();
   useEffect(() => {
     const state: FormState = {
       isSubmitting: formik.isSubmitting,
       isValid: formik.isValid,
-      isDirty: getDirty(),
+      isDirty,
     };
-    onStateChange?.(state);
-  }, [formik.isSubmitting, formik.isValid, getDirty, onStateChange]);
+    onStateChangeRef.current?.(state);
+  }, [formik.isSubmitting, formik.isValid, isDirty]);
 }
 
 export default useFormHandle;

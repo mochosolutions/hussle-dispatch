@@ -62,12 +62,10 @@ export function createConfirmationHook<TData = unknown>(
 
       // If modal was closed (backdrop/cancel button), return false to abort
       if (result.cancelled) {
-        console.log(`[${confirmConfig.confirmActionType}] User cancelled - modal closed`);
         return false;
       }
 
       // If confirmed, return true to proceed
-      console.log(`[${confirmConfig.confirmActionType}] User confirmed`);
       return !!result.confirmed;
     } finally {
       // Always close modal when saga finishes

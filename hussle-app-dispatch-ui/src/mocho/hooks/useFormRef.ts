@@ -37,7 +37,16 @@ export function useFormRef<T extends FormHandle = FormHandle>(): UseFormRefRetur
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM_STATE);
 
   const handleFormStateChange = useCallback<FormStateChangeCallback>((state) => {
-    setFormState(state);
+    setFormState((prev) => {
+      if (
+        prev.isSubmitting === state.isSubmitting &&
+        prev.isValid === state.isValid &&
+        prev.isDirty === state.isDirty
+      ) {
+        return prev; // same values — skip re-render
+      }
+      return state;
+    });
   }, []);
 
   const submitForm = useCallback(() => {

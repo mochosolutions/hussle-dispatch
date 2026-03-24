@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useBlocker, type Blocker } from 'react-router-dom';
 
 interface UseDirtyFormBlockerOptions {
@@ -75,27 +75,48 @@ export const useDirtyFormBlocker = ({
   title = 'Unsaved Changes',
   onBlock,
 }: UseDirtyFormBlockerOptions): Blocker => {
-  // Block in-app navigation when form is dirty and not submitting.
-  // When submitting, user intends to save and leave, so don't block.
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !isSubmitting && currentLocation.pathname !== nextLocation.pathname
+  // Store callbacks in refs so they never destabilize the effect or blocker.
+  const onBlockRef = useRef(onBlock);
+  onBlockRef.current = onBlock;
+
+  const titleRef = useRef(title);
+  titleRef.current = title;
+
+  const messageRef = useRef(message);
+  messageRef.current = message;
+
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
+
+  // Stable function reference — reads current values from refs so the
+  // callback identity never changes across renders.
+  const shouldBlock = useCallback(
+    ({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }) =>
+      isDirtyRef.current &&
+      !isSubmittingRef.current &&
+      currentLocation.pathname !== nextLocation.pathname,
+    [],
   );
+
+  const blocker = useBlocker(shouldBlock);
 
   // Show confirmation dialog when navigation is blocked
   useEffect(() => {
-    if (blocker.state === 'blocked' && onBlock) {
-      onBlock(blocker, title, message);
+    if (blocker.state === 'blocked' && onBlockRef.current) {
+      onBlockRef.current(blocker, titleRef.current, messageRef.current);
     }
-  }, [blocker.state, blocker, title, message, onBlock]);
+  }, [blocker.state, blocker]);
 
   // Handle browser refresh/close with native dialog
   useEffect(() => {
     if (isDirty && !isSubmitting) {
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         e.preventDefault();
-        e.returnValue = ''; // Required for Chrome
-        return ''; // Required for some browsers
+        e.returnValue = '';
+        return '';
       };
 
       window.addEventListener('beforeunload', handleBeforeUnload);

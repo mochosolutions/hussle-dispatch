@@ -18,6 +18,7 @@ export const TextField: React.FC<TextFieldProps> = ({
   disabled = false,
   required = false,
   type = 'text',
+  autoComplete,
   formik,
 }) => {
   const error = formik.errors[name] as string | undefined;
@@ -40,6 +41,7 @@ export const TextField: React.FC<TextFieldProps> = ({
         onBlur={formik.handleBlur}
         placeholder={placeholder}
         disabled={disabled}
+        autoComplete={autoComplete}
         fullWidth
         error={Boolean(touched && error)}
       />

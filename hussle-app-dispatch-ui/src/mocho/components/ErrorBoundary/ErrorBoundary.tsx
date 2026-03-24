@@ -77,14 +77,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       onError(error, errorInfo);
     }
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error(
-        `ErrorBoundary caught error${context ? ` in ${context}` : ''}:`,
-        error,
-        errorInfo
-      );
-    }
+    // Error info is available via the onError callback and React DevTools
   }
 
   resetErrorBoundary = (): void => {

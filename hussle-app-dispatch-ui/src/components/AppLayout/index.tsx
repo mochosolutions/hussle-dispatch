@@ -1,3 +1,6 @@
+import type { ComponentProps } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Outlet, useMatches, useNavigate } from 'react-router-dom';
 import {
   LayoutStateProvider,
   LayoutShell,
@@ -5,82 +8,47 @@ import {
   LayoutDrawer,
   MainContent,
   Profile,
+  Avatar,
   // Logo,
 } from '@mocho/ui/components';
-// import Logo from 'components/logo';
+import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { LogoutOutlined } from '@ant-design/icons';
+import { menuItems } from './menuItem';
+import { formattedCurrentUserSelector } from '../../features/auth/store/selectors';
+import { logoutRequest } from '../../features/auth/store/authSlice';
+import { fetchCountsRequest } from '../../features/invoices/store/reducers/invoicePageSlice';
+import { selectInvoiceDraftCount } from '../../features/invoices/store/selectors/invoiceSelectors';
+import { useSelector, useDispatch } from '../../store';
 import type { NavItemType } from '@mocho/ui/types';
-import type { ComponentProps } from 'react';
-import { Outlet, useMatches } from 'react-router-dom';
-import { House, Van, BarChart3, Truck, FileText, Contact, MapPinCheckIcon } from 'lucide-react';
 
-// Camera
-
-const menuItems: NavItemType[] = [
-  {
-    id: 'navigation',
-    title: '',
-    type: 'group',
-    children: [
-      {
-        id: 'dashboard',
-        title: 'Dashboard',
-        type: 'item',
-        url: '/',
-        icon: <House size={24} />,
-      },
-      {
-        id: 'dispatch-board',
-        title: 'Dispatch Board',
-        type: 'item',
-        url: '/loads',
-        icon: <Truck size={24} />,
-      },
-      {
-        id: 'load-intelligence',
-        title: 'Load Intelligence',
-        type: 'item',
-        url: '/load-intelligence',
-        icon: <BarChart3 size={24} />,
-      },
-      {
-        id: 'fleet',
-        title: 'Fleet Management',
-        type: 'collapse',
-        icon: <Van size={24} />,
-        children: [
-          { id: 'carriers', title: 'Carriers', type: 'item', url: '/carriers' },
-          { id: 'vehicles', title: 'Vehicles', type: 'item', url: '/vehicles' },
-          { id: 'drivers', title: 'Drivers', type: 'item', url: '/drivers' },
-        ],
-      },
-      {
-        id: 'contacts',
-        title: 'Contacts',
-        type: 'item',
-        url: '/contacts',
-        icon: <Contact size={24} />,
-      },
-      {
-        id: 'places',
-        title: 'Places',
-        type: 'item',
-        url: '/places',
-        icon: <MapPinCheckIcon size={24} />,
-      },
-      {
-        id: 'invoices',
-        title: 'Invoices',
-        type: 'item',
-        url: '/invoices',
-        icon: <FileText size={24} />,
-      },
-    ],
-  },
-];
-
-const user = {
-  name: 'John Doe',
-  organizationName: 'Hussle',
+const UserFooter = ({ onLogout }: { onLogout: () => void }) => {
+  const user = useSelector(formattedCurrentUserSelector);
+  return (
+    <Stack direction="row" spacing={2} alignItems="center">
+      <Avatar
+        alt="profile user"
+        sx={{ width: 32, height: 32 }}
+      />
+      <Stack sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="body1" textTransform="capitalize" noWrap>
+          {user?.name} - {user?.role}
+        </Typography>
+        <Typography variant="body2" noWrap>
+          {user?.orgName}
+        </Typography>
+      </Stack>
+      <Tooltip title="Logout">
+        <IconButton
+          onClick={onLogout}
+          size="small"
+          aria-label="logout"
+          sx={{ color: 'grey.400', '&:hover': { color: 'common.white' } }}
+        >
+          <LogoutOutlined />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
 };
 
 const validContainerMaxWidths = ['sm', 'md', 'lg', 'xl'];
@@ -151,6 +119,46 @@ const isAppLayoutHandle = (value: unknown): value is AppLayoutHandle => {
 
 const AppLayout = () => {
   const matches = useMatches();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const formattedUser = useSelector(formattedCurrentUserSelector);
+  const draftCount = useSelector(selectInvoiceDraftCount);
+
+  useEffect(() => {
+    dispatch(fetchCountsRequest());
+  }, [dispatch]);
+
+  const dynamicMenuItems: NavItemType[] = useMemo(() => {
+    if (draftCount <= 0) {
+      return menuItems;
+    }
+
+    return menuItems.map((group) => ({
+      ...group,
+      children: group.children?.map((item) => {
+        if (item.id === 'invoices') {
+          return {
+            ...item,
+            chip: {
+              label: String(draftCount),
+              color: 'warning' as const,
+              size: 'small' as const,
+              variant: 'filled' as const,
+            },
+          };
+        }
+        return item;
+      }),
+    }));
+  }, [draftCount]);
+
+  const handleNavigateToSettings = useCallback(() => {
+    navigate('/settings');
+  }, [navigate]);
+
+  const handleLogout = useCallback(() => {
+    dispatch(logoutRequest());
+  }, [dispatch]);
 
   const mainContentProps = matches.reduce<AppLayoutMainContentProps>((accumulator, match) => {
     if (!isAppLayoutHandle(match.handle) || match.handle.mainContentProps === undefined) {
@@ -167,19 +175,29 @@ const AppLayout = () => {
     <LayoutStateProvider disableMiniDrawer>
       <LayoutShell sx={{ height: '100vh', overflow: 'hidden' }}>
         <LayoutHeader>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginLeft: 'auto',
-            }}
-          >
-            <Profile user={user} />
-          </div>
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
+            <Profile
+              user={formattedUser ? { name: formattedUser.name, organizationName: formattedUser.orgName } : undefined}
+              onLogout={handleLogout}
+              onSettings={handleNavigateToSettings}
+            />
+          </Box>
         </LayoutHeader>
         <LayoutDrawer
-          logo="/vite.svg"
-          menuItems={menuItems}
+          logo={
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: 'common.white',
+                letterSpacing: '-0.02em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Hussle Dispatch
+            </Typography>
+          }
+          menuItems={dynamicMenuItems}
           paperStyles={{
             backgroundColor: 'primary.dark',
             color: 'grey.300',
@@ -213,11 +231,7 @@ const AppLayout = () => {
             borderColor: 'primary.900',
             px: 2,
           }}
-          footer={
-            <>
-              <div>Footer</div>
-            </>
-          }
+          footer={<UserFooter onLogout={handleLogout} />}
         />
         <MainContent {...mainContentProps}>
           <Outlet />

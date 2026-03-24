@@ -3,6 +3,7 @@ import type {
   InvoiceListItem,
   InvoiceDetail,
   InvoiceFilters,
+  InvoiceCounts,
   UpdateInvoiceInput,
   SendInvoiceInput,
   PaymentInput,
@@ -43,40 +44,78 @@ export const getInvoices = async (
   return response.data;
 };
 
-export const getInvoice = async (id: string): Promise<{ invoice: InvoiceDetail }> => {
+export const getInvoice = async (id: string): Promise<InvoiceDetail> => {
   const response = await axiosInstance.get<GetInvoiceResponse>(`/invoices/${id}`);
-  return { invoice: response.data.data };
+  return response.data.data;
 };
 
 export const updateInvoice = async (
   id: string,
   data: UpdateInvoiceInput,
-): Promise<{ invoice: InvoiceDetail }> => {
+): Promise<InvoiceDetail> => {
   const response = await axiosInstance.patch<GetInvoiceResponse>(`/invoices/${id}`, data);
-  return { invoice: response.data.data };
+  return response.data.data;
 };
 
-export const approveInvoice = async (id: string): Promise<{ invoice: InvoiceDetail }> => {
-  const response = await axiosInstance.patch<GetInvoiceResponse>(`/invoices/${id}/approve`);
-  return { invoice: response.data.data };
+export const approveInvoice = async (id: string): Promise<InvoiceDetail> => {
+  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${id}/approve`);
+  return response.data.data;
 };
 
 export const sendInvoice = async (
   id: string,
   input: SendInvoiceInput,
-): Promise<{ invoice: InvoiceDetail }> => {
-  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${id}/send`, input);
-  return { invoice: response.data.data };
+): Promise<InvoiceDetail> => {
+  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${id}/send`, {
+    email: input.recipientEmail,
+  });
+  return response.data.data;
 };
 
 export const markPaid = async (
   id: string,
   data: PaymentInput,
-): Promise<{ invoice: InvoiceDetail }> => {
-  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${id}/payments`, data);
-  return { invoice: response.data.data };
+): Promise<InvoiceDetail> => {
+  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${id}/mark-paid`, data);
+  return response.data.data;
 };
 
 export const deleteInvoice = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/invoices/${id}`);
+};
+
+export const createFromLoad = async (loadId: string): Promise<InvoiceDetail> => {
+  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/from-load/${loadId}`);
+  return response.data.data;
+};
+
+export const voidInvoice = async (invoiceId: string): Promise<InvoiceDetail> => {
+  const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${invoiceId}/void`);
+  return response.data.data;
+};
+
+export const getInvoicePdf = async (invoiceId: string): Promise<{ data: { url: string } }> => {
+  const response = await axiosInstance.get<{ data: { url: string } }>(
+    `/invoices/${invoiceId}/pdf`,
+  );
+  return response.data;
+};
+
+export const previewInvoicePdf = async (invoiceId: string): Promise<Blob> => {
+  const response = await axiosInstance.get(`/invoices/${invoiceId}/preview`, {
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};
+
+export const downloadInvoicePacket = async (invoiceId: string): Promise<Blob> => {
+  const response = await axiosInstance.get(`/invoices/${invoiceId}/packet`, {
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};
+
+export const getInvoiceCounts = async (): Promise<InvoiceCounts> => {
+  const response = await axiosInstance.get<{ data: InvoiceCounts }>('/invoices/counts');
+  return response.data.data;
 };

@@ -18,8 +18,8 @@ export const FormikDecorator: React.FC<FormikDecoratorProps> = ({
   return (
     <Formik
       initialValues={initialValues}
-      onSubmit={(values) => {
-        console.log('Form submitted:', values);
+      onSubmit={() => {
+        // Storybook form submit handler
       }}
       validateOnChange
       validateOnBlur

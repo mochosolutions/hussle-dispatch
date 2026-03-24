@@ -69,24 +69,24 @@ export const getLoads = async (
   return response.data;
 };
 
-export const getLoad = async (id: string): Promise<{ load: LoadDetail }> => {
+export const getLoad = async (id: string): Promise<LoadDetail> => {
   const response = await axiosInstance.get<GetLoadResponse>(`/loads/${id}`);
-  return { load: response.data.data };
+  return response.data.data;
 };
 
 export const createLoad = async (
   data: CreateLoadInput,
-): Promise<{ load: LoadDetail }> => {
+): Promise<LoadDetail> => {
   const response = await axiosInstance.post<GetLoadResponse>('/loads', data);
-  return { load: response.data.data };
+  return response.data.data;
 };
 
 export const updateLoad = async (
   id: string,
   data: UpdateLoadInput,
-): Promise<{ load: LoadDetail }> => {
+): Promise<LoadDetail> => {
   const response = await axiosInstance.patch<GetLoadResponse>(`/loads/${id}`, data);
-  return { load: response.data.data };
+  return response.data.data;
 };
 
 export const deleteLoad = async (id: string): Promise<void> => {
@@ -106,31 +106,31 @@ export const transitionStatus = async (
 
 export const getCheckCalls = async (
   loadId: string,
-): Promise<{ checkCalls: CheckCall[] }> => {
+): Promise<CheckCall[]> => {
   const response = await axiosInstance.get<GetCheckCallsResponse>(
     `/loads/${loadId}/check-calls`,
   );
-  return { checkCalls: response.data.data };
+  return response.data.data;
 };
 
 export const createCheckCall = async (
   loadId: string,
   data: CreateCheckCallInput,
-): Promise<{ checkCall: CheckCall }> => {
+): Promise<CheckCall> => {
   const response = await axiosInstance.post<CreateCheckCallResponse>(
     `/loads/${loadId}/check-calls`,
     data,
   );
-  return { checkCall: response.data.data };
+  return response.data.data;
 };
 
 export const getStatusHistory = async (
   loadId: string,
-): Promise<{ statusHistory: StatusHistoryEntry[] }> => {
+): Promise<StatusHistoryEntry[]> => {
   const response = await axiosInstance.get<GetStatusHistoryResponse>(
     `/loads/${loadId}/status-history`,
   );
-  return { statusHistory: response.data.data };
+  return response.data.data;
 };
 
 export const getLoadFiltersFromParams = (filters: LoadFilters): GetLoadsParams => {

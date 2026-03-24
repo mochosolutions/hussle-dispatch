@@ -88,7 +88,6 @@ export function createCreateSaga<
       if (hooks?.beforeCreate) {
         const shouldContinue = (yield* hooks.beforeCreate(data)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} creation cancelled by beforeCreate hook`);
           return;
         }
       }
@@ -124,8 +123,6 @@ export function createCreateSaga<
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`create${entityName}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message

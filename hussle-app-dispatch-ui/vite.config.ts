@@ -31,7 +31,6 @@ export default defineConfig({
     dedupe: [
       'react',
       'react-dom',
-      'react-is',
       '@emotion/react',
       '@emotion/styled',
       '@mui/material',

@@ -3,7 +3,7 @@ import { Formik, Form, useFormikContext } from 'formik';
 import type { FormikProps, FormikValues } from 'formik';
 import { Box, Button, CircularProgress } from '@mui/material';
 import type { ObjectSchema } from 'yup';
-import { EditDrawer } from '../../../features/carrier/components/EditDrawer';
+import { EditDrawer } from '../../../components/EditDrawer';
 
 interface FormDrawerProps<TValues extends FormikValues> {
   /** Whether the drawer is open */

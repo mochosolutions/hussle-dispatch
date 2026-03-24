@@ -79,6 +79,8 @@ const MainContent = ({
         width: mainWidth,
         minWidth: 0,
         flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
         overflowY: 'auto',
         p: contentPadding,
         ...(downBreakpoint &&
@@ -101,7 +103,7 @@ const MainContent = ({
         sx={{
           ...(useContainer && { px: { xs: 0, sm: 2 } }),
           position: 'relative',
-          minHeight: 'calc(100vh - 110px)',
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
         }}

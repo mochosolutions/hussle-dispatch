@@ -43,22 +43,22 @@ export const getCarriers = async (
   return response.data;
 };
 
-export const getCarrier = async (id: string): Promise<{ carrier: Carrier }> => {
+export const getCarrier = async (id: string): Promise<Carrier> => {
   const response = await axiosInstance.get<GetCarrierResponse>(`/carriers/${id}`);
-  return { carrier: response.data.data };
+  return response.data.data;
 };
 
-export const createCarrier = async (data: CreateCarrierInput): Promise<{ carrier: Carrier }> => {
+export const createCarrier = async (data: CreateCarrierInput): Promise<Carrier> => {
   const response = await axiosInstance.post<GetCarrierResponse>('/carriers', data);
-  return { carrier: response.data.data };
+  return response.data.data;
 };
 
 export const updateCarrier = async (
   id: string,
   data: UpdateCarrierInput,
-): Promise<{ carrier: Carrier }> => {
+): Promise<Carrier> => {
   const response = await axiosInstance.patch<GetCarrierResponse>(`/carriers/${id}`, data);
-  return { carrier: response.data.data };
+  return response.data.data;
 };
 
 export const deleteCarrier = async (id: string): Promise<void> => {
@@ -67,11 +67,11 @@ export const deleteCarrier = async (id: string): Promise<void> => {
 
 export const getCarrierOnboarding = async (
   id: string,
-): Promise<{ onboarding: CarrierOnboardingStatus }> => {
+): Promise<CarrierOnboardingStatus> => {
   const response = await axiosInstance.get<CarrierOnboardingResponse>(
     `/carriers/${id}/onboarding`,
   );
-  return { onboarding: response.data.data };
+  return response.data.data;
 };
 
 // ---------------------------------------------------------------------------
@@ -88,22 +88,22 @@ interface CreateCarrierNoteResponse {
 
 export const getCarrierNotes = async (
   carrierId: string,
-): Promise<{ notes: CarrierNote[] }> => {
+): Promise<CarrierNote[]> => {
   const response = await axiosInstance.get<GetCarrierNotesResponse>(
     `/carriers/${carrierId}/notes`,
   );
-  return { notes: response.data.data };
+  return response.data.data;
 };
 
 export const createCarrierNote = async (
   carrierId: string,
   data: CreateCarrierNoteInput,
-): Promise<{ note: CarrierNote }> => {
+): Promise<CarrierNote> => {
   const response = await axiosInstance.post<CreateCarrierNoteResponse>(
     `/carriers/${carrierId}/notes`,
     data,
   );
-  return { note: response.data.data };
+  return response.data.data;
 };
 
 // ---------------------------------------------------------------------------
@@ -122,22 +122,22 @@ interface GetCarrierVehiclesResponse {
 
 export const getCarrierDrivers = async (
   carrierId: string,
-): Promise<{ data: Driver[] }> => {
+): Promise<Driver[]> => {
   const response = await axiosInstance.get<GetCarrierDriversResponse>(
     `/drivers`,
     { params: { carrierId } },
   );
-  return { data: response.data.data };
+  return response.data.data;
 };
 
 export const getCarrierVehicles = async (
   carrierId: string,
-): Promise<{ data: Vehicle[] }> => {
+): Promise<Vehicle[]> => {
   const response = await axiosInstance.get<GetCarrierVehiclesResponse>(
     `/vehicles`,
     { params: { carrierId } },
   );
-  return { data: response.data.data };
+  return response.data.data;
 };
 
 // ---------------------------------------------------------------------------
@@ -160,10 +160,10 @@ interface GetCarrierWithAssetsResponse {
 
 export const createCarrierWithAssets = async (
   data: CreateCarrierWithAssetsInput,
-): Promise<{ carrier: CarrierWithAssets }> => {
+): Promise<CarrierWithAssets> => {
   const response = await axiosInstance.post<GetCarrierWithAssetsResponse>(
     '/carriers/with-assets',
     data,
   );
-  return { carrier: response.data.data };
+  return response.data.data;
 };

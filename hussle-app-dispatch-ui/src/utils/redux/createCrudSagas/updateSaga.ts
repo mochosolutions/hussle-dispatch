@@ -93,13 +93,13 @@ export function createUpdateSaga<
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook({ id, data })) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} update cancelled by user`);
+          // Update cancelled by user
           return;
         }
       } else if (hooks?.beforeUpdate) {
         const shouldContinue = (yield* hooks.beforeUpdate(id, data)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} update cancelled by beforeUpdate hook`);
+          // Update cancelled by beforeUpdate hook
           return;
         }
       }
@@ -135,8 +135,6 @@ export function createUpdateSaga<
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`update${entityName}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message

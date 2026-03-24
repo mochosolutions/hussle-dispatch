@@ -60,7 +60,6 @@ async function uploadSingleImage(imageState: ImageState): Promise<SingleUploadRe
 
   // Validate presign response (Issue #11 fix)
   if (!presignResponse.uploadUrl || !presignResponse.documentId) {
-    console.error('Invalid presign response:', { presignResponse, placeholderId });
     throw new Error('Invalid presign response: missing uploadUrl or documentId');
   }
 
@@ -159,10 +158,6 @@ export async function uploadInlineImages(
       result.documentMapping[placeholderId] = documentId;
       result.documentIds.push(documentId);
     } else {
-      console.error(
-        `Failed to upload inline image ${placeholderId}:`,
-        settledResult.reason
-      );
       result.failedIds.push(placeholderId);
       // Still update progress for failed uploads
       completed++;
@@ -264,7 +259,6 @@ export async function uploadHeroImage(
 
   // Validate presign response
   if (!presignResponse.uploadUrl || !presignResponse.documentId) {
-    console.error('Invalid presign response for hero image:', { presignResponse, filename });
     throw new Error('Invalid presign response: missing uploadUrl or documentId');
   }
 
@@ -300,11 +294,7 @@ export function revokeHeroImageBlobUrl(heroImageState: HeroImageState | null): v
     try {
       URL.revokeObjectURL(heroImageState.blobUrl);
     } catch (error) {
-      // Log but don't throw - revoking an already-revoked URL is not critical
-      console.warn('Failed to revoke hero image blob URL:', {
-        blobUrl: heroImageState.blobUrl,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      // Revoking an already-revoked URL is not critical
     }
   }
 }

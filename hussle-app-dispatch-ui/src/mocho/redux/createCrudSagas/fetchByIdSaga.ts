@@ -64,7 +64,6 @@ export function createFetchByIdSaga<TEntity extends { id: string }>(
       if (hooks?.beforeFetchById) {
         const shouldContinue = (yield* hooks.beforeFetchById(id)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} fetch by ID cancelled by beforeFetchById hook`);
           return;
         }
       }
@@ -85,8 +84,6 @@ export function createFetchByIdSaga<TEntity extends { id: string }>(
         yield* hooks.afterFetchById(entity);
       }
     } catch (error: unknown) {
-      console.error(`fetch${entityName}ByIdSaga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message

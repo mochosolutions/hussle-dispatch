@@ -105,7 +105,6 @@ export function useAutoFocus<T extends HTMLElement = HTMLInputElement>(
           window.getComputedStyle(element).visibility !== 'hidden';
 
         if (!isVisible) {
-          console.warn('useAutoFocus: Element is not visible, skipping focus');
           return;
         }
       }
@@ -117,9 +116,8 @@ export function useAutoFocus<T extends HTMLElement = HTMLInputElement>(
       if (selectOnFocus && 'select' in element && typeof element.select === 'function') {
         try {
           (element as unknown as HTMLInputElement | HTMLTextAreaElement).select();
-        } catch (error) {
+        } catch (_error) {
           // Silently fail if selection not supported
-          console.debug('useAutoFocus: Text selection failed', error);
         }
       }
     };
@@ -186,7 +184,6 @@ export function useAutoFocusFirst<T extends HTMLElement = HTMLDivElement>(
       const firstFocusable = container.querySelector<HTMLElement>(focusableSelectors);
 
       if (!firstFocusable) {
-        console.warn('useAutoFocusFirst: No focusable element found in container');
         return;
       }
 
@@ -198,7 +195,6 @@ export function useAutoFocusFirst<T extends HTMLElement = HTMLDivElement>(
           window.getComputedStyle(firstFocusable).visibility !== 'hidden';
 
         if (!isVisible) {
-          console.warn('useAutoFocusFirst: First focusable element is not visible');
           return;
         }
       }

@@ -2,36 +2,45 @@ import { createBrowserRouter } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import DashboardRoutes from 'features/dashboard/routes/DashboardRoutes';
 import LoginRoutes from 'features/auth/routes/LoginRoutes';
-import DispatchBoardRoutes from 'features/dispatchboard/routes/DispatchBoardRoutes';
+// import DispatchBoardRoutes from 'features/dispatchboard/routes/DispatchBoardRoutes';
 // import FleetRoutes from 'pages/fleet/routes/FleetRoutes';
 import CarrierRoutes from 'features/carrier/routes/carrierRoutes';
 import VehicleRoutes from 'features/vehicle/routes/vehicleRoutes';
 import DriverRoutes from 'features/driver/routes/driverRoutes';
 import InvoiceRoutes from 'features/invoices/routes/InvoiceRoutes';
-import LoadIntelligenceRoutes from 'features/loadintelligence/routes/LoadIntelligence';
 import PlaceRoutes from 'features/place/routes/placeRoutes';
 import LoadRoutes from 'features/load/routes/loadRoutes';
+import ContactRoutes from 'features/contact/routes/contactRoutes';
+import CustomerRoutes from 'features/customer/routes/customerRoutes';
+import SettingsRoutes from 'features/settings/routes/settingsRoutes';
+import DriverPortalRoutes from 'features/driver-portal/routes/driverPortalRoutes';
+import DevRoutes from 'features/dev/routes/devRoutes';
+import ErrorPage from 'components/ErrorPage';
 import App from '../App';
 export const routes: RouteObject[] = [
+  DriverPortalRoutes,
   {
     element: <App />,
     children: [
+      ...DevRoutes,
       LoginRoutes,
       DashboardRoutes,
-      DispatchBoardRoutes,
+      // DispatchBoardRoutes,
       LoadRoutes,
       // FleetRoutes,
       CarrierRoutes,
       VehicleRoutes,
       DriverRoutes,
       InvoiceRoutes,
-      LoadIntelligenceRoutes,
       PlaceRoutes,
+      ContactRoutes,
+      CustomerRoutes,
+      SettingsRoutes,
 
-      // {
-      //   path: '*',
-      //   element: <ErrorPage />,
-      // },
+      {
+        path: '*',
+        element: <ErrorPage />,
+      },
     ],
   },
 ];

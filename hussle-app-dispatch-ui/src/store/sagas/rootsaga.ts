@@ -7,7 +7,10 @@ import { loadSagaWatcher } from 'features/load/store/sagas/loadSagaWatcher';
 import { intelSagaWatcher } from 'features/loadintelligence/store/sagas/intelSagaWatcher';
 import { invoiceSagaWatcher } from 'features/invoices/store/sagas/invoiceSagaWatcher';
 import { dashboardSagaWatcher } from 'features/dashboard/store/sagas/dashboardSagaWatcher';
+import { contactSagaWatcher } from 'features/contact/store/sagas/contactSagasWatcher';
+import { customerSagaWatcher } from 'features/customer/store/sagas/customerSagaWatcher';
 import { authWatcher } from 'features/auth/store';
+import { settingsSagaWatcher } from 'features/settings/store/sagas/settingsSagaWatcher';
 
 export default function* rootSaga() {
   yield all([
@@ -20,5 +23,8 @@ export default function* rootSaga() {
     intelSagaWatcher(),
     invoiceSagaWatcher(),
     dashboardSagaWatcher(),
+    contactSagaWatcher(),
+    customerSagaWatcher(),
+    settingsSagaWatcher(),
   ]);
 }

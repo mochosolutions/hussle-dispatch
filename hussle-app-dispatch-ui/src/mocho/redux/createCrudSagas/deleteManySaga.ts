@@ -94,7 +94,6 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
 
       // Validate input
       if (!ids || ids.length === 0) {
-        console.log(`No ${entityNamePlural.toLowerCase()} to delete`);
         return;
       }
 
@@ -103,15 +102,11 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook(ids)) as boolean;
         if (!shouldContinue) {
-          console.log(`Bulk ${entityName.toLowerCase()} deletion cancelled by user`);
           return;
         }
       } else if (hooks?.beforeDeleteMany) {
         const shouldContinue = (yield* hooks.beforeDeleteMany(ids)) as boolean;
         if (!shouldContinue) {
-          console.log(
-            `Bulk ${entityName.toLowerCase()} deletion cancelled by beforeDeleteMany hook`
-          );
           return;
         }
       }
@@ -151,8 +146,6 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`bulkDelete${entityNamePlural}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message

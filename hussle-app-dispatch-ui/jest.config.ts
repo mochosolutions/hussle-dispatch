@@ -7,6 +7,9 @@ export default {
       {
         tsconfig: 'tsconfig.test.json',
         diagnostics: false,
+        astTransformers: {
+          before: ['./jest.importMetaTransformer.ts'],
+        },
       },
     ],
   },

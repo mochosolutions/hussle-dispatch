@@ -90,13 +90,11 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook(id)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} deletion cancelled by user`);
           return;
         }
       } else if (hooks?.beforeDelete) {
         const shouldContinue = (yield* hooks.beforeDelete(id)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} deletion cancelled by beforeDelete hook`);
           return;
         }
       }
@@ -155,8 +153,6 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`delete${entityName}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message
