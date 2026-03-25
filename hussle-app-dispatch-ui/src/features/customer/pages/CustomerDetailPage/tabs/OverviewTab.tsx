@@ -1,8 +1,8 @@
 import { Box, Typography } from '@mui/material';
 import SectionCard from 'components/SectionCard';
 import { DetailRow, KpiCell } from 'components/Typography';
-import { EditableSectionHeader } from '../../../../carrier/components/EditableSectionHeader';
-import { FieldRow } from '../../../../carrier/components/FieldRow';
+import { EditableSectionHeader } from 'components/EditableSectionHeader';
+import { FieldRow } from 'components/FieldRow';
 import { CUSTOMER_TYPE_LABELS } from '../../../constants';
 import type { Customer } from '../../../types';
 
