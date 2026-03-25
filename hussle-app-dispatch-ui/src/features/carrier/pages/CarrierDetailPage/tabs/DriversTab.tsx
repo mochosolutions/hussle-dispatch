@@ -42,10 +42,15 @@ export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
         valueGetter: (params: { data: Driver }) => params.data.status ?? '—',
       },
       {
-        field: 'cdlNumber',
-        headerName: 'CDL',
-        width: 140,
-        valueGetter: (params: { data: Driver }) => params.data.cdlNumber ?? '—',
+        field: 'licenseNumber',
+        headerName: 'License',
+        width: 180,
+        valueGetter: (params: { data: Driver }) => {
+          const typeOpt = params.data.licenseType;
+          const num = params.data.licenseNumber;
+          if (!num) return '—';
+          return `${typeOpt} · ${num}`;
+        },
       },
       {
         field: 'homeBase',

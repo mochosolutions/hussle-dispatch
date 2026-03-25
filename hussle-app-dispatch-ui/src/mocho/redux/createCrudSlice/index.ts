@@ -27,6 +27,8 @@ export interface FetchByIdSuccessPayload {
 /** Payload for creating an entity */
 export interface CreateRequestPayload<TData> {
   data: TData;
+  redirectTo?: string;
+  onCreated?: (id: string) => void;
 }
 
 /** Payload for updating an entity */

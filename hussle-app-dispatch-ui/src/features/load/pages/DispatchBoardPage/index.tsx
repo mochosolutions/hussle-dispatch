@@ -57,7 +57,7 @@ import type { BoardView, LoadStatus } from '../../types';
 // Board view persistence in localStorage
 // ---------------------------------------------------------------------------
 
-const DISPATCH_BOARD_LOAD_LIMIT = 500;
+const DISPATCH_BOARD_LOAD_LIMIT = 100;
 const BOARD_VIEW_STORAGE_KEY = 'dispatch-board-view';
 
 const getPersistedBoardView = (): BoardView | null => {
@@ -95,7 +95,6 @@ const DispatchBoardPage = () => {
   const weeklyGrossItems = useSelector(selectWeeklyGross);
   const weeklyGrossLoading = useSelector(selectWeeklyGrossLoading);
   const weeklyGrossFetched = useSelector(selectWeeklyGrossFetched);
-
 
   // Initialise board view from localStorage on mount
   const mountedRef = useRef(false);

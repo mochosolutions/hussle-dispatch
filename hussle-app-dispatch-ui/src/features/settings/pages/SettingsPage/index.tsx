@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Grid,
@@ -21,7 +21,9 @@ import {
   SubmitButton,
 } from 'mocho/components/form-fields';
 import type { FormikFieldProps } from 'mocho/components/form-fields';
+import { DetailTabBar } from 'components/DetailTabBar';
 import { settingsSchema } from '../../validators/settingsSchema';
+import TeamTab from '../../components/TeamTab';
 import type { SettingsFormValues } from '../../types';
 import {
   selectSettings,
@@ -58,8 +60,14 @@ const buildInitialValues = (settings: ReturnType<typeof selectSettings>): Settin
   companyLogoUrl: settings?.companyLogoUrl ?? '',
 });
 
+const SETTINGS_TABS = [
+  { value: 'general', label: 'General' },
+  { value: 'team', label: 'Team' },
+] as const;
+
 const SettingsPage = () => {
   const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = useState('general');
   const settings = useSelector(selectSettings);
   const isLoading = useSelector(selectSettingsLoading);
   const isSaving = useSelector(selectSettingsSaving);
@@ -136,6 +144,10 @@ const SettingsPage = () => {
     <PageWrapper isLoading={isLoading} errorContext="SettingsPage" sx={{ gap: 2 }}>
       <PageHeader title="Settings" subtitle="Manage your organization settings" />
 
+      <DetailTabBar tabs={SETTINGS_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {activeTab === 'general' && (
+      <>
       {error && (
         <MainCard sx={{ bgcolor: 'error.lighter', borderColor: 'error.light' }}>
           <Typography color="error.main" variant="body2" role="alert">
@@ -336,6 +348,10 @@ const SettingsPage = () => {
           </Box>
         </Stack>
       </Box>
+      </>
+      )}
+
+      {activeTab === 'team' && <TeamTab />}
     </PageWrapper>
   );
 };

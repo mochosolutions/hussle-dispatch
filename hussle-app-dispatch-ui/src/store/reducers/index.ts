@@ -22,6 +22,7 @@ import { contactPageSlice } from 'features/contact/store/reducers/contactPageSli
 import { customerReducer } from 'features/customer/store/reducers/customerEntitySlice';
 import { customerPageReducer } from 'features/customer/store/reducers/customerPageSlice';
 import { settingsSlice } from 'features/settings/store/reducers/settingsSlice';
+import { teamReducer } from 'features/settings/store/reducers/teamSlice';
 
 const pages = combineReducers({
   ui: uiReducer,
@@ -39,6 +40,7 @@ const pages = combineReducers({
   contacts: contactPageSlice.reducer,
   customers: customerPageReducer,
   settings: settingsSlice.reducer,
+  team: teamReducer,
 });
 
 const entities = combineReducers({

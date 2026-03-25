@@ -17,7 +17,7 @@ export const DriverSummaryCard = ({ driver, onEdit, onRemove }: DriverSummaryCar
     .join('')
     .toUpperCase();
 
-  const details = [driver.cdlNumber, driver.phone].filter(Boolean);
+  const details = [driver.licenseNumber, driver.phone].filter(Boolean);
 
   return (
     <Box

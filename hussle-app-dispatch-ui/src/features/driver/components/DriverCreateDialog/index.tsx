@@ -1,9 +1,23 @@
 import React from 'react';
-import { Grid, Typography, Divider, Stack } from '@mui/material';
-import { TextField } from '@mocho/ui/components';
+import {
+  Autocomplete,
+  Chip,
+  Divider,
+  Grid,
+  MenuItem,
+  Stack,
+  TextField as MuiTextField,
+  Typography,
+} from '@mui/material';
+import { TextField, SelectField } from '@mocho/ui/components';
 import { useDispatch } from 'store';
 import { createDriverRequest } from '../../store/reducers';
 import { driverInfoSchema } from '../../validators/driverInfoSchema';
+import {
+  DRIVER_LICENSE_TYPE_OPTIONS,
+  ENDORSEMENT_OPTIONS,
+} from 'features/carrier/types';
+import type { EndorsementCode } from 'features/carrier/types';
 import CarrierAutocomplete from 'features/carrier/components/CarrierAutocomplete';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 
@@ -26,9 +40,11 @@ const INITIAL_VALUES = {
   lastName: '',
   phone: '',
   email: '',
-  cdlNumber: '',
-  cdlState: '',
-  cdlExpiry: '',
+  licenseType: 'CLASS_D' as const,
+  licenseNumber: '',
+  licenseState: '',
+  licenseExpiry: '',
+  endorsements: [] as EndorsementCode[],
   homeBaseCity: '',
   homeBaseState: '',
 };
@@ -101,17 +117,51 @@ export const DriverCreateDrawer: React.FC<DriverCreateDrawerProps> = ({
           <Divider />
 
           <Typography variant="subtitle2" sx={sectionLabelSx}>
-            CDL Information
+            License Information
           </Typography>
+          <SelectField name="licenseType" label="License Type" formik={formik} required>
+            {DRIVER_LICENSE_TYPE_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </SelectField>
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <TextField name="cdlNumber" label="CDL Number" formik={formik} />
+              <TextField name="licenseNumber" label="License Number" formik={formik} />
             </Grid>
             <Grid item xs={6}>
-              <TextField name="cdlState" label="CDL State" formik={formik} />
+              <TextField name="licenseState" label="License State" formik={formik} />
             </Grid>
           </Grid>
-          <TextField name="cdlExpiry" label="CDL Expiry" formik={formik} />
+          <TextField name="licenseExpiry" label="License Expiry" formik={formik} />
+          {formik.values.licenseType.startsWith('CDL_') && (
+            <Autocomplete
+              multiple
+              options={ENDORSEMENT_OPTIONS}
+              getOptionLabel={(opt) => `${opt.value} — ${opt.label}`}
+              value={ENDORSEMENT_OPTIONS.filter((o) =>
+                (formik.values.endorsements ?? []).includes(o.value),
+              )}
+              onChange={(_, selected) => {
+                void formik.setFieldValue(
+                  'endorsements',
+                  selected.map((s) => s.value),
+                );
+              }}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.value}
+                    label={option.value}
+                    size="small"
+                  />
+                ))
+              }
+              renderInput={(params) => <MuiTextField {...params} label="Endorsements" />}
+            />
+          )}
 
           <Divider />
 

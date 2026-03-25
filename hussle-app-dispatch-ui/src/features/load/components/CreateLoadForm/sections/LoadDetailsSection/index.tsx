@@ -7,14 +7,14 @@ import type { FormikFieldProps } from '@mocho/ui/forms';
 import BrokerAutocomplete from 'features/contact/components/BrokerAutocomplete';
 import CustomerAutocomplete from 'features/customer/components/CustomerAutocomplete';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../validators/loadSchema';
+import type { LoadFormValues } from '../../../../validators/loadSchema';
 import {
   EQUIPMENT_OPTIONS,
   PAYMENT_TERMS_OPTIONS,
   REEFER_MODE_OPTIONS,
   FLATBED_LENGTH_OPTIONS,
   TARP_TYPE_OPTIONS,
-} from '../../constants';
+} from '../../../../constants';
 
 interface LoadDetailsSectionProps {
   formik: FormikProps<LoadFormValues>;
@@ -59,87 +59,16 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
   return (
     <SectionCard
       title="Load Details"
-      subtitle="Set the rate, equipment, and basic load information"
+      subheader="Set the rate, equipment, and basic load information"
       actions={
-        complete ? (
-          <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-        ) : undefined
+        complete ? <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> : undefined
       }
     >
       <Grid container spacing={1.5}>
-        {/* Row 1: Rate Con + Broker + Broker Ref */}
-        {/* <Grid item xs={12} md={3}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mb: 0.5, display: 'block', textTransform: 'uppercase', fontWeight: 600, fontSize: 10 }}
-          >
-            Rate Confirmation
-          </Typography>
-          <Box
-            onClick={() => rateConRef.current?.click()}
-            sx={{
-              border: '2px dashed',
-              borderColor: formik.values.rateConFile ? 'success.main' : 'divider',
-              borderRadius: 1,
-              px: 2,
-              py: 1,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              backgroundColor: formik.values.rateConFile ? 'success.50' : 'transparent',
-              '&:hover': { borderColor: 'primary.main' },
-            }}
-          >
-            <input
-              ref={rateConRef}
-              type="file"
-              hidden
-              accept=".pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  void formik.setFieldValue('rateConFile', file);
-                }
-              }}
-            />
-            {formik.values.rateConFile ? (
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
-                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 18 }} />
-                <Typography variant="caption" sx={{ fontWeight: 600, flex: 1 }}>
-                  {(formik.values.rateConFile as File).name}
-                </Typography>
-                <Button
-                  size="small"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void formik.setFieldValue('rateConFile', undefined);
-                  }}
-                >
-                  Remove
-                </Button>
-              </Stack>
-            ) : (
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <UploadFileIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-                <Box>
-                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                    Attach rate con
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                    PDF, max 10MB
-                  </Typography>
-                </Box>
-              </Stack>
-            )}
-          </Box>
-        </Grid> */}
-
-        <Grid item xs={12} md={5}>
+        <Grid item xs={12} md={4}>
           <CustomerAutocomplete
             name="customerId"
+            required={true}
             value={formik.values.customerId ?? ''}
             onChange={(customerId) => {
               void formik.setFieldValue('customerId', customerId || undefined);
@@ -175,7 +104,7 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
           />
         </Grid>
 
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <TextField name="externalRefNumber" label="External Ref #" formik={formikProps} />
         </Grid>
 
@@ -205,6 +134,14 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
         </Grid>
         <Grid item xs={12} md={3}>
           <SelectField
+            name="paymentTerms"
+            label="Payment Terms"
+            data={paymentTermsData}
+            formik={formikProps}
+          />
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <SelectField
             name="equipmentType"
             label="Equipment Type"
             required
@@ -212,14 +149,7 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
             formik={formikProps}
           />
         </Grid>
-        <Grid item xs={12} md={3}>
-          <SelectField
-            name="paymentTerms"
-            label="Payment Terms"
-            data={paymentTermsData}
-            formik={formikProps}
-          />
-        </Grid>
+
         <Grid item xs={12} md={3}>
           <TextField name="totalMiles" label="Total Miles (auto from route)" formik={formikProps} />
         </Grid>

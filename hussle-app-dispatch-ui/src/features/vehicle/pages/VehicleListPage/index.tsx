@@ -16,7 +16,10 @@ import type { ActionsCellConfig } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
 import { KpiCell } from 'components/Typography';
 import { StatusBadge } from 'components/Statusbadge';
+import UpgradePlanDialog from 'components/UpgradePlanDialog';
 import { useDispatch, useSelector } from 'store';
+import { getSubscriptionUsage } from 'utils/api/team/teamApi';
+import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import type { Vehicle } from 'features/carrier/types';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { fetchVehiclesRequest } from '../../store/reducers';
@@ -48,8 +51,11 @@ const VehicleListPage = () => {
   const [activeTab, setActiveTab] = useState<VehicleTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [vehicleLimit, setVehicleLimit] = useState(0);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const organizationId = useSelector(organizationIdSelector);
 
   const isLoading = useSelector(selectVehicleListLoading);
 
@@ -82,9 +88,25 @@ const VehicleListPage = () => {
     [dispatch],
   );
 
-  const handleOpenCreate = useCallback(() => {
+  const handleOpenCreate = useCallback(async () => {
+    if (!organizationId) {
+      return;
+    }
+
+    try {
+      const usage = await getSubscriptionUsage(organizationId);
+
+      if (usage.vehicles.current >= usage.vehicles.limit) {
+        setVehicleLimit(usage.vehicles.limit);
+        setUpgradeOpen(true);
+        return;
+      }
+    } catch {
+      // If usage check fails, allow creation to proceed
+    }
+
     setCreateDialogOpen(true);
-  }, []);
+  }, [organizationId]);
 
   const handleCloseCreate = useCallback(() => {
     setCreateDialogOpen(false);
@@ -298,6 +320,13 @@ const VehicleListPage = () => {
       </ListLayout>
 
       {createDialogOpen && <VehicleCreateDrawer onClose={handleCloseCreate} />}
+
+      <UpgradePlanDialog
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        resourceType="vehicles"
+        limit={vehicleLimit}
+      />
     </PageWrapper>
   );
 };

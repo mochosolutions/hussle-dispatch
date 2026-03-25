@@ -12,7 +12,8 @@ export enum TenantStatus {
 }
 
 export enum SubscriptionTier {
-  Free = 'free',
-  Pro = 'pro',
-  Enterprise = 'enterprise',
+  TRIAL = 'TRIAL',
+  LAUNCH = 'LAUNCH',
+  PRO = 'PRO',
+  ELITE = 'ELITE',
 }

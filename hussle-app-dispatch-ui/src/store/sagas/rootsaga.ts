@@ -11,6 +11,7 @@ import { contactSagaWatcher } from 'features/contact/store/sagas/contactSagasWat
 import { customerSagaWatcher } from 'features/customer/store/sagas/customerSagaWatcher';
 import { authWatcher } from 'features/auth/store';
 import { settingsSagaWatcher } from 'features/settings/store/sagas/settingsSagaWatcher';
+import { teamSagaWatcher } from 'features/settings/store/sagas/teamSagaWatcher';
 
 export default function* rootSaga() {
   yield all([
@@ -26,5 +27,6 @@ export default function* rootSaga() {
     contactSagaWatcher(),
     customerSagaWatcher(),
     settingsSagaWatcher(),
+    teamSagaWatcher(),
   ]);
 }

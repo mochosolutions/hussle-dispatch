@@ -76,9 +76,11 @@ interface AddressSearchResponse {
 export const searchAddresses = async (
   query: string,
   limit = 10,
+  signal?: AbortSignal,
 ): Promise<AddressSearchResult[]> => {
   const response = await axiosInstance.get<AddressSearchResponse>('/places/address-search', {
     params: { query, limit },
+    signal,
   });
   return response.data.data;
 };

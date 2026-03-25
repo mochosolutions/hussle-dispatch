@@ -25,7 +25,10 @@ export const BaseFieldWrapper: React.FC<BaseFieldWrapperProps> = ({
   return (
     <Stack spacing={1}>
       <InputLabel htmlFor={name} required={required}>
-        {label}
+        {label}{' '}
+        <FormHelperText component="span" error={hasError} sx={{ display: 'inline', ml: 0.5 }}>
+          {!required && '(optional)'}
+        </FormHelperText>
       </InputLabel>
 
       {children}

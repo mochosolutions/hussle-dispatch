@@ -2,9 +2,9 @@ import { Chip, Grid, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../validators/loadSchema';
-import type { SelectedDriverInfo } from '../../types';
-import AssignmentFieldGroup from '../AssignmentFieldGroup';
+import type { LoadFormValues } from '../../../../validators/loadSchema';
+import type { SelectedDriverInfo } from '../../../../types';
+import AssignmentFieldGroup from '../../../AssignmentFieldGroup';
 
 interface DriverSectionProps {
   formik: FormikProps<LoadFormValues>;
@@ -31,13 +31,11 @@ export const DriverSection: React.FC<DriverSectionProps> = ({
   return (
     <SectionCard
       title="Driver & Asset"
-      subtitle="Assign a carrier, driver, and vehicle to this load"
+      subheader="Assign a carrier, driver, and vehicle to this load"
       actions={
         complete || driverBadge ? (
           <Stack direction="row" alignItems="center" spacing={1}>
-            {complete && (
-              <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-            )}
+            {complete && <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />}
             {driverBadge && (
               <Chip
                 label={driverBadge.label}

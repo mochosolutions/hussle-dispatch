@@ -46,7 +46,7 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
           {displayName}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {data.cdlNumber ? `CDL# ${data.cdlNumber}` : '\u2014'}
+          {data.licenseNumber ? `${data.licenseType} · ${data.licenseNumber}` : '\u2014'}
         </Typography>
       </Box>
     </Stack>

@@ -40,7 +40,7 @@ export const selectFormattedDriverById = (id: string | undefined) =>
         ...driver,
         createdAt: formatDate(driver.createdAt),
         updatedAt: formatDate(driver.updatedAt),
-        cdlExpiry: formatNullableDate(driver.cdlExpiry),
+        licenseExpiry: formatNullableDate(driver.licenseExpiry),
       };
     },
   );

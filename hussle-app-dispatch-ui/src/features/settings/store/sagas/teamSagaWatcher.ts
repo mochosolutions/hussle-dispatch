@@ -1,0 +1,18 @@
+import { takeLatest } from 'redux-saga/effects';
+import { fetchTeamSaga } from './fetchTeamSaga';
+import { changeMemberRoleSaga } from './changeMemberRoleSaga';
+import { removeMemberSaga } from './removeMemberSaga';
+import { inviteMemberSaga } from './inviteMemberSaga';
+import {
+  fetchTeamRequest,
+  changeMemberRoleRequest,
+  removeMemberRequest,
+  inviteMemberRequest,
+} from '../reducers/teamSlice';
+
+export function* teamSagaWatcher(): Generator {
+  yield takeLatest(fetchTeamRequest.type, fetchTeamSaga);
+  yield takeLatest(changeMemberRoleRequest.type, changeMemberRoleSaga);
+  yield takeLatest(removeMemberRequest.type, removeMemberSaga);
+  yield takeLatest(inviteMemberRequest.type, inviteMemberSaga);
+}

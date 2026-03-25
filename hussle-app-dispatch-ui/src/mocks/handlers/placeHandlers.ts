@@ -40,23 +40,42 @@ export const placeHandlers = [
       }));
 
     const external = query.length >= 3
-      ? [{
-          source: 'EXTERNAL' as const,
-          id: `ext-${Date.now()}`,
-          name: `${query.charAt(0).toUpperCase()}${query.slice(1)} Facility`,
-          address: '100 Main St',
-          city: 'Memphis',
-          state: 'TN',
-          zip: '38103',
-          lat: 35.1495,
-          lng: -90.049,
-          facilityType: null,
-          contactName: null,
-          contactPhone: null,
-          appointmentRequired: false,
-          lumperRequired: false,
-          ppeRequired: false,
-        }]
+      ? [
+          {
+            source: 'EXTERNAL' as const,
+            id: 'ext-0',
+            name: '100 Main St, Memphis, TN 38103',
+            address: '100 Main St',
+            city: 'Memphis',
+            state: 'TN',
+            zip: '38103',
+            lat: 35.1495,
+            lng: -90.049,
+            facilityType: null,
+            contactName: null,
+            contactPhone: null,
+            appointmentRequired: false,
+            lumperRequired: false,
+            ppeRequired: false,
+          },
+          {
+            source: 'EXTERNAL' as const,
+            id: 'ext-1',
+            name: '500 Commerce St, Nashville, TN 37203',
+            address: '500 Commerce St',
+            city: 'Nashville',
+            state: 'TN',
+            zip: '37203',
+            lat: 36.1627,
+            lng: -86.7816,
+            facilityType: null,
+            contactName: null,
+            contactPhone: null,
+            appointmentRequired: false,
+            lumperRequired: false,
+            ppeRequired: false,
+          },
+        ]
       : [];
 
     return HttpResponse.json({ data: [...saved, ...external] });
@@ -69,7 +88,7 @@ export const placeHandlers = [
         totalMiles: 847,
         totalMinutes: 780,
         legs: [
-          { fromIndex: 0, toIndex: 1, miles: 847, minutes: 780 },
+          { distanceMiles: 847, durationMinutes: 780, isEstimated: true },
         ],
         isEstimated: true,
       },

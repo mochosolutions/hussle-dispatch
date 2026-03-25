@@ -28,8 +28,8 @@ export function* createCarrierSaga(
       name: d.name,
       phone: d.phone,
       email: d.email || undefined,
-      cdlNumber: d.cdlNumber || undefined,
-      cdlExpiry: d.cdlExpiry || undefined,
+      licenseNumber: d.licenseNumber || undefined,
+      licenseExpiry: d.licenseExpiry || undefined,
     }));
 
     const mappedVehicles = vehicles.map((v) => ({

@@ -25,8 +25,8 @@ export const DriverInlineForm = ({
         firstName: initial?.firstName ?? '',
         lastName: initial?.lastName ?? '',
         phone: initial?.phone ?? '',
-        cdlNumber: initial?.cdlNumber ?? '',
-        cdlExpiry: initial?.cdlExpiry ?? '',
+        licenseNumber: initial?.licenseNumber ?? '',
+        licenseExpiry: initial?.licenseExpiry ?? '',
         email: initial?.email ?? '',
       }}
       validationSchema={driverSchema}
@@ -36,8 +36,8 @@ export const DriverInlineForm = ({
           firstName: values.firstName,
           lastName: values.lastName,
           phone: values.phone,
-          cdlNumber: values.cdlNumber ?? '',
-          cdlExpiry: values.cdlExpiry ?? '',
+          licenseNumber: values.licenseNumber ?? '',
+          licenseExpiry: values.licenseExpiry ?? '',
           email: values.email ?? '',
         });
       }}
@@ -77,10 +77,10 @@ export const DriverInlineForm = ({
 
           <Grid container spacing={1.5} sx={{ mb: 2 }}>
             <Grid item xs={6}>
-              <TextField name="cdlNumber" label="CDL Number" placeholder="A123456789" formik={formikProps} />
+              <TextField name="licenseNumber" label="License Number" placeholder="A123456789" formik={formikProps} />
             </Grid>
             <Grid item xs={6}>
-              <DateField name="cdlExpiry" label="CDL Expiry" formik={formikProps} />
+              <DateField name="licenseExpiry" label="License Expiry" formik={formikProps} />
             </Grid>
           </Grid>
 

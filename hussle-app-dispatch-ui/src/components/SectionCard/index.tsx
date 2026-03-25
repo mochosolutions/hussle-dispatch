@@ -4,12 +4,11 @@ import React from 'react';
 
 interface SectionCardProps extends MainCardProps {
   title: string | React.ReactNode;
-  subtitle?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
 }
 
-const SectionCard: React.FC<SectionCardProps> = ({ title, subtitle, actions, children, ...rest }) => (
+const SectionCard: React.FC<SectionCardProps> = ({ title, actions, children, ...rest }) => (
   <MainCard
     title={title}
     sx={{
@@ -31,11 +30,6 @@ const SectionCard: React.FC<SectionCardProps> = ({ title, subtitle, actions, chi
     secondary={actions}
     {...rest}
   >
-    {subtitle && (
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        {subtitle}
-      </Typography>
-    )}
     {children}
   </MainCard>
 );
@@ -66,11 +60,6 @@ export const DarkSectionCard: React.FC<SectionCardProps> = ({
     secondary={actions}
     {...rest}
   >
-    {subtitle && (
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        {subtitle}
-      </Typography>
-    )}
     {children}
   </MainCard>
 );

@@ -25,8 +25,14 @@ export function* createCustomerSaga(
 
     yield call(enqueueSnackbar, 'Customer created', { variant: 'success' });
 
-    const navigate = (yield call(getNavigate)) as (path: string) => void;
-    yield call(navigate, '/customers');
+    const { redirectTo, onCreated } = action.payload;
+    if (onCreated) {
+      onCreated(response.customer.id);
+    }
+    if (redirectTo) {
+      const navigate = (yield call(getNavigate)) as (path: string) => void;
+      yield call(navigate, redirectTo);
+    }
 
     yield put(fetchCustomersRequest({ page: 1, limit: 25 }));
   } catch (error: unknown) {

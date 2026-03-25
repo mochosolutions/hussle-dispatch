@@ -160,6 +160,31 @@ export interface DriverNoGoZone {
   city: string | null;
 }
 
+export type DriverLicenseType = 'CLASS_D' | 'CLASS_M' | 'CDL_A' | 'CDL_B' | 'CDL_C';
+
+export const DRIVER_LICENSE_TYPE_OPTIONS: Array<{
+  value: DriverLicenseType;
+  label: string;
+  shortLabel: string;
+}> = [
+  { value: 'CLASS_D', label: 'Standard (Class D)', shortLabel: 'Class D' },
+  { value: 'CLASS_M', label: 'Motorcycle (Class M)', shortLabel: 'Class M' },
+  { value: 'CDL_A', label: 'CDL Class A', shortLabel: 'CDL-A' },
+  { value: 'CDL_B', label: 'CDL Class B', shortLabel: 'CDL-B' },
+  { value: 'CDL_C', label: 'CDL Class C', shortLabel: 'CDL-C' },
+];
+
+export type EndorsementCode = 'H' | 'N' | 'X' | 'T' | 'P' | 'S';
+
+export const ENDORSEMENT_OPTIONS: Array<{ value: EndorsementCode; label: string }> = [
+  { value: 'H', label: 'Hazmat' },
+  { value: 'N', label: 'Tanker' },
+  { value: 'X', label: 'Hazmat + Tanker' },
+  { value: 'T', label: 'Double/Triple Trailers' },
+  { value: 'P', label: 'Passenger' },
+  { value: 'S', label: 'School Bus' },
+];
+
 export interface Driver {
   id: string;
   carrierId: string | null;
@@ -168,9 +193,11 @@ export interface Driver {
   lastName: string;
   email: string | null;
   phone: string | null;
-  cdlNumber: string | null;
-  cdlState: string | null;
-  cdlExpiry: string | null;
+  licenseType: DriverLicenseType;
+  licenseNumber: string | null;
+  licenseState: string | null;
+  licenseExpiry: string | null;
+  endorsements: EndorsementCode[] | null;
   isAvailable: boolean;
   status: string;
   homeBaseCity: string | null;
@@ -193,9 +220,11 @@ export interface CreateDriverInput {
   lastName: string;
   email?: string | null;
   phone?: string | null;
-  cdlNumber?: string | null;
-  cdlState?: string | null;
-  cdlExpiry?: string | null;
+  licenseType?: DriverLicenseType;
+  licenseNumber?: string | null;
+  licenseState?: string | null;
+  licenseExpiry?: string | null;
+  endorsements?: EndorsementCode[] | null;
   isAvailable?: boolean;
   status?: string;
   homeBaseCity?: string | null;
@@ -215,9 +244,11 @@ export interface UpdateDriverInput {
   lastName?: string;
   email?: string | null;
   phone?: string | null;
-  cdlNumber?: string | null;
-  cdlState?: string | null;
-  cdlExpiry?: string | null;
+  licenseType?: DriverLicenseType;
+  licenseNumber?: string | null;
+  licenseState?: string | null;
+  licenseExpiry?: string | null;
+  endorsements?: EndorsementCode[] | null;
   isAvailable?: boolean;
   status?: string;
   homeBaseCity?: string | null;
@@ -380,7 +411,7 @@ export interface DriverFormEntry {
   firstName: string;
   lastName: string;
   phone: string;
-  cdlNumber: string;
-  cdlExpiry: string;
+  licenseNumber: string;
+  licenseExpiry: string;
   email: string;
 }

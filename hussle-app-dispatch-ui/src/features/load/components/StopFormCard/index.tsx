@@ -18,18 +18,14 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { FieldArray } from 'formik';
 import type { FormikProps } from 'formik';
-import {
-  MainCard,
-  TextField,
-  DateField,
-  TimeField,
-} from '@mocho/ui/components';
+import { MainCard, TextField, DateField, TimeField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import type { LoadFormValues } from '../../validators/loadSchema';
 import { AddressSearchField } from '../AddressSearchField';
 import type { CommoditySummary } from '../../types';
+import { EMPTY_COMMODITY } from '../../constants';
 
-interface StopFormCardProps {
+export interface StopFormCardProps {
   index: number;
   prefix: string;
   formik: FormikProps<LoadFormValues>;
@@ -38,16 +34,6 @@ interface StopFormCardProps {
   allPickupCommodities: CommoditySummary[];
   defaultExpanded?: boolean;
 }
-
-const EMPTY_COMMODITY = {
-  description: '',
-  weight: '',
-  pieces: '',
-  nmfc: '',
-  isHazmat: false,
-  isTarp: false,
-  isTempControlled: false,
-};
 
 export const StopFormCard: React.FC<StopFormCardProps> = ({
   index,
@@ -94,19 +80,17 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
 
   const commodities = stop.commodities ?? [];
 
-  const commoditySummary = commodities.length > 0
-    ? `${commodities.length} item${commodities.length > 1 ? 's' : ''}`
-    : null;
+  const commoditySummary =
+    commodities.length > 0
+      ? `${commodities.length} item${commodities.length > 1 ? 's' : ''}`
+      : null;
 
   return (
     <MainCard
       content={false}
       sx={{
-        // border: '1px solid',
-        borderColor: 'divider',
-        border: `2px solid`,
-        borderColor: accentColor,
-        borderRadius: 1,
+        borderLeft: `2px solid`,
+        borderLeftColor: accentColor,
         boxShadow: 'none',
         overflow: 'hidden',
       }}
@@ -126,7 +110,7 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
         }}
       >
         {/* Drag handle */}
-        <Box
+        {/* <Box
           aria-label="Drag to reorder"
           sx={{
             alignItems: 'center',
@@ -161,11 +145,19 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
               />
             ))}
           </Box>
-        </Box>
+        </Box> */}
 
-        <Typography color="text.secondary" sx={{ minWidth: 16 }} variant="caption">
-          {index + 1}
-        </Typography>
+        <Box
+          sx={{
+            backgroundColor: 'grey.100',
+            p: 0.5,
+            // borderRadius: 0.75,
+          }}
+        >
+          <Typography color="text.secondary" sx={{ minWidth: 16 }} variant="caption">
+            {index + 1}
+          </Typography>
+        </Box>
 
         {/* P/D badge */}
         <Chip
@@ -197,10 +189,22 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
         ) : null}
 
         {!stop.facilityName && !stop.placeId && (
-          <Chip label="No facility" size="small" color="error" variant="outlined" sx={{ fontSize: 10, height: 20 }} />
+          <Chip
+            label="No facility"
+            size="small"
+            color="error"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20 }}
+          />
         )}
         {!stop.appointmentDate && (
-          <Chip label="No appt" size="small" color="warning" variant="outlined" sx={{ fontSize: 10, height: 20 }} />
+          <Chip
+            label="No appt"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20 }}
+          />
         )}
 
         <Box sx={{ flex: 1 }} />
@@ -230,10 +234,10 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
             </Grid>
 
             {/* Date/Time */}
-            <Grid item xs={12} md={2.2}>
+            <Grid item xs={12} md={4}>
               <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} />
             </Grid>
-            <Grid item xs={12} md={2.2}>
+            <Grid item xs={12} md={4}>
               <TimeField name={`${prefix}.appointmentTime`} label="Time" formik={stopFormik} />
             </Grid>
           </Grid>
@@ -395,7 +399,6 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
               </Stack>
             </Box>
           )}
-
         </Box>
       </Collapse>
     </MainCard>

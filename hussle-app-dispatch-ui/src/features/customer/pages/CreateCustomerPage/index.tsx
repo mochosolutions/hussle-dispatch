@@ -231,7 +231,7 @@ const CreateCustomerPage = () => {
         quickPayDiscount: values.quickPayDiscount || null,
         notes: values.notes || null,
       };
-      dispatch(createCustomerRequest({ data: payload }));
+      dispatch(createCustomerRequest({ data: payload, redirectTo: '/customers' }));
     },
     [dispatch],
   );

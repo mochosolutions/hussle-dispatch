@@ -64,15 +64,13 @@ const accessorialFormSchema = Yup.object().shape({
 // ---------------------------------------------------------------------------
 
 export const loadSchema = Yup.object().shape({
+  customerId: Yup.string().required('Customer is required'),
   carrierId: Yup.string().required('Carrier is required'),
   driverId: Yup.string(),
   vehicleId: Yup.string(),
-  customerId: Yup.string(),
   contactId: Yup.string(),
   externalRefNumber: Yup.string(),
-  equipmentType: Yup.string()
-    .oneOf(EQUIPMENT_VALUES)
-    .required('Equipment type is required'),
+  equipmentType: Yup.string().oneOf(EQUIPMENT_VALUES).required('Equipment type is required'),
   isHazmat: Yup.boolean(),
   isTarp: Yup.boolean(),
   isTeamDriver: Yup.boolean(),
@@ -95,26 +93,18 @@ export const loadSchema = Yup.object().shape({
   stops: Yup.array()
     .of(stopSchema)
     .required('At least one stop is required')
-    .test(
-      'has-pickup',
-      'At least one pickup stop is required',
-      (stops) => {
-        if (!stops) {
-          return false;
-        }
-        return stops.some((stop) => stop.type === 'PICKUP');
-      },
-    )
-    .test(
-      'has-delivery',
-      'At least one delivery stop is required',
-      (stops) => {
-        if (!stops) {
-          return false;
-        }
-        return stops.some((stop) => stop.type === 'DELIVERY');
-      },
-    ),
+    .test('has-pickup', 'At least one pickup stop is required', (stops) => {
+      if (!stops) {
+        return false;
+      }
+      return stops.some((stop) => stop.type === 'PICKUP');
+    })
+    .test('has-delivery', 'At least one delivery stop is required', (stops) => {
+      if (!stops) {
+        return false;
+      }
+      return stops.some((stop) => stop.type === 'DELIVERY');
+    }),
   // UI-only load fields
   loadType: Yup.string().oneOf(['std', 'mp1d', '1pmd', 'mpmd', 'dh', 'po']),
   reeferTempMin: Yup.number(),

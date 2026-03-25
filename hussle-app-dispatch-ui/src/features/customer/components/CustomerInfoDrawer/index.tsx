@@ -4,8 +4,16 @@ import { useDispatch } from 'store';
 import { TextField, EmailField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { customerSchema } from '../../validators/customerSchema';
-import type { Customer, CustomerType, UpdateCustomerPayload, CreateCustomerPayload } from '../../types';
-import { createCustomerRequest, updateCustomerRequest } from '../../store/reducers/customerPageSlice';
+import type {
+  Customer,
+  CustomerType,
+  UpdateCustomerPayload,
+  CreateCustomerPayload,
+} from '../../types';
+import {
+  createCustomerRequest,
+  updateCustomerRequest,
+} from '../../store/reducers/customerPageSlice';
 import {
   CUSTOMER_TYPE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
@@ -17,6 +25,7 @@ interface CustomerInfoDrawerProps {
   defaultType?: CustomerType;
   initialCompanyName?: string;
   onClose: () => void;
+  onCreated?: (id: string) => void;
 }
 
 const sectionHeaderSx = {
@@ -32,6 +41,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
   defaultType,
   initialCompanyName,
   onClose,
+  onCreated,
 }) => {
   const dispatch = useDispatch();
   const isEditing = Boolean(customer);
@@ -95,7 +105,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
         notes: values.notes || null,
         status: values.status,
       };
-      dispatch(createCustomerRequest({ data: createData }));
+      dispatch(createCustomerRequest({ data: createData, onCreated }));
     }
   };
 
@@ -111,79 +121,92 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
       saveLabel={isEditing ? 'Save Changes' : 'Create Customer'}
     >
       {(formik) => (
-        <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>
-            Company Details
-          </Typography>
-
-          <TextField name="companyName" label="Company Name" formik={formik} required />
-
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="type" label="Type" formik={formik} select required>
-                {CUSTOMER_TYPE_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={6}>
-              <TextField name="status" label="Status" formik={formik} select>
-                {CUSTOMER_STATUS_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
+        <Grid container spacing={1.5} sx={{ p: 3 }}>
+          {/* <Stack spacing={2.5} sx={{ p: 3 }}> */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" sx={sectionHeaderSx}>
+              Company Details
+            </Typography>
           </Grid>
 
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="mcNumber" label="MC #" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField name="dotNumber" label="DOT #" formik={formik} />
-            </Grid>
+          <Grid item xs={6}>
+            <TextField name="companyName" label="Company Name" formik={formik} required />
           </Grid>
 
-          <Divider sx={{ my: 0.5 }} />
-
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>
-            Contact Information
-          </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="phone" label="Phone" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
-              <EmailField name="email" label="Email" formik={formik} />
-            </Grid>
+          <Grid item xs={6}>
+            <TextField name="type" label="Type" formik={formik} select required>
+              {CUSTOMER_TYPE_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
 
-          <TextField name="website" label="Website" formik={formik} />
-
-          <Divider sx={{ my: 0.5 }} />
-
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>
-            Address
-          </Typography>
-
-          <TextField name="address" label="Address" formik={formik} />
-
-          <Grid container spacing={2}>
-            <Grid item xs={5}>
-              <TextField name="city" label="City" formik={formik} />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField name="state" label="State" formik={formik} />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField name="zip" label="ZIP" formik={formik} />
-            </Grid>
+          <Grid item xs={6}>
+            <TextField name="status" label="Status" formik={formik} select>
+              {CUSTOMER_STATUS_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
+
+          {/* <Grid container> */}
+          <Grid item xs={6}>
+            <TextField name="mcNumber" label="MC #" formik={formik} />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField name="dotNumber" label="DOT #" formik={formik} />
+          </Grid>
+          {/* </Grid> */}
+
+          <Grid item xs={12}>
+            <Divider sx={{ my: 0.5 }} />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" sx={sectionHeaderSx}>
+              Contact Information
+            </Typography>
+          </Grid>
+
+          {/* <Grid container> */}
+          <Grid item xs={6}>
+            <TextField name="phone" label="Phone" formik={formik} />
+          </Grid>
+          <Grid item xs={6}>
+            <EmailField name="email" label="Email" formik={formik} />
+          </Grid>
+          {/* </Grid> */}
+
+          <Grid item xs={12}>
+            <TextField name="website" label="Website" formik={formik} />
+            <Divider sx={{ my: 0.5 }} />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" sx={sectionHeaderSx}>
+              Address
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField name="address" label="Address" formik={formik} />
+          </Grid>
+
+          {/* <Grid container> */}
+          <Grid item xs={5}>
+            <TextField name="city" label="City" formik={formik} />
+          </Grid>
+          <Grid item xs={3}>
+            <TextField name="state" label="State" formik={formik} />
+          </Grid>
+          <Grid item xs={4}>
+            <TextField name="zip" label="ZIP" formik={formik} />
+          </Grid>
+          {/* </Grid> */}
 
           <Divider sx={{ my: 0.5 }} />
 
@@ -191,7 +214,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
             Payment
           </Typography>
 
-          <Grid container spacing={2}>
+          <Grid container>
             <Grid item xs={6}>
               <TextField name="paymentTerms" label="Payment Terms" formik={formik} select>
                 {PAYMENT_TERMS_OPTIONS.map((option) => (
@@ -202,12 +225,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
               </TextField>
             </Grid>
             <Grid item xs={6}>
-              <TextField
-                name="paymentTermsDays"
-                label="Days"
-                formik={formik}
-                type="number"
-              />
+              <TextField name="paymentTermsDays" label="Days" formik={formik} type="number" />
             </Grid>
           </Grid>
 
@@ -220,7 +238,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
           </Typography>
 
           <TextField name="notes" label="Notes" formik={formik} multiline minRows={3} />
-        </Stack>
+        </Grid>
       )}
     </FormDrawer>
   );

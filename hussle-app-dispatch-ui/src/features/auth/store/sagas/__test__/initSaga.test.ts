@@ -35,7 +35,7 @@ const mockOrgs = [
     membershipId: 'mem-123',
     userId: 'user-123',
     orgName: 'Test Org',
-    orgSubscriptionTier: 'pro',
+    orgSubscriptionTier: 'PRO',
     orgStatus: 'active',
     organizationId: 'org-123',
     createdAt: '2024-01-01T00:00:00Z',

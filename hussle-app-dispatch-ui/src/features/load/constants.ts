@@ -129,17 +129,16 @@ export const ALTERNATIVE_STATUSES: Partial<Record<LoadStatus, LoadStatus[]>> = {
 // Transition prerequisites — fields that must be populated for a target status
 // ---------------------------------------------------------------------------
 
-export const TRANSITION_PREREQUISITES: Partial<
-  Record<string, { field: string; label: string }[]>
-> = {
-  BOOKED: [{ field: 'carrierId', label: 'Carrier assigned' }],
-  DISPATCHED: [
-    { field: 'carrierId', label: 'Carrier assigned' },
-    { field: 'driverId', label: 'Driver assigned' },
-    { field: 'vehicleId', label: 'Vehicle assigned' },
-    { field: 'customerRate', label: 'Customer rate set' },
-  ],
-};
+export const TRANSITION_PREREQUISITES: Partial<Record<string, { field: string; label: string }[]>> =
+  {
+    BOOKED: [{ field: 'carrierId', label: 'Carrier assigned' }],
+    DISPATCHED: [
+      { field: 'carrierId', label: 'Carrier assigned' },
+      { field: 'driverId', label: 'Driver assigned' },
+      { field: 'vehicleId', label: 'Vehicle assigned' },
+      { field: 'customerRate', label: 'Customer rate set' },
+    ],
+  };
 
 // ---------------------------------------------------------------------------
 // Load detail tabs
@@ -404,3 +403,13 @@ export const MARKET_RPM = 3.8;
 export const MIN_BOOK = 900;
 export const FUEL_PPG = 4.2;
 export const COMPANY_DRIVER_MPG = 7.5;
+
+export const EMPTY_COMMODITY = {
+  description: '',
+  weight: '',
+  pieces: '',
+  nmfc: '',
+  isHazmat: false,
+  isTarp: false,
+  isTempControlled: false,
+};

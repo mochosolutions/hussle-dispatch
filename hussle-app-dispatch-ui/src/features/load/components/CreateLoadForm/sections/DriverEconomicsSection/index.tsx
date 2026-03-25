@@ -7,9 +7,9 @@ import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
 import { useSelector } from 'store';
 import { selectCarrierById } from 'features/carrier/store/selectors/carrierSelectors';
-import type { LoadFormValues } from '../../validators/loadSchema';
-import type { SelectedDriverInfo } from '../../types';
-import { COMPANY_DRIVER_MPG, FUEL_PPG, formatCurrencyCompact } from '../../constants';
+import type { LoadFormValues } from '../../../../validators/loadSchema';
+import type { SelectedDriverInfo } from '../../../../types';
+import { COMPANY_DRIVER_MPG, FUEL_PPG, formatCurrencyCompact } from '../../../../constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,9 +59,7 @@ export const DriverEconomicsSection: React.FC<DriverEconomicsSectionProps> = ({
 }) => {
   const { values } = formik;
   const carrierId = values.carrierId as string | undefined;
-  const selectedCarrier = useSelector(
-    carrierId ? selectCarrierById(carrierId) : () => undefined,
-  );
+  const selectedCarrier = useSelector(carrierId ? selectCarrierById(carrierId) : () => undefined);
 
   const DEFAULT_CARRIER_PERCENT = 80;
   const dispatchFeePercent = selectedCarrier?.dispatchFeePercent;
@@ -130,8 +128,7 @@ export const DriverEconomicsSection: React.FC<DriverEconomicsSectionProps> = ({
       ? 'Owner Operator Economics'
       : 'Company Driver Economics';
 
-  const headerBg =
-    driverEconomics.type === 'owner_operator' ? 'success.50' : 'primary.50';
+  const headerBg = driverEconomics.type === 'owner_operator' ? 'success.50' : 'primary.50';
 
   return (
     <SectionCard
@@ -151,10 +148,7 @@ export const DriverEconomicsSection: React.FC<DriverEconomicsSectionProps> = ({
               />
             </Grid>
             <Grid item xs={6} md={4}>
-              <MetricItem
-                label="Rate/Mile"
-                value={`$${driverEconomics.rpm.toFixed(2)}`}
-              />
+              <MetricItem label="Rate/Mile" value={`$${driverEconomics.rpm.toFixed(2)}`} />
             </Grid>
             <Grid item xs={6} md={4}>
               <MetricItem
@@ -209,10 +203,7 @@ export const DriverEconomicsSection: React.FC<DriverEconomicsSectionProps> = ({
         <Stack spacing={1.5}>
           <Grid container spacing={2}>
             <Grid item xs={6} md={4}>
-              <MetricItem
-                label="Driver Pay Rate"
-                value={`$${driverEconomics.cpm.toFixed(2)}/mi`}
-              />
+              <MetricItem label="Driver Pay Rate" value={`$${driverEconomics.cpm.toFixed(2)}/mi`} />
             </Grid>
             <Grid item xs={6} md={4}>
               <MetricItem

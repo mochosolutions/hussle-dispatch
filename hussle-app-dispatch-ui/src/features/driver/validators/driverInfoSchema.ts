@@ -11,9 +11,15 @@ export const driverInfoSchema = Yup.object({
   lastName: Yup.string().required('Last name is required').trim(),
   phone: Yup.string().nullable().trim(),
   email: Yup.string().nullable().email('Invalid email').trim(),
-  cdlNumber: Yup.string().nullable().trim(),
-  cdlState: stateCodeValidator.nullable(),
-  cdlExpiry: Yup.string().nullable(),
+  licenseType: Yup.string()
+    .oneOf(['CLASS_D', 'CLASS_M', 'CDL_A', 'CDL_B', 'CDL_C'])
+    .required('License type is required'),
+  licenseNumber: Yup.string().nullable().trim(),
+  licenseState: stateCodeValidator.nullable(),
+  licenseExpiry: Yup.string().nullable(),
+  endorsements: Yup.array()
+    .of(Yup.string().oneOf(['H', 'N', 'X', 'T', 'P', 'S']))
+    .nullable(),
   homeBaseCity: Yup.string().nullable().trim(),
   homeBaseState: stateCodeValidator.nullable(),
   notes: Yup.string().nullable().trim(),

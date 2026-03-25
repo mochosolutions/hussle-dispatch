@@ -11,6 +11,7 @@ const AuthCodeVerification = Loadable(lazy(() => import('features/auth/pages/cod
 const AuthChangePassword = Loadable(lazy(() => import('features/auth/pages/force-change-password')));
 const AuthTerms = Loadable(lazy(() => import('features/auth/pages/terms')));
 const AuthPrivacy = Loadable(lazy(() => import('features/auth/pages/privacy')));
+const AcceptInvitePage = Loadable(lazy(() => import('features/auth/pages/accept-invite')));
 
 const LoginRoutes = {
   path: '/',
@@ -54,6 +55,10 @@ const LoginRoutes = {
         {
           path: 'privacy',
           element: <AuthPrivacy />,
+        },
+        {
+          path: 'invite/accept/:token',
+          element: <AcceptInvitePage />,
         },
       ],
     },

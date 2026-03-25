@@ -1,12 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Stack, Typography, Grid } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -15,10 +8,10 @@ import { FieldArray } from 'formik';
 import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
 import { MainCard } from '@mocho/ui/components';
-import type { LoadFormValues } from '../../validators/loadSchema';
-import type { CommoditySummary, StopType } from '../../types';
-import { StopFormCard } from '../StopFormCard';
-import { MapView } from '../MapView';
+import type { LoadFormValues } from '../../../../validators/loadSchema';
+import type { CommoditySummary, StopType } from '../../../../types';
+import { StopFormCard } from '../../../StopFormCard';
+import { MapView } from '../../../MapView';
 import { useRouteDistance } from './useRouteDistance';
 
 interface StopsSectionProps {
@@ -35,7 +28,10 @@ interface LegConnectorProps {
   isEstimated?: boolean;
 }
 
-const getLegChipColor = (miles: number | null, isEstimated: boolean): 'warning' | 'primary' | 'default' => {
+const getLegChipColor = (
+  miles: number | null,
+  isEstimated: boolean,
+): 'warning' | 'primary' | 'default' => {
   if (miles === null) {
     return 'default';
   }
@@ -68,11 +64,7 @@ const LegConnector: React.FC<LegConnectorProps> = ({ miles, isEstimated = false 
     />
     <Chip
       size="small"
-      label={
-        miles !== null
-          ? `${isEstimated ? '~' : ''}${miles.toLocaleString()} mi`
-          : '\u2014 mi'
-      }
+      label={miles !== null ? `${isEstimated ? '~' : ''}${miles.toLocaleString()} mi` : '\u2014 mi'}
       color={getLegChipColor(miles, isEstimated)}
       variant={getLegChipVariant(miles, isEstimated)}
       sx={{ position: 'absolute', fontSize: 11 }}
@@ -113,7 +105,13 @@ const EMPTY_STOP = {
 
 export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) => {
   const stops = formik.values.stops;
-  const { legMiles, totalMiles, isLoading: isRouteLoading, legIsEstimated, isEstimated } = useRouteDistance(formik);
+  const {
+    legMiles,
+    totalMiles,
+    isLoading: isRouteLoading,
+    legIsEstimated,
+    isEstimated,
+  } = useRouteDistance(formik);
   const displayTotalMiles = formik.values.totalMiles ?? totalMiles;
   const hazmatFileRef = useRef<HTMLInputElement>(null);
 
@@ -142,9 +140,7 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
   const hasHazmat = useMemo(
     () =>
       stops.some(
-        (stop) =>
-          stop.type === 'PICKUP' &&
-          (stop.commodities ?? []).some((c) => c.isHazmat),
+        (stop) => stop.type === 'PICKUP' && (stop.commodities ?? []).some((c) => c.isHazmat),
       ),
     [stops],
   );
@@ -166,23 +162,25 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
         {(arrayHelpers) => (
           <SectionCard
             title="Stops"
-            subtitle="Add pickup and delivery locations with appointment times"
+            subheader="Add pickup and delivery locations with appointment times"
             actions={
               <Stack alignItems="center" direction="row" spacing={1}>
-                {complete && (
-                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                )}
+                {complete && <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />}
                 <Chip label={stops.length} size="small" />
-                {isRouteLoading && (
-                  <CircularProgress size={14} />
-                )}
+                {isRouteLoading && <CircularProgress size={14} />}
                 {displayTotalMiles > 0 && !isRouteLoading && (
                   <>
                     <Typography color="text.secondary" variant="caption">
                       {`${displayTotalMiles.toLocaleString()} total miles`}
                     </Typography>
                     {isEstimated && formik.values.totalMiles === null && (
-                      <Chip label="EST" size="small" color="warning" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
+                      <Chip
+                        label="EST"
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                        sx={{ fontSize: 10, height: 18 }}
+                      />
                     )}
                   </>
                 )}
@@ -191,53 +189,56 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
           >
             <Stack spacing={0}>
               {/* Route map */}
-              <Box sx={{ mb: 2 }}>
-                <MapView stops={formik.values.stops} />
-              </Box>
+
+              <Grid container spacing={2} sx={{ mb: 1 }}>
+                <Grid item xs={6} sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <Stack spacing={0}>
+                    {stops.map((stop, idx) => (
+                      <Box key={idx}>
+                        {idx > 0 && (
+                          <LegConnector miles={legMiles[idx]} isEstimated={legIsEstimated[idx]} />
+                        )}
+                        <StopFormCard
+                          index={idx}
+                          prefix={`stops[${idx}]`}
+                          formik={formik}
+                          canRemove={stops.length > 2}
+                          onRemove={() => arrayHelpers.remove(idx)}
+                          allPickupCommodities={allPickupCommodities}
+                          defaultExpanded={idx === firstPickupIdx || idx === firstDeliveryIdx}
+                        />
+                      </Box>
+                    ))}
+                  </Stack>
+
+                  {/* Add stop buttons */}
+                  <Stack direction={{ sm: 'row', xs: 'column' }} spacing={1} sx={{ mt: 2 }}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleAddStop('PICKUP', arrayHelpers)}
+                    >
+                      Add Pickup
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="success"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleAddStop('DELIVERY', arrayHelpers)}
+                    >
+                      Add Delivery
+                    </Button>
+                  </Stack>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <MapView stops={formik.values.stops} height="60%" />
+                </Grid>
+              </Grid>
 
               {/* Stop cards with leg connectors */}
-              <Stack spacing={0}>
-                {stops.map((stop, idx) => (
-                  <Box key={idx}>
-                    {idx > 0 && (
-                      <LegConnector
-                        miles={legMiles[idx]}
-                        isEstimated={legIsEstimated[idx]}
-                      />
-                    )}
-                    <StopFormCard
-                      index={idx}
-                      prefix={`stops[${idx}]`}
-                      formik={formik}
-                      canRemove={stops.length > 2}
-                      onRemove={() => arrayHelpers.remove(idx)}
-                      allPickupCommodities={allPickupCommodities}
-                      defaultExpanded={idx === firstPickupIdx || idx === firstDeliveryIdx}
-                    />
-                  </Box>
-                ))}
-              </Stack>
-
-              {/* Add stop buttons */}
-              <Stack direction={{ sm: 'row', xs: 'column' }} spacing={1} sx={{ mt: 2 }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleAddStop('PICKUP', arrayHelpers)}
-                >
-                  Add Pickup
-                </Button>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="success"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleAddStop('DELIVERY', arrayHelpers)}
-                >
-                  Add Delivery
-                </Button>
-              </Stack>
             </Stack>
           </SectionCard>
         )}
@@ -288,7 +289,9 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                   <CheckCircleIcon sx={{ color: 'success.main' }} />
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {formik.values.hazmatDocFile instanceof File ? formik.values.hazmatDocFile.name : 'Document'}
+                    {formik.values.hazmatDocFile instanceof File
+                      ? formik.values.hazmatDocFile.name
+                      : 'Document'}
                   </Typography>
                   <Button
                     size="small"

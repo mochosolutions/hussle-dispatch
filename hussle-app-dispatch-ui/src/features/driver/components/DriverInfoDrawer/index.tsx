@@ -1,11 +1,25 @@
 import React from 'react';
-import { TextField, Divider, Grid, Stack, Typography } from '@mui/material';
+import {
+  Autocomplete,
+  Chip,
+  Divider,
+  Grid,
+  MenuItem,
+  Select,
+  Stack,
+  TextField as MuiTextField,
+  Typography,
+} from '@mui/material';
 import type { FormikProps } from 'formik';
 import { FormDrawer } from 'mocho/components/FormDrawer';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import { driverInfoSchema } from '../../validators/driverInfoSchema';
 import type { DriverInfoFormValues } from '../../validators/driverInfoSchema';
-import type { Driver, UpdateDriverInput } from 'features/carrier/types';
+import {
+  DRIVER_LICENSE_TYPE_OPTIONS,
+  ENDORSEMENT_OPTIONS,
+} from 'features/carrier/types';
+import type { Driver, EndorsementCode, UpdateDriverInput } from 'features/carrier/types';
 
 interface DriverInfoDrawerProps {
   open: boolean;
@@ -38,9 +52,11 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
       lastName: data.lastName,
       phone: data.phone ?? '',
       email: data.email ?? '',
-      cdlNumber: data.cdlNumber ?? '',
-      cdlState: data.cdlState ?? '',
-      cdlExpiry: data.cdlExpiry ?? '',
+      licenseType: data.licenseType ?? 'CLASS_D',
+      licenseNumber: data.licenseNumber ?? '',
+      licenseState: data.licenseState ?? '',
+      licenseExpiry: data.licenseExpiry ?? '',
+      endorsements: data.endorsements ?? ([] as EndorsementCode[]),
       homeBaseCity: data.homeBaseCity ?? '',
       homeBaseState: data.homeBaseState ?? '',
       notes: data.notes ?? '',
@@ -50,7 +66,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
       onSave(values);
     }}
   >
-    {({ values, errors, touched, handleChange, handleBlur }: FormikProps<DriverInfoFormValues>) => (
+    {({ values, errors, touched, handleChange, handleBlur, setFieldValue }: FormikProps<DriverInfoFormValues>) => (
       <Stack spacing={2.5} sx={{ p: 3 }}>
         {/* Personal Info */}
         <Typography variant="subtitle2" sx={sectionLabelSx}>
@@ -58,7 +74,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
               name="firstName"
               label="First Name"
@@ -70,7 +86,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
               name="lastName"
               label="Last Name"
@@ -84,7 +100,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
         </Grid>
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
               name="phone"
               label="Phone"
@@ -97,7 +113,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
               name="email"
               label="Email"
@@ -113,48 +129,88 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
 
         <Divider sx={{ my: 0.5 }} />
 
-        {/* CDL Information */}
+        {/* License Information */}
         <Typography variant="subtitle2" sx={sectionLabelSx}>
-          CDL Information
+          License Information
         </Typography>
+        <Select
+          fullWidth
+          name="licenseType"
+          value={values.licenseType}
+          onChange={handleChange}
+          onBlur={handleBlur}
+        >
+          {DRIVER_LICENSE_TYPE_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </Select>
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
-              name="cdlNumber"
-              label="CDL Number"
-              value={values.cdlNumber}
+              name="licenseNumber"
+              label="License Number"
+              value={values.licenseNumber}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={touched.cdlNumber && Boolean(errors.cdlNumber)}
-              helperText={touched.cdlNumber && errors.cdlNumber}
+              error={touched.licenseNumber && Boolean(errors.licenseNumber)}
+              helperText={touched.licenseNumber && errors.licenseNumber}
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
-              name="cdlState"
-              label="CDL State"
-              value={values.cdlState}
+              name="licenseState"
+              label="License State"
+              value={values.licenseState}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={touched.cdlState && Boolean(errors.cdlState)}
-              helperText={touched.cdlState && errors.cdlState}
+              error={touched.licenseState && Boolean(errors.licenseState)}
+              helperText={touched.licenseState && errors.licenseState}
             />
           </Grid>
         </Grid>
-        <TextField
+        <MuiTextField
           fullWidth
-          name="cdlExpiry"
-          label="CDL Expiry"
+          name="licenseExpiry"
+          label="License Expiry"
           type="date"
-          value={values.cdlExpiry}
+          value={values.licenseExpiry}
           onChange={handleChange}
           onBlur={handleBlur}
-          error={touched.cdlExpiry && Boolean(errors.cdlExpiry)}
-          helperText={touched.cdlExpiry && errors.cdlExpiry}
+          error={touched.licenseExpiry && Boolean(errors.licenseExpiry)}
+          helperText={touched.licenseExpiry && errors.licenseExpiry}
           InputLabelProps={{ shrink: true }}
         />
+        {String(values.licenseType).startsWith('CDL_') && (
+          <Autocomplete
+            multiple
+            options={ENDORSEMENT_OPTIONS}
+            getOptionLabel={(opt) => `${opt.value} — ${opt.label}`}
+            value={ENDORSEMENT_OPTIONS.filter((o) =>
+              ((values.endorsements as EndorsementCode[]) ?? []).includes(o.value),
+            )}
+            onChange={(_, selected) => {
+              void setFieldValue(
+                'endorsements',
+                selected.map((s) => s.value),
+              );
+            }}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={option.value}
+                  label={option.value}
+                  size="small"
+                />
+              ))
+            }
+            renderInput={(params) => <MuiTextField {...params} label="Endorsements" />}
+          />
+        )}
 
         <Divider sx={{ my: 0.5 }} />
 
@@ -164,7 +220,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
               name="homeBaseCity"
               label="City"
@@ -176,7 +232,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
             />
           </Grid>
           <Grid item xs={6}>
-            <TextField
+            <MuiTextField
               fullWidth
               name="homeBaseState"
               label="State"
@@ -195,7 +251,7 @@ export const DriverInfoDrawer: React.FC<DriverInfoDrawerProps> = ({
         <Typography variant="subtitle2" sx={sectionLabelSx}>
           Notes
         </Typography>
-        <TextField
+        <MuiTextField
           fullWidth
           name="notes"
           label="Notes"

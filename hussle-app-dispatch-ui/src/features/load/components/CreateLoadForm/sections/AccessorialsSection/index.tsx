@@ -1,28 +1,15 @@
 import { useCallback, useMemo } from 'react';
-import {
-  Alert,
-  Button,
-  Grid,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Button, Grid, IconButton, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { FormikProps } from 'formik';
-import {
-  TextField,
-  SelectField,
-} from '@mocho/ui/components';
+import { TextField, SelectField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import { useSelector } from 'store';
 import { selectCarrierById } from 'features/carrier/store/selectors/carrierSelectors';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../validators/loadSchema';
-import {
-  ACCESSORIAL_TYPE_OPTIONS,
-  formatCurrencyCompact,
-} from '../../constants';
+import type { LoadFormValues } from '../../../../validators/loadSchema';
+import { ACCESSORIAL_TYPE_OPTIONS, formatCurrencyCompact } from '../../../../constants';
 
 interface AccessorialsSectionProps {
   formik: FormikProps<LoadFormValues>;
@@ -35,15 +22,10 @@ const APPLIES_TO_OPTIONS = [
   { label: 'Both', value: 'both' },
 ];
 
-export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({
-  formik,
-  carrierId,
-}) => {
+export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({ formik, carrierId }) => {
   const { values } = formik;
 
-  const selectedCarrier = useSelector(
-    carrierId ? selectCarrierById(carrierId) : () => undefined,
-  );
+  const selectedCarrier = useSelector(carrierId ? selectCarrierById(carrierId) : () => undefined);
   const feeIncludesAccessorials = selectedCarrier?.feeIncludesAccessorials === true;
 
   const accessorials = useMemo(() => values.accessorials ?? [], [values.accessorials]);
@@ -87,7 +69,7 @@ export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({
   return (
     <SectionCard
       title="Accessorials"
-      subtitle="Add extra charges like fuel surcharge, detention, or lumper fees"
+      subheader="Add extra charges like fuel surcharge, detention, or lumper fees"
       actions={
         <Typography variant="caption" sx={{ fontWeight: 700 }}>
           {formatCurrencyCompact(accessorialTotal)}

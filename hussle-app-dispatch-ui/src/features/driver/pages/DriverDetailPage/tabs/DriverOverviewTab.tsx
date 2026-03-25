@@ -42,9 +42,14 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
           <FieldRow label="Full Name" value={getDriverDisplayName(d)} />
           <FieldRow label="Phone" value={d.phone} />
           <FieldRow label="Email" value={d.email} isLink />
-          <FieldRow label="CDL Number" value={d.cdlNumber} />
-          <FieldRow label="CDL State" value={d.cdlState} />
-          <FieldRow label="CDL Expiry" value={d.cdlExpiry} />
+          <FieldRow label="License Type" value={d.licenseType} />
+          <FieldRow label="License Number" value={d.licenseNumber} />
+          <FieldRow label="License State" value={d.licenseState} />
+          <FieldRow label="License Expiry" value={d.licenseExpiry} />
+          <FieldRow
+            label="Endorsements"
+            value={d.endorsements && d.endorsements.length > 0 ? d.endorsements.join(', ') : null}
+          />
           <FieldRow label="Carrier" value={d.carrierName} />
           <FieldRow label="Vehicle" value={'\u2014'} />
           <FieldRow label="Home Base" value={formatLocation(d.homeBaseCity, d.homeBaseState)} />

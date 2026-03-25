@@ -16,6 +16,7 @@ import { BaseFieldWrapper } from 'mocho/components/form-fields/BaseFieldWrapper'
 import { getCustomers } from 'utils/api/fleet/customerApi';
 import { CUSTOMER_TYPE_LABELS } from '../../constants';
 import { CustomerInfoDrawer } from '../CustomerInfoDrawer';
+import { StatusBadge } from '../../../../components/Statusbadge';
 
 const DEBOUNCE_MS = 300;
 
@@ -29,6 +30,7 @@ interface CustomerAutocompleteProps {
   helperText?: string;
   disabled?: boolean;
   placeholder?: string;
+  required?: boolean;
 }
 
 const formatCustomerLocation = (customer: Customer): string =>
@@ -38,6 +40,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   value,
   onChange,
   onBlur,
+  required,
   name = 'customerId',
   label = 'Customer',
   error = false,
@@ -50,12 +53,21 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   const [loading, setLoading] = useState(false);
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [pendingSelectId, setPendingSelectId] = useState<string | null>(null);
   const requestIdRef = useRef(0);
 
   const selectedCustomer = useMemo(
     () => options.find((customer) => customer.id === value) ?? null,
     [options, value],
   );
+
+  // Auto-select newly created customer once it appears in the fetched options
+  useEffect(() => {
+    if (pendingSelectId && options.some((c) => c.id === pendingSelectId)) {
+      onChange(pendingSelectId);
+      setPendingSelectId(null);
+    }
+  }, [pendingSelectId, options, onChange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -125,6 +137,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
         error={error ? helperText : undefined}
         touched={error}
         helperText={!error ? helperText : undefined}
+        required={required}
       >
         <Autocomplete<Customer, false, false, false>
           value={selectedCustomer}
@@ -149,12 +162,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {option.companyName}
                   </Typography>
-                  <Chip
-                    label={CUSTOMER_TYPE_LABELS[option.type]}
-                    size="small"
-                    variant="outlined"
-                    sx={{ height: 20, fontSize: '0.625rem' }}
-                  />
+                  <StatusBadge status={CUSTOMER_TYPE_LABELS[option.type]} />
                 </Box>
                 {formatCustomerLocation(option) ? (
                   <Typography variant="caption" color="text.secondary">
@@ -192,7 +200,11 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
           initialCompanyName={inputValue}
           onClose={() => {
             setCreateDrawerOpen(false);
+            setInputValue('');
             setRefreshTrigger((prev) => prev + 1);
+          }}
+          onCreated={(newId) => {
+            setPendingSelectId(newId);
           }}
         />
       ) : null}
