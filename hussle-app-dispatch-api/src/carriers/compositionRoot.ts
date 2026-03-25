@@ -5,6 +5,7 @@ import type { Logger } from '@/shared/utils/logger';
 import { createCarrierControllers } from './controllers/carrierController';
 import type { CarrierControllers } from './controllers/carrierController';
 import { carrierRepositoryPrisma } from './repositories/carrierRepositoryPrisma';
+import { carrierStatsQueryPrisma } from './repositories/carrierStatsQueryPrisma';
 import { createCarrierService } from './services/carrierService';
 import { initializeCarrierSubscriber } from './services/carrierSubscriber';
 
@@ -23,6 +24,7 @@ export const createCarriersModule = ({
   initializeSubscriber: () => Promise<void>;
 } => {
   const repositories = carrierRepositoryPrisma(prismaClient);
+  const carrierStatsQuery = carrierStatsQueryPrisma(prismaClient);
 
   const carrierService = createCarrierService({
     carrierRepository: repositories,
@@ -32,6 +34,7 @@ export const createCarriersModule = ({
 
   const controllers = createCarrierControllers({
     carrierService,
+    carrierStatsQuery,
   });
 
   const initializeSubscriber = () =>

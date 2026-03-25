@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { CarrierService } from '../types/carrierServiceTypes';
+import type { CarrierStatsQueryPort } from '../repositories/carrierStatsQueryPrisma';
 import { createCarrierMapper } from './mappers/createCarrierMapper';
 import { createCarrierNoteMapper } from './mappers/createCarrierNoteMapper';
 import { createCarrierWithAssetsMapper } from './mappers/createCarrierWithAssetsMapper';
@@ -22,6 +23,7 @@ import {
 
 interface CarrierControllerDeps {
   carrierService: CarrierService;
+  carrierStatsQuery: CarrierStatsQueryPort;
 }
 
 export interface CarrierControllers {
@@ -34,6 +36,7 @@ export interface CarrierControllers {
   getCarrierOnboarding: RequestHandler;
   listNotes: RequestHandler;
   createNote: RequestHandler;
+  getCarrierStats: RequestHandler;
 }
 
 export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierControllers => ({
@@ -103,5 +106,12 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
     const serviceInput = createCarrierNoteMapper(req);
     const note = await deps.carrierService.createNote(serviceInput);
     sendSingle(res, toCarrierNoteResponse(note), 201);
+  },
+
+  getCarrierStats: async (req: Request, res: Response): Promise<void> => {
+    const id = getRequiredCarrierIdMapper(req);
+    const context = getRequestContextMapper(req);
+    const stats = await deps.carrierStatsQuery.getStats(id, context.organizationId);
+    sendSingle(res, stats);
   },
 });

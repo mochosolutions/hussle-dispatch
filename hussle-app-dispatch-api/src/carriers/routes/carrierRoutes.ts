@@ -31,6 +31,12 @@ export const createCarriersRouter = (controllers: CarrierControllers): express.R
   );
   router.get('/', requireAuth, validateRequest(listCarriersValidator), controllers.listCarriers);
   router.get(
+    '/:id/stats',
+    requireAuth,
+    validateRequest(carrierIdParamValidator),
+    controllers.getCarrierStats,
+  );
+  router.get(
     '/:id',
     requireAuth,
     validateRequest(carrierIdParamValidator),
