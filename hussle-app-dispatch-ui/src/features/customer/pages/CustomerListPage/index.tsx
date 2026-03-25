@@ -252,10 +252,10 @@ const CustomerListPage = () => {
       },
       {
         headerName: 'Loads',
-        field: 'loadCount',
         minWidth: 90,
         maxWidth: 110,
         cellStyle: { textAlign: 'center' as const },
+        valueGetter: (params: { data: Customer }) => params.data._count?.loads ?? 0,
       },
       {
         headerName: 'Revenue',

@@ -29,9 +29,11 @@ export interface Customer {
   quickPayDiscount: string | null;
   notes: string | null;
   status: CustomerStatus;
-  loadCount: number;
-  contactCount: number;
-  placeCount: number;
+  _count: {
+    loads: number;
+    contacts: number;
+    places: number;
+  };
   createdAt: string;
   updatedAt: string;
 }

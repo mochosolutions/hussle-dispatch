@@ -138,7 +138,7 @@ const CustomerDetailPage = () => {
                   sub={
                     statsLoading
                       ? ''
-                      : `${customerStats?.loadCount ?? c.loadCount} loads`
+                      : `${customerStats?.loadCount ?? c._count.loads} loads`
                   }
                   valueProps={
                     customerStats && Number(customerStats.totalRevenue) > 0

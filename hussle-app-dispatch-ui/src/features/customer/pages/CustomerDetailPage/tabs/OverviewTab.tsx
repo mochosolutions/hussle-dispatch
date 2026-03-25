@@ -44,13 +44,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ customer, onEditCompan
         <DetailRow label="Terms Days" value={`${customer.paymentTermsDays} days`} />
         <DetailRow
           label="Quick Pay Rate"
-          value={customer.quickPayDiscount ? `${customer.quickPayDiscount}%` : '\u2014'}
+          value={customer.quickPayDiscount ? `${customer.quickPayDiscount}%` : '—'}
         />
-        <DetailRow label="Billing Method" value="\u2014" noBorder />
+        <DetailRow label="Billing Method" value={'—'} noBorder />
       </SectionCard>
 
       {/* Performance — All Time */}
-      <SectionCard title="Performance — All Time">
+      <SectionCard title={'Performance \u2014 All Time'}>
         <Box
           sx={{
             display: 'grid',
@@ -59,11 +59,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ customer, onEditCompan
             p: 1,
           }}
         >
-          <KpiCell label="Total Loads" value={String(customer.loadCount)} />
-          <KpiCell label="Revenue" value="\u2014" />
-          <KpiCell label="Outstanding" value="\u2014" />
-          <KpiCell label="Avg Rate/Load" value="\u2014" />
-          <KpiCell label="On-Time %" value="\u2014" />
+          <KpiCell label="Total Loads" value={String(customer._count.loads)} />
+          <KpiCell label="Revenue" value={'—'} />
+          <KpiCell label="Outstanding" value={'—'} />
+          <KpiCell label="Avg Rate/Load" value={'—'} />
+          <KpiCell label="On-Time %" value={'—'} />
         </Box>
       </SectionCard>
     </Box>
