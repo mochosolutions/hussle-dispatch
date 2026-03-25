@@ -5,6 +5,7 @@ import { colors, textBody } from '../shared/emailStyles';
 import type { InvitationEmailData } from './renderInvitationEmail';
 
 const InvitationEmail = ({
+  inviteeName,
   inviterName,
   orgName,
   role,
@@ -16,6 +17,8 @@ const InvitationEmail = ({
     headerTitle="You're Invited!"
     headerSubtitle={orgName}
   >
+    <Text style={textBody}>Hi {inviteeName},</Text>
+
     <Text style={textBody}>
       <strong>{inviterName}</strong> has invited you to join <strong>{orgName}</strong> as a{' '}
       <strong>{role}</strong> on Hussle Dispatch.

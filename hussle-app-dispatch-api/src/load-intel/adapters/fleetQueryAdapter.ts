@@ -2,6 +2,9 @@ import type { PrismaClient } from '@prisma/client';
 import type { FleetQueryPort } from '../types/loadIntelPorts';
 import type { FleetUnit } from '../types/loadIntelTypes';
 import type { EquipmentType } from '../../shared/constants/equipmentTypes';
+import { normalizeLanes, normalizeZones } from '../../shared/scoring/normalizeDriverPreferences';
+import { calculateCpm } from '../../shared/scoring/calculateCpm';
+import type { ExpenseItem } from '../../shared/scoring/calculateCpm';
 
 /**
  * Prisma-backed adapter for querying active fleet units.
@@ -33,19 +36,18 @@ export const createFleetQueryAdapter = (prisma: PrismaClient): FleetQueryPort =>
       .map((v) => {
         const driver = v.driver;
 
-        // Calculate vehicle CPM from expenses
-        const totalMonthlyCost = v.expenses.reduce(
-          (sum, e) => sum + Number(e.monthlyAmount),
-          0,
-        );
         const monthlyMiles = v.monthlyMilesTarget ?? 10000;
-        const vehicleCpm = monthlyMiles > 0 ? totalMonthlyCost / monthlyMiles : 0;
+        const expenseItems: ExpenseItem[] = v.expenses.map((e) => ({
+          monthlyCost: Number(e.monthlyAmount),
+          milesPerMonth: monthlyMiles,
+        }));
+        const vehicleCpm = calculateCpm(expenseItems);
 
         const preferredLanes = Array.isArray(driver?.preferredLanes)
-          ? (driver.preferredLanes as string[])
+          ? normalizeLanes(driver.preferredLanes)
           : [];
         const noGoZones = Array.isArray(driver?.noGoZones)
-          ? (driver.noGoZones as string[])
+          ? normalizeZones(driver.noGoZones)
           : [];
 
         return {

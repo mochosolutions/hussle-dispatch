@@ -5,6 +5,7 @@ import { createConsoleNotificationService } from './consoleNotificationService';
 import { createConsoleSmsService } from './consoleSmsService';
 import { createSesNotificationService } from './sesNotificationService';
 import { createSmtpNotificationService } from './smtpNotificationService';
+import { createTwilioSmsService } from './twilioSmsService';
 
 interface SmtpConfig {
   host: string;
@@ -14,10 +15,21 @@ interface SmtpConfig {
   pass: string;
 }
 
+interface TwilioConfig {
+  accountSid: string;
+  authToken: string;
+  fromNumber: string;
+}
+
 interface NotificationConfig {
   backend?: 'console' | 'ses' | 'smtp';
   region?: string;
   smtp?: SmtpConfig;
+}
+
+interface SmsConfig {
+  backend?: 'console' | 'twilio';
+  twilio?: TwilioConfig;
 }
 
 /**
@@ -48,17 +60,21 @@ export const createNotificationService = (
 
 /**
  * Factory for creating an SmsService.
- * Currently only supports 'console' backend (dev/MVP).
- * Add SNS/Twilio backends as needed.
+ * Supports 'console' (dev logging) and 'twilio' (production SMS).
  */
 export const createSmsService = (
-  config: NotificationConfig,
+  config: SmsConfig,
   logger: Logger,
 ): SmsService => {
   const backend = config.backend ?? 'console';
 
-  if (backend === 'console') {
-    return createConsoleSmsService(logger);
+  if (backend === 'twilio') {
+    if (!config.twilio) {
+      logger.warn('SmsService: twilio backend selected but no config provided, falling back to console');
+      return createConsoleSmsService(logger);
+    }
+    logger.info('SmsService: using Twilio backend', { from: config.twilio.fromNumber });
+    return createTwilioSmsService(config.twilio, logger);
   }
 
   return createConsoleSmsService(logger);

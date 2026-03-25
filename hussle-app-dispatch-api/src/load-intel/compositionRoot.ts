@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import type Redis from 'ioredis';
+import type { EventBus } from '../shared/messaging/eventBus';
 import type { Logger } from '../shared/utils/logger';
 import { createLoadIntelRedisAdapter } from './adapters/loadIntelRedisAdapter';
 import { createFleetQueryAdapter } from './adapters/fleetQueryAdapter';
@@ -25,12 +26,14 @@ import {
   ingestSingleController,
   ingestBatchController,
 } from './controllers/bookController';
+import { initializeCpmInvalidationSubscriber } from './services/cpmInvalidationSubscriber';
 import type { LoadIntelControllers } from './routes/loadIntelRoutes';
 import type { IngestResult, IngestBatchResult } from './types/loadIntelTypes';
 
 interface LoadIntelModuleDeps {
   prisma: PrismaClient;
   redis: Redis;
+  eventBus: EventBus;
   logger: Logger;
 }
 
@@ -73,6 +76,17 @@ export const createLoadIntelModule = (deps: LoadIntelModuleDeps): LoadIntelModul
     redisPort,
     logger: deps.logger,
   };
+
+  // Initialize event subscribers
+  initializeCpmInvalidationSubscriber({
+    eventBus: deps.eventBus,
+    redisPort,
+    logger: deps.logger,
+  }).catch((error: unknown) => {
+    deps.logger.error('Failed to initialize CPM invalidation subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
 
   const controllers: LoadIntelControllers = {
     getFeed: getFeedController({

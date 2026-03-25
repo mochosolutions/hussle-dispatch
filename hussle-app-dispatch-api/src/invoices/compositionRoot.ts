@@ -20,7 +20,6 @@ import { createInvoiceControllers } from './controllers/invoiceController';
 import { createPdfControllers } from './controllers/pdfController';
 import { createDocumentPacketControllers } from './controllers/documentPacketController';
 import { createInvoiceBuilderControllers } from './controllers/invoiceBuilderController';
-import { initializeInvoiceSubscriber } from './services/invoiceSubscriber';
 import { initializeCanceledLoadSubscriber } from './services/canceledLoadSubscriber';
 import { initializeAccessorialSyncSubscriber } from './services/accessorialSyncSubscriber';
 import { initializeReadinessSubscriber } from './services/invoiceReadinessSubscriber';
@@ -126,12 +125,6 @@ export const createInvoiceModule = ({
   };
 
   const initializeSubscriber = async () => {
-    await initializeInvoiceSubscriber({
-      eventBus,
-      invoiceRepo,
-      loadQuery,
-      logger,
-    });
     await initializeCanceledLoadSubscriber({
       eventBus,
       invoiceRepo,

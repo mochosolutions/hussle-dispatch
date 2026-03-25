@@ -29,6 +29,21 @@ export interface LoadIntelResponse {
     minBookRate: number;
     mode: string;
   }[];
+  chainScore?: number;
+  chainCount?: number;
+  chains?: {
+    steps: {
+      loadHash: string;
+      origin: { city: string; state: string };
+      dest: { city: string; state: string };
+      rate?: number;
+      loadedMiles?: number;
+      compositeScore: number;
+    }[];
+    totalMiles: number;
+    totalRate: number;
+    chainScore: number;
+  }[];
 }
 
 export const loadIntelTransformer = (record: LoadIntelRedis): LoadIntelResponse => ({
@@ -59,5 +74,20 @@ export const loadIntelTransformer = (record: LoadIntelRedis): LoadIntelResponse 
     driverFitScore: s.driverFitScore,
     minBookRate: s.minBookRate,
     mode: s.mode,
+  })),
+  chainScore: record.chainScore,
+  chainCount: record.chainCount,
+  chains: record.chains?.map((chain) => ({
+    steps: chain.steps.map((s) => ({
+      loadHash: s.loadHash,
+      origin: s.origin,
+      dest: s.dest,
+      rate: s.rate,
+      loadedMiles: s.loadedMiles,
+      compositeScore: s.compositeScore,
+    })),
+    totalMiles: chain.totalMiles,
+    totalRate: chain.totalRate,
+    chainScore: chain.chainScore,
   })),
 });

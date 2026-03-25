@@ -14,6 +14,7 @@ export interface LoadIntelRedisPort {
   sismember(key: string, member: string): Promise<boolean>;
   sadd(key: string, member: string): Promise<void>;
   zrem(key: string, member: string): Promise<void>;
+  del(key: string): Promise<void>;
 }
 
 /**

@@ -3,9 +3,13 @@ import { OrganizationStatus } from '../../constants/enums';
 import { InvitationStatus } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/utils/logger';
+import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits';
+import { SeatLimitReachedError } from '@/shared/errors';
 
 interface InviteUserInput {
   email: string;
+  firstName: string;
+  lastName: string;
   role: string;
 }
 
@@ -27,12 +31,23 @@ interface InviteUserDependencies {
   }) => Promise<{ email: string }[] | null>;
   createInvite: (data: {
     email: string;
+    firstName: string;
+    lastName: string;
     role: string;
     organizationId: string;
     token: string;
     status: InvitationStatus;
     expiresAt: Date;
-  }) => Promise<{ email: string }>;
+  }) => Promise<{
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    organizationId: string;
+    token: string;
+    expiresAt: string;
+  }>;
   findUserByFilter: (filter: {
     email: { $in: string[] };
   }) => Promise<{ id: string }[] | null>;
@@ -40,6 +55,8 @@ interface InviteUserDependencies {
     id: string;
     status: string;
   }) => Promise<{ id: string } | null>;
+  countActiveMemberships: (organizationId: string) => Promise<number>;
+  countPendingInvitations: (organizationId: string) => Promise<number>;
   allowedRoles: string[];
 }
 
@@ -50,6 +67,8 @@ export const inviteUserService = async (
 ) => {
   const invitesToCreate: {
     email: string;
+    firstName: string;
+    lastName: string;
     role: string;
     organizationId: string;
     token: string;
@@ -76,6 +95,17 @@ export const inviteUserService = async (
 
   if (!organization) {
     throw new BadRequestError('Organization not found or inactive.');
+  }
+
+  const [activeMemberships, pendingInvitations] = await Promise.all([
+    deps.countActiveMemberships(organizationId),
+    deps.countPendingInvitations(organizationId),
+  ]);
+
+  const totalOccupied = activeMemberships + pendingInvitations + users.length;
+
+  if (totalOccupied > SUBSCRIPTION_LIMITS.maxUsers) {
+    throw new SeatLimitReachedError('users', SUBSCRIPTION_LIMITS.maxUsers);
   }
 
   const usersEmails = users.map((user) => user.email.toLowerCase().trim());
@@ -118,7 +148,7 @@ export const inviteUserService = async (
     membershipMapSize: existingMembershipMap.size,
   });
 
-  for (const { email, role } of users) {
+  for (const { email, firstName, lastName, role } of users) {
     if (!email || !role) {
       skipped.push({ email, reason: 'Email and role are required' });
       continue;
@@ -141,6 +171,8 @@ export const inviteUserService = async (
 
     invitesToCreate.push({
       email,
+      firstName,
+      lastName,
       role,
       organizationId,
       token: uuidv4(),

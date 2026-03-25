@@ -1,4 +1,5 @@
 import type { LoadIntelRedis } from './loadIntelTypes';
+import type { ChainScoreResult } from '../../shared/scoring/calculateChainScore';
 
 /**
  * Input for backhaul search.
@@ -30,6 +31,7 @@ export interface LoadChain {
   totalMiles: number;
   totalRate: number;
   chainScore: number;
+  chainScoreResult?: ChainScoreResult;
 }
 
 /**

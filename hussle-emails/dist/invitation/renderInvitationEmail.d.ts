@@ -1,4 +1,5 @@
 export interface InvitationEmailData {
+    inviteeName: string;
     inviterName: string;
     orgName: string;
     role: string;

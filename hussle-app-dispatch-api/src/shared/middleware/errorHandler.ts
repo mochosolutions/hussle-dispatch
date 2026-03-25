@@ -1,6 +1,10 @@
 import type { NextFunction, Request, Response } from 'express';
 import { CustomError } from '@mocho/common';
-import { ActiveLoadsConflictError, AssignmentValidationError } from '@/shared/errors';
+import {
+  ActiveLoadsConflictError,
+  AssignmentValidationError,
+  SeatLimitReachedError,
+} from '@/shared/errors';
 import { logger } from '@/shared/utils/logger';
 
 export const errorHandler = (
@@ -9,6 +13,20 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
+  if (error instanceof SeatLimitReachedError) {
+    logger.warn('Handled error', {
+      type: error.constructor.name,
+      statusCode: error.statusCode,
+      message: error.message,
+    });
+    res.status(error.statusCode).json({
+      errors: error.serializeErrors(),
+      resourceType: error.resourceType,
+      limit: error.limit,
+    });
+    return;
+  }
+
   if (error instanceof ActiveLoadsConflictError) {
     logger.warn('Handled error', {
       type: error.constructor.name,

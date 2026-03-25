@@ -6,6 +6,8 @@ export const organizationIdSchema = Yup.object({
 
 export const inviteUserSchema = Yup.object({
   email: Yup.string().email().required(),
+  firstName: Yup.string().min(1).max(50).required(),
+  lastName: Yup.string().min(1).max(50).required(),
   role: Yup.string().required(),
 });
 
@@ -17,7 +19,6 @@ export const signupInvitedUserValidator = Yup.object({
   role: Yup.string().min(1).max(50).required(),
   invitationToken: Yup.string().min(10).max(256).required(),
   organizationId: Yup.string().required(),
-  userOrganizationId: Yup.string().required(),
 });
 
 export const inviteUserValidator = Yup.object({

@@ -19,6 +19,8 @@ export const formatInvite = (invite: PrismaInvitation): Invite => ({
   id: invite.id,
   organizationId: invite.organizationId,
   email: invite.email,
+  firstName: invite.firstName,
+  lastName: invite.lastName,
   role: invite.role,
   token: invite.token,
   status: invite.status,
@@ -128,6 +130,21 @@ export const inviteRepositoryPrisma = (
       } catch (error) {
         logger.error('Error deleting invite', { error });
         throw new BadRequestError('Error deleting invite');
+      }
+    },
+
+    countPending: async (organizationId: string): Promise<number> => {
+      try {
+        const count = await prisma.invitation.count({
+          where: {
+            organizationId,
+            status: 'PENDING',
+          },
+        });
+        return count;
+      } catch (error: unknown) {
+        logger.error('Error counting pending invitations', { error });
+        throw new BadRequestError('Error counting pending invitations');
       }
     },
 

@@ -231,4 +231,37 @@ export class SequenceError extends CustomError {
   }
 }
 
+export class SeatLimitReachedError extends CustomError {
+  statusCode = 429;
+  readonly code = 'SEAT_LIMIT_REACHED';
+  readonly resourceType: 'users' | 'vehicles';
+  readonly limit: number;
+
+  constructor(resourceType: 'users' | 'vehicles', limit: number) {
+    const label = resourceType === 'users' ? 'team members' : 'vehicles';
+    super(`You've reached your plan limit of ${limit} ${label}. Upgrade your plan to add more.`);
+    this.resourceType = resourceType;
+    this.limit = limit;
+    Object.setPrototypeOf(this, SeatLimitReachedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
+export class LastAdminError extends CustomError {
+  statusCode = 409;
+  readonly code = 'LAST_ADMIN';
+
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, LastAdminError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
 export const isCustomError = (error: unknown): error is CustomError => error instanceof CustomError;

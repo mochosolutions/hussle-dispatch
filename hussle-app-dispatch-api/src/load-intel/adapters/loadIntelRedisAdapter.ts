@@ -40,4 +40,8 @@ export const createLoadIntelRedisAdapter = (redis: Redis): LoadIntelRedisPort =>
   zrem: async (key: string, member: string): Promise<void> => {
     await redis.zrem(key, member);
   },
+
+  del: async (key: string): Promise<void> => {
+    await redis.del(key);
+  },
 });

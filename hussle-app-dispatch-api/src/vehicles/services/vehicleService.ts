@@ -1,11 +1,14 @@
 import type { PrismaTransaction } from '@/config/database';
+import type { EventBus } from '@/shared/messaging';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
+import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits';
 import {
   ActiveLoadsConflictError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  SeatLimitReachedError,
   ValidationError,
 } from '@/shared/errors';
 import type { LoadQueryPort } from '@/shared/loadQueries';
@@ -65,6 +68,7 @@ interface VehicleServiceDeps {
   loadRepository: LoadRepositoryPort;
   driverQueryPort: DriverQueryPort;
   loadQueryPort: LoadQueryPort;
+  eventBus: EventBus;
   transactionManager: {
     runInTransaction: <T>(operation: (tx: PrismaTransaction) => Promise<T>) => Promise<T>;
   };
@@ -167,6 +171,13 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
     assertOwnerOperatorIsBlocked(role);
     await assertCarrierExists(input.carrierId, organizationId, deps);
 
+    const activeVehicleCount =
+      await deps.vehicleRepository.countActiveByOrganization(organizationId);
+
+    if (activeVehicleCount >= SUBSCRIPTION_LIMITS.maxVehicles) {
+      throw new SeatLimitReachedError('vehicles', SUBSCRIPTION_LIMITS.maxVehicles);
+    }
+
     return deps.vehicleRepository.create(input);
   },
 
@@ -232,19 +243,23 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
 
     assertUniqueExpenseKeys(expensesToReplace);
 
-    return deps.transactionManager.runInTransaction(async (tx) => {
+    const updatedVehicle = await deps.transactionManager.runInTransaction(async (tx) => {
       const txVehicleRepository = deps.vehicleRepositoryFactory(tx);
       await txVehicleRepository.update(id, updateData);
       await txVehicleRepository.replaceExpenses(id, expensesToReplace);
 
-      const updatedVehicle = await txVehicleRepository.findById(id, organizationId);
+      const result = await txVehicleRepository.findById(id, organizationId);
 
-      if (updatedVehicle === null) {
+      if (result === null) {
         throw new NotFoundError('Vehicle not found.');
       }
 
-      return updatedVehicle;
+      return result;
     });
+
+    await deps.eventBus.publish('vehicle.expense.changed', { vehicleId: id, organizationId });
+
+    return updatedVehicle;
   },
 
   deleteVehicle: async ({ id, organizationId, role }: DeleteVehicleServiceInput) => {
@@ -361,7 +376,15 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
     assertOwnerOperatorIsBlocked(role);
     await findVehicleOrThrow(vehicleId, organizationId, deps);
 
-    return deps.vehicleRepository.createExpense(vehicleId, input);
+    const expense = await deps.vehicleRepository.createExpense(vehicleId, input);
+
+    await deps.eventBus.publish('vehicle.expense.created', {
+      vehicleId,
+      organizationId,
+      expenseId: expense.id,
+    });
+
+    return expense;
   },
 
   listExpenses: async ({ vehicleId, organizationId, role }: ListExpensesServiceInput) => {

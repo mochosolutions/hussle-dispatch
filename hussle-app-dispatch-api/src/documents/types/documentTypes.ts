@@ -108,21 +108,22 @@ export interface ArchiveDocumentInput {
   organizationId: string;
 }
 
-export interface DocumentListItem {
-  id: string;
-  entityType: string;
-  entityId: string;
-  type: DocumentType;
-  fileName: string;
-  fileSize: number | null;
-  mimeType: string | null;
-  uploadStatus: string;
-  isArchived: boolean;
-  uploadedByUserId: string | null;
-  expiresAt: Date | null;
-  metadata: Record<string, unknown> | null;
-  createdAt: Date;
-}
+export type DocumentListItem = Pick<
+  Document,
+  | 'id'
+  | 'entityType'
+  | 'entityId'
+  | 'type'
+  | 'fileName'
+  | 'fileSize'
+  | 'mimeType'
+  | 'uploadStatus'
+  | 'isArchived'
+  | 'uploadedByUserId'
+  | 'expiresAt'
+  | 'metadata'
+  | 'createdAt'
+>;
 
 // ---------------------------------------------------------------------------
 // Repository port

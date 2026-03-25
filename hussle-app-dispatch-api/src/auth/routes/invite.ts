@@ -24,6 +24,11 @@ export const createInviteRouter = (controllers: AuthControllers): express.Router
   );
 
   router.post(
+    '/invitations/:token/verify',
+    controllers.verifyInviteByTokenController,
+  );
+
+  router.post(
     '/invitations/accept',
     validateRequest(acceptInviteValidator),
     controllers.acceptInviteController,

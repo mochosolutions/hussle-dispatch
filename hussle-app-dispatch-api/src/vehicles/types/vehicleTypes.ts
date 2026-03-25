@@ -98,6 +98,7 @@ export interface VehicleRepositoryPort {
   assignDriver(vehicleId: string, driverId: string): Promise<VehicleWithExpenses>;
   unassignDriver(vehicleId: string): Promise<VehicleWithExpenses>;
   findByDriverId(driverId: string): Promise<VehicleWithExpenses | null>;
+  countActiveByOrganization(organizationId: string): Promise<number>;
 }
 
 export interface CarrierRepositoryPort {

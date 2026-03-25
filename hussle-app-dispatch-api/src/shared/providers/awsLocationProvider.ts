@@ -64,14 +64,53 @@ const parseResult = (
 
   const addressParts = [place.AddressNumber, place.Street].filter(Boolean);
   const address = addressParts.join(' ');
+  const city = place.Municipality ?? '';
   const rawState = place.Region ?? '';
+  const state = rawState.length > 0 ? normalizeStateCode(rawState) : '';
+  const zip = place.PostalCode ?? '';
+
+  // Extract POI/business name from the raw AWS Label when present.
+  // AWS Label format: "Walmart, 455 E Wetmore Rd, Tucson, AZ 85705, USA"
+  // The POI name is the first segment if it doesn't match any structured field.
+  let poiName = '';
+  const rawLabel = place.Label ?? '';
+  if (rawLabel.length > 0) {
+    const firstSegment = rawLabel.split(',')[0]?.trim() ?? '';
+    const isStructuredField =
+      firstSegment === place.AddressNumber ||
+      firstSegment === place.Street ||
+      firstSegment === address ||
+      firstSegment === place.Municipality ||
+      firstSegment === place.Region ||
+      firstSegment === place.PostalCode;
+
+    if (!isStructuredField && firstSegment.length > 0) {
+      poiName = firstSegment;
+    }
+  }
+
+  const labelParts: string[] = [];
+  if (poiName.length > 0) {
+    labelParts.push(poiName);
+  }
+  if (address.length > 0) {
+    labelParts.push(address);
+  }
+  const cityState = [city, state].filter(Boolean).join(', ');
+  if (cityState.length > 0) {
+    labelParts.push(cityState);
+  }
+  if (zip.length > 0) {
+    labelParts.push(zip);
+  }
+  const label = labelParts.length > 0 ? labelParts.join(', ') : rawLabel;
 
   return {
-    label: place.Label ?? address,
+    label,
     address,
-    city: place.Municipality ?? '',
-    state: rawState.length > 0 ? normalizeStateCode(rawState) : '',
-    zip: place.PostalCode ?? '',
+    city,
+    state,
+    zip,
     lat,
     lng,
   };

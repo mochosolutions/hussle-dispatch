@@ -441,7 +441,7 @@ export const carrierAssignmentQueryPrisma = (
       where: {
         id: carrierId,
         managedByOrgId: organizationId,
-        status: 'active',
+        status: 'ACTIVE',
         deletedAt: null,
       },
       select: {

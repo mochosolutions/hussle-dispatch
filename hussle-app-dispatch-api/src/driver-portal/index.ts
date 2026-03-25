@@ -11,7 +11,19 @@ import { trackingTokenRepositoryPrisma } from '../notifications/repositories/tra
 import { createDriverPortalModule } from './compositionRoot';
 import { createDriverPortalRouter } from './routes/driverPortalRoutes';
 
-const smsService = createSmsService({ backend: 'console' }, logger);
+const smsService = createSmsService(
+  {
+    backend: env.SMS_BACKEND,
+    twilio: env.TWILIO_ACCOUNT_SID
+      ? {
+          accountSid: env.TWILIO_ACCOUNT_SID,
+          authToken: env.TWILIO_AUTH_TOKEN,
+          fromNumber: env.TWILIO_FROM_NUMBER,
+        }
+      : undefined,
+  },
+  logger,
+);
 const logRepo = notificationLogRepositoryPrisma(prisma);
 const tokenRepo = trackingTokenRepositoryPrisma(prisma);
 

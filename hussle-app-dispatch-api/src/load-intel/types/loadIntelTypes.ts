@@ -1,5 +1,6 @@
 import type { EquipmentType } from '../../shared/constants/equipmentTypes';
 import type { LoadSource } from '../../shared/constants/loadSources';
+import type { LoadChain } from './backhaulTypes';
 
 /**
  * Geographic location with city and state.
@@ -62,6 +63,9 @@ export interface LoadIntelRedis {
   bestScore: number;
   createdAt: string;
   ttlSeconds: number;
+  chainScore?: number;
+  chainCount?: number;
+  chains?: LoadChain[];
 }
 
 /**

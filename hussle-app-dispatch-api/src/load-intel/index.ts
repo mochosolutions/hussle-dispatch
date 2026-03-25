@@ -32,6 +32,7 @@ export { loadIntelRoutes } from './routes/loadIntelRoutes';
 // Wired router for mounting in app.ts
 import { prisma } from '@/shared/prisma';
 import { redisClient } from '@/shared/redisClient';
+import { sharedEventBus } from '@/shared/messaging';
 import { logger } from '@/shared/utils/logger';
 import { createLoadIntelModule } from './compositionRoot';
 import { loadIntelRoutes } from './routes/loadIntelRoutes';
@@ -39,6 +40,7 @@ import { loadIntelRoutes } from './routes/loadIntelRoutes';
 const loadIntelModule = createLoadIntelModule({
   prisma,
   redis: redisClient,
+  eventBus: sharedEventBus,
   logger,
 });
 

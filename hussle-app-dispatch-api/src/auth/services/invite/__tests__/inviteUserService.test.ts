@@ -1,5 +1,6 @@
 import { BadRequestError } from '@mocho/common';
 import { InvitationStatus } from '@prisma/client';
+import { SeatLimitReachedError } from '@/shared/errors';
 import { inviteUserService } from '../inviteUserService';
 
 describe('inviteUserService', () => {
@@ -9,6 +10,8 @@ describe('inviteUserService', () => {
     createInvite: jest.fn().mockImplementation(async (payload) => payload),
     findUserByFilter: jest.fn().mockResolvedValue([]),
     findOneOrganizationByFilter: jest.fn().mockResolvedValue({ id: 'org-1', status: 'active' }),
+    countActiveMemberships: jest.fn().mockResolvedValue(1),
+    countPendingInvitations: jest.fn().mockResolvedValue(0),
     allowedRoles: ['admin', 'dispatcher', 'viewer', 'driver'],
   };
 
@@ -20,7 +23,7 @@ describe('inviteUserService', () => {
 
     const result = await inviteUserService(
       {
-        users: [{ email: 'one@example.com', role: 'admin' }],
+        users: [{ email: 'one@example.com', firstName: 'Jane', lastName: 'Doe', role: 'admin' }],
         organizationId: 'org-1',
         userOrganizationId: 'org-1',
       },
@@ -29,7 +32,11 @@ describe('inviteUserService', () => {
 
     expect(deps.createInvite).toHaveBeenCalledTimes(1);
     expect(deps.createInvite).toHaveBeenCalledWith(
-      expect.objectContaining({ status: InvitationStatus.PENDING }),
+      expect.objectContaining({
+        status: InvitationStatus.PENDING,
+        firstName: 'Jane',
+        lastName: 'Doe',
+      }),
     );
     expect(result.invited).toContain('one@example.com');
     expect(result.skipped).toHaveLength(0);
@@ -43,7 +50,7 @@ describe('inviteUserService', () => {
 
     const result = await inviteUserService(
       {
-        users: [{ email: 'dup@example.com', role: 'admin' }],
+        users: [{ email: 'dup@example.com', firstName: 'Dup', lastName: 'User', role: 'admin' }],
         organizationId: 'org-1',
         userOrganizationId: 'org-1',
       },
@@ -59,7 +66,7 @@ describe('inviteUserService', () => {
     await expect(
       inviteUserService(
         {
-          users: [{ email: 'one@example.com', role: 'admin' }],
+          users: [{ email: 'one@example.com', firstName: 'Jane', lastName: 'Doe', role: 'admin' }],
           organizationId: 'org-1',
           userOrganizationId: 'org-2',
         },
@@ -76,7 +83,7 @@ describe('inviteUserService', () => {
 
     const result = await inviteUserService(
       {
-        users: [{ email: 'hacker@example.com', role: 'hacker' }],
+        users: [{ email: 'hacker@example.com', firstName: 'Bad', lastName: 'Actor', role: 'hacker' }],
         organizationId: 'org-1',
         userOrganizationId: 'org-1',
       },
@@ -86,5 +93,24 @@ describe('inviteUserService', () => {
     expect(deps.createInvite).not.toHaveBeenCalled();
     expect(result.invited).toHaveLength(0);
     expect(result.skipped[0]?.reason).toBe('Invalid role: hacker');
+  });
+
+  it('throws SeatLimitReachedError when seat limit would be exceeded', async () => {
+    const deps = {
+      ...baseDeps,
+      countActiveMemberships: jest.fn().mockResolvedValue(2),
+      countPendingInvitations: jest.fn().mockResolvedValue(1),
+    };
+
+    await expect(
+      inviteUserService(
+        {
+          users: [{ email: 'new@example.com', firstName: 'New', lastName: 'User', role: 'admin' }],
+          organizationId: 'org-1',
+          userOrganizationId: 'org-1',
+        },
+        deps,
+      ),
+    ).rejects.toBeInstanceOf(SeatLimitReachedError);
   });
 });

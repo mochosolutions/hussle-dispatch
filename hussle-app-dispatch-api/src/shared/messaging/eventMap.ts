@@ -52,4 +52,25 @@ export interface EventMap {
     organizationId: string;
     invoiceNumber: string;
   };
+  'vehicle.expense.changed': {
+    vehicleId: string;
+    organizationId: string;
+  };
+  'vehicle.expense.created': {
+    vehicleId: string;
+    organizationId: string;
+    expenseId: string;
+  };
+  'invitation.created': {
+    inviteId: string;
+    organizationId: string;
+    orgName: string;
+    recipientEmail: string;
+    inviteeFirstName: string;
+    inviteeLastName: string;
+    inviterName: string;
+    role: string;
+    inviteToken: string;
+    expiresAt: string;
+  };
 }

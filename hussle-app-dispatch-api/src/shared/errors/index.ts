@@ -18,6 +18,8 @@ export {
   ConcurrentEditError,
   OwnerOperatorNotSupportedError,
   SequenceError,
+  SeatLimitReachedError,
+  LastAdminError,
   isCustomError,
 } from './commonErrors';
 

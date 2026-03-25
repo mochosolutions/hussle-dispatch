@@ -1,3 +1,14 @@
+jest.mock('@hussle/emails', () => ({
+  renderStatusChangeEmail: jest.fn().mockResolvedValue({
+    subject: 'Load LD-001 — Status Update: DISPATCHED',
+    html: '<p>Status changed</p>',
+  }),
+  renderCheckCallEmail: jest.fn().mockResolvedValue({
+    subject: 'Load LD-001 — Check Call Update',
+    html: '<p>Check call</p>',
+  }),
+}));
+
 import { initializeNotificationSubscriber } from '../notificationSubscriber';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { EventMap } from '@/shared/messaging/eventMap';
@@ -71,6 +82,7 @@ const createMockDeps = () => {
       smsService,
       logger,
       trackingBaseUrl: 'http://localhost:5173',
+      frontendUrl: 'http://localhost:5173',
     },
     invokeHandler,
   };
@@ -79,11 +91,11 @@ const createMockDeps = () => {
 describe('notificationSubscriber', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('subscribes to load.status.changed and load.checkcall.logged', async () => {
+  it('subscribes to load.status.changed, load.checkcall.logged, and invitation.created', async () => {
     const { deps } = createMockDeps();
     await initializeNotificationSubscriber(deps);
 
-    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(2);
+    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(3);
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'load.status.changed',
       'notifications-service',
@@ -91,6 +103,11 @@ describe('notificationSubscriber', () => {
     );
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'load.checkcall.logged',
+      'notifications-service',
+      expect.any(Function),
+    );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'invitation.created',
       'notifications-service',
       expect.any(Function),
     );

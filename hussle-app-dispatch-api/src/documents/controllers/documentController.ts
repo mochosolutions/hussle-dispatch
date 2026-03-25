@@ -21,7 +21,9 @@ export interface DocumentControllers {
   bulkDownload: RequestHandler;
 }
 
-export const createDocumentControllers = (deps: DocumentControllerDeps): DocumentControllers => ({
+type BaseDocumentControllers = Omit<DocumentControllers, 'bulkDownload'>;
+
+export const createDocumentControllers = (deps: DocumentControllerDeps): BaseDocumentControllers => ({
   presign: async (req: Request, res: Response): Promise<void> => {
     const input = presignMapper(req);
     const result = await deps.documentService.presign(input);

@@ -1,0 +1,16 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+dist
+coverage
+.nyc_output
+*.log
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+emails/dist

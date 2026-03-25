@@ -486,6 +486,26 @@ export const membershipRepositoryPrisma = (
     },
 
     /**
+     * TENANT-SCOPED: Counts active (non-deleted) memberships for the current organization.
+     * Used for subscription seat limit enforcement.
+     */
+    countActiveByOrg: async (organizationId: string): Promise<number> => {
+      try {
+        const count = await prisma.membership.count({
+          where: {
+            organizationId,
+            deleted: false,
+            status: { not: 'deleted' },
+          },
+        });
+        return count;
+      } catch (error: unknown) {
+        logger.error('Error counting active memberships for org', { error });
+        throw new BadRequestError('Error counting active memberships for org');
+      }
+    },
+
+    /**
      * CROSS-TENANT: Counts active memberships for a user across ALL organizations.
      *
      * JUSTIFICATION: Used to check if a user has any remaining active memberships

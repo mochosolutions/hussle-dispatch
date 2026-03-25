@@ -7,7 +7,9 @@ import type {
   ChainStep,
   LoadChain,
 } from '../types/backhaulTypes';
+import type { ChainScoreInput } from '../../shared/scoring/calculateChainScore';
 import { NotFoundError } from '../../shared/errors/commonErrors';
+import { calculateChainScore } from '../../shared/scoring/calculateChainScore';
 import { searchBackhaul } from './backhaulService';
 
 const CHAIN_TTL_SECONDS = 86400; // 24 hours
@@ -17,6 +19,9 @@ interface ChainServiceDeps {
   redisPort: LoadIntelRedisPort;
   geoPort: BackhaulGeoPort;
   logger: Logger;
+  vehicleCpmPerDay?: number;
+  homeBase?: string;
+  preferredLanes?: string[];
 }
 
 /**
@@ -95,15 +100,26 @@ export const assembleChain = async (
       // 2-step chain: outbound + backhaul
       const totalMiles = (outbound.payload.loadedMiles ?? 0) + (backhaul.payload.loadedMiles ?? 0);
       const totalRate = (outbound.payload.rate ?? 0) + (backhaul.payload.rate ?? 0);
-      const chainScore = Math.round(
-        (outbound.bestScore + backhaul.bestScore) / 2,
-      );
+      const scoreInput: ChainScoreInput = {
+        outboundRate: outbound.payload.rate ?? 0,
+        outboundMiles: outbound.payload.loadedMiles ?? 0,
+        returnRate: backhaul.payload.rate ?? 0,
+        returnMiles: backhaul.payload.loadedMiles ?? 0,
+        totalTripDays: 2,
+        milesFromHomeAfterReturn: distFromHome,
+        homeBase: deps.homeBase ?? '',
+        returnDropState: backhaul.payload.dest.state,
+        preferredLanes: deps.preferredLanes ?? [],
+        vehicleCpmPerDay: deps.vehicleCpmPerDay ?? 0,
+      };
+      const chainScoreResult = calculateChainScore(scoreInput);
 
       chains.push({
         steps: [outboundStep, backhaulStep],
         totalMiles,
         totalRate,
-        chainScore,
+        chainScore: chainScoreResult.chainScore,
+        chainScoreResult,
       });
     } else {
       // 3-step chain: outbound + intermediate + backhaul
@@ -128,30 +144,52 @@ export const assembleChain = async (
           (outbound.payload.rate ?? 0) +
           (backhaul.payload.rate ?? 0) +
           (intermediate.payload.rate ?? 0);
-        const chainScore = Math.round(
-          (outbound.bestScore + backhaul.bestScore + intermediate.bestScore) / 3,
-        );
+        const threeStepScoreInput: ChainScoreInput = {
+          outboundRate: outbound.payload.rate ?? 0,
+          outboundMiles: (outbound.payload.loadedMiles ?? 0) + (backhaul.payload.loadedMiles ?? 0),
+          returnRate: (backhaul.payload.rate ?? 0) + (intermediate.payload.rate ?? 0),
+          returnMiles: (backhaul.payload.loadedMiles ?? 0) + (intermediate.payload.loadedMiles ?? 0),
+          totalTripDays: 3,
+          milesFromHomeAfterReturn: distFromHome,
+          homeBase: deps.homeBase ?? '',
+          returnDropState: intermediate.payload.dest.state,
+          preferredLanes: deps.preferredLanes ?? [],
+          vehicleCpmPerDay: deps.vehicleCpmPerDay ?? 0,
+        };
+        const threeStepResult = calculateChainScore(threeStepScoreInput);
 
         chains.push({
           steps: [outboundStep, intermediateStep, backhaulStep],
           totalMiles,
           totalRate,
-          chainScore,
+          chainScore: threeStepResult.chainScore,
+          chainScoreResult: threeStepResult,
         });
       } else {
         // Fall back to 2-step if no intermediate found
         const totalMiles =
           (outbound.payload.loadedMiles ?? 0) + (backhaul.payload.loadedMiles ?? 0);
         const totalRate = (outbound.payload.rate ?? 0) + (backhaul.payload.rate ?? 0);
-        const chainScore = Math.round(
-          (outbound.bestScore + backhaul.bestScore) / 2,
-        );
+        const fallbackScoreInput: ChainScoreInput = {
+          outboundRate: outbound.payload.rate ?? 0,
+          outboundMiles: outbound.payload.loadedMiles ?? 0,
+          returnRate: backhaul.payload.rate ?? 0,
+          returnMiles: backhaul.payload.loadedMiles ?? 0,
+          totalTripDays: 2,
+          milesFromHomeAfterReturn: distFromHome,
+          homeBase: deps.homeBase ?? '',
+          returnDropState: backhaul.payload.dest.state,
+          preferredLanes: deps.preferredLanes ?? [],
+          vehicleCpmPerDay: deps.vehicleCpmPerDay ?? 0,
+        };
+        const fallbackResult = calculateChainScore(fallbackScoreInput);
 
         chains.push({
           steps: [outboundStep, backhaulStep],
           totalMiles,
           totalRate,
-          chainScore,
+          chainScore: fallbackResult.chainScore,
+          chainScoreResult: fallbackResult,
         });
       }
     }

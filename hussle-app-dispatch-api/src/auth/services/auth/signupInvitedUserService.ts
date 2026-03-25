@@ -48,7 +48,6 @@ interface SignupInvitedUserInput {
   role: string;
   invitationToken: string;
   organizationId: string;
-  userOrganizationId: string;
 }
 
 export const signupInvitedUserUseCase = async (

@@ -21,6 +21,7 @@ services:
     volumes:
       - ./hussle-app-dispatch-api:/usr/app
       - /usr/app/node_modules
+      - ./hussle-emails:/usr/hussle-emails
     env_file:
       - ./hussle-app-dispatch-api/.env
     depends_on:

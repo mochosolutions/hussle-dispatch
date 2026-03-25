@@ -4,6 +4,7 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  SeatLimitReachedError,
   ValidationError,
 } from '@/shared/errors';
 import { createVehicleService } from '../vehicleService';
@@ -68,6 +69,7 @@ describe('vehicleService', () => {
     assignDriver: jest.fn(),
     unassignDriver: jest.fn(),
     findByDriverId: jest.fn(),
+    countActiveByOrganization: jest.fn(),
   };
 
   const mockCarrierRepository = {
@@ -93,6 +95,12 @@ describe('vehicleService', () => {
     runInTransaction: jest.fn(),
   };
 
+  const mockEventBus = {
+    publish: jest.fn().mockResolvedValue(undefined),
+    subscribe: jest.fn(),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
+
   const vehicleService = createVehicleService({
     vehicleRepository: mockVehicleRepository,
     carrierRepository: mockCarrierRepository,
@@ -101,6 +109,7 @@ describe('vehicleService', () => {
     loadQueryPort: mockLoadQueryPort,
     transactionManager: mockTransactionManager,
     vehicleRepositoryFactory: () => mockVehicleRepository,
+    eventBus: mockEventBus,
   });
 
   beforeEach(() => {
@@ -122,6 +131,25 @@ describe('vehicleService', () => {
         },
       }),
     ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('throws SeatLimitReachedError when vehicle limit is reached', async () => {
+    mockCarrierRepository.findActiveByIdForOrg.mockResolvedValue(true);
+    mockVehicleRepository.countActiveByOrganization.mockResolvedValue(3);
+
+    await expect(
+      vehicleService.createVehicle({
+        organizationId: 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
+        role: 'admin',
+        input: {
+          carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
+          unitNumber: 'TRK-001',
+          type: 'DRY_VAN',
+        },
+      }),
+    ).rejects.toBeInstanceOf(SeatLimitReachedError);
+
+    expect(mockVehicleRepository.create).not.toHaveBeenCalled();
   });
 
   it('returns not found when carrier does not exist on create', async () => {
@@ -288,5 +316,106 @@ describe('vehicleService', () => {
         role: 'admin',
       }),
     ).rejects.toBeInstanceOf(ActiveLoadsConflictError);
+  });
+
+  describe('expense event emissions', () => {
+    it('emits vehicle.expense.changed when updateVehicle includes expenses', async () => {
+      // Arrange
+      const vehicleId = '4f83f8d0-0f18-4f7a-95f1-85c293f23f70';
+      const organizationId = 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad';
+      const updatedVehicle = buildVehicle();
+
+      mockVehicleRepository.findById
+        .mockResolvedValueOnce(buildVehicle())
+        .mockResolvedValueOnce(updatedVehicle);
+      mockTransactionManager.runInTransaction.mockImplementation(async (operation) =>
+        operation({}),
+      );
+
+      // Act
+      await vehicleService.updateVehicle({
+        id: vehicleId,
+        organizationId,
+        role: 'admin',
+        input: {
+          expenses: [
+            {
+              category: 'FIXED',
+              expenseKey: 'insurance',
+              label: 'Insurance',
+              monthlyAmount: 350,
+            },
+          ],
+        },
+      });
+
+      // Assert
+      expect(mockEventBus.publish).toHaveBeenCalledWith('vehicle.expense.changed', {
+        vehicleId,
+        organizationId,
+      });
+    });
+
+    it('does not emit vehicle.expense.changed when updateVehicle has no expenses', async () => {
+      // Arrange
+      const vehicleId = '4f83f8d0-0f18-4f7a-95f1-85c293f23f70';
+      const organizationId = 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad';
+      const updatedVehicle = buildVehicle();
+
+      mockVehicleRepository.findById.mockResolvedValue(updatedVehicle);
+      mockVehicleRepository.update.mockResolvedValue(updatedVehicle);
+
+      // Act
+      await vehicleService.updateVehicle({
+        id: vehicleId,
+        organizationId,
+        role: 'admin',
+        input: {
+          unitNumber: 'TRK-099',
+        },
+      });
+
+      // Assert
+      expect(mockEventBus.publish).not.toHaveBeenCalled();
+    });
+
+    it('emits vehicle.expense.created when createExpense succeeds', async () => {
+      // Arrange
+      const vehicleId = '4f83f8d0-0f18-4f7a-95f1-85c293f23f70';
+      const organizationId = 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad';
+      const expenseId = 'expense-new-001';
+
+      mockVehicleRepository.findById.mockResolvedValue(buildVehicle());
+      mockVehicleRepository.createExpense.mockResolvedValue({
+        id: expenseId,
+        vehicleId,
+        category: 'VARIABLE',
+        expenseKey: 'fuel',
+        label: 'Fuel',
+        monthlyAmount: new Decimal('500.00'),
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-01T00:00:00.000Z'),
+      });
+
+      // Act
+      await vehicleService.createExpense({
+        vehicleId,
+        organizationId,
+        role: 'admin',
+        input: {
+          category: 'VARIABLE',
+          expenseKey: 'fuel',
+          label: 'Fuel',
+          monthlyAmount: 500,
+        },
+      });
+
+      // Assert
+      expect(mockEventBus.publish).toHaveBeenCalledWith('vehicle.expense.created', {
+        vehicleId,
+        organizationId,
+        expenseId,
+      });
+    });
   });
 });

@@ -2,6 +2,7 @@ import { render } from '@react-email/components';
 import InvitationEmail from './InvitationEmail';
 
 export interface InvitationEmailData {
+  inviteeName: string;
   inviterName: string;
   orgName: string;
   role: string;

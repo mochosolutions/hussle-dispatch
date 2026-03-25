@@ -6,10 +6,13 @@ import type {
   FeedQueryParams,
 } from '../types/loadIntelTypes';
 import { SCORE_TIERS } from '../types/loadIntelTypes';
+import type { BackhaulGeoPort } from '../types/backhaulTypes';
+import { assembleChain } from './chainService';
 
 interface FeedServiceDeps {
   redisPort: LoadIntelRedisPort;
   logger: Logger;
+  geoPort?: BackhaulGeoPort;
 }
 
 interface FeedResult {
@@ -113,6 +116,46 @@ export const getFeed = async (
 
   // Paginate the matched results
   const pageData = matched.slice(startOffset, startOffset + params.limit);
+
+  // Enrich with chain data when requested (best-effort)
+  if (params.includeChains && deps.geoPort) {
+    const chainDeps = {
+      redisPort: deps.redisPort,
+      geoPort: deps.geoPort,
+      logger: deps.logger,
+    };
+
+    for (const item of pageData) {
+      const topScore = item.scores[0];
+
+      if (topScore === undefined) {
+        continue;
+      }
+
+      try {
+        const chains = await assembleChain(
+          orgId,
+          item.loadHash,
+          topScore.vehicleId,
+          3,
+          chainDeps,
+        );
+
+        const firstChain = chains[0];
+
+        if (firstChain !== undefined) {
+          item.chains = chains;
+          item.chainScore = firstChain.chainScore;
+          item.chainCount = chains.length;
+        }
+      } catch (error: unknown) {
+        deps.logger.warn('Chain enrichment failed for load', {
+          loadHash: item.loadHash,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
 
   deps.logger.info('Feed retrieved', {
     orgId,

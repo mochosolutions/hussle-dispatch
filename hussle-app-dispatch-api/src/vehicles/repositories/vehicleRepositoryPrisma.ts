@@ -171,4 +171,13 @@ export const vehicleRepositoryPrisma = (
       },
       include: includeExpenses,
     }),
+
+  countActiveByOrganization: (organizationId) =>
+    prisma.vehicle.count({
+      where: {
+        carrier: { managedByOrgId: organizationId },
+        isActive: true,
+        deletedAt: null,
+      },
+    }),
 });

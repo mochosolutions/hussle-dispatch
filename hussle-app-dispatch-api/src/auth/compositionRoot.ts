@@ -19,6 +19,8 @@ import { createSignupOrgValidator } from './validators/signupOrgValidator';
 import { createUpdateOrganizationValidator } from './validators';
 import { createBulkOrgValidators } from './validators/bulkOrgValidator';
 import type { AuditLogPort } from './types/auditLogPort';
+import { createSubscriptionUsageService } from './services/subscription/subscriptionUsageService';
+import { createMemberManagementService } from './services/membership/memberManagementService';
 
 interface AuthModuleConfig {
   allowedRoles: string[];
@@ -114,6 +116,8 @@ export const createAuthModule = ({
       membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).findMembershipsByFilter(filter),
     findMembershipsByUserId: (userId: string) =>
       membershipRepositoryPrisma(prismaClient, undefined, enumConfig).findMembershipsByUserId(userId),
+    countActive: (organizationId: string) =>
+      membershipRepositoryPrisma(prismaClient, organizationId, enumConfig).countActiveByOrg(organizationId),
   };
 
   const inviteRepo = {
@@ -131,6 +135,8 @@ export const createAuthModule = ({
       id: string,
       data: Parameters<ReturnType<typeof inviteRepositoryPrisma>['updateInvite']>[1],
     ) => inviteRepositoryPrisma(prismaClient, organizationId).updateInvite(id, data),
+    countPending: (organizationId: string) =>
+      inviteRepositoryPrisma(prismaClient, organizationId).countPending(organizationId),
   };
 
   const userRepo = {
@@ -147,6 +153,32 @@ export const createAuthModule = ({
       ...args: Parameters<ReturnType<typeof userRepositoryPrisma>['findUserByIdWithMemberships']>
     ) => userRepositoryPrisma(prismaClient).findUserByIdWithMemberships(...args),
   };
+
+  const subscriptionUsageService = createSubscriptionUsageService({ prismaClient });
+
+  const memberManagementService = createMemberManagementService({
+    membershipRepository: {
+      findMembershipsByFilter: (filter: Record<string, unknown>) => {
+        const orgId = filter.organizationId as string | undefined;
+        return membershipRepositoryPrisma(
+          prismaClient,
+          orgId,
+          enumConfig,
+        ).findMembershipsByFilter(filter);
+      },
+      findOneByFilter: (filter: Record<string, unknown>) => {
+        const orgId = filter.organizationId as string | undefined;
+        return membershipRepositoryPrisma(
+          prismaClient,
+          orgId,
+          enumConfig,
+        ).findOneByFilter(filter);
+      },
+      updateMembership: (id: string, data: Record<string, unknown>) =>
+        membershipRepositoryPrisma(prismaClient, undefined, enumConfig).updateMembership(id, data),
+    },
+    tokenProvider: tokenProviderInstance,
+  });
 
   const signupOrganization = async (data: SignupOrgInput): Promise<SignupOrgResult> => {
     const { clientId, userPoolId } = await getClientId();
@@ -189,6 +221,8 @@ export const createAuthModule = ({
     eventBus,
     logger,
     config: { defaultOrgRole: config.defaultOrgRole },
+    subscriptionUsageService,
+    memberManagementService,
   });
 
   const validators: AuthModuleValidators = {

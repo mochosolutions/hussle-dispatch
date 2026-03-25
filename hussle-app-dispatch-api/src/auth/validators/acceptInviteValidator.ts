@@ -10,6 +10,5 @@ export const acceptInviteValidator = Yup.object({
     role: Yup.string().required(),
     invitationToken: Yup.string().required(),
     organizationId: Yup.string().required(),
-    userOrganizationId: Yup.string().required(),
   }),
 });

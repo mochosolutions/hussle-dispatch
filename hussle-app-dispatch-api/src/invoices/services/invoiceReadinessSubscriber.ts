@@ -4,6 +4,7 @@ import type { InvoiceRepoPort, InvoiceLoadQueryPort } from '../types/invoiceType
 import type { DocumentQueryPort } from '../types/documentPacketTypes';
 import type { OrgSettingsQueryPort } from '../types/readinessTypes';
 import type { InvoiceBuilderService } from './invoiceBuilderService';
+import { generateTonuInvoice } from './invoiceGenerationService';
 
 interface ReadinessSubscriberDeps {
   eventBus: EventBus;
@@ -128,6 +129,42 @@ export const initializeReadinessSubscriber = async (
       } catch (error: unknown) {
         deps.logger.error('Readiness evaluation failed on document confirm', {
           entityId: data.entityId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
+  await deps.eventBus.subscribe(
+    'load.delivered',
+    'invoice-readiness',
+    async (data) => {
+      try {
+        await evaluateReadiness(data.loadId, deps);
+      } catch (error: unknown) {
+        deps.logger.error('Readiness evaluation failed on load delivered', {
+          loadId: data.loadId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
+  await deps.eventBus.subscribe(
+    'load.tonu',
+    'invoice-readiness',
+    async (data) => {
+      const tonuDeps = {
+        invoiceRepo: deps.invoiceRepo,
+        loadQuery: deps.loadQuery,
+        logger: deps.logger,
+      };
+
+      try {
+        await generateTonuInvoice(data.loadId, tonuDeps);
+      } catch (error: unknown) {
+        deps.logger.error('Failed to generate TONU invoice from event', {
+          loadId: data.loadId,
           error: error instanceof Error ? error.message : String(error),
         });
       }

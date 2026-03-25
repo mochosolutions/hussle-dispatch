@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import type { EventBus } from '@/shared/messaging';
 import { createLoadQueries } from '@/shared/loadQueries';
 import { PrismaTransactionManager } from '@/shared/prisma';
 import { createVehicleControllers } from './controllers/vehicleController';
@@ -13,11 +14,13 @@ import type { DriverQueryPort } from './types/vehicleTypes';
 interface VehicleModuleDeps {
   prismaClient: PrismaClient | PrismaTransaction;
   driverQueryPort: DriverQueryPort;
+  eventBus: EventBus;
 }
 
 export const createVehiclesModule = ({
   prismaClient,
   driverQueryPort,
+  eventBus,
 }: VehicleModuleDeps): {
   controllers: VehicleControllers;
 } => {
@@ -33,6 +36,7 @@ export const createVehiclesModule = ({
     loadRepository,
     driverQueryPort,
     loadQueryPort,
+    eventBus,
     transactionManager,
     vehicleRepositoryFactory: (tx) => vehicleRepositoryPrisma(tx),
   });

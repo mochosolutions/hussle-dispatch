@@ -66,6 +66,19 @@ if [ "$DEV_MODE" = "true" ]; then
   else
     echo "✓ Dependencies up to date"
   fi
+
+  # Link @hussle/emails from sibling volume mount
+  if [ -d /usr/hussle-emails ] && [ -f /usr/hussle-emails/package.json ]; then
+    EMAILS_LINK=$(ls -la node_modules/@hussle/emails 2>/dev/null || echo "")
+    if echo "$EMAILS_LINK" | grep -q "hussle-emails"; then
+      echo "✓ @hussle/emails already linked"
+    else
+      echo "Linking @hussle/emails..."
+      cd /usr/hussle-emails && npm link 2>/dev/null
+      cd /usr/app && npm link @hussle/emails 2>/dev/null
+      echo "✓ @hussle/emails linked"
+    fi
+  fi
 fi
 
 # Wait for database to be ready

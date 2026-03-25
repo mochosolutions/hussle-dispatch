@@ -6,7 +6,7 @@ import type { NotificationSettingsRepoPort, LoadNotificationOverrideRepoPort, No
 import type { TrackingTokenRepoPort } from '../types/trackingTokenTypes';
 import type { ResolvedNotificationConfig } from '../types/notificationTypes';
 import { resolveNotificationSettings } from './resolveNotificationSettings';
-import { buildStatusChangeContent, buildCheckCallContent } from './notificationContentBuilder';
+import { buildStatusChangeContent, buildCheckCallContent, buildInvitationContent } from './notificationContentBuilder';
 
 interface NotificationSubscriberDeps {
   eventBus: EventBus;
@@ -18,6 +18,7 @@ interface NotificationSubscriberDeps {
   smsService: SmsService;
   logger: Logger;
   trackingBaseUrl: string;
+  frontendUrl: string;
 }
 
 /**
@@ -139,7 +140,7 @@ export const initializeNotificationSubscriber = async (
 
         const trackingUrl = await getOrCreateTrackingUrl(data.loadId, deps);
 
-        const content = buildStatusChangeContent({
+        const content = await buildStatusChangeContent({
           loadNumber: data.loadNumber,
           fromStatus: data.fromStatus,
           toStatus: data.toStatus,
@@ -191,7 +192,7 @@ export const initializeNotificationSubscriber = async (
 
         const trackingUrl = await getOrCreateTrackingUrl(data.loadId, deps);
 
-        const content = buildCheckCallContent({
+        const content = await buildCheckCallContent({
           loadNumber: data.loadNumber,
           location: data.location,
           status: data.status,
@@ -216,6 +217,42 @@ export const initializeNotificationSubscriber = async (
         deps.logger.error('Failed to process check call notification', {
           loadId: data.loadId,
           error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
+  // Subscribe to invitation created events
+  await deps.eventBus.subscribe(
+    'invitation.created',
+    'notifications-service',
+    async (data) => {
+      try {
+        const inviteUrl = `${deps.frontendUrl}/invite/accept/${data.inviteToken}`;
+        const content = await buildInvitationContent({
+          inviterName: data.inviterName,
+          orgName: data.orgName,
+          role: data.role,
+          inviteUrl,
+          expiresAt: data.expiresAt,
+          inviteeName: `${data.inviteeFirstName} ${data.inviteeLastName}`.trim(),
+        });
+
+        await deps.emailService.sendEmail({
+          to: data.recipientEmail,
+          from: DEFAULT_FROM_EMAIL,
+          subject: content.subject,
+          html: content.html,
+        });
+
+        deps.logger.info('Invitation email sent', {
+          inviteId: data.inviteId,
+          to: data.recipientEmail,
+        });
+      } catch (error: unknown) {
+        deps.logger.error('Failed to send invitation email', {
+          error: error instanceof Error ? error.message : String(error),
+          inviteId: data.inviteId,
         });
       }
     },

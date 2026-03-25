@@ -7,77 +7,8 @@ import type { DocumentQueryPort } from '../types/documentPacketTypes';
 import type { OrgSettingsQueryPort } from '../types/readinessTypes';
 import type { StorageProvider } from '../../shared/storage/storageProvider';
 import Decimal from 'decimal.js';
+import { renderInvoiceEmail } from '@hussle/emails';
 import { buildInvoicePdfData } from './invoicePdfDataBuilder';
-
-interface InvoiceEmailTemplateData {
-  invoiceNumber: string;
-  loadNumber: string;
-  totalAmount: unknown; // Decimal from Prisma
-  dueDate: Date;
-  paymentTerms: string;
-  replyToEmail: string;
-}
-
-const formatCurrency = (value: unknown): string => {
-  const num = new Decimal(String(value));
-  return `$${num.toFixed(2)}`;
-};
-
-const formatDate = (date: Date): string =>
-  date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-const buildInvoiceEmailHtml = (data: InvoiceEmailTemplateData): string => `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f5f5f5;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:24px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;">
-        <tr>
-          <td style="background-color:#1a237e;padding:24px 32px;">
-            <h1 style="color:#ffffff;margin:0;font-size:20px;">Invoice #${data.invoiceNumber}</h1>
-            <p style="color:#c5cae9;margin:4px 0 0;font-size:14px;">Load #${data.loadNumber}</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:32px;">
-            <p style="margin:0 0 20px;font-size:15px;color:#333333;">
-              Please find the invoice PDF and supporting documents attached to this email.
-            </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e0e0e0;border-radius:4px;margin-bottom:24px;">
-              <tr style="background-color:#fafafa;">
-                <td style="padding:12px 16px;font-size:13px;color:#666666;border-bottom:1px solid #e0e0e0;">Total Amount</td>
-                <td style="padding:12px 16px;font-size:15px;font-weight:bold;color:#1a237e;border-bottom:1px solid #e0e0e0;text-align:right;">${formatCurrency(data.totalAmount)}</td>
-              </tr>
-              <tr>
-                <td style="padding:12px 16px;font-size:13px;color:#666666;border-bottom:1px solid #e0e0e0;">Due Date</td>
-                <td style="padding:12px 16px;font-size:14px;color:#333333;border-bottom:1px solid #e0e0e0;text-align:right;">${formatDate(data.dueDate)}</td>
-              </tr>
-              <tr>
-                <td style="padding:12px 16px;font-size:13px;color:#666666;">Payment Terms</td>
-                <td style="padding:12px 16px;font-size:14px;color:#333333;text-align:right;">${data.paymentTerms}</td>
-              </tr>
-            </table>
-            <p style="margin:0;font-size:13px;color:#999999;">
-              If you have any questions regarding this invoice, please reply to this email
-              or contact us at <a href="mailto:${data.replyToEmail}" style="color:#1a237e;">${data.replyToEmail}</a>.
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td style="background-color:#fafafa;padding:16px 32px;border-top:1px solid #e0e0e0;">
-            <p style="margin:0;font-size:12px;color:#999999;text-align:center;">
-              Sent via Hussle Dispatch
-            </p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>
-`;
 
 interface InvoiceEmailServiceDeps {
   invoiceRepo: InvoiceRepoPort;
@@ -138,20 +69,32 @@ export const createInvoiceEmailService = (
       }
     }
 
+    // Render email via hussle-emails React Email templates
+    const replyToEmail = input.replyToEmail ?? input.fromEmail;
+    const totalDecimal = new Decimal(String(invoice.totalAmount));
+    const carrierName = invoice.carrier?.name ?? 'Unknown Carrier';
+
+    const { subject, html } = await renderInvoiceEmail({
+      invoiceNumber: invoice.invoiceNumber,
+      loadNumber: invoice.load.loadNumber,
+      carrierName,
+      totalAmount: `$${totalDecimal.toFixed(2)}`,
+      dueDate: invoice.dueDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+      paymentTerms: invoice.paymentTerms,
+      replyToEmail,
+    });
+
     // Send via the shared notification service
     await deps.notificationService.sendEmail({
       from: input.fromEmail,
       to: input.recipientEmail,
       replyTo: input.replyToEmail,
-      subject: input.subject,
-      html: buildInvoiceEmailHtml({
-        invoiceNumber: invoice.invoiceNumber,
-        loadNumber: invoice.load.loadNumber,
-        totalAmount: invoice.totalAmount,
-        dueDate: invoice.dueDate,
-        paymentTerms: invoice.paymentTerms,
-        replyToEmail: input.replyToEmail ?? input.fromEmail,
-      }),
+      subject,
+      html,
       attachments,
     });
 

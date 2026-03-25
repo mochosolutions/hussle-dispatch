@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { DocumentListItem } from '../../types/documentTypes';
 
 export interface DocumentResponse {
@@ -12,7 +13,7 @@ export interface DocumentResponse {
   isArchived: boolean;
   uploadedByUserId: string | null;
   expiresAt: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: Prisma.JsonValue;
   createdAt: string;
 }
 

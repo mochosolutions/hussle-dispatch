@@ -30,7 +30,19 @@ const emailService = createNotificationService(
   },
   logger,
 );
-const smsService = createSmsService({ backend: 'console' }, logger);
+const smsService = createSmsService(
+  {
+    backend: env.SMS_BACKEND,
+    twilio: env.TWILIO_ACCOUNT_SID
+      ? {
+          accountSid: env.TWILIO_ACCOUNT_SID,
+          authToken: env.TWILIO_AUTH_TOKEN,
+          fromNumber: env.TWILIO_FROM_NUMBER,
+        }
+      : undefined,
+  },
+  logger,
+);
 
 const notificationModule = createNotificationModule({
   prismaClient: prisma,
@@ -39,6 +51,7 @@ const notificationModule = createNotificationModule({
   smsService,
   logger,
   trackingBaseUrl: env.TRACKING_BASE_URL,
+  frontendUrl: env.FRONTEND_URL,
 });
 
 // Initialize subscriber for auto-notifications

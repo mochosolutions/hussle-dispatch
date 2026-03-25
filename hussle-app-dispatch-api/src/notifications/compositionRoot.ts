@@ -30,6 +30,7 @@ interface NotificationModuleDeps {
   smsService: SmsService;
   logger: Logger;
   trackingBaseUrl: string;
+  frontendUrl: string;
 }
 
 export interface NotificationModuleExports {
@@ -70,6 +71,7 @@ export const createNotificationModule = (
       smsService: deps.smsService,
       logger: deps.logger,
       trackingBaseUrl: deps.trackingBaseUrl,
+      frontendUrl: deps.frontendUrl,
     });
   };
 
