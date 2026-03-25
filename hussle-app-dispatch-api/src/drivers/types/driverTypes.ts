@@ -1,4 +1,4 @@
-import type { Driver, DriverStatus, LoadStatus, Prisma } from '@prisma/client';
+import type { Driver, DriverLicenseType, DriverStatus, LoadStatus, Prisma } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 
 export interface PreferredLaneInput {
@@ -19,6 +19,7 @@ export interface CreateDriverInput {
   lastName: string;
   phone?: string;
   email?: string;
+  licenseType?: DriverLicenseType;
   cdlNumber?: string;
   cdlState?: string;
   cdlExpiry?: Date;
@@ -41,6 +42,7 @@ export interface UpdateDriverInput {
   lastName?: string;
   phone?: string;
   email?: string;
+  licenseType?: DriverLicenseType;
   cdlNumber?: string;
   cdlState?: string;
   cdlExpiry?: Date;

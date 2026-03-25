@@ -91,6 +91,8 @@ model Invitation {
   id             String           @id @default(uuid())
   organizationId String
   email          String
+  firstName      String?
+  lastName       String?
   role           String
   token          String           @unique
   status         InvitationStatus @default(PENDING)
@@ -268,6 +270,12 @@ enum DriverStatus {
   ON_LOAD
   INACTIVE
   OFF_DUTY
+}
+
+enum DriverLicenseType {
+  CDL_A
+  CDL_B
+  NON_CDL
 }
 
 enum BillingMethod {
@@ -452,6 +460,7 @@ model Driver {
   lastName        String
   phone           String?
   email           String?
+  licenseType     DriverLicenseType @default(CDL_A)
   cdlNumber       String?
   cdlState        String?
   cdlExpiry       DateTime?

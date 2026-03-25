@@ -25,6 +25,7 @@ const createBodySchema = Yup.object({
   lastName: Yup.string().trim().required('lastName is required'),
   phone: optionalTrimmed,
   email: Yup.string().trim().email('email must be valid').notRequired(),
+  licenseType: Yup.string().oneOf(['CDL_A', 'CDL_B', 'NON_CDL']).notRequired(),
   cdlNumber: optionalTrimmed,
   cdlState: stateCodeValidator.notRequired(),
   cdlExpiry: Yup.date().notRequired(),
