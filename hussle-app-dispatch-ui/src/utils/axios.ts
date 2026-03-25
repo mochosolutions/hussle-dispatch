@@ -1,5 +1,6 @@
 import type { AxiosRequestConfig, AxiosError } from 'axios';
 import axios from 'axios';
+import { enqueueSnackbar } from 'notistack';
 import config from '../config';
 import { store } from 'store';
 import { logoutSuccess } from '../features/auth/store/authSlice';
@@ -52,10 +53,28 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+const ORG_SUSPENDED_MESSAGE = 'Organization is suspended or inactive';
+
+const extractErrorMessage = (error: AxiosError): string => {
+  const data = error.response?.data as { errors?: Array<{ message: string }> } | undefined;
+  const firstError = data?.errors?.[0];
+  return firstError?.message ?? 'Access denied';
+};
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryableRequestConfig | undefined;
+
+    if (error.response?.status === 403) {
+      const message = extractErrorMessage(error);
+      if (message.includes(ORG_SUSPENDED_MESSAGE)) {
+        handleAuthFailure();
+      } else {
+        enqueueSnackbar(message, { variant: 'error' });
+      }
+      return Promise.reject(error);
+    }
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
       return Promise.reject(error);
