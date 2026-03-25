@@ -4,6 +4,7 @@ import { enqueueSnackbar } from 'notistack';
 import { getNavigate } from 'utils/getNavigate';
 import { createLoad } from 'utils/api/loads/loadApi';
 import { presignDocument, uploadDocumentToS3, confirmDocument } from 'utils/api/documents/documentApi';
+import { createContact } from 'utils/api/fleet/contactApi';
 import type { CreateLoadInput, LoadListItem, QueuedDocument } from '../../types';
 import {
   createLoadSuccess,
@@ -90,6 +91,48 @@ export function* createLoadSaga(
 
     yield put(loadActions.addOne(loadListItem));
     yield put(createLoadSuccess({}));
+
+    // Auto-save new contacts (have contactName but no contactId)
+    const newContacts = data.stops
+      .filter((stop) => stop.contactName && !stop.contactId)
+      .reduce<{ firstName: string; lastName: string; phone?: string; customerId?: string }[]>(
+        (acc, stop) => {
+          const name = stop.contactName?.trim();
+          if (!name) return acc;
+          // Deduplicate by full name
+          if (acc.some((c) => `${c.firstName} ${c.lastName}`.trim() === name)) return acc;
+          const parts = name.split(' ');
+          const firstName = parts[0] ?? name;
+          const lastName = parts.slice(1).join(' ') || '';
+          acc.push({
+            firstName,
+            lastName,
+            phone: stop.contactPhone ?? undefined,
+            customerId: data.customerId ?? undefined,
+          });
+          return acc;
+        },
+        [],
+      );
+
+    if (newContacts.length > 0) {
+      let saved = 0;
+      for (const contact of newContacts) {
+        try {
+          yield call(createContact, contact);
+          saved += 1;
+        } catch {
+          // Silently skip — don't block load creation flow
+        }
+      }
+      if (saved > 0) {
+        yield call(
+          enqueueSnackbar,
+          `${String(saved)} new contact${saved > 1 ? 's' : ''} saved`,
+          { variant: 'info' },
+        );
+      }
+    }
 
     const isDraft = data.status === 'QUOTED';
 
