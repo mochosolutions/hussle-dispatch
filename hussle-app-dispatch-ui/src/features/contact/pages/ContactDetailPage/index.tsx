@@ -1,14 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { format, parseISO } from 'date-fns';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
 import SectionCard from 'components/SectionCard';
 import { KpiCell, DetailRow, LinkText } from 'components/Typography';
+import { StatusBadge } from 'components/Statusbadge';
+import { getContactStats } from 'utils/api/fleet/contactApi';
+import type { ContactStats } from 'utils/api/fleet/contactApi';
 import { selectFormattedContactById, selectContactDetailLoading } from '../../store/selectors/contactSelectors';
 import {
   fetchContactDetailsRequest,
@@ -30,11 +34,25 @@ const ContactDetailPage = () => {
     (state) => !!contactPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
+  const [contactStats, setContactStats] = useState<ContactStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchContactDetailsRequest({ id }));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    setStatsLoading(true);
+    getContactStats(id)
+      .then(setContactStats)
+      .catch(() => setContactStats(null))
+      .finally(() => setStatsLoading(false));
+  }, [id]);
 
   const handleBack = () => {
     navigate('/contacts');
@@ -71,7 +89,10 @@ const ContactDetailPage = () => {
                 <KpiCell label="Role" value={c.role ?? '\u2014'} />
                 <KpiCell label="Phone" value={c.phone ?? '\u2014'} />
                 <KpiCell label="Email" value={c.email ?? '\u2014'} />
-                <KpiCell label="Loads as Contact" value="\u2014" />
+                <KpiCell
+                  label="Loads as Contact"
+                  value={statsLoading ? '\u2026' : String(contactStats?.loadCount ?? '\u2014')}
+                />
               </>
             }
             tabs={CONTACT_DETAIL_TABS}
@@ -176,18 +197,88 @@ const ContactDetailPage = () => {
                 </SectionCard>
 
                 <SectionCard title="Recent Loads">
-                  <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
-                    No load history available
-                  </Typography>
+                  {statsLoading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  )}
+                  {!statsLoading && (!contactStats || contactStats.recentLoads.length === 0) && (
+                    <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
+                      No load history available
+                    </Typography>
+                  )}
+                  {!statsLoading && contactStats && contactStats.recentLoads.length > 0 && (
+                    <Stack spacing={0} divider={<Box sx={{ borderBottom: 1, borderColor: 'divider' }} />}>
+                      {contactStats.recentLoads.map((load) => (
+                        <Box
+                          key={load.id}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            px: 2,
+                            py: 1.5,
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {load.loadNumber}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {load.pickupDate
+                                ? format(parseISO(load.pickupDate), 'MMM d, yyyy')
+                                : '\u2014'}
+                            </Typography>
+                          </Box>
+                          <StatusBadge status={`LOAD_${load.status}`} size="small" />
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
                 </SectionCard>
               </Box>
             )}
 
             {activeTab === 'loads' && (
               <SectionCard title="Load History">
-                <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
-                  {'\u2014'}
-                </Typography>
+                {statsLoading && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                )}
+                {!statsLoading && (!contactStats || contactStats.recentLoads.length === 0) && (
+                  <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
+                    No load history available
+                  </Typography>
+                )}
+                {!statsLoading && contactStats && contactStats.recentLoads.length > 0 && (
+                  <Stack spacing={0} divider={<Box sx={{ borderBottom: 1, borderColor: 'divider' }} />}>
+                    {contactStats.recentLoads.map((load) => (
+                      <Box
+                        key={load.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          px: 2,
+                          py: 1.5,
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {load.loadNumber}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {load.pickupDate
+                              ? format(parseISO(load.pickupDate), 'MMM d, yyyy')
+                              : '\u2014'}
+                          </Typography>
+                        </Box>
+                        <StatusBadge status={`LOAD_${load.status}`} size="small" />
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </SectionCard>
             )}
 

@@ -51,3 +51,26 @@ export const updateContact = async (
 export const deleteContact = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/contacts/${id}`);
 };
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+export interface ContactStats {
+  loadCount: number;
+  recentLoads: Array<{
+    id: string;
+    loadNumber: string;
+    status: string;
+    pickupDate: string | null;
+  }>;
+}
+
+interface GetContactStatsResponse {
+  data: ContactStats;
+}
+
+export const getContactStats = async (id: string): Promise<ContactStats> => {
+  const response = await axiosInstance.get<GetContactStatsResponse>(`/contacts/${id}/stats`);
+  return response.data.data;
+};
