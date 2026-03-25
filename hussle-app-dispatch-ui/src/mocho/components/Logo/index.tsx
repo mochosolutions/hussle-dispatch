@@ -63,8 +63,9 @@ export const Logo: React.FC<LogoProps> = ({
           variant="h5"
           component="span"
           sx={{
-            fontWeight: 600,
-            color: 'text.primary',
+            fontWeight: 700,
+            color: reverse ? 'common.white' : 'text.primary',
+            letterSpacing: '-0.02em',
             whiteSpace: 'nowrap',
           }}
         >
@@ -76,8 +77,9 @@ export const Logo: React.FC<LogoProps> = ({
           variant="h5"
           component="span"
           sx={{
-            fontWeight: 600,
-            color: 'primary.main',
+            fontWeight: 700,
+            color: reverse ? 'common.white' : 'primary.main',
+            letterSpacing: '-0.02em',
           }}
         >
           {isIcon ? 'M' : 'Logo'}

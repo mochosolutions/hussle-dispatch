@@ -9,7 +9,7 @@ import {
   MainContent,
   Profile,
   Avatar,
-  // Logo,
+  Logo,
 } from '@mocho/ui/components';
 import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { LogoutOutlined } from '@ant-design/icons';
@@ -184,19 +184,7 @@ const AppLayout = () => {
           </Box>
         </LayoutHeader>
         <LayoutDrawer
-          logo={
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: 'common.white',
-                letterSpacing: '-0.02em',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Hussle Dispatch
-            </Typography>
-          }
+          logo={<Logo text="Hussle Dispatch" reverse />}
           menuItems={dynamicMenuItems}
           paperStyles={{
             backgroundColor: 'primary.dark',
