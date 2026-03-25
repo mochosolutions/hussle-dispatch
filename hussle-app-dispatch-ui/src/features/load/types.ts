@@ -136,6 +136,7 @@ export interface LoadListItem {
   contactPhone: string | null;
   invoiceReadiness: string;
   accessorialChargeCount: number;
+  pickupDate: string | null;
   createdAt: string;
   updatedAt: string;
 }

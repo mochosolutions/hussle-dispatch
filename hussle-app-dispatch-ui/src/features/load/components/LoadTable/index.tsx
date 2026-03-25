@@ -12,7 +12,7 @@ import {
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import type { GridApi, GridReadyEvent } from 'ag-grid-community';
 import { NewDataGrid, MainCard } from '@mocho/ui/components';
 import { StatusCell } from 'components/Statusbadge';
@@ -77,6 +77,46 @@ const DateCellRenderer = ({ value }: { value: string }) => (
   </Box>
 );
 
+const getPickupLabel = (daysUntil: number): { text: string; color: string } => {
+  if (daysUntil < 0) {
+    return { text: `${Math.abs(daysUntil)}d ago`, color: 'text.disabled' };
+  }
+  if (daysUntil === 0) {
+    return { text: 'Today', color: 'warning.main' };
+  }
+  if (daysUntil === 1) {
+    return { text: 'Tomorrow', color: 'info.main' };
+  }
+  return { text: `In ${daysUntil}d`, color: 'text.secondary' };
+};
+
+const PickupDateCellRenderer = ({ value }: { value: string | null }) => {
+  if (!value) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+        <Typography variant="body2" color="text.disabled">
+          &mdash;
+        </Typography>
+      </Box>
+    );
+  }
+
+  const date = parseISO(value);
+  const daysUntil = differenceInCalendarDays(date, new Date());
+  const { text, color } = getPickupLabel(daysUntil);
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+      <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
+        {format(date, 'MMM d, yyyy')}
+      </Typography>
+      <Typography variant="caption" sx={{ color, lineHeight: 1.2 }}>
+        {format(date, 'h:mm a')} &middot; {text}
+      </Typography>
+    </Box>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // Column Definitions
 // ---------------------------------------------------------------------------
@@ -130,10 +170,10 @@ const buildColumnDefs = () => [
     },
   },
   {
-    field: 'createdAt',
-    headerName: 'Created',
-    width: 120,
-    cellRenderer: DateCellRenderer,
+    field: 'pickupDate',
+    headerName: 'Pickup',
+    width: 150,
+    cellRenderer: PickupDateCellRenderer,
   },
   {
     field: 'carrierRate',
