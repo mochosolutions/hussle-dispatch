@@ -6,6 +6,7 @@ import { createPlaceControllers } from './controllers/placeController';
 import type { PlaceControllers } from './controllers/placeController';
 import { createRouteDistanceController } from './controllers/routeDistanceController';
 import { placeRepositoryPrisma } from './repositories/placeRepositoryPrisma';
+import { placeStatsQueryPrisma } from './repositories/placeStatsQueryPrisma';
 import { createPlaceService } from './services/placeService';
 import { createAddressSearchService } from './services/addressSearchService';
 import { createRouteDistanceService } from './services/routeDistanceService';
@@ -48,9 +49,12 @@ export const createPlacesModule = ({
     routeCalculatorEnabled: env.ROUTE_CALCULATOR_ENABLED,
   });
 
+  const placeStatsQuery = placeStatsQueryPrisma(prismaClient);
+
   const placeControllers = createPlaceControllers({
     placeService,
     addressSearchService,
+    placeStatsQuery,
   });
 
   const controllers: PlaceModuleControllers = {

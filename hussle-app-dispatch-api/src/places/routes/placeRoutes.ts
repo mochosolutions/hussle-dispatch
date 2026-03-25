@@ -47,6 +47,12 @@ export const createPlacesRouter = (controllers: PlaceModuleControllers): express
     controllers.routeDistance,
   );
   router.get(
+    '/:id/stats',
+    requireAuth,
+    validateRequest(placeIdParamValidator),
+    controllers.getPlaceStats,
+  );
+  router.get(
     '/:id',
     requireAuth,
     validateRequest(placeIdParamValidator),

@@ -3,6 +3,7 @@ import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { PlaceService } from '../types/placeServiceTypes';
 import type { AddressSearchInput, AddressSearchResult } from '../types/addressSearchTypes';
+import type { PlaceStatsQueryPort } from '../repositories/placeStatsQueryPrisma';
 import { createPlaceMapper } from './mappers/createPlaceMapper';
 import { getRequiredPlaceIdMapper } from './mappers/getRequiredPlaceIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
@@ -25,6 +26,7 @@ interface AddressSearchService {
 interface PlaceControllerDeps {
   placeService: PlaceService;
   addressSearchService: AddressSearchService;
+  placeStatsQuery: PlaceStatsQueryPort;
 }
 
 export interface PlaceControllers {
@@ -36,6 +38,7 @@ export interface PlaceControllers {
   typeahead: RequestHandler;
   addressSearch: RequestHandler;
   loadsAtFacility: RequestHandler;
+  getPlaceStats: RequestHandler;
 }
 
 export const createPlaceControllers = (deps: PlaceControllerDeps): PlaceControllers => ({
@@ -95,5 +98,11 @@ export const createPlaceControllers = (deps: PlaceControllerDeps): PlaceControll
     const result = await deps.placeService.loadsAtFacility(serviceInput);
     const response = toLoadsAtFacilityEnvelope(result.data, result.meta);
     sendList(res, { data: response.data, meta: response.meta });
+  },
+
+  getPlaceStats: async (req: Request, res: Response): Promise<void> => {
+    const id = getRequiredPlaceIdMapper(req);
+    const stats = await deps.placeStatsQuery.getStats(id);
+    sendSingle(res, stats);
   },
 });

@@ -5,6 +5,32 @@ import type { AddressSearchInput, AddressSearchResult } from '../types/addressSe
 const MIN_QUERY_LENGTH_FOR_GEOCODING = 3;
 const PLACES_THRESHOLD = 3;
 
+const buildDedupeKey = (city: string, state: string, address: string): string =>
+  `${city.toLowerCase().trim()}|${state.toLowerCase().trim()}|${address.toLowerCase().trim()}`;
+
+const deduplicateResults = (
+  savedResults: AddressSearchResult[],
+  externalResults: AddressSearchResult[],
+): AddressSearchResult[] => {
+  const savedKeys = new Set(
+    savedResults.map((r) => buildDedupeKey(r.city, r.state, r.address)),
+  );
+
+  const seen = new Set<string>();
+  const uniqueExternal = externalResults.filter((result) => {
+    const key = buildDedupeKey(result.city, result.state, result.address);
+
+    if (savedKeys.has(key) || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+
+  return [...savedResults, ...uniqueExternal];
+};
+
 interface AddressSearchServiceDeps {
   placeRepository: PlaceRepositoryPort;
   geocodingProvider: GeocodingProviderPort;
@@ -48,8 +74,6 @@ export const createAddressSearchService = (deps: AddressSearchServiceDeps) => ({
 
     const remainingSlots = input.limit - savedResults.length;
 
-    console.log("Input Query", {query: input.query, slots: remainingSlots})
-
     try {
       const geocodeResults = await deps.geocodingProvider.searchAddresses(
         input.query,
@@ -74,7 +98,7 @@ export const createAddressSearchService = (deps: AddressSearchServiceDeps) => ({
         ppeRequired: false,
       }));
 
-      return [...savedResults, ...externalResults];
+      return deduplicateResults(savedResults, externalResults);
     } catch {
       return savedResults;
     }

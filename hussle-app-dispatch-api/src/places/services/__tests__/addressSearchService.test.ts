@@ -131,8 +131,8 @@ describe('addressSearchService', () => {
   it('ranks Places first when merging with external results', async () => {
     const places = [buildPlaceResult({ id: 'p1', name: 'Saved Place' })];
     const geocodeResults = [
-      buildGeocodeSuggestion({ label: 'External 1' }),
-      buildGeocodeSuggestion({ label: 'External 2' }),
+      buildGeocodeSuggestion({ label: 'External 1', address: '100 Oak St', city: 'Austin', state: 'TX' }),
+      buildGeocodeSuggestion({ label: 'External 2', address: '200 Elm St', city: 'San Antonio', state: 'TX' }),
     ];
     (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue(places);
     (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue(geocodeResults);
@@ -147,5 +147,44 @@ describe('addressSearchService', () => {
     expect(resultAt(results, 0).name).toBe('Saved Place');
     expect(resultAt(results, 1).source).toBe('EXTERNAL');
     expect(resultAt(results, 2).source).toBe('EXTERNAL');
+  });
+
+  it('deduplicates external results with identical city, state, and address', async () => {
+    (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+    (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([
+      buildGeocodeSuggestion({ label: 'Dallas, TX', address: '', city: 'Dallas', state: 'TX' }),
+      buildGeocodeSuggestion({ label: 'Dallas, TX (2)', address: '', city: 'Dallas', state: 'TX' }),
+      buildGeocodeSuggestion({ label: '100 Main St, Dallas, TX', address: '100 Main St', city: 'Dallas', state: 'TX' }),
+    ]);
+
+    const results = await service.search({
+      organizationId: 'org-1',
+      query: 'Dallas',
+      limit: 10,
+    });
+
+    expect(results).toHaveLength(2);
+    expect(resultAt(results, 0).name).toBe('Dallas, TX');
+    expect(resultAt(results, 1).name).toBe('100 Main St, Dallas, TX');
+  });
+
+  it('removes external results that match a saved place by city, state, and address', async () => {
+    const places = [buildPlaceResult({ address: '123 Main St', city: 'Dallas', state: 'TX' })];
+    (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue(places);
+    (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([
+      buildGeocodeSuggestion({ address: '123 Main St', city: 'Dallas', state: 'TX' }),
+      buildGeocodeSuggestion({ address: '456 Oak Ave', city: 'Houston', state: 'TX' }),
+    ]);
+
+    const results = await service.search({
+      organizationId: 'org-1',
+      query: 'Dallas',
+      limit: 10,
+    });
+
+    expect(results).toHaveLength(2);
+    expect(resultAt(results, 0).source).toBe('SAVED');
+    expect(resultAt(results, 1).source).toBe('EXTERNAL');
+    expect(resultAt(results, 1).city).toBe('Houston');
   });
 });
