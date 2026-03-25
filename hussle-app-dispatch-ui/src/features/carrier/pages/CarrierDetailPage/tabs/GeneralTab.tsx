@@ -5,7 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useSelector } from 'store';
 import SectionCard from 'components/SectionCard';
-import { FieldRow } from '../../../components/FieldRow';
+import { FieldRow } from 'components/FieldRow';
 import { ONBOARDING_ITEMS } from '../../../constants';
 import { selectUserRole } from '../../../store/selectors/carrierSelectors';
 import type { CarrierListItem, InsuranceWarning } from '../../../types';

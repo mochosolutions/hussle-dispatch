@@ -18,7 +18,7 @@ import { DetailRow } from 'components/Typography';
 import { useDispatch } from 'store';
 import type { VehicleExpense } from 'features/carrier/types';
 import EditIcon from '@mui/icons-material/Edit';
-import { FieldRow } from 'features/carrier/components/FieldRow';
+import { FieldRow } from 'components/FieldRow';
 import {
   assignDriverRequest,
   unassignDriverRequest,

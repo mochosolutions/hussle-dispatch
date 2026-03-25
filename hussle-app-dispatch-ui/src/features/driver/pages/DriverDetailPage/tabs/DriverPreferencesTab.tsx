@@ -3,7 +3,7 @@ import EditIcon from '@mui/icons-material/Edit';
 
 import { EmptyState } from '@mocho/ui/components';
 import type { Driver } from 'features/carrier/types';
-import { FieldRow } from 'features/carrier/components/FieldRow';
+import { FieldRow } from 'components/FieldRow';
 import SectionCard from 'components/SectionCard';
 
 interface DriverWithCarrier extends Driver {

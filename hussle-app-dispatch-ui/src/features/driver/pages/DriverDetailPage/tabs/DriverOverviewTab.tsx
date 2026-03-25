@@ -3,8 +3,8 @@ import { Box, Button, Chip, Grid, Stack, Typography } from '@mui/material';
 import { EmptyState } from '@mocho/ui/components';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { Driver } from 'features/carrier/types';
-import { FieldRow } from 'features/carrier/components/FieldRow';
-import { EditableSectionHeader } from 'features/carrier/components/EditableSectionHeader';
+import { FieldRow } from 'components/FieldRow';
+import { EditableSectionHeader } from 'components/EditableSectionHeader';
 import SectionCard from 'components/SectionCard';
 
 interface DriverWithCarrierInfo extends Driver {
