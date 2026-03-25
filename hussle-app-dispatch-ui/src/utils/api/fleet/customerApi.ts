@@ -47,3 +47,15 @@ export const updateCustomer = async (
 export const deleteCustomer = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/customers/${id}`);
 };
+
+export interface CustomerStats {
+  totalRevenue: string;
+  avgDaysToPay: number | null;
+  outstandingAR: string;
+  loadCount: number;
+}
+
+export const getCustomerStats = async (id: string): Promise<CustomerStats> => {
+  const response = await axiosInstance.get<{ data: CustomerStats }>(`/customers/${id}/stats`);
+  return response.data.data;
+};

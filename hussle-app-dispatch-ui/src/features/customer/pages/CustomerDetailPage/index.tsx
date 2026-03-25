@@ -6,6 +6,8 @@ import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
 import { KpiCell } from 'components/Typography';
+import { getCustomerStats } from 'utils/api/fleet/customerApi';
+import type { CustomerStats } from 'utils/api/fleet/customerApi';
 import { CUSTOMER_DETAIL_TAB_ITEMS } from '../../constants';
 import { selectFormattedCustomerById } from '../../store/selectors/customerSelectors';
 import {
@@ -21,6 +23,9 @@ import {
   NotificationsTab,
 } from './tabs';
 
+const formatCurrency = (value: string): string =>
+  `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
 const CustomerDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
@@ -34,11 +39,25 @@ const CustomerDetailPage = () => {
     (state) => !!customerPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
+  const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchCustomerDetailsRequest({ id }));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    setStatsLoading(true);
+    getCustomerStats(id)
+      .then(setCustomerStats)
+      .catch(() => setCustomerStats(null))
+      .finally(() => setStatsLoading(false));
+  }, [id]);
 
   const handleBack = () => {
     navigate('/customers');
@@ -83,18 +102,49 @@ const CustomerDetailPage = () => {
                 />
                 <KpiCell
                   label="AVG DAYS TO PAY"
-                  value="\u2014"
-                  valueProps={{ color: 'warning.main' }}
+                  value={
+                    statsLoading
+                      ? '\u2026'
+                      : customerStats?.avgDaysToPay !== null &&
+                          customerStats?.avgDaysToPay !== undefined
+                        ? `${customerStats.avgDaysToPay} days`
+                        : '\u2014'
+                  }
                 />
                 <KpiCell
                   label="OUTSTANDING AR"
-                  value="\u2014"
-                  valueProps={{ color: 'warning.main' }}
+                  value={
+                    statsLoading
+                      ? '\u2026'
+                      : customerStats
+                        ? formatCurrency(customerStats.outstandingAR)
+                        : '\u2014'
+                  }
+                  valueProps={
+                    customerStats && Number(customerStats.outstandingAR) > 0
+                      ? { color: 'warning.main' }
+                      : undefined
+                  }
                 />
                 <KpiCell
                   label="TOTAL REVENUE"
-                  value="\u2014"
-                  sub={`${c.loadCount} loads`}
+                  value={
+                    statsLoading
+                      ? '\u2026'
+                      : customerStats
+                        ? formatCurrency(customerStats.totalRevenue)
+                        : '\u2014'
+                  }
+                  sub={
+                    statsLoading
+                      ? ''
+                      : `${customerStats?.loadCount ?? c.loadCount} loads`
+                  }
+                  valueProps={
+                    customerStats && Number(customerStats.totalRevenue) > 0
+                      ? { color: 'success.main' }
+                      : undefined
+                  }
                 />
               </>
             }
