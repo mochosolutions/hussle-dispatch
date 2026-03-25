@@ -50,12 +50,12 @@ export const EditDrawer: React.FC<{
           },
         }}
       >
-        {/* Navy header */}
+        {/* Drawer header */}
         <Box
           sx={{
             px: 3,
             py: 2,
-            bgcolor: 'primary.dark',
+            bgcolor: 'drawer.headerBg',
             borderBottom: '1px solid',
             borderColor: 'rgba(255,255,255,0.1)',
             display: 'flex',
@@ -67,7 +67,7 @@ export const EditDrawer: React.FC<{
           }}
         >
           <Box>
-            <Typography variant="h5" sx={{ color: 'common.white' }}>
+            <Typography variant="h5" sx={{ color: 'drawer.headerText' }}>
               {title}
             </Typography>
             {subtitle && (
@@ -81,7 +81,7 @@ export const EditDrawer: React.FC<{
             size="small"
             aria-label="Close drawer"
             sx={{
-              color: 'common.white',
+              color: 'drawer.headerText',
               border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: '6px',
               width: 28,

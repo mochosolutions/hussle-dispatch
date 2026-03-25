@@ -159,6 +159,11 @@ const Palette = (mode: ThemeMode) =>
         default: '#E4E7EB',
         paper: '#fff',
       },
+      // Drawer
+      drawer: {
+        headerBg: '#002159',
+        headerText: '#ffffff',
+      },
       // Tertiary color scales
       cyan,
       teal,

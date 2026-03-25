@@ -42,7 +42,13 @@ declare module '@mui/material/styles' {
     1000: string;
   }
 
+  interface DrawerPalette {
+    headerBg: string;
+    headerText: string;
+  }
+
   interface Palette {
+    drawer: DrawerPalette;
     cyan: ColorScale;
     teal: ColorScale;
     indigo: ColorScale;
@@ -53,6 +59,7 @@ declare module '@mui/material/styles' {
   }
 
   interface PaletteOptions {
+    drawer?: Partial<DrawerPalette>;
     cyan?: ColorScale;
     teal?: ColorScale;
     indigo?: ColorScale;
