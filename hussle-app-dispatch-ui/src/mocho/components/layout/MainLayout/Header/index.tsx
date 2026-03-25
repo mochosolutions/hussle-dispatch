@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
-import { AppBar, Box, Toolbar, useMediaQuery } from '@mui/material';
+import { AppBar, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import type { AppBarProps } from '@mui/material';
 
 // project import
@@ -72,12 +72,21 @@ const Header = ({ children }: LayoutHeaderProps) => {
           {!drawerOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         </IconButton>
       ) : null}
-      {headerContent}
       {downLG ? (
-        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
-          <Logo sx={{ height: 28, width: 'auto' }} />
-        </Box>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            color: 'common.white',
+            letterSpacing: '-0.02em',
+            whiteSpace: 'nowrap',
+            ml: 1,
+          }}
+        >
+          Hussle Dispatch
+        </Typography>
       ) : null}
+      {headerContent}
     </Toolbar>
   );
 
