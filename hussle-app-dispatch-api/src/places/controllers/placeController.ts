@@ -102,7 +102,9 @@ export const createPlaceControllers = (deps: PlaceControllerDeps): PlaceControll
 
   getPlaceStats: async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredPlaceIdMapper(req);
-    const stats = await deps.placeStatsQuery.getStats(id);
+    const context = getRequestContextMapper(req);
+    await deps.placeService.getPlaceById({ ...context, id });
+    const stats = await deps.placeStatsQuery.getStats(id, context.organizationId);
     sendSingle(res, stats);
   },
 });

@@ -53,6 +53,7 @@ export const customerStatsQueryPrisma = (
       prisma.invoice.aggregate({
         where: {
           customerId,
+          load: { organizationId },
           status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] },
         },
         _sum: { totalAmount: true },
@@ -60,6 +61,7 @@ export const customerStatsQueryPrisma = (
       prisma.invoice.findMany({
         where: {
           customerId,
+          load: { organizationId },
           status: 'PAID',
           paidAt: { not: null },
           sentAt: { not: null },

@@ -7,17 +7,19 @@ export interface PlaceStatsResult {
 }
 
 export interface PlaceStatsQueryPort {
-  getStats: (placeId: string) => Promise<PlaceStatsResult>;
+  getStats: (placeId: string, organizationId: string) => Promise<PlaceStatsResult>;
 }
 
 export const placeStatsQueryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
 ): PlaceStatsQueryPort => ({
-  getStats: async (placeId) => {
+  getStats: async (placeId, organizationId) => {
+    const stopWhereClause = { placeId, load: { organizationId, deletedAt: null } };
+
     const [visitCount, aggregate] = await Promise.all([
-      prisma.stop.count({ where: { placeId } }),
+      prisma.stop.count({ where: stopWhereClause }),
       prisma.stop.aggregate({
-        where: { placeId },
+        where: stopWhereClause,
         _max: { appointmentDate: true },
       }),
     ]);

@@ -71,6 +71,7 @@ export const createCustomerControllers = (deps: CustomerControllerDeps): Custome
   getCustomerStats: async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredCustomerIdMapper(req);
     const context = getRequestContextMapper(req);
+    await deps.customerService.getCustomerById({ ...context, id });
     const stats = await deps.customerStatsQuery.getStats(id, context.organizationId);
     sendSingle(res, stats);
   },

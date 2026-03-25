@@ -111,6 +111,7 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
   getCarrierStats: async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredCarrierIdMapper(req);
     const context = getRequestContextMapper(req);
+    await deps.carrierService.getCarrierById({ ...context, id });
     const stats = await deps.carrierStatsQuery.getStats(id, context.organizationId);
     sendSingle(res, stats);
   },

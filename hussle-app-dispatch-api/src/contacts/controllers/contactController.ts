@@ -68,6 +68,7 @@ export const createContactControllers = (deps: ContactControllerDeps): ContactCo
   getContactStats: async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredContactIdMapper(req);
     const context = getRequestContextMapper(req);
+    await deps.contactService.getContactById({ ...context, id });
     const stats = await deps.contactStatsQuery.getStats(id, context.organizationId);
     sendSingle(res, stats);
   },
