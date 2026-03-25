@@ -4,7 +4,6 @@ import {
   Chip,
   Divider,
   Grid,
-  MenuItem,
   Stack,
   TextField as MuiTextField,
   Typography,
@@ -119,13 +118,13 @@ export const DriverCreateDrawer: React.FC<DriverCreateDrawerProps> = ({
           <Typography variant="subtitle2" sx={sectionLabelSx}>
             License Information
           </Typography>
-          <SelectField name="licenseType" label="License Type" formik={formik} required>
-            {DRIVER_LICENSE_TYPE_OPTIONS.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </MenuItem>
-            ))}
-          </SelectField>
+          <SelectField
+            name="licenseType"
+            label="License Type"
+            formik={formik}
+            required
+            data={DRIVER_LICENSE_TYPE_OPTIONS}
+          />
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField name="licenseNumber" label="License Number" formik={formik} />
