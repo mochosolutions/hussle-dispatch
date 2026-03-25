@@ -29,13 +29,33 @@ export interface InvoiceAccessorial {
   amount: number;
 }
 
+export interface InvoiceLoadStop {
+  id: string;
+  type: string;
+  sequence: number;
+  facilityName: string | null;
+  city: string | null;
+  state: string | null;
+  appointmentDate: string | null;
+}
+
 export interface InvoiceListItem {
   id: string;
   invoiceNumber: string;
   type: InvoiceType;
   status: InvoiceStatus;
-  load: { id: string; loadNumber: string; status: string } | null;
-  carrier: { id: string; name: string } | null;
+  load: {
+    id: string;
+    loadNumber: string;
+    status: string;
+    stops?: InvoiceLoadStop[];
+  } | null;
+  carrier: {
+    id: string;
+    name: string;
+    mcNumber?: string | null;
+    phone?: string | null;
+  } | null;
   subtotal: string;
   accessorials: string;
   totalAmount: string;

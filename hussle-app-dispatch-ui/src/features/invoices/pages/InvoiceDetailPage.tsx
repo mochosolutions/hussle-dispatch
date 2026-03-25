@@ -392,30 +392,53 @@ const InvoiceDetailPage = () => {
                     {/* Load Reference */}
                     <SectionCard title="Load Reference">
                       {inv.load ? (
-                        <>
-                          <DetailRow
-                            label="Load Number"
-                            value={
-                              <Typography
-                                component={RouterLink}
-                                to={`/loads/${inv.load.id}`}
-                                variant="body1"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: 'primary.main',
-                                  textDecoration: 'none',
-                                  '&:hover': { textDecoration: 'underline' },
-                                }}
-                              >
-                                {inv.load.loadNumber}
-                              </Typography>
-                            }
-                          />
-                          <DetailRow label="Load Status" value={inv.load.status} />
-                          <DetailRow label="Pickup Date" value={'\u2014'} />
-                          <DetailRow label="Delivery Date" value={'\u2014'} />
-                          <DetailRow label="Route" value={'\u2014'} noBorder />
-                        </>
+                        (() => {
+                          const stops = inv.load.stops ?? [];
+                          const pickupStop = stops.find((s) => s.type === 'PICKUP');
+                          const deliveryStop = [...stops].reverse().find((s) => s.type === 'DELIVERY');
+                          const originLabel = pickupStop?.city && pickupStop?.state
+                            ? `${pickupStop.city}, ${pickupStop.state}`
+                            : null;
+                          const destLabel = deliveryStop?.city && deliveryStop?.state
+                            ? `${deliveryStop.city}, ${deliveryStop.state}`
+                            : null;
+                          const routeDisplay = originLabel && destLabel
+                            ? `${originLabel} \u2192 ${destLabel}`
+                            : originLabel ?? destLabel ?? '\u2014';
+                          const pickupDate = pickupStop?.appointmentDate
+                            ? format(new Date(pickupStop.appointmentDate), 'MMM dd, yyyy')
+                            : '\u2014';
+                          const deliveryDate = deliveryStop?.appointmentDate
+                            ? format(new Date(deliveryStop.appointmentDate), 'MMM dd, yyyy')
+                            : '\u2014';
+
+                          return (
+                            <>
+                              <DetailRow
+                                label="Load Number"
+                                value={
+                                  <Typography
+                                    component={RouterLink}
+                                    to={`/loads/${inv.load.id}`}
+                                    variant="body1"
+                                    sx={{
+                                      fontWeight: 600,
+                                      color: 'primary.main',
+                                      textDecoration: 'none',
+                                      '&:hover': { textDecoration: 'underline' },
+                                    }}
+                                  >
+                                    {inv.load.loadNumber}
+                                  </Typography>
+                                }
+                              />
+                              <DetailRow label="Load Status" value={inv.load.status} />
+                              <DetailRow label="Route" value={routeDisplay} />
+                              <DetailRow label="Pickup Date" value={pickupDate} />
+                              <DetailRow label="Delivery Date" value={deliveryDate} noBorder />
+                            </>
+                          );
+                        })()
                       ) : (
                         <BodyMuted sx={{ p: 2 }}>No load associated.</BodyMuted>
                       )}
@@ -424,7 +447,18 @@ const InvoiceDetailPage = () => {
                     {/* Carrier */}
                     <SectionCard title="Carrier">
                       {inv.carrier ? (
-                        <DetailRow label="Name" value={inv.carrier.name} noBorder />
+                        <>
+                          <DetailRow label="Name" value={inv.carrier.name} />
+                          <DetailRow
+                            label="MC #"
+                            value={inv.carrier.mcNumber ?? '\u2014'}
+                          />
+                          <DetailRow
+                            label="Phone"
+                            value={inv.carrier.phone ?? '\u2014'}
+                            noBorder
+                          />
+                        </>
                       ) : (
                         <BodyMuted sx={{ p: 2 }}>No carrier associated.</BodyMuted>
                       )}
