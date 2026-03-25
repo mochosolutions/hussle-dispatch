@@ -29,6 +29,13 @@ export const createCustomersRouter = (controllers: CustomerControllers): express
   );
 
   router.get(
+    '/:id/stats',
+    requireAuth,
+    validateRequest(customerIdParamSchema),
+    controllers.getCustomerStats,
+  );
+
+  router.get(
     '/:id',
     requireAuth,
     validateRequest(customerIdParamSchema),

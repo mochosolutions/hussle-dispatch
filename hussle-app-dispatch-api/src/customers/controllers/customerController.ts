@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { CustomerService } from '../types/customerServiceTypes';
+import type { CustomerStatsQueryPort } from '../repositories/customerStatsQueryPrisma';
 import { createCustomerMapper } from './mappers/createCustomerMapper';
 import { getRequiredCustomerIdMapper } from './mappers/getRequiredCustomerIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
@@ -15,6 +16,7 @@ import {
 
 interface CustomerControllerDeps {
   customerService: CustomerService;
+  customerStatsQuery: CustomerStatsQueryPort;
 }
 
 export interface CustomerControllers {
@@ -23,6 +25,7 @@ export interface CustomerControllers {
   getCustomerById: RequestHandler;
   updateCustomer: RequestHandler;
   deleteCustomer: RequestHandler;
+  getCustomerStats: RequestHandler;
 }
 
 export const createCustomerControllers = (deps: CustomerControllerDeps): CustomerControllers => ({
@@ -63,5 +66,12 @@ export const createCustomerControllers = (deps: CustomerControllerDeps): Custome
       id,
     });
     res.status(204).send();
+  },
+
+  getCustomerStats: async (req: Request, res: Response): Promise<void> => {
+    const id = getRequiredCustomerIdMapper(req);
+    const context = getRequestContextMapper(req);
+    const stats = await deps.customerStatsQuery.getStats(id, context.organizationId);
+    sendSingle(res, stats);
   },
 });
