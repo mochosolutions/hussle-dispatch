@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
-import { AppBar, Toolbar, useMediaQuery } from '@mui/material';
+import { AppBar, Box, Toolbar, useMediaQuery } from '@mui/material';
 import type { AppBarProps } from '@mui/material';
 
 // project import
@@ -64,8 +64,8 @@ const Header = ({ children }: LayoutHeaderProps) => {
           color="secondary"
           variant="light"
           sx={{
-            color: 'text.primary',
-            bgcolor: drawerOpen ? iconBackColorOpen : iconBackColor,
+            color: downLG ? 'common.white' : 'text.primary',
+            bgcolor: downLG ? 'transparent' : (drawerOpen ? iconBackColorOpen : iconBackColor),
             ml: { xs: 0, lg: -2 },
           }}
         >
@@ -73,6 +73,11 @@ const Header = ({ children }: LayoutHeaderProps) => {
         </IconButton>
       ) : null}
       {headerContent}
+      {downLG ? (
+        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+          <Logo sx={{ height: 28, width: 'auto' }} />
+        </Box>
+      ) : null}
     </Toolbar>
   );
 
