@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { format, parseISO } from 'date-fns';
 import { Button, Grid, Stack, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DirectionsIcon from '@mui/icons-material/Directions';
@@ -9,6 +10,8 @@ import { DetailLayout } from 'components/DetailLayout';
 import { KpiCell, DetailRow } from 'components/Typography';
 import SectionCard from 'components/SectionCard';
 import { ContextualAlert } from 'components/ContextualAlert';
+import { getPlaceStats } from 'utils/api/places/placeApi';
+import type { PlaceStats } from 'utils/api/places/placeApi';
 import { selectFormattedPlaceById } from '../../store/selectors/placeSelectors';
 import {
   fetchPlaceDetailsRequest,
@@ -73,11 +76,32 @@ const PlaceDetailPage = () => {
     (state) => Boolean(placePageSelectors.selectEntityError('getById', id ?? '')(state)),
   );
 
+  const [placeStats, setPlaceStats] = useState<PlaceStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchPlaceDetailsRequest({ id }));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    setStatsLoading(true);
+    getPlaceStats(id)
+      .then(setPlaceStats)
+      .catch(() => setPlaceStats(null))
+      .finally(() => setStatsLoading(false));
+  }, [id]);
+
+  const formatLastVisit = (date: string | null): string => {
+    if (!date) {
+      return '\u2014';
+    }
+    return format(parseISO(date), 'MMM d, yyyy');
+  };
 
   const handleBack = () => {
     navigate('/places');
@@ -148,7 +172,11 @@ const PlaceDetailPage = () => {
                     valueProps={p.appointmentRequired ? { color: 'error.main' } : {}}
                   />
                   <KpiCell label="Dock Type" value={dockLabel ?? '\u2014'} />
-                  <KpiCell label="Total Visits" value="\u2014" sub="Avg wait: \u2014" />
+                  <KpiCell
+                    label="Total Visits"
+                    value={statsLoading ? '...' : String(placeStats?.visitCount ?? '\u2014')}
+                    sub={`Last: ${statsLoading ? '...' : formatLastVisit(placeStats?.lastVisitDate ?? null)}`}
+                  />
                 </>
               }
               tabs={PLACE_DETAIL_TABS}
@@ -211,9 +239,16 @@ const PlaceDetailPage = () => {
 
                     <Grid item xs={12} md={4}>
                       <SectionCard title="Visit Stats">
-                        <DetailRow label="Total Loads" value="\u2014" />
+                        <DetailRow
+                          label="Total Visits"
+                          value={statsLoading ? '...' : String(placeStats?.visitCount ?? '\u2014')}
+                        />
                         <DetailRow label="Avg Wait Time" value="\u2014" />
-                        <DetailRow label="Last Visit" value="\u2014" noBorder />
+                        <DetailRow
+                          label="Last Visit"
+                          value={statsLoading ? '...' : formatLastVisit(placeStats?.lastVisitDate ?? null)}
+                          noBorder
+                        />
                       </SectionCard>
                     </Grid>
                   </Grid>

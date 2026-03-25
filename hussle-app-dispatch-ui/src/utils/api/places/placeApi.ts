@@ -115,3 +115,17 @@ export const calculateRouteDistance = async (
   });
   return response.data.data;
 };
+
+export interface PlaceStats {
+  visitCount: number;
+  lastVisitDate: string | null;
+}
+
+interface GetPlaceStatsResponse {
+  data: PlaceStats;
+}
+
+export const getPlaceStats = async (id: string): Promise<PlaceStats> => {
+  const response = await axiosInstance.get<GetPlaceStatsResponse>(`/places/${id}/stats`);
+  return response.data.data;
+};
