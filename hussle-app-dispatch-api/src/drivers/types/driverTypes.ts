@@ -20,9 +20,10 @@ export interface CreateDriverInput {
   phone?: string;
   email?: string;
   licenseType?: DriverLicenseType;
-  cdlNumber?: string;
-  cdlState?: string;
-  cdlExpiry?: Date;
+  licenseNumber?: string;
+  licenseState?: string;
+  licenseExpiry?: Date;
+  endorsements?: string[];
   availableHours?: string | number;
   currentCity?: string;
   currentState?: string;
@@ -43,9 +44,10 @@ export interface UpdateDriverInput {
   phone?: string;
   email?: string;
   licenseType?: DriverLicenseType;
-  cdlNumber?: string;
-  cdlState?: string;
-  cdlExpiry?: Date;
+  licenseNumber?: string;
+  licenseState?: string;
+  licenseExpiry?: Date;
+  endorsements?: string[];
   availableHours?: string | number;
   currentCity?: string;
   currentState?: string;

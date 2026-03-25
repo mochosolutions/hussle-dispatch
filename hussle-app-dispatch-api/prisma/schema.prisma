@@ -273,9 +273,11 @@ enum DriverStatus {
 }
 
 enum DriverLicenseType {
+  CLASS_D
+  CLASS_M
   CDL_A
   CDL_B
-  NON_CDL
+  CDL_C
 }
 
 enum BillingMethod {
@@ -460,10 +462,11 @@ model Driver {
   lastName        String
   phone           String?
   email           String?
-  licenseType     DriverLicenseType @default(CDL_A)
-  cdlNumber       String?
-  cdlState        String?
-  cdlExpiry       DateTime?
+  licenseType     DriverLicenseType @default(CLASS_D)
+  licenseNumber   String?
+  licenseState    String?
+  licenseExpiry   DateTime?
+  endorsements    Json?
   availableHours  Decimal?  @db.Decimal(4, 1)
   currentCity     String?
   currentState    String?

@@ -19,7 +19,7 @@ import type {
   UpdateDriverServiceInput,
 } from '../types/driverServiceTypes';
 
-const listSortableFields = ['createdAt', 'updatedAt', 'firstName', 'lastName', 'cdlExpiry', 'currentState'] as const;
+const listSortableFields = ['createdAt', 'updatedAt', 'firstName', 'lastName', 'licenseExpiry', 'currentState'] as const;
 
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
