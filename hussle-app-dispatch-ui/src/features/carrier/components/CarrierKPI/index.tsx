@@ -1,10 +1,13 @@
-import { Box, Typography } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { differenceInCalendarDays, format, parse } from 'date-fns';
 import type { Carrier } from '../../types';
+import type { CarrierStats } from 'utils/api/fleet/carrierApi';
 
 interface CarrierKPIProps {
   /** Carrier from selectFormattedCarrierById — dates are pre-formatted as MM/dd/yyyy */
   c: Carrier;
+  stats?: CarrierStats | null;
+  statsLoading?: boolean;
 }
 
 interface KpiItem {
@@ -37,7 +40,26 @@ const buildInsuranceKpi = (insuranceExpiry: string | null): KpiItem => {
   };
 };
 
-export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c }) => {
+const formatRevenue = (value: string): string => {
+  const num = Number(value);
+  if (num >= 1_000_000) {
+    return `$${(num / 1_000_000).toFixed(1)}M`;
+  }
+  if (num >= 1_000) {
+    return `$${(num / 1_000).toFixed(1)}K`;
+  }
+  return `$${num.toLocaleString()}`;
+};
+
+export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c, stats, statsLoading }) => {
+  const revenueDisplay = statsLoading
+    ? '\u2026'
+    : stats ? formatRevenue(stats.lifetimeRevenue) : '\u2014';
+
+  const loadCountDisplay = statsLoading
+    ? ''
+    : stats ? `${stats.loadCount} loads` : '';
+
   const kpiItems: KpiItem[] = [
     { label: 'MC / DOT', primary: c.mcNumber ?? '\u2014', secondary: c.dotNumber ?? '\u2014' },
     { label: 'CONTACT', primary: c.phone ?? '\u2014', secondary: c.email ?? '\u2014' },
@@ -48,13 +70,14 @@ export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c }) => {
     },
     {
       label: 'DRIVERS',
-      primary: '\u2014',
-      secondary: '',
+      primary: String(c.driverCount ?? 0),
+      secondary: c.vehicleCount !== undefined ? `${c.vehicleCount} vehicles` : '',
     },
     {
       label: 'LIFETIME REVENUE',
-      primary: '\u2014',
-      secondary: '',
+      primary: revenueDisplay,
+      secondary: loadCountDisplay,
+      color: stats && Number(stats.lifetimeRevenue) > 0 ? 'success.main' : undefined,
     },
     buildInsuranceKpi(c.insuranceExpiry),
   ];

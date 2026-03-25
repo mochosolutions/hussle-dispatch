@@ -75,6 +75,24 @@ export const getCarrierOnboarding = async (
 };
 
 // ---------------------------------------------------------------------------
+// Carrier Stats
+// ---------------------------------------------------------------------------
+
+export interface CarrierStats {
+  lifetimeRevenue: string;
+  loadCount: number;
+}
+
+interface GetCarrierStatsResponse {
+  data: CarrierStats;
+}
+
+export const getCarrierStats = async (id: string): Promise<CarrierStats> => {
+  const response = await axiosInstance.get<GetCarrierStatsResponse>(`/carriers/${id}/stats`);
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
 // Carrier Notes
 // ---------------------------------------------------------------------------
 

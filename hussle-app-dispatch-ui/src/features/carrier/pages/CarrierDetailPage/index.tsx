@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
 import { CarrierKPI } from '../../components/CarrierKPI';
+import { getCarrierStats } from 'utils/api/fleet/carrierApi';
+import type { CarrierStats } from 'utils/api/fleet/carrierApi';
 import { CARRIER_DETAIL_TAB_ITEMS } from '../../constants';
 import { selectFormattedCarrierById } from '../../store/selectors/carrierSelectors';
 import {
@@ -34,11 +36,25 @@ const CarrierDetailEditable: React.FC = () => {
     (state) => !!carrierPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
+  const [carrierStats, setCarrierStats] = useState<CarrierStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
     if (id) {
       dispatch(fetchCarrierDetailsRequest({ id }));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    setStatsLoading(true);
+    getCarrierStats(id)
+      .then(setCarrierStats)
+      .catch(() => setCarrierStats(null))
+      .finally(() => setStatsLoading(false));
+  }, [id]);
 
   const handleBack = () => {
     navigate('/carriers');
@@ -53,7 +69,7 @@ const CarrierDetailEditable: React.FC = () => {
             status={`CARRIER_${c.status ?? 'DRAFT'}`}
             breadcrumb={{ label: 'Carriers', href: '/carriers' }}
             onBack={handleBack}
-            summary={<CarrierKPI c={c} />}
+            summary={<CarrierKPI c={c} stats={carrierStats} statsLoading={statsLoading} />}
             tabs={CARRIER_DETAIL_TAB_ITEMS}
             activeTab={activeTab}
             onTabChange={setActiveTab}
