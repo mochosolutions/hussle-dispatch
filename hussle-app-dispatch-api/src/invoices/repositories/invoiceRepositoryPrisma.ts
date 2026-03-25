@@ -10,6 +10,18 @@ const INVOICE_DETAIL_INCLUDE = {
   load: {
     include: {
       accessorialCharges: true,
+      stops: {
+        orderBy: { sequence: 'asc' as const },
+        select: {
+          id: true,
+          type: true,
+          sequence: true,
+          facilityName: true,
+          city: true,
+          state: true,
+          appointmentDate: true,
+        },
+      },
     },
   },
   carrier: true,

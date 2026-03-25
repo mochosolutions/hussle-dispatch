@@ -6,14 +6,28 @@ import type {
   Carrier,
   Customer,
   AccessorialCharge,
+  StopType,
 } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
 // Entity types
 // ---------------------------------------------------------------------------
 
+export interface InvoiceDetailStop {
+  id: string;
+  type: StopType;
+  sequence: number;
+  facilityName: string | null;
+  city: string | null;
+  state: string | null;
+  appointmentDate: Date | null;
+}
+
 export interface InvoiceWithRelations extends Invoice {
-  load: Load & { accessorialCharges: AccessorialCharge[] };
+  load: Load & {
+    accessorialCharges: AccessorialCharge[];
+    stops: InvoiceDetailStop[];
+  };
   carrier: Carrier | null;
   customer: Customer | null;
 }

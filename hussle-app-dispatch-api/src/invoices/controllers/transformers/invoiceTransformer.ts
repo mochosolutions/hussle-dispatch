@@ -7,6 +7,16 @@ interface AccessorialItemResponse {
   amount: string;
 }
 
+interface StopResponse {
+  id: string;
+  type: string;
+  sequence: number;
+  facilityName: string | null;
+  city: string | null;
+  state: string | null;
+  appointmentDate: string | null;
+}
+
 interface InvoiceDetailResponse {
   id: string;
   loadId: string;
@@ -44,10 +54,13 @@ interface InvoiceDetailResponse {
     id: string;
     loadNumber: string;
     status: string;
+    stops: StopResponse[];
   };
   carrier: {
     id: string;
     name: string;
+    mcNumber: string | null;
+    phone: string | null;
   } | null;
   customer: {
     id: string;
@@ -99,9 +112,23 @@ export const toInvoiceDetailResponse = (
     id: invoice.load.id,
     loadNumber: invoice.load.loadNumber,
     status: invoice.load.status,
+    stops: invoice.load.stops.map((stop) => ({
+      id: stop.id,
+      type: stop.type,
+      sequence: stop.sequence,
+      facilityName: stop.facilityName,
+      city: stop.city,
+      state: stop.state,
+      appointmentDate: stop.appointmentDate?.toISOString() ?? null,
+    })),
   },
   carrier: invoice.carrier !== null
-    ? { id: invoice.carrier.id, name: invoice.carrier.name }
+    ? {
+        id: invoice.carrier.id,
+        name: invoice.carrier.name,
+        mcNumber: invoice.carrier.mcNumber,
+        phone: invoice.carrier.phone,
+      }
     : null,
   customer: invoice.customer !== null
     ? { id: invoice.customer.id, companyName: invoice.customer.companyName }
