@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import { ActionsCell, ListSkeleton, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
 import { KpiCell } from 'components/Typography';
@@ -231,7 +231,7 @@ const VehicleListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="VehicleListPage" sx={{ gap: 2 }}>
+    <PageWrapper isLoading={isLoading} loadingComponent={<ListSkeleton rows={8} />} errorContext="VehicleListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Vehicles"
         primaryAction={

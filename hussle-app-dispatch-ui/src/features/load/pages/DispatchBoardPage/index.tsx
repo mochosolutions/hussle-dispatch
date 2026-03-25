@@ -24,7 +24,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import InsightsIcon from '@mui/icons-material/Insights';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { PageWrapper } from '@mocho/ui/components';
+import { ListSkeleton, PageWrapper } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
 import { useSelector, useDispatch } from 'store';
 import { fetchLoadsRequest, setBoardView, setLoadFilters } from '../../store/reducers';
@@ -173,7 +173,7 @@ const DispatchBoardPage = () => {
   const currentCarrierFilter = filters.carrierName ?? 'all';
 
   return (
-    <PageWrapper isLoading={isLoading} errorContext="DispatchBoardPage">
+    <PageWrapper isLoading={isLoading} loadingComponent={<ListSkeleton rows={8} />} errorContext="DispatchBoardPage">
       <ListLayout
         title="Dispatch Board"
         primaryAction={

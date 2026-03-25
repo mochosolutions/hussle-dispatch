@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ActionsCell,
   ActionsCellConfig,
+  ListSkeleton,
   MainCard,
   NewDataGrid,
   PageWrapper,
@@ -182,7 +183,7 @@ const CarrierListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="CarrierListPage" sx={{ gap: 2 }}>
+    <PageWrapper isLoading={isLoading} loadingComponent={<ListSkeleton rows={8} />} errorContext="CarrierListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Carriers"
         primaryAction={
