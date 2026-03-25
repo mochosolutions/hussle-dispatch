@@ -139,4 +139,5 @@ export interface PaginationMeta {
   limit: number;
   total: number;
   totalPages: number;
+  hasMore: boolean;
 }
