@@ -222,16 +222,19 @@ export interface LoadListItemResponse {
   contactPhone: string | null;
   invoiceReadiness: string;
   accessorialChargeCount: number;
+  pickupDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-const getOriginStop = (stops: LoadListItem['stops']): { city: string | null; state: string | null } => {
+const getOriginStop = (
+  stops: LoadListItem['stops'],
+): { city: string | null; state: string | null; appointmentDate: Date | null } => {
   const pickup = stops.find((stop) => stop.type === 'PICKUP');
   if (pickup !== undefined) {
-    return { city: pickup.city, state: pickup.state };
+    return { city: pickup.city, state: pickup.state, appointmentDate: pickup.appointmentDate };
   }
-  return { city: null, state: null };
+  return { city: null, state: null, appointmentDate: null };
 };
 
 const getDestinationStop = (stops: LoadListItem['stops']): { city: string | null; state: string | null } => {
@@ -273,6 +276,7 @@ export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse
     originState: origin.state,
     destinationCity: destination.city,
     destinationState: destination.state,
+    pickupDate: origin.appointmentDate?.toISOString() ?? null,
     invoiceReadiness: load.invoiceReadiness,
     accessorialChargeCount: load._count.accessorialCharges,
     createdAt: load.createdAt.toISOString(),
