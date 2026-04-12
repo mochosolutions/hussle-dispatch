@@ -52,6 +52,7 @@ const notificationModule = createNotificationModule({
   logger,
   trackingBaseUrl: env.TRACKING_BASE_URL,
   frontendUrl: env.FRONTEND_URL,
+  portalBaseUrl: env.FRONTEND_URL,
 });
 
 // Initialize subscriber for auto-notifications

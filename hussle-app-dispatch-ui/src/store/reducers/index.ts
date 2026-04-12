@@ -23,6 +23,12 @@ import { customerReducer } from 'features/customer/store/reducers/customerEntity
 import { customerPageReducer } from 'features/customer/store/reducers/customerPageSlice';
 import { settingsSlice } from 'features/settings/store/reducers/settingsSlice';
 import { teamReducer } from 'features/settings/store/reducers/teamSlice';
+import { documentReducer } from 'features/documents/store/reducers/documentEntitySlice';
+import documentPageReducer from 'features/documents/store/reducers/documentPageSlice';
+import { carrierPortalReducer } from 'features/carrier-portal/store/slices/carrierPortalSlice';
+import { settlementReducer } from 'features/accounting/store/reducers/settlementEntitySlice';
+import { settlementPageReducer } from 'features/accounting/store/reducers/settlementPageSlice';
+import { loadBoardReducer } from 'features/loadBoard/store/reducers/loadBoardSlice';
 
 const pages = combineReducers({
   ui: uiReducer,
@@ -41,6 +47,10 @@ const pages = combineReducers({
   customers: customerPageReducer,
   settings: settingsSlice.reducer,
   team: teamReducer,
+  documents: documentPageReducer,
+  carrierPortal: carrierPortalReducer,
+  settlements: settlementPageReducer,
+  loadBoard: loadBoardReducer,
 });
 
 const entities = combineReducers({
@@ -53,6 +63,8 @@ const entities = combineReducers({
   contacts: contactReducer,
   invoices: invoiceReducer,
   customers: customerReducer,
+  documents: documentReducer,
+  settlements: settlementReducer,
 });
 
 const rootReducer = combineReducers({

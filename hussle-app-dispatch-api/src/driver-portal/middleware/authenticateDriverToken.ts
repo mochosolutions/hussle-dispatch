@@ -37,7 +37,7 @@ export const createAuthenticateDriverToken = (deps: AuthenticateDriverTokenDeps)
     }
 
     req.driverPortal = {
-      loadId: tokenRecord.loadId,
+      loadId: tokenRecord.loadId ?? '',
       tokenId: tokenRecord.id,
     };
 

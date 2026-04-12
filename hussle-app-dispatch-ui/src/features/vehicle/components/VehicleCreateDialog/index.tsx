@@ -69,16 +69,7 @@ export const VehicleCreateDrawer: React.FC<VehicleCreateDrawerProps> = ({
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <CarrierAutocomplete
-            value={formik.values.carrierId}
-            onChange={(carrierId) => {
-              void formik.setFieldValue('carrierId', carrierId);
-            }}
-            onBlur={() => {
-              void formik.setFieldTouched('carrierId', true);
-            }}
-            label="Carrier"
-          />
+          <CarrierAutocomplete formik={formik} />
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField name="unitNumber" label="Unit Number" formik={formik} required />

@@ -129,11 +129,20 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
             city: stop.city,
             state: stop.state,
             zip: stop.zip,
-            appointmentDate: stop.appointmentDate,
-            appointmentTime: stop.appointmentTime,
+            schedulingType: stop.schedulingType,
+            appointmentStart: stop.appointmentStart,
+            appointmentEnd: stop.appointmentEnd,
+            targetDate: stop.targetDate,
+            notificationHours: stop.notificationHours,
             appointmentNumber: stop.appointmentNumber,
             contactName: stop.contactName,
             contactPhone: stop.contactPhone,
+            commodity: stop.commodity,
+            weight: stop.weight,
+            pieceCount: stop.pieceCount,
+            isHazmat: stop.isHazmat ?? false,
+            isTarp: stop.isTarp ?? false,
+            isTempControlled: stop.isTempControlled ?? false,
             notes: stop.notes,
           })),
         },
@@ -169,6 +178,12 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
         organizationId,
         deletedAt: null,
       },
+      include: LOAD_DETAIL_INCLUDE,
+    }),
+
+  findByIdUnscoped: (id) =>
+    prisma.load.findUnique({
+      where: { id },
       include: LOAD_DETAIL_INCLUDE,
     }),
 
@@ -216,11 +231,20 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
                   city: stop.city,
                   state: stop.state,
                   zip: stop.zip,
-                  appointmentDate: stop.appointmentDate,
-                  appointmentTime: stop.appointmentTime,
+                  schedulingType: stop.schedulingType,
+                  appointmentStart: stop.appointmentStart,
+                  appointmentEnd: stop.appointmentEnd,
+                  targetDate: stop.targetDate,
+                  notificationHours: stop.notificationHours,
                   appointmentNumber: stop.appointmentNumber,
                   contactName: stop.contactName,
                   contactPhone: stop.contactPhone,
+                  commodity: stop.commodity,
+                  weight: stop.weight,
+                  pieceCount: stop.pieceCount,
+                  isHazmat: stop.isHazmat ?? false,
+                  isTarp: stop.isTarp ?? false,
+                  isTempControlled: stop.isTempControlled ?? false,
                   notes: stop.notes,
                 })),
               },
@@ -397,9 +421,10 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
   },
 
   listDocuments: async (loadId, organizationId) => {
-    return prisma.document.findMany({
+    const docs = await prisma.document.findMany({
       where: {
-        loadId,
+        entityType: 'load',
+        entityId: loadId,
         organizationId,
         isArchived: false,
       },
@@ -407,7 +432,7 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
       select: {
         id: true,
         organizationId: true,
-        loadId: true,
+        entityId: true,
         type: true,
         fileName: true,
         fileSize: true,
@@ -417,6 +442,18 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
         createdAt: true,
       },
     });
+    return docs.map((doc) => ({
+      id: doc.id,
+      organizationId: doc.organizationId,
+      loadId: doc.entityId,
+      type: doc.type,
+      fileName: doc.fileName,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      uploadStatus: doc.uploadStatus,
+      notes: doc.notes,
+      createdAt: doc.createdAt,
+    }));
   },
 });
 

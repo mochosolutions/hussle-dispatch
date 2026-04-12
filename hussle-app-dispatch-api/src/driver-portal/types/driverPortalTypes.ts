@@ -19,8 +19,6 @@ export interface DriverPortalLoadSummary {
   loadNumber: string;
   status: string;
   equipmentType: string | null;
-  commodity: string | null;
-  weight: number | null;
   driverInstructions: string | null;
   stops: DriverPortalStop[];
   driver: {
@@ -38,9 +36,14 @@ export interface DriverPortalStop {
   city: string | null;
   state: string | null;
   zip: string | null;
-  appointmentDate: Date | null;
-  appointmentTime: string | null;
+  appointmentStart: Date | null;
+  appointmentEnd: Date | null;
   contactName: string | null;
   contactPhone: string | null;
+  commodity: string | null;
+  weight: number | null;
+  pieceCount: number | null;
+  isHazmat: boolean;
+  isTarp: boolean;
   notes: string | null;
 }

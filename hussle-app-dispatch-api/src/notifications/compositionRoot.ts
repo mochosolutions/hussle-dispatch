@@ -15,6 +15,7 @@ import { createNotificationSettingsService } from './services/notificationSettin
 import { createLoadNotificationOverrideService } from './services/loadNotificationOverrideService';
 import { createTrackingTokenService } from './services/trackingTokenService';
 import { initializeNotificationSubscriber } from './services/notificationSubscriber';
+import { initializeCarrierOnboardingSubscriber } from './services/carrierOnboardingSubscriber';
 import { createNotificationSettingsControllers } from './controllers/notificationSettingsController';
 import { createLoadNotificationControllers } from './controllers/loadNotificationController';
 import { createTrackingControllers } from './controllers/trackingController';
@@ -31,6 +32,7 @@ interface NotificationModuleDeps {
   logger: Logger;
   trackingBaseUrl: string;
   frontendUrl: string;
+  portalBaseUrl: string;
 }
 
 export interface NotificationModuleExports {
@@ -71,6 +73,15 @@ export const createNotificationModule = (
       smsService: deps.smsService,
       logger: deps.logger,
       trackingBaseUrl: deps.trackingBaseUrl,
+      frontendUrl: deps.frontendUrl,
+    });
+
+    await initializeCarrierOnboardingSubscriber({
+      eventBus: deps.eventBus,
+      emailService: deps.emailService,
+      smsService: deps.smsService,
+      logger: deps.logger,
+      portalBaseUrl: deps.portalBaseUrl,
       frontendUrl: deps.frontendUrl,
     });
   };

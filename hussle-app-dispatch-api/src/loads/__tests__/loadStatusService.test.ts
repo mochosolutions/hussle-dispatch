@@ -32,6 +32,14 @@ const createMockLoad = (overrides: Partial<LoadWithRelations> = {}): LoadWithRel
   dispatchFee: null,
   partnerSplit: null,
   ratePerMile: null,
+  ratePerTotalMile: null,
+  carrierPayout: null,
+  companyMargin: null,
+  driverPay: null,
+  estimatedHours: null,
+  estimatedCost: null,
+  dispatcherComm: null,
+  dispatcherUserId: null,
   rateConReceivedAt: null,
   bolUnsignedAt: null,
   bolSignedAt: null,
@@ -56,6 +64,7 @@ const createMockDeps = () => {
   const loadRepository: jest.Mocked<LoadRepoPort> = {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIdUnscoped: jest.fn(),
     list: jest.fn(),
     count: jest.fn(),
     update: jest.fn(),
@@ -147,13 +156,14 @@ describe('loadStatusService', () => {
         city: null,
         state: null,
         zip: null,
-        notes: null,
-        primaryContactName: null,
-        primaryContactPhone: null,
-        primaryContactEmail: null,
+        description: null,
+        primaryContactId: null,
         dispatchFeePercent: new Decimal('10.00'),
         partnerSplitPercent: new Decimal('50.00'),
         feeIncludesAccessorials: false,
+        feeType: 'PER_LOAD_PERCENT' as const,
+        payFromNet: false,
+        includeExpensesOnSettlement: false,
         ownerOpPayPercent: null,
         dispatchAgreementOnFile: true,
         dispatchAgreementSignedAt: null,
@@ -161,8 +171,16 @@ describe('loadStatusService', () => {
         insuranceExpiry: null,
         w9OnFile: true,
         carrierPacketOnFile: false,
-        onboardingFlowId: null,
-        onboardingStatus: null,
+        onboardingStatus: 'NOT_STARTED',
+        minimumRatePerMile: null,
+        inviteSentAt: null,
+        entryMethod: 'INVITE',
+        dispatchAgreementConsentIp: null,
+        dispatchAgreementConsentUserAgent: null,
+        costProfileVersion: 0,
+        costProfileSource: null,
+        howFoundUs: null,
+        fuelCardProviders: [],
         authorityStatus: 'active',
         billingMethod: 'DIRECT',
         factoringCompanyName: null,
@@ -199,10 +217,20 @@ describe('loadStatusService', () => {
         userRole: 'admin',
       });
 
+      // dispatchFee = 5000 x 0.10 = 500.00 (feeIncludesAccessorials=false, so acc excluded from fee base)
+      // partnerSplit = (5000 + 200) x 0.50 = 2600.00 (always based on total revenue)
+      // carrierPayout = (5000 + 200) - 500.00 = 4700.00
+      // companyMargin = 500.00 (same as dispatchFee)
       expect(deps.loadStatusRepo.updateFinancials).toHaveBeenCalledWith('load-1', {
         dispatchFee: '500.00',
-        partnerSplit: '250.00',
+        partnerSplit: '2600.00',
         ratePerMile: '5.00',
+        ratePerTotalMile: null,
+        carrierPayout: '4700.00',
+        companyMargin: '500.00',
+        driverPay: null,
+        estimatedCost: null,
+        dispatcherComm: null,
       });
     });
 

@@ -127,22 +127,13 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ carrier, onEditCompanyIn
         }
       >
         <FieldRow
-          label="Dispatch Fee"
+          label="Company Margin"
           value={
             <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              {carrier.dispatchFeePercent}%
+              {carrier.companyMarginPercent}%
             </Typography>
           }
         />
-
-        {!isDispatcher && (
-          <FieldRow
-            label="Partner Split"
-            value={
-              carrier.partnerSplitPercent ? `${carrier.partnerSplitPercent}%` : '—'
-            }
-          />
-        )}
 
         <FieldRow
           label="Fee Includes Accessorials"

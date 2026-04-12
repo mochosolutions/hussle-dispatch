@@ -12,13 +12,23 @@ export interface StopResponse {
   city: string | null;
   state: string | null;
   zip: string | null;
-  appointmentDate: string | null;
-  appointmentTime: string | null;
+  schedulingType: string;
+  appointmentStart: string | null;
+  appointmentEnd: string | null;
+  targetDate: string | null;
+  notificationHours: number | null;
+  notifiedAt: string | null;
   appointmentNumber: string | null;
   arrivalTime: string | null;
   departureTime: string | null;
   contactName: string | null;
   contactPhone: string | null;
+  commodity: string | null;
+  weight: number | null;
+  pieceCount: number | null;
+  isHazmat: boolean;
+  isTarp: boolean;
+  isTempControlled: boolean;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -36,13 +46,23 @@ export const toStopResponse = (stop: Stop): StopResponse => ({
   city: stop.city,
   state: stop.state,
   zip: stop.zip,
-  appointmentDate: stop.appointmentDate?.toISOString() ?? null,
-  appointmentTime: stop.appointmentTime,
+  schedulingType: stop.schedulingType,
+  appointmentStart: stop.appointmentStart?.toISOString() ?? null,
+  appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
+  targetDate: stop.targetDate?.toISOString() ?? null,
+  notificationHours: stop.notificationHours,
+  notifiedAt: stop.notifiedAt?.toISOString() ?? null,
   appointmentNumber: stop.appointmentNumber,
   arrivalTime: stop.arrivalTime?.toISOString() ?? null,
   departureTime: stop.departureTime?.toISOString() ?? null,
   contactName: stop.contactName,
   contactPhone: stop.contactPhone,
+  commodity: stop.commodity,
+  weight: stop.weight,
+  pieceCount: stop.pieceCount,
+  isHazmat: stop.isHazmat,
+  isTarp: stop.isTarp,
+  isTempControlled: stop.isTempControlled,
   notes: stop.notes,
   createdAt: stop.createdAt.toISOString(),
   updatedAt: stop.updatedAt.toISOString(),

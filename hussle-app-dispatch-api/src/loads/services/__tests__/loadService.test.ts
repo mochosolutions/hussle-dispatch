@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { AssignmentValidationError } from '../../../shared/errors';
+import Decimal from 'decimal.js';
+import { AssignmentValidationError, ValidationError } from '../../../shared/errors';
 import { createLoadService } from '../loadService';
 import type {
   CarrierAssignmentQueryPort,
@@ -9,6 +10,12 @@ import type {
   OrgSettingsQueryPort,
   VehicleAssignmentQueryPort,
 } from '../../types/loadTypes';
+import type { LoadStatusRepoPort } from '../../types/loadStatusTypes';
+import type { Logger } from '../../../shared/utils/logger';
+
+jest.mock('@/shared/sequenceGenerator', () => ({
+  generateSequenceNumber: jest.fn<() => Promise<string>>().mockResolvedValue('L-0001'),
+}));
 
 const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
   const baseLoad = {
@@ -21,12 +28,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     contactId: null,
     externalRefNumber: null,
     equipmentType: null,
-    isHazmat: false,
-    isTarp: false,
     isTeamDriver: false,
-    commodity: null,
-    weight: null,
-    pieceCount: null,
     loadedMiles: null,
     deadheadMiles: null,
     totalMiles: null,
@@ -35,6 +37,14 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     dispatchFee: null,
     partnerSplit: null,
     ratePerMile: null,
+    ratePerTotalMile: null,
+    carrierPayout: null,
+    companyMargin: null,
+    driverPay: null,
+    estimatedHours: null,
+    estimatedCost: null,
+    dispatcherComm: null,
+    dispatcherUserId: null,
     status: 'BOOKED',
     rateConReceivedAt: null,
     bolUnsignedAt: null,
@@ -68,6 +78,7 @@ describe('loadService assignment validation', () => {
   const mockLoadRepository: jest.Mocked<LoadRepoPort> = {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIdUnscoped: jest.fn(),
     list: jest.fn(),
     count: jest.fn(),
     update: jest.fn(),
@@ -273,5 +284,407 @@ describe('loadService assignment validation', () => {
         input: { vehicleId: 'vehicle-3' },
       }),
     ).rejects.toBeInstanceOf(AssignmentValidationError);
+  });
+});
+
+describe('updateLoad financial recalculation', () => {
+  const companyCarrier = {
+    id: 'carrier-1',
+    managedByOrgId: 'org-1',
+    carrierOrgId: null,
+    name: 'Fleet Carrier',
+    type: 'COMPANY_ASSET' as const,
+    mcNumber: null,
+    dotNumber: null,
+    ein: null,
+    phone: null,
+    email: null,
+    address: null,
+    city: null,
+    state: null,
+    zip: null,
+    primaryContactId: null,
+    dispatchFeePercent: new Decimal('10.0000'),
+    partnerSplitPercent: new Decimal('50.0000'),
+    feeIncludesAccessorials: false,
+    feeType: 'PER_LOAD_PERCENT' as const,
+    payFromNet: false,
+    includeExpensesOnSettlement: false,
+    ownerOpPayPercent: null,
+    dispatchAgreementOnFile: true,
+    dispatchAgreementSignedAt: null,
+    insuranceCertOnFile: true,
+    insuranceExpiry: null,
+    w9OnFile: true,
+    carrierPacketOnFile: false,
+    onboardingStatus: 'APPROVED' as const,
+    minimumRatePerMile: null,
+    inviteSentAt: null,
+    entryMethod: 'MANUAL',
+    dispatchAgreementConsentIp: null,
+    dispatchAgreementConsentUserAgent: null,
+    costProfileVersion: 0,
+    costProfileSource: null,
+    howFoundUs: null,
+    fuelCardProviders: [],
+    authorityStatus: 'active',
+    billingMethod: 'DIRECT' as const,
+    factoringCompanyName: null,
+    factoringCompanyEmail: null,
+    factoringSubmissionMethod: null,
+    factoringAdvanceRate: null,
+    factoringFeePercent: null,
+    factoringNoa: null,
+    outboundEmailMode: 'MANUAL' as const,
+    replyToEmail: null,
+    description: null,
+    status: 'ACTIVE' as const,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
+
+  const mockLoadRepository: jest.Mocked<LoadRepoPort> = {
+    create: jest.fn(),
+    findById: jest.fn(),
+    findByIdUnscoped: jest.fn(),
+    list: jest.fn(),
+    count: jest.fn(),
+    update: jest.fn(),
+    findBlockingLoadIdsByDriver: jest.fn(),
+    findBlockingLoadIdsByVehicle: jest.fn(),
+    softDelete: jest.fn(),
+    createCheckCall: jest.fn(),
+    listCheckCalls: jest.fn(),
+    listStatusHistory: jest.fn(),
+    listDocuments: jest.fn(),
+    findLastDeliveryCoordinates: jest.fn(),
+    findFirstPickupCoordinates: jest.fn(),
+  };
+
+  const mockOrgSettingsQuery: jest.Mocked<OrgSettingsQueryPort> = {
+    getProhibitedCommodities: jest.fn(),
+  };
+
+  const mockCarrierAssignmentQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
+    findDispatchableById: jest.fn(),
+  };
+
+  const mockDriverAssignmentQuery: jest.Mocked<DriverAssignmentQueryPort> = {
+    findAssignableById: jest.fn(),
+  };
+
+  const mockVehicleAssignmentQuery: jest.Mocked<VehicleAssignmentQueryPort> = {
+    findAssignableById: jest.fn(),
+  };
+
+  const mockLoadStatusRepo: jest.Mocked<
+    Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>
+  > = {
+    sumAccessorialCharges: jest.fn<() => Promise<string>>(),
+    updateFinancials: jest.fn<() => Promise<void>>(),
+  };
+
+  const mockLogger: jest.Mocked<Logger> = {
+    info: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  };
+
+  const loadService = createLoadService({
+    loadRepository: mockLoadRepository,
+    orgSettingsQuery: mockOrgSettingsQuery,
+    carrierAssignmentQuery: mockCarrierAssignmentQuery,
+    driverAssignmentQuery: mockDriverAssignmentQuery,
+    vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+    loadStatusRepo: mockLoadStatusRepo,
+    logger: mockLogger,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockOrgSettingsQuery.getProhibitedCommodities.mockResolvedValue([]);
+  });
+
+  it('recalculates financials when customerRate changes on BOOKED load', async () => {
+    const existing = buildLoad({
+      customerRate: new Decimal('2800'),
+      carrierId: 'carrier-1',
+      carrier: companyCarrier,
+      loadedMiles: 500,
+      status: 'BOOKED',
+    });
+    const updated = buildLoad({
+      ...existing,
+      customerRate: new Decimal('3000'),
+    });
+
+    mockLoadRepository.findById.mockResolvedValue(existing);
+    mockLoadRepository.update.mockResolvedValue(updated);
+    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
+    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
+
+    // After recalculation, findById is called again to re-fetch
+    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
+
+    await loadService.updateLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      input: { customerRate: 3000 },
+    });
+
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
+  });
+
+  it('recalculates financials when loadedMiles changes on BOOKED load', async () => {
+    const existing = buildLoad({
+      customerRate: new Decimal('2800'),
+      carrierId: 'carrier-1',
+      carrier: companyCarrier,
+      loadedMiles: 500,
+      status: 'BOOKED',
+    });
+    const updated = buildLoad({
+      ...existing,
+      loadedMiles: 600,
+    });
+
+    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
+    mockLoadRepository.update.mockResolvedValue(updated);
+    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
+    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
+
+    await loadService.updateLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      input: { loadedMiles: 600 },
+    });
+
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
+  });
+
+  it('does not recalculate when non-financial field changes', async () => {
+    const existing = buildLoad({
+      customerRate: new Decimal('2800'),
+      carrierId: 'carrier-1',
+      carrier: companyCarrier,
+      loadedMiles: 500,
+      status: 'BOOKED',
+    });
+    const updated = buildLoad({
+      ...existing,
+      dispatcherNotes: 'updated notes',
+    });
+
+    mockLoadRepository.findById.mockResolvedValue(existing);
+    mockLoadRepository.update.mockResolvedValue(updated);
+
+    await loadService.updateLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      input: { dispatcherNotes: 'updated notes' },
+    });
+
+    expect(mockLoadStatusRepo.updateFinancials).not.toHaveBeenCalled();
+  });
+
+  it('does not recalculate when carrier is null', async () => {
+    const existing = buildLoad({
+      customerRate: new Decimal('2800'),
+      carrierId: null,
+      carrier: null,
+      loadedMiles: 500,
+      status: 'BOOKED',
+    });
+    const updated = buildLoad({
+      ...existing,
+      customerRate: new Decimal('3000'),
+    });
+
+    mockLoadRepository.findById.mockResolvedValue(existing);
+    mockLoadRepository.update.mockResolvedValue(updated);
+
+    await loadService.updateLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      input: { customerRate: 3000 },
+    });
+
+    expect(mockLoadStatusRepo.updateFinancials).not.toHaveBeenCalled();
+  });
+
+  it('recalculates financials when carrierId changes on BOOKED load', async () => {
+    const existing = buildLoad({
+      customerRate: new Decimal('2800'),
+      carrierId: 'carrier-1',
+      carrier: companyCarrier,
+      driverId: null,
+      driver: null,
+      vehicleId: null,
+      vehicle: null,
+      loadedMiles: 500,
+      status: 'BOOKED',
+    });
+    const updated = buildLoad({
+      ...existing,
+      carrierId: 'carrier-2',
+      carrier: { ...companyCarrier, id: 'carrier-2' },
+    });
+
+    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
+    mockLoadRepository.update.mockResolvedValue(updated);
+    mockCarrierAssignmentQuery.findDispatchableById.mockResolvedValue({
+      id: 'carrier-2',
+      name: 'New Carrier',
+      type: 'COMPANY_ASSET',
+      dispatchAgreementOnFile: true,
+      insuranceCertOnFile: true,
+      insuranceExpiry: null,
+      w9OnFile: true,
+    });
+    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
+    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
+
+    await loadService.updateLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      input: { carrierId: 'carrier-2' },
+    });
+
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
+  });
+
+  it('re-fetches load after financial calculation on createLoad', async () => {
+    const staleLoad = buildLoad({
+      carrierId: 'carrier-1',
+      carrier: companyCarrier,
+      customerRate: new Decimal('2800'),
+      loadedMiles: 500,
+      companyMargin: null,
+      stops: [
+        {
+          id: 'stop-1',
+          loadId: 'load-1',
+          type: 'PICKUP',
+          sequence: 0,
+          contactId: null,
+          placeId: null,
+          facilityName: null,
+          address: null,
+          city: 'Dallas',
+          state: 'TX',
+          zip: null,
+          schedulingType: 'FCFS',
+          appointmentStart: null,
+          appointmentEnd: null,
+          targetDate: null,
+          notificationHours: null,
+          notifiedAt: null,
+          appointmentNumber: null,
+          arrivalTime: null,
+          departureTime: null,
+          contactName: null,
+          contactPhone: null,
+          commodity: 'Steel',
+          weight: 40000,
+          pieceCount: 1,
+          isHazmat: false,
+          isTarp: false,
+          isTempControlled: false,
+          notes: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'stop-2',
+          loadId: 'load-1',
+          type: 'DELIVERY',
+          sequence: 1,
+          contactId: null,
+          placeId: null,
+          facilityName: null,
+          address: null,
+          city: 'Houston',
+          state: 'TX',
+          zip: null,
+          schedulingType: 'FCFS',
+          appointmentStart: null,
+          appointmentEnd: null,
+          targetDate: null,
+          notificationHours: null,
+          notifiedAt: null,
+          appointmentNumber: null,
+          arrivalTime: null,
+          departureTime: null,
+          contactName: null,
+          contactPhone: null,
+          commodity: null,
+          weight: null,
+          pieceCount: null,
+          isHazmat: false,
+          isTarp: false,
+          isTempControlled: false,
+          notes: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+    });
+
+    const freshLoad = buildLoad({
+      ...staleLoad,
+      companyMargin: new Decimal('500'),
+      dispatchFee: new Decimal('280'),
+    });
+
+    mockLoadRepository.create.mockResolvedValue(staleLoad);
+    mockLoadRepository.findById.mockResolvedValue(freshLoad);
+    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
+    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
+
+    const result = await loadService.createLoad({
+      organizationId: 'org-1',
+      role: 'admin',
+      input: {
+        carrierId: 'carrier-1',
+        customerRate: 2800,
+        loadedMiles: 500,
+        stops: [
+          { type: 'PICKUP', sequence: 0, city: 'Dallas', state: 'TX', commodity: 'Steel', weight: 40000, pieceCount: 1 },
+          { type: 'DELIVERY', sequence: 1, city: 'Houston', state: 'TX' },
+        ],
+      },
+    });
+
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
+    expect(mockLoadRepository.findById).toHaveBeenCalledWith('load-1', 'org-1');
+    expect(result.companyMargin).toEqual(new Decimal('500'));
+  });
+
+  it('rejects financial field change on DISPATCHED load', async () => {
+    const existing = buildLoad({
+      customerRate: new Decimal('2800'),
+      carrierId: 'carrier-1',
+      carrier: companyCarrier,
+      loadedMiles: 500,
+      status: 'DISPATCHED',
+    });
+
+    mockLoadRepository.findById.mockResolvedValue(existing);
+
+    await expect(
+      loadService.updateLoad({
+        id: 'load-1',
+        organizationId: 'org-1',
+        role: 'admin',
+        input: { customerRate: 3000 },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 });

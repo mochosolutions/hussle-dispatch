@@ -1,6 +1,5 @@
 import type { Request, Response, RequestHandler } from 'express';
 import { sendSingle } from '@/shared/responseEnvelope';
-import { UnauthorizedError } from '@/shared/errors';
 import type { SettingsService } from '../services/settingsService';
 import { updateSettingsMapper } from './mappers/updateSettingsMapper';
 import { toSettingsResponse } from './transformers/settingsTransformer';
@@ -16,11 +15,7 @@ export interface SettingsControllers {
 
 export const createSettingsControllers = (deps: SettingsControllerDeps): SettingsControllers => ({
   get: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-
-    if (organizationId === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
 
     const settings = await deps.settingsService.getSettings(organizationId);
     sendSingle(res, toSettingsResponse(settings));

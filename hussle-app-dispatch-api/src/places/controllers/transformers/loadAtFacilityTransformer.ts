@@ -1,6 +1,9 @@
-import type { Load } from '@prisma/client';
+import type { Load, Stop } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
+import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
+
+type LoadWithStops = Load & { stops: Stop[] };
 
 const decimalToNumber = (value: Decimal | null): number | null => {
   if (value === null) {
@@ -31,30 +34,34 @@ export interface LoadAtFacilityResponse {
   updatedAt: Date;
 }
 
-export const toLoadAtFacilityResponse = (load: Load): LoadAtFacilityResponse => ({
-  id: load.id,
-  organizationId: load.organizationId,
-  loadNumber: load.loadNumber,
-  carrierId: load.carrierId,
-  driverId: load.driverId,
-  vehicleId: load.vehicleId,
-  contactId: load.contactId,
-  externalRefNumber: load.externalRefNumber,
-  equipmentType: load.equipmentType,
-  commodity: load.commodity,
-  weight: load.weight,
-  loadedMiles: load.loadedMiles,
-  totalMiles: load.totalMiles,
-  customerRate: decimalToNumber(load.customerRate),
-  carrierRate: decimalToNumber(load.carrierRate),
-  ratePerMile: decimalToNumber(load.ratePerMile),
-  status: load.status,
-  createdAt: load.createdAt,
-  updatedAt: load.updatedAt,
-});
+export const toLoadAtFacilityResponse = (load: LoadWithStops): LoadAtFacilityResponse => {
+  const cargo = computeCommoditySummary(load.stops);
+
+  return {
+    id: load.id,
+    organizationId: load.organizationId,
+    loadNumber: load.loadNumber,
+    carrierId: load.carrierId,
+    driverId: load.driverId,
+    vehicleId: load.vehicleId,
+    contactId: load.contactId,
+    externalRefNumber: load.externalRefNumber,
+    equipmentType: load.equipmentType,
+    commodity: cargo.commodity ?? null,
+    weight: cargo.weight ?? null,
+    loadedMiles: load.loadedMiles,
+    totalMiles: load.totalMiles,
+    customerRate: decimalToNumber(load.customerRate),
+    carrierRate: decimalToNumber(load.carrierRate),
+    ratePerMile: decimalToNumber(load.ratePerMile),
+    status: load.status,
+    createdAt: load.createdAt,
+    updatedAt: load.updatedAt,
+  };
+};
 
 export const toLoadsAtFacilityEnvelope = (
-  loads: Load[],
+  loads: LoadWithStops[],
   meta: PaginationMeta,
 ): { data: LoadAtFacilityResponse[]; meta: PaginationMeta } => ({
   data: loads.map((load) => toLoadAtFacilityResponse(load)),

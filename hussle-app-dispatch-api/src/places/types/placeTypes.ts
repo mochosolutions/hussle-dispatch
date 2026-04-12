@@ -1,4 +1,4 @@
-import type { Place, FacilityType, DockType, GeoSource, Load } from '@prisma/client';
+import type { Place, Prisma, FacilityType, DockType, GeoSource, Load, Stop } from '@prisma/client';
 import type { SortOrder } from '@/shared/pagination';
 
 export interface CreatePlaceInput {
@@ -14,8 +14,9 @@ export interface CreatePlaceInput {
   longitude?: number;
   geoSource?: GeoSource;
   facilityType?: FacilityType;
-  operatingHours?: string;
-  receivingHours?: string;
+  facilityHours?: Prisma.InputJsonValue;
+  is24Hours?: boolean;
+  timezone?: string;
   appointmentRequired?: boolean;
   dockType?: DockType;
   contactName?: string;
@@ -41,8 +42,9 @@ export interface UpdatePlaceInput {
   longitude?: number;
   geoSource?: GeoSource;
   facilityType?: FacilityType | null;
-  operatingHours?: string;
-  receivingHours?: string;
+  facilityHours?: Prisma.InputJsonValue;
+  is24Hours?: boolean;
+  timezone?: string;
   appointmentRequired?: boolean;
   dockType?: DockType | null;
   contactName?: string;
@@ -102,7 +104,7 @@ export interface FindLoadsAtFacilityInput {
 }
 
 export interface FindLoadsAtFacilityResult {
-  data: Load[];
+  data: (Load & { stops: Stop[] })[];
   total: number;
 }
 
@@ -132,8 +134,9 @@ export interface PlaceResponse {
   longitude: number | null;
   geoSource: GeoSource;
   facilityType: FacilityType | null;
-  operatingHours: string | null;
-  receivingHours: string | null;
+  facilityHours: Prisma.JsonValue;
+  is24Hours: boolean;
+  timezone: string | null;
   appointmentRequired: boolean;
   dockType: DockType | null;
   contactName: string | null;

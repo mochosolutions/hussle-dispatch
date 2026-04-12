@@ -14,7 +14,7 @@ export const companyInfoSchema = Yup.object().shape({
 });
 
 export const dispatchTermsSchema = Yup.object().shape({
-  dispatchFeePercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').required('Required'),
+  companyMarginPercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').required('Required'),
   feeIncludesAccessorials: Yup.boolean(),
   dispatchAgreementOnFile: Yup.boolean(),
   dispatchAgreementSignedAt: Yup.string().nullable(),

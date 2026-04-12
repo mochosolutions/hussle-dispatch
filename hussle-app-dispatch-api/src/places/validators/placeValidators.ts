@@ -24,8 +24,9 @@ const createBodySchema = Yup.object({
   facilityType: Yup.mixed<FacilityType>()
     .oneOf(facilityTypeValues, 'facilityType must be a valid FacilityType')
     .notRequired(),
-  operatingHours: optionalTrimmed,
-  receivingHours: optionalTrimmed,
+  facilityHours: Yup.array().notRequired(),
+  is24Hours: Yup.boolean().notRequired(),
+  timezone: optionalTrimmed,
   appointmentRequired: Yup.boolean().notRequired(),
   dockType: Yup.mixed<DockType>()
     .oneOf(dockTypeValues, 'dockType must be a valid DockType')

@@ -4,3 +4,4 @@ export { VehiclesTab } from './VehiclesTab';
 export { LoadHistoryTab } from './LoadHistoryTab';
 export { NotesTab } from './NotesTab';
 export { DocumentsTab } from './DocumentsTab';
+export { OnboardingTab } from './OnboardingTab';

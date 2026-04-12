@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
 import { CarrierKPI } from '../../components/CarrierKPI';
+import { InviteCarrierButton } from '../../components/InviteCarrierButton';
 import { getCarrierStats } from 'utils/api/fleet/carrierApi';
 import type { CarrierStats } from 'utils/api/fleet/carrierApi';
 import { CARRIER_DETAIL_TAB_ITEMS } from '../../constants';
@@ -21,6 +22,7 @@ import {
   LoadHistoryTab,
   NotesTab,
   DocumentsTab,
+  OnboardingTab,
 } from './tabs';
 
 const CarrierDetailEditable: React.FC = () => {
@@ -69,8 +71,20 @@ const CarrierDetailEditable: React.FC = () => {
             status={`CARRIER_${c.status ?? 'DRAFT'}`}
             breadcrumb={{ label: 'Carriers', href: '/carriers' }}
             onBack={handleBack}
+            actions={
+              <InviteCarrierButton
+                carrierId={c.id}
+                carrierName={c.name}
+                carrierEmail={c.email}
+                onboardingStatus={c.status}
+              />
+            }
             summary={<CarrierKPI c={c} stats={carrierStats} statsLoading={statsLoading} />}
-            tabs={CARRIER_DETAIL_TAB_ITEMS}
+            tabs={
+              c.status !== 'DRAFT'
+                ? [...CARRIER_DETAIL_TAB_ITEMS, { value: 'onboarding', label: 'Onboarding' }]
+                : CARRIER_DETAIL_TAB_ITEMS
+            }
             activeTab={activeTab}
             onTabChange={setActiveTab}
           >
@@ -97,6 +111,14 @@ const CarrierDetailEditable: React.FC = () => {
             {activeTab === 'documents' && id && <DocumentsTab carrierId={id} />}
 
             {activeTab === 'notes' && id && <NotesTab carrierId={id} />}
+
+            {activeTab === 'onboarding' && id && (
+              <OnboardingTab
+                carrierId={id}
+                carrierName={c.name}
+                onStatusChanged={() => dispatch(fetchCarrierDetailsRequest({ id }))}
+              />
+            )}
           </DetailLayout>
         )}
       </DataGuard>

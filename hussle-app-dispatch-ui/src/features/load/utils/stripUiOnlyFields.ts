@@ -26,31 +26,16 @@ export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
     appointmentNumber: stop.appointmentNumber || undefined,
     contactName: stop.contactName || undefined,
     contactPhone: stop.contactPhone || undefined,
+    commodity: stop.commodity || undefined,
+    weight: stop.weight ? Number(stop.weight) : undefined,
+    pieceCount: stop.pieceCount ? Number(stop.pieceCount) : undefined,
+    isHazmat: stop.isHazmat ?? false,
+    isTarp: stop.isTarp ?? false,
+    isTempControlled: stop.isTempControlled ?? false,
     notes: stop.notes || undefined,
   }));
 
-  // Map first pickup commodity to top-level fields
-  const firstPickup = (values.stops ?? []).find((s) => s.type === 'PICKUP');
-  const firstCommodity = firstPickup?.commodities?.[0];
-  const commodity = firstCommodity?.description || values.commodity || undefined;
-  const weight = firstCommodity?.weight
-    ? Number(firstCommodity.weight) || undefined
-    : values.weight || undefined;
-  const pieceCount = firstCommodity?.pieces
-    ? Number(firstCommodity.pieces) || undefined
-    : values.pieceCount || undefined;
-  const isHazmat =
-    (values.stops ?? []).some(
-      (s) => s.type === 'PICKUP' && (s.commodities ?? []).some((c) => c.isHazmat),
-    ) || values.isHazmat;
-  const isTarp =
-    (values.stops ?? []).some(
-      (s) => s.type === 'PICKUP' && (s.commodities ?? []).some((c) => c.isTarp),
-    ) || values.isTarp;
-
-  // Carrier rate is auto-calculated by RateSidebar and synced to formik
   const customerRate = Number(values.customerRate) || undefined;
-  const carrierRate = Number(values.carrierRate) || undefined;
 
   // Map accessorials
   const accessorialCharges: AccessorialChargeInput[] | undefined =
@@ -71,20 +56,11 @@ export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
     customerId: values.customerId || undefined,
     externalRefNumber: values.externalRefNumber || undefined,
     equipmentType: values.equipmentType as CreateLoadInput['equipmentType'],
-    isHazmat: isHazmat || false,
-    isTarp: isTarp || false,
     isTeamDriver: values.isTeamDriver || false,
-    commodity,
-    weight: typeof weight === 'number' ? weight : undefined,
-    pieceCount: typeof pieceCount === 'number' ? pieceCount : undefined,
     loadedMiles: values.loadedMiles || undefined,
     deadheadMiles: values.deadheadMiles || undefined,
     totalMiles: values.totalMiles || undefined,
     customerRate,
-    carrierRate,
-    dispatchFee: values.dispatchFee || undefined,
-    partnerSplit: values.partnerSplit || undefined,
-    ratePerMile: values.ratePerMile || undefined,
     dispatcherNotes: values.dispatcherNotes || undefined,
     driverInstructions: values.driverInstructions || undefined,
     stops,

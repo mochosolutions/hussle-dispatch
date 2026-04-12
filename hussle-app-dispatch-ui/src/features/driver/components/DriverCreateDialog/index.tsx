@@ -82,16 +82,7 @@ export const DriverCreateDrawer: React.FC<DriverCreateDrawerProps> = ({
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <CarrierAutocomplete
-            value={formik.values.carrierId}
-            onChange={(carrierId) => {
-              void formik.setFieldValue('carrierId', carrierId);
-            }}
-            onBlur={() => {
-              void formik.setFieldTouched('carrierId', true);
-            }}
-            label="Carrier"
-          />
+          <CarrierAutocomplete formik={formik} />
 
           <Typography variant="subtitle2" sx={sectionLabelSx}>
             Personal Info

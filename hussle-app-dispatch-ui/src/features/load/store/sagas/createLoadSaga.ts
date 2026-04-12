@@ -3,14 +3,14 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { enqueueSnackbar } from 'notistack';
 import { getNavigate } from 'utils/getNavigate';
 import { createLoad } from 'utils/api/loads/loadApi';
-import { presignDocument, uploadDocumentToS3, confirmDocument } from 'utils/api/documents/documentApi';
+import {
+  presignDocument,
+  uploadDocumentToS3,
+  confirmDocument,
+} from 'utils/api/documents/documentApi';
 import { createContact } from 'utils/api/fleet/contactApi';
 import type { CreateLoadInput, LoadListItem, QueuedDocument } from '../../types';
-import {
-  createLoadSuccess,
-  createLoadFailure,
-  fetchLoadsRequest,
-} from '../reducers/loadPageSlice';
+import { createLoadSuccess, createLoadFailure, fetchLoadsRequest } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
 
 interface CreateLoadPayload {
@@ -39,14 +39,17 @@ function* uploadQueuedDocuments(loadId: string, documents: QueuedDocument[]) {
   return failed;
 }
 
-export function* createLoadSaga(
-  action: PayloadAction<CreateLoadPayload>,
-): Generator {
+// Remove automatic contact creation contacts should be created prior to load creation
+//
+export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Generator {
   try {
     const { data, queuedDocuments } = action.payload;
 
+    console.log('Creating load with data:', { data });
+
     const load = (yield call(createLoad, data)) as SagaReturnType<typeof createLoad>;
 
+    console.log('Load created successfully:', { load });
     // Upload queued documents after load creation
     let docsFailed = 0;
     if (queuedDocuments.length > 0) {
@@ -65,15 +68,16 @@ export function* createLoadSaga(
       equipmentType: load.equipmentType,
       commodity: load.commodity,
       customerRate: load.customerRate,
-      carrierRate: load.carrierRate,
+      carrierPayout: load.carrierPayout,
+      companyMargin: load.companyMargin,
+      companyNet: load.companyNet,
       totalMiles: load.totalMiles,
       ratePerMile: load.ratePerMile,
+      ratePerTotalMile: load.ratePerTotalMile ?? null,
       carrierId: load.carrierId,
       carrierName: load.carrier?.name ?? null,
       driverId: load.driverId,
-      driverName: load.driver
-        ? `${load.driver.firstName} ${load.driver.lastName}`
-        : null,
+      driverName: load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : null,
       customerName: load.customer?.companyName ?? null,
       contactName: load.contact
         ? `${load.contact.firstName} ${load.contact.lastName}`.trim()
@@ -87,6 +91,7 @@ export function* createLoadSaga(
       accessorialChargeCount: load.accessorialCharges.length,
       createdAt: load.createdAt,
       updatedAt: load.updatedAt,
+      pickupDate: origin?.appointmentDate ?? null,
     };
 
     yield put(loadActions.addOne(loadListItem));
@@ -126,11 +131,9 @@ export function* createLoadSaga(
         }
       }
       if (saved > 0) {
-        yield call(
-          enqueueSnackbar,
-          `${String(saved)} new contact${saved > 1 ? 's' : ''} saved`,
-          { variant: 'info' },
-        );
+        yield call(enqueueSnackbar, `${String(saved)} new contact${saved > 1 ? 's' : ''} saved`, {
+          variant: 'info',
+        });
       }
     }
 
@@ -160,11 +163,7 @@ export function* createLoadSaga(
     }
 
     // Extract API validation errors from Axios response
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'response' in error
-    ) {
+    if (typeof error === 'object' && error !== null && 'response' in error) {
       const resp = (error as { response?: { data?: { errors?: { message: string }[] } } }).response;
       const apiErrors = resp?.data?.errors;
       if (Array.isArray(apiErrors) && apiErrors.length > 0) {

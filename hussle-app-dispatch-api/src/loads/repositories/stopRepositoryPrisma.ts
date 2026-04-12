@@ -99,6 +99,14 @@ export const stopRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
     });
   },
 
+  findById: async (id, organizationId) =>
+    prisma.stop.findFirst({
+      where: {
+        id,
+        load: { organizationId },
+      },
+    }),
+
   findByLoadId: async (loadId, organizationId) => {
     return prisma.stop.findMany({
       where: {

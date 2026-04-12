@@ -38,16 +38,16 @@ const loadRoutes = {
         },
       },
     },
-    {
-      path: 'create',
-      element: <CreateLoadPage />,
-      handle: {
-        mainContentProps: {
-          container: false,
-          contentPadding: 0,
-        },
-      },
-    },
+    // {
+    //   path: 'create',
+    //   element: <CreateLoadPage />,
+    //   handle: {
+    //     mainContentProps: {
+    //       container: false,
+    //       contentPadding: 0,
+    //     },
+    //   },
+    // },
     {
       path: ':id',
       element: <LoadDetailPage />,

@@ -129,6 +129,8 @@ export type DocumentListItem = Pick<
 // Repository port
 // ---------------------------------------------------------------------------
 
+import type { Prisma } from '@prisma/client';
+
 export interface CreateDocumentData {
   organizationId: string;
   entityType: string;
@@ -141,7 +143,7 @@ export interface CreateDocumentData {
   uploadStatus: string;
   uploadedByUserId?: string;
   expiresAt?: Date;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 }
 
 export interface DocumentRepoPort {

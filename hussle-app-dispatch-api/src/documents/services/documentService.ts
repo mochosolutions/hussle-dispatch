@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { StorageProvider } from '@/shared/storage';
 import type { EventBus } from '@/shared/messaging';
 import type {
@@ -37,7 +38,6 @@ const buildStorageKey = (input: PresignInput): string => {
   return `${input.organizationId}/${input.entityType}s/${input.entityId}/${typeLower}/${input.fileName}`;
 };
 
-
 export const createDocumentService = (deps: DocumentServiceDeps): DocumentService => ({
   presign: async (input: PresignInput): Promise<PresignResult> => {
     const s3Key = buildStorageKey(input);
@@ -59,7 +59,9 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       uploadStatus: UPLOAD_STATUS.PENDING,
       uploadedByUserId: input.uploadedByUserId,
       ...(input.expiresAt !== undefined && { expiresAt: new Date(input.expiresAt) }),
-      ...(input.metadata !== undefined && { metadata: input.metadata }),
+      ...(input.metadata !== undefined && {
+        metadata: input.metadata as unknown as Prisma.InputJsonValue,
+      }),
     });
 
     return {
@@ -70,10 +72,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
   },
 
   confirm: async (input: ConfirmInput): Promise<Document> => {
-    const document = await deps.documentRepository.findById(
-      input.documentId,
-      input.organizationId,
-    );
+    const document = await deps.documentRepository.findById(input.documentId, input.organizationId);
 
     if (document === null) {
       throw new DocumentNotFoundError(input.documentId);

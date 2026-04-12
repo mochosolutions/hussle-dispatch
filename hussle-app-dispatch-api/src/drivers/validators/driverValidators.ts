@@ -41,6 +41,7 @@ const createBodySchema = Yup.object({
   isAvailable: Yup.boolean().notRequired(),
   status: optionalTrimmed,
   notes: optionalTrimmed,
+  timezone: optionalTrimmed,
 });
 
 const updateBodySchema = createBodySchema

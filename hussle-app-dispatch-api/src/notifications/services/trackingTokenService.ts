@@ -61,6 +61,10 @@ export const createTrackingTokenService = (
       throw new NotFoundError('Tracking link has expired.');
     }
 
+    if (tokenRecord.loadId === null) {
+      throw new NotFoundError('Load not found.');
+    }
+
     const summary = await deps.loadQuery.findTrackingSummary(tokenRecord.loadId);
 
     if (summary === null) {

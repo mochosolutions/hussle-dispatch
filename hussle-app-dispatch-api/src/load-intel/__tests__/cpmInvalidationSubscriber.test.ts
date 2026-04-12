@@ -76,15 +76,22 @@ describe('initializeCpmInvalidationSubscriber', () => {
     return {
       expenseChanged: extractHandler(deps.eventBus.subscribe, 'vehicle.expense.changed'),
       expenseCreated: extractHandler(deps.eventBus.subscribe, 'vehicle.expense.created'),
+      expenseCreatedNew: extractHandler(deps.eventBus.subscribe, 'expense.created'),
+      expenseUpdated: extractHandler(deps.eventBus.subscribe, 'expense.updated'),
+      expenseDeleted: extractHandler(deps.eventBus.subscribe, 'expense.deleted'),
+      recurringExpenseGenerated: extractHandler(
+        deps.eventBus.subscribe,
+        'recurring-expense.generated',
+      ),
     };
   };
 
-  it('subscribes to vehicle.expense.changed and vehicle.expense.created events', async () => {
+  it('subscribes to all expense-related events', async () => {
     // Arrange & Act
     await initializeCpmInvalidationSubscriber(deps);
 
     // Assert
-    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(2);
+    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(6);
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'vehicle.expense.changed',
       'cpm-invalidation',
@@ -92,6 +99,26 @@ describe('initializeCpmInvalidationSubscriber', () => {
     );
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'vehicle.expense.created',
+      'cpm-invalidation',
+      expect.any(Function),
+    );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'expense.created',
+      'cpm-invalidation',
+      expect.any(Function),
+    );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'expense.updated',
+      'cpm-invalidation',
+      expect.any(Function),
+    );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'expense.deleted',
+      'cpm-invalidation',
+      expect.any(Function),
+    );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'recurring-expense.generated',
       'cpm-invalidation',
       expect.any(Function),
     );
@@ -140,6 +167,193 @@ describe('initializeCpmInvalidationSubscriber', () => {
           vehicleId: 'vehicle-2',
           organizationId: 'org-456',
           expenseId: 'expense-1',
+        }),
+      );
+    });
+  });
+
+  describe('expense.created handler', () => {
+    it('calls redisPort.del with intel:feed:{organizationId}', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+
+      // Act
+      await handlers.expenseCreatedNew({
+        expenseId: 'expense-10',
+        vehicleId: 'vehicle-3',
+        organizationId: 'org-789',
+        category: 'FUEL',
+      });
+
+      // Assert
+      expect(deps.redisPort.del).toHaveBeenCalledWith('intel:feed:org-789');
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        'CPM cache invalidated on expense.created',
+        expect.objectContaining({
+          expenseId: 'expense-10',
+          vehicleId: 'vehicle-3',
+          organizationId: 'org-789',
+        }),
+      );
+    });
+
+    it('logs error and does not throw when redis fails', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+      deps.redisPort.del.mockRejectedValue(new Error('Redis down'));
+
+      // Act & Assert — should not throw
+      await handlers.expenseCreatedNew({
+        expenseId: 'expense-10',
+        vehicleId: 'vehicle-3',
+        organizationId: 'org-789',
+        category: 'FUEL',
+      });
+
+      expect(deps.logger.error).toHaveBeenCalledWith(
+        'CPM cache invalidation failed on expense.created',
+        expect.objectContaining({
+          expenseId: 'expense-10',
+          vehicleId: 'vehicle-3',
+          organizationId: 'org-789',
+          error: 'Redis down',
+        }),
+      );
+    });
+  });
+
+  describe('expense.updated handler', () => {
+    it('calls redisPort.del with intel:feed:{organizationId}', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+
+      // Act
+      await handlers.expenseUpdated({
+        expenseId: 'expense-11',
+        vehicleId: 'vehicle-4',
+        organizationId: 'org-100',
+      });
+
+      // Assert
+      expect(deps.redisPort.del).toHaveBeenCalledWith('intel:feed:org-100');
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        'CPM cache invalidated on expense.updated',
+        expect.objectContaining({
+          expenseId: 'expense-11',
+          vehicleId: 'vehicle-4',
+          organizationId: 'org-100',
+        }),
+      );
+    });
+
+    it('logs error and does not throw when redis fails', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+      deps.redisPort.del.mockRejectedValue(new Error('Redis timeout'));
+
+      // Act & Assert — should not throw
+      await handlers.expenseUpdated({
+        expenseId: 'expense-11',
+        vehicleId: 'vehicle-4',
+        organizationId: 'org-100',
+      });
+
+      expect(deps.logger.error).toHaveBeenCalledWith(
+        'CPM cache invalidation failed on expense.updated',
+        expect.objectContaining({
+          error: 'Redis timeout',
+        }),
+      );
+    });
+  });
+
+  describe('expense.deleted handler', () => {
+    it('calls redisPort.del with intel:feed:{organizationId}', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+
+      // Act
+      await handlers.expenseDeleted({
+        expenseId: 'expense-12',
+        vehicleId: 'vehicle-5',
+        organizationId: 'org-200',
+      });
+
+      // Assert
+      expect(deps.redisPort.del).toHaveBeenCalledWith('intel:feed:org-200');
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        'CPM cache invalidated on expense.deleted',
+        expect.objectContaining({
+          expenseId: 'expense-12',
+          vehicleId: 'vehicle-5',
+          organizationId: 'org-200',
+        }),
+      );
+    });
+
+    it('logs error and does not throw when redis fails', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+      deps.redisPort.del.mockRejectedValue(new Error('Redis connection refused'));
+
+      // Act & Assert — should not throw
+      await handlers.expenseDeleted({
+        expenseId: 'expense-12',
+        vehicleId: 'vehicle-5',
+        organizationId: 'org-200',
+      });
+
+      expect(deps.logger.error).toHaveBeenCalledWith(
+        'CPM cache invalidation failed on expense.deleted',
+        expect.objectContaining({
+          error: 'Redis connection refused',
+        }),
+      );
+    });
+  });
+
+  describe('recurring-expense.generated handler', () => {
+    it('calls redisPort.del with intel:feed:{organizationId}', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+
+      // Act
+      await handlers.recurringExpenseGenerated({
+        vehicleId: 'vehicle-6',
+        organizationId: 'org-300',
+        count: 3,
+      });
+
+      // Assert
+      expect(deps.redisPort.del).toHaveBeenCalledWith('intel:feed:org-300');
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        'CPM cache invalidated on recurring-expense.generated',
+        expect.objectContaining({
+          vehicleId: 'vehicle-6',
+          organizationId: 'org-300',
+          count: 3,
+        }),
+      );
+    });
+
+    it('logs error and does not throw when redis fails', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+      deps.redisPort.del.mockRejectedValue(new Error('Redis timeout'));
+
+      // Act & Assert — should not throw
+      await handlers.recurringExpenseGenerated({
+        vehicleId: 'vehicle-6',
+        organizationId: 'org-300',
+        count: 3,
+      });
+
+      expect(deps.logger.error).toHaveBeenCalledWith(
+        'CPM cache invalidation failed on recurring-expense.generated',
+        expect.objectContaining({
+          vehicleId: 'vehicle-6',
+          organizationId: 'org-300',
+          error: 'Redis timeout',
         }),
       );
     });

@@ -15,12 +15,17 @@ import { loadsRouter } from './loads';
 import { placesRouter } from './places';
 import { vehiclesRouter } from './vehicles';
 import { loadIntelRouter } from './load-intel';
+import { loadBoardRouter } from './load-board';
 import { invoicesRouter } from './invoices';
 import { notificationsRouter } from './notifications';
 import { dashboardRouter } from './dashboard';
 import { settingsRouter } from './settings';
 import { mapsRouter } from './maps';
 import { driverPortalRouter } from './driver-portal';
+import { carrierPortalRouter } from './carrier-portal';
+import { expensesRouter, recurringExpensesRouter, driverPortalExpensesRouter } from './expenses';
+import { iftaRouter } from './ifta';
+import { settlementsRouter } from './settlements';
 
 // Side-effect imports: initialize subscribers on startup
 import './audit';
@@ -62,8 +67,8 @@ export const createApp = (): express.Application => {
     app.use(morgan('combined'));
   }
 
-  // Body parsing
-  app.use(express.json());
+  // Body parsing — 2MB limit to accommodate large load-board ingest payloads
+  app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
 
   // Cookie parsing (auth reads tokens from HttpOnly cookies)
@@ -82,12 +87,19 @@ export const createApp = (): express.Application => {
   app.use('/api/v1/loads', loadsRouter);
   app.use('/api/v1/vehicles', vehiclesRouter);
   app.use('/api/v1/load-intel', loadIntelRouter);
+  app.use('/api/v1/load-board', loadBoardRouter);
   app.use('/api/v1/invoices', invoicesRouter);
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/dashboard', dashboardRouter);
   app.use('/api/v1/settings', settingsRouter);
   app.use('/api/v1/maps', mapsRouter);
   app.use('/api/v1/driver-portal', driverPortalRouter);
+  app.use('/api/v1/carrier-portal', carrierPortalRouter);
+  app.use('/api/v1/expenses', expensesRouter);
+  app.use('/api/v1/recurring-expenses', recurringExpensesRouter);
+  app.use('/api/v1/driver-portal/expenses', driverPortalExpensesRouter);
+  app.use('/api/v1/ifta', iftaRouter);
+  app.use('/api/v1/settlements', settlementsRouter);
 
   // Local storage file-serving route (dev/test only)
   if (env.STORAGE_BACKEND === 'local') {

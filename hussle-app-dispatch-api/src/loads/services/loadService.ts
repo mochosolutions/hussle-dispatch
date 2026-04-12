@@ -1,3 +1,4 @@
+import type { CarrierType } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import {
   AssignmentValidationError,
@@ -16,13 +17,17 @@ import type { LoadStatusRepoPort } from '../types/loadStatusTypes';
 import type {
   CarrierAssignmentQueryPort,
   CustomerQueryPort,
+  DispatcherProfileQueryPort,
   DriverAssignmentQueryPort,
   LoadAssignmentInput,
   LoadAssignmentWarning,
   LoadRepoPort,
   LoadWithRelations,
   OrgSettingsQueryPort,
+  StopInput,
+  UpdateLoadInput,
   VehicleAssignmentQueryPort,
+  VehicleCpmQueryPort,
 } from '../types/loadTypes';
 import type {
   AssignLoadServiceInput,
@@ -81,7 +86,7 @@ const getSafeSortField = (field: string): (typeof listSortableFields)[number] =>
   return 'createdAt';
 };
 
-const validateStops = (stops: { type: string }[]): void => {
+export const validateStops = (stops: StopInput[]): void => {
   const hasPickup = stops.some((stop) => stop.type === 'PICKUP');
   const hasDelivery = stops.some((stop) => stop.type === 'DELIVERY');
 
@@ -92,7 +97,37 @@ const validateStops = (stops: { type: string }[]): void => {
   if (!hasDelivery) {
     throw new ValidationError('At least one DELIVERY stop is required');
   }
+
+  stops.forEach((stop, index) => {
+    if (
+      stop.schedulingType === 'APPOINTMENT' &&
+      (stop.appointmentStart === undefined || stop.appointmentStart === null)
+    ) {
+      throw new ValidationError(
+        `Stop ${String(index + 1)}: appointmentStart is required when schedulingType is APPOINTMENT.`,
+      );
+    }
+
+    if (
+      stop.schedulingType === 'NOTIFICATION' &&
+      (stop.notificationHours === undefined || stop.notificationHours === null)
+    ) {
+      throw new ValidationError(
+        `Stop ${String(index + 1)}: notificationHours is required when schedulingType is NOTIFICATION.`,
+      );
+    }
+
+    if (
+      stop.schedulingType === 'FCFS' &&
+      (stop.targetDate === undefined || stop.targetDate === null)
+    ) {
+      throw new ValidationError(
+        `Stop ${String(index + 1)}: targetDate is required when schedulingType is FCFS.`,
+      );
+    }
+  });
 };
+
 
 const checkProhibitedCommodity = async (
   commodity: string | undefined,
@@ -110,6 +145,30 @@ const checkProhibitedCommodity = async (
 
   if (match !== undefined) {
     throw new ProhibitedCommodityError(commodity);
+  }
+};
+
+interface ProhibitedCommodityCheckInput {
+  stops: StopInput[] | undefined;
+  organizationId: string;
+}
+
+const checkProhibitedCommodities = async (
+  input: ProhibitedCommodityCheckInput,
+  orgSettingsQuery: OrgSettingsQueryPort,
+): Promise<void> => {
+  if (input.stops === undefined) {
+    return;
+  }
+
+  const stopCommodities = input.stops
+    .map((stop) => stop.commodity)
+    .filter((c): c is string => c !== undefined && c.length > 0);
+
+  const uniqueStopCommodities = [...new Set(stopCommodities)];
+
+  for (const stopCommodity of uniqueStopCommodities) {
+    await checkProhibitedCommodity(stopCommodity, input.organizationId, orgSettingsQuery);
   }
 };
 
@@ -158,6 +217,8 @@ interface LoadServiceDeps {
   vehicleAssignmentQuery: VehicleAssignmentQueryPort;
   customerQuery?: CustomerQueryPort;
   loadStatusRepo?: Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>;
+  vehicleCpmQuery?: VehicleCpmQueryPort;
+  dispatcherProfileQuery?: DispatcherProfileQueryPort;
   eventBus?: EventBus;
   logger?: Logger;
 }
@@ -232,7 +293,7 @@ const validateAssignmentState = async (
   let carrier: {
     id: string;
     name: string;
-    type: 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
+    type: CarrierType;
     dispatchAgreementOnFile: boolean;
     insuranceCertOnFile: boolean;
     insuranceExpiry: Date | null;
@@ -432,6 +493,43 @@ const findLoadOrThrow = async (
   return load;
 };
 
+const hasFinancialRelevantFieldChanged = (
+  input: UpdateLoadInput,
+  existing: LoadWithRelations,
+  resolvedAssignment: ResolvedAssignmentState | undefined,
+): boolean => {
+  if (
+    input.customerRate !== undefined &&
+    String(input.customerRate) !== String(existing.customerRate)
+  ) {
+    return true;
+  }
+
+  if (
+    input.loadedMiles !== undefined &&
+    input.loadedMiles !== (existing.loadedMiles ?? undefined)
+  ) {
+    return true;
+  }
+
+  if (
+    input.totalMiles !== undefined &&
+    input.loadedMiles === undefined &&
+    input.totalMiles !== (existing.loadedMiles ?? undefined)
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedAssignment !== undefined &&
+    resolvedAssignment.carrierId !== existing.carrierId
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
   createLoad: async ({ organizationId, input }: CreateLoadServiceInput) => {
     const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
@@ -443,7 +541,13 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     validateStops(input.stops);
 
-    await checkProhibitedCommodity(input.commodity, organizationId, deps.orgSettingsQuery);
+    await checkProhibitedCommodities(
+      {
+        stops: input.stops,
+        organizationId,
+      },
+      deps.orgSettingsQuery,
+    );
 
     await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
 
@@ -451,12 +555,42 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       await validateAssignmentState(resolvedAssignment, organizationId, undefined, deps);
     }
 
+    const loadedMiles = input.loadedMiles ?? input.totalMiles;
+
+    const computedTotalMiles =
+      loadedMiles !== undefined && loadedMiles !== null
+        ? loadedMiles + (input.deadheadMiles ?? 0)
+        : undefined;
+
     const loadNumber = await generateSequenceNumber('LOAD', organizationId);
 
-    return deps.loadRepository.create(organizationId, loadNumber, {
+    const load = await deps.loadRepository.create(organizationId, loadNumber, {
       ...input,
       ...resolvedAssignment,
+      ...(loadedMiles !== undefined ? { loadedMiles } : {}),
+      ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
     });
+
+    // Calculate financials when carrier and customer rate are present at creation
+    if (
+      load.carrierId !== null &&
+      load.customerRate !== null &&
+      deps.loadStatusRepo !== undefined &&
+      deps.logger !== undefined
+    ) {
+      await calculateAndPersistFinancials(load.id, {
+        load,
+        loadStatusRepo: deps.loadStatusRepo,
+        logger: deps.logger,
+        vehicleCpmQuery: deps.vehicleCpmQuery,
+        dispatcherProfileQuery: deps.dispatcherProfileQuery,
+        organizationId: load.organizationId,
+      });
+
+      return findLoadOrThrow(load.id, organizationId, deps);
+    }
+
+    return load;
   },
 
   listLoads: async ({ query, organizationId, filters }: ListLoadsServiceInput) => {
@@ -494,31 +628,80 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     assertFinancialsNotChanged(existing.status, input as Record<string, unknown>);
 
-    if (input.commodity !== undefined) {
-      await checkProhibitedCommodity(input.commodity, organizationId, deps.orgSettingsQuery);
-    }
-
-    await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
-
     if (input.stops !== undefined) {
       validateStops(input.stops);
     }
 
-    if (!shouldValidateAssignment) {
-      return deps.loadRepository.update(id, input);
-    }
-
-    const resolvedAssignment = resolveAssignmentState(
-      getCurrentAssignmentState(existing),
-      normalizedAssignmentInput,
+    await checkProhibitedCommodities(
+      {
+        stops: input.stops,
+        organizationId,
+      },
+      deps.orgSettingsQuery,
     );
 
-    await validateAssignmentState(resolvedAssignment, organizationId, id, deps);
+    await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
 
-    return deps.loadRepository.update(id, {
+    const loadedMiles = input.loadedMiles ?? input.totalMiles ?? existing.loadedMiles ?? undefined;
+
+    const existingDeadhead = existing.deadheadMiles ?? 0;
+    const deadheadMiles = input.deadheadMiles ?? existingDeadhead;
+    const computedTotalMiles =
+      loadedMiles !== undefined
+        ? loadedMiles + deadheadMiles
+        : undefined;
+
+    const mergedInput = {
       ...input,
-      ...resolvedAssignment,
-    });
+      ...(loadedMiles !== undefined ? { loadedMiles } : {}),
+      ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
+    };
+
+    let load: LoadWithRelations;
+    let resolvedAssignment: ResolvedAssignmentState | undefined;
+
+    if (!shouldValidateAssignment) {
+      load = await deps.loadRepository.update(id, mergedInput);
+    } else {
+      resolvedAssignment = resolveAssignmentState(
+        getCurrentAssignmentState(existing),
+        normalizedAssignmentInput,
+      );
+
+      await validateAssignmentState(resolvedAssignment, organizationId, id, deps);
+
+      load = await deps.loadRepository.update(id, {
+        ...mergedInput,
+        ...resolvedAssignment,
+      });
+    }
+
+    const financialFieldChanged = hasFinancialRelevantFieldChanged(
+      input,
+      existing,
+      resolvedAssignment,
+    );
+
+    if (
+      financialFieldChanged &&
+      load.carrierId !== null &&
+      load.customerRate !== null &&
+      deps.loadStatusRepo !== undefined &&
+      deps.logger !== undefined
+    ) {
+      await calculateAndPersistFinancials(id, {
+        load,
+        loadStatusRepo: deps.loadStatusRepo,
+        logger: deps.logger,
+        vehicleCpmQuery: deps.vehicleCpmQuery,
+        dispatcherProfileQuery: deps.dispatcherProfileQuery,
+        organizationId: load.organizationId,
+      });
+
+      return findLoadOrThrow(id, organizationId, deps);
+    }
+
+    return load;
   },
 
   assignLoad: async ({ id, organizationId, input }: AssignLoadServiceInput) => {
@@ -546,9 +729,15 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       }
     }
 
+    const totalMiles =
+      deadheadMiles !== undefined && existing.loadedMiles !== null
+        ? existing.loadedMiles + deadheadMiles
+        : undefined;
+
     const load = await deps.loadRepository.update(id, {
       ...resolvedAssignment,
       ...(deadheadMiles !== undefined ? { deadheadMiles } : {}),
+      ...(totalMiles !== undefined ? { totalMiles } : {}),
     });
 
     if (
@@ -561,6 +750,9 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         load,
         loadStatusRepo: deps.loadStatusRepo,
         logger: deps.logger,
+        vehicleCpmQuery: deps.vehicleCpmQuery,
+        dispatcherProfileQuery: deps.dispatcherProfileQuery,
+        organizationId: load.organizationId,
       });
     }
 

@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   Box,
   Button,
-  Collapse,
   Stack,
   Typography,
 } from '@mui/material';
@@ -13,8 +12,8 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 
-import type { Document, DocumentType } from '../../types';
-import { DocumentUpload } from '../DocumentUpload';
+import { DocumentType } from '../../types';
+import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -24,7 +23,6 @@ interface RateConStatusProps {
   loadId: string;
   loadStatus: string;
   rateConReceivedAt: string | null;
-  onUploadComplete?: (document: Document) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -32,8 +30,6 @@ interface RateConStatusProps {
 // ---------------------------------------------------------------------------
 
 const UPLOAD_VISIBLE_STATUSES = new Set(['QUOTED', 'BOOKED']);
-
-const RATE_CON_DOC_TYPE: DocumentType = 'RATE_CONFIRMATION';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -43,23 +39,19 @@ export const RateConStatus: React.FC<RateConStatusProps> = ({
   loadId,
   loadStatus,
   rateConReceivedAt,
-  onUploadComplete,
 }) => {
-  const [showUpload, setShowUpload] = useState(false);
-
+  const { openDrawer } = useDrawerActions();
   const canUpload = UPLOAD_VISIBLE_STATUSES.has(loadStatus);
 
-  const handleToggleUpload = useCallback(() => {
-    setShowUpload((prev) => !prev);
-  }, []);
-
-  const handleUploadComplete = useCallback(
-    (document: Document) => {
-      setShowUpload(false);
-      onUploadComplete?.(document);
-    },
-    [onUploadComplete],
-  );
+  const handleUploadClick = useCallback(() => {
+    openDrawer('documentUpload', {
+      context: 'load-detail',
+      entityType: 'load',
+      entityId: loadId,
+      preselectedDocType: DocumentType.BROKER_RATE_CON,
+      lockDocType: true,
+    });
+  }, [openDrawer, loadId]);
 
   // Rate con received — show success indicator
   if (rateConReceivedAt) {
@@ -86,25 +78,13 @@ export const RateConStatus: React.FC<RateConStatusProps> = ({
             size="small"
             variant="outlined"
             startIcon={<CloudUploadOutlined />}
-            onClick={handleToggleUpload}
+            onClick={handleUploadClick}
             sx={{ ml: 1 }}
           >
-            {showUpload ? 'Cancel' : 'Upload Rate Con'}
+            Upload Rate Con
           </Button>
         )}
       </Stack>
-
-      {canUpload && (
-        <Collapse in={showUpload}>
-          <Box sx={{ mt: 1.5 }}>
-            <DocumentUpload
-              loadId={loadId}
-              documentType={RATE_CON_DOC_TYPE}
-              onUploadComplete={handleUploadComplete}
-            />
-          </Box>
-        </Collapse>
-      )}
     </Box>
   );
 };

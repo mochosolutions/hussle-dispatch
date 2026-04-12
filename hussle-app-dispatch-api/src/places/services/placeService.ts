@@ -1,9 +1,10 @@
 import type Redis from 'ioredis';
 import type { Place } from '@prisma/client';
-import { NotFoundError } from '@/shared/errors';
+import { NotFoundError, ValidationError } from '@/shared/errors';
 import { getCityCoords } from '@/shared/geoLookup';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import { buildPaginationMeta } from '@/shared/responseEnvelope';
+import { validateFacilityHoursJson } from '@/shared/utils/facilityHours';
 import type { PlaceRepositoryPort } from '../types/placeTypes';
 import type {
   CreatePlaceServiceInput,
@@ -38,6 +39,13 @@ const findPlaceOrThrow = async (
   return place;
 };
 
+const validateTimezone = (timezone: string): void => {
+  const validTimezones = Intl.supportedValuesOf('timeZone');
+  if (!validTimezones.includes(timezone)) {
+    throw new ValidationError(`Invalid timezone: "${timezone}". Must be a valid IANA timezone.`);
+  }
+};
+
 interface PlaceServiceDeps {
   placeRepository: PlaceRepositoryPort;
   redis: Redis;
@@ -45,6 +53,14 @@ interface PlaceServiceDeps {
 
 export const createPlaceService = (deps: PlaceServiceDeps): PlaceService => ({
   createPlace: async ({ organizationId, input }: CreatePlaceServiceInput) => {
+    if (input.facilityHours !== undefined) {
+      validateFacilityHoursJson(input.facilityHours);
+    }
+
+    if (input.timezone !== undefined) {
+      validateTimezone(input.timezone);
+    }
+
     const geoResult = await getCityCoords(deps.redis, input.state, input.city);
 
     const createData = {
@@ -86,6 +102,14 @@ export const createPlaceService = (deps: PlaceServiceDeps): PlaceService => ({
 
   updatePlace: async ({ id, organizationId, input }: UpdatePlaceServiceInput) => {
     const existingPlace = await findPlaceOrThrow(id, organizationId, deps);
+
+    if (input.facilityHours !== undefined) {
+      validateFacilityHoursJson(input.facilityHours);
+    }
+
+    if (input.timezone !== undefined) {
+      validateTimezone(input.timezone);
+    }
 
     const cityChanged = input.city !== undefined && input.city !== existingPlace.city;
     const stateChanged = input.state !== undefined && input.state !== existingPlace.state;

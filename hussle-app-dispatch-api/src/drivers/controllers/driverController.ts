@@ -1,8 +1,10 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { sendList, sendSingle } from '@/shared/responseEnvelope';
+import type { DeadheadToResult, DeadheadToServiceInput } from '../types/deadheadToTypes';
 import type { DriverService } from '../types/driverServiceTypes';
 import { createDriverMapper } from './mappers/createDriverMapper';
+import { deadheadToMapper } from './mappers/deadheadToMapper';
 import { getDriverLoadHistoryMapper } from './mappers/getDriverLoadHistoryMapper';
 import { getRequiredDriverIdMapper } from './mappers/getRequiredDriverIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
@@ -20,6 +22,7 @@ import {
 
 interface DriverControllerDeps {
   driverService: DriverService;
+  deadheadToService: (input: DeadheadToServiceInput) => Promise<DeadheadToResult>;
 }
 
 export interface DriverControllers {
@@ -29,6 +32,7 @@ export interface DriverControllers {
   updateDriver: RequestHandler;
   deleteDriver: RequestHandler;
   getLoadHistory: RequestHandler;
+  getDeadheadTo: RequestHandler;
 }
 
 export const createDriverControllers = (deps: DriverControllerDeps): DriverControllers => ({
@@ -83,5 +87,11 @@ export const createDriverControllers = (deps: DriverControllerDeps): DriverContr
     const data = result.data.map(toLoadHistoryItemResponse);
     const metrics = toLoadPerformanceMetricsResponse(result.metrics);
     res.status(200).json({ data, meta: result.meta, metrics });
+  },
+
+  getDeadheadTo: async (req: Request, res: Response): Promise<void> => {
+    const input = deadheadToMapper(req);
+    const result = await deps.deadheadToService(input);
+    sendSingle(res, result);
   },
 });

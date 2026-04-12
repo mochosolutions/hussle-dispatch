@@ -1,25 +1,28 @@
-import type { Driver, Load } from '@prisma/client';
+import type { Driver, Load, Stop } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
+import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
 import type {
   ActiveLoadSummary,
   DriverDetailResponse,
   DriverResponse,
 } from '../../types/driverTypes';
 
+type LoadWithStops = Load & { stops: Stop[] };
+
 type DriverWithCarrier = Driver & {
   carrier?: { name: string } | null;
 };
 
 type DriverWithLoads = DriverWithCarrier & {
-  loads?: Load[];
+  loads?: LoadWithStops[];
 };
 
-const toActiveLoadSummary = (load: Load): ActiveLoadSummary => ({
+const toActiveLoadSummary = (load: LoadWithStops): ActiveLoadSummary => ({
   id: load.id,
   loadNumber: load.loadNumber,
   status: load.status,
   equipmentType: load.equipmentType,
-  commodity: load.commodity,
+  commodity: computeCommoditySummary(load.stops).commodity ?? null,
   customerRate: load.customerRate !== null ? String(load.customerRate) : null,
   totalMiles: load.totalMiles,
 });

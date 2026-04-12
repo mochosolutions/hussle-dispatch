@@ -22,6 +22,7 @@ import {
   selectAttentionItemsByCategory,
   selectTotalAttentionCount,
 } from '../store/selectors/dashboardSelectors';
+import { PendingCarriersCard } from 'features/carrier/components/PendingCarriersCard';
 import type { AttentionCategory, WeeklyGrossItem } from '../types';
 import { ATTENTION_CATEGORY_LABELS } from '../types';
 
@@ -160,12 +161,8 @@ const DashboardPage = () => {
         value: currencyFormatter.format(Number(kpis?.revenue?.revenueThisMonth ?? 0)),
       },
       {
-        label: 'Dispatch Fees',
-        value: currencyFormatter.format(Number(kpis?.revenue?.dispatchFeesThisMonth ?? 0)),
-      },
-      {
-        label: 'Partner Split',
-        value: currencyFormatter.format(Number(kpis?.revenue?.partnerSplitThisMonth ?? 0)),
+        label: 'Company Margin',
+        value: currencyFormatter.format(Number(kpis?.revenue?.companyMarginThisMonth ?? 0)),
       },
       {
         label: 'Overdue Invoices',
@@ -224,6 +221,11 @@ const DashboardPage = () => {
                 </Typography>
               )}
             </MainCard>
+          </Grid>
+
+          {/* Pending Carriers */}
+          <Grid item xs={12} lg={4}>
+            <PendingCarriersCard />
           </Grid>
 
           {/* Attention Items */}

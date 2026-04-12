@@ -5,29 +5,36 @@
  * distinct from the mocho shared library's generic document types.
  */
 
-export type DocumentType =
-  | 'BROKER_RATE_CON'
-  | 'BOL_UNSIGNED'
-  | 'BOL_SIGNED'
-  | 'LUMPER_RECEIPT'
-  | 'SCALE_TICKET'
-  | 'INVOICE'
-  | 'DISPATCH_AGREEMENT'
-  | 'INSURANCE_CERT'
-  | 'W9'
-  | 'CARRIER_PACKET'
-  | 'POD'
-  | 'HAZMAT'
-  | 'LOA'
-  | 'DETENTION'
-  | 'LICENSE'
-  | 'REGISTRATION'
-  | 'INSPECTION_CERT'
-  | 'OTHER';
+export enum DocumentType {
+  BROKER_RATE_CON = 'BROKER_RATE_CON',
+  BOL_UNSIGNED = 'BOL_UNSIGNED',
+  BOL_SIGNED = 'BOL_SIGNED',
+  LUMPER_RECEIPT = 'LUMPER_RECEIPT',
+  SCALE_TICKET = 'SCALE_TICKET',
+  INVOICE = 'INVOICE',
+  DISPATCH_AGREEMENT = 'DISPATCH_AGREEMENT',
+  INSURANCE_CERT = 'INSURANCE_CERT',
+  W9 = 'W9',
+  CARRIER_PACKET = 'CARRIER_PACKET',
+  POD = 'POD',
+  HAZMAT = 'HAZMAT',
+  LOA = 'LOA',
+  DETENTION = 'DETENTION',
+  LICENSE = 'LICENSE',
+  REGISTRATION = 'REGISTRATION',
+  INSPECTION_CERT = 'INSPECTION_CERT',
+  OTHER = 'OTHER',
+}
 
 export type DocumentEntityType = 'load' | 'carrier' | 'driver' | 'vehicle';
 
-export type UploadStatus = 'idle' | 'presigning' | 'uploading' | 'confirming' | 'complete' | 'error';
+export type UploadStatus =
+  | 'idle'
+  | 'presigning'
+  | 'uploading'
+  | 'confirming'
+  | 'complete'
+  | 'error';
 
 export interface Document {
   id: string;
@@ -56,8 +63,8 @@ export interface DocumentMetadata {
 }
 
 export interface BulkDownloadResult {
-  downloads: Array<{ documentId: string; fileName: string; presignedUrl: string }>;
-  errors: Array<{ documentId: string; reason: string }>;
+  downloads: { documentId: string; fileName: string; presignedUrl: string }[];
+  errors: { documentId: string; reason: string }[];
 }
 
 export interface PresignInput {

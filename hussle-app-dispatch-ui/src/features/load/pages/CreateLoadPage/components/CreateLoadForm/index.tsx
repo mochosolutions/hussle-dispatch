@@ -72,8 +72,9 @@ const EMPTY_STOP = {
   appointmentRequired: false,
   lumperRequired: false,
   ppeRequired: false,
-  commodities: [],
-  receivingCommodityIds: [],
+  isHazmat: false,
+  isTarp: false,
+  isTempControlled: false,
 };
 
 const buildInitialStops = (loadType: string, intelPrefill?: IntelPrefill) => {

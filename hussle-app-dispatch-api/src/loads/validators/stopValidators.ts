@@ -1,7 +1,8 @@
-import { StopType } from '@prisma/client';
+import { SchedulingType, StopType } from '@prisma/client';
 import * as Yup from 'yup';
 
 const stopTypeValues = Object.values(StopType);
+const schedulingTypeValues = Object.values(SchedulingType);
 
 const optionalTrimmed = Yup.string().trim().notRequired();
 
@@ -22,14 +23,24 @@ const createStopBodySchema = Yup.object({
     .required('state is required'),
   zip: Yup.string().trim().max(20, 'zip must be at most 20 characters')
     .required('zip is required'),
-  appointmentDate: Yup.date().notRequired(),
-  appointmentTime: optionalTrimmed,
-  appointmentEndTime: optionalTrimmed,
+  schedulingType: Yup.mixed<SchedulingType>()
+    .oneOf(schedulingTypeValues, 'schedulingType must be a valid SchedulingType')
+    .notRequired(),
+  appointmentStart: Yup.date().nullable().notRequired(),
+  appointmentEnd: Yup.date().nullable().notRequired(),
+  targetDate: Yup.date().nullable().notRequired(),
+  notificationHours: Yup.number().integer().nullable().notRequired(),
   appointmentNumber: optionalTrimmed,
   contactName: Yup.string().trim().max(255, 'contactName must be at most 255 characters')
     .notRequired(),
   contactPhone: Yup.string().trim().max(50, 'contactPhone must be at most 50 characters')
     .notRequired(),
+  commodity: Yup.string().trim().notRequired(),
+  weight: Yup.number().integer().min(0).notRequired(),
+  pieceCount: Yup.number().integer().min(0).notRequired(),
+  isHazmat: Yup.boolean().notRequired(),
+  isTarp: Yup.boolean().notRequired(),
+  isTempControlled: Yup.boolean().notRequired(),
   notes: Yup.string().trim().max(2000, 'notes must be at most 2000 characters').notRequired(),
 });
 
@@ -46,9 +57,13 @@ const updateStopBodySchema = Yup.object({
   city: Yup.string().trim().max(100, 'city must be at most 100 characters').notRequired(),
   state: Yup.string().trim().max(50, 'state must be at most 50 characters').notRequired(),
   zip: Yup.string().trim().max(20, 'zip must be at most 20 characters').notRequired(),
-  appointmentDate: Yup.date().notRequired(),
-  appointmentTime: optionalTrimmed,
-  appointmentEndTime: optionalTrimmed,
+  schedulingType: Yup.mixed<SchedulingType>()
+    .oneOf(schedulingTypeValues, 'schedulingType must be a valid SchedulingType')
+    .notRequired(),
+  appointmentStart: Yup.date().nullable().notRequired(),
+  appointmentEnd: Yup.date().nullable().notRequired(),
+  targetDate: Yup.date().nullable().notRequired(),
+  notificationHours: Yup.number().integer().nullable().notRequired(),
   appointmentNumber: optionalTrimmed,
   arrivalTime: Yup.date().notRequired(),
   departureTime: Yup.date().notRequired(),
@@ -56,6 +71,12 @@ const updateStopBodySchema = Yup.object({
     .notRequired(),
   contactPhone: Yup.string().trim().max(50, 'contactPhone must be at most 50 characters')
     .notRequired(),
+  commodity: Yup.string().trim().notRequired(),
+  weight: Yup.number().integer().min(0).notRequired(),
+  pieceCount: Yup.number().integer().min(0).notRequired(),
+  isHazmat: Yup.boolean().notRequired(),
+  isTarp: Yup.boolean().notRequired(),
+  isTempControlled: Yup.boolean().notRequired(),
   notes: Yup.string().trim().max(2000, 'notes must be at most 2000 characters').notRequired(),
 }).test('has-any-field', 'At least one field must be provided', (value) => {
   if (value === undefined) {

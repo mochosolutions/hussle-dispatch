@@ -38,6 +38,12 @@ interface FormDrawerProps<TValues extends FormikValues> {
 
   /** Custom label for the saving state (default: "Saving...") */
   savingLabel?: string;
+
+  /** Whether Formik should validate on every change event (default: Formik default — true) */
+  validateOnChange?: boolean;
+
+  /** Whether Formik should validate on blur events (default: Formik default — true) */
+  validateOnBlur?: boolean;
 }
 
 interface FormDrawerContentProps<TValues extends FormikValues> {
@@ -131,6 +137,8 @@ export const FormDrawer = <TValues extends FormikValues>({
   enableReinitialize = true,
   saveLabel = 'Save Changes',
   savingLabel = 'Saving\u2026',
+  validateOnChange,
+  validateOnBlur,
 }: FormDrawerProps<TValues>): React.ReactElement | null => {
   const formId = useId();
 
@@ -148,6 +156,8 @@ export const FormDrawer = <TValues extends FormikValues>({
         onClose();
       }}
       enableReinitialize={enableReinitialize}
+      validateOnChange={validateOnChange}
+      validateOnBlur={validateOnBlur}
     >
       <FormDrawerContent<TValues>
         title={title}

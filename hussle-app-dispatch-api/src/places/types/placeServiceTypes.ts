@@ -1,5 +1,5 @@
 import type { ParsedQs } from 'qs';
-import type { Place, Load } from '@prisma/client';
+import type { Place, Load, Stop } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import type {
   CreatePlaceInput,
@@ -58,7 +58,7 @@ export interface LoadsAtFacilityServiceInput {
 }
 
 export interface LoadsAtFacilityResult {
-  data: Load[];
+  data: (Load & { stops: Stop[] })[];
   meta: PaginationMeta;
 }
 

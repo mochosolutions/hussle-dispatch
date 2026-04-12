@@ -6,15 +6,15 @@ import { enqueueSnackbar } from 'notistack';
 import { createPlace } from 'utils/api/places/placeApi';
 import type { AddressSearchResult } from 'features/place/types';
 import { AddressTypeahead } from 'components/AddressTypeahead';
-import type { LoadFormValues } from '../../validators/loadSchema';
+import type { StopsFormShape } from '../../validators/loadSchema';
 
-interface AddressSearchFieldProps {
+interface AddressSearchFieldProps<T extends StopsFormShape = StopsFormShape> {
   prefix: string;
-  formik: FormikProps<LoadFormValues>;
+  formik: FormikProps<T>;
   disabled?: boolean;
 }
 
-const formatDisplayValue = (stop: LoadFormValues['stops'][number]): string => {
+const formatDisplayValue = (stop: StopsFormShape['stops'][number]): string => {
   const parts = [stop.address, stop.city, stop.state].filter(Boolean);
   if (stop.zip) {
     parts.push(stop.zip);
@@ -22,11 +22,11 @@ const formatDisplayValue = (stop: LoadFormValues['stops'][number]): string => {
   return parts.join(', ') || stop.facilityName || '';
 };
 
-export const AddressSearchField: React.FC<AddressSearchFieldProps> = ({
+export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
   prefix,
   formik,
   disabled = false,
-}) => {
+}: AddressSearchFieldProps<T>) => {
   const stopIndex = Number(prefix.replace(/^stops\[(\d+)\]$/, '$1'));
   const stop = formik.values.stops[stopIndex];
   const hasSelection = Boolean(stop?.facilityName || stop?.placeId);

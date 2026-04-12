@@ -64,9 +64,9 @@ export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c, stats, statsLoading }
     { label: 'MC / DOT', primary: c.mcNumber ?? '\u2014', secondary: c.dotNumber ?? '\u2014' },
     { label: 'CONTACT', primary: c.phone ?? '\u2014', secondary: c.email ?? '\u2014' },
     {
-      label: 'DISPATCH FEE',
-      primary: c.dispatchFeePercent ? `${c.dispatchFeePercent}%` : '\u2014',
-      secondary: c.partnerSplitPercent ? `${c.partnerSplitPercent}% partner split` : '',
+      label: 'COMPANY MARGIN',
+      primary: c.companyMarginPercent ? `${c.companyMarginPercent}%` : '\u2014',
+      secondary: '',
     },
     {
       label: 'DRIVERS',

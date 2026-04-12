@@ -39,7 +39,10 @@ export const EditDrawer: React.FC<{
       <Drawer
         anchor="right"
         open={open}
-        onClose={handleClose}
+        onClose={(_event, reason) => {
+          if (reason === 'backdropClick') return;
+          handleClose();
+        }}
         PaperProps={{
           sx: {
             width: { xs: '100%', sm: 480 },

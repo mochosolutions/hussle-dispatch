@@ -52,7 +52,9 @@ export type EmailFieldProps = BaseInputFieldProps;
  * Props for TextField component.
  */
 export interface TextFieldProps extends BaseInputFieldProps {
-	type?: 'text' | 'number';
+	type?: 'text' | 'number' | 'tel';
+	multiline?: boolean;
+	minRows?: number;
 }
 
 /**
@@ -265,6 +267,7 @@ export interface SubmitButtonProps {
 	fullWidth?: boolean;
 	size?: 'small' | 'medium' | 'large';
 	type?: 'submit' | 'button';
+	onClick?: () => void;
 }
 
 /**

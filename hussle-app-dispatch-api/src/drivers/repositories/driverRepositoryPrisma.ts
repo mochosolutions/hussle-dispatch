@@ -116,6 +116,11 @@ export const driverRepositoryPrisma = (
               in: ['BOOKED', 'DISPATCHED', 'IN_TRANSIT', 'AT_PICKUP', 'AT_DELIVERY'],
             },
           },
+          include: {
+            stops: {
+              orderBy: { sequence: 'asc' as const },
+            },
+          },
         },
       },
     }),

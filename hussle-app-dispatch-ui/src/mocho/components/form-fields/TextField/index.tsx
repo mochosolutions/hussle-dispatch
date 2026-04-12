@@ -19,19 +19,16 @@ export const TextField: React.FC<TextFieldProps> = ({
   required = false,
   type = 'text',
   autoComplete,
+  multiline = false,
+  minRows,
   formik,
+  ...rest
 }) => {
   const error = formik.errors[name] as string | undefined;
   const touched = formik.touched[name] as boolean | undefined;
 
   return (
-    <BaseFieldWrapper
-      name={name}
-      label={label}
-      required={required}
-      error={error}
-      touched={touched}
-    >
+    <BaseFieldWrapper name={name} label={label} required={required} error={error} touched={touched}>
       <OutlinedInput
         id={name}
         name={name}
@@ -42,8 +39,11 @@ export const TextField: React.FC<TextFieldProps> = ({
         placeholder={placeholder}
         disabled={disabled}
         autoComplete={autoComplete}
+        multiline={multiline}
+        minRows={minRows}
         fullWidth
         error={Boolean(touched && error)}
+        {...rest}
       />
     </BaseFieldWrapper>
   );

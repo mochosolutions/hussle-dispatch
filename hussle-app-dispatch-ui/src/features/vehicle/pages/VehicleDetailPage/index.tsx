@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
@@ -22,7 +22,8 @@ import { VehicleKPI } from '../../components/VehicleKPI';
 import { VehicleInfoDrawer } from '../../components/VehicleInfoDrawer';
 import { VehicleExpenseDrawer } from '../../components/VehicleExpenseDrawer';
 import { VehicleTargetsDrawer } from '../../components/VehicleTargetsDrawer';
-import { DocumentUpload } from 'features/documents/components/DocumentUpload';
+import { DocumentTable } from 'features/documents/components/DocumentTable';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { VehicleOverviewTab } from './tabs/VehicleOverviewTab';
 import { VehicleExpenseTab } from './tabs/VehicleExpenseTab';
 import { VehicleLoadHistoryTab } from './tabs/VehicleLoadHistoryTab';
@@ -41,6 +42,7 @@ const VehicleDetailPage = () => {
   const loadHistoryLoading = useSelector(selectVehicleLoadHistoryLoading(id ?? ''));
 
   const [activeTab, setActiveTab] = useState('overview');
+  const { openDrawer } = useDrawerActions();
 
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
   const [expenseDrawerOpen, setExpenseDrawerOpen] = useState(false);
@@ -132,11 +134,24 @@ const VehicleDetailPage = () => {
               )}
 
               {activeTab === 'documents' && id && (
-                <DocumentUpload
-                  context="vehicle-detail"
-                  entityType="vehicle"
-                  entityId={id}
-                />
+                <Box sx={{ p: 3 }}>
+                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() =>
+                        openDrawer('documentUpload', {
+                          context: 'vehicle-detail',
+                          entityType: 'vehicle',
+                          entityId: id,
+                        })
+                      }
+                    >
+                      Upload
+                    </Button>
+                  </Box>
+                  <DocumentTable entityType="vehicle" entityId={id} />
+                </Box>
               )}
             </DetailLayout>
 

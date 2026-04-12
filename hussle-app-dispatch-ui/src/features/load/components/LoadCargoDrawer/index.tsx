@@ -1,15 +1,9 @@
 import React from 'react';
-import {
-  Box,
-  Button,
-  Grid,
-  Stack,
-  CircularProgress,
-} from '@mui/material';
-import { Formik, Form, useFormikContext } from 'formik';
+import { Grid, Stack } from '@mui/material';
 import * as Yup from 'yup';
 import { TextField, SelectField, CheckboxField } from '@mocho/ui/components';
-import { EditDrawer, DrawerSection } from 'components/EditDrawer';
+import { FormDrawer } from '../../../../mocho/components/FormDrawer';
+import { DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
 import { updateLoadRequest } from '../../store/reducers';
 import type { LoadDetail } from '../../types';
@@ -43,99 +37,43 @@ export const LoadCargoDrawer: React.FC<LoadCargoDrawerProps> = ({ load, onClose 
     isTarp: load.isTarp,
   };
 
-  const handleSubmit = (values: CargoFormValues) => {
-    dispatch(
-      updateLoadRequest({
-        id: load.id,
-        data: values,
-      }),
-    );
-    onClose();
-  };
-
   return (
-    <Formik
+    <FormDrawer
+      open
+      onClose={onClose}
+      title="Edit Cargo"
+      subtitle={load.loadNumber}
       initialValues={initialValues}
       validationSchema={cargoSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize
+      onSubmit={(values) => {
+        dispatch(updateLoadRequest({ id: load.id, data: values }));
+      }}
     >
-      <LoadCargoDrawerContent loadNumber={load.loadNumber} onClose={onClose} />
-    </Formik>
-  );
-};
-
-interface LoadCargoDrawerContentProps {
-  loadNumber: string;
-  onClose: () => void;
-}
-
-const LoadCargoDrawerContent: React.FC<LoadCargoDrawerContentProps> = ({ loadNumber, onClose }) => {
-  const {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    setFieldValue,
-    isSubmitting,
-    isValid,
-    dirty,
-  } = useFormikContext<Record<string, unknown>>();
-
-  const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
-
-  const footer = (
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form="load-cargo-form"
-        variant="contained"
-        disabled={!isValid || !dirty || isSubmitting}
-        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-      >
-        {isSubmitting ? 'Saving...' : 'Save Changes'}
-      </Button>
-    </Box>
-  );
-
-  return (
-    <EditDrawer
-      open
-      title="Edit Cargo"
-      subtitle={loadNumber}
-      onClose={onClose}
-      isDirty={dirty}
-      footer={footer}
-    >
-      <Form id="load-cargo-form">
+      {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <DrawerSection label="Cargo Details">
             <SelectField
-            name="equipmentType"
-            label="Equipment Type"
-            data={EQUIPMENT_OPTIONS}
-            formik={formikProps}
-          />
-          <TextField name="commodity" label="Commodity" formik={formikProps} />
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="weight" label="Weight (lbs)" formik={formikProps} />
+              name="equipmentType"
+              label="Equipment Type"
+              data={EQUIPMENT_OPTIONS}
+              formik={formik}
+            />
+            <TextField name="commodity" label="Commodity" formik={formik} />
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <TextField name="weight" label="Weight (lbs)" formik={formik} />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField name="pieceCount" label="Piece Count" formik={formik} />
+              </Grid>
             </Grid>
-            <Grid item xs={6}>
-              <TextField name="pieceCount" label="Piece Count" formik={formikProps} />
-            </Grid>
-          </Grid>
-          <Stack direction="row" spacing={2}>
-            <CheckboxField name="isHazmat" label="Hazmat" formik={formikProps} />
-            <CheckboxField name="isTarp" label="Tarp Required" formik={formikProps} />
-          </Stack>
+            <Stack direction="row" spacing={2}>
+              <CheckboxField name="isHazmat" label="Hazmat" formik={formik} />
+              <CheckboxField name="isTarp" label="Tarp Required" formik={formik} />
+            </Stack>
           </DrawerSection>
         </Stack>
-      </Form>
-    </EditDrawer>
+      )}
+    </FormDrawer>
   );
 };

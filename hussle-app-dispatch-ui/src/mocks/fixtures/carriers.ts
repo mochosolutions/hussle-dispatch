@@ -15,8 +15,8 @@ export const mockCarriers: CarrierListItem[] = [
     city: 'Dallas',
     state: 'TX',
     zip: '75201',
-    dispatchFeePercent: '10.00',
-    partnerSplitPercent: null,
+    companyMarginPercent: '10.00',
+
     feeIncludesAccessorials: true,
     dispatchAgreementOnFile: true,
     insuranceCertOnFile: true,
@@ -46,8 +46,8 @@ export const mockCarriers: CarrierListItem[] = [
     city: 'Houston',
     state: 'TX',
     zip: '77001',
-    dispatchFeePercent: '12.00',
-    partnerSplitPercent: '88.00',
+    companyMarginPercent: '12.00',
+
     feeIncludesAccessorials: false,
     dispatchAgreementOnFile: true,
     insuranceCertOnFile: true,
@@ -77,8 +77,8 @@ export const mockCarriers: CarrierListItem[] = [
     city: 'Phoenix',
     state: 'AZ',
     zip: null,
-    dispatchFeePercent: '8.00',
-    partnerSplitPercent: null,
+    companyMarginPercent: '8.00',
+
     feeIncludesAccessorials: false,
     dispatchAgreementOnFile: false,
     insuranceCertOnFile: false,

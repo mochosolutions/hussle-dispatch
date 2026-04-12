@@ -1,15 +1,15 @@
 import { Box, Button, Chip, Grid, Stack, Typography } from '@mui/material';
-
 import { EmptyState } from '@mocho/ui/components';
+import EditIcon from '@mui/icons-material/Edit';
+import { FieldRow } from 'components/FieldRow';
+import SectionCard from 'components/SectionCard';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { Driver } from 'features/carrier/types';
-import { FieldRow } from 'components/FieldRow';
-import { EditableSectionHeader } from 'components/EditableSectionHeader';
-import SectionCard from 'components/SectionCard';
 
 interface DriverWithCarrierInfo extends Driver {
   carrierName: string | null;
   carrierType: string | null;
+  companyMarginPercent: number | null;
 }
 
 interface DriverOverviewTabProps {
@@ -33,10 +33,14 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
   onEditLocation,
 }) => (
   <Grid container spacing={2.5} sx={{ p: 3, maxWidth: 1200 }}>
-    {/* Left Column -- Driver Information */}
-    <Grid item xs={4}>
+    <Grid item xs={12} md={8}>
       <SectionCard
-        title={<EditableSectionHeader title="Driver Information" onEdit={onEditInfo} />}
+        title="Driver Information"
+        actions={
+          <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={onEditInfo}>
+            Edit
+          </Button>
+        }
       >
         <Box sx={{ px: 1.5, py: 1 }}>
           <FieldRow label="Full Name" value={getDriverDisplayName(d)} />
@@ -54,95 +58,69 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
           <FieldRow label="Vehicle" value={'\u2014'} />
           <FieldRow label="Home Base" value={formatLocation(d.homeBaseCity, d.homeBaseState)} />
           <FieldRow
-            label="Dispatch Fee"
-            value={d.dispatchFeePercent !== null ? `${d.dispatchFeePercent}%` : '\u2014'}
+            label="Company Margin"
+            value={d.companyMarginPercent !== null ? `${d.companyMarginPercent}%` : '\u2014'}
           />
+        </Box>
+      </SectionCard>
+
+      <SectionCard title="Performance (All Time)">
+        <Box
+          sx={{
+            px: 1.5,
+            py: 1,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 2,
+          }}
+        >
+          {[
+            { value: '\u2014', label: 'Total Loads' },
+            { value: '\u2014', label: 'Revenue' },
+            { value: '\u2014', label: 'Avg Rate/Mi' },
+            { value: '\u2014', label: 'On-Time %' },
+            { value: '\u2014', label: 'Avg Days Out' },
+            { value: '\u2014', label: 'Weekly Avg' },
+          ].map((stat) => (
+            <Box
+              key={stat.label}
+              sx={{
+                textAlign: 'center',
+                py: 1.5,
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                {stat.value}
+              </Typography>
+              <Typography variant="caption">{stat.label}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </SectionCard>
+
+      <SectionCard title="Weekly Gross History">
+        <Box sx={{ px: 1.5, py: 2 }}>
+          <EmptyState title="No load history data available" />
         </Box>
       </SectionCard>
     </Grid>
 
-    {/* Center Column -- Performance + Weekly Gross */}
-    <Grid item xs={5}>
+    <Grid item xs={12} md={4}>
       <Stack spacing={2}>
-        <SectionCard title="Performance (All Time)">
-          <Box
-            sx={{
-              px: 1.5,
-              py: 1,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 2,
-            }}
-          >
-            {[
-              { value: '\u2014', label: 'Total Loads' },
-              { value: '\u2014', label: 'Revenue' },
-              { value: '\u2014', label: 'Avg Rate/Mi' },
-              { value: '\u2014', label: 'On-Time %' },
-              { value: '\u2014', label: 'Avg Days Out' },
-              { value: '\u2014', label: 'Weekly Avg' },
-            ].map((stat) => (
-              <Box
-                key={stat.label}
-                sx={{
-                  textAlign: 'center',
-                  py: 1.5,
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                  {stat.value}
-                </Typography>
-                <Typography variant="caption">{stat.label}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </SectionCard>
-
-        <SectionCard title="Weekly Gross History">
-          <Box sx={{ px: 1.5, py: 2 }}>
-            <EmptyState title="No load history data available" />
-          </Box>
-        </SectionCard>
-      </Stack>
-    </Grid>
-
-    {/* Right Column -- Status, Matching, Upcoming, Preferences */}
-    <Grid item xs={3}>
-      <Stack spacing={2}>
-        {/* Status & Location */}
         <SectionCard
-          title={
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}
+          title="Status & Location"
+          actions={
+            <Button
+              startIcon={<EditIcon fontSize="small" />}
+              size="small"
+              onClick={onEditLocation}
+              sx={{ minWidth: 'auto', fontSize: '0.7rem' }}
             >
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                  fontSize: '0.6875rem',
-                  color: 'text.disabled',
-                }}
-              >
-                Status & Location
-              </Typography>
-              <Button
-                size="small"
-                onClick={onEditLocation}
-                sx={{ minWidth: 'auto', fontSize: '0.7rem' }}
-              >
-                Edit
-              </Button>
-            </Box>
+              Edit
+            </Button>
           }
         >
           <Box sx={{ px: 1, py: 0.5 }}>
@@ -188,49 +166,17 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
           </Box>
         </SectionCard>
 
-        {/* Find Matching Loads */}
-        <Button variant="contained" color="success" disabled fullWidth>
-          Find Matching Loads
-        </Button>
-
-        {/* Upcoming Load */}
-        <SectionCard title="Upcoming Load">
-          <Box sx={{ px: 1, py: 1 }}>
-            <EmptyState title="No upcoming load" />
-          </Box>
-        </SectionCard>
-
-        {/* Preferences Snapshot */}
         <SectionCard
-          title={
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}
+          title="Preferences Snapshot"
+          actions={
+            <Button
+              size="small"
+              startIcon={<EditIcon fontSize="small" />}
+              onClick={onEditPreferences}
+              sx={{ minWidth: 'auto', fontSize: '0.7rem' }}
             >
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                  fontSize: '0.6875rem',
-                  color: 'text.disabled',
-                }}
-              >
-                Preferences Snapshot
-              </Typography>
-              <Button
-                size="small"
-                onClick={onEditPreferences}
-                sx={{ minWidth: 'auto', fontSize: '0.7rem' }}
-              >
-                Edit
-              </Button>
-            </Box>
+              Edit
+            </Button>
           }
         >
           <Box sx={{ px: 1, py: 0.5 }}>

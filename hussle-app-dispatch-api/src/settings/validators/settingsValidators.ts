@@ -23,7 +23,7 @@ const updateSettingsBodySchema = Yup.object({
     .notRequired(),
   minBookRateProfitMargin: Yup.number()
     .min(0, 'minBookRateProfitMargin must be at least 0')
-    .max(9.99, 'minBookRateProfitMargin must be at most 9.99')
+    .max(100, 'minBookRateProfitMargin must be at most 100')
     .notRequired(),
   defaultMaxDaysOut: Yup.number()
     .integer('defaultMaxDaysOut must be an integer')

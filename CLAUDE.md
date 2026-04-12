@@ -62,3 +62,15 @@
 ## Docker
 - `docker compose up` runs dispatch-ui (:5173) + storybook (:6006)
 - Backend services (API, Postgres, Redis) commented out — enable when API is scaffolded
+
+---
+
+## Bootstrap Refresh (2026-03-25)
+
+### Changes detected since last bootstrap:
+
+- **`mocho-ui/` removed** — no longer exists in repo. References to `@mocho/ui` and `REGISTRY-mocho-ui.md` above may be stale.
+- **`hussle-app-dispatch-api/` now scaffolded** — Express + Prisma + Redis + RabbitMQ. Has `validate` script (`lint + lint:deps + check-ts + test`).
+- **`hussle-emails/` added** — React Email library for transactional email templates.
+- **`extension/` added** — Chrome extension for DAT load scraping (esbuild + Jest).
+- **Packages updated:** 4 packages detected (dispatch-api, dispatch-ui, emails, extension). See `.planning/codebase/packages.json`.

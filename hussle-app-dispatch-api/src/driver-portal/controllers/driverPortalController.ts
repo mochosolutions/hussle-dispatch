@@ -4,6 +4,7 @@ import type { DocumentService } from '../../documents/types/documentServiceTypes
 import type { DriverPortalService } from '../services/driverPortalService';
 import type { DriverPortalContext, DriverPortalLoadSummary } from '../types/driverPortalTypes';
 import type { DriverCheckCallRecord } from '../repositories/driverPortalCheckCallRepositoryPrisma';
+import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
 import { sendSingle } from '@/shared/responseEnvelope';
 import { UnauthorizedError, ValidationError } from '@/shared/errors';
 
@@ -37,13 +38,16 @@ const getDriverPortal = (req: Request): DriverPortalContext => {
 // Transformers
 // ---------------------------------------------------------------------------
 
-const transformLoadSummary = (load: DriverPortalLoadSummary) => ({
+const transformLoadSummary = (load: DriverPortalLoadSummary) => {
+  const cargo = computeCommoditySummary(load.stops);
+
+  return {
   id: load.id,
   loadNumber: load.loadNumber,
   status: load.status,
   equipmentType: load.equipmentType,
-  commodity: load.commodity,
-  weight: load.weight,
+  commodity: cargo.commodity ?? null,
+  weight: cargo.weight ?? null,
   driverInstructions: load.driverInstructions,
   stops: load.stops.map((stop) => ({
     id: stop.id,
@@ -54,14 +58,15 @@ const transformLoadSummary = (load: DriverPortalLoadSummary) => ({
     city: stop.city,
     state: stop.state,
     zip: stop.zip,
-    appointmentDate: stop.appointmentDate?.toISOString() ?? null,
-    appointmentTime: stop.appointmentTime,
+    appointmentStart: stop.appointmentStart?.toISOString() ?? null,
+    appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
     contactName: stop.contactName,
     contactPhone: stop.contactPhone,
     notes: stop.notes,
   })),
   driver: load.driver,
-});
+  };
+};
 
 const transformCheckCall = (checkCall: DriverCheckCallRecord) => ({
   id: checkCall.id,

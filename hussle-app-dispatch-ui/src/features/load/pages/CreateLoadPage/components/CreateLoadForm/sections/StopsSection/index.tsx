@@ -9,7 +9,7 @@ import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
 import { MainCard } from '@mocho/ui/components';
 import type { LoadFormValues } from '../../../../../../validators/loadSchema';
-import type { CommoditySummary, StopType } from '../../../../../../types';
+import type { StopType } from '../../../../../../types';
 import { StopFormCard } from 'features/load/components/StopFormCard';
 import { MapView } from 'features/load/components/MapView';
 import { useRouteDistance } from './useRouteDistance';
@@ -95,8 +95,9 @@ const EMPTY_STOP = {
   commodity: '',
   weight: '',
   pieceCount: '',
-  commodities: [],
-  receivingCommodityIds: [],
+  isHazmat: false,
+  isTarp: false,
+  isTempControlled: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -119,29 +120,9 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
   const firstPickupIdx = useMemo(() => stops.findIndex((s) => s.type === 'PICKUP'), [stops]);
   const firstDeliveryIdx = useMemo(() => stops.findIndex((s) => s.type === 'DELIVERY'), [stops]);
 
-  // Aggregate pickup commodities for delivery freight receiving
-  const allPickupCommodities: CommoditySummary[] = useMemo(
-    () =>
-      stops.flatMap((stop, stopIdx) => {
-        if (stop.type !== 'PICKUP') {
-          return [];
-        }
-        return (stop.commodities ?? []).map((c, cIdx) => ({
-          id: `${stopIdx}-${cIdx}`,
-          stopIndex: stopIdx,
-          description: c.description ?? '',
-          weight: c.weight ?? '',
-        }));
-      }),
-    [stops],
-  );
-
-  // Check if any commodity has hazmat
+  // Check if any pickup stop has hazmat
   const hasHazmat = useMemo(
-    () =>
-      stops.some(
-        (stop) => stop.type === 'PICKUP' && (stop.commodities ?? []).some((c) => c.isHazmat),
-      ),
+    () => stops.some((stop) => stop.type === 'PICKUP' && stop.isHazmat),
     [stops],
   );
 
@@ -204,7 +185,6 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                           formik={formik}
                           canRemove={stops.length > 2}
                           onRemove={() => arrayHelpers.remove(idx)}
-                          allPickupCommodities={allPickupCommodities}
                           defaultExpanded={idx === firstPickupIdx || idx === firstDeliveryIdx}
                         />
                       </Box>

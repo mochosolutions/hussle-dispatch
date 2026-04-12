@@ -1,15 +1,8 @@
 import type { Request } from 'express';
 import type { UpdateSettingsInput } from '../../types/settingsTypes';
-import { UnauthorizedError } from '@/shared/errors';
 
 export const updateSettingsMapper = (req: Request): UpdateSettingsInput => {
-  const organizationId = req.organizationId;
-
-  if (organizationId === undefined) {
-    throw new UnauthorizedError('Authentication required');
-  }
-
-  const input: UpdateSettingsInput = { organizationId };
+  const input: UpdateSettingsInput = { organizationId: req.organizationId ?? '' };
 
   if (req.body.defaultTonuFee !== undefined) {
     input.defaultTonuFee = req.body.defaultTonuFee;

@@ -9,3 +9,4 @@ const placesModule = createPlacesModule({
 });
 
 export const placesRouter = createPlacesRouter(placesModule.controllers);
+export const placeQueries = placesModule.queries;

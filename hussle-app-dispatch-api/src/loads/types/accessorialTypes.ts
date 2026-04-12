@@ -17,6 +17,7 @@ export interface CreateAccessorialInput {
   approvalSource?: string;
   approvalNotes?: string;
   documentId?: string;
+  stopId?: string;
 }
 
 // ---------------------------------------------------------------------------

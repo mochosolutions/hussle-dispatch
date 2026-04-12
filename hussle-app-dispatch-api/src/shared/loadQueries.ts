@@ -20,6 +20,7 @@ export interface LoadHistoryItem {
 
 export interface LoadPerformanceMetrics {
   totalLoads: number;
+  totalGross: string;
   totalRevenue: string;
   avgRatePerMile: string;
   onTimePercent: string;
@@ -46,20 +47,39 @@ const loadHistorySelect = {
 
 const DELIVERED_STATUSES = ['DELIVERED', 'POD_RECEIVED', 'INVOICED', 'PAID'] as const;
 
-const computeMetrics = (
-  allLoads: { carrierRate: Decimal | null; ratePerMile: Decimal | null; status: string }[],
+export const computeMetrics = (
+  allLoads: {
+    customerRate: Decimal | null;
+    dispatchFee: Decimal | null;
+    ratePerMile: Decimal | null;
+    status: string;
+    carrier: { type: string } | null;
+  }[],
 ): LoadPerformanceMetrics => {
   const totalLoads = allLoads.length;
 
+  let totalGross = new Decimal(0);
   let totalRevenue = new Decimal(0);
   let ratePerMileSum = new Decimal(0);
   let ratePerMileCount = 0;
   let deliveredCount = 0;
 
   allLoads.forEach((load) => {
-    if (load.carrierRate !== null) {
-      totalRevenue = totalRevenue.plus(load.carrierRate);
+    if (load.customerRate !== null) {
+      totalGross = totalGross.plus(load.customerRate);
     }
+
+    // OWNER_OPERATOR intentionally excluded — not supported in this release (decision X-001).
+    if (load.carrier === null || load.carrier.type === 'COMPANY_ASSET') {
+      if (load.customerRate !== null) {
+        totalRevenue = totalRevenue.plus(load.customerRate);
+      }
+    } else if (load.carrier.type === 'EXTERNAL_CARRIER') {
+      if (load.dispatchFee !== null) {
+        totalRevenue = totalRevenue.plus(load.dispatchFee);
+      }
+    }
+
     if (load.ratePerMile !== null) {
       ratePerMileSum = ratePerMileSum.plus(load.ratePerMile);
       ratePerMileCount += 1;
@@ -79,6 +99,7 @@ const computeMetrics = (
 
   return {
     totalLoads,
+    totalGross: totalGross.toFixed(2),
     totalRevenue: totalRevenue.toFixed(2),
     avgRatePerMile,
     onTimePercent,
@@ -126,9 +147,11 @@ export const createLoadQueries = (
     const allLoadsForMetrics = await prisma.load.findMany({
       where: whereClause,
       select: {
-        carrierRate: true,
+        customerRate: true,
+        dispatchFee: true,
         ratePerMile: true,
         status: true,
+        carrier: { select: { type: true } },
       },
     });
 
@@ -168,9 +191,11 @@ export const createLoadQueries = (
     const allLoadsForMetrics = await prisma.load.findMany({
       where: whereClause,
       select: {
-        carrierRate: true,
+        customerRate: true,
+        dispatchFee: true,
         ratePerMile: true,
         status: true,
+        carrier: { select: { type: true } },
       },
     });
 

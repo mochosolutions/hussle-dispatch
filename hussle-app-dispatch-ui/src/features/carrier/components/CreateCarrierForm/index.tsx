@@ -46,8 +46,7 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
       city: carrier?.city ?? '',
       state: carrier?.state ?? '',
       zip: carrier?.zip ?? '',
-      dispatchFeePercent: carrier?.dispatchFeePercent ?? 10,
-      partnerSplitPercent: carrier?.partnerSplitPercent ?? 50,
+      companyMarginPercent: carrier?.companyMarginPercent ?? 10,
       feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
       dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
       insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
@@ -135,11 +134,7 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <TextField name="dispatchFeePercent" label="Dispatch Fee %" type="number" formik={formik} />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <TextField name="partnerSplitPercent" label="Partner Split %" type="number" formik={formik} />
+          <TextField name="companyMarginPercent" label="Company Margin %" type="number" formik={formik} />
         </Grid>
 
         <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>

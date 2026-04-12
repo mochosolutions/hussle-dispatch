@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import { UnauthorizedError, ValidationError } from '@/shared/errors';
+import { ValidationError } from '@/shared/errors';
 
 export interface DriverLoadHistoryInput {
   driverId: string;
@@ -9,13 +9,6 @@ export interface DriverLoadHistoryInput {
 }
 
 export const getDriverLoadHistoryMapper = (req: Request): DriverLoadHistoryInput => {
-  const organizationId = req.organizationId;
-  const role = req.user?.role;
-
-  if (organizationId === undefined || role === undefined) {
-    throw new UnauthorizedError('Authentication required');
-  }
-
   const driverId = req.params['id'];
 
   if (driverId === undefined || driverId.length === 0) {
@@ -24,8 +17,8 @@ export const getDriverLoadHistoryMapper = (req: Request): DriverLoadHistoryInput
 
   return {
     driverId,
-    organizationId,
-    role,
+    organizationId: req.organizationId ?? '',
+    role: req.user?.role ?? '',
     query: req.query,
   };
 };

@@ -20,7 +20,8 @@ export interface InvoiceDetailStop {
   facilityName: string | null;
   city: string | null;
   state: string | null;
-  appointmentDate: Date | null;
+  appointmentStart: Date | null;
+  appointmentEnd: Date | null;
 }
 
 export interface InvoiceWithRelations extends Invoice {
@@ -170,8 +171,6 @@ export interface InvoiceLoadQueryPort {
     loadNumber: string;
     externalRefNumber: string | null;
     equipmentType: string | null;
-    commodity: string | null;
-    weight: number | null;
     totalMiles: number | null;
     customerRate: unknown | null;
     carrierRate: unknown | null;
@@ -214,9 +213,15 @@ export interface InvoiceLoadQueryPort {
       facilityName: string | null;
       city: string | null;
       state: string | null;
-      appointmentDate: Date | null;
+      appointmentStart: Date | null;
+      appointmentEnd: Date | null;
       arrivalTime: Date | null;
       departureTime: Date | null;
+      commodity: string | null;
+      weight: number | null;
+      pieceCount: number | null;
+      isHazmat: boolean;
+      isTarp: boolean;
     }[];
     accessorialCharges: {
       id: string;

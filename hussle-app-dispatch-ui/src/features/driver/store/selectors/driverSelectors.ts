@@ -129,7 +129,7 @@ export const selectDriverWithCarrier = (driverId: string) =>
         ...driver,
         carrierName: carrier?.name ?? null,
         carrierType: carrier?.type ?? null,
-        dispatchFeePercent: carrier?.dispatchFeePercent ?? null,
+        companyMarginPercent: carrier?.companyMarginPercent ?? null,
       };
     },
   );

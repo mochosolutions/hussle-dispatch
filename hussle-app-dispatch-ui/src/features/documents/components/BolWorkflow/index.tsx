@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   Box,
   Button,
-  Collapse,
   Stack,
   Typography,
 } from '@mui/material';
@@ -12,8 +11,8 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 
-import type { Document } from '../../types';
-import { DocumentUpload } from '../DocumentUpload';
+import { DocumentType } from '../../types';
+import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -37,7 +36,6 @@ interface BolWorkflowProps {
   loadStatus: string;
   bolUnsignedAt: string | null;
   bolSignedAt: string | null;
-  onBolUploaded?: (document: Document) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,27 +68,25 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
   loadStatus,
   bolUnsignedAt,
   bolSignedAt,
-  onBolUploaded,
 }) => {
-  const [showUpload, setShowUpload] = useState(false);
+  const { openDrawer } = useDrawerActions();
 
-  const handleToggleUpload = useCallback(() => {
-    setShowUpload((prev) => !prev);
-  }, []);
-
-  const handleUploadComplete = useCallback(
-    (document: Document) => {
-      setShowUpload(false);
-      onBolUploaded?.(document);
-    },
-    [onBolUploaded],
-  );
-
-  // Determine what to show based on load status and BOL state
   const needsUnsignedBol = loadStatus === 'AT_PICKUP' && !bolUnsignedAt;
   const needsSignedBol =
     (loadStatus === 'AT_DELIVERY' || loadStatus === 'DELIVERED') && !bolSignedAt;
-  const uploadType = needsSignedBol ? 'POD' : 'BOL';
+  const preselectedDocType = needsSignedBol
+    ? DocumentType.BOL_SIGNED
+    : DocumentType.BOL_UNSIGNED;
+
+  const handleUploadClick = useCallback(() => {
+    openDrawer('documentUpload', {
+      context: 'load-detail',
+      entityType: 'load',
+      entityId: loadId,
+      preselectedDocType,
+      lockDocType: true,
+    });
+  }, [openDrawer, loadId, preselectedDocType]);
 
   // Both BOLs uploaded — show completion status
   if (bolUnsignedAt && bolSignedAt) {
@@ -126,18 +122,10 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
           <Typography variant="body2" sx={{ fontWeight: 500, color: 'warning.main' }}>
             {promptLabel}
           </Typography>
-          <Button size="small" variant="outlined" onClick={handleToggleUpload}>
-            {showUpload ? 'Cancel' : 'Upload'}
+          <Button size="small" variant="outlined" onClick={handleUploadClick}>
+            Upload
           </Button>
         </Stack>
-
-        <Collapse in={showUpload}>
-          <DocumentUpload
-            loadId={loadId}
-            documentType={uploadType}
-            onUploadComplete={handleUploadComplete}
-          />
-        </Collapse>
       </Box>
     );
   }
@@ -159,6 +147,5 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
     );
   }
 
-  // No BOL data and not in a status that prompts — show nothing
   return null;
 };

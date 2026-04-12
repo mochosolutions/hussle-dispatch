@@ -315,6 +315,54 @@ const runSeed = async (): Promise<void> => {
   process.stdout.write('Contacts: 8 created\n');
 
   // ===========================================================================
+  // CARRIER PRIMARY CONTACTS
+  // ===========================================================================
+
+  await prisma.contact.upsert({
+    where: { id: 'seed-carrier-contact-1' },
+    update: {},
+    create: {
+      id: 'seed-carrier-contact-1',
+      organizationId: org.id,
+      firstName: 'Tom',
+      lastName: 'Bradley',
+      role: 'primary_contact',
+      phone: '704-555-9000',
+      email: 'tbradley@apexfleet.com',
+    },
+  });
+
+  await prisma.contact.upsert({
+    where: { id: 'seed-carrier-contact-2' },
+    update: {},
+    create: {
+      id: 'seed-carrier-contact-2',
+      organizationId: org.id,
+      firstName: 'Carlos',
+      lastName: 'Williams',
+      role: 'primary_contact',
+      phone: '615-555-0700',
+      email: 'cwilliams@williamstrucking.com',
+    },
+  });
+
+  await prisma.contact.upsert({
+    where: { id: 'seed-carrier-contact-3' },
+    update: {},
+    create: {
+      id: 'seed-carrier-contact-3',
+      organizationId: org.id,
+      firstName: 'Maria',
+      lastName: 'Garcia',
+      role: 'primary_contact',
+      phone: '214-555-0801',
+      email: 'mgarcia@lonestarexpress.com',
+    },
+  });
+
+  process.stdout.write('Carrier primary contacts: 3 created\n');
+
+  // ===========================================================================
   // CARRIERS
   // ===========================================================================
   const companyCarrier = await prisma.carrier.upsert({
@@ -327,11 +375,12 @@ const runSeed = async (): Promise<void> => {
       type: 'COMPANY_ASSET',
       mcNumber: 'MC-842196',
       dotNumber: '3654812',
-      primaryContactName: 'Tom Bradley',
-      primaryContactPhone: '704-555-9000',
-      primaryContactEmail: 'tbradley@apexfleet.com',
+      primaryContactId: 'seed-carrier-contact-1',
       dispatchFeePercent: 10,
       partnerSplitPercent: 50,
+      feeType: 'PER_LOAD_PERCENT',
+      payFromNet: false,
+      includeExpensesOnSettlement: false,
       city: 'Charlotte',
       state: 'NC',
       authorityStatus: 'active',
@@ -357,13 +406,12 @@ const runSeed = async (): Promise<void> => {
       dotNumber: '2918473',
       phone: '615-555-0700',
       email: 'cwilliams@williamstrucking.com',
-      primaryContactName: 'Carlos Williams',
-      primaryContactPhone: '615-555-0700',
-      primaryContactEmail: 'cwilliams@williamstrucking.com',
+      primaryContactId: 'seed-carrier-contact-2',
       city: 'Nashville',
       state: 'TN',
       dispatchFeePercent: 12,
       partnerSplitPercent: 50,
+      feeType: 'PER_LOAD_PERCENT',
       authorityStatus: 'active',
       status: 'ACTIVE',
       dispatchAgreementOnFile: true,
@@ -387,13 +435,14 @@ const runSeed = async (): Promise<void> => {
       dotNumber: '1122334',
       phone: '214-555-0800',
       email: 'dispatch@lonestarexpress.com',
-      primaryContactName: 'Maria Garcia',
-      primaryContactPhone: '214-555-0801',
-      primaryContactEmail: 'mgarcia@lonestarexpress.com',
+      primaryContactId: 'seed-carrier-contact-3',
       city: 'Dallas',
       state: 'TX',
       dispatchFeePercent: 8,
       partnerSplitPercent: 50,
+      feeType: 'PER_LOAD_PERCENT',
+      payFromNet: false,
+      includeExpensesOnSettlement: true,
       dispatchAgreementOnFile: true,
       dispatchAgreementSignedAt: new Date('2025-06-15'),
       insuranceCertOnFile: true,
@@ -431,6 +480,8 @@ const runSeed = async (): Promise<void> => {
       currentState: 'NC',
       availableHours: 70,
       maxDaysOut: 5,
+      payType: 'PERCENTAGE',
+      payRate: 50.0,
       preferredLanes: {
         origins: [
           { state: 'NC', city: 'Charlotte' },
@@ -471,6 +522,8 @@ const runSeed = async (): Promise<void> => {
       currentState: 'GA',
       availableHours: 65,
       maxDaysOut: 7,
+      payType: 'PER_MILE',
+      payRate: 0.6,
       preferredLanes: {
         origins: [
           { state: 'GA', city: 'Atlanta' },
@@ -511,6 +564,8 @@ const runSeed = async (): Promise<void> => {
       currentState: 'TN',
       availableHours: 55,
       maxDaysOut: 10,
+      payType: 'PER_HOUR',
+      payRate: 25.0,
       preferredLanes: {
         origins: [{ state: 'TN', city: 'Nashville' }],
         destinations: [
@@ -669,36 +724,36 @@ const runSeed = async (): Promise<void> => {
   // ---------------------------------------------------------------------------
   const allExpenses = [
     // Vehicle 1 — dry van
-    { vehicleId: vehicle1.id, category: 'FIXED' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 2200.0 },
-    { vehicleId: vehicle1.id, category: 'FIXED' as const, expenseKey: 'trailer_payment', label: 'Trailer Payment', monthlyAmount: 650.0 },
-    { vehicleId: vehicle1.id, category: 'FIXED' as const, expenseKey: 'insurance', label: 'Insurance', monthlyAmount: 900.0 },
-    { vehicleId: vehicle1.id, category: 'VARIABLE' as const, expenseKey: 'fuel', label: 'Fuel', monthlyAmount: 3200.0 },
-    { vehicleId: vehicle1.id, category: 'VARIABLE' as const, expenseKey: 'tires', label: 'Tires (amortized)', monthlyAmount: 400.0 },
-    { vehicleId: vehicle1.id, category: 'VARIABLE' as const, expenseKey: 'tolls', label: 'Tolls & Scales', monthlyAmount: 150.0 },
-    { vehicleId: vehicle1.id, category: 'SERVICE' as const, expenseKey: 'oil_change', label: 'Oil Change & Filters', monthlyAmount: 300.0 },
-    { vehicleId: vehicle1.id, category: 'SERVICE' as const, expenseKey: 'repairs', label: 'Repairs & Maintenance', monthlyAmount: 500.0 },
+    { vehicleId: vehicle1.id, category: 'TRUCK_PAYMENT' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 2200.0 },
+    { vehicleId: vehicle1.id, category: 'TRAILER_RENTAL' as const, expenseKey: 'trailer_payment', label: 'Trailer Payment', monthlyAmount: 650.0 },
+    { vehicleId: vehicle1.id, category: 'INSURANCE' as const, expenseKey: 'insurance', label: 'Insurance', monthlyAmount: 900.0 },
+    { vehicleId: vehicle1.id, category: 'FUEL' as const, expenseKey: 'fuel', label: 'Fuel', monthlyAmount: 3200.0 },
+    { vehicleId: vehicle1.id, category: 'TIRES' as const, expenseKey: 'tires', label: 'Tires (amortized)', monthlyAmount: 400.0 },
+    { vehicleId: vehicle1.id, category: 'TOLLS' as const, expenseKey: 'tolls', label: 'Tolls & Scales', monthlyAmount: 150.0 },
+    { vehicleId: vehicle1.id, category: 'OIL_CHANGE' as const, expenseKey: 'oil_change', label: 'Oil Change & Filters', monthlyAmount: 300.0 },
+    { vehicleId: vehicle1.id, category: 'MAINTENANCE' as const, expenseKey: 'repairs', label: 'Repairs & Maintenance', monthlyAmount: 500.0 },
     // Vehicle 2 — flatbed
-    { vehicleId: vehicle2.id, category: 'FIXED' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 2800.0 },
-    { vehicleId: vehicle2.id, category: 'FIXED' as const, expenseKey: 'flatbed_payment', label: 'Flatbed Trailer Payment', monthlyAmount: 750.0 },
-    { vehicleId: vehicle2.id, category: 'FIXED' as const, expenseKey: 'insurance', label: 'Insurance', monthlyAmount: 1050.0 },
-    { vehicleId: vehicle2.id, category: 'VARIABLE' as const, expenseKey: 'fuel', label: 'Fuel', monthlyAmount: 3600.0 },
-    { vehicleId: vehicle2.id, category: 'VARIABLE' as const, expenseKey: 'tires', label: 'Tires (amortized)', monthlyAmount: 500.0 },
-    { vehicleId: vehicle2.id, category: 'VARIABLE' as const, expenseKey: 'tarps_straps', label: 'Tarps & Straps', monthlyAmount: 120.0 },
-    { vehicleId: vehicle2.id, category: 'SERVICE' as const, expenseKey: 'oil_change', label: 'Oil Change & Filters', monthlyAmount: 320.0 },
-    { vehicleId: vehicle2.id, category: 'SERVICE' as const, expenseKey: 'repairs', label: 'Repairs & Maintenance', monthlyAmount: 650.0 },
+    { vehicleId: vehicle2.id, category: 'TRUCK_PAYMENT' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 2800.0 },
+    { vehicleId: vehicle2.id, category: 'TRAILER_RENTAL' as const, expenseKey: 'flatbed_payment', label: 'Flatbed Trailer Payment', monthlyAmount: 750.0 },
+    { vehicleId: vehicle2.id, category: 'INSURANCE' as const, expenseKey: 'insurance', label: 'Insurance', monthlyAmount: 1050.0 },
+    { vehicleId: vehicle2.id, category: 'FUEL' as const, expenseKey: 'fuel', label: 'Fuel', monthlyAmount: 3600.0 },
+    { vehicleId: vehicle2.id, category: 'TIRES' as const, expenseKey: 'tires', label: 'Tires (amortized)', monthlyAmount: 500.0 },
+    { vehicleId: vehicle2.id, category: 'OTHER' as const, expenseKey: 'tarps_straps', label: 'Tarps & Straps', monthlyAmount: 120.0 },
+    { vehicleId: vehicle2.id, category: 'OIL_CHANGE' as const, expenseKey: 'oil_change', label: 'Oil Change & Filters', monthlyAmount: 320.0 },
+    { vehicleId: vehicle2.id, category: 'MAINTENANCE' as const, expenseKey: 'repairs', label: 'Repairs & Maintenance', monthlyAmount: 650.0 },
     // Vehicle 3 — owner-op dry van
-    { vehicleId: vehicle3.id, category: 'FIXED' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 2600.0 },
-    { vehicleId: vehicle3.id, category: 'FIXED' as const, expenseKey: 'trailer_payment', label: 'Trailer Lease', monthlyAmount: 700.0 },
-    { vehicleId: vehicle3.id, category: 'FIXED' as const, expenseKey: 'insurance', label: 'Insurance', monthlyAmount: 950.0 },
-    { vehicleId: vehicle3.id, category: 'VARIABLE' as const, expenseKey: 'fuel', label: 'Fuel', monthlyAmount: 3400.0 },
-    { vehicleId: vehicle3.id, category: 'SERVICE' as const, expenseKey: 'repairs', label: 'Repairs & Maintenance', monthlyAmount: 450.0 },
+    { vehicleId: vehicle3.id, category: 'TRUCK_PAYMENT' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 2600.0 },
+    { vehicleId: vehicle3.id, category: 'TRAILER_RENTAL' as const, expenseKey: 'trailer_payment', label: 'Trailer Lease', monthlyAmount: 700.0 },
+    { vehicleId: vehicle3.id, category: 'INSURANCE' as const, expenseKey: 'insurance', label: 'Insurance', monthlyAmount: 950.0 },
+    { vehicleId: vehicle3.id, category: 'FUEL' as const, expenseKey: 'fuel', label: 'Fuel', monthlyAmount: 3400.0 },
+    { vehicleId: vehicle3.id, category: 'MAINTENANCE' as const, expenseKey: 'repairs', label: 'Repairs & Maintenance', monthlyAmount: 450.0 },
     // Vehicle 4 — reefer
-    { vehicleId: vehicle4.id, category: 'FIXED' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 3100.0 },
-    { vehicleId: vehicle4.id, category: 'FIXED' as const, expenseKey: 'reefer_payment', label: 'Reefer Trailer Payment', monthlyAmount: 900.0 },
-    { vehicleId: vehicle4.id, category: 'FIXED' as const, expenseKey: 'insurance', label: 'Insurance (incl. Cargo)', monthlyAmount: 1200.0 },
-    { vehicleId: vehicle4.id, category: 'VARIABLE' as const, expenseKey: 'fuel', label: 'Fuel (truck + reefer)', monthlyAmount: 4100.0 },
-    { vehicleId: vehicle4.id, category: 'VARIABLE' as const, expenseKey: 'tires', label: 'Tires (amortized)', monthlyAmount: 550.0 },
-    { vehicleId: vehicle4.id, category: 'SERVICE' as const, expenseKey: 'reefer_service', label: 'Reefer Unit Service', monthlyAmount: 600.0 },
+    { vehicleId: vehicle4.id, category: 'TRUCK_PAYMENT' as const, expenseKey: 'truck_payment', label: 'Truck Payment', monthlyAmount: 3100.0 },
+    { vehicleId: vehicle4.id, category: 'TRAILER_RENTAL' as const, expenseKey: 'reefer_payment', label: 'Reefer Trailer Payment', monthlyAmount: 900.0 },
+    { vehicleId: vehicle4.id, category: 'INSURANCE' as const, expenseKey: 'insurance', label: 'Insurance (incl. Cargo)', monthlyAmount: 1200.0 },
+    { vehicleId: vehicle4.id, category: 'FUEL' as const, expenseKey: 'fuel', label: 'Fuel (truck + reefer)', monthlyAmount: 4100.0 },
+    { vehicleId: vehicle4.id, category: 'TIRES' as const, expenseKey: 'tires', label: 'Tires (amortized)', monthlyAmount: 550.0 },
+    { vehicleId: vehicle4.id, category: 'MAINTENANCE' as const, expenseKey: 'reefer_service', label: 'Reefer Unit Service', monthlyAmount: 600.0 },
   ];
 
   for (const expense of allExpenses) {
@@ -712,6 +767,50 @@ const runSeed = async (): Promise<void> => {
   process.stdout.write('TruckExpenses: created for all vehicles\n');
 
   // ---------------------------------------------------------------------------
+  // RecurringExpenses
+  // ---------------------------------------------------------------------------
+  await prisma.recurringExpense.upsert({
+    where: { vehicleId_label: { vehicleId: vehicle1.id, label: 'Truck Payment' } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      vehicleId: vehicle1.id,
+      category: 'TRUCK_PAYMENT',
+      label: 'Truck Payment',
+      amount: 2500.0,
+      frequency: 'MONTHLY',
+    },
+  });
+
+  await prisma.recurringExpense.upsert({
+    where: { vehicleId_label: { vehicleId: vehicle1.id, label: 'Insurance' } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      vehicleId: vehicle1.id,
+      category: 'INSURANCE',
+      label: 'Insurance',
+      amount: 800.0,
+      frequency: 'MONTHLY',
+    },
+  });
+
+  await prisma.recurringExpense.upsert({
+    where: { vehicleId_label: { vehicleId: vehicle2.id, label: 'Truck Payment' } },
+    update: {},
+    create: {
+      organizationId: org.id,
+      vehicleId: vehicle2.id,
+      category: 'TRUCK_PAYMENT',
+      label: 'Truck Payment',
+      amount: 2500.0,
+      frequency: 'MONTHLY',
+    },
+  });
+
+  process.stdout.write('RecurringExpenses: 3 created\n');
+
+  // ---------------------------------------------------------------------------
   // Driver-Vehicle assignments
   // ---------------------------------------------------------------------------
   await prisma.vehicle.update({ where: { id: vehicle1.id }, data: { driverId: 'seed-driver-company-1' } });
@@ -720,6 +819,43 @@ const runSeed = async (): Promise<void> => {
   await prisma.vehicle.update({ where: { id: vehicle4.id }, data: { driverId: 'seed-driver-external-1' } });
 
   process.stdout.write('Driver-Vehicle assignments: 4 created\n');
+
+  // ---------------------------------------------------------------------------
+  // User, Membership, and DispatcherProfile
+  // ---------------------------------------------------------------------------
+  const seedUser = await prisma.user.upsert({
+    where: { externalId: 'seed-dispatcher-external-id' },
+    update: {},
+    create: {
+      externalId: 'seed-dispatcher-external-id',
+      email: 'dispatcher@apexdispatch.com',
+      firstName: 'Alex',
+      lastName: 'Dispatcher',
+    },
+  });
+
+  const seedMembership = await prisma.membership.upsert({
+    where: { id: 'seed-membership-dispatcher' },
+    update: {},
+    create: {
+      id: 'seed-membership-dispatcher',
+      userId: seedUser.id,
+      organizationId: org.id,
+      role: 'DISPATCHER',
+    },
+  });
+
+  await prisma.dispatcherProfile.upsert({
+    where: { membershipId: seedMembership.id },
+    update: {},
+    create: {
+      membershipId: seedMembership.id,
+      commissionType: 'PERCENTAGE_OF_MARGIN',
+      commissionRate: 10.0,
+    },
+  });
+
+  process.stdout.write('User / Membership / DispatcherProfile: created for seed dispatcher\n');
 
   // ---------------------------------------------------------------------------
   // CarrierNotes
@@ -912,9 +1048,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerCoyote.id,
       externalRefNumber: 'COY-482916',
       equipmentType: 'DRY_VAN',
-      commodity: 'Auto Parts',
-      weight: 38000,
-      pieceCount: 24,
       loadedMiles: 756,
       deadheadMiles: 15,
       totalMiles: 771,
@@ -950,9 +1083,6 @@ const runSeed = async (): Promise<void> => {
       contactId: 'seed-contact-4',
       customerId: customerSunbelt.id,
       equipmentType: 'REEFER',
-      commodity: 'Frozen Poultry',
-      weight: 42000,
-      pieceCount: 18,
       loadedMiles: 239,
       deadheadMiles: 25,
       totalMiles: 264,
@@ -988,9 +1118,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerPremier.id,
       externalRefNumber: 'PSC-10492',
       equipmentType: 'FLATBED',
-      commodity: 'Steel Beams',
-      weight: 44000,
-      pieceCount: 6,
       loadedMiles: 244,
       deadheadMiles: 10,
       totalMiles: 254,
@@ -1002,7 +1129,6 @@ const runSeed = async (): Promise<void> => {
       invoiceReadiness: 'READY',
       rateConReceivedAt: daysAgo(5),
       bolSignedAt: daysAgo(2),
-      isTarp: true,
       createdAt: daysAgo(5),
       updatedAt: daysAgo(2),
       stops: {
@@ -1027,9 +1153,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerEcho.id,
       externalRefNumber: 'ECHO-78421',
       equipmentType: 'DRY_VAN',
-      commodity: 'Consumer Electronics',
-      weight: 32000,
-      pieceCount: 42,
       loadedMiles: 244,
       deadheadMiles: 0,
       totalMiles: 244,
@@ -1064,9 +1187,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerCoyote.id,
       externalRefNumber: 'COY-503718',
       equipmentType: 'DRY_VAN',
-      commodity: 'Paper Products',
-      weight: 36000,
-      pieceCount: 30,
       loadedMiles: 660,
       deadheadMiles: 20,
       totalMiles: 680,
@@ -1101,9 +1221,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerEcho.id,
       externalRefNumber: 'ECHO-79105',
       equipmentType: 'REEFER',
-      commodity: 'Pharmaceuticals',
-      weight: 28000,
-      pieceCount: 16,
       loadedMiles: 1090,
       deadheadMiles: 30,
       totalMiles: 1120,
@@ -1135,9 +1252,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerPremier.id,
       externalRefNumber: 'PSC-10521',
       equipmentType: 'DRY_VAN',
-      commodity: 'Household Goods',
-      weight: 34000,
-      pieceCount: 50,
       loadedMiles: 1065,
       totalMiles: 1065,
       customerRate: 3400.0,
@@ -1165,8 +1279,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerCoyote.id,
       externalRefNumber: 'COY-509241',
       equipmentType: 'DRY_VAN',
-      commodity: 'Automotive Accessories',
-      weight: 30000,
       loadedMiles: 781,
       totalMiles: 781,
       customerRate: 2400.0,
@@ -1197,9 +1309,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerEcho.id,
       externalRefNumber: 'ECHO-77893',
       equipmentType: 'FLATBED',
-      commodity: 'Lumber',
-      weight: 45000,
-      pieceCount: 12,
       loadedMiles: 756,
       deadheadMiles: 40,
       totalMiles: 796,
@@ -1208,7 +1317,6 @@ const runSeed = async (): Promise<void> => {
       dispatchFee: 310.0,
       ratePerMile: 4.10,
       status: 'EXCEPTION',
-      isTarp: true,
       rateConReceivedAt: daysAgo(6),
       dispatcherNotes: 'EXCEPTION: Receiver refused partial — 3 bundles damaged in transit. Filing claim.',
       createdAt: daysAgo(6),
@@ -1235,9 +1343,6 @@ const runSeed = async (): Promise<void> => {
       customerId: customerCoyote.id,
       externalRefNumber: 'COY-471385',
       equipmentType: 'DRY_VAN',
-      commodity: 'Packaged Food',
-      weight: 40000,
-      pieceCount: 32,
       loadedMiles: 380,
       deadheadMiles: 10,
       totalMiles: 390,

@@ -19,6 +19,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
   fullWidth = true,
   size = 'large',
   type = 'submit',
+  onClick,
 }) => {
   return (
     <AnimateButton>
@@ -31,6 +32,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
         type={type}
         variant="contained"
         color="primary"
+        onClick={onClick}
       >
         {label}
       </LoadingButton>

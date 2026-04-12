@@ -5,9 +5,11 @@ import {
   Truck,
   FileText,
   Contact,
+  Map,
   MapPinCheckIcon,
   Users,
   Settings,
+  Calculator,
 } from 'lucide-react';
 
 export const menuItems: NavItemType[] = [
@@ -29,6 +31,13 @@ export const menuItems: NavItemType[] = [
         type: 'item',
         url: '/loads',
         icon: <Truck size={24} />,
+      },
+      {
+        id: 'load-board',
+        title: 'Load Board',
+        type: 'item',
+        url: '/loadboard',
+        icon: <Map size={24} />,
       },
       {
         id: 'fleet',
@@ -68,6 +77,17 @@ export const menuItems: NavItemType[] = [
         type: 'item',
         url: '/invoices',
         icon: <FileText size={24} />,
+      },
+      {
+        id: 'accounting',
+        title: 'Accounting',
+        type: 'collapse',
+        icon: <Calculator size={24} />,
+        children: [
+          { id: 'settlements', title: 'Settlements', type: 'item', url: '/accounting/settlements' },
+          { id: 'ifta', title: 'IFTA', type: 'item', url: '/accounting/ifta' },
+          { id: 'expenses', title: 'Expenses', type: 'item', url: '/accounting/expenses' },
+        ],
       },
       {
         id: 'settings',

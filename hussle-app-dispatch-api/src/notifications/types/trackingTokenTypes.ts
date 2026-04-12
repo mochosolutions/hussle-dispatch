@@ -3,12 +3,19 @@ import type { LoadTrackingToken, TrackingTokenType } from '@prisma/client';
 export type TrackingTokenRecord = LoadTrackingToken;
 
 export interface CreateTrackingTokenInput {
-  loadId: string;
+  loadId?: string;
   expiresInHours?: number;
 }
 
 export interface TrackingTokenRepoPort {
-  create(input: { loadId: string; token: string; expiresAt: Date; type?: TrackingTokenType }): Promise<TrackingTokenRecord>;
+  create(input: {
+    loadId?: string;
+    vehicleId?: string;
+    driverId?: string;
+    token: string;
+    expiresAt: Date;
+    type?: TrackingTokenType;
+  }): Promise<TrackingTokenRecord>;
   findByToken(token: string): Promise<TrackingTokenRecord | null>;
   findActiveByLoadId(loadId: string, type?: TrackingTokenType): Promise<TrackingTokenRecord | null>;
   revoke(id: string): Promise<void>;

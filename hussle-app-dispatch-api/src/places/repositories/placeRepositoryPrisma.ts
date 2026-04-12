@@ -176,6 +176,11 @@ export const placeRepositoryPrisma = (
         skip,
         take,
         orderBy,
+        include: {
+          stops: {
+            orderBy: { sequence: 'asc' as const },
+          },
+        },
       }),
       prisma.load.count({ where }),
     ]);

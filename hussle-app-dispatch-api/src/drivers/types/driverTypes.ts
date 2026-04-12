@@ -34,6 +34,7 @@ export interface CreateDriverInput {
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
   status?: DriverStatus;
+  timezone?: string;
   notes?: string;
 }
 
@@ -58,6 +59,7 @@ export interface UpdateDriverInput {
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
   status?: DriverStatus;
+  timezone?: string;
   notes?: string;
 }
 

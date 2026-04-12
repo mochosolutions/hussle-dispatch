@@ -32,8 +32,7 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
       title="Edit Dispatch Terms"
       subtitle={carrier.name}
       initialValues={{
-        dispatchFeePercent: carrier.dispatchFeePercent,
-        partnerSplitPercent: carrier.partnerSplitPercent ?? undefined,
+        companyMarginPercent: carrier.companyMarginPercent,
         feeIncludesAccessorials: carrier.feeIncludesAccessorials,
         dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       }}
@@ -45,26 +44,11 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
       {(formikProps) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <TextField
-            name="dispatchFeePercent"
-            label="Dispatch Fee %"
+            name="companyMarginPercent"
+            label="Company Margin %"
             type="number"
             formik={formikProps}
           />
-
-          {!isDispatcher && (
-            <TextField
-              name="partnerSplitPercent"
-              label="Partner Split %"
-              type="number"
-              formik={formikProps}
-            />
-          )}
-
-          {isDispatcher && (
-            <Typography variant="body2" color="text.secondary">
-              Partner split is managed by administrators.
-            </Typography>
-          )}
 
           <CheckboxField
             name="feeIncludesAccessorials"

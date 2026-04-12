@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { sendSingle } from '@/shared/responseEnvelope';
-import { UnauthorizedError } from '@/shared/errors';
 import type { StopService } from '../services/stopService';
 import { createStopMapper } from './mappers/createStopMapper';
 import { updateStopMapper } from './mappers/updateStopMapper';
@@ -34,24 +33,16 @@ export const createStopControllers = (deps: StopControllerDeps): StopControllers
   },
 
   remove: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-    const stopId = req.params['stopId'];
-
-    if (organizationId === undefined || stopId === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
+    const stopId = req.params['stopId'] ?? '';
 
     await deps.stopService.deleteStop(stopId, organizationId);
     res.status(204).send();
   },
 
   list: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-    const loadId = req.params['loadId'];
-
-    if (organizationId === undefined || loadId === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
+    const loadId = req.params['loadId'] ?? '';
 
     const stops = await deps.stopService.listStops(loadId, organizationId);
     sendSingle(res, toStopListResponse(stops));

@@ -10,6 +10,9 @@ import { placeStatsQueryPrisma } from './repositories/placeStatsQueryPrisma';
 import { createPlaceService } from './services/placeService';
 import { createAddressSearchService } from './services/addressSearchService';
 import { createRouteDistanceService } from './services/routeDistanceService';
+import { checkFacilityOpenAt } from './services/facilityHoursService';
+import type { CheckFacilityOpenAtInput } from './services/facilityHoursService';
+import { logger } from '@/shared/utils/logger';
 import { createAwsLocationProvider } from '@/shared/providers/awsLocationProvider';
 import { calculateRoadDistance } from '@/shared/utils/distanceCalculator';
 import { env } from '@/config/env';
@@ -23,11 +26,16 @@ export interface PlaceModuleControllers extends PlaceControllers {
   routeDistance: RequestHandler;
 }
 
+export interface PlaceModuleQueries {
+  checkFacilityOpenAt: (input: CheckFacilityOpenAtInput) => ReturnType<typeof checkFacilityOpenAt>;
+}
+
 export const createPlacesModule = ({
   prismaClient,
   redis,
 }: PlaceModuleDeps): {
   controllers: PlaceModuleControllers;
+  queries: PlaceModuleQueries;
 } => {
   const repositories = placeRepositoryPrisma(prismaClient);
 
@@ -62,5 +70,11 @@ export const createPlacesModule = ({
     routeDistance: createRouteDistanceController({ routeDistanceService }),
   };
 
-  return { controllers };
+  const facilityHoursDeps = { placeRepo: repositories, logger };
+
+  const queries: PlaceModuleQueries = {
+    checkFacilityOpenAt: (input) => checkFacilityOpenAt(input, facilityHoursDeps),
+  };
+
+  return { controllers, queries };
 };

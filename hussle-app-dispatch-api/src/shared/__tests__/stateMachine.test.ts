@@ -596,3 +596,93 @@ describe('validateTransition — DRIVER role restrictions', () => {
     expect(result.valid).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateTransition — appointment number warnings
+// ---------------------------------------------------------------------------
+
+describe('validateTransition — appointment number warnings', () => {
+  const dispatchReadyLoad = {
+    carrierId: 'c-1',
+    driverId: 'd-1',
+    vehicleId: 'v-1',
+    rateConReceivedAt: new Date(),
+  };
+
+  it('warns when BOOKED→DISPATCHED with APPOINTMENT stop missing appointmentNumber', () => {
+    const result = validateTransition('BOOKED', 'DISPATCHED', {
+      userRole: 'DISPATCHER',
+      load: {
+        ...dispatchReadyLoad,
+        stops: [
+          { sequence: 1, schedulingType: 'APPOINTMENT', appointmentNumber: null },
+        ],
+      },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toBeDefined();
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('missing appointment number'),
+      ]),
+    );
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Stop 1'),
+      ]),
+    );
+  });
+
+  it('returns no appointmentNumber warnings when all APPOINTMENT stops have appointmentNumber', () => {
+    const result = validateTransition('BOOKED', 'DISPATCHED', {
+      userRole: 'DISPATCHER',
+      load: {
+        ...dispatchReadyLoad,
+        stops: [
+          { sequence: 1, schedulingType: 'APPOINTMENT', appointmentNumber: 'APT-123' },
+          { sequence: 2, schedulingType: 'APPOINTMENT', appointmentNumber: 'APT-456' },
+        ],
+      },
+    });
+    expect(result.valid).toBe(true);
+    const appointmentWarnings = (result.warnings ?? []).filter((w) =>
+      w.includes('missing appointment number'),
+    );
+    expect(appointmentWarnings).toHaveLength(0);
+  });
+
+  it('returns no appointmentNumber warnings for FCFS stops without appointmentNumber', () => {
+    const result = validateTransition('BOOKED', 'DISPATCHED', {
+      userRole: 'DISPATCHER',
+      load: {
+        ...dispatchReadyLoad,
+        stops: [
+          { sequence: 1, schedulingType: 'FCFS', appointmentNumber: null },
+          { sequence: 2, schedulingType: 'FCFS', appointmentNumber: null },
+        ],
+      },
+    });
+    expect(result.valid).toBe(true);
+    const appointmentWarnings = (result.warnings ?? []).filter((w) =>
+      w.includes('missing appointment number'),
+    );
+    expect(appointmentWarnings).toHaveLength(0);
+  });
+
+  it('does not check appointmentNumber for non-DISPATCHED transitions', () => {
+    const result = validateTransition('QUOTED', 'BOOKED', {
+      userRole: 'DISPATCHER',
+      load: {
+        carrierId: 'c-1',
+        stops: [
+          { sequence: 1, schedulingType: 'APPOINTMENT', appointmentNumber: null },
+        ],
+      },
+    });
+    expect(result.valid).toBe(true);
+    const appointmentWarnings = (result.warnings ?? []).filter((w) =>
+      w.includes('missing appointment number'),
+    );
+    expect(appointmentWarnings).toHaveLength(0);
+  });
+});

@@ -1,9 +1,15 @@
 import { createAction } from '@reduxjs/toolkit';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import type { RootState } from 'store';
-import { createCrudSlice, createCrudSelectors } from '@mocho/ui/redux';
+import { createCrudSlice, createCrudSelectors, LoadingState } from '@mocho/ui/redux';
 import type { CrudPageState } from '@mocho/ui/redux';
-import type { BoardView, LoadFilters, LoadStatus, TransitionStatusInput } from '../../types';
+import type {
+  AssignLoadInput,
+  BoardView,
+  LoadFilters,
+  LoadStatus,
+  TransitionStatusInput,
+} from '../../types';
 
 // ---------------------------------------------------------------------------
 // Extended state — adds boardView and filters to the standard CRUD page state
@@ -40,6 +46,29 @@ const initialState: LoadPageState = {
   ...loadPageInitialExtras,
 };
 
+// Loading-map helpers — mirror @mocho/ui/redux setPending/setFulfilled/setRejected,
+// but operate on plain state (the wrapper reducer is not Immer-wrapped).
+const setLoadPending = (state: LoadPageState, key: string): LoadPageState => ({
+  ...state,
+  loading: { ...state.loading, [key]: LoadingState.Pending },
+});
+
+const setLoadFulfilled = (state: LoadPageState, key: string): LoadPageState => ({
+  ...state,
+  loading: { ...state.loading, [key]: LoadingState.Fulfilled },
+  errors: { ...state.errors, [key]: '' },
+});
+
+const setLoadRejected = (
+  state: LoadPageState,
+  key: string,
+  error: string,
+): LoadPageState => ({
+  ...state,
+  loading: { ...state.loading, [key]: LoadingState.Rejected },
+  errors: { ...state.errors, [key]: error },
+});
+
 export const loadPageReducer = (
   state: LoadPageState = initialState,
   action: UnknownAction,
@@ -56,6 +85,28 @@ export const loadPageReducer = (
   if (fetchLoadsSuccess.match(action)) {
     const nextCrud = crudReducer(state, action);
     return { ...nextCrud, boardView: state.boardView, filters: state.filters, lastRefreshed: new Date().toISOString() };
+  }
+
+  // Status transition lifecycle — composite-key loading state per load
+  if (transitionLoadStatusRequest.match(action)) {
+    return setLoadPending(state, `transition:${action.payload.loadId}`);
+  }
+  if (transitionLoadStatusSuccess.match(action)) {
+    return setLoadFulfilled(state, `transition:${action.payload.loadId}`);
+  }
+  if (transitionLoadStatusFailure.match(action)) {
+    return setLoadRejected(state, `transition:${action.payload.loadId}`, action.payload.error);
+  }
+
+  // Assign-and-dispatch lifecycle — composite-key loading state per load
+  if (assignAndDispatchRequest.match(action)) {
+    return setLoadPending(state, `assignAndDispatch:${action.payload.loadId}`);
+  }
+  if (assignAndDispatchSuccess.match(action)) {
+    return setLoadFulfilled(state, `assignAndDispatch:${action.payload.loadId}`);
+  }
+  if (assignAndDispatchFailure.match(action)) {
+    return setLoadRejected(state, `assignAndDispatch:${action.payload.loadId}`, action.payload.error);
   }
 
   // Delegate all other actions to the CRUD slice reducer
@@ -121,6 +172,39 @@ export const showTransitionWarnings = createAction<{
   loadId: string;
   warnings: { code: string; message: string; detail?: string }[];
 }>('load/showTransitionWarnings');
+
+// ---------------------------------------------------------------------------
+// Assignment actions
+// ---------------------------------------------------------------------------
+
+export const assignLoadRequest = createAction<{
+  loadId: string;
+  data: AssignLoadInput;
+}>('load/assignLoadRequest');
+
+export const assignLoadSuccess = createAction<{
+  loadId: string;
+}>('load/assignLoadSuccess');
+
+export const assignLoadFailure = createAction<{
+  loadId: string;
+  error: string;
+}>('load/assignLoadFailure');
+
+export const assignAndDispatchRequest = createAction<{
+  loadId: string;
+  assignment: AssignLoadInput;
+  notes?: string;
+}>('load/assignAndDispatchRequest');
+
+export const assignAndDispatchSuccess = createAction<{
+  loadId: string;
+}>('load/assignAndDispatchSuccess');
+
+export const assignAndDispatchFailure = createAction<{
+  loadId: string;
+  error: string;
+}>('load/assignAndDispatchFailure');
 
 export const createCheckCallRequest = createAction<{
   loadId: string;

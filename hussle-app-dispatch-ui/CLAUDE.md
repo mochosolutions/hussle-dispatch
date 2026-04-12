@@ -106,7 +106,10 @@ src/
 ├── pages/                       # Feature modules — each is a self-contained domain
 │   ├── <feature>/
 │   │   ├── pages/               # Page-level components (Index, Create, Edit, Detail)
-│   │   ├── components/          # Feature-specific components
+│   │   │   └── <Page>/
+│   │   │       ├── index.tsx    # Page entry — orchestrates state, composes components
+│   │   │       └── components/  # Page-local components (see Component Placement rule)
+│   │   ├── components/          # Feature-shared components (reusable across pages)
 │   │   ├── routes/              # <Feature>Routes.tsx — route definitions
 │   │   ├── store/
 │   │   │   ├── reducers/        # Page slice + entity slice + barrel index.ts
@@ -156,6 +159,25 @@ src/
 ├── providers/                   # Provider wrapper components
 └── assets/                      # Static assets (images, fonts)
 ```
+
+### Component Placement
+
+Feature components live in one of two places. The choice is governed by a strict rule, not by intuition.
+
+**A component lives in `pages/<feature>/pages/<Page>/components/` (page-local) when ALL of the following are true:**
+
+1. It is only used by this one page.
+2. It takes the page's local state as props — it does not own data fetching, sagas, or selectors.
+3. Its purpose is readability — extracting a chunk of JSX out of the page file.
+4. It is not a candidate for reuse even hypothetically (not a generic card, drawer, dialog, table, or form field).
+
+**Otherwise it lives in `pages/<feature>/components/` (feature-shared).**
+
+When usage transitions from one page to two, move the component up to the feature-shared bucket. Default to page-local when current usage is single-page — promote on demand, not on speculation.
+
+**Tab panels are page-local components.** A tabbed detail page's tabs (e.g., `OverviewTab.tsx`, `FinancialsTab.tsx`) live in `pages/<Page>/components/` alongside any other page-local components. Do not create a separate `tabs/` folder — the `Tab` filename suffix already conveys the role.
+
+**Defining components inside `pages/<Page>/index.tsx` is not allowed.** If a section is large enough to deserve its own name and prop interface, give it its own file in `components/`. The page `index.tsx` should orchestrate state and compose components, not declare them.
 
 ---
 
@@ -683,3 +705,6 @@ export default FeatureIndexPage;
 - **Use `moment`** — legacy dependency. Use `date-fns` for all date operations.
 - **Use inline `style={{}}`** — use the `sx` prop on MUI components instead
 - **Use `styled-components`** — use MUI's `styled()` from `@mui/material/styles` for reusable styled components
+- **Declare components inside `pages/<Page>/index.tsx`** — extract them to `pages/<Page>/components/`. The page file orchestrates state and composes components, it does not declare them.
+- **Create a `tabs/` folder under a page** — tab panels are page-local components. They live in `pages/<Page>/components/` like everything else; the `Tab` filename suffix conveys the role.
+- **Put page-local components in the feature-shared `components/` bucket** — if it's only used by one page, takes that page's state as props, and exists for readability, it belongs in `pages/<Page>/components/`. See the Component Placement rule.

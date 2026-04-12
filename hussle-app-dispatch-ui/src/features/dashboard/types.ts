@@ -14,8 +14,7 @@ export interface DashboardKpis {
   revenue: {
     revenueThisWeek: string;
     revenueThisMonth: string;
-    dispatchFeesThisMonth: string;
-    partnerSplitThisMonth: string | null;
+    companyMarginThisMonth: string;
   };
   overdueInvoices: {
     count: number;

@@ -4,10 +4,11 @@ import type {
   LoadDetail,
   CreateLoadInput,
   UpdateLoadInput,
+  AssignLoadInput,
+  AssignLoadResponse,
   LoadFilters,
   CheckCall,
   StatusHistoryEntry,
-  StatusTransitionResponse,
   TransitionStatusInput,
   CreateCheckCallInput,
 } from 'features/load/types';
@@ -89,6 +90,17 @@ export const updateLoad = async (
   return response.data.data;
 };
 
+export const assignLoad = async (
+  id: string,
+  data: AssignLoadInput,
+): Promise<AssignLoadResponse> => {
+  const response = await axiosInstance.patch<{ data: AssignLoadResponse }>(
+    `/loads/${id}/assignment`,
+    data,
+  );
+  return response.data.data;
+};
+
 export const deleteLoad = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/loads/${id}`);
 };
@@ -96,12 +108,12 @@ export const deleteLoad = async (id: string): Promise<void> => {
 export const transitionStatus = async (
   id: string,
   input: TransitionStatusInput,
-): Promise<StatusTransitionResponse> => {
-  const response = await axiosInstance.patch<StatusTransitionApiResponse>(
+): Promise<StatusTransitionApiResponse> => {
+  const response = await axiosInstance.patch<{ data: StatusTransitionApiResponse }>(
     `/loads/${id}/status`,
     input,
   );
-  return response.data;
+  return response.data.data;
 };
 
 export const getCheckCalls = async (

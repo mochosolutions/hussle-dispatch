@@ -109,9 +109,9 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
             )}
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            {load.carrierRate && (
+            {load.carrierPayout && (
               <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>
-                ${Number(load.carrierRate).toLocaleString()}
+                ${Number(load.carrierPayout).toLocaleString()}
               </Typography>
             )}
           </Box>

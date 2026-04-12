@@ -28,10 +28,12 @@ import {
   reorderStopsSchema,
   updateStopSchema,
 } from '../validators/stopValidators';
+import { rankDriversValidator } from '../validators/rankDriversValidator';
 
 export interface LoadRouterControllers extends LoadControllers {
   transitionStatus: RequestHandler;
   getWeeklyGross: RequestHandler;
+  rankDrivers: RequestHandler;
 }
 
 export const createLoadsRouter = (
@@ -151,6 +153,14 @@ export const createLoadsRouter = (
     requireAuth,
     validateRequest(loadIdParamValidator),
     controllers.listLoadDocuments,
+  );
+
+  router.get(
+    '/:loadId/eligible-drivers',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(rankDriversValidator),
+    controllers.rankDrivers,
   );
 
   // --- Stop sub-routes ---

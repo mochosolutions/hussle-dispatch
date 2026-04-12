@@ -22,7 +22,8 @@ export type DrawerType =
   | 'driverCreate'
   | 'carrierForm'
   | 'contactCreate'
-  | 'loadDetail';
+  | 'loadDetail'
+  | 'documentUpload';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
@@ -44,6 +45,13 @@ export interface DrawerTypeMap {
     defaultType?: string;
     initialCompanyName?: string;
     onClose: () => void;
+  };
+  documentUpload: {
+    context: import('../../documents/constants').DocumentContext;
+    entityType: import('../../documents/types').DocumentEntityType;
+    entityId: string;
+    preselectedDocType?: import('../../documents/types').DocumentType;
+    lockDocType?: boolean;
   };
 }
 

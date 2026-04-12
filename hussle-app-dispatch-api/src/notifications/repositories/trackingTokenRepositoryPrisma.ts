@@ -12,6 +12,8 @@ export const trackingTokenRepositoryPrisma = (
     prisma.loadTrackingToken.create({
       data: {
         loadId: input.loadId,
+        vehicleId: input.vehicleId,
+        driverId: input.driverId,
         token: input.token,
         expiresAt: input.expiresAt,
         type: input.type ?? 'CUSTOMER',

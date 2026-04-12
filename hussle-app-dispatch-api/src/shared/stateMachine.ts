@@ -39,14 +39,16 @@ export type SideEffectTag =
   | 'CALCULATE_FINANCIALS'
   | 'FREEZE_FINANCIALS'
   | 'AUTO_GENERATE_INVOICE'
-  | 'AUTO_CREATE_TONU_ACCESSORIAL';
+  | 'AUTO_CREATE_TONU_ACCESSORIAL'
+  | 'CHECK_DETENTION';
 
 export type SideEffectsMap = Readonly<Partial<Record<LoadStatus, readonly SideEffectTag[]>>>;
 
 export const TRANSITION_SIDE_EFFECTS: SideEffectsMap = Object.freeze({
   BOOKED: Object.freeze(['CALCULATE_FINANCIALS'] as const),
   DISPATCHED: Object.freeze(['FREEZE_FINANCIALS'] as const),
-  DELIVERED: Object.freeze(['AUTO_GENERATE_INVOICE'] as const),
+  IN_TRANSIT: Object.freeze(['CHECK_DETENTION'] as const),
+  DELIVERED: Object.freeze(['AUTO_GENERATE_INVOICE', 'CHECK_DETENTION'] as const),
   TONU: Object.freeze(['AUTO_CREATE_TONU_ACCESSORIAL', 'AUTO_GENERATE_INVOICE'] as const),
 });
 
@@ -60,6 +62,11 @@ export interface LoadSnapshot {
   vehicleId?: string | null;
   rateConReceivedAt?: Date | null;
   bolSignedAt?: Date | null;
+  stops?: readonly {
+    sequence: number;
+    schedulingType: string;
+    appointmentNumber: string | null;
+  }[];
 }
 
 export interface TransitionContext {
@@ -163,6 +170,19 @@ export const validateTransition = (
 
   if (toStatus === 'DELIVERED' && context.load.bolSignedAt === null) {
     warnings.push('No signed BOL on file');
+  }
+
+  if (toStatus === 'DISPATCHED' && context.load.stops !== undefined) {
+    context.load.stops.forEach((stop) => {
+      if (
+        stop.schedulingType === 'APPOINTMENT' &&
+        (stop.appointmentNumber === null ||
+          stop.appointmentNumber === undefined ||
+          stop.appointmentNumber.trim() === '')
+      ) {
+        warnings.push(`Stop ${stop.sequence}: APPOINTMENT stop is missing appointment number`);
+      }
+    });
   }
 
   return {

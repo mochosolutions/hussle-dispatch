@@ -1,8 +1,9 @@
-import { AccessorialType, EquipmentType, LoadStatus, StopType } from '@prisma/client';
+import { AccessorialType, EquipmentType, LoadStatus, SchedulingType, StopType } from '@prisma/client';
 import * as Yup from 'yup';
 
 const equipmentTypeValues = Object.values(EquipmentType);
 const loadStatusValues = Object.values(LoadStatus);
+const schedulingTypeValues = Object.values(SchedulingType);
 const stopTypeValues = Object.values(StopType);
 const accessorialTypeValues = Object.values(AccessorialType);
 
@@ -31,11 +32,22 @@ const stopSchema = Yup.object({
   city: optionalTrimmed,
   state: optionalTrimmed,
   zip: optionalTrimmed,
-  appointmentDate: Yup.date().notRequired(),
-  appointmentTime: optionalTrimmed,
+  schedulingType: Yup.mixed<SchedulingType>()
+    .oneOf(schedulingTypeValues, 'schedulingType must be a valid SchedulingType')
+    .notRequired(),
+  appointmentStart: Yup.date().nullable().notRequired(),
+  appointmentEnd: Yup.date().nullable().notRequired(),
+  targetDate: Yup.date().nullable().notRequired(),
+  notificationHours: Yup.number().integer().nullable().notRequired(),
   appointmentNumber: optionalTrimmed,
   contactName: optionalTrimmed,
   contactPhone: optionalTrimmed,
+  commodity: optionalTrimmed,
+  weight: Yup.number().integer().min(0).notRequired(),
+  pieceCount: Yup.number().integer().min(0).notRequired(),
+  isHazmat: Yup.boolean().notRequired(),
+  isTarp: Yup.boolean().notRequired(),
+  isTempControlled: Yup.boolean().notRequired(),
   notes: optionalTrimmed,
 });
 
@@ -59,20 +71,12 @@ const createBodySchema = Yup.object({
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
     .notRequired(),
-  isHazmat: Yup.boolean().notRequired(),
-  isTarp: Yup.boolean().notRequired(),
   isTeamDriver: Yup.boolean().notRequired(),
-  commodity: optionalTrimmed,
-  weight: Yup.number().integer().min(0).notRequired(),
-  pieceCount: Yup.number().integer().min(0).notRequired(),
   loadedMiles: Yup.number().integer().min(0).notRequired(),
   deadheadMiles: Yup.number().integer().min(0).notRequired(),
   totalMiles: Yup.number().integer().min(0).notRequired(),
   customerRate: Yup.number().min(0).notRequired(),
   carrierRate: Yup.number().min(0).notRequired(),
-  dispatchFee: Yup.number().min(0).notRequired(),
-  partnerSplit: Yup.number().min(0).notRequired(),
-  ratePerMile: Yup.number().min(0).notRequired(),
   status: Yup.mixed<LoadStatus>()
     .oneOf(loadStatusValues, 'status must be a valid LoadStatus')
     .notRequired(),
@@ -98,20 +102,12 @@ const updateBodySchema = Yup.object({
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
     .notRequired(),
-  isHazmat: Yup.boolean().notRequired(),
-  isTarp: Yup.boolean().notRequired(),
   isTeamDriver: Yup.boolean().notRequired(),
-  commodity: optionalTrimmed,
-  weight: Yup.number().integer().min(0).notRequired(),
-  pieceCount: Yup.number().integer().min(0).notRequired(),
   loadedMiles: Yup.number().integer().min(0).notRequired(),
   deadheadMiles: Yup.number().integer().min(0).notRequired(),
   totalMiles: Yup.number().integer().min(0).notRequired(),
   customerRate: Yup.number().min(0).notRequired(),
   carrierRate: Yup.number().min(0).notRequired(),
-  dispatchFee: Yup.number().min(0).notRequired(),
-  partnerSplit: Yup.number().min(0).notRequired(),
-  ratePerMile: Yup.number().min(0).notRequired(),
   status: Yup.mixed<LoadStatus>()
     .oneOf(loadStatusValues, 'status must be a valid LoadStatus')
     .notRequired(),

@@ -62,8 +62,7 @@ export interface Carrier {
   city: string | null;
   state: string | null;
   zip: string | null;
-  dispatchFeePercent: number;
-  partnerSplitPercent: number | null;
+  companyMarginPercent: number;
   feeIncludesAccessorials: boolean;
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
@@ -115,8 +114,7 @@ export interface CreateCarrierInput {
   city?: string | null;
   state?: string | null;
   zip?: string | null;
-  dispatchFeePercent?: number | null;
-  partnerSplitPercent?: number | null;
+  companyMarginPercent?: number | null;
   feeIncludesAccessorials?: boolean | null;
   dispatchAgreementOnFile?: boolean | null;
   insuranceCertOnFile?: boolean | null;
@@ -137,8 +135,7 @@ export interface UpdateCarrierInput {
   city?: string | null;
   state?: string | null;
   zip?: string | null;
-  dispatchFeePercent?: number | null;
-  partnerSplitPercent?: number | null;
+  companyMarginPercent?: number | null;
   feeIncludesAccessorials?: boolean | null;
   dispatchAgreementOnFile?: boolean | null;
   insuranceCertOnFile?: boolean | null;

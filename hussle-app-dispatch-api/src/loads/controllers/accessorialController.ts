@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { sendSingle } from '@/shared/responseEnvelope';
-import { UnauthorizedError } from '@/shared/errors';
 import type { AccessorialService } from '../services/accessorialService';
 import { createAccessorialMapper } from './mappers/createAccessorialMapper';
 import { updateAccessorialMapper } from './mappers/updateAccessorialMapper';
@@ -36,48 +35,32 @@ export const createAccessorialControllers = (
   },
 
   remove: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-    const id = req.params['id'];
-
-    if (organizationId === undefined || id === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
+    const id = req.params['id'] ?? '';
 
     await deps.accessorialService.deleteAccessorial(id, organizationId);
     res.status(204).send();
   },
 
   list: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-    const loadId = req.params['loadId'];
-
-    if (organizationId === undefined || loadId === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
+    const loadId = req.params['loadId'] ?? '';
 
     const charges = await deps.accessorialService.listAccessorials(loadId, organizationId);
     sendSingle(res, toAccessorialListResponse(charges));
   },
 
   get: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-    const id = req.params['id'];
-
-    if (organizationId === undefined || id === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
+    const id = req.params['id'] ?? '';
 
     const charge = await deps.accessorialService.getAccessorial(id, organizationId);
     sendSingle(res, toAccessorialResponse(charge));
   },
 
   updateApproval: async (req: Request, res: Response): Promise<void> => {
-    const organizationId = req.organizationId;
-    const id = req.params['id'];
-
-    if (organizationId === undefined || id === undefined) {
-      throw new UnauthorizedError('Authentication required');
-    }
+    const organizationId = req.organizationId ?? '';
+    const id = req.params['id'] ?? '';
 
     const input = {
       id,

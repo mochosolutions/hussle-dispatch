@@ -89,6 +89,10 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
   const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
   const inputRef = useRef<HTMLInputElement>(null);
   const justSelectedRef = useRef(false);
+  const hasSelectionRef = useRef(hasSelection);
+
+  // Keep ref in sync so the search effect can read it without re-triggering
+  hasSelectionRef.current = hasSelection;
 
   // Sync input when external value changes
   useEffect(() => {
@@ -103,6 +107,12 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
   useEffect(() => {
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
+      return;
+    }
+
+    // Don't auto-search when a place is already selected —
+    // the user must clear the selection first to trigger a new search
+    if (hasSelectionRef.current) {
       return;
     }
 

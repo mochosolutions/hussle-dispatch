@@ -130,7 +130,7 @@ export const InvoicePdfTemplate: React.FC<InvoicePdfTemplateProps> = ({ data }) 
                     {stop.facilityName !== null && <strong>{stop.facilityName} — </strong>}
                     {[stop.city, stop.state].filter(Boolean).join(', ') || '—'}
                   </td>
-                  <td>{stop.appointmentDate ?? '—'}</td>
+                  <td>{stop.appointmentStart ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

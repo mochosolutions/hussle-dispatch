@@ -157,7 +157,7 @@ export const dashboardQueryPrisma = (
         stops: {
           some: {
             type: 'PICKUP',
-            appointmentDate: {
+            appointmentStart: {
               gte: startOfDay,
               lte: endOfDay,
             },

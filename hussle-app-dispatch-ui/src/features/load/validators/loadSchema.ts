@@ -4,20 +4,6 @@ import { EQUIPMENT_OPTIONS } from '../constants';
 const EQUIPMENT_VALUES = EQUIPMENT_OPTIONS.map((opt) => opt.value);
 
 // ---------------------------------------------------------------------------
-// Commodity schema (per-stop commodity entries)
-// ---------------------------------------------------------------------------
-
-const commoditySchema = Yup.object().shape({
-  description: Yup.string().default(''),
-  weight: Yup.string().default(''),
-  pieces: Yup.string().default(''),
-  nmfc: Yup.string().default(''),
-  isHazmat: Yup.boolean().default(false),
-  isTarp: Yup.boolean().default(false),
-  isTempControlled: Yup.boolean().default(false),
-});
-
-// ---------------------------------------------------------------------------
 // Stop schema
 // ---------------------------------------------------------------------------
 
@@ -38,12 +24,13 @@ const stopSchema = Yup.object().shape({
   appointmentNumber: Yup.string(),
   contactName: Yup.string(),
   contactPhone: Yup.string(),
-  notes: Yup.string(),
   commodity: Yup.string(),
   weight: Yup.string(),
   pieceCount: Yup.string(),
-  commodities: Yup.array().of(commoditySchema).default([]),
-  receivingCommodityIds: Yup.array().of(Yup.string()).default([]),
+  isHazmat: Yup.boolean().default(false),
+  isTarp: Yup.boolean().default(false),
+  isTempControlled: Yup.boolean().default(false),
+  notes: Yup.string(),
   lat: Yup.number().nullable(),
   lng: Yup.number().nullable(),
 });
@@ -84,9 +71,8 @@ export const loadSchema = Yup.object().shape({
   deadheadMiles: Yup.number().min(0),
   totalMiles: Yup.number().min(0),
   customerRate: Yup.number().min(0).required('Customer rate is required'),
-  carrierRate: Yup.number().min(0),
-  dispatchFee: Yup.number().min(0),
-  partnerSplit: Yup.number().min(0),
+  carrierPayout: Yup.number().min(0),
+  companyMargin: Yup.number().min(0),
   ratePerMile: Yup.number().min(0),
   dispatcherNotes: Yup.string(),
   driverInstructions: Yup.string(),
@@ -118,9 +104,17 @@ export const loadSchema = Yup.object().shape({
   paymentTerms: Yup.string().oneOf(['quick_pay', 'net_15', 'net_30', 'net_45']),
   queuedDocuments: Yup.array().default([]),
   accessorials: Yup.array().of(accessorialFormSchema).default([]),
-  calculatedTotalMiles: Yup.number().nullable(),
+  calculatedTripMiles: Yup.number().nullable(),
   isMilesEstimated: Yup.boolean().default(false),
   hazmatDocFile: Yup.mixed().nullable(),
 });
 
 export type LoadFormValues = Yup.InferType<typeof loadSchema>;
+
+/**
+ * Minimum form shape required by StopFormCard and AddressSearchField.
+ * Any Formik form that contains a `stops` array can use these components.
+ */
+export interface StopsFormShape {
+  stops: LoadFormValues['stops'];
+}

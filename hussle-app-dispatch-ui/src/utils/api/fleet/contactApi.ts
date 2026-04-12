@@ -12,6 +12,7 @@ interface GetContactsParams {
   search?: string;
   sort?: string;
   order?: 'asc' | 'desc';
+  customerId?: string;
 }
 
 interface GetContactsResponse {

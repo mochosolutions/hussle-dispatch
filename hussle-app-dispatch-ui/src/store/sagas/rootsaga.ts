@@ -12,6 +12,10 @@ import { customerSagaWatcher } from 'features/customer/store/sagas/customerSagaW
 import { authWatcher } from 'features/auth/store';
 import { settingsSagaWatcher } from 'features/settings/store/sagas/settingsSagaWatcher';
 import { teamSagaWatcher } from 'features/settings/store/sagas/teamSagaWatcher';
+import { documentSagaWatcher } from 'features/documents/store/sagas/documentSagaWatcher';
+import { portalRootSaga } from 'features/carrier-portal/store/sagas/portalRootSaga';
+import { settlementSagaWatcher } from 'features/accounting/store/sagas/settlementSagaWatcher';
+import { loadBoardSagaWatcher } from 'features/loadBoard/store/sagas/loadBoardSagaWatcher';
 
 export default function* rootSaga() {
   yield all([
@@ -28,5 +32,9 @@ export default function* rootSaga() {
     customerSagaWatcher(),
     settingsSagaWatcher(),
     teamSagaWatcher(),
+    documentSagaWatcher(),
+    portalRootSaga(),
+    settlementSagaWatcher(),
+    loadBoardSagaWatcher(),
   ]);
 }

@@ -53,5 +53,92 @@ export const initializeCpmInvalidationSubscriber = async (
     },
   );
 
+  await deps.eventBus.subscribe(
+    'expense.created',
+    'cpm-invalidation',
+    async (data) => {
+      try {
+        await deps.redisPort.del(`intel:feed:${data.organizationId}`);
+        deps.logger.info('CPM cache invalidated on expense.created', {
+          expenseId: data.expenseId,
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+        });
+      } catch (error: unknown) {
+        deps.logger.error('CPM cache invalidation failed on expense.created', {
+          expenseId: data.expenseId,
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
+  await deps.eventBus.subscribe(
+    'expense.updated',
+    'cpm-invalidation',
+    async (data) => {
+      try {
+        await deps.redisPort.del(`intel:feed:${data.organizationId}`);
+        deps.logger.info('CPM cache invalidated on expense.updated', {
+          expenseId: data.expenseId,
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+        });
+      } catch (error: unknown) {
+        deps.logger.error('CPM cache invalidation failed on expense.updated', {
+          expenseId: data.expenseId,
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
+  await deps.eventBus.subscribe(
+    'expense.deleted',
+    'cpm-invalidation',
+    async (data) => {
+      try {
+        await deps.redisPort.del(`intel:feed:${data.organizationId}`);
+        deps.logger.info('CPM cache invalidated on expense.deleted', {
+          expenseId: data.expenseId,
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+        });
+      } catch (error: unknown) {
+        deps.logger.error('CPM cache invalidation failed on expense.deleted', {
+          expenseId: data.expenseId,
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
+  await deps.eventBus.subscribe(
+    'recurring-expense.generated',
+    'cpm-invalidation',
+    async (data) => {
+      try {
+        await deps.redisPort.del(`intel:feed:${data.organizationId}`);
+        deps.logger.info('CPM cache invalidated on recurring-expense.generated', {
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+          count: data.count,
+        });
+      } catch (error: unknown) {
+        deps.logger.error('CPM cache invalidation failed on recurring-expense.generated', {
+          vehicleId: data.vehicleId,
+          organizationId: data.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+  );
+
   deps.logger.info('CPM invalidation subscriber initialized');
 };

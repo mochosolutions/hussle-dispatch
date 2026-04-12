@@ -9,8 +9,10 @@ import type {
   Vehicle,
   Contact,
   Customer,
+  CarrierType,
   EquipmentType,
   LoadStatus,
+  SchedulingType,
   StopType,
   AccessorialType,
 } from '@prisma/client';
@@ -31,11 +33,20 @@ export interface StopInput {
   city?: string;
   state?: string;
   zip?: string;
-  appointmentDate?: Date;
-  appointmentTime?: string;
+  schedulingType?: SchedulingType;
+  appointmentStart?: Date | string | null;
+  appointmentEnd?: Date | string | null;
+  targetDate?: Date | string | null;
+  notificationHours?: number | null;
   appointmentNumber?: string;
   contactName?: string;
   contactPhone?: string;
+  commodity?: string;
+  weight?: number;
+  pieceCount?: number;
+  isHazmat?: boolean;
+  isTarp?: boolean;
+  isTempControlled?: boolean;
   notes?: string;
 }
 
@@ -63,20 +74,12 @@ export interface CreateLoadInput {
   customerId?: string | null;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
-  isHazmat?: boolean;
-  isTarp?: boolean;
   isTeamDriver?: boolean;
-  commodity?: string;
-  weight?: number;
-  pieceCount?: number;
   loadedMiles?: number;
   deadheadMiles?: number;
   totalMiles?: number;
   customerRate?: number | string;
   carrierRate?: number | string;
-  dispatchFee?: number | string;
-  partnerSplit?: number | string;
-  ratePerMile?: number | string;
   status?: LoadStatus;
   rateConReceivedAt?: Date;
   bolUnsignedAt?: Date;
@@ -95,12 +98,7 @@ export interface UpdateLoadInput {
   customerId?: string | null;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
-  isHazmat?: boolean;
-  isTarp?: boolean;
   isTeamDriver?: boolean;
-  commodity?: string;
-  weight?: number;
-  pieceCount?: number;
   loadedMiles?: number;
   deadheadMiles?: number;
   totalMiles?: number;
@@ -272,6 +270,7 @@ export interface LoadRepoPort {
     input: CreateLoadInput,
   ): Promise<LoadWithRelations>;
   findById(id: string, organizationId: string): Promise<LoadWithRelations | null>;
+  findByIdUnscoped(id: string): Promise<LoadWithRelations | null>;
   list(input: ListLoadsRepositoryInput): Promise<LoadListItem[]>;
   count(input: LoadQueryInput): Promise<number>;
   update(id: string, input: UpdateLoadInput): Promise<LoadWithRelations>;
@@ -318,7 +317,7 @@ export interface CarrierAssignmentQueryPort {
   ): Promise<{
     id: string;
     name: string;
-    type: 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
+    type: CarrierType;
     dispatchAgreementOnFile: boolean;
     insuranceCertOnFile: boolean;
     insuranceExpiry: Date | null;
@@ -354,4 +353,26 @@ export interface VehicleAssignmentQueryPort {
 
 export interface CustomerQueryPort {
   findById(id: string, organizationId: string): Promise<{ id: string } | null>;
+}
+
+export interface VehicleCpmQueryPort {
+  getRecurringExpenses(vehicleId: string): Promise<{ amount: number; milesPerMonth: number }[]>;
+  getActualExpenseSummary(
+    vehicleId: string,
+    dateRange?: { from: Date; to: Date },
+  ): Promise<{
+    totalFixed: number;
+    totalVariable: number;
+    expenseCount: number;
+  }>;
+}
+
+export interface DispatcherProfileQueryPort {
+  findByUserId(
+    userId: string,
+    organizationId: string,
+  ): Promise<{
+    commissionType: string;
+    commissionRate: string;
+  } | null>;
 }

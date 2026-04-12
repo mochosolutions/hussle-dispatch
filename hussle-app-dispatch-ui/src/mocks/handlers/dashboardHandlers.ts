@@ -16,8 +16,7 @@ export const dashboardHandlers = [
         revenue: {
           revenueThisWeek: '18500.00',
           revenueThisMonth: '52400.00',
-          dispatchFeesThisMonth: '5240.00',
-          partnerSplitThisMonth: '2620.00',
+          companyMarginThisMonth: '5240.00',
         },
         overdueInvoices: {
           count: 1,

@@ -18,7 +18,7 @@ export const createFleetQueryAdapter = (prisma: PrismaClient): FleetQueryPort =>
         deletedAt: null,
         carrier: {
           managedByOrgId: orgId,
-          status: 'active',
+          status: 'ACTIVE',
         },
         driver: {
           isNot: null,
@@ -67,7 +67,7 @@ export const createFleetQueryAdapter = (prisma: PrismaClient): FleetQueryPort =>
           currentDaysOut: 0, // TODO: Calculate from current load assignment
           equipmentType: v.type as EquipmentType,
           dispatchFeePercent: Number(v.carrier.dispatchFeePercent) / 100,
-          profitMargin: 0.15, // TODO: Pull from OrgSettings.minBookRateProfitMargin
+          profitMargin: 15 / 100, // TODO: Pull from OrgSettings.minBookRateProfitMargin
         };
       });
   },

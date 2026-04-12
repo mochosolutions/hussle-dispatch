@@ -1,12 +1,12 @@
 import { env } from './config/env';
 // import { runGeoBootstrap } from './config/geoBootstrap';
-// import { redisClient } from './shared/redisClient';
+import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
 import { createRabbitMqEventBus } from './shared/messaging';
 import { logger } from './shared/utils/logger';
 
 const start = async (): Promise<void> => {
-  // await redisClient.connect();
+  await redisClient.connect();
   // await runGeoBootstrap(redisClient);
 
   const eventBus = createRabbitMqEventBus(env.RABBITMQ_URL, logger);
@@ -15,8 +15,9 @@ const start = async (): Promise<void> => {
 
   // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {
-    logger.info('Shutting down event bus...');
+    logger.info('Shutting down...');
     await eventBus.close();
+    await redisClient.quit();
     process.exit(0);
   };
 

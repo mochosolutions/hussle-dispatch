@@ -55,11 +55,9 @@ export const configureSecurity = (app: Application): void => {
           return callback(null, true);
         }
 
-        if (allowedOrigins.includes(origin)) {
+        if (allowedOrigins.includes(origin) || origin.startsWith('chrome-extension://')) {
           callback(null, true);
         } else {
-          // logger.warn(`CORS blocked origin: ${origin}`);
-          // return callback(null, true);
           callback(new Error('Not allowed by CORS'));
         }
       },

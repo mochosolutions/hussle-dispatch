@@ -64,6 +64,15 @@ const selectWithCounts = {
       },
     },
   },
+  primaryContact: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      email: true,
+    },
+  },
 } as const;
 
 const buildListWhere = (

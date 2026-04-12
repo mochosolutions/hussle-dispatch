@@ -30,6 +30,7 @@ export const toLoadPerformanceMetricsResponse = (
   metrics: LoadPerformanceMetrics,
 ): LoadPerformanceMetrics => ({
   totalLoads: metrics.totalLoads,
+  totalGross: metrics.totalGross,
   totalRevenue: metrics.totalRevenue,
   avgRatePerMile: metrics.avgRatePerMile,
   onTimePercent: metrics.onTimePercent,

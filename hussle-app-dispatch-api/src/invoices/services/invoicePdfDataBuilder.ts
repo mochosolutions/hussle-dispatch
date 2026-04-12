@@ -2,6 +2,7 @@ import Decimal from 'decimal.js';
 import type { InvoiceTemplateData } from '../types/invoiceTemplateTypes';
 import type { InvoiceWithRelations, InvoiceLoadQueryPort } from '../types/invoiceTypes';
 import type { OrgSettingsQueryPort } from '../types/readinessTypes';
+import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
 import type { Logger } from '../../shared/utils/logger';
 
 interface PdfDataBuilderDeps {
@@ -34,6 +35,7 @@ export const buildInvoicePdfData = async (
 
   const carrier = load.carrier;
   const customer = load.customer;
+  const cargo = computeCommoditySummary(load.stops);
 
   const carrierCityParts = [carrier?.city, carrier?.state, carrier?.zip].filter(Boolean);
   const customerCityParts = [customer?.city, customer?.state, customer?.zip].filter(Boolean);
@@ -83,8 +85,8 @@ export const buildInvoicePdfData = async (
     loadNumber: load.loadNumber,
     externalRefNumber: load.externalRefNumber,
     equipmentType: load.equipmentType,
-    commodity: load.commodity,
-    weight: load.weight,
+    commodity: cargo.commodity ?? null,
+    weight: cargo.weight ?? null,
     totalMiles: load.totalMiles,
 
     stops: load.stops
@@ -94,7 +96,8 @@ export const buildInvoicePdfData = async (
         facilityName: stop.facilityName,
         city: stop.city,
         state: stop.state,
-        appointmentDate: stop.appointmentDate !== null ? formatDate(stop.appointmentDate) : null,
+        appointmentStart: stop.appointmentStart !== null ? formatDate(stop.appointmentStart) : null,
+        appointmentEnd: stop.appointmentEnd !== null ? formatDate(stop.appointmentEnd) : null,
         arrivalTime: stop.arrivalTime !== null ? formatDate(stop.arrivalTime) : null,
         departureTime: stop.departureTime !== null ? formatDate(stop.departureTime) : null,
       })),

@@ -780,6 +780,11 @@ Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding 
 - Insurance expiry tracking (30-day and 7-day warnings)
 - Carrier list/detail pages, driver detail with preferences editor, vehicle detail with CPM editor
 - Delete constraints: cannot deactivate carrier/driver/vehicle with active loads
+- Driver name split: `firstName` + `lastName` (replaces single `name` field)
+- Primary contact fields on Carrier: `primaryContactName`, `primaryContactPhone`, `primaryContactEmail`
+- Carrier notes as a list: timestamped `CarrierNote` model replaces single `notes` text field
+- Driver-vehicle 1:1 assignment via nullable `driverId` on Vehicle (unique constraint, same-carrier enforcement)
+- Load history integration: per-driver and per-vehicle load history + performance metrics
 
 **Does NOT:**
 - Implement load assignment UI (that's load-management)
@@ -789,12 +794,13 @@ Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding 
 
 ## Capabilities
 
-1. Carrier list: name, type badge, MC#, status, onboarding status (complete/incomplete), driver count, vehicle count
-2. Carrier detail: contact info, compliance, financial terms (fee %, split %, feeIncludesAccessorials toggle), onboarding doc section with upload slots + indicators, drivers/vehicles/load-history tabs, insurance expiry warning
-3. Driver detail: standard info, operational (availableHours, currentCity/State), preferences section (home base, maxDaysOut, preferred lanes table, no-go zones list)
-4. Vehicle detail: ownership, emergency contact, warranty, CPM expense editor (same categories as existing CPM Calculator), auto-calculated monthly cost, cost per mile, daily minimum revenue
+1. Carrier list: name, type badge, MC#, primary contact name/phone, onboarding status (complete/incomplete), driver count, vehicle count
+2. Carrier detail: contact info, primary contact, compliance, financial terms (fee %, split %, feeIncludesAccessorials toggle), onboarding doc section with upload slots + indicators, drivers/vehicles/load-history tabs, insurance expiry warning, notes list (timestamped, add-note form)
+3. Driver detail: firstName/lastName, operational (availableHours, currentCity/State), assigned vehicle unit number, preferences section (home base, maxDaysOut, preferred lanes table, no-go zones list), load history tab with performance metrics
+4. Vehicle detail: ownership, emergency contact, warranty, assigned driver name, CPM expense editor (same categories as existing CPM Calculator), auto-calculated monthly cost, cost per mile, daily minimum revenue, load history tab with performance metrics
 5. Contact CRUD: type-based (broker, shipper, consignee, factoring), payment terms, quick pay discount
 6. Onboarding gate: blocks EXTERNAL_CARRIER load assignment if missing dispatch agreement, insurance cert (or expired), or W-9
+7. Driver-vehicle assignment: assign/unassign driver to vehicle (1:1, same carrier enforced), reflected on both detail pages
 
 ## Success Criteria
 
@@ -807,14 +813,21 @@ Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding 
 - GIVEN carrier with active load WHEN deactivation attempted THEN blocked with load list
 - GIVEN driver with MT no-go WHEN assigning to Montana load THEN warning displayed (requires confirmation)
 - GIVEN driver with NJ→PA preferred WHEN assigning NJ→PA load THEN "Preferred Lane" badge
+- GIVEN driver created with firstName "John", lastName "Smith" WHEN viewed in list THEN displays "John Smith" with initials "JS"
+- GIVEN carrier with primaryContactName "Jane Doe" WHEN viewed in carrier list THEN contact column shows "Jane Doe" with phone below
+- GIVEN carrier with notes WHEN viewed on detail page THEN notes display newest-first with timestamp and author
+- GIVEN vehicle under carrier A and driver under carrier B WHEN assign-driver attempted THEN returns BadRequestError (same-carrier enforced)
+- GIVEN driver assigned to vehicle WHEN viewing driver detail THEN KPI strip shows assigned vehicle unit number
+- GIVEN driver with completed loads WHEN viewing load history tab THEN shows load table + performance metrics (total loads, revenue, avg rate/mile, on-time %)
 
 ## Data Requirements
 
 **Prisma models (defined in foundation, consumed here):**
-- Carrier (lines 274-322) — all fields
-- Driver (lines 400-431) — all fields including preferences (preferredLanes, noGoZones JSON)
-- Vehicle (lines 433-465) — all fields
+- Carrier (lines 274-322) — all fields + `primaryContactName`, `primaryContactPhone`, `primaryContactEmail`
+- Driver (lines 400-431) — `firstName`/`lastName` (replaces `name`), preferences (preferredLanes, noGoZones JSON), reverse relation `assignedVehicle`
+- Vehicle (lines 433-465) — all fields + `driverId` (unique, nullable) with `driver` relation
 - TruckExpense (lines 482-495) — expense categories for CPM
+- CarrierNote — new model (id, carrierId, text, authorId?, authorName?, createdAt)
 - Contact (lines 361-391) — all fields
 
 **Depends on from foundation:**
@@ -832,9 +845,21 @@ Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding 
 4. Uploads dispatch agreement, insurance cert, W-9 (toggles booleans in MVP)
 5. Onboarding status becomes "Complete"
 
+**Add Carrier Notes:**
+1. Navigate to carrier detail → Notes section
+2. Type note text in add-note form → submit
+3. Note appears at top of list with timestamp and author name
+4. Notes are displayed newest-first
+
+**Assign Driver to Vehicle:**
+1. Navigate to vehicle detail → "Assign Driver" button
+2. Select driver from dropdown (filtered to same carrier)
+3. Vehicle detail shows assigned driver name; driver detail shows assigned vehicle unit number
+4. To unassign: click "Unassign" on vehicle detail
+
 **Add Driver with Preferences:**
 1. Navigate to carrier detail → Drivers tab → "Add Driver"
-2. Fill in name, phone, CDL info
+2. Fill in firstName, lastName, phone, CDL info
 3. Set home base (city + state), max days out
 4. Add preferred lanes (origin state → dest state, optional city refinement)
 5. Add no-go zones (state, optional city)
@@ -865,6 +890,10 @@ Full CRUD for carriers, drivers, vehicles, and contacts with carrier onboarding 
 - CPM calculated client-side from expense data, not stored as a separate field
 - Onboarding booleans set manually in MVP (no automated document verification)
 - Soft delete via `deletedAt` timestamp — queries filter `WHERE deletedAt IS NULL`
+- Driver name split into `firstName` + `lastName` — search ORs across both fields
+- Driver-vehicle assignment: 1:1 via nullable unique `driverId` on Vehicle, same-carrier enforced in service layer
+- Carrier notes: separate `CarrierNote` model (not a text field), paginated newest-first
+- Load history: shared `loadQueries` module in `src/shared/`, reused by driver and vehicle routes
 
 **API Endpoints:**
 
@@ -873,16 +902,22 @@ GET    /api/v1/carriers                     ?page=&limit=&type=&search=
 POST   /api/v1/carriers
 PATCH  /api/v1/carriers/:id
 GET    /api/v1/carriers/:id/onboarding
+GET    /api/v1/carriers/:carrierId/notes    ?page=&limit=
+POST   /api/v1/carriers/:carrierId/notes
 
 GET    /api/v1/drivers                      ?carrierId=
 POST   /api/v1/drivers
 PATCH  /api/v1/drivers/:id                  # Includes preferences
+GET    /api/v1/drivers/:id/loads            ?page=&limit=
 
 GET    /api/v1/drivers/:id/fit              ?originState=&destState=&destCity=
 
 GET    /api/v1/vehicles                     ?carrierId=
 POST   /api/v1/vehicles
 PATCH  /api/v1/vehicles/:id
+PATCH  /api/v1/vehicles/:id/assign-driver   { driverId }
+PATCH  /api/v1/vehicles/:id/unassign-driver
+GET    /api/v1/vehicles/:id/loads           ?page=&limit=
 
 GET    /api/v1/contacts                     ?type=&search=
 POST   /api/v1/contacts

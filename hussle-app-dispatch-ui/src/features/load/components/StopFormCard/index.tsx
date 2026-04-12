@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
-  Button,
-  Checkbox,
   Chip,
   Collapse,
   FormControlLabel,
@@ -12,38 +10,44 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { FieldArray } from 'formik';
 import type { FormikProps } from 'formik';
 import { MainCard, TextField, DateField, TimeField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
-import type { LoadFormValues } from '../../validators/loadSchema';
+import type { StopsFormShape } from '../../validators/loadSchema';
 import { AddressSearchField } from '../AddressSearchField';
-import type { CommoditySummary } from '../../types';
-import { EMPTY_COMMODITY } from '../../constants';
 
-export interface StopFormCardProps {
+export interface StopFormCardProps<T extends StopsFormShape = StopsFormShape> {
   index: number;
   prefix: string;
-  formik: FormikProps<LoadFormValues>;
+  formik: FormikProps<T>;
   canRemove: boolean;
   onRemove: () => void;
-  allPickupCommodities: CommoditySummary[];
   defaultExpanded?: boolean;
+  canReorder?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
-export const StopFormCard: React.FC<StopFormCardProps> = ({
+export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
   index,
   prefix,
   formik,
   canRemove,
   onRemove,
-  allPickupCommodities,
   defaultExpanded = false,
-}) => {
+  canReorder,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
+}: StopFormCardProps<T>) => {
   const stop = formik.values.stops[index];
   const isPickup = stop.type === 'PICKUP';
   const accentColor = isPickup ? 'primary.main' : 'success.main';
@@ -54,7 +58,6 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
 
   // Auto-expand when validation errors exist for this stop after submit attempt
   const stopErrors = formik.errors.stops?.[index];
-  const stopTouched = formik.touched.stops?.[index];
   useEffect(() => {
     if (formik.submitCount > 0 && stopErrors && !expanded) {
       setExpanded(true);
@@ -78,12 +81,7 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
     setFieldValue: formik.setFieldValue,
   };
 
-  const commodities = stop.commodities ?? [];
-
-  const commoditySummary =
-    commodities.length > 0
-      ? `${commodities.length} item${commodities.length > 1 ? 's' : ''}`
-      : null;
+  const commoditySummary = stop.commodity ? stop.commodity : null;
 
   return (
     <MainCard
@@ -109,49 +107,33 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
           py: 0.75,
         }}
       >
-        {/* Drag handle */}
-        {/* <Box
-          aria-label="Drag to reorder"
-          sx={{
-            alignItems: 'center',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 0.75,
-            color: 'text.secondary',
-            cursor: 'grab',
-            display: 'inline-flex',
-            height: 22,
-            justifyContent: 'center',
-            width: 22,
-          }}
-        >
-          <Box
-            sx={{
-              columnGap: 0.35,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              rowGap: 0.35,
-            }}
-          >
-            {Array.from({ length: 6 }).map((_, dotIdx) => (
-              <Box
-                key={`drag-dot-${dotIdx}`}
-                sx={{
-                  backgroundColor: 'text.secondary',
-                  borderRadius: '50%',
-                  height: 3,
-                  width: 3,
-                }}
-              />
-            ))}
-          </Box>
-        </Box> */}
+        {canReorder && (
+          <Stack direction="column" spacing={0} sx={{ mr: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={onMoveUp}
+              disabled={isFirst}
+              aria-label="Move stop up"
+              sx={{ p: 0.25 }}
+            >
+              <ArrowUpwardIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={onMoveDown}
+              disabled={isLast}
+              aria-label="Move stop down"
+              sx={{ p: 0.25 }}
+            >
+              <ArrowDownwardIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Stack>
+        )}
 
         <Box
           sx={{
             backgroundColor: 'grey.100',
             p: 0.5,
-            // borderRadius: 0.75,
           }}
         >
           <Typography color="text.secondary" sx={{ minWidth: 16 }} variant="caption">
@@ -240,165 +222,109 @@ export const StopFormCard: React.FC<StopFormCardProps> = ({
             <Grid item xs={12} md={4}>
               <TimeField name={`${prefix}.appointmentTime`} label="Time" formik={stopFormik} />
             </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                name={`${prefix}.appointmentNumber`}
+                label="Appt #"
+                formik={stopFormik}
+              />
+            </Grid>
           </Grid>
 
-          {/* Commodity section (pickup) */}
+          {/* Commodity fields (pickup) */}
           {isPickup && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-                Commodities
+                Commodity
               </Typography>
-              <FieldArray name={`${prefix}.commodities`}>
-                {(arrayHelpers) => (
-                  <Stack spacing={1}>
-                    {commodities.map((commodity, cIdx) => (
-                      <Box
-                        key={cIdx}
-                        sx={{
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          p: 1.5,
-                        }}
-                      >
-                        <Grid container spacing={1} alignItems="center">
-                          <Grid item xs={12} md={4}>
-                            <TextField
-                              name={`${prefix}.commodities[${cIdx}].description`}
-                              label="Commodity"
-                              formik={stopFormik}
-                            />
-                          </Grid>
-                          <Grid item xs={6} md={2}>
-                            <TextField
-                              name={`${prefix}.commodities[${cIdx}].weight`}
-                              label="Weight (lbs)"
-                              formik={stopFormik}
-                            />
-                          </Grid>
-                          <Grid item xs={6} md={2}>
-                            <TextField
-                              name={`${prefix}.commodities[${cIdx}].pieces`}
-                              label="Pieces"
-                              formik={stopFormik}
-                            />
-                          </Grid>
-                          <Grid item xs={6} md={2}>
-                            <TextField
-                              name={`${prefix}.commodities[${cIdx}].nmfc`}
-                              label="NMFC"
-                              formik={stopFormik}
-                            />
-                          </Grid>
-                          <Grid item xs={6} md={2}>
-                            <IconButton
-                              size="small"
-                              onClick={() => arrayHelpers.remove(cIdx)}
-                              aria-label={`Remove commodity ${cIdx + 1}`}
-                            >
-                              <DeleteOutlineIcon fontSize="small" color="error" />
-                            </IconButton>
-                          </Grid>
-                          <Grid item xs={12}>
-                            <Stack direction="row" spacing={2}>
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    size="small"
-                                    checked={commodity.isHazmat ?? false}
-                                    onChange={(_e, checked) => {
-                                      void formik.setFieldValue(
-                                        `${prefix}.commodities[${cIdx}].isHazmat`,
-                                        checked,
-                                      );
-                                    }}
-                                  />
-                                }
-                                label={<Typography variant="caption">Hazmat</Typography>}
-                              />
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    size="small"
-                                    checked={commodity.isTarp ?? false}
-                                    onChange={(_e, checked) => {
-                                      void formik.setFieldValue(
-                                        `${prefix}.commodities[${cIdx}].isTarp`,
-                                        checked,
-                                      );
-                                    }}
-                                  />
-                                }
-                                label={<Typography variant="caption">Tarp</Typography>}
-                              />
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    size="small"
-                                    checked={commodity.isTempControlled ?? false}
-                                    onChange={(_e, checked) => {
-                                      void formik.setFieldValue(
-                                        `${prefix}.commodities[${cIdx}].isTempControlled`,
-                                        checked,
-                                      );
-                                    }}
-                                  />
-                                }
-                                label={<Typography variant="caption">Temp Controlled</Typography>}
-                              />
-                            </Stack>
-                          </Grid>
-                        </Grid>
-                      </Box>
-                    ))}
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<AddIcon />}
-                      onClick={() => arrayHelpers.push({ ...EMPTY_COMMODITY })}
-                      sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
-                    >
-                      Add Commodity
-                    </Button>
+              <Grid container spacing={1.5}>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    name={`${prefix}.commodity`}
+                    label="Commodity"
+                    formik={stopFormik}
+                  />
+                </Grid>
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    name={`${prefix}.weight`}
+                    label="Weight (lbs)"
+                    formik={stopFormik}
+                  />
+                </Grid>
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    name={`${prefix}.pieceCount`}
+                    label="Pieces"
+                    formik={stopFormik}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Stack direction="row" spacing={2}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          size="small"
+                          checked={stop.isHazmat ?? false}
+                          onChange={(_e, checked) => {
+                            void formik.setFieldValue(`${prefix}.isHazmat`, checked);
+                          }}
+                        />
+                      }
+                      label={<Typography variant="caption">Hazmat</Typography>}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          size="small"
+                          checked={stop.isTarp ?? false}
+                          onChange={(_e, checked) => {
+                            void formik.setFieldValue(`${prefix}.isTarp`, checked);
+                          }}
+                        />
+                      }
+                      label={<Typography variant="caption">Tarp</Typography>}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          size="small"
+                          checked={stop.isTempControlled ?? false}
+                          onChange={(_e, checked) => {
+                            void formik.setFieldValue(`${prefix}.isTempControlled`, checked);
+                          }}
+                        />
+                      }
+                      label={<Typography variant="caption">Temp Controlled</Typography>}
+                    />
                   </Stack>
-                )}
-              </FieldArray>
+                </Grid>
+              </Grid>
             </Box>
           )}
 
-          {/* Freight receiving (delivery) */}
-          {!isPickup && allPickupCommodities.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-                Freight Receiving
-              </Typography>
-              <Stack spacing={0.5}>
-                {allPickupCommodities.map((c) => (
-                  <FormControlLabel
-                    key={c.id}
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={(stop.receivingCommodityIds ?? []).includes(c.id)}
-                        onChange={(_e, checked) => {
-                          const current = stop.receivingCommodityIds ?? [];
-                          const next = checked
-                            ? [...current, c.id]
-                            : current.filter((id) => id !== c.id);
-                          void formik.setFieldValue(`${prefix}.receivingCommodityIds`, next);
-                        }}
-                      />
-                    }
-                    label={
-                      <Typography variant="caption">
-                        {c.description || 'Unnamed'} {c.weight ? `\u2014 ${c.weight} lbs` : ''}
-                      </Typography>
-                    }
-                  />
-                ))}
-              </Stack>
-            </Box>
-          )}
+          {/* Contact */}
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={1.5}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  name={`${prefix}.contactName`}
+                  label="Contact Name"
+                  formik={stopFormik}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  name={`${prefix}.contactPhone`}
+                  label="Contact Phone"
+                  formik={stopFormik}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField name={`${prefix}.notes`} label="Notes" formik={stopFormik} />
+              </Grid>
+            </Grid>
+          </Box>
         </Box>
       </Collapse>
     </MainCard>

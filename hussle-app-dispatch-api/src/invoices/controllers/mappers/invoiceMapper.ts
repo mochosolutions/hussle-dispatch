@@ -1,6 +1,5 @@
 import type { InvoiceStatus, InvoiceType } from '@prisma/client';
 import type { Request } from 'express';
-import { UnauthorizedError } from '@/shared/errors';
 import type { InvoiceListFilters } from '../../types/invoiceTypes';
 import type {
   ListInvoicesServiceInput,
@@ -12,17 +11,11 @@ import type {
   MarkPaidServiceInput,
 } from '../../types/invoiceServiceTypes';
 
-const getContext = (req: Request) => {
-  const organizationId = req.organizationId;
-  const role = req.user?.role;
-  const userId = req.user?.userId;
-
-  if (organizationId === undefined || role === undefined || userId === undefined) {
-    throw new UnauthorizedError('Authentication required');
-  }
-
-  return { organizationId, role, userId };
-};
+const getContext = (req: Request) => ({
+  organizationId: req.organizationId ?? '',
+  role: req.user?.role ?? '',
+  userId: req.user?.userId ?? '',
+});
 
 const parseStatusFilter = (value: unknown): InvoiceStatus[] | undefined => {
   if (typeof value !== 'string' || value.length === 0) {

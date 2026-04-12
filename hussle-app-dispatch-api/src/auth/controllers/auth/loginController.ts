@@ -75,6 +75,7 @@ export const createLoginController = ({
       return res.status(200).json({
         user,
         accessibleOrgs: orgs,
+        accessToken: token.accessToken,
         status: 'authenticated',
         message: 'User authenticated successfully',
       });
@@ -87,6 +88,7 @@ export const createLoginController = ({
       return res.status(200).json({
         user,
         accessibleOrgs: orgs,
+        accessToken: token?.accessToken ?? null,
         status: 'authenticated',
         message: 'User authenticated successfully, but no refresh token available',
       });

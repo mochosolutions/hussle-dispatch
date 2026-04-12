@@ -27,14 +27,11 @@ export interface CreateCarrierInput {
   insuranceExpiry?: Date;
   w9OnFile?: boolean;
   carrierPacketOnFile?: boolean;
-  onboardingFlowId?: string;
   onboardingStatus?: string;
   authorityStatus?: string;
   status?: string;
-  notes?: string;
-  primaryContactName?: string;
-  primaryContactPhone?: string;
-  primaryContactEmail?: string;
+  description?: string;
+  primaryContactId?: string;
   billingMethod?: BillingMethod;
   factoringCompanyName?: string;
   factoringCompanyEmail?: string;
@@ -73,14 +70,11 @@ export interface UpdateCarrierInput {
   insuranceExpiry?: Date;
   w9OnFile?: boolean;
   carrierPacketOnFile?: boolean;
-  onboardingFlowId?: string;
   onboardingStatus?: string;
   authorityStatus?: string;
   status?: string;
-  notes?: string;
-  primaryContactName?: string;
-  primaryContactPhone?: string;
-  primaryContactEmail?: string;
+  description?: string;
+  primaryContactId?: string;
   billingMethod?: BillingMethod;
   factoringCompanyName?: string;
   factoringCompanyEmail?: string;
@@ -90,6 +84,8 @@ export interface UpdateCarrierInput {
   factoringNoa?: string;
   outboundEmailMode?: EmailMode;
   replyToEmail?: string;
+  inviteSentAt?: Date;
+  entryMethod?: string;
 }
 
 export interface CarrierListFilters {
@@ -99,11 +95,20 @@ export interface CarrierListFilters {
 
 export type InsuranceWarning = '30_DAY' | '7_DAY' | 'EXPIRED';
 
+export interface PrimaryContactInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  email: string | null;
+}
+
 export interface CarrierWithCounts extends Carrier {
   _count: {
     drivers: number;
     vehicles: number;
   };
+  primaryContact: PrimaryContactInfo | null;
 }
 
 export interface CarrierWithAssets extends CarrierWithCounts {

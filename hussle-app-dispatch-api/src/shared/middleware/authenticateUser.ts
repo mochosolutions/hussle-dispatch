@@ -30,7 +30,12 @@ export const createAppAuthMiddleware = (options: { redis: Redis; jwtSecret?: str
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req.cookies?.accessToken as string | undefined;
+      // Support both cookie auth (dispatch-ui) and Bearer token auth (extension)
+      const bearerHeader = req.headers.authorization;
+      const bearerToken = bearerHeader?.startsWith('Bearer ')
+        ? bearerHeader.slice(7)
+        : undefined;
+      const token = (req.cookies?.accessToken as string | undefined) ?? bearerToken;
 
       logger.debug('Auth middleware: token received', {
         hasToken: Boolean(token),

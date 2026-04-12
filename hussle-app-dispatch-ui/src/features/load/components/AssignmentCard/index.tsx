@@ -14,7 +14,9 @@ interface AssignmentCardProps {
 export const AssignmentCard: React.FC<AssignmentCardProps> = ({ load, onEdit }) => {
   const driverName = load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : null;
 
-  const vehicleLabel = load.vehicle ? `#${load.vehicle.unitNumber} — ${load.vehicle.type}` : null;
+  const vehicleLabel = load.vehicle
+    ? `#${load.vehicle.unitNumber} — ${formatEquipmentType(load.vehicle.type)}`
+    : null;
 
   return (
     <SectionCard

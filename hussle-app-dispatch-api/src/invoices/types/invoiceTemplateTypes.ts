@@ -7,7 +7,8 @@ export interface InvoiceTemplateStop {
   facilityName: string | null;
   city: string | null;
   state: string | null;
-  appointmentDate: string | null;
+  appointmentStart: string | null;
+  appointmentEnd: string | null;
   arrivalTime: string | null;
   departureTime: string | null;
 }

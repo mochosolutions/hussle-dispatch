@@ -1,10 +1,6 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {
-  formatAppointmentDateTime,
-  formatTimestamp,
-  getStopStatus,
-} from '../../constants';
+import { formatAppointmentDateTime, formatTimestamp, getStopStatus } from '../../constants';
 import type { LoadStatus, Stop } from '../../types';
 
 interface StopCardProps {
@@ -47,6 +43,9 @@ export const StopCard: React.FC<StopCardProps> = ({ stop, allStops, loadStatus }
           color: '#fff',
           width: 24,
           height: 24,
+          '.MuiChip-label': {
+            textOverflow: 'unset',
+          },
         }}
       />
 

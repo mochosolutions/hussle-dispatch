@@ -51,8 +51,7 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
     city: carrier?.city ?? '',
     state: carrier?.state ?? '',
     zip: carrier?.zip ?? '',
-    dispatchFeePercent: carrier?.dispatchFeePercent ?? 10,
-    partnerSplitPercent: carrier?.partnerSplitPercent ?? 50,
+    companyMarginPercent: carrier?.companyMarginPercent ?? 10,
     feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
     dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
     insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
@@ -131,10 +130,7 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
           </Typography>
           <Grid container spacing={2}>
             <Grid item xs={4}>
-              <TextField name="dispatchFeePercent" label="Dispatch Fee %" type="number" formik={formik} />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField name="partnerSplitPercent" label="Partner Split %" type="number" formik={formik} />
+              <TextField name="companyMarginPercent" label="Company Margin %" type="number" formik={formik} />
             </Grid>
             <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center' }}>
               <CheckboxField

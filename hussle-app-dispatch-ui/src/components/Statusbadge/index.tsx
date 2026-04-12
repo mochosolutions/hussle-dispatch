@@ -457,6 +457,33 @@ const STATUS_CONFIG: Record<string, BadgeStyle> = {
     label: 'Pending',
   },
 
+  // ── SETTLEMENT STATUS ───────────────────────────────────────────────────────
+
+  SETTLEMENT_DRAFT: {
+    bg: P.p100,
+    color: P.p700,
+    border: P.p200,
+    label: 'Draft',
+  },
+  SETTLEMENT_APPROVED: {
+    bg: P.s100,
+    color: P.s700,
+    border: P.s200,
+    label: 'Approved',
+  },
+  SETTLEMENT_PAID: {
+    bg: P.pu50,
+    color: P.pu700,
+    border: P.pu200,
+    label: 'Paid',
+  },
+  SETTLEMENT_DISPUTED: {
+    bg: P.r50,
+    color: P.r700,
+    border: P.r200,
+    label: 'Disputed',
+  },
+
   // ── PAYROLL STATUS ─────────────────────────────────────────────────────────
 
   PAYROLL_PENDING: {
@@ -607,8 +634,10 @@ export function StatusCell({ status, size }: StatusCellProps) {
   return (
     <Box
       sx={{
+        pt: 1,
+        pb: 1,
         display: 'flex',
-        alignItems: 'center',
+        // alignItems: 'center',
         height: '100%',
       }}
     >
@@ -676,6 +705,13 @@ export const VEHICLE_STATUS = {
   ACTIVE: 'VEHICLE_ACTIVE',
   MAINTENANCE: 'VEHICLE_MAINTENANCE',
   INACTIVE: 'VEHICLE_INACTIVE',
+} as const;
+
+export const SETTLEMENT_STATUS = {
+  DRAFT: 'SETTLEMENT_DRAFT',
+  APPROVED: 'SETTLEMENT_APPROVED',
+  PAID: 'SETTLEMENT_PAID',
+  DISPUTED: 'SETTLEMENT_DISPUTED',
 } as const;
 
 export const PAYROLL_STATUS = {

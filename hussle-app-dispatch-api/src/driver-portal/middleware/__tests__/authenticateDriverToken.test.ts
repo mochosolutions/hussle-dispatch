@@ -23,6 +23,8 @@ const makeMockNext = (): jest.MockedFunction<NextFunction> => jest.fn();
 const makeTokenRecord = (overrides: Partial<TrackingTokenRecord> = {}): TrackingTokenRecord => ({
   id: 'token-1',
   loadId: 'load-1',
+  vehicleId: null,
+  driverId: null,
   token: 'valid-token-abc',
   type: 'DRIVER',
   expiresAt: new Date(Date.now() + 3600000),

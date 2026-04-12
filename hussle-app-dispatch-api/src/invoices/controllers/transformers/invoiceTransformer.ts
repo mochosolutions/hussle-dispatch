@@ -14,7 +14,8 @@ interface StopResponse {
   facilityName: string | null;
   city: string | null;
   state: string | null;
-  appointmentDate: string | null;
+  appointmentStart: string | null;
+  appointmentEnd: string | null;
 }
 
 interface InvoiceDetailResponse {
@@ -119,7 +120,8 @@ export const toInvoiceDetailResponse = (
       facilityName: stop.facilityName,
       city: stop.city,
       state: stop.state,
-      appointmentDate: stop.appointmentDate?.toISOString() ?? null,
+      appointmentStart: stop.appointmentStart?.toISOString() ?? null,
+      appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
     })),
   },
   carrier: invoice.carrier !== null

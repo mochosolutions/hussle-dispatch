@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, Fade, Stack, Typography } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { PageWrapper } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
@@ -20,10 +20,16 @@ import type {
 } from '../../types';
 import { KpiCell } from 'components/Typography';
 import type { LoadFormValues } from '../../validators/loadSchema';
-import { LOAD_TYPE_OPTIONS, formatCurrency, formatCurrencyCompact, MARGIN_THRESHOLDS } from '../../constants';
+import {
+  LOAD_TYPE_OPTIONS,
+  formatCurrency,
+  formatCurrencyCompact,
+  MARGIN_THRESHOLDS,
+} from '../../constants';
 import { stripUiOnlyFields } from '../../utils/stripUiOnlyFields';
-import { CreateLoadActions } from '../../components/CreateLoadActions';
-import { CreateLoadForm } from '../../components/CreateLoadForm';
+import { CreateLoadActions } from './components/CreateLoadActions';
+import { CreateLoadForm } from './components/CreateLoadForm';
+import { KpiGroup } from './components/KpiGroup';
 
 const CreateLoadPage = () => {
   const dispatch = useDispatch();
@@ -57,7 +63,10 @@ const CreateLoadPage = () => {
     grossMargin: 0,
     marginPct: 0,
     ratePerMile: 0,
+    tripMiles: 0,
+    deadheadMiles: 0,
     totalMiles: 0,
+    ratePerTotalMile: 0,
     minBookRate: null,
     avgCostPerMile: null,
     carrierPay: 0,
@@ -81,13 +90,13 @@ const CreateLoadPage = () => {
     wasCreating.current = isCreating;
   }, [isCreating]);
 
-  const headerTitle = useMemo(() => {
-    const parts = ['New Load'];
-    if (loadType) {
-      parts.push(loadTypeLabel);
-    }
-    return parts.join(' — ');
-  }, [loadType, loadTypeLabel]);
+  // const headerTitle = useMemo(() => {
+  //   const parts = ['New Load'];
+  //   if (loadType) {
+  //     parts.push(loadTypeLabel);
+  //   }
+  //   return parts.join(' — ');
+  // }, [loadType, loadTypeLabel]);
 
   const handleCloseModal = useCallback(() => {
     setCancelled(true);
@@ -114,7 +123,10 @@ const CreateLoadPage = () => {
       hasSubmittedRef.current = true;
       dispatch(
         createLoadRequest({
-          data: { ...payload.data, status: 'BOOKED' },
+          data: {
+            ...payload.data,
+            status: 'BOOKED',
+          },
           queuedDocuments: payload.queuedDocuments,
         }),
       );
@@ -174,24 +186,87 @@ const CreateLoadPage = () => {
   }, [financials.marginPct]);
 
   const summaryBar = loadType ? (
-    <>
-      <KpiCell label="Customer Rate" value={financials.customerRate > 0 ? formatCurrencyCompact(financials.customerRate) : '\u2014'} />
-      <KpiCell
-        label="Gross Margin"
-        value={financials.customerRate > 0 ? formatCurrencyCompact(financials.grossMargin) : '\u2014'}
-        valueProps={{ color: financials.customerRate > 0 ? marginColor : undefined }}
-      />
-      <KpiCell label="Rate/Mile" value={financials.ratePerMile > 0 ? `$${financials.ratePerMile.toFixed(2)}` : '\u2014'} />
-      <KpiCell label="Total Miles" value={financials.totalMiles > 0 ? financials.totalMiles.toLocaleString() : '\u2014'} />
-      <KpiCell label="Min Book Rate" value={financials.minBookRate ? formatCurrency(financials.minBookRate) : '\u2014'} />
-      <KpiCell label="Avg Cost/Mile" value={financials.avgCostPerMile ? `$${financials.avgCostPerMile.toFixed(2)}/mi` : '\u2014'} />
-      <KpiCell label="Carrier Pay" value={financials.carrierPay > 0 ? formatCurrency(financials.carrierPay) : '\u2014'} />
-    </>
+    <Stack
+      direction={{ xs: 'column', md: 'row' }}
+      spacing={2}
+      divider={
+        <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+      }
+      sx={{ width: '100%' }}
+    >
+      <KpiGroup label="Revenue">
+        <KpiCell
+          label="Cust Rate"
+          value={
+            financials.customerRate > 0 ? formatCurrencyCompact(financials.customerRate) : '\u2014'
+          }
+        />
+        <KpiCell
+          label="Margin"
+          value={
+            financials.customerRate > 0 ? formatCurrencyCompact(financials.grossMargin) : '\u2014'
+          }
+          valueProps={{ color: financials.customerRate > 0 ? marginColor : undefined }}
+        />
+        <KpiCell
+          label="Min Book"
+          value={financials.minBookRate ? formatCurrency(financials.minBookRate) : '\u2014'}
+        />
+      </KpiGroup>
+      <KpiGroup label="Route">
+        <Stack spacing={0.5}>
+          <Stack direction="row" spacing={2}>
+            <KpiCell
+              label="Trip Mi"
+              value={financials.tripMiles > 0 ? financials.tripMiles.toLocaleString() : '\u2014'}
+            />
+            <KpiCell
+              label="RPM"
+              value={
+                financials.ratePerMile > 0 ? `$${financials.ratePerMile.toFixed(2)}/mi` : '\u2014'
+              }
+            />
+          </Stack>
+          {financials.deadheadMiles > 0 && (
+            <Fade in timeout={200}>
+              <Stack direction="row" spacing={2}>
+                <Typography variant="caption" sx={{ color: 'grey.400' }}>
+                  +{financials.deadheadMiles.toLocaleString()} DH (
+                  {financials.totalMiles.toLocaleString()} tot)
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'grey.400' }}>
+                  Tot RPM ${financials.ratePerTotalMile.toFixed(2)}/mi
+                </Typography>
+              </Stack>
+            </Fade>
+          )}
+        </Stack>
+      </KpiGroup>
+      <KpiGroup label="Carrier">
+        <KpiCell
+          label="Carrier Pay"
+          value={financials.carrierPay > 0 ? formatCurrency(financials.carrierPay) : '\u2014'}
+        />
+        <KpiCell
+          label="Cost/Mi"
+          value={
+            financials.avgCostPerMile ? `$${financials.avgCostPerMile.toFixed(2)}/mi` : '\u2014'
+          }
+        />
+      </KpiGroup>
+    </Stack>
   ) : undefined;
 
   const headerActions = loadType ? (
     <Stack direction="row" alignItems="center" spacing={1.5}>
-      {loadType && <Chip label={loadTypeLabel} size="small" variant="outlined" sx={{ color: 'grey.300', borderColor: 'grey.500' }} />}
+      {loadType && (
+        <Chip
+          label={loadTypeLabel}
+          size="small"
+          variant="outlined"
+          sx={{ color: 'grey.300', borderColor: 'grey.500' }}
+        />
+      )}
       {draftSavedIndicator}
       <CreateLoadActions
         formState={formState}

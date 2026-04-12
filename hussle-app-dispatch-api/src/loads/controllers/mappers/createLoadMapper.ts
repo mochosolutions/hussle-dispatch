@@ -5,10 +5,31 @@ import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMappe
 
 export const createLoadMapper = (req: Request): CreateLoadServiceInput => {
   const context = getRequestContextMapper(req);
-  const input: CreateLoadInput = req.body;
+  const { body } = req;
 
-  return {
-    ...context,
-    input,
+  const input: CreateLoadInput = {
+    carrierId: body.carrierId,
+    driverId: body.driverId,
+    vehicleId: body.vehicleId,
+    contactId: body.contactId,
+    customerId: body.customerId,
+    externalRefNumber: body.externalRefNumber,
+    equipmentType: body.equipmentType,
+    isTeamDriver: body.isTeamDriver,
+    loadedMiles: body.loadedMiles,
+    deadheadMiles: body.deadheadMiles,
+    totalMiles: body.totalMiles,
+    customerRate: body.customerRate,
+    carrierRate: body.carrierRate,
+    status: body.status,
+    rateConReceivedAt: body.rateConReceivedAt,
+    bolUnsignedAt: body.bolUnsignedAt,
+    bolSignedAt: body.bolSignedAt,
+    dispatcherNotes: body.dispatcherNotes,
+    driverInstructions: body.driverInstructions,
+    stops: body.stops,
+    accessorialCharges: body.accessorialCharges,
   };
+
+  return { ...context, input };
 };

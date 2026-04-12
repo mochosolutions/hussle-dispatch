@@ -4,9 +4,7 @@ import { LoadingState } from '@mocho/ui/redux';
 import { loadSelectors } from '../reducers/loadEntitySlice';
 import { STATUS_TO_KANBAN_GROUP, formatEquipmentType } from '../../constants';
 import { formatAppointmentDateTime, formatCurrencyCompact } from '../../constants';
-import {
-  isLoadDetail,
-} from '../../types';
+import { isLoadDetail } from '../../types';
 import type {
   BoardView,
   FormattedLoadDetail,
@@ -27,11 +25,13 @@ export const selectLoadById = (id: string) => (state: RootState) =>
   loadSelectors.selectById(state, id);
 
 /** Returns the entity only when it has been hydrated with full detail data. */
-export const selectLoadDetailById = (id: string) => (state: RootState): LoadDetail | undefined => {
-  const entity = loadSelectors.selectById(state, id);
-  if (entity && isLoadDetail(entity)) return entity;
-  return undefined;
-};
+export const selectLoadDetailById =
+  (id: string) =>
+  (state: RootState): LoadDetail | undefined => {
+    const entity = loadSelectors.selectById(state, id);
+    if (entity && isLoadDetail(entity)) return entity;
+    return undefined;
+  };
 
 // ---------------------------------------------------------------------------
 // Page loading selectors
@@ -55,6 +55,18 @@ export const selectLoadCreateFulfilled = (state: RootState) =>
 export const selectLoadUpdateFulfilled = (id: string) => (state: RootState) =>
   state.pages.loads.loading[`update:${id}`] === LoadingState.Fulfilled;
 
+export const selectLoadTransitionLoading = (id: string) => (state: RootState) =>
+  state.pages.loads.loading[`transition:${id}`] === LoadingState.Pending;
+
+export const selectLoadTransitionFulfilled = (id: string) => (state: RootState) =>
+  state.pages.loads.loading[`transition:${id}`] === LoadingState.Fulfilled;
+
+export const selectLoadAssignAndDispatchLoading = (id: string) => (state: RootState) =>
+  state.pages.loads.loading[`assignAndDispatch:${id}`] === LoadingState.Pending;
+
+export const selectLoadAssignAndDispatchFulfilled = (id: string) => (state: RootState) =>
+  state.pages.loads.loading[`assignAndDispatch:${id}`] === LoadingState.Fulfilled;
+
 // ---------------------------------------------------------------------------
 // Board view selector
 // ---------------------------------------------------------------------------
@@ -63,7 +75,8 @@ export const selectBoardView = (state: RootState): BoardView => state.pages.load
 
 export const selectLoadFilters = (state: RootState): LoadFilters => state.pages.loads.filters;
 
-export const selectLastRefreshed = (state: RootState): string | null => state.pages.loads.lastRefreshed;
+export const selectLastRefreshed = (state: RootState): string | null =>
+  state.pages.loads.lastRefreshed;
 
 // ---------------------------------------------------------------------------
 // Kanban grouping selector
@@ -88,9 +101,7 @@ export const selectFilteredLoads = createSelector(
           (load.originCity ?? '').toLowerCase(),
           (load.destinationCity ?? '').toLowerCase(),
         ];
-        return terms.every((term) =>
-          searchableFields.some((field) => field.includes(term)),
-        );
+        return terms.every((term) => searchableFields.some((field) => field.includes(term)));
       });
     }
 
@@ -151,9 +162,7 @@ const buildCityState = (city: string | null, state: string | null): string => {
 
 const buildStopAddress = (stop: Stop | undefined): string => {
   if (!stop) return '';
-  return [stop.address, buildCityState(stop.city, stop.state), stop.zip]
-    .filter(Boolean)
-    .join(', ');
+  return [stop.address, buildCityState(stop.city, stop.state), stop.zip].filter(Boolean).join(', ');
 };
 
 export const selectFormattedLoadById = (id: string | undefined) =>
@@ -166,8 +175,10 @@ export const selectFormattedLoadById = (id: string | undefined) =>
       const destination = getDestinationStop(load.stops);
 
       const routeLabel =
-        [buildCityState(origin?.city ?? null, origin?.state ?? null),
-         buildCityState(destination?.city ?? null, destination?.state ?? null)]
+        [
+          buildCityState(origin?.city ?? null, origin?.state ?? null),
+          buildCityState(destination?.city ?? null, destination?.state ?? null),
+        ]
           .filter(Boolean)
           .join(' → ') || '\u2014';
 
@@ -175,7 +186,7 @@ export const selectFormattedLoadById = (id: string | undefined) =>
         load.loadedMiles ? `${load.loadedMiles} loaded` : null,
         load.deadheadMiles ? `${load.deadheadMiles} DH` : null,
       ].filter(Boolean);
-      const milesStr = milesItems.length > 0 ? `${milesItems.join(' + ')} mi` : '';
+      const milesStr = milesItems.length > 0 ? milesItems.join(' + ') : '';
 
       return {
         ...load,
@@ -207,22 +218,21 @@ export const selectFormattedLoadById = (id: string | undefined) =>
           load: {
             routeLabel,
             miles: milesStr,
-            cargo: [
-              load.commodity,
-              load.weight ? `${load.weight.toLocaleString()} lbs` : null,
-            ].filter(Boolean).join(' · ') || '',
+            cargo:
+              [load.commodity, load.weight ? `${load.weight.toLocaleString()} lbs` : null]
+                .filter(Boolean)
+                .join(' · ') || '',
             rate: formatCurrencyCompact(load.customerRate),
-            ratePerMile: load.ratePerMile
-              ? `$${parseFloat(load.ratePerMile).toFixed(2)}/mi`
-              : '',
+            ratePerMile: load.ratePerMile ? `$${parseFloat(load.ratePerMile).toFixed(2)}/mi` : '',
+            weight: load.weight,
+            isHazmat: load.isHazmat,
+            isTarp: load.isTarp,
           },
           driver: {
-            name: load.driver
-              ? `${load.driver.firstName} ${load.driver.lastName}`
-              : '\u2014',
+            name: load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : '\u2014',
             carrier: load.carrier?.name ?? '\u2014',
             vehicle: load.vehicle
-              ? `#${load.vehicle.unitNumber} \u2014 ${load.vehicle.type}`
+              ? `#${load.vehicle.unitNumber} \u2014 ${formatEquipmentType(load.vehicle.type)}`
               : '\u2014',
             equipment: formatEquipmentType(load.equipmentType),
           },

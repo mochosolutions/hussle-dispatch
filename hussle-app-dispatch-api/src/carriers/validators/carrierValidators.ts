@@ -19,21 +19,21 @@ const createBodySchema = Yup.object({
   city: optionalTrimmed,
   state: optionalTrimmed,
   zip: optionalTrimmed,
-  dispatchFeePercent: Yup.number().notRequired(),
-  partnerSplitPercent: Yup.number().notRequired(),
+  dispatchFeePercent: Yup.number().min(0).max(100).notRequired(),
+  partnerSplitPercent: Yup.number().min(0).max(100).notRequired(),
   feeIncludesAccessorials: Yup.boolean().notRequired(),
-  ownerOpPayPercent: Yup.number().notRequired(),
+  ownerOpPayPercent: Yup.number().min(0).max(100).notRequired(),
   dispatchAgreementOnFile: Yup.boolean().notRequired(),
   dispatchAgreementSignedAt: Yup.date().notRequired(),
   insuranceCertOnFile: Yup.boolean().notRequired(),
   insuranceExpiry: Yup.date().notRequired(),
   w9OnFile: Yup.boolean().notRequired(),
   carrierPacketOnFile: Yup.boolean().notRequired(),
-  onboardingFlowId: optionalTrimmed,
   onboardingStatus: optionalTrimmed,
   authorityStatus: optionalTrimmed,
   status: optionalTrimmed,
-  notes: optionalTrimmed,
+  description: optionalTrimmed,
+  primaryContactId: Yup.string().uuid().notRequired(),
 });
 
 const updateBodySchema = createBodySchema
@@ -85,6 +85,15 @@ export const carrierNotesParamValidator = Yup.object({
   query: Yup.object({
     page: Yup.number().integer().min(1).notRequired(),
     limit: Yup.number().integer().min(1).max(100).notRequired(),
+  }),
+});
+
+export const sendInviteValidator = Yup.object({
+  params: Yup.object({
+    id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+  body: Yup.object({
+    message: Yup.string().max(500).notRequired(),
   }),
 });
 

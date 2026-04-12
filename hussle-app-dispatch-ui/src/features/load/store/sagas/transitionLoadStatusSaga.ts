@@ -48,9 +48,10 @@ export function* transitionLoadStatusSaga(
         equipmentType: load.equipmentType,
         commodity: load.commodity,
         customerRate: load.customerRate,
-        carrierRate: load.carrierRate,
+        carrierPayout: load.carrierPayout,
         totalMiles: load.totalMiles,
         ratePerMile: load.ratePerMile,
+        ratePerTotalMile: load.ratePerTotalMile ?? null,
         carrierId: load.carrierId,
         carrierName: load.carrier?.name ?? null,
         driverId: load.driverId,
@@ -66,6 +67,7 @@ export function* transitionLoadStatusSaga(
       };
 
       yield put(loadActions.updateOne({ id: loadId, changes }));
+      yield put(loadActions.upsertOne(load));
     }
 
     yield put(transitionLoadStatusSuccess({ loadId, newStatus: input.status }));

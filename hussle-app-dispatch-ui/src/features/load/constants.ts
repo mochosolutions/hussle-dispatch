@@ -137,6 +137,7 @@ export const TRANSITION_PREREQUISITES: Partial<Record<string, { field: string; l
       { field: 'driverId', label: 'Driver assigned' },
       { field: 'vehicleId', label: 'Vehicle assigned' },
       { field: 'customerRate', label: 'Customer rate set' },
+      { field: 'rateConReceivedAt', label: 'Rate confirmation on file' },
     ],
   };
 
@@ -401,15 +402,4 @@ export const CREATE_LOAD_DOC_CARD_CONFIG: readonly {
 export const MARGIN_THRESHOLDS = { good: 20, ok: 10 } as const;
 export const MARKET_RPM = 3.8;
 export const MIN_BOOK = 900;
-export const FUEL_PPG = 4.2;
-export const COMPANY_DRIVER_MPG = 7.5;
 
-export const EMPTY_COMMODITY = {
-  description: '',
-  weight: '',
-  pieces: '',
-  nmfc: '',
-  isHazmat: false,
-  isTarp: false,
-  isTempControlled: false,
-};

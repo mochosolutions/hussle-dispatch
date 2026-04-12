@@ -16,6 +16,8 @@ const buildDriver = () => ({
   availableHours: new Decimal('9.5'),
   currentCity: 'Dallas',
   currentState: 'TX',
+  currentLatitude: null,
+  currentLongitude: null,
   homeBaseCity: 'Dallas',
   homeBaseState: 'TX',
   maxDaysOut: 5,

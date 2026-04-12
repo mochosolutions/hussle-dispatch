@@ -60,6 +60,12 @@ export interface Stop {
   departureTime: string | null;
   contactName: string | null;
   contactPhone: string | null;
+  commodity: string | null;
+  weight: number | null;
+  pieceCount: number | null;
+  isHazmat: boolean;
+  isTarp: boolean;
+  isTempControlled: boolean;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -80,6 +86,12 @@ export interface StopInput {
   appointmentNumber?: string;
   contactName?: string;
   contactPhone?: string;
+  commodity?: string;
+  weight?: number;
+  pieceCount?: number;
+  isHazmat?: boolean;
+  isTarp?: boolean;
+  isTempControlled?: boolean;
   notes?: string;
 }
 
@@ -119,9 +131,12 @@ export interface LoadListItem {
   equipmentType: string | null;
   commodity: string | null;
   customerRate: string | null;
-  carrierRate: string | null;
+  carrierPayout: string | null;
+  companyMargin: string | null;
+  companyNet: string | null;
   totalMiles: number | null;
   ratePerMile: string | null;
+  ratePerTotalMile: string | null;
   carrierId: string | null;
   carrierName: string | null;
   driverId: string | null;
@@ -134,7 +149,7 @@ export interface LoadListItem {
   contactName: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
-  invoiceReadiness: string;
+  invoiceReadiness?: string;
   accessorialChargeCount: number;
   pickupDate: string | null;
   createdAt: string;
@@ -167,10 +182,15 @@ export interface LoadDetail {
   deadheadMiles: number | null;
   totalMiles: number | null;
   customerRate: string | null;
-  carrierRate: string | null;
-  dispatchFee: string | null;
-  partnerSplit: string | null;
+  carrierPayout: string | null;
+  companyMargin: string | null;
+  companyNet: string | null;
+  driverPay: string | null;
+  dispatcherComm: string | null;
+  estimatedNetEarnings: string | null;
+  marginPercent: string | null;
   ratePerMile: string | null;
+  ratePerTotalMile: string | null;
   status: LoadStatus;
   invoiceReadiness: string;
   rateConReceivedAt: string | null;
@@ -209,20 +229,11 @@ export interface CreateLoadInput {
   customerId?: string;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
-  isHazmat?: boolean;
-  isTarp?: boolean;
   isTeamDriver?: boolean;
-  commodity?: string;
-  weight?: number;
-  pieceCount?: number;
   loadedMiles?: number;
   deadheadMiles?: number;
   totalMiles?: number;
   customerRate?: number | string;
-  carrierRate?: number | string;
-  dispatchFee?: number | string;
-  partnerSplit?: number | string;
-  ratePerMile?: number | string;
   status?: LoadStatus;
   dispatcherNotes?: string;
   driverInstructions?: string;
@@ -238,25 +249,41 @@ export interface UpdateLoadInput {
   customerId?: string;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
-  isHazmat?: boolean;
-  isTarp?: boolean;
   isTeamDriver?: boolean;
-  commodity?: string;
-  weight?: number;
-  pieceCount?: number;
   loadedMiles?: number;
   deadheadMiles?: number;
   totalMiles?: number;
   customerRate?: number | string;
-  carrierRate?: number | string;
-  dispatchFee?: number | string;
-  partnerSplit?: number | string;
-  ratePerMile?: number | string;
   status?: LoadStatus;
   dispatcherNotes?: string;
   driverInstructions?: string;
   stops?: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
+}
+
+// ---------------------------------------------------------------------------
+// Assignment
+// ---------------------------------------------------------------------------
+
+export interface AssignLoadInput {
+  carrierId?: string;
+  driverId?: string;
+  vehicleId?: string;
+  customerRate?: number | string;
+  carrierPayout?: number | string;
+  companyMargin?: number | string;
+  isTeamDriver?: boolean;
+}
+
+export interface AssignLoadWarning {
+  code: string;
+  message: string;
+  detail?: string;
+}
+
+export interface AssignLoadResponse {
+  load: LoadDetail;
+  warnings: AssignLoadWarning[];
 }
 
 // ---------------------------------------------------------------------------
@@ -317,9 +344,8 @@ export interface CreateCheckCallInput {
 // Type guard — distinguishes LoadDetail from LoadListItem in the shared entity adapter
 // ---------------------------------------------------------------------------
 
-export const isLoadDetail = (
-  entity: LoadListItem | LoadDetail,
-): entity is LoadDetail => Array.isArray((entity as LoadDetail).stops);
+export const isLoadDetail = (entity: LoadListItem | LoadDetail): entity is LoadDetail =>
+  Array.isArray((entity as LoadDetail).stops);
 
 // ---------------------------------------------------------------------------
 // Formatted load summary (pre-computed display values for LoadSummaryBar)
@@ -343,6 +369,9 @@ export interface FormattedLoadSummary {
     cargo: string;
     rate: string;
     ratePerMile: string;
+    weight: number | null;
+    isHazmat: boolean;
+    isTarp: boolean;
   };
   driver: {
     name: string;
@@ -422,12 +451,6 @@ export interface SelectedDriverInfo {
   minEarnings?: number;
 }
 
-export interface CommoditySummary {
-  id: string;
-  stopIndex: number;
-  description: string;
-  weight: string;
-}
 
 export interface IntelPrefill {
   originCity?: string;
@@ -505,7 +528,10 @@ export interface FinancialSummary {
   grossMargin: number;
   marginPct: number;
   ratePerMile: number;
+  tripMiles: number;
+  deadheadMiles: number;
   totalMiles: number;
+  ratePerTotalMile: number;
   minBookRate: number | null;
   avgCostPerMile: number | null;
   carrierPay: number;

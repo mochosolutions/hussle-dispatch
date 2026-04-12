@@ -13,6 +13,7 @@ import type {
   CreateVehicleInput,
   PaginationMeta,
 } from 'features/carrier/types';
+import type { CarrierOnboardingDetail } from 'features/carrier/onboardingTypes';
 
 interface GetCarriersParams {
   page?: number;
@@ -70,6 +71,23 @@ export const getCarrierOnboarding = async (
 ): Promise<CarrierOnboardingStatus> => {
   const response = await axiosInstance.get<CarrierOnboardingResponse>(
     `/carriers/${id}/onboarding`,
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Carrier Onboarding Detail (full 6-phase read-only view)
+// ---------------------------------------------------------------------------
+
+interface CarrierOnboardingDetailResponse {
+  data: CarrierOnboardingDetail;
+}
+
+export const getCarrierOnboardingDetail = async (
+  carrierId: string,
+): Promise<CarrierOnboardingDetail> => {
+  const response = await axiosInstance.get<CarrierOnboardingDetailResponse>(
+    `/carriers/${carrierId}/onboarding`,
   );
   return response.data.data;
 };
@@ -182,6 +200,87 @@ export const createCarrierWithAssets = async (
   const response = await axiosInstance.post<GetCarrierWithAssetsResponse>(
     '/carriers/with-assets',
     data,
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Carrier Invite
+// ---------------------------------------------------------------------------
+
+interface InviteCarrierInput {
+  message?: string;
+}
+
+export interface InviteCarrierResponse {
+  inviteSentAt: string;
+  tokenExpiresAt: string;
+}
+
+interface InviteCarrierApiResponse {
+  data: InviteCarrierResponse;
+}
+
+export const inviteCarrier = async (
+  carrierId: string,
+  data?: InviteCarrierInput,
+): Promise<InviteCarrierResponse> => {
+  const response = await axiosInstance.post<InviteCarrierApiResponse>(
+    `/carriers/${carrierId}/invite`,
+    data,
+  );
+  return response.data.data;
+};
+
+export const resendCarrierInvite = async (
+  carrierId: string,
+  data?: InviteCarrierInput,
+): Promise<InviteCarrierResponse> => {
+  const response = await axiosInstance.post<InviteCarrierApiResponse>(
+    `/carriers/${carrierId}/resend-invite`,
+    data,
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Carrier Approve / Reject
+// ---------------------------------------------------------------------------
+
+export interface ApproveCarrierResponse {
+  id: string;
+  status: string;
+  onboardingStatus: string;
+  minimumRatePerMile: number | null;
+}
+
+export interface RejectCarrierResponse {
+  id: string;
+  onboardingStatus: string;
+}
+
+interface ApproveCarrierApiResponse {
+  data: ApproveCarrierResponse;
+}
+
+interface RejectCarrierApiResponse {
+  data: RejectCarrierResponse;
+}
+
+export const approveCarrier = async (carrierId: string): Promise<ApproveCarrierResponse> => {
+  const response = await axiosInstance.post<ApproveCarrierApiResponse>(
+    `/carriers/${carrierId}/approve`,
+  );
+  return response.data.data;
+};
+
+export const rejectCarrier = async (
+  carrierId: string,
+  reason: string,
+): Promise<RejectCarrierResponse> => {
+  const response = await axiosInstance.post<RejectCarrierApiResponse>(
+    `/carriers/${carrierId}/reject`,
+    { reason },
   );
   return response.data.data;
 };

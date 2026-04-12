@@ -57,11 +57,11 @@ services:
       retries: 5
 
   hussle-app-redis:
-    image: redis:7-alpine
+    image: redis/redis-stack:7.4.0-v2
     container_name: hussle-app-redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
+      - "8001:8001"
     volumes:
       - redis-data:/data
     restart: unless-stopped

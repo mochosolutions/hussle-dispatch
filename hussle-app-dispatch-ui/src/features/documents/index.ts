@@ -1,6 +1,7 @@
-export { DocumentUpload } from './components/DocumentUpload';
-export type { DocumentUploadProps } from './components/DocumentUpload';
-export { DocumentList } from './components/DocumentList';
+export { DocumentTable } from './components/DocumentTable';
+export type { DocumentTableProps } from './components/DocumentTable';
+export { DocumentUploadDrawer } from './components/DocumentUploadDrawer';
+export type { DocumentUploadDrawerProps } from './components/DocumentUploadDrawer';
 export { BolWorkflow } from './components/BolWorkflow';
 export { RateConStatus } from './components/RateConStatus';
 export type {

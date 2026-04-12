@@ -50,7 +50,6 @@ export const DetailLayout: React.FC<DetailLayoutProps> = ({
   sx,
 }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', ...sx }}>
-    {/* Sticky header group */}
     <Box
       sx={{
         ...(stickyHeader && {
@@ -61,7 +60,6 @@ export const DetailLayout: React.FC<DetailLayoutProps> = ({
         flexShrink: 0,
       }}
     >
-      {/* Navy header zone */}
       <Box
         sx={{
           bgcolor: 'primary.dark',
@@ -71,9 +69,7 @@ export const DetailLayout: React.FC<DetailLayoutProps> = ({
         }}
       >
         <Button
-          {...(onBack
-            ? { onClick: onBack }
-            : { component: 'a' as const, href: breadcrumb.href })}
+          {...(onBack ? { onClick: onBack } : { component: 'a' as const, href: breadcrumb.href })}
           startIcon={<ArrowBackIcon />}
           size="small"
           sx={{
@@ -104,16 +100,13 @@ export const DetailLayout: React.FC<DetailLayoutProps> = ({
         </Stack>
       </Box>
 
-      {/* Summary bar */}
       {summary && <SummaryBar>{summary}</SummaryBar>}
 
-      {/* Tab bar */}
       {tabs && activeTab !== undefined && onTabChange && (
         <DetailTabBar tabs={tabs} activeTab={activeTab} onTabChange={onTabChange} />
       )}
     </Box>
 
-    {/* Scrollable body */}
     <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'grey.100', p: { xs: 2, sm: 3 } }}>
       {children}
     </Box>

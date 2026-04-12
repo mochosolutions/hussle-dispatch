@@ -37,3 +37,47 @@ export const getAttentionItems = async (): Promise<AttentionItem[]> => {
   );
   return response.data.data;
 };
+
+// ---------------------------------------------------------------------------
+// Pending Carriers
+// ---------------------------------------------------------------------------
+
+export interface PendingCarrier {
+  id: string;
+  name: string;
+  type: string;
+  email: string | null;
+  phone: string | null;
+  onboardingStatus: string;
+  entryMethod: string;
+  inviteSentAt: string | null;
+  completedAt: string | null;
+  driverCount: number;
+  vehicleCount: number;
+}
+
+interface GetPendingCarriersParams {
+  page?: number;
+  limit?: number;
+}
+
+interface GetPendingCarriersResponse {
+  data: PendingCarrier[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+export const getPendingCarriers = async (
+  params?: GetPendingCarriersParams,
+): Promise<GetPendingCarriersResponse> => {
+  const response = await axiosInstance.get<GetPendingCarriersResponse>(
+    '/dashboard/pending-carriers',
+    { params },
+  );
+  return response.data;
+};

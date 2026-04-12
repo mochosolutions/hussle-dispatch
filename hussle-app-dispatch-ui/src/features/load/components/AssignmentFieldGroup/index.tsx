@@ -12,6 +12,8 @@ import type { CarrierListItem, Driver, Vehicle } from 'features/carrier/types';
 import type { FormikFieldProps, TypeaheadOption } from '@mocho/ui/forms';
 import { TypeaheadField } from '@mocho/ui/components';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
+import { useDispatch } from 'store';
+import { carrierActions } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { getCarriers } from 'utils/api/fleet/carrierApi';
 import { getDrivers } from 'utils/api/fleet/driverApi';
 import { getVehicles } from 'utils/api/fleet/vehicleApi';
@@ -95,6 +97,7 @@ const searchAdornment = (
 );
 
 export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ formik }) => {
+  const dispatch = useDispatch();
   const [carriers, setCarriers] = useState<CarrierListItem[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -105,7 +108,7 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
   const [driversLoading, setDriversLoading] = useState(false);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const requestIdRef = useRef(0);
-  const prevCarrierIdRef = useRef(formik.values.carrierId);
+  const prevCarrierIdRef = useRef<string | undefined>(undefined);
   const driverSearchRef = useRef('');
   const vehicleSearchRef = useRef('');
 
@@ -310,7 +313,7 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
   );
 
   const handleCarrierSelect = useCallback(
-    (_option: TypeaheadOption | null) => {
+    (option: TypeaheadOption | null) => {
       void formik.setFieldValue('driverId', '');
       void formik.setFieldValue('vehicleId', '');
       setDrivers([]);
@@ -319,8 +322,16 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
       setVehicleInputValue('');
       driverSearchRef.current = '';
       vehicleSearchRef.current = '';
+
+      // Add selected carrier to entity store so financial components can read its config
+      if (option) {
+        const carrier = carriers.find((c) => c.id === option.value);
+        if (carrier) {
+          dispatch(carrierActions.addOne(carrier));
+        }
+      }
     },
-    [formik],
+    [formik, carriers, dispatch],
   );
 
   const handleDriverSelect = useCallback(

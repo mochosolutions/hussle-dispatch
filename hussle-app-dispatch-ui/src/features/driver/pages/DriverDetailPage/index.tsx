@@ -5,7 +5,8 @@ import EditIcon from '@mui/icons-material/Edit';
 
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
-import { DocumentUpload } from 'features/documents/components/DocumentUpload';
+import { DocumentTable } from 'features/documents/components/DocumentTable';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { useDispatch, useSelector } from 'store';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { UpdateDriverInput } from 'features/carrier/types';
@@ -34,6 +35,7 @@ const DriverDetailPage = () => {
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   const [locationDrawerOpen, setLocationDrawerOpen] = useState(false);
+  const { openDrawer } = useDrawerActions();
 
   useEffect(() => {
     if (id) {
@@ -98,7 +100,22 @@ const DriverDetailPage = () => {
             )}
             {activeTab === 'documents' && (
               <Box sx={{ p: 3 }}>
-                <DocumentUpload context="driver-profile" entityType="driver" entityId={id ?? ''} />
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() =>
+                      openDrawer('documentUpload', {
+                        context: 'driver-profile',
+                        entityType: 'driver',
+                        entityId: id ?? '',
+                      })
+                    }
+                  >
+                    Upload
+                  </Button>
+                </Box>
+                <DocumentTable entityType="driver" entityId={id ?? ''} />
               </Box>
             )}
           </DetailLayout>

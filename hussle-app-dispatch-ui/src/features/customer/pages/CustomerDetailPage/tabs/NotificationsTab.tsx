@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import {
   Box,
   Card,
@@ -9,7 +9,6 @@ import {
   Switch,
   TextField,
   Typography,
-  Button,
   Skeleton,
 } from '@mui/material';
 import { useSelector, useDispatch } from 'store';
@@ -62,6 +61,25 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ customerId }
     dispatch(fetchNotificationSettingsRequest({ customerId }));
   }, [dispatch, customerId]);
 
+  // Local state for recipient fields (save on blur, not every keystroke)
+  const [localRecipients, setLocalRecipients] = useState<Record<string, string>>({});
+
+  const getRecipientKey = (trigger: NotificationTrigger, channel: NotificationChannel) =>
+    `${trigger}:${channel}`;
+
+  const getRecipientValue = (
+    trigger: NotificationTrigger,
+    channel: NotificationChannel,
+    field: 'recipientEmail' | 'recipientPhone',
+  ): string => {
+    const key = getRecipientKey(trigger, channel);
+    if (key in localRecipients) {
+      return localRecipients[key];
+    }
+    const setting = findSetting(settings, trigger, channel);
+    return (setting?.[field] as string) ?? '';
+  };
+
   const handleToggle = useCallback(
     (trigger: NotificationTrigger, channel: NotificationChannel, currentEnabled: boolean) => {
       const existing = findSetting(settings, trigger, channel);
@@ -82,6 +100,57 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ customerId }
       );
     },
     [dispatch, customerId, settings],
+  );
+
+  const handleRecipientChange = useCallback(
+    (trigger: NotificationTrigger, channel: NotificationChannel, value: string) => {
+      const key = getRecipientKey(trigger, channel);
+      setLocalRecipients((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
+
+  const handleRecipientBlur = useCallback(
+    (trigger: NotificationTrigger, channel: NotificationChannel) => {
+      const existing = findSetting(settings, trigger, channel);
+      const key = getRecipientKey(trigger, channel);
+      const localValue = localRecipients[key];
+
+      if (localValue === undefined) {
+        return;
+      }
+
+      const currentEmail = existing?.recipientEmail ?? null;
+      const currentPhone = existing?.recipientPhone ?? null;
+      const newEmail = channel === 'EMAIL' ? (localValue || null) : currentEmail;
+      const newPhone = channel === 'SMS' ? (localValue || null) : currentPhone;
+
+      // Only save if value actually changed
+      if (newEmail === currentEmail && newPhone === currentPhone) {
+        return;
+      }
+
+      dispatch(
+        updateNotificationSettingsRequest({
+          customerId,
+          settings: [
+            {
+              trigger,
+              channel,
+              enabled: existing?.enabled ?? false,
+              recipientEmail: newEmail,
+              recipientPhone: newPhone,
+            },
+          ],
+        }),
+      );
+
+      // Clear local state after save
+      setLocalRecipients((prev) =>
+        Object.fromEntries(Object.entries(prev).filter(([k]) => k !== key)),
+      );
+    },
+    [dispatch, customerId, settings, localRecipients],
   );
 
   if (isLoading) {
@@ -136,10 +205,13 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ customerId }
                           size="small"
                           fullWidth
                           label="Recipient Email"
-                          value={setting?.recipientEmail ?? ''}
+                          value={getRecipientValue(trigger.key, channel.key, 'recipientEmail')}
+                          onChange={(e) =>
+                            handleRecipientChange(trigger.key, channel.key, e.target.value)
+                          }
+                          onBlur={() => handleRecipientBlur(trigger.key, channel.key)}
                           sx={{ mt: 1 }}
-                          disabled
-                          helperText="Edit via API — UI editing coming soon"
+                          placeholder="Uses load contact email if blank"
                         />
                       )}
                       {channel.key === 'SMS' && isEnabled && (
@@ -147,10 +219,13 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ customerId }
                           size="small"
                           fullWidth
                           label="Recipient Phone"
-                          value={setting?.recipientPhone ?? ''}
+                          value={getRecipientValue(trigger.key, channel.key, 'recipientPhone')}
+                          onChange={(e) =>
+                            handleRecipientChange(trigger.key, channel.key, e.target.value)
+                          }
+                          onBlur={() => handleRecipientBlur(trigger.key, channel.key)}
                           sx={{ mt: 1 }}
-                          disabled
-                          helperText="Edit via API — UI editing coming soon"
+                          placeholder="Uses load contact phone if blank"
                         />
                       )}
                     </Box>

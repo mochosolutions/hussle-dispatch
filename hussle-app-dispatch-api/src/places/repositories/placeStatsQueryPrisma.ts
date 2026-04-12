@@ -20,11 +20,11 @@ export const placeStatsQueryPrisma = (
       prisma.stop.count({ where: stopWhereClause }),
       prisma.stop.aggregate({
         where: stopWhereClause,
-        _max: { appointmentDate: true },
+        _max: { appointmentStart: true },
       }),
     ]);
 
-    const lastVisitDate = aggregate._max.appointmentDate?.toISOString() ?? null;
+    const lastVisitDate = aggregate._max.appointmentStart?.toISOString() ?? null;
 
     return { visitCount, lastVisitDate };
   },

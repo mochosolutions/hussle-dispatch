@@ -37,7 +37,7 @@ export const contactStatsQueryPrisma = (
             where: { type: 'PICKUP' },
             take: 1,
             orderBy: { sequence: 'asc' },
-            select: { appointmentDate: true },
+            select: { appointmentStart: true },
           },
         },
       }),
@@ -47,7 +47,7 @@ export const contactStatsQueryPrisma = (
       id: load.id,
       loadNumber: load.loadNumber,
       status: load.status,
-      pickupDate: load.stops[0]?.appointmentDate?.toISOString() ?? null,
+      pickupDate: load.stops[0]?.appointmentStart?.toISOString() ?? null,
     }));
 
     return { loadCount, recentLoads: transformedLoads };
