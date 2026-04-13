@@ -32,6 +32,11 @@ const LOAD_DETAIL_INCLUDE = {
 const LOAD_LIST_INCLUDE = {
   stops: {
     orderBy: { sequence: 'asc' as const },
+    include: {
+      place: {
+        select: { latitude: true, longitude: true },
+      },
+    },
   },
   carrier: {
     select: { id: true, name: true },

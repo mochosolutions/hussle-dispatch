@@ -15,7 +15,7 @@ import { teamSagaWatcher } from 'features/settings/store/sagas/teamSagaWatcher';
 import { documentSagaWatcher } from 'features/documents/store/sagas/documentSagaWatcher';
 import { portalRootSaga } from 'features/carrier-portal/store/sagas/portalRootSaga';
 import { settlementSagaWatcher } from 'features/accounting/store/sagas/settlementSagaWatcher';
-import { loadBoardSagaWatcher } from 'features/loadBoard/store/sagas/loadBoardSagaWatcher';
+import { loadBoardSagaWatcher } from 'features/load/store/sagas/loadBoardSagaWatcher';
 
 export default function* rootSaga() {
   yield all([

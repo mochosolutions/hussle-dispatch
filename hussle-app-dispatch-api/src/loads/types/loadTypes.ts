@@ -1,3 +1,4 @@
+import type { Decimal } from '@prisma/client/runtime/library';
 import type {
   Load,
   Stop,
@@ -158,8 +159,12 @@ export interface LoadWithRelations extends Load {
   accessorialCharges: AccessorialCharge[];
 }
 
+export interface LoadListStop extends Stop {
+  place: { latitude: Decimal | null; longitude: Decimal | null } | null;
+}
+
 export interface LoadListItem extends Load {
-  stops: Stop[];
+  stops: LoadListStop[];
   carrier: Pick<Carrier, 'id' | 'name'> | null;
   driver: Pick<Driver, 'id' | 'firstName' | 'lastName'> | null;
   contact: Pick<Contact, 'id' | 'firstName' | 'lastName' | 'email' | 'phone'> | null;

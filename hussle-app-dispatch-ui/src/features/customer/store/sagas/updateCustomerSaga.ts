@@ -21,6 +21,7 @@ export function* updateCustomerSaga(
     >;
 
     yield put(customerActions.updateOne({ id, changes: response.customer }));
+    yield put(customerActions.upsertOne(response.customer));
     yield put(updateCustomerSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Customer updated', { variant: 'success' });

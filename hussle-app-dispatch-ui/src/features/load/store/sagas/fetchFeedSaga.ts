@@ -3,7 +3,7 @@ import type { SagaReturnType } from 'redux-saga/effects';
 
 import { getLoadBoardFeed } from 'utils/api/loadBoard/loadBoardApi';
 
-import { fetchFeedFailure, fetchFeedSuccess } from '../reducers/loadBoardSlice';
+import { fetchFeedFailure, fetchFeedSuccess } from '../reducers/loadPageSlice';
 
 export function* fetchFeedSaga(): Generator {
   try {

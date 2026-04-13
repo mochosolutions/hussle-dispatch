@@ -363,6 +363,10 @@ export interface LoadListItemResponse {
   pickupSchedulingType: string | null;
   deliveryDate: string | null;
   deliverySchedulingType: string | null;
+  originLat: number | null;
+  originLng: number | null;
+  destLat: number | null;
+  destLng: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -372,7 +376,15 @@ interface StopSummary {
   state: string | null;
   appointmentStart: Date | null;
   schedulingType: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
+
+const toCoord = (val: unknown): number | null => {
+  if (val === null || val === undefined) return null;
+  const num = Number(val);
+  return Number.isFinite(num) ? num : null;
+};
 
 const getOriginStop = (stops: LoadListItem['stops']): StopSummary => {
   const pickup = stops.find((stop) => stop.type === 'PICKUP');
@@ -382,9 +394,11 @@ const getOriginStop = (stops: LoadListItem['stops']): StopSummary => {
       state: pickup.state,
       appointmentStart: pickup.appointmentStart,
       schedulingType: pickup.schedulingType,
+      latitude: toCoord(pickup.place?.latitude),
+      longitude: toCoord(pickup.place?.longitude),
     };
   }
-  return { city: null, state: null, appointmentStart: null, schedulingType: null };
+  return { city: null, state: null, appointmentStart: null, schedulingType: null, latitude: null, longitude: null };
 };
 
 const getDestinationStop = (stops: LoadListItem['stops']): StopSummary => {
@@ -396,9 +410,11 @@ const getDestinationStop = (stops: LoadListItem['stops']): StopSummary => {
       state: lastDelivery.state,
       appointmentStart: lastDelivery.appointmentStart,
       schedulingType: lastDelivery.schedulingType,
+      latitude: toCoord(lastDelivery.place?.latitude),
+      longitude: toCoord(lastDelivery.place?.longitude),
     };
   }
-  return { city: null, state: null, appointmentStart: null, schedulingType: null };
+  return { city: null, state: null, appointmentStart: null, schedulingType: null, latitude: null, longitude: null };
 };
 
 export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse => {
@@ -446,6 +462,10 @@ export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse
     pickupSchedulingType: origin.schedulingType,
     deliveryDate: destination.appointmentStart?.toISOString() ?? null,
     deliverySchedulingType: destination.schedulingType,
+    originLat: origin.latitude,
+    originLng: origin.longitude,
+    destLat: destination.latitude,
+    destLng: destination.longitude,
     invoiceReadiness: load.invoiceReadiness,
     accessorialChargeCount: load._count.accessorialCharges,
     createdAt: load.createdAt.toISOString(),

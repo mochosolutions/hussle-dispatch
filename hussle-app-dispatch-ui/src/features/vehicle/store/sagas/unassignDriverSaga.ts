@@ -19,6 +19,7 @@ export function* unassignDriverSaga(action: PayloadAction<{ vehicleId: string }>
     >;
 
     yield put(vehicleActions.updateOne({ id: vehicleId, changes: response }));
+    yield put(vehicleActions.upsertOne(response));
     yield put(fetchVehicleDetailsRequest({ id: vehicleId }));
     yield put(fetchVehiclesRequest({ page: 1, limit: 25 }));
     yield put(updateVehicleSuccess({ id: vehicleId }));

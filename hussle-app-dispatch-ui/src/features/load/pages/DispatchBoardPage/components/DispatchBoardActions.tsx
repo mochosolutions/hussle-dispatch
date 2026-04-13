@@ -1,10 +1,10 @@
-import { Button, Stack, ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
+import { Button, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import InsightsIcon from '@mui/icons-material/Insights';
+// import InsightsIcon from '@mui/icons-material/Insights';
 import MapIcon from '@mui/icons-material/Map';
-import PeopleIcon from '@mui/icons-material/People';
+// import PeopleIcon from '@mui/icons-material/People';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
+// import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import type { BoardView } from '../../../types';
 
 export interface DispatchBoardActionsProps {
@@ -44,11 +44,11 @@ export const DispatchBoardActions = ({
           <TableChartIcon sx={{ fontSize: 16, mr: 0.75 }} />
           Table
         </ToggleButton>
+        {/* Kanban and Driver views hidden — code preserved for future re-enable
         <ToggleButton value="kanban" aria-label="Kanban view">
           <ViewKanbanIcon sx={{ fontSize: 16, mr: 0.75 }} />
           Kanban
         </ToggleButton>
-
         <ToggleButton value="driver" aria-label="Driver view">
           <PeopleIcon sx={{ fontSize: 16, mr: 0.75 }} />
           Driver
@@ -57,14 +57,11 @@ export const DispatchBoardActions = ({
           <InsightsIcon sx={{ fontSize: 16, mr: 0.75 }} />
           Intel
         </ToggleButton>
-        <Tooltip title="Coming Soon">
-          <span>
-            <ToggleButton value="map" aria-label="Map view" disabled>
-              <MapIcon sx={{ fontSize: 16, mr: 0.75 }} />
-              Map
-            </ToggleButton>
-          </span>
-        </Tooltip>
+        */}
+        <ToggleButton value="map" aria-label="Map view">
+          <MapIcon sx={{ fontSize: 16, mr: 0.75 }} />
+          Map
+        </ToggleButton>
       </ToggleButtonGroup>
       <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateLoad}>
         Create Load

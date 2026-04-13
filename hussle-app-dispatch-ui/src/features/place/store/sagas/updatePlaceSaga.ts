@@ -22,6 +22,7 @@ export function* updatePlaceSaga(
     )) as SagaReturnType<typeof updatePlace>;
 
     yield put(placeActions.updateOne({ id, changes: response }));
+    yield put(placeActions.upsertOne(response));
     yield put(updatePlaceSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Place updated', { variant: 'success' });

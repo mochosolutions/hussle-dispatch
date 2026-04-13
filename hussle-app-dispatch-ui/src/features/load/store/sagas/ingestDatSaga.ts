@@ -8,7 +8,7 @@ import {
   fetchFeedRequest,
   ingestDatFailure,
   ingestDatSuccess,
-} from '../reducers/loadBoardSlice';
+} from '../reducers/loadPageSlice';
 
 export function* ingestDatSaga(): Generator {
   try {

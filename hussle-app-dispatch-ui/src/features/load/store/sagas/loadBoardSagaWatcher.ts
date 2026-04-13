@@ -6,7 +6,7 @@ import {
   ingestDatRequest,
   startPolling,
   stopPolling,
-} from '../reducers/loadBoardSlice';
+} from '../reducers/loadPageSlice';
 import { fetchFeedSaga } from './fetchFeedSaga';
 import { ingestDatSaga } from './ingestDatSaga';
 

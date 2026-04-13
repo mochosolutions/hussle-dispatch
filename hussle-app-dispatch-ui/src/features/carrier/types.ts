@@ -202,6 +202,8 @@ export interface Driver {
   availableHours: string | null;
   currentCity: string | null;
   currentState: string | null;
+  currentLatitude: number | null;
+  currentLongitude: number | null;
   maxDaysOut: number | null;
   preferredLanes: DriverPreferredLane[];
   noGoZones: DriverNoGoZone[];

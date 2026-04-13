@@ -28,8 +28,6 @@ import documentPageReducer from 'features/documents/store/reducers/documentPageS
 import { carrierPortalReducer } from 'features/carrier-portal/store/slices/carrierPortalSlice';
 import { settlementReducer } from 'features/accounting/store/reducers/settlementEntitySlice';
 import { settlementPageReducer } from 'features/accounting/store/reducers/settlementPageSlice';
-import { loadBoardReducer } from 'features/loadBoard/store/reducers/loadBoardSlice';
-
 const pages = combineReducers({
   ui: uiReducer,
   carriers: carrierPageSlice.reducer,
@@ -50,7 +48,6 @@ const pages = combineReducers({
   documents: documentPageReducer,
   carrierPortal: carrierPortalReducer,
   settlements: settlementPageReducer,
-  loadBoard: loadBoardReducer,
 });
 
 const entities = combineReducers({

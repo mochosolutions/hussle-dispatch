@@ -5,7 +5,6 @@ import {
   Truck,
   FileText,
   Contact,
-  Map,
   MapPinCheckIcon,
   Users,
   Settings,
@@ -31,13 +30,6 @@ export const menuItems: NavItemType[] = [
         type: 'item',
         url: '/loads',
         icon: <Truck size={24} />,
-      },
-      {
-        id: 'load-board',
-        title: 'Load Board',
-        type: 'item',
-        url: '/loadboard',
-        icon: <Map size={24} />,
       },
       {
         id: 'fleet',

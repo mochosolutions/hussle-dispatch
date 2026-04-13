@@ -23,7 +23,7 @@ import {
 } from 'features/dashboard/store/selectors/dashboardSelectors';
 import { KanbanBoard } from '../../components/KanbanBoard';
 
-import { MapView } from '../../components/MapView';
+import { CommandCenterView } from './components/CommandCenterView';
 import { DriverGroupView } from '../../components/DriverGroupView';
 // import { WeeklyGrossStrip } from '../../components/WeeklyGrossStrip';
 import { IntelFeedView } from '../../components/IntelFeedView';
@@ -42,7 +42,13 @@ const BOARD_VIEW_STORAGE_KEY = 'dispatch-board-view';
 const getPersistedBoardView = (): BoardView | null => {
   try {
     const stored = localStorage.getItem(BOARD_VIEW_STORAGE_KEY);
-    if (stored === 'kanban' || stored === 'table' || stored === 'driver' || stored === 'intel') {
+    if (
+      stored === 'kanban' ||
+      stored === 'table' ||
+      stored === 'driver' ||
+      stored === 'intel' ||
+      stored === 'map'
+    ) {
       return stored;
     }
   } catch {
@@ -189,8 +195,7 @@ const DispatchBoardPage = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: 0,
-                px: { xs: 2, sm: 3 },
-                pb: 2,
+                ...(boardView !== 'map' && { px: { xs: 2, sm: 3 }, pb: 2 }),
               }}
             >
               {boardView === 'kanban' && <KanbanBoard loadsByGroup={loadsByGroup} />}
@@ -201,7 +206,7 @@ const DispatchBoardPage = () => {
                   totalCount={filteredLoads.length}
                 />
               )}
-              {boardView === 'map' && <MapView stops={[]} />}
+              {boardView === 'map' && <CommandCenterView />}
               {boardView === 'driver' && filteredLoads.length > 0 && (
                 <DriverGroupView loads={filteredLoads} />
               )}

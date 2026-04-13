@@ -52,6 +52,7 @@ export function* updateLoadSaga(
         },
       }),
     );
+    yield put(loadActions.upsertOne(load));
     yield put(updateLoadSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Load updated', { variant: 'success' });

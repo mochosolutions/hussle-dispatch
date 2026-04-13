@@ -22,6 +22,7 @@ export function* updateContactSaga(
     )) as SagaReturnType<typeof updateContact>;
 
     yield put(contactActions.updateOne({ id, changes: response }));
+    yield put(contactActions.upsertOne(response));
     yield put(updateContactSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Contact updated', { variant: 'success' });

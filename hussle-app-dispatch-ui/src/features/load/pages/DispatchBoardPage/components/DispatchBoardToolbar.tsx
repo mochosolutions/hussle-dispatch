@@ -43,7 +43,7 @@ export const DispatchBoardToolbar = ({
   lastRefreshed,
   currentCarrierFilter,
 }: DispatchBoardToolbarProps) => {
-  if (boardView !== 'intel') {
+  if (boardView !== 'intel' && boardView !== 'map') {
     return (
       <Box
         sx={{

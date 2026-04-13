@@ -21,6 +21,7 @@ export function* updateDriverSaga(action: UpdateDriverAction): Generator {
     )) as SagaReturnType<typeof updateDriver>;
 
     yield put(driverActions.updateOne({ id, changes: response }));
+    yield put(driverActions.upsertOne(response));
     yield put(updateDriverSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Driver updated', { variant: 'success' });

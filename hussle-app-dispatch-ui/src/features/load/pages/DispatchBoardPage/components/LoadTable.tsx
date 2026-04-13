@@ -13,9 +13,7 @@ import {
 } from '@mui/material';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-// import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
-
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import type { GridApi, GridReadyEvent } from 'ag-grid-community';
 import { NewDataGrid, MainCard } from '@mocho/ui/components';
@@ -24,7 +22,6 @@ import { StatusCell } from 'components/Statusbadge';
 import { InvoiceReadinessBadge } from 'features/load/components/InvoiceReadinessBadge';
 import { formatEquipmentType } from 'features/load/constants';
 import type { LoadListItem, LoadStatus } from 'features/load/types';
-// import { minWidth } from '@mui/system';
 
 const CellRendererWrapper = ({ children, sx }: { children: React.ReactNode; sx?: SxProps }) => (
   <Box

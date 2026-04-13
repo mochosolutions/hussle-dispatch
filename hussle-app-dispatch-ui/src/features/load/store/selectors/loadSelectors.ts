@@ -78,6 +78,9 @@ export const selectLoadFilters = (state: RootState): LoadFilters => state.pages.
 export const selectLastRefreshed = (state: RootState): string | null =>
   state.pages.loads.lastRefreshed;
 
+export const selectCommandCenterLayers = (state: RootState) =>
+  state.pages.loads.commandCenterLayers;
+
 // ---------------------------------------------------------------------------
 // Kanban grouping selector
 // ---------------------------------------------------------------------------

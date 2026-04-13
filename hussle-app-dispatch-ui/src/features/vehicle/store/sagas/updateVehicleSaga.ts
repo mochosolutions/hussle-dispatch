@@ -22,6 +22,7 @@ export function* updateVehicleSaga(
     )) as SagaReturnType<typeof updateVehicle>;
 
     yield put(vehicleActions.updateOne({ id, changes: response }));
+    yield put(vehicleActions.upsertOne(response));
     yield put(updateVehicleSuccess({ id }));
 
     yield call(enqueueSnackbar, 'Vehicle updated', { variant: 'success' });

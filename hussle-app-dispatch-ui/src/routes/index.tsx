@@ -9,7 +9,6 @@ import DriverRoutes from 'features/driver/routes/driverRoutes';
 import InvoiceRoutes from 'features/invoices/routes/InvoiceRoutes';
 import PlaceRoutes from 'features/place/routes/placeRoutes';
 import LoadRoutes from 'features/load/routes/loadRoutes';
-import LoadBoardRoutes from 'features/loadBoard/routes/loadBoardRoutes';
 import ContactRoutes from 'features/contact/routes/contactRoutes';
 import CustomerRoutes from 'features/customer/routes/customerRoutes';
 import SettingsRoutes from 'features/settings/routes/settingsRoutes';
@@ -30,7 +29,6 @@ export const routes: RouteObject[] = [
       DashboardRoutes,
       // DispatchBoardRoutes,
       LoadRoutes,
-      LoadBoardRoutes,
       CarrierRoutes,
       VehicleRoutes,
       DriverRoutes,

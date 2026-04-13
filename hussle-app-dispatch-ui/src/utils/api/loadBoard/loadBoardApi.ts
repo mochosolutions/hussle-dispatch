@@ -1,5 +1,5 @@
 import axios from 'utils/axios';
-import type { LoadBoardFeedResponse } from 'features/loadBoard/types/loadBoardTypes';
+import type { LoadBoardFeedResponse } from 'features/load/types';
 
 export const getLoadBoardFeed = async (source?: string): Promise<LoadBoardFeedResponse> => {
   const params = source ? { source } : {};

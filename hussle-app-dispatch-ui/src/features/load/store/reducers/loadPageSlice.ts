@@ -6,8 +6,11 @@ import type { CrudPageState } from '@mocho/ui/redux';
 import type {
   AssignLoadInput,
   BoardView,
+  FeedMeta,
+  LoadBoardSource,
   LoadFilters,
   LoadStatus,
+  StagedLoad,
   TransitionStatusInput,
 } from '../../types';
 
@@ -15,16 +18,48 @@ import type {
 // Extended state — adds boardView and filters to the standard CRUD page state
 // ---------------------------------------------------------------------------
 
+export interface CommandCenterLayers {
+  showDrivers: boolean;
+  showFeedLoads: boolean;
+  showActiveLoads: boolean;
+}
+
 export interface LoadPageState extends CrudPageState {
   boardView: BoardView;
   filters: LoadFilters;
   lastRefreshed: string | null;
+  commandCenterLayers: CommandCenterLayers;
+  feedLoads: StagedLoad[];
+  feedMeta: FeedMeta | null;
+  sourceFilter: 'all' | LoadBoardSource;
+  feedLoading: boolean;
+  feedError: string | null;
+  datIngesting: boolean;
 }
 
-const loadPageInitialExtras: Pick<LoadPageState, 'boardView' | 'filters' | 'lastRefreshed'> = {
+const loadPageInitialExtras: Pick<
+  LoadPageState,
+  | 'boardView'
+  | 'filters'
+  | 'lastRefreshed'
+  | 'commandCenterLayers'
+  | 'feedLoads'
+  | 'feedMeta'
+  | 'sourceFilter'
+  | 'feedLoading'
+  | 'feedError'
+  | 'datIngesting'
+> = {
   boardView: 'table',
   filters: {},
   lastRefreshed: null,
+  commandCenterLayers: { showDrivers: true, showFeedLoads: true, showActiveLoads: true },
+  feedLoads: [],
+  feedMeta: null,
+  sourceFilter: 'all',
+  feedLoading: false,
+  feedError: null,
+  datIngesting: false,
 };
 
 export const loadPageSlice = createCrudSlice({
@@ -69,6 +104,24 @@ const setLoadRejected = (
   errors: { ...state.errors, [key]: error },
 });
 
+// Helper — preserves all custom (non-CRUD) fields when merging CRUD state changes
+const preserveCustomFields = (
+  crudState: CrudPageState,
+  customState: LoadPageState,
+): LoadPageState => ({
+  ...crudState,
+  boardView: customState.boardView,
+  filters: customState.filters,
+  lastRefreshed: customState.lastRefreshed,
+  commandCenterLayers: customState.commandCenterLayers,
+  feedLoads: customState.feedLoads,
+  feedMeta: customState.feedMeta,
+  sourceFilter: customState.sourceFilter,
+  feedLoading: customState.feedLoading,
+  feedError: customState.feedError,
+  datIngesting: customState.datIngesting,
+});
+
 export const loadPageReducer = (
   state: LoadPageState = initialState,
   action: UnknownAction,
@@ -82,9 +135,50 @@ export const loadPageReducer = (
     return { ...state, filters: action.payload };
   }
 
+  if (toggleCommandCenterLayer.match(action)) {
+    return {
+      ...state,
+      commandCenterLayers: {
+        ...state.commandCenterLayers,
+        [action.payload]: !state.commandCenterLayers[action.payload],
+      },
+    };
+  }
+
   if (fetchLoadsSuccess.match(action)) {
     const nextCrud = crudReducer(state, action);
-    return { ...nextCrud, boardView: state.boardView, filters: state.filters, lastRefreshed: new Date().toISOString() };
+    return { ...preserveCustomFields(nextCrud, state), lastRefreshed: new Date().toISOString() };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Load board feed actions
+  // ---------------------------------------------------------------------------
+
+  if (fetchFeedRequest.match(action)) {
+    return { ...state, feedLoading: true };
+  }
+  if (fetchFeedSuccess.match(action)) {
+    return {
+      ...state,
+      feedLoading: false,
+      feedLoads: action.payload.loads,
+      feedMeta: action.payload.meta,
+    };
+  }
+  if (fetchFeedFailure.match(action)) {
+    return { ...state, feedLoading: false, feedError: action.payload };
+  }
+  if (setSourceFilter.match(action)) {
+    return { ...state, sourceFilter: action.payload };
+  }
+  if (ingestDatRequest.match(action)) {
+    return { ...state, datIngesting: true };
+  }
+  if (ingestDatSuccess.match(action)) {
+    return { ...state, datIngesting: false };
+  }
+  if (ingestDatFailure.match(action)) {
+    return { ...state, datIngesting: false, feedError: action.payload };
   }
 
   // Status transition lifecycle — composite-key loading state per load
@@ -118,12 +212,7 @@ export const loadPageReducer = (
   }
 
   // Merge CRUD state changes while preserving custom fields
-  return {
-    ...nextCrudState,
-    boardView: state.boardView,
-    filters: state.filters,
-    lastRefreshed: state.lastRefreshed,
-  };
+  return preserveCustomFields(nextCrudState, state);
 };
 
 // Semantic action aliases — match the naming convention used by sagas and barrel exports
@@ -152,6 +241,10 @@ export const {
 export const setBoardView = createAction<BoardView>('load/setBoardView');
 
 export const setLoadFilters = createAction<LoadFilters>('load/setLoadFilters');
+
+export const toggleCommandCenterLayer = createAction<keyof CommandCenterLayers>(
+  'load/toggleCommandCenterLayer',
+);
 
 export const transitionLoadStatusRequest = createAction<{
   loadId: string;
@@ -327,3 +420,27 @@ export const deleteAccessorialSuccess = createAction<{ loadId: string }>(
 export const deleteAccessorialFailure = createAction<{ loadId: string; error: string }>(
   'load/deleteAccessorialFailure',
 );
+
+// ---------------------------------------------------------------------------
+// Load board feed actions (migrated from loadBoard feature)
+// ---------------------------------------------------------------------------
+
+export const fetchFeedRequest = createAction('load/fetchFeedRequest');
+
+export const fetchFeedSuccess = createAction<{ loads: StagedLoad[]; meta: FeedMeta }>(
+  'load/fetchFeedSuccess',
+);
+
+export const fetchFeedFailure = createAction<string>('load/fetchFeedFailure');
+
+export const setSourceFilter = createAction<'all' | LoadBoardSource>('load/setSourceFilter');
+
+export const ingestDatRequest = createAction('load/ingestDatRequest');
+
+export const ingestDatSuccess = createAction('load/ingestDatSuccess');
+
+export const ingestDatFailure = createAction<string>('load/ingestDatFailure');
+
+export const startPolling = createAction('load/startPolling');
+
+export const stopPolling = createAction('load/stopPolling');
