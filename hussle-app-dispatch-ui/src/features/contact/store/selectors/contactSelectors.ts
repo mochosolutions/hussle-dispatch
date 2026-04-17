@@ -13,8 +13,10 @@ export const selectAllContacts = (state: RootState) => contactSelectors.selectAl
 export const selectContactById = (id: string) => (state: RootState) =>
   contactSelectors.selectById(state, id);
 
-export const selectContactListLoading = (state: RootState) =>
-  state.pages.contacts.loading['getAll'] === LoadingState.Pending;
+export const selectContactListLoading = (state: RootState) => {
+  const status = state.pages.contacts.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectContactCreateLoading = (state: RootState) =>
   state.pages.contacts.loading['create'] === LoadingState.Pending;

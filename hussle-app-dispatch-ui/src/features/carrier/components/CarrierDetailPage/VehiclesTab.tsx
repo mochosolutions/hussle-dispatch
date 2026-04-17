@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import { Box, Card, Chip, Typography } from '@mui/material';
-import AgGridTable from '../../../../../mocho/components/NewDataGrid';
+import AgGridTable from '../../../../mocho/components/NewDataGrid';
 import { useDispatch, useSelector } from 'store';
-import { selectVehiclesByCarrierId } from '../../../store/selectors/carrierSelectors';
-import { fetchCarrierVehiclesRequest } from '../../../store/reducers';
-import { EQUIPMENT_OPTIONS } from '../../../constants';
-import type { Vehicle } from '../../../types';
+import { selectVehiclesByCarrierId } from '../../store/selectors/carrierSelectors';
+import { fetchCarrierVehiclesRequest } from '../../store/reducers';
+import { EQUIPMENT_OPTIONS } from '../../constants';
+import type { Vehicle } from '../../types';
 
 interface VehiclesTabProps {
   carrierId: string;

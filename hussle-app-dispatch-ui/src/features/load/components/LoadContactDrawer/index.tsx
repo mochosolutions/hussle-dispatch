@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Box, Button, CircularProgress, Grid, Stack } from '@mui/material';
+import { Box, Button, CircularProgress, Stack } from '@mui/material';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
-import { TextField, EmailField } from '@mocho/ui/components';
+import { TextField, EmailField, PhoneField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
@@ -93,22 +93,22 @@ const InlineContactForm: React.FC<InlineContactFormProps> = ({
         return (
           <Form>
             <Stack spacing={2} sx={{ pt: 1 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
                   <TextField name="firstName" label="First Name" formik={fieldProps} required />
-                </Grid>
-                <Grid item xs={6}>
+                </Box>
+                <Box sx={{ flex: 1 }}>
                   <TextField name="lastName" label="Last Name" formik={fieldProps} required />
-                </Grid>
-              </Grid>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
                   <EmailField name="email" label="Email" formik={fieldProps} />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField name="phone" label="Phone" formik={fieldProps} />
-                </Grid>
-              </Grid>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <PhoneField name="phone" label="Phone" formik={fieldProps} />
+                </Box>
+              </Box>
               {submitError ? (
                 <Box sx={{ color: 'error.main', typography: 'caption' }}>{submitError}</Box>
               ) : null}
@@ -145,7 +145,7 @@ export const LoadContactDrawer: React.FC<LoadContactDrawerProps> = ({ load, onCl
   const dispatch = useDispatch();
 
   const initialValues: ContactFormValues = {
-    contactId: load.contactId ?? undefined,
+    contactId: load.contact?.id ?? undefined,
     externalRefNumber: load.externalRefNumber ?? undefined,
   };
 
@@ -161,7 +161,7 @@ export const LoadContactDrawer: React.FC<LoadContactDrawerProps> = ({ load, onCl
     );
   };
 
-  const scopeParams = load.customerId ? { customerId: load.customerId } : undefined;
+  const scopeParams = load.customer?.id ? { customerId: load.customer.id } : undefined;
 
   return (
     <FormDrawer
@@ -183,7 +183,7 @@ export const LoadContactDrawer: React.FC<LoadContactDrawerProps> = ({ load, onCl
                 <InlineContactForm
                   onCreated={onCreated}
                   onCancel={onCancel}
-                  customerId={load.customerId}
+                  customerId={load.customer?.id ?? null}
                 />
               )}
             />

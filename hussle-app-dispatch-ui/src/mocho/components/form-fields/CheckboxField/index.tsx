@@ -1,5 +1,6 @@
 import React from 'react';
 import { FormControlLabel, Checkbox } from '@mui/material';
+import { getIn } from 'formik';
 import type { CheckboxFieldProps } from '../types';
 
 /**
@@ -21,7 +22,7 @@ export const CheckboxField: React.FC<CheckboxFieldProps> = ({
     <FormControlLabel
       control={
         <Checkbox
-          checked={Boolean(formik.values[name])}
+          checked={Boolean(getIn(formik.values, name))}
           onChange={(event) => {
             formik.setFieldValue(name, event.target.checked);
           }}

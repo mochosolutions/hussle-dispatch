@@ -1,5 +1,6 @@
 import React from 'react';
 import { Select, MenuItem, SelectChangeEvent, Typography } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { SelectFieldProps } from '../types';
 
@@ -21,9 +22,9 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   placeholder,
   formik,
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
-  const value = formik.values[name] || '';
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
+  const value = getIn(formik.values, name) || '';
 
   const handleChange = (event: SelectChangeEvent<unknown>) => {
     formik.setFieldValue(name, event.target.value);

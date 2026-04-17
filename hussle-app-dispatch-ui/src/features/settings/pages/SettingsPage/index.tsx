@@ -5,7 +5,6 @@ import {
   Stack,
   Switch,
   FormControlLabel,
-  Typography,
   Chip,
   IconButton,
   OutlinedInput,
@@ -22,6 +21,8 @@ import {
 } from 'mocho/components/form-fields';
 import type { FormikFieldProps } from 'mocho/components/form-fields';
 import { DetailTabBar } from 'components/DetailTabBar';
+import SectionCard from 'components/SectionCard';
+import { SectionTitle, BodyMuted, ErrorText } from 'components/Typography';
 import { settingsSchema } from '../../validators/settingsSchema';
 import TeamTab from '../../components/TeamTab';
 import type { SettingsFormValues } from '../../types';
@@ -35,14 +36,6 @@ import {
   fetchSettingsRequest,
   updateSettingsRequest,
 } from '../../store/reducers/settingsSlice';
-
-const sectionHeaderSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
 
 const buildInitialValues = (settings: ReturnType<typeof selectSettings>): SettingsFormValues => ({
   defaultTonuFee: settings?.defaultTonuFee ?? 250,
@@ -150,20 +143,14 @@ const SettingsPage = () => {
       <>
       {error && (
         <MainCard sx={{ bgcolor: 'error.lighter', borderColor: 'error.light' }}>
-          <Typography color="error.main" variant="body2" role="alert">
-            {error}
-          </Typography>
+          <ErrorText role="alert">{error}</ErrorText>
         </MainCard>
       )}
 
       <Box component="form" noValidate onSubmit={formik.handleSubmit}>
         <Stack spacing={3} sx={{ maxWidth: 800 }}>
           {/* Financial Settings */}
-          <MainCard>
-            <Typography variant="subtitle2" sx={{ ...sectionHeaderSx, mb: 2.5 }}>
-              Financial Settings
-            </Typography>
-
+          <SectionCard title={<SectionTitle>Financial Settings</SectionTitle>}>
             <Stack spacing={2.5}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -219,14 +206,10 @@ const SettingsPage = () => {
                 </Grid>
               </Grid>
             </Stack>
-          </MainCard>
+          </SectionCard>
 
           {/* Operations Settings */}
-          <MainCard>
-            <Typography variant="subtitle2" sx={{ ...sectionHeaderSx, mb: 2.5 }}>
-              Operations Settings
-            </Typography>
-
+          <SectionCard title={<SectionTitle>Operations Settings</SectionTitle>}>
             <Stack spacing={2.5}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -276,9 +259,7 @@ const SettingsPage = () => {
 
               {/* Prohibited Commodities */}
               <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  Prohibited Commodities
-                </Typography>
+                <BodyMuted sx={{ mb: 1, fontWeight: 500 }}>Prohibited Commodities</BodyMuted>
                 <OutlinedInput
                   placeholder="Type a commodity and press Enter"
                   onKeyDown={handleAddCommodity}
@@ -304,14 +285,10 @@ const SettingsPage = () => {
                 )}
               </Box>
             </Stack>
-          </MainCard>
+          </SectionCard>
 
           {/* Communication Settings */}
-          <MainCard>
-            <Typography variant="subtitle2" sx={{ ...sectionHeaderSx, mb: 2.5 }}>
-              Communication
-            </Typography>
-
+          <SectionCard title={<SectionTitle>Communication</SectionTitle>}>
             <Stack spacing={2.5}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -336,7 +313,7 @@ const SettingsPage = () => {
                 formik={formikProps}
               />
             </Stack>
-          </MainCard>
+          </SectionCard>
 
           {/* Save Button */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

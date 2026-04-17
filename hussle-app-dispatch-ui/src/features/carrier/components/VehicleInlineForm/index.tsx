@@ -1,4 +1,4 @@
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { Formik } from 'formik';
 import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';
@@ -59,42 +59,42 @@ export const VehicleInlineForm = ({
             opacity: 0.95,
           }}
         >
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={3}>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+            <Box sx={{ flex: 3 }}>
               <TextField name="unitNumber" label="Unit #" placeholder="TRK-001" formik={formikProps} />
-            </Grid>
-            <Grid item xs={2}>
+            </Box>
+            <Box sx={{ flex: 2 }}>
               <TextField name="year" label="Year" placeholder="2022" formik={formikProps} />
-            </Grid>
-            <Grid item xs={4}>
+            </Box>
+            <Box sx={{ flex: 4 }}>
               <SelectField
                 name="make"
                 label="Make"
                 data={[{ value: '', label: 'Select make' }, ...VEHICLE_MAKES.map((m) => ({ value: m, label: m }))]}
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={3}>
+            </Box>
+            <Box sx={{ flex: 3 }}>
               <TextField name="model" label="Model" placeholder="Cascadia" formik={formikProps} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <TextField name="vin" label="VIN" placeholder="1FUJGLDR..." formik={formikProps} />
-            </Grid>
-            <Grid item xs={4}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <SelectField
                 name="type"
                 label="Equipment Type"
                 data={[{ value: '', label: '—' }, ...EQUIPMENT_OPTIONS]}
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={4}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <TextField name="licensePlate" label="License Plate" placeholder="ABC-1234" formik={formikProps} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
             <Button variant="outlined" size="small" onClick={onCancel}>

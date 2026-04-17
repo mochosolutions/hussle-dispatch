@@ -44,13 +44,13 @@ export const LoadAssignmentDrawer: React.FC<LoadAssignmentDrawerProps> = ({ load
   const financialsLocked = FINANCIALS_LOCKED_STATUSES.includes(load.status);
 
   const initialValues: AssignmentFormValues = {
-    carrierId: load.carrierId ?? undefined,
-    driverId: load.driverId ?? undefined,
-    vehicleId: load.vehicleId ?? undefined,
-    customerRate: load.customerRate ? Number(load.customerRate) : undefined,
-    carrierPayout: load.carrierPayout ? Number(load.carrierPayout) : undefined,
-    companyMargin: load.companyMargin ? Number(load.companyMargin) : undefined,
-    isTeamDriver: load.isTeamDriver,
+    carrierId: load.assignment.carrier?.id ?? undefined,
+    driverId: load.assignment.driver?.id ?? undefined,
+    vehicleId: load.assignment.vehicle?.id ?? undefined,
+    customerRate: load.financials.customerRate ? Number(load.financials.customerRate) : undefined,
+    carrierPayout: load.financials.carrierPayout ? Number(load.financials.carrierPayout) : undefined,
+    companyMargin: load.financials.companyMargin ? Number(load.financials.companyMargin) : undefined,
+    isTeamDriver: load.assignment.isTeamDriver,
   };
 
   const handleSubmit = (values: AssignmentFormValues) => {

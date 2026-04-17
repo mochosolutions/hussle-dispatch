@@ -1,14 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { format, parseISO } from 'date-fns';
-import { Button, Grid, Stack, Typography } from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DirectionsIcon from '@mui/icons-material/Directions';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
-import { KpiCell, DetailRow } from 'components/Typography';
-import SectionCard from 'components/SectionCard';
+import { KpiCell } from 'components/Typography';
 import { ContextualAlert } from 'components/ContextualAlert';
 import { getPlaceStats } from 'utils/api/places/placeApi';
 import type { PlaceStats } from 'utils/api/places/placeApi';
@@ -20,6 +19,9 @@ import {
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 import { FACILITY_TYPE_LABELS, DOCK_TYPE_LABELS } from '../../constants';
 import type { FacilityType, DockType, Place } from '../../types';
+import { OverviewTab } from '../../components/PlaceDetailPage/OverviewTab';
+import { LoadHistoryTab } from '../../components/PlaceDetailPage/LoadHistoryTab';
+import { NotesTab } from '../../components/PlaceDetailPage/NotesTab';
 
 const PLACE_DETAIL_TABS = [
   { label: 'Overview', value: 'overview' },
@@ -63,6 +65,13 @@ const buildSpecialInstructions = (p: Place): string | null => {
   return parts.length > 0 ? parts.join(' | ') : null;
 };
 
+const formatLastVisit = (date: string | null): string => {
+  if (!date) {
+    return '—';
+  }
+  return format(parseISO(date), 'MMM d, yyyy');
+};
+
 const PlaceDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
@@ -95,13 +104,6 @@ const PlaceDetailPage = () => {
       .catch(() => setPlaceStats(null))
       .finally(() => setStatsLoading(false));
   }, [id]);
-
-  const formatLastVisit = (date: string | null): string => {
-    if (!date) {
-      return '\u2014';
-    }
-    return format(parseISO(date), 'MMM d, yyyy');
-  };
 
   const handleBack = () => {
     navigate('/places');
@@ -164,17 +166,17 @@ const PlaceDetailPage = () => {
               }
               summary={
                 <>
-                  <KpiCell label="Address" value={fullAddress || '\u2014'} />
-                  <KpiCell label="Facility Type" value={facilityLabel ?? '\u2014'} />
+                  <KpiCell label="Address" value={fullAddress || '—'} />
+                  <KpiCell label="Facility Type" value={facilityLabel ?? '—'} />
                   <KpiCell
                     label="Appointment"
                     value={p.appointmentRequired ? 'Required' : 'Walk-in'}
                     valueProps={p.appointmentRequired ? { color: 'error.main' } : {}}
                   />
-                  <KpiCell label="Dock Type" value={dockLabel ?? '\u2014'} />
+                  <KpiCell label="Dock Type" value={dockLabel ?? '—'} />
                   <KpiCell
                     label="Total Visits"
-                    value={statsLoading ? '...' : String(placeStats?.visitCount ?? '\u2014')}
+                    value={statsLoading ? '...' : String(placeStats?.visitCount ?? '—')}
                     sub={`Last: ${statsLoading ? '...' : formatLastVisit(placeStats?.lastVisitDate ?? null)}`}
                   />
                 </>
@@ -184,101 +186,21 @@ const PlaceDetailPage = () => {
               onTabChange={setActiveTab}
             >
               {activeTab === 'overview' && (
-                <Stack spacing={2.5}>
-                  {specialInstructions && (
-                    <ContextualAlert
-                      severity="warning"
-                      title="Special Instructions"
-                      description={specialInstructions}
-                    />
-                  )}
-
-                  <Grid container spacing={2.5}>
-                    <Grid item xs={12} md={8}>
-                      <Stack spacing={2.5}>
-                        <SectionCard title="Facility Details">
-                          <DetailRow label="Place Name" value={p.name} />
-                          <DetailRow
-                            label="Facility Type"
-                            value={facilityLabel ?? '\u2014'}
-                          />
-                          <DetailRow label="Address" value={fullAddress || '\u2014'} />
-                          <DetailRow label="Dock Type" value={dockLabel ?? '\u2014'} />
-                          <DetailRow
-                            label="Appointment"
-                            value={p.appointmentRequired ? 'Required' : 'Walk-in'}
-                            valueColor={p.appointmentRequired ? 'error.main' : undefined}
-                          />
-                          <DetailRow
-                            label="Lumper Required"
-                            value={p.lumperRequired ? 'Yes' : 'No'}
-                            valueColor={p.lumperRequired ? 'warning.main' : undefined}
-                          />
-                          <DetailRow
-                            label="Dock Hours"
-                            value={p.operatingHours ?? '\u2014'}
-                          />
-                          <DetailRow
-                            label="Gate Code"
-                            value={p.checkInProcedures ?? '\u2014'}
-                            noBorder
-                          />
-                        </SectionCard>
-
-                        <SectionCard title="On-Site Contact">
-                          <DetailRow label="Contact Name" value={p.contactName ?? '\u2014'} />
-                          <DetailRow label="Phone" value={p.contactPhone ?? '\u2014'} />
-                          <DetailRow
-                            label="Email"
-                            value={p.contactEmail ?? '\u2014'}
-                            noBorder
-                          />
-                        </SectionCard>
-                      </Stack>
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                      <SectionCard title="Visit Stats">
-                        <DetailRow
-                          label="Total Visits"
-                          value={statsLoading ? '...' : String(placeStats?.visitCount ?? '\u2014')}
-                        />
-                        <DetailRow label="Avg Wait Time" value="\u2014" />
-                        <DetailRow
-                          label="Last Visit"
-                          value={statsLoading ? '...' : formatLastVisit(placeStats?.lastVisitDate ?? null)}
-                          noBorder
-                        />
-                      </SectionCard>
-                    </Grid>
-                  </Grid>
-                </Stack>
+                <OverviewTab
+                  place={p}
+                  placeStats={placeStats}
+                  statsLoading={statsLoading}
+                  facilityLabel={facilityLabel}
+                  dockLabel={dockLabel}
+                  fullAddress={fullAddress}
+                  specialInstructions={specialInstructions}
+                  formatLastVisit={formatLastVisit}
+                />
               )}
 
-              {activeTab === 'loads' && (
-                <SectionCard title="Load History">
-                  <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No loads have been assigned to this facility yet.
-                    </Typography>
-                  </Stack>
-                </SectionCard>
-              )}
+              {activeTab === 'loads' && <LoadHistoryTab />}
 
-              {activeTab === 'notes' && (
-                <SectionCard title="Notes">
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: p.notes ? 'text.primary' : 'text.disabled',
-                      whiteSpace: 'pre-wrap',
-                      p: 1,
-                    }}
-                  >
-                    {p.notes || 'No notes added.'}
-                  </Typography>
-                </SectionCard>
-              )}
+              {activeTab === 'notes' && <NotesTab notes={p.notes} />}
             </DetailLayout>
           );
         }}

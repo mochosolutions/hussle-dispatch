@@ -18,6 +18,15 @@ export { TypeaheadField } from './TypeaheadField';
 export { DateField } from './DateField';
 export { TimeField } from './TimeField';
 
+// Formatted input components
+export { PhoneField } from './PhoneField';
+export { CurrencyField } from './CurrencyField';
+export { NumericField } from './NumericField';
+export { PercentField } from './PercentField';
+export { StateField } from './StateField';
+export { ZipCodeField } from './ZipCodeField';
+export { ContentSelectorField } from './ContentSelectorField';
+
 // Extended input components
 export { CharCounterField } from './CharCounterField';
 export { MultiSelectChipField } from './MultiSelectChipField';

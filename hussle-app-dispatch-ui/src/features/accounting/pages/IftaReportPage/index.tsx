@@ -7,11 +7,11 @@ import {
   Select,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { MainCard, NewDataGrid } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
+import { Body, BodyMuted, ErrorText, SectionTitle } from 'components/Typography';
 import { getIftaReport } from 'utils/api/accounting/iftaApi';
 import type {
   IftaReportResponse,
@@ -111,19 +111,19 @@ const flattenVehicleStates = (vehicle: IftaVehicleEntry): StateRow[] =>
 
 const MilesCellRenderer = ({ value }: { value: number }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatWholeNumber(value)}
+    <Body>{formatWholeNumber(value)}</Body>
   </Box>
 );
 
 const GallonsCellRenderer = ({ value }: { value: number }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatNumber(value)}
+    <Body>{formatNumber(value)}</Body>
   </Box>
 );
 
 const CurrencyCellRenderer = ({ value }: { value: number }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatCurrency(value)}
+    <Body>{formatCurrency(value)}</Body>
   </Box>
 );
 
@@ -173,7 +173,6 @@ const IftaReportPage = () => {
     [],
   );
 
-  // Build grid rows
   const { rows, totalsRow } = useMemo(() => {
     if (!report) {
       return { rows: [], totalsRow: [] as StateRow[] };
@@ -258,7 +257,6 @@ const IftaReportPage = () => {
           minHeight: 0,
         }}
       >
-        {/* Filters */}
         <MainCard
           content={false}
           sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
@@ -312,26 +310,21 @@ const IftaReportPage = () => {
             </Stack>
           </Stack>
 
-          {/* Error state */}
           {error && !loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <Typography color="error">{error}</Typography>
+              <ErrorText>{error}</ErrorText>
             </Box>
           )}
 
-          {/* Empty state */}
           {!loading && !error && report !== null && report.vehicles.length === 0 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
-              <Typography variant="h6" color="text.secondary">
-                {`No IFTA data for Q${quarter} ${year}`}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <SectionTitle sx={{ color: 'text.secondary' }}>{`No IFTA data for Q${quarter} ${year}`}</SectionTitle>
+              <BodyMuted sx={{ mt: 1 }}>
                 State mileage is calculated automatically when loads have stops with coordinates.
-              </Typography>
+              </BodyMuted>
             </Box>
           )}
 
-          {/* Data grid */}
           {(loading || hasData) && (
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
@@ -363,48 +356,29 @@ const IftaReportPage = () => {
           )}
         </MainCard>
 
-        {/* Per-vehicle summary cards */}
         {showVehicleSummaries && (
           <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 2 }}>
-              Vehicle Summary
-            </Typography>
+            <SectionTitle sx={{ mb: 2 }}>Vehicle Summary</SectionTitle>
             <Grid container spacing={2}>
               {report.vehicles.map((vehicle: IftaVehicleEntry) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={vehicle.vehicleId}>
                   <MainCard title={vehicle.unitNumber}>
                     <Stack spacing={1}>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Total Miles
-                        </Typography>
-                        <Typography variant="body2">
-                          {formatWholeNumber(vehicle.totals.totalMiles)}
-                        </Typography>
+                        <BodyMuted>Total Miles</BodyMuted>
+                        <Body>{formatWholeNumber(vehicle.totals.totalMiles)}</Body>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Total Gallons
-                        </Typography>
-                        <Typography variant="body2">
-                          {formatNumber(vehicle.totals.totalGallons)}
-                        </Typography>
+                        <BodyMuted>Total Gallons</BodyMuted>
+                        <Body>{formatNumber(vehicle.totals.totalGallons)}</Body>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Fuel Cost
-                        </Typography>
-                        <Typography variant="body2">
-                          {formatCurrency(vehicle.totals.totalFuelCost)}
-                        </Typography>
+                        <BodyMuted>Fuel Cost</BodyMuted>
+                        <Body>{formatCurrency(vehicle.totals.totalFuelCost)}</Body>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Avg MPG
-                        </Typography>
-                        <Typography variant="body2">
-                          {formatNumber(vehicle.totals.averageMpg)}
-                        </Typography>
+                        <BodyMuted>Avg MPG</BodyMuted>
+                        <Body>{formatNumber(vehicle.totals.averageMpg)}</Body>
                       </Stack>
                     </Stack>
                   </MainCard>

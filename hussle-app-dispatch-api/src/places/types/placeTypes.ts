@@ -94,6 +94,11 @@ export interface TypeaheadPlaceResult {
   contactPhone: string | null;
   latitude: number | null;
   longitude: number | null;
+  appointmentRequired: boolean;
+  lumperRequired: boolean;
+  ppeRequired: boolean;
+  facilityHours: unknown;
+  is24Hours: boolean;
 }
 
 export interface FindLoadsAtFacilityInput {

@@ -1,41 +1,47 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Box, Button, Typography } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
-import { DocumentTable } from 'features/documents/components/DocumentTable';
+import DocumentsTab from 'components/DocumentsTab';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { useDispatch, useSelector } from 'store';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
-import type { UpdateDriverInput } from 'features/carrier/types';
-import { fetchDriverDetailsRequest, updateDriverRequest } from '../../store/reducers';
+import {
+  fetchDriverDetailsRequest,
+  fetchScheduleRequest,
+  deleteOverrideRequest,
+} from '../../store/reducers';
 import {
   selectDriverWithCarrier,
   selectDriverDetailLoading,
+  selectScheduleOverrides,
+  selectScheduleLoading,
+  selectWeeklySchedule,
 } from '../../store/selectors/driverSelectors';
-import { DriverInfoDrawer } from '../../components/DriverInfoDrawer';
-import { DriverPreferencesDrawer } from '../../components/DriverPreferencesDrawer';
-import { DriverLocationDrawer } from '../../components/DriverLocationDrawer';
 import { DriverKPI } from '../../components/DriverKPI';
 import { DRIVER_TABS } from '../../constants';
-import DriverLoadHistoryTab from './tabs/DriverLoadHistoryTab';
-import { DriverPreferencesTab } from './tabs/DriverPreferencesTab';
-import { DriverOverviewTab } from './tabs/DriverOverviewTab';
+import DriverLoadHistoryTab from '../../components/DriverDetailPage/DriverLoadHistoryTab';
+import { DriverPreferencesTab } from '../../components/DriverDetailPage/DriverPreferencesTab';
+import { DriverOverviewTab } from '../../components/DriverDetailPage/DriverOverviewTab';
+import { DriverScheduleTab } from '../../components/DriverDetailPage/DriverScheduleTab';
 
 const DriverDetailPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
+  const { openDrawer } = useDrawerActions();
   const driverSelector = useMemo(() => selectDriverWithCarrier(id ?? ''), [id]);
   const driver = useSelector(driverSelector);
   const isLoading = useSelector(selectDriverDetailLoading(id ?? ''));
   const [activeTab, setActiveTab] = useState('overview');
-  const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
-  const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
-  const [locationDrawerOpen, setLocationDrawerOpen] = useState(false);
-  const { openDrawer } = useDrawerActions();
+
+  const weeklySchedule = useSelector(selectWeeklySchedule);
+  const scheduleOverrides = useSelector(selectScheduleOverrides);
+  const scheduleLoading = useSelector(selectScheduleLoading);
+  const scheduleFetchedRef = useRef(false);
 
   useEffect(() => {
     if (id) {
@@ -43,10 +49,21 @@ const DriverDetailPage = () => {
     }
   }, [dispatch, id]);
 
-  const handleSaveDriver = useCallback(
-    (values: UpdateDriverInput) => {
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      setActiveTab(tab);
+      if (tab === 'schedule' && id && !scheduleFetchedRef.current) {
+        scheduleFetchedRef.current = true;
+        dispatch(fetchScheduleRequest({ driverId: id }));
+      }
+    },
+    [dispatch, id],
+  );
+
+  const handleDeleteOverride = useCallback(
+    (overrideId: string) => {
       if (id) {
-        dispatch(updateDriverRequest({ id, data: values }));
+        dispatch(deleteOverrideRequest({ driverId: id, overrideId }));
       }
     },
     [dispatch, id],
@@ -72,7 +89,7 @@ const DriverDetailPage = () => {
               <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
-                onClick={() => setInfoDrawerOpen(true)}
+                onClick={() => openDrawer('driverInfo', { driverId: id ?? '' })}
                 sx={{ color: 'common.white', borderColor: 'grey.500' }}
               >
                 Edit
@@ -81,70 +98,39 @@ const DriverDetailPage = () => {
             summary={<DriverKPI driver={d} />}
             tabs={DRIVER_TABS}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
           >
             {activeTab === 'overview' && (
               <DriverOverviewTab
                 driver={d}
-                onEditInfo={() => setInfoDrawerOpen(true)}
-                onEditPreferences={() => setPreferencesDrawerOpen(true)}
-                onEditLocation={() => setLocationDrawerOpen(true)}
+                onEditInfo={() => openDrawer('driverInfo', { driverId: id ?? '' })}
+                onEditPreferences={() => openDrawer('driverPreferences', { driverId: id ?? '' })}
+                onEditLocation={() => openDrawer('driverLocation', { driverId: id ?? '' })}
               />
             )}
             {activeTab === 'load-history' && <DriverLoadHistoryTab />}
             {activeTab === 'preferences' && (
               <DriverPreferencesTab
                 driver={d}
-                onEditPreferences={() => setPreferencesDrawerOpen(true)}
+                onEditPreferences={() => openDrawer('driverPreferences', { driverId: id ?? '' })}
+              />
+            )}
+            {activeTab === 'schedule' && (
+              <DriverScheduleTab
+                weeklySchedule={weeklySchedule}
+                overrides={scheduleOverrides}
+                isLoading={scheduleLoading}
+                onEditWeekly={() => openDrawer('driverWeeklySchedule', { driverId: id ?? '' })}
+                onAddOverride={() => openDrawer('driverScheduleOverride', { driverId: id ?? '' })}
+                onDeleteOverride={handleDeleteOverride}
               />
             )}
             {activeTab === 'documents' && (
-              <Box sx={{ p: 3 }}>
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() =>
-                      openDrawer('documentUpload', {
-                        context: 'driver-profile',
-                        entityType: 'driver',
-                        entityId: id ?? '',
-                      })
-                    }
-                  >
-                    Upload
-                  </Button>
-                </Box>
-                <DocumentTable entityType="driver" entityId={id ?? ''} />
-              </Box>
+              <DocumentsTab entityType="driver" entityId={id ?? ''} canUpload />
             )}
           </DetailLayout>
         )}
       </DataGuard>
-
-      {/* Drawers rendered outside DetailLayout to avoid scroll containment */}
-      {driver && (
-        <>
-          <DriverInfoDrawer
-            open={infoDrawerOpen}
-            onClose={() => setInfoDrawerOpen(false)}
-            data={driver}
-            onSave={handleSaveDriver}
-          />
-          <DriverPreferencesDrawer
-            open={preferencesDrawerOpen}
-            onClose={() => setPreferencesDrawerOpen(false)}
-            data={driver}
-            onSave={handleSaveDriver}
-          />
-          <DriverLocationDrawer
-            open={locationDrawerOpen}
-            onClose={() => setLocationDrawerOpen(false)}
-            data={driver}
-            onSave={handleSaveDriver}
-          />
-        </>
-      )}
     </PageWrapper>
   );
 };

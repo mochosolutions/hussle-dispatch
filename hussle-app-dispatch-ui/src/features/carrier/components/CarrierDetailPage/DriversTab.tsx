@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { Box, Card, Chip, Typography } from '@mui/material';
-import AgGridTable from '../../../../../mocho/components/NewDataGrid';
+import AgGridTable from '../../../../mocho/components/NewDataGrid';
 import { useDispatch, useSelector } from 'store';
-import { selectDriversByCarrierId } from '../../../store/selectors/carrierSelectors';
-import { fetchCarrierDriversRequest } from '../../../store/reducers';
-import type { Driver } from '../../../types';
+import { selectDriversByCarrierId } from '../../store/selectors/carrierSelectors';
+import { fetchCarrierDriversRequest } from '../../store/reducers';
+import type { Driver } from '../../types';
 
 interface DriversTabProps {
   carrierId: string;

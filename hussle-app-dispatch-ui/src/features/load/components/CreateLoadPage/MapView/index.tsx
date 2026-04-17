@@ -5,7 +5,7 @@ import { Map, Marker, Source, Layer, useMap } from 'react-map-gl/maplibre';
 import { LngLatBounds } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import config from '../../../../config';
+import config from '../../../../../config';
 
 interface StopMarker {
   type: string;
@@ -192,7 +192,12 @@ export const MapView: React.FC<MapViewProps> = ({ stops = [], height = 280 }) =>
         id="load-map"
         initialViewState={{ longitude: -98, latitude: 39, zoom: 3.5 }}
         mapStyle={STYLE_URL}
-        onError={() => setMapError(true)}
+        onError={(e) => {
+          const msg = String(e?.error?.message ?? '');
+          if (msg.includes('style') || msg.includes('Style')) {
+            setMapError(true);
+          }
+        }}
       >
         <MapContent stops={stops} />
       </Map>

@@ -1,5 +1,7 @@
-import React from 'react';
-import { OutlinedInput } from '@mui/material';
+import React, { useCallback } from 'react';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { parse, format, isValid } from 'date-fns';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { TimeFieldProps } from '../types';
 
@@ -10,28 +12,41 @@ export const TimeField: React.FC<TimeFieldProps> = ({
   required = false,
   formik,
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
+  const rawValue = getIn(formik.values, name) as string | null;
+
+  const timeValue = rawValue ? parse(rawValue, 'HH:mm', new Date()) : null;
+
+  const handleChange = useCallback(
+    (newValue: Date | null) => {
+      if (newValue && isValid(newValue)) {
+        formik.setFieldValue(name, format(newValue, 'HH:mm'));
+      } else {
+        formik.setFieldValue(name, null);
+      }
+    },
+    [formik, name],
+  );
 
   return (
-    <BaseFieldWrapper
-      error={error}
-      label={label}
-      name={name}
-      required={required}
-      touched={touched}
-    >
-      <OutlinedInput
+    <BaseFieldWrapper name={name} label={label} required={required} error={error} touched={touched}>
+      <TimePicker
+        value={timeValue}
+        onChange={handleChange}
         disabled={disabled}
-        error={Boolean(touched && error)}
-        fullWidth
-        id={name}
-        name={name}
-        notched
-        onBlur={formik.handleBlur}
-        onChange={formik.handleChange}
-        type="time"
-        value={formik.values[name] || ''}
+        minutesStep={30}
+        skipDisabled
+        slotProps={{
+          textField: {
+            id: name,
+            name,
+            fullWidth: true,
+            error: Boolean(touched && error),
+            onBlur: formik.handleBlur,
+            placeholder: 'hh:mm AM/PM',
+          },
+        }}
       />
     </BaseFieldWrapper>
   );

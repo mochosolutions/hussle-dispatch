@@ -6,11 +6,11 @@ import { Map, Marker, useMap } from 'react-map-gl/maplibre';
 import { LngLatBounds } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import config from '../../../../../config';
+import config from '../../../../config';
 import type { Driver } from 'features/carrier/types';
-import type { StagedLoad } from '../../../types';
-import type { LoadListItem } from '../../../types';
-import type { CommandCenterLayers } from '../../../store/reducers/loadPageSlice';
+import type { StagedLoad } from '../../types';
+import type { LoadListItem } from '../../types';
+import type { CommandCenterLayers } from '../../store/reducers/loadPageSlice';
 
 interface CommandCenterMapProps {
   feedLoads: StagedLoad[];
@@ -42,12 +42,14 @@ const isValidDriver = (driver: Driver): driver is ValidDriver =>
   typeof driver.currentLatitude === 'number' && typeof driver.currentLongitude === 'number';
 
 interface ValidActiveLoad extends LoadListItem {
-  destLat: number;
-  destLng: number;
+  route: LoadListItem['route'] & {
+    destLat: number;
+    destLng: number;
+  };
 }
 
 const isValidActiveLoad = (load: LoadListItem): load is ValidActiveLoad =>
-  typeof load.destLat === 'number' && typeof load.destLng === 'number';
+  typeof load.route.destLat === 'number' && typeof load.route.destLng === 'number';
 
 const MapContent: React.FC<CommandCenterMapProps> = ({
   feedLoads,
@@ -89,7 +91,7 @@ const MapContent: React.FC<CommandCenterMapProps> = ({
     const allPoints = [
       ...visibleLoads.map((l) => ({ lng: l.originLng, lat: l.originLat })),
       ...visibleDrivers.map((d) => ({ lng: d.currentLongitude, lat: d.currentLatitude })),
-      ...visibleActiveLoads.map((l) => ({ lng: l.destLng, lat: l.destLat })),
+      ...visibleActiveLoads.map((l) => ({ lng: l.route.destLng, lat: l.route.destLat })),
     ];
     if (!map || allPoints.length === 0) {
       return;
@@ -169,8 +171,8 @@ const MapContent: React.FC<CommandCenterMapProps> = ({
       {visibleActiveLoads.map((load) => (
         <Marker
           key={`active-${load.id}`}
-          longitude={load.destLng}
-          latitude={load.destLat}
+          longitude={load.route.destLng}
+          latitude={load.route.destLat}
           anchor="center"
           onClick={() => onActiveLoadClick(load.id)}
         >

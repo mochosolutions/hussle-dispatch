@@ -55,6 +55,16 @@ export default function OutlinedInput(theme: Theme) {
           '&.Mui-error': {
             ...getColor({variant: 'error', theme}),
           },
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+            backgroundColor: theme.palette.grey[100],
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: theme.palette.grey[200],
+            },
+            '& input, & textarea': {
+              cursor: 'not-allowed',
+            },
+          },
         },
         inputSizeSmall: {
           padding: '7.5px 8px 7.5px 12px',

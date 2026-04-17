@@ -6,9 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'store';
 
 import type { Driver } from 'features/carrier/types';
-import type { StagedLoad } from '../../../types';
-import { toggleCommandCenterLayer } from '../../../store/reducers';
-import { selectCommandCenterLayers } from '../../../store/selectors/loadSelectors';
+import type { StagedLoad } from '../../types';
+import { toggleCommandCenterLayer } from '../../store/reducers';
+import { selectCommandCenterLayers } from '../../store/selectors/loadSelectors';
 
 // ---------------------------------------------------------------------------
 // Haversine distance (miles)

@@ -9,7 +9,6 @@ const CardSection = () => {
 
   return (
     <Stack spacing={4}>
-      {/* SectionCard with header + edit button + DetailRows */}
       <Box>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
           SectionCard with DetailRows
@@ -17,11 +16,7 @@ const CardSection = () => {
         <SectionCard
           title={<SectionTitle>Route Information</SectionTitle>}
           actions={
-            <IconButton
-              size="small"
-              onClick={() => setShowEdit(!showEdit)}
-              aria-label="Edit route"
-            >
+            <IconButton size="small" onClick={() => setShowEdit(!showEdit)} aria-label="Edit route">
               <EditIcon fontSize="small" />
             </IconButton>
           }
@@ -35,7 +30,6 @@ const CardSection = () => {
         </SectionCard>
       </Box>
 
-      {/* DetailRow variants */}
       <Box>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
           DetailRow Variants

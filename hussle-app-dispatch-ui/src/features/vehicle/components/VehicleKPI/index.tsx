@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { KpiCell } from 'components/Typography';
+import { Box, Grid } from '@mui/material';
+import { KpiLabel, BodyStrong, BodyMuted } from 'components/Typography';
 import type { Vehicle } from 'features/carrier/types';
 import type { VehicleLoad } from 'utils/api/fleet/vehicleApi';
 import { VEHICLE_TYPE_LABELS, OWNERSHIP_LABELS } from '../../constants';
@@ -8,8 +9,6 @@ interface VehicleKPIProps {
   vehicle: Vehicle & {
     driverName: string | null;
   };
-  cpm: number;
-  monthlyCost: number;
   vehicleLoads?: VehicleLoad[];
 }
 
@@ -19,58 +18,59 @@ const currencyCompact = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-export const VehicleKPI: React.FC<VehicleKPIProps> = ({
-  vehicle,
-  cpm,
-  monthlyCost,
-  vehicleLoads = [],
-}) => {
-  const loadMetrics = useMemo(() => {
-    const totalLoads = vehicleLoads.length;
+export const VehicleKPI: React.FC<VehicleKPIProps> = ({ vehicle, vehicleLoads = [] }) => {
+  const revenueMetrics = useMemo(() => {
     const deliveredLoads = vehicleLoads.filter((load) => load.status === 'DELIVERED');
-    const totalRevenue = deliveredLoads.reduce(
-      (sum, load) => sum + parseFloat(load.rate),
-      0,
-    );
-    const totalMiles = deliveredLoads.reduce((sum, load) => sum + load.miles, 0);
-    const avgRpm = totalMiles > 0 ? totalRevenue / totalMiles : 0;
-
-    return { totalLoads, totalRevenue, totalMiles, avgRpm };
+    const totalRevenue = deliveredLoads.reduce((sum, load) => sum + parseFloat(load.rate), 0);
+    return { totalRevenue, loadCount: vehicleLoads.length };
   }, [vehicleLoads]);
 
+  const typeValue =
+    `${vehicle.year ?? ''} ${vehicle.make ?? ''} ${vehicle.model ?? ''}`.trim() || '—';
+
   return (
-    <>
-      <KpiCell
-        label="TYPE"
-        value={`${vehicle.year ?? ''} ${vehicle.make ?? ''} ${vehicle.model ?? ''}`.trim() || '\u2014'}
-      />
-      <KpiCell label="EQUIPMENT" value={VEHICLE_TYPE_LABELS[vehicle.type] ?? '\u2014'} />
-      <KpiCell label="OWNERSHIP" value={OWNERSHIP_LABELS[vehicle.ownership] ?? '\u2014'} />
-      <KpiCell label="DRIVER" value={vehicle.driverName ?? '\u2014'} />
-      <KpiCell
-        label="CPM"
-        value={Number.isFinite(cpm) ? `$${cpm.toFixed(2)}/mi` : '\u2014'}
-      />
-      <KpiCell
-        label="MONTHLY COST"
-        value={Number.isFinite(monthlyCost) ? currencyCompact.format(monthlyCost) : '\u2014'}
-      />
-      <KpiCell
-        label="TOTAL LOADS"
-        value={loadMetrics.totalLoads > 0 ? String(loadMetrics.totalLoads) : '\u2014'}
-      />
-      <KpiCell
-        label="TOTAL REVENUE"
-        value={loadMetrics.totalRevenue > 0 ? currencyCompact.format(loadMetrics.totalRevenue) : '\u2014'}
-      />
-      <KpiCell
-        label="TOTAL MILES"
-        value={loadMetrics.totalMiles > 0 ? loadMetrics.totalMiles.toLocaleString() : '\u2014'}
-      />
-      <KpiCell
-        label="AVG RPM"
-        value={loadMetrics.avgRpm > 0 ? `$${loadMetrics.avgRpm.toFixed(2)}` : '\u2014'}
-      />
-    </>
+    <Grid container spacing={2}>
+      <Grid item sm={6} md={4}>
+        <KpiLabel>VEHICLE INFO</KpiLabel>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Type:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3 }}>{typeValue}</BodyStrong>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Equipment:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3 }}>{VEHICLE_TYPE_LABELS[vehicle.type] ?? '—'}</BodyStrong>
+        </Box>
+      </Grid>
+
+      <Grid item sm={6} md={4}>
+        <KpiLabel>ASSIGNMENT</KpiLabel>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Ownership:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3 }}>{OWNERSHIP_LABELS[vehicle.ownership] ?? '—'}</BodyStrong>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Driver:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3 }}>{vehicle.driverName ?? 'Unassigned'}</BodyStrong>
+        </Box>
+      </Grid>
+
+      <Grid item sm={6} md={4}>
+        <KpiLabel>FINANCIALS</KpiLabel>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Revenue:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3 }}>
+            {revenueMetrics.totalRevenue > 0
+              ? currencyCompact.format(revenueMetrics.totalRevenue)
+              : '$0'}
+          </BodyStrong>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Total Loads:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3 }}>
+            {revenueMetrics.loadCount > 0 ? `${revenueMetrics.loadCount}` : '—'}
+          </BodyStrong>
+        </Box>
+      </Grid>
+    </Grid>
   );
 };

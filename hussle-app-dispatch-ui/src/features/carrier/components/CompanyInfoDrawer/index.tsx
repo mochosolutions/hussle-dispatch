@@ -1,7 +1,7 @@
 import React from 'react';
-import { Divider, Grid, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
-import { TextField, EmailField } from '../../../../mocho/components';
+import { TextField, EmailField, PhoneField, StateField, ZipCodeField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { companyInfoSchema } from '../../validators/fleetSchema';
 import { selectCarrierById } from '../../store/selectors/carrierSelectors';
@@ -60,27 +60,27 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
             Company Details
           </Typography>
           <TextField name="name" label="Legal Name" formik={formik} />
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <TextField name="mcNumber" label="MC Number" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <TextField name="dotNumber" label="DOT Number" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
           <TextField name="ein" label="EIN" formik={formik} />
           <TextField name="address" label="Address" formik={formik} />
-          <Grid container spacing={2}>
-            <Grid item xs={5}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 5 }}>
               <TextField name="city" label="City" formik={formik} />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField name="state" label="State" formik={formik} />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField name="zip" label="ZIP" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+            <Box sx={{ flex: 3 }}>
+              <StateField name="state" label="State" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 4 }}>
+              <ZipCodeField name="zip" label="ZIP" formik={formik} />
+            </Box>
+          </Box>
 
           <Divider sx={{ my: 0.5 }} />
 
@@ -96,14 +96,14 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
           >
             Primary Contact
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="phone" label="Phone" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <PhoneField name="phone" label="Phone" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <EmailField name="email" label="Email" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Stack>
       )}
     </FormDrawer>

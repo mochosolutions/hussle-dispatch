@@ -18,6 +18,7 @@ const DetailLayoutDemo = lazy(() => import('../pages/DetailLayoutDemo'));
 const ListLayoutDemo = lazy(() => import('../pages/ListLayoutDemo'));
 const EditDrawerDemo = lazy(() => import('../pages/EditDrawerDemo'));
 const EquipmentPreview = lazy(() => import('../pages/EquipmentPreview'));
+const FormFieldsPreview = lazy(() => import('../pages/FormFieldsPreview'));
 
 const ProfileHeaderSetup = () => {
   return (
@@ -81,6 +82,10 @@ const DevRoutes: RouteObject[] = [
   {
     path: '/dev/edit-drawer',
     element: <EditDrawerDemo />,
+  },
+  {
+    path: '/dev/form-fields',
+    element: <FormFieldsPreview />,
   },
   {
     path: '/dev/equipment-preview',

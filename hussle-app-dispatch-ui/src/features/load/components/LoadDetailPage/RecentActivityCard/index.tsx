@@ -1,7 +1,7 @@
 import { Button } from '@mui/material';
 import SectionCard from 'components/SectionCard';
 import { StatusTimeline } from '../StatusTimeline';
-import type { StatusHistoryEntry } from '../../types';
+import type { StatusHistoryEntry } from '../../../types';
 
 const MAX_ENTRIES = 4;
 

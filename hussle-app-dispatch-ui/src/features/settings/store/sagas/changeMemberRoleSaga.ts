@@ -8,6 +8,7 @@ import {
   changeMemberRoleSuccess,
   changeMemberRoleFailure,
 } from '../reducers/teamSlice';
+import { teamEntityActions } from '../reducers/teamEntitySlice';
 
 export function* changeMemberRoleSaga(
   action: ReturnType<typeof changeMemberRoleRequest>,
@@ -24,6 +25,7 @@ export function* changeMemberRoleSaga(
       role,
     )) as SagaReturnType<typeof changeMemberRole>;
 
+    yield put(teamEntityActions.upsertOne(updatedMember));
     yield put(changeMemberRoleSuccess(updatedMember));
     yield call(enqueueSnackbar, 'Role updated', { variant: 'success' });
   } catch (error: unknown) {

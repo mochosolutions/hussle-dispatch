@@ -3,11 +3,10 @@ import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { loadSelectors } from '../reducers/loadEntitySlice';
 import { STATUS_TO_KANBAN_GROUP, formatEquipmentType } from '../../constants';
-import { formatAppointmentDateTime, formatCurrencyCompact } from '../../constants';
+import { formatTimestamp, formatCurrencyCompact } from '../../constants';
 import { isLoadDetail } from '../../types';
 import type {
   BoardView,
-  FormattedLoadDetail,
   KanbanGroup,
   LoadDetail,
   LoadFilters,
@@ -37,8 +36,10 @@ export const selectLoadDetailById =
 // Page loading selectors
 // ---------------------------------------------------------------------------
 
-export const selectLoadListLoading = (state: RootState) =>
-  state.pages.loads.loading['getAll'] === LoadingState.Pending;
+export const selectLoadListLoading = (state: RootState) => {
+  const status = state.pages.loads.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectLoadCreateLoading = (state: RootState) =>
   state.pages.loads.loading['create'] === LoadingState.Pending;
@@ -82,10 +83,6 @@ export const selectCommandCenterLayers = (state: RootState) =>
   state.pages.loads.commandCenterLayers;
 
 // ---------------------------------------------------------------------------
-// Kanban grouping selector
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Filtered loads selector — applies search + status filters from Redux state
 // ---------------------------------------------------------------------------
 
@@ -99,17 +96,17 @@ export const selectFilteredLoads = createSelector(
       result = result.filter((load) => {
         const searchableFields = [
           load.loadNumber.toLowerCase(),
-          (load.carrierName ?? '').toLowerCase(),
-          (load.driverName ?? '').toLowerCase(),
-          (load.originCity ?? '').toLowerCase(),
-          (load.destinationCity ?? '').toLowerCase(),
+          (load.assignment.carrierName ?? '').toLowerCase(),
+          (load.assignment.driverName ?? '').toLowerCase(),
+          (load.route.originCity ?? '').toLowerCase(),
+          (load.route.destinationCity ?? '').toLowerCase(),
         ];
         return terms.every((term) => searchableFields.some((field) => field.includes(term)));
       });
     }
 
     if (filters.carrierName) {
-      result = result.filter((load) => load.carrierName === filters.carrierName);
+      result = result.filter((load) => load.assignment.carrierName === filters.carrierName);
     }
 
     if (filters.status && filters.status.length > 0) {
@@ -123,7 +120,7 @@ export const selectFilteredLoads = createSelector(
 export const selectUniqueCarrierNames = createSelector(
   [selectAllLoads],
   (loads): string[] =>
-    [...new Set(loads.map((load) => load.carrierName).filter(Boolean))] as string[],
+    [...new Set(loads.map((load) => load.assignment.carrierName).filter(Boolean))] as string[],
 );
 
 export const selectLoadsByKanbanGroup = createSelector(
@@ -168,14 +165,20 @@ const buildStopAddress = (stop: Stop | undefined): string => {
   return [stop.address, buildCityState(stop.city, stop.state), stop.zip].filter(Boolean).join(', ');
 };
 
+const formatSchedule = (stop: Stop | undefined): string => {
+  if (!stop?.appointmentStart) return '\u2014';
+  return formatTimestamp(stop.appointmentStart);
+};
+
 export const selectFormattedLoadById = (id: string | undefined) =>
   createSelector(
     [(state: RootState) => (id ? loadSelectors.selectById(state, id) : undefined)],
-    (load): FormattedLoadDetail | undefined => {
+    (load) => {
       if (!load || !isLoadDetail(load)) return undefined;
 
-      const origin = getOriginStop(load.stops);
-      const destination = getDestinationStop(load.stops);
+      console.log('Load', load);
+      const origin = getOriginStop(load.route.stops);
+      const destination = getDestinationStop(load.route.stops);
 
       const routeLabel =
         [
@@ -183,12 +186,13 @@ export const selectFormattedLoadById = (id: string | undefined) =>
           buildCityState(destination?.city ?? null, destination?.state ?? null),
         ]
           .filter(Boolean)
-          .join(' → ') || '\u2014';
+          .join(' \u2192 ') || '\u2014';
 
       const milesItems = [
-        load.loadedMiles ? `${load.loadedMiles} loaded` : null,
-        load.deadheadMiles ? `${load.deadheadMiles} DH` : null,
+        load.route.loadedMiles ? `${load.route.loadedMiles} loaded` : null,
+        load.route.deadheadMiles ? `${load.route.deadheadMiles} DH` : null,
       ].filter(Boolean);
+
       const milesStr = milesItems.length > 0 ? milesItems.join(' + ') : '';
 
       return {
@@ -197,47 +201,49 @@ export const selectFormattedLoadById = (id: string | undefined) =>
           pickup: {
             facilityName: origin?.facilityName ?? '\u2014',
             address: buildStopAddress(origin),
-            schedule: origin
-              ? formatAppointmentDateTime(origin.appointmentDate, origin.appointmentTime)
-              : '\u2014',
+            schedule: formatSchedule(origin),
             cityState: buildCityState(origin?.city ?? null, origin?.state ?? null),
-            dateTime: origin
-              ? formatAppointmentDateTime(origin.appointmentDate, origin.appointmentTime)
-              : '\u2014',
+            dateTime: formatSchedule(origin),
             isCompleted: Boolean(origin?.arrivalTime),
           },
           delivery: {
             facilityName: destination?.facilityName ?? '\u2014',
             address: buildStopAddress(destination),
-            schedule: destination
-              ? formatAppointmentDateTime(destination.appointmentDate, destination.appointmentTime)
-              : '\u2014',
+            schedule: formatSchedule(destination),
             cityState: buildCityState(destination?.city ?? null, destination?.state ?? null),
-            dateTime: destination
-              ? formatAppointmentDateTime(destination.appointmentDate, destination.appointmentTime)
-              : '\u2014',
+            dateTime: formatSchedule(destination),
             isCompleted: Boolean(destination?.departureTime),
           },
           load: {
             routeLabel,
             miles: milesStr,
             cargo:
-              [load.commodity, load.weight ? `${load.weight.toLocaleString()} lbs` : null]
+              [
+                load.cargo.commodity,
+                load.cargo.weight ? `${load.cargo.weight.toLocaleString()} lbs` : null,
+              ]
                 .filter(Boolean)
-                .join(' · ') || '',
-            rate: formatCurrencyCompact(load.customerRate),
-            ratePerMile: load.ratePerMile ? `$${parseFloat(load.ratePerMile).toFixed(2)}/mi` : '',
-            weight: load.weight,
-            isHazmat: load.isHazmat,
-            isTarp: load.isTarp,
+                .join(' \u00b7 ') || '',
+            rate: formatCurrencyCompact(load.financials.customerRate),
+            ratePerMile: load.financials.ratePerMile
+              ? `$${parseFloat(load.financials.ratePerMile).toFixed(2)}/mi`
+              : '',
+            weight: load.cargo.weight,
+            isHazmat: load.cargo.isHazmat,
+            isTarp: load.cargo.isTarp,
+            externalRefNumber: load.externalRefNumber,
           },
           driver: {
-            name: load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : '\u2014',
-            carrier: load.carrier?.name ?? '\u2014',
-            vehicle: load.vehicle
-              ? `#${load.vehicle.unitNumber} \u2014 ${formatEquipmentType(load.vehicle.type)}`
+            name: load.assignment.driver
+              ? `${load.assignment.driver.firstName} ${load.assignment.driver.lastName}`
+              : '\u2014',
+            carrier: load.assignment.carrier?.name ?? '\u2014',
+            vehicle: load.assignment.vehicle
+              ? `#${load.assignment.vehicle.unitNumber} \u2014 ${formatEquipmentType(load.assignment.vehicle.type)}`
               : '\u2014',
             equipment: formatEquipmentType(load.equipmentType),
+            driverId: load.assignment.driver?.id ?? null,
+            carrierId: load.assignment.carrier?.id ?? null,
           },
         },
       };

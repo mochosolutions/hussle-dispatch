@@ -16,9 +16,9 @@ export interface CommoditySummaryStop {
 }
 
 export interface CommoditySummary {
-  commodity: string | undefined;
-  weight: number | undefined;
-  pieceCount: number | undefined;
+  commodity: string | null;
+  weight: number | null;
+  pieceCount: number | null;
   isHazmat: boolean;
   isTarp: boolean;
 }
@@ -28,9 +28,9 @@ export const computeCommoditySummary = (stops: CommoditySummaryStop[]): Commodit
 
   if (pickupStops.length === 0) {
     return {
-      commodity: undefined,
-      weight: undefined,
-      pieceCount: undefined,
+      commodity: null,
+      weight: null,
+      pieceCount: null,
       isHazmat: false,
       isTarp: false,
     };
@@ -56,17 +56,15 @@ export const computeCommoditySummary = (stops: CommoditySummaryStop[]): Commodit
     return sum;
   }, 0);
 
-  const hasWeight = pickupStops.some(
-    (stop) => stop.weight !== undefined && stop.weight !== null,
-  );
+  const hasWeight = pickupStops.some((stop) => stop.weight !== undefined && stop.weight !== null);
   const hasPieceCount = pickupStops.some(
     (stop) => stop.pieceCount !== undefined && stop.pieceCount !== null,
   );
 
   return {
-    commodity: uniqueCommodities.length > 0 ? uniqueCommodities.join(', ') : undefined,
-    weight: hasWeight ? totalWeight : undefined,
-    pieceCount: hasPieceCount ? totalPieceCount : undefined,
+    commodity: uniqueCommodities.length > 0 ? uniqueCommodities.join(', ') : null,
+    weight: hasWeight ? totalWeight : null,
+    pieceCount: hasPieceCount ? totalPieceCount : null,
     isHazmat: stops.some((stop) => stop.isHazmat === true),
     isTarp: stops.some((stop) => stop.isTarp === true),
   };

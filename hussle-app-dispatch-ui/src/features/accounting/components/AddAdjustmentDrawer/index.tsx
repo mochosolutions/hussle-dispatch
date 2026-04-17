@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import { TextField, DateField } from '@mocho/ui/components';
+import { TextField, DateField, CurrencyField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
@@ -63,7 +63,7 @@ export const AddAdjustmentDrawer: React.FC<AddAdjustmentDrawerProps> = ({
       {(formik) => (
         <DrawerSection label="Adjustment Details">
           <TextField name="description" label="Description" formik={formik} />
-          <TextField name="amount" label="Amount" type="number" formik={formik} />
+          <CurrencyField name="amount" label="Amount" required formik={formik} />
           <DateField name="date" label="Date" formik={formik} />
         </DrawerSection>
       )}

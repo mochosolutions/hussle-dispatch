@@ -13,10 +13,11 @@ const LOAD_DETAIL_INCLUDE = {
   customer: true,
   statusHistory: {
     orderBy: { createdAt: 'desc' as const },
-    include: { changedBy: true },
+    include: { changedBy: { select: { id: true, firstName: true, lastName: true } } },
   },
   checkCalls: {
     orderBy: { createdAt: 'desc' as const },
+    include: { calledBy: { select: { id: true, firstName: true, lastName: true } } },
   },
   accessorialCharges: {
     orderBy: { createdAt: 'asc' as const },

@@ -10,6 +10,7 @@ jest.mock('@mocho/ui/components', () => ({
   ActionsCell: () => null,
   ConfirmDeleteDialog: ({ open, title }: { open: boolean; title: string }) =>
     open ? <div>{title}</div> : null,
+  ListSkeleton: () => <div data-testid="list-skeleton" />,
   MainCard: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   NewDataGrid: () => <div data-testid="data-grid" />,
   PageHeader: ({ title, headerActions }: { title: string; headerActions?: React.ReactNode }) => (
@@ -54,8 +55,8 @@ describe('CarrierListPage', () => {
     expect(screen.getByTestId('data-grid')).toBeInTheDocument();
   });
 
-  it('renders carrier tabs', () => {
+  it('renders the status filter', () => {
     renderWithProviders();
-    expect(screen.getByRole('tablist')).toBeInTheDocument();
+    expect(screen.getByText(/status/i)).toBeInTheDocument();
   });
 });

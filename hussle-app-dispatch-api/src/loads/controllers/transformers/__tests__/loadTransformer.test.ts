@@ -114,6 +114,53 @@ const buildListItem = (overrides?: Partial<LoadListItem>): LoadListItem => {
   return { ...base, ...overrides };
 };
 
+const makeDriver = (overrides?: Partial<LoadWithRelations['driver'] & object>) => ({
+  id: 'd-1',
+  carrierId: 'c-1',
+  firstName: 'John',
+  lastName: 'Doe',
+  phone: null,
+  email: null,
+  licenseType: 'CDL_A' as const,
+  licenseNumber: null,
+  licenseState: null,
+  licenseExpiry: null,
+  endorsements: null,
+  availableHours: null,
+  currentCity: null,
+  currentState: null,
+  currentLatitude: null,
+  currentLongitude: null,
+  homeBaseCity: null,
+  homeBaseState: null,
+  maxDaysOut: 5,
+  preferredLanes: null,
+  noGoZones: null,
+  isAvailable: true,
+  status: 'ACTIVE' as const,
+  timezone: null,
+  notes: null,
+  payType: null,
+  payRate: null,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+  deletedAt: null,
+  ...overrides,
+});
+
+const makeCarrierListItem = (overrides?: Partial<LoadListItem['carrier'] & object>) => ({
+  id: 'c-1',
+  name: 'FastTruck',
+  ...overrides,
+});
+
+const makeDriverListItem = (overrides?: Partial<LoadListItem['driver'] & object>) => ({
+  id: 'd-1',
+  firstName: 'John',
+  lastName: 'Doe',
+  ...overrides,
+});
+
 const makeAccessorial = (amount: string) => ({
   id: `acc-${amount}`,
   loadId: 'load-1',
@@ -145,7 +192,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.carrierRpm).toBe('3.15');
+      expect(result.financials.carrierRpm).toBe('3.15');
     });
 
     it('returns null when carrierPayout is null', () => {
@@ -156,7 +203,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.carrierRpm).toBeNull();
+      expect(result.financials.carrierRpm).toBeNull();
     });
 
     it('returns null when loadedMiles is null', () => {
@@ -167,7 +214,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.carrierRpm).toBeNull();
+      expect(result.financials.carrierRpm).toBeNull();
     });
 
     it('returns null when loadedMiles is 0', () => {
@@ -178,7 +225,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.carrierRpm).toBeNull();
+      expect(result.financials.carrierRpm).toBeNull();
     });
   });
 
@@ -191,7 +238,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.companyNet).toBe('224.00');
+      expect(result.financials.companyNet).toBe('224.00');
     });
 
     it('returns null when dispatcherComm is null', () => {
@@ -202,7 +249,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.companyNet).toBeNull();
+      expect(result.financials.companyNet).toBeNull();
     });
 
     it('returns null when companyMargin is null', () => {
@@ -213,7 +260,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.companyNet).toBeNull();
+      expect(result.financials.companyNet).toBeNull();
     });
   });
 
@@ -227,7 +274,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.marginPercent).toBe('10.00');
+      expect(result.financials.marginPercent).toBe('10.00');
     });
 
     it('computes marginPercent including accessorials in gross', () => {
@@ -240,7 +287,7 @@ describe('toLoadDetailResponse', () => {
       // gross = 2800 + 200 = 3000, marginPercent = 280 / 3000 * 100 = 9.3333... → '9.33'
       const result = toLoadDetailResponse(load);
 
-      expect(result.marginPercent).toBe('9.33');
+      expect(result.financials.marginPercent).toBe('9.33');
     });
 
     it('returns null when companyMargin is null', () => {
@@ -251,7 +298,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.marginPercent).toBeNull();
+      expect(result.financials.marginPercent).toBeNull();
     });
 
     it('returns null when customerRate is null', () => {
@@ -262,7 +309,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.marginPercent).toBeNull();
+      expect(result.financials.marginPercent).toBeNull();
     });
   });
 
@@ -275,7 +322,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.estimatedNetEarnings).toBe('1720.00');
+      expect(result.financials.estimatedNetEarnings).toBe('1720.00');
     });
 
     it('returns null when estimatedCost is null', () => {
@@ -286,7 +333,7 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.estimatedNetEarnings).toBeNull();
+      expect(result.financials.estimatedNetEarnings).toBeNull();
     });
 
     it('returns null when carrierPayout is null', () => {
@@ -297,7 +344,69 @@ describe('toLoadDetailResponse', () => {
 
       const result = toLoadDetailResponse(load);
 
-      expect(result.estimatedNetEarnings).toBeNull();
+      expect(result.financials.estimatedNetEarnings).toBeNull();
+    });
+  });
+
+  describe('grouped structure', () => {
+    it('groups route fields correctly', () => {
+      const load = buildLoad({
+        loadedMiles: 500,
+        deadheadMiles: 50,
+        totalMiles: 550,
+        estimatedHours: new Decimal('8.5'),
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.route.loadedMiles).toBe(500);
+      expect(result.route.deadheadMiles).toBe(50);
+      expect(result.route.totalMiles).toBe(550);
+      expect(result.route.estimatedHours).toBe('8.5');
+      expect(result.route.stops).toEqual([]);
+    });
+
+    it('groups assignment fields correctly', () => {
+      const load = buildLoad({
+        isTeamDriver: true,
+        carrier: null,
+        driver: makeDriver(),
+        vehicle: null,
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.assignment.isTeamDriver).toBe(true);
+      expect(result.assignment.driver).toEqual({
+        id: 'd-1',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
+      expect(result.assignment.carrier).toBeNull();
+      expect(result.assignment.vehicle).toBeNull();
+    });
+
+    it('groups tracking fields correctly', () => {
+      const load = buildLoad({
+        invoiceReadiness: 'READY',
+        rateConReceivedAt: new Date('2026-02-01T00:00:00.000Z'),
+        bolUnsignedAt: null,
+        bolSignedAt: null,
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.tracking.invoiceReadiness).toBe('READY');
+      expect(result.tracking.rateConReceivedAt).toBe('2026-02-01T00:00:00.000Z');
+      expect(result.tracking.bolUnsignedAt).toBeNull();
+    });
+
+    it('groups activity fields correctly', () => {
+      const result = toLoadDetailResponse(buildLoad());
+
+      expect(result.activity.statusHistory).toEqual([]);
+      expect(result.activity.checkCalls).toEqual([]);
+      expect(result.activity.accessorialCharges).toEqual([]);
     });
   });
 });
@@ -315,8 +424,8 @@ describe('toLoadListItemResponse', () => {
 
     const result = toLoadListItemResponse(load);
 
-    expect(result.companyMargin).toBe('280');
-    expect(result.carrierPayout).toBe('2520');
+    expect(result.financials.companyMargin).toBe('280');
+    expect(result.financials.carrierPayout).toBe('2520');
   });
 
   it('computes companyNet as companyMargin - dispatcherComm', () => {
@@ -327,7 +436,7 @@ describe('toLoadListItemResponse', () => {
 
     const result = toLoadListItemResponse(load);
 
-    expect(result.companyNet).toBe('224.00');
+    expect(result.financials.companyNet).toBe('224.00');
   });
 
   it('returns null companyNet when dispatcherComm is null', () => {
@@ -338,7 +447,7 @@ describe('toLoadListItemResponse', () => {
 
     const result = toLoadListItemResponse(load);
 
-    expect(result.companyNet).toBeNull();
+    expect(result.financials.companyNet).toBeNull();
   });
 
   it('returns null companyMargin and carrierPayout when fields are null', () => {
@@ -349,7 +458,31 @@ describe('toLoadListItemResponse', () => {
 
     const result = toLoadListItemResponse(load);
 
-    expect(result.companyMargin).toBeNull();
-    expect(result.carrierPayout).toBeNull();
+    expect(result.financials.companyMargin).toBeNull();
+    expect(result.financials.carrierPayout).toBeNull();
+  });
+
+  it('groups route fields correctly', () => {
+    const result = toLoadListItemResponse(buildListItem({ totalMiles: 500 }));
+
+    expect(result.route.totalMiles).toBe(500);
+    expect(result.route.originCity).toBeNull();
+    expect(result.route.destinationCity).toBeNull();
+  });
+
+  it('groups assignment fields correctly', () => {
+    const load = buildListItem({
+      carrierId: 'c-1',
+      carrier: makeCarrierListItem(),
+      driverId: 'd-1',
+      driver: makeDriverListItem(),
+    });
+
+    const result = toLoadListItemResponse(load);
+
+    expect(result.assignment.carrierId).toBe('c-1');
+    expect(result.assignment.carrierName).toBe('FastTruck');
+    expect(result.assignment.driverId).toBe('d-1');
+    expect(result.assignment.driverName).toBe('John Doe');
   });
 });

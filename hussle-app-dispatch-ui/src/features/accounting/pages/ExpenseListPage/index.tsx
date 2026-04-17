@@ -1,24 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  InputLabel,
-  MenuItem,
-  OutlinedInput,
-  Select,
-  Stack,
-  TextField,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import type { ColDef } from 'ag-grid-community';
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import { MainCard, NewDataGrid, PageWrapper, ListSkeleton } from '@mocho/ui/components';
+import { NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import { ActionsCell } from 'mocho/components/DataGrid';
 import { ListLayout } from 'components/ListLayout';
+import MainCard from 'components/MainCard';
+import { FilterBar } from 'components/FilterBar';
+import { Body } from 'components/Typography';
 import { getExpenses } from 'utils/api/accounting/expenseApi';
-import { ExpenseQuickAddDrawer } from '../../components/ExpenseQuickAddDrawer';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import type { ExpenseListItem } from '../../types';
+import {
+  DateCellRenderer,
+  CurrencyCellRenderer,
+  CategoryCellRenderer,
+  CATEGORY_LABEL_MAP,
+} from '../../components/ExpenseListPage/ExpenseCellRenderers';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -26,69 +24,8 @@ import type { ExpenseListItem } from '../../types';
 
 const CATEGORY_OPTIONS = [
   { value: 'ALL', label: 'All Categories' },
-  { value: 'FUEL', label: 'Fuel' },
-  { value: 'MAINTENANCE', label: 'Maintenance' },
-  { value: 'TOLLS', label: 'Tolls' },
-  { value: 'PARKING', label: 'Parking' },
-  { value: 'MEALS', label: 'Meals' },
-  { value: 'INSURANCE', label: 'Insurance' },
-  { value: 'TRUCK_PAYMENT', label: 'Truck Payment' },
-  { value: 'TRAILER_RENTAL', label: 'Trailer Rental' },
-  { value: 'PERMITS_TAGS', label: 'Permits & Tags' },
-  { value: 'SCALES', label: 'Scales' },
-  { value: 'LUMPER', label: 'Lumper' },
-  { value: 'TIRES', label: 'Tires' },
-  { value: 'OIL_CHANGE', label: 'Oil Change' },
-  { value: 'DEF_FLUID', label: 'DEF Fluid' },
-  { value: 'TRUCK_WASH', label: 'Truck Wash' },
+  ...Object.entries(CATEGORY_LABEL_MAP).map(([value, label]) => ({ value, label })),
 ];
-
-const CATEGORY_LABEL_MAP: Record<string, string> = Object.fromEntries(
-  CATEGORY_OPTIONS.filter((o) => o.value !== 'ALL').map((o) => [o.value, o.label]),
-);
-
-// ---------------------------------------------------------------------------
-// Formatters
-// ---------------------------------------------------------------------------
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-});
-
-const formatCurrency = (value: string | number): string =>
-  currencyFormatter.format(Number(value));
-
-const formatDate = (value: string): string => {
-  if (!value) {
-    return '';
-  }
-  const date = new Date(value);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-// ---------------------------------------------------------------------------
-// Cell renderers
-// ---------------------------------------------------------------------------
-
-const DateCellRenderer = ({ value }: { value: string }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatDate(value)}
-  </Box>
-);
-
-const CurrencyCellRenderer = ({ value }: { value: string }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatCurrency(value)}
-  </Box>
-);
-
-const CategoryCellRenderer = ({ value }: { value: string }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    <Chip label={CATEGORY_LABEL_MAP[value] ?? value} size="small" variant="outlined" />
-  </Box>
-);
 
 // ---------------------------------------------------------------------------
 // Component
@@ -98,31 +35,21 @@ const ExpenseListPage = () => {
   const [expenses, setExpenses] = useState<ExpenseListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
   const [category, setCategory] = useState('ALL');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState<Date | null>(null);
+  const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Debounced search
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { openDrawer } = useDrawerActions();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // Fetch expenses
   useEffect(() => {
     let cancelled = false;
 
     const fetchData = async () => {
       setLoading(true);
       try {
-        const params: Record<string, unknown> = { page: 1, limit: 500 };
+        const params: Parameters<typeof getExpenses>[0] = { page: 1, limit: 500 };
         if (category !== 'ALL') {
           params.category = category;
         }
@@ -130,13 +57,13 @@ const ExpenseListPage = () => {
           params.search = debouncedSearch;
         }
         if (dateFrom) {
-          params.dateFrom = dateFrom;
+          params.dateFrom = dateFrom.toISOString().split('T')[0];
         }
         if (dateTo) {
-          params.dateTo = dateTo;
+          params.dateTo = dateTo.toISOString().split('T')[0];
         }
 
-        const result = await getExpenses(params as Parameters<typeof getExpenses>[0]);
+        const result = await getExpenses(params);
 
         if (!cancelled) {
           setExpenses(result.data);
@@ -161,16 +88,55 @@ const ExpenseListPage = () => {
     };
   }, [category, debouncedSearch, dateFrom, dateTo, refreshKey]);
 
-  const handleCategoryChange = useCallback((event: SelectChangeEvent) => {
-    setCategory(event.target.value);
-  }, []);
-
   const handleDrawerSuccess = useCallback(() => {
-    setDrawerOpen(false);
     setRefreshKey((prev) => prev + 1);
   }, []);
 
-  // Column definitions
+  const handleCategoryChange = useCallback((value: string) => {
+    setCategory(value);
+  }, []);
+
+  const handleDateRangeChange = useCallback((from: Date | null, to: Date | null) => {
+    setDateFrom(from);
+    setDateTo(to);
+  }, []);
+
+  const handleSearchChange = useCallback((value: string | number) => {
+    setDebouncedSearch(String(value));
+  }, []);
+
+  const filterConfig = useMemo(
+    () => [
+      {
+        type: 'select' as const,
+        name: 'category',
+        label: 'Category',
+        options: CATEGORY_OPTIONS,
+        value: category,
+        onChange: handleCategoryChange,
+      },
+      {
+        type: 'dateRange' as const,
+        name: 'dateRange',
+        label: 'Date Range',
+        from: dateFrom,
+        to: dateTo,
+        onChange: handleDateRangeChange,
+      },
+    ],
+    [category, dateFrom, dateTo, handleCategoryChange, handleDateRangeChange],
+  );
+
+  const searchConfig = useMemo(
+    () => ({
+      placeholder: 'Search expenses...',
+      value: '',
+      onChange: handleSearchChange,
+      debounce: 300,
+    }),
+    [handleSearchChange],
+  );
+
   const columnDefs = useMemo<ColDef<ExpenseListItem>[]>(
     () => [
       {
@@ -191,6 +157,7 @@ const ExpenseListPage = () => {
         field: 'description',
         minWidth: 200,
         flex: 2,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'Amount',
@@ -202,16 +169,35 @@ const ExpenseListPage = () => {
         headerName: 'Vehicle',
         field: 'vehicleUnitNumber',
         minWidth: 120,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'State',
         field: 'state',
         width: 80,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'Gallons',
         field: 'gallons',
         minWidth: 100,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
+      },
+      {
+        headerName: 'Actions',
+        field: 'actions',
+        width: 100,
+        sortable: false,
+        filter: false,
+        cellRenderer: ActionsCell,
+        cellRendererParams: {
+          config: {
+            showView: false,
+            showEdit: true,
+            showDelete: false,
+            getEditRoute: (data: ExpenseListItem) => `/accounting/expenses/${data.id}/edit`,
+          },
+        },
       },
     ],
     [],
@@ -229,16 +215,15 @@ const ExpenseListPage = () => {
   );
 
   return (
-    <PageWrapper
-      isLoading={loading && expenses.length === 0}
-      loadingComponent={<ListSkeleton rows={8} />}
-      errorContext="ExpenseListPage"
-      sx={{ gap: 2 }}
-    >
+    <PageWrapper errorContext="ExpenseListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Expenses"
         primaryAction={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDrawerOpen(true)}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => openDrawer('expenseQuickAdd', { onSuccess: handleDrawerSuccess })}
+          >
             Add Expense
           </Button>
         }
@@ -247,7 +232,6 @@ const ExpenseListPage = () => {
           sx={{
             px: { xs: 2, sm: 3 },
             pb: 3,
-            pt: 2,
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
@@ -258,64 +242,10 @@ const ExpenseListPage = () => {
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            {/* Filters toolbar */}
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              alignItems={{ xs: 'stretch', sm: 'flex-end' }}
-              spacing={2}
-              sx={{ px: 2, py: 1.5 }}
-            >
-              <Stack spacing={0.5} sx={{ minWidth: 220 }}>
-                <InputLabel>Search</InputLabel>
-                <OutlinedInput
-                  size="small"
-                  placeholder="Search expenses..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  startAdornment={<SearchIcon sx={{ color: 'text.secondary', mr: 0.5 }} />}
-                />
-              </Stack>
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filterConfig} search={searchConfig} />
+            </Box>
 
-              <Stack spacing={0.5} sx={{ minWidth: 180 }}>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={category}
-                  onChange={handleCategoryChange}
-                  size="small"
-                  sx={{ minWidth: 180 }}
-                >
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Stack>
-
-              <Stack spacing={0.5}>
-                <InputLabel>From</InputLabel>
-                <TextField
-                  type="date"
-                  size="small"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Stack>
-
-              <Stack spacing={0.5}>
-                <InputLabel>To</InputLabel>
-                <TextField
-                  type="date"
-                  size="small"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Stack>
-            </Stack>
-
-            {/* Data grid */}
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
                 <NewDataGrid
@@ -332,7 +262,7 @@ const ExpenseListPage = () => {
                     paginationPageSize: 25,
                     suppressCellFocus: true,
                     headerHeight: 44,
-                    rowHeight: 52,
+                    rowHeight: 56,
                   }}
                   loading={loading}
                 />
@@ -341,12 +271,6 @@ const ExpenseListPage = () => {
           </MainCard>
         </Box>
       </ListLayout>
-
-      <ExpenseQuickAddDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onSuccess={handleDrawerSuccess}
-      />
     </PageWrapper>
   );
 };

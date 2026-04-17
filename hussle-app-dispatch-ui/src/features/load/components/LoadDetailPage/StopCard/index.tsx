@@ -1,7 +1,13 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Body, BodyMuted, Meta } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { formatAppointmentDateTime, formatTimestamp, getStopStatus } from '../../constants';
-import type { LoadStatus, Stop } from '../../types';
+import {
+  formatTimestamp,
+  getStopStatus,
+  SCHEDULING_TYPE_LABELS,
+  STOP_TYPE_CONFIG,
+} from '../../../constants';
+import type { LoadStatus, Stop } from '../../../types';
 
 interface StopCardProps {
   stop: Stop;
@@ -35,11 +41,11 @@ export const StopCard: React.FC<StopCardProps> = ({ stop, allStops, loadStatus }
     >
       {/* Type indicator */}
       <Chip
-        label={stop.type === 'PICKUP' ? 'P' : 'D'}
+        label={STOP_TYPE_CONFIG[stop.type]?.abbr ?? stop.type[0]}
         size="small"
         sx={{
           fontWeight: 700,
-          bgcolor: stop.type === 'PICKUP' ? 'primary.main' : 'success.main',
+          bgcolor: STOP_TYPE_CONFIG[stop.type]?.color ?? 'grey.500',
           color: '#fff',
           width: 24,
           height: 24,
@@ -62,10 +68,14 @@ export const StopCard: React.FC<StopCardProps> = ({ stop, allStops, loadStatus }
                 flexShrink: 0,
               }}
             />
-            {stop.facilityName && (
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {stop.facilityName}
-              </Typography>
+            {stop.facilityName && <Body sx={{ fontWeight: 600 }}>{stop.facilityName}</Body>}
+            {stop.schedulingType && (
+              <Chip
+                label={SCHEDULING_TYPE_LABELS[stop.schedulingType] ?? stop.schedulingType}
+                size="small"
+                variant="outlined"
+                sx={{ height: 20, fontSize: '0.65rem', mt: 0.25 }}
+              />
             )}
           </Stack>
           {status.label !== 'Pending' && (
@@ -79,31 +89,40 @@ export const StopCard: React.FC<StopCardProps> = ({ stop, allStops, loadStatus }
             />
           )}
         </Stack>
-
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+        <BodyMuted sx={{ mt: 0.25 }}>
           {[stop.address, stop.city, stop.state, stop.zip].filter(Boolean).join(', ')}
-        </Typography>
+        </BodyMuted>
 
-        {(stop.appointmentDate ?? stop.appointmentTime) && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            Appt: {formatAppointmentDateTime(stop.appointmentDate, stop.appointmentTime)}
-          </Typography>
+        {stop.appointmentStart && (
+          <Meta sx={{ display: 'block', mt: 0.5 }}>
+            Appt: {formatTimestamp(stop.appointmentStart)}
+          </Meta>
+        )}
+
+        {(stop.facilityOpenTime ?? stop.facilityCloseTime) && (
+          <Meta sx={{ display: 'block' }}>
+            Hours: {stop.facilityOpenTime ?? '?'} – {stop.facilityCloseTime ?? '?'}
+          </Meta>
         )}
 
         {(stop.arrivalTime ?? stop.departureTime) && (
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+          <Meta sx={{ display: 'block' }}>
             {stop.arrivalTime ? `Arrived: ${formatTimestamp(stop.arrivalTime)}` : ''}
             {stop.arrivalTime && stop.departureTime ? '  ' : ''}
             {stop.departureTime ? `Departed: ${formatTimestamp(stop.departureTime)}` : ''}
-          </Typography>
+          </Meta>
         )}
-
         {(stop.appointmentNumber ?? stop.notes) && (
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.25 }}>
+          <Meta sx={{ display: 'block', mt: 0.25 }}>
             {stop.appointmentNumber ? `Ref: ${stop.appointmentNumber}` : ''}
             {stop.appointmentNumber && stop.notes ? ' — ' : ''}
             {stop.notes ?? ''}
-          </Typography>
+          </Meta>
+        )}
+        {(stop.contactName ?? stop.contactPhone) && (
+          <Meta sx={{ display: 'block', mt: 0.25 }}>
+            Contact: {[stop.contactName, stop.contactPhone].filter(Boolean).join(' — ')}
+          </Meta>
         )}
       </Box>
     </Box>

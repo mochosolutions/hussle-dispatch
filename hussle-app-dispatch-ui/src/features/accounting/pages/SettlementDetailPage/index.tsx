@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Typography } from '@mui/material';
+import { Button } from '@mui/material';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
+import { BodyStrong, BodyMuted } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import {
   fetchSettlementDetailRequest,
   approveSettlementRequest,
@@ -12,10 +14,8 @@ import {
   selectSettlementDetailById,
   selectSettlementDetailLoading,
 } from '../../store/selectors/settlementSelectors';
-import { OverviewTab } from './tabs/OverviewTab';
-import { LineItemsTab } from './tabs/LineItemsTab';
-import { PaySettlementDrawer } from '../../components/PaySettlementDrawer';
-import { DisputeSettlementDrawer } from '../../components/DisputeSettlementDrawer';
+import { OverviewTab } from '../../components/SettlementDetailPage/OverviewTab';
+import { LineItemsTab } from '../../components/SettlementDetailPage/LineItemsTab';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -47,10 +47,9 @@ const SettlementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openDrawer } = useDrawerActions();
 
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const [payDrawerOpen, setPayDrawerOpen] = useState(false);
-  const [disputeDrawerOpen, setDisputeDrawerOpen] = useState(false);
 
   const detailSelector = useMemo(() => selectSettlementDetailById(id ?? ''), [id]);
   const settlement = useSelector(detailSelector);
@@ -74,6 +73,18 @@ const SettlementDetailPage = () => {
     }
   }, [dispatch, id]);
 
+  const handleOpenPayModal = useCallback(() => {
+    if (id) {
+      openDrawer('paySettlement', { settlementId: id });
+    }
+  }, [id, openDrawer]);
+
+  const handleOpenDisputeDrawer = useCallback(() => {
+    if (id) {
+      openDrawer('disputeSettlement', { settlementId: id });
+    }
+  }, [id, openDrawer]);
+
   const renderActions = () => {
     if (!settlement) {
       return null;
@@ -87,11 +98,7 @@ const SettlementDetailPage = () => {
           </Button>
         )}
         {settlement.status === 'APPROVED' && (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => setPayDrawerOpen(true)}
-          >
+          <Button variant="contained" size="small" onClick={handleOpenPayModal}>
             Mark Paid
           </Button>
         )}
@@ -100,7 +107,7 @@ const SettlementDetailPage = () => {
             variant="outlined"
             size="small"
             color="warning"
-            onClick={() => setDisputeDrawerOpen(true)}
+            onClick={handleOpenDisputeDrawer}
           >
             Dispute
           </Button>
@@ -116,30 +123,16 @@ const SettlementDetailPage = () => {
 
     return (
       <>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          CARRIER
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {settlement.carrierName}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-          DRIVER
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {settlement.driverName ?? '\u2014'}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-          PERIOD
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        <BodyMuted sx={{ display: 'block' }}>CARRIER</BodyMuted>
+        <BodyStrong>{settlement.carrierName}</BodyStrong>
+        <BodyMuted sx={{ display: 'block', mt: 0.5 }}>DRIVER</BodyMuted>
+        <BodyStrong>{settlement.driverName ?? '\u2014'}</BodyStrong>
+        <BodyMuted sx={{ display: 'block', mt: 0.5 }}>PERIOD</BodyMuted>
+        <BodyStrong>
           {formatDate(settlement.periodStart)} \u2013 {formatDate(settlement.periodEnd)}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-          TOTAL MILES
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {settlement.totalMiles.toLocaleString()}
-        </Typography>
+        </BodyStrong>
+        <BodyMuted sx={{ display: 'block', mt: 0.5 }}>TOTAL MILES</BodyMuted>
+        <BodyStrong>{settlement.totalMiles.toLocaleString()}</BodyStrong>
       </>
     );
   };
@@ -148,7 +141,7 @@ const SettlementDetailPage = () => {
     <PageWrapper isLoading={isLoading} errorContext="SettlementDetailPage">
       <DataGuard
         data={settlement}
-        emptyComponent={<Typography p={4}>Settlement not found.</Typography>}
+        emptyComponent={<BodyMuted sx={{ p: 4 }}>Settlement not found.</BodyMuted>}
       >
         {(s) => (
           <DetailLayout
@@ -167,20 +160,6 @@ const SettlementDetailPage = () => {
           </DetailLayout>
         )}
       </DataGuard>
-
-      {payDrawerOpen && id && (
-        <PaySettlementDrawer
-          settlementId={id}
-          onClose={() => setPayDrawerOpen(false)}
-        />
-      )}
-
-      {disputeDrawerOpen && id && (
-        <DisputeSettlementDrawer
-          settlementId={id}
-          onClose={() => setDisputeDrawerOpen(false)}
-        />
-      )}
     </PageWrapper>
   );
 };

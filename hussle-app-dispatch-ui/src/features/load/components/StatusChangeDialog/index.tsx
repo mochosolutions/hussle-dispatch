@@ -74,9 +74,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
 
   // Assignment form state for inline dispatch flow
   const [assignmentValues, setAssignmentValues] = useState({
-    carrierId: load?.carrierId ?? '',
-    driverId: load?.driverId ?? '',
-    vehicleId: load?.vehicleId ?? '',
+    carrierId: load?.assignment.carrier?.id ?? '',
+    driverId: load?.assignment.driver?.id ?? '',
+    vehicleId: load?.assignment.vehicle?.id ?? '',
   });
 
   const prerequisites = useMemo(() => {

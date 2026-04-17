@@ -1,7 +1,7 @@
 import React from 'react';
-import { Grid, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import * as Yup from 'yup';
-import { TextField, SelectField, DateField } from '@mocho/ui/components';
+import { TextField, SelectField, DateField, CurrencyField, NumericField, StateField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { createExpense } from 'utils/api/accounting/expenseApi';
@@ -34,16 +34,6 @@ const FUEL_TYPE_OPTIONS = [
   { value: 'DIESEL', label: 'Diesel' },
   { value: 'DEF', label: 'DEF' },
 ];
-
-const US_STATES = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
-];
-
-const US_STATE_OPTIONS = US_STATES.map((code) => ({ value: code, label: code }));
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -88,25 +78,29 @@ const FuelFields: React.FC<{ formik: FormikProps<ExpenseFormValues> }> = ({ form
 
   return (
     <DrawerSection label="Fuel Details">
-      <Grid container spacing={2}>
-        <Grid item xs={6}>
-          <TextField name="gallons" label="Gallons" type="number" formik={formik} />
-        </Grid>
-        <Grid item xs={6}>
-          <TextField name="pricePerGallon" label="Price / Gallon" type="number" formik={formik} />
-        </Grid>
-        <Grid item xs={6}>
-          <SelectField name="state" label="State" data={US_STATE_OPTIONS} formik={formik} />
-        </Grid>
-        <Grid item xs={6}>
-          <SelectField
-            name="fuelType"
-            label="Fuel Type"
-            data={FUEL_TYPE_OPTIONS}
-            formik={formik}
-          />
-        </Grid>
-      </Grid>
+      <Stack spacing={2}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <NumericField name="gallons" label="Gallons" suffix="gal" decimalScale={1} formik={formik} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <CurrencyField name="pricePerGallon" label="Price / Gallon" formik={formik} />
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <StateField name="state" label="State" formik={formik} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <SelectField
+              name="fuelType"
+              label="Fuel Type"
+              data={FUEL_TYPE_OPTIONS}
+              formik={formik}
+            />
+          </Box>
+        </Box>
+      </Stack>
     </DrawerSection>
   );
 };
@@ -164,50 +158,39 @@ export const ExpenseQuickAddDrawer: React.FC<ExpenseQuickAddDrawerProps> = ({
       {(formik) => (
         <Stack spacing={3} sx={{ p: 3 }}>
           <DrawerSection label="Expense Details">
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <SelectField
-                  name="category"
-                  label="Category"
-                  data={EXPENSE_CATEGORIES}
-                  required
-                  placeholder="Select category"
-                  formik={formik}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  name="amount"
-                  label="Amount"
-                  type="number"
-                  required
-                  placeholder="0.00"
-                  formik={formik}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <DateField name="date" label="Date" required formik={formik} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  name="vehicleId"
-                  label="Vehicle ID"
-                  required
-                  placeholder="Enter vehicle ID"
-                  formik={formik}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  name="description"
-                  label="Description"
-                  placeholder="Optional description"
-                  multiline
-                  minRows={2}
-                  formik={formik}
-                />
-              </Grid>
-            </Grid>
+            <Stack spacing={2}>
+              <SelectField
+                name="category"
+                label="Category"
+                data={EXPENSE_CATEGORIES}
+                required
+                placeholder="Select category"
+                formik={formik}
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <CurrencyField name="amount" label="Amount" required formik={formik} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <DateField name="date" label="Date" required formik={formik} />
+                </Box>
+              </Box>
+              <TextField
+                name="vehicleId"
+                label="Vehicle ID"
+                required
+                placeholder="Enter vehicle ID"
+                formik={formik}
+              />
+              <TextField
+                name="description"
+                label="Description"
+                placeholder="Optional description"
+                multiline
+                minRows={2}
+                formik={formik}
+              />
+            </Stack>
           </DrawerSection>
 
           <FuelFields formik={formik} />

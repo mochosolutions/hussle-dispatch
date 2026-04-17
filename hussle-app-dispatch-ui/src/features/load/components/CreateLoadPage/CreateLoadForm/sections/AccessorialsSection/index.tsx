@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from 'react';
-import { Alert, Button, Grid, IconButton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, IconButton, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { FormikProps } from 'formik';
-import { TextField, SelectField } from '@mocho/ui/components';
+import { CurrencyField, SelectField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import { useSelector } from 'store';
 import { selectCarrierById } from 'features/carrier/store/selectors/carrierSelectors';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
-import { ACCESSORIAL_TYPE_OPTIONS, formatCurrencyCompact } from '../../../../../../constants';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
+import { ACCESSORIAL_TYPE_OPTIONS, formatCurrencyCompact } from '../../../../../constants';
 
 interface AccessorialsSectionProps {
   formik: FormikProps<LoadFormValues>;
@@ -84,28 +84,28 @@ export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({ formik
         )}
 
         {accessorials.map((acc, idx) => (
-          <Grid container key={idx} spacing={1} alignItems="center">
-            <Grid item xs={12} md={3}>
+          <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Box sx={{ flex: 3 }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {acc.label || acc.type}
               </Typography>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <TextField
+            </Box>
+            <Box sx={{ flex: 3 }}>
+              <CurrencyField
                 name={`accessorials[${idx}].amount`}
-                label="Amount ($)"
+                label="Amount"
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={12} md={3}>
+            </Box>
+            <Box sx={{ flex: 3 }}>
               <SelectField
                 name={`accessorials[${idx}].applies`}
                 label="Applies to"
                 data={APPLIES_TO_OPTIONS}
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={12} md={1}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <IconButton
                 size="small"
                 onClick={() => handleRemoveAccessorial(idx)}
@@ -113,8 +113,8 @@ export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({ formik
               >
                 <DeleteOutlineIcon fontSize="small" color="error" />
               </IconButton>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         ))}
 
         <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>

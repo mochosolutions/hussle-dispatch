@@ -6,6 +6,7 @@ import { Box, Stack, Typography } from '@mui/material';
 interface TypoProps {
   children: React.ReactNode;
   sx?: SxProps<Theme>;
+  onClick?: React.MouseEventHandler<HTMLSpanElement>;
 }
 
 // ==============================|| DISPLAY — h1 (20px / 800) ||============================== //
@@ -98,9 +99,10 @@ export const Amount: React.FC<TypoProps> = ({ children, sx }) => (
   </Typography>
 );
 
-export const LinkText: React.FC<TypoProps> = ({ children, sx }) => (
+export const LinkText: React.FC<TypoProps> = ({ children, sx, onClick }) => (
   <Typography
     variant="body1"
+    onClick={onClick}
     sx={{ color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' }, ...sx }}
   >
     {children}

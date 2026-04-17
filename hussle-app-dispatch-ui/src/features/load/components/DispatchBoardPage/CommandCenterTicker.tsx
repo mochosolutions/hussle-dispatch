@@ -4,8 +4,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useNavigate } from 'react-router-dom';
 
-import type { LoadListItem } from '../../../types';
-import { STATUS_COLORS, STATUS_LABELS } from '../../../constants';
+import type { LoadListItem } from '../../types';
+import { STATUS_COLORS, STATUS_LABELS } from '../../constants';
 
 interface CommandCenterTickerProps {
   activeLoads: LoadListItem[];
@@ -79,11 +79,11 @@ export const CommandCenterTicker: React.FC<CommandCenterTickerProps> = ({ active
           }}
         >
           {active.map((load) => {
-            const origin = load.originCity
-              ? `${load.originCity}, ${load.originState}`
+            const origin = load.route.originCity
+              ? `${load.route.originCity}, ${load.route.originState}`
               : '';
-            const dest = load.destinationCity
-              ? `${load.destinationCity}, ${load.destinationState}`
+            const dest = load.route.destinationCity
+              ? `${load.route.destinationCity}, ${load.route.destinationState}`
               : '';
             const route = [origin, dest].filter(Boolean).join(' \u2192 ');
 

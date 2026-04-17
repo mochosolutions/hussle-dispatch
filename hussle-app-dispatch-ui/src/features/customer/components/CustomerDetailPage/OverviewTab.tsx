@@ -3,8 +3,8 @@ import SectionCard from 'components/SectionCard';
 import { DetailRow, KpiCell } from 'components/Typography';
 import { EditableSectionHeader } from 'components/EditableSectionHeader';
 import { FieldRow } from 'components/FieldRow';
-import { CUSTOMER_TYPE_LABELS } from '../../../constants';
-import type { Customer } from '../../../types';
+import { CUSTOMER_TYPE_LABELS } from '../../constants';
+import type { Customer } from '../../types';
 
 interface OverviewTabProps {
   customer: Customer;

@@ -18,7 +18,6 @@ import { generateSettlementRequest } from '../../store/reducers/settlementPageSl
 import type { GenerateSettlementInput } from '../../types';
 
 interface GenerateSettlementDialogProps {
-  open: boolean;
   onClose: () => void;
 }
 
@@ -47,7 +46,6 @@ const initialValues: GenerateFormValues = {
 };
 
 export const GenerateSettlementDialog: React.FC<GenerateSettlementDialogProps> = ({
-  open,
   onClose,
 }) => {
   const dispatch = useDispatch();
@@ -70,7 +68,7 @@ export const GenerateSettlementDialog: React.FC<GenerateSettlementDialogProps> =
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <Formik<GenerateFormValues>
         initialValues={initialValues}
         validationSchema={validationSchema}

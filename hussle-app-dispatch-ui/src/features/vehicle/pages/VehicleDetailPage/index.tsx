@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Button, Typography } from '@mui/material';
+import { Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
+import { Body } from 'components/Typography';
 import { DetailLayout } from 'components/DetailLayout';
+import DocumentsTab from 'components/DocumentsTab';
 import {
   fetchVehicleDetailsRequest,
   fetchVehicleLoadHistoryRequest,
-  updateVehicleRequest,
 } from '../../store/reducers';
 import {
   selectVehicleWithCarrier,
@@ -19,14 +20,10 @@ import {
 } from '../../store/selectors/vehicleSelectors';
 import { VEHICLE_TABS } from '../../constants';
 import { VehicleKPI } from '../../components/VehicleKPI';
-import { VehicleInfoDrawer } from '../../components/VehicleInfoDrawer';
-import { VehicleExpenseDrawer } from '../../components/VehicleExpenseDrawer';
-import { VehicleTargetsDrawer } from '../../components/VehicleTargetsDrawer';
-import { DocumentTable } from 'features/documents/components/DocumentTable';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
-import { VehicleOverviewTab } from './tabs/VehicleOverviewTab';
-import { VehicleExpenseTab } from './tabs/VehicleExpenseTab';
-import { VehicleLoadHistoryTab } from './tabs/VehicleLoadHistoryTab';
+import { VehicleOverviewTab } from '../../components/VehicleDetailPage/VehicleOverviewTab';
+import { VehicleExpenseTab } from '../../components/VehicleDetailPage/VehicleExpenseTab';
+import { VehicleLoadHistoryTab } from '../../components/VehicleDetailPage/VehicleLoadHistoryTab';
 
 const VehicleDetailPage = () => {
   const dispatch = useDispatch();
@@ -44,10 +41,6 @@ const VehicleDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const { openDrawer } = useDrawerActions();
 
-  const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
-  const [expenseDrawerOpen, setExpenseDrawerOpen] = useState(false);
-  const [targetsDrawerOpen, setTargetsDrawerOpen] = useState(false);
-
   useEffect(() => {
     if (id) {
       dispatch(fetchVehicleDetailsRequest({ id }));
@@ -55,29 +48,17 @@ const VehicleDetailPage = () => {
     }
   }, [dispatch, id]);
 
-  const kpiCpm = useMemo(() => {
-    if (!vehicle) return 0;
-    const monthlyTotal = vehicle.expenses.reduce(
-      (sum, exp) => sum + parseFloat(exp.monthlyAmount),
-      0,
-    );
-    const target = vehicle.monthlyMilesTarget ?? 0;
-    return target > 0 ? monthlyTotal / target : 0;
-  }, [vehicle]);
+  const handleOpenInfoDrawer = useCallback(() => {
+    if (id) {
+      openDrawer('vehicleInfo', { vehicleId: id });
+    }
+  }, [openDrawer, id]);
 
-  const kpiMonthlyTotal = useMemo(() => {
-    if (!vehicle) return 0;
-    return vehicle.expenses.reduce((sum, exp) => sum + parseFloat(exp.monthlyAmount), 0);
-  }, [vehicle]);
-
-  const handleDrawerSave = useCallback(
-    (values: Record<string, unknown>) => {
-      if (id) {
-        dispatch(updateVehicleRequest({ id, data: values }));
-      }
-    },
-    [dispatch, id],
-  );
+  const handleOpenTargetsDrawer = useCallback(() => {
+    if (id) {
+      openDrawer('vehicleTargets', { vehicleId: id });
+    }
+  }, [openDrawer, id]);
 
   const handleBack = () => {
     navigate('/vehicles');
@@ -87,99 +68,55 @@ const VehicleDetailPage = () => {
     <PageWrapper isLoading={isLoading} errorContext="VehicleDetailPage">
       <DataGuard
         data={vehicle}
-        emptyComponent={<Typography p={4}>Vehicle not found.</Typography>}
+        emptyComponent={<Body sx={{ p: 4 }}>Vehicle not found.</Body>}
       >
         {(v) => (
-          <>
-            <DetailLayout
-              id={v.unitNumber}
-              status={v.isActive ? 'VEHICLE_ACTIVE' : 'VEHICLE_INACTIVE'}
-              breadcrumb={{ label: 'Vehicles', href: '/vehicles' }}
-              onBack={handleBack}
-              actions={
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  startIcon={<EditIcon />}
-                  onClick={() => setInfoDrawerOpen(true)}
-                >
-                  Edit
-                </Button>
-              }
-              summary={<VehicleKPI vehicle={v} cpm={kpiCpm} monthlyCost={kpiMonthlyTotal} vehicleLoads={vehicleLoads} />}
-              tabs={VEHICLE_TABS}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            >
-              {activeTab === 'overview' && (
-                <VehicleOverviewTab
-                  vehicle={v}
-                  carrierDrivers={carrierDrivers}
-                  onOpenInfoDrawer={() => setInfoDrawerOpen(true)}
-                />
-              )}
-
-              {activeTab === 'expenses' && (
-                <VehicleExpenseTab
-                  vehicle={v}
-                  onOpenTargetsDrawer={() => setTargetsDrawerOpen(true)}
-                />
-              )}
-
-              {activeTab === 'load-history' && (
-                <VehicleLoadHistoryTab
-                  vehicleLoads={vehicleLoads}
-                  isLoading={loadHistoryLoading}
-                />
-              )}
-
-              {activeTab === 'documents' && id && (
-                <Box sx={{ p: 3 }}>
-                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() =>
-                        openDrawer('documentUpload', {
-                          context: 'vehicle-detail',
-                          entityType: 'vehicle',
-                          entityId: id,
-                        })
-                      }
-                    >
-                      Upload
-                    </Button>
-                  </Box>
-                  <DocumentTable entityType="vehicle" entityId={id} />
-                </Box>
-              )}
-            </DetailLayout>
-
-            {infoDrawerOpen && (
-              <VehicleInfoDrawer
-                open={infoDrawerOpen}
-                onClose={() => setInfoDrawerOpen(false)}
-                data={v}
-                onSave={handleDrawerSave}
+          <DetailLayout
+            id={v.unitNumber}
+            status={v.isActive ? 'VEHICLE_ACTIVE' : 'VEHICLE_INACTIVE'}
+            breadcrumb={{ label: 'Vehicles', href: '/vehicles' }}
+            onBack={handleBack}
+            actions={
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<EditIcon />}
+                onClick={handleOpenInfoDrawer}
+              >
+                Edit
+              </Button>
+            }
+            summary={<VehicleKPI vehicle={v} vehicleLoads={vehicleLoads} />}
+            tabs={VEHICLE_TABS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          >
+            {activeTab === 'overview' && (
+              <VehicleOverviewTab
+                vehicle={v}
+                carrierDrivers={carrierDrivers}
+                onOpenInfoDrawer={handleOpenInfoDrawer}
               />
             )}
-            {expenseDrawerOpen && (
-              <VehicleExpenseDrawer
-                open={expenseDrawerOpen}
-                onClose={() => setExpenseDrawerOpen(false)}
-                data={v}
-                onSave={handleDrawerSave}
+
+            {activeTab === 'expenses' && (
+              <VehicleExpenseTab
+                vehicle={v}
+                onOpenTargetsDrawer={handleOpenTargetsDrawer}
               />
             )}
-            {targetsDrawerOpen && (
-              <VehicleTargetsDrawer
-                open={targetsDrawerOpen}
-                onClose={() => setTargetsDrawerOpen(false)}
-                data={v}
-                onSave={handleDrawerSave}
+
+            {activeTab === 'load-history' && (
+              <VehicleLoadHistoryTab
+                vehicleLoads={vehicleLoads}
+                isLoading={loadHistoryLoading}
               />
             )}
-          </>
+
+            {activeTab === 'documents' && id && (
+              <DocumentsTab entityType="vehicle" entityId={id} canUpload />
+            )}
+          </DetailLayout>
         )}
       </DataGuard>
     </PageWrapper>

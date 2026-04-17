@@ -19,15 +19,15 @@ import { CheckCircleOutline, CancelOutlined } from '@mui/icons-material';
 import SectionCard from 'components/SectionCard';
 import { FieldRow } from 'components/FieldRow';
 import { getCarrierOnboardingDetail } from 'utils/api/fleet/carrierApi';
-import { ApproveCarrierDialog } from '../../../components/ApproveCarrierDialog';
-import { RejectCarrierDialog } from '../../../components/RejectCarrierDialog';
+import { ApproveCarrierDialog } from '../../components/ApproveCarrierDialog';
+import { RejectCarrierDialog } from '../../components/RejectCarrierDialog';
 import type {
   CarrierOnboardingDetail,
   CostAnalysisResult,
   LanePreferenceEntry,
   PortalDocument,
   StatePreferenceEntry,
-} from '../../../onboardingTypes';
+} from '../../onboardingTypes';
 
 interface OnboardingTabProps {
   carrierId: string;

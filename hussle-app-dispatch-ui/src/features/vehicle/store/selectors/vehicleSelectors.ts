@@ -15,8 +15,10 @@ export const selectAllVehicles = (state: RootState) => vehicleSelectors.selectAl
 export const selectVehicleById = (id: string) => (state: RootState) =>
   vehicleSelectors.selectById(state, id);
 
-export const selectVehicleListLoading = (state: RootState) =>
-  state.pages.vehicles.loading['getAll'] === LoadingState.Pending;
+export const selectVehicleListLoading = (state: RootState) => {
+  const status = state.pages.vehicles.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectVehicleCreateLoading = (state: RootState) =>
   state.pages.vehicles.loading['create'] === LoadingState.Pending;

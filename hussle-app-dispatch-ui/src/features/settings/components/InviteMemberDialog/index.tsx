@@ -20,7 +20,6 @@ import { inviteMemberRequest } from '../../store/reducers/teamSlice';
 import type { RootState } from 'store';
 
 interface InviteMemberDialogProps {
-  open: boolean;
   onClose: () => void;
   organizationId: string;
 }
@@ -42,9 +41,8 @@ const inviteSchema = Yup.object().shape({
 });
 
 export const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
-  open,
   onClose,
-  organizationId,
+  organizationId: _organizationId,
 }) => {
   const dispatch = useDispatch();
   const inviteLoading = useSelector(
@@ -93,7 +91,7 @@ export const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
   const isSubmitting = inviteLoading === 'Pending';
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         Invite Team Member
         <IconButton

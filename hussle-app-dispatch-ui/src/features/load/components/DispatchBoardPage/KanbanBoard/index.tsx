@@ -3,9 +3,9 @@ import { Box, Typography, Chip, Avatar, Card, CardContent, useMediaQuery } from 
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from 'components/Statusbadge';
-import { KANBAN_GROUPS, STATUS_LABELS } from '../../constants';
+import { KANBAN_GROUPS, STATUS_LABELS } from '../../../constants';
 import { InvoiceReadinessBadge } from '../InvoiceReadinessBadge';
-import type { LoadListItem, KanbanGroup } from '../../types';
+import type { LoadListItem, KanbanGroup } from '../../../types';
 
 // ---------------------------------------------------------------------------
 // Kanban column colors
@@ -38,16 +38,16 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
     navigate(`/loads/${load.id}`);
   }, [navigate, load.id]);
 
-  const route = [load.originCity, load.originState]
+  const route = [load.route.originCity, load.route.originState]
     .filter(Boolean)
     .join(', ');
 
-  const destination = [load.destinationCity, load.destinationState]
+  const destination = [load.route.destinationCity, load.route.destinationState]
     .filter(Boolean)
     .join(', ');
 
-  const driverInitials = load.driverName
-    ? load.driverName
+  const driverInitials = load.assignment.driverName
+    ? load.assignment.driverName
         .split(' ')
         .map((n) => n[0])
         .join('')
@@ -80,9 +80,9 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
           {route || 'TBD'} &rarr; {destination || 'TBD'}
         </Typography>
 
-        {load.carrierName && (
+        {load.assignment.carrierName && (
           <Chip
-            label={load.carrierName}
+            label={load.assignment.carrierName}
             size="small"
             variant="outlined"
             sx={{ fontSize: '0.6875rem', height: 20, mb: 1 }}
@@ -97,21 +97,21 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            {load.driverName && (
+            {load.assignment.driverName && (
               <>
                 <Avatar sx={{ width: 22, height: 22, fontSize: '0.625rem', fontWeight: 700 }}>
                   {driverInitials}
                 </Avatar>
                 <Typography variant="caption" color="text.secondary">
-                  {load.driverName.split(' ')[0]}
+                  {load.assignment.driverName.split(' ')[0]}
                 </Typography>
               </>
             )}
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            {load.carrierPayout && (
+            {load.financials.carrierPayout && (
               <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>
-                ${Number(load.carrierPayout).toLocaleString()}
+                ${Number(load.financials.carrierPayout).toLocaleString()}
               </Typography>
             )}
           </Box>

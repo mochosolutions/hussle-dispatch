@@ -24,8 +24,10 @@ export const selectSettlementDetailById =
 // Page loading selectors
 // ---------------------------------------------------------------------------
 
-export const selectSettlementListLoading = (state: RootState) =>
-  state.pages.settlements.loading['getAll'] === LoadingState.Pending;
+export const selectSettlementListLoading = (state: RootState) => {
+  const status = state.pages.settlements.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectSettlementDetailLoading = (id: string) => (state: RootState) =>
   state.pages.settlements.loading[`getById:${id}`] === LoadingState.Pending;

@@ -20,4 +20,14 @@ export interface AddressSearchResult {
   appointmentRequired: boolean;
   lumperRequired: boolean;
   ppeRequired: boolean;
+  facilityHours: FacilityDayHoursEntry[] | null;
+  is24Hours: boolean;
+}
+
+export interface FacilityDayHoursEntry {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+  is24Hours: boolean;
 }

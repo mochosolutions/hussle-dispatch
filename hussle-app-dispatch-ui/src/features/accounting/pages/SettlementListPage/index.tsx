@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Box, Button, InputLabel, MenuItem, Select, Stack } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
-import { MainCard, NewDataGrid, PageWrapper, ListSkeleton } from '@mocho/ui/components';
+import { NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import { ActionsCell } from 'mocho/components/DataGrid';
 import { ListLayout } from 'components/ListLayout';
+import MainCard from 'components/MainCard';
+import ListKpiBar from 'components/ListKpiBar';
+import { FilterBar } from 'components/FilterBar';
 import { StatusCell } from 'components/Statusbadge';
+import { Amount, Body } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 import {
   fetchSettlementsRequest,
   setSettlementFilters,
@@ -16,54 +21,10 @@ import {
   selectSettlementListLoading,
   selectSettlementFilters,
 } from '../../store/selectors/settlementSelectors';
-import { GenerateSettlementDialog } from '../../components/GenerateSettlementDialog';
 import type { SettlementListItem } from '../../types';
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-});
-
-const formatCurrency = (value: string | number): string =>
-  currencyFormatter.format(Number(value));
-
-const formatDate = (value: string): string => {
-  if (!value) {
-    return '';
-  }
-  const date = new Date(value);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const toSettlementStatusKey = (status: string): string => `SETTLEMENT_${status}`;
-
-// ---------------------------------------------------------------------------
-// Column definitions
-// ---------------------------------------------------------------------------
-
-const StatusCellRenderer = ({ value }: { value: string }) => (
-  <StatusCell status={toSettlementStatusKey(value)} size="small" />
-);
-
-const CurrencyCellRenderer = ({ value }: { value: string }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatCurrency(value)}
-  </Box>
-);
-
-const DateCellRenderer = ({ value }: { value: string }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {formatDate(value)}
-  </Box>
-);
-
-// ---------------------------------------------------------------------------
-// Filter options
+// Constants
 // ---------------------------------------------------------------------------
 
 const STATUS_OPTIONS = [
@@ -74,14 +35,16 @@ const STATUS_OPTIONS = [
   { value: 'DISPUTED', label: 'Disputed' },
 ];
 
+const toSettlementStatusKey = (status: string): string => `SETTLEMENT_${status}`;
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 const SettlementListPage = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openModal } = useModalActions();
 
   const isLoading = useSelector(selectSettlementListLoading);
   const settlements = useSelector(selectAllSettlements);
@@ -92,8 +55,8 @@ const SettlementListPage = () => {
   }, [dispatch]);
 
   const handleStatusChange = useCallback(
-    (event: SelectChangeEvent) => {
-      const status = event.target.value === 'ALL' ? undefined : event.target.value;
+    (value: string) => {
+      const status = value === 'ALL' ? undefined : value;
       const nextFilters = { ...filters, status };
       dispatch(setSettlementFilters(nextFilters));
       dispatch(fetchSettlementsRequest({ page: 1, limit: 25, ...nextFilters }));
@@ -110,6 +73,20 @@ const SettlementListPage = () => {
     [navigate],
   );
 
+  const filterConfig = useMemo(
+    () => [
+      {
+        type: 'select' as const,
+        name: 'status',
+        label: 'Status',
+        options: STATUS_OPTIONS,
+        value: filters.status ?? 'ALL',
+        onChange: handleStatusChange,
+      },
+    ],
+    [filters.status, handleStatusChange],
+  );
+
   const columnDefs = useMemo(
     () => [
       {
@@ -122,43 +99,79 @@ const SettlementListPage = () => {
         headerName: 'Status',
         field: 'status',
         minWidth: 140,
-        cellRenderer: StatusCellRenderer,
+        cellRenderer: ({ value }: { value: string }) => (
+          <StatusCell status={toSettlementStatusKey(value)} size="small" />
+        ),
       },
       {
         headerName: 'Carrier',
         field: 'carrierName',
         minWidth: 160,
         flex: 1,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'Driver',
         field: 'driverName',
         minWidth: 140,
         flex: 1,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'Period Start',
         field: 'periodStart',
         minWidth: 140,
-        cellRenderer: DateCellRenderer,
+        cellRenderer: ({ value }: { value: string }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Body>{value}</Body>
+          </Box>
+        ),
       },
       {
         headerName: 'Period End',
         field: 'periodEnd',
         minWidth: 140,
-        cellRenderer: DateCellRenderer,
+        cellRenderer: ({ value }: { value: string }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Body>{value}</Body>
+          </Box>
+        ),
       },
       {
         headerName: 'Gross Revenue',
         field: 'grossRevenue',
         minWidth: 140,
-        cellRenderer: CurrencyCellRenderer,
+        cellRenderer: ({ value }: { value: string }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Amount>{value}</Amount>
+          </Box>
+        ),
       },
       {
         headerName: 'Net Earnings',
         field: 'netEarnings',
         minWidth: 140,
-        cellRenderer: CurrencyCellRenderer,
+        cellRenderer: ({ value }: { value: string }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Amount>{value}</Amount>
+          </Box>
+        ),
+      },
+      {
+        headerName: 'Actions',
+        field: 'actions',
+        width: 80,
+        sortable: false,
+        filter: false,
+        cellRenderer: ActionsCell,
+        cellRendererParams: {
+          config: {
+            showView: true,
+            showEdit: false,
+            showDelete: false,
+            getViewRoute: (data: SettlementListItem) => `/accounting/settlements/${data.id}`,
+          },
+        },
       },
     ],
     [],
@@ -175,30 +188,55 @@ const SettlementListPage = () => {
     [],
   );
 
+  const totalAmount = useMemo(
+    () =>
+      settlements.reduce((sum, s) => sum + parseFloat(s.netEarnings ?? '0'), 0),
+    [settlements],
+  );
+
+  const pendingCount = useMemo(
+    () => settlements.filter((s) => s.status === 'DRAFT').length,
+    [settlements],
+  );
+
+  const approvedCount = useMemo(
+    () => settlements.filter((s) => s.status === 'APPROVED').length,
+    [settlements],
+  );
+
+  const kpiItems = useMemo(
+    () => [
+      { label: 'Total Settlements', value: settlements.length },
+      { label: 'Pending', value: pendingCount },
+      { label: 'Approved', value: approvedCount },
+      {
+        label: 'Total Amount',
+        value: `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      },
+    ],
+    [settlements.length, pendingCount, approvedCount, totalAmount],
+  );
+
   return (
-    <PageWrapper
-      isLoading={isLoading}
-      loadingComponent={<ListSkeleton rows={8} />}
-      errorContext="SettlementListPage"
-      sx={{ gap: 2 }}
-    >
+    <PageWrapper errorContext="SettlementListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Settlements"
         primaryAction={
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setDialogOpen(true)}
+            onClick={() => openModal('generateSettlement', {})}
           >
             Generate Settlement
           </Button>
         }
       >
+        <ListKpiBar items={kpiItems} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }} />
+
         <Box
           sx={{
             px: { xs: 2, sm: 3 },
             pb: 3,
-            pt: 2,
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
@@ -209,28 +247,9 @@ const SettlementListPage = () => {
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-              spacing={2}
-              sx={{ px: 2, py: 1.5 }}
-            >
-              <Stack spacing={1}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.status ?? 'ALL'}
-                  onChange={handleStatusChange}
-                  size="small"
-                  sx={{ minWidth: 200 }}
-                >
-                  {STATUS_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Stack>
-            </Stack>
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filterConfig} />
+            </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
@@ -248,7 +267,7 @@ const SettlementListPage = () => {
                     paginationPageSize: 25,
                     suppressCellFocus: true,
                     headerHeight: 44,
-                    rowHeight: 52,
+                    rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
                   loading={isLoading}
@@ -258,8 +277,6 @@ const SettlementListPage = () => {
           </MainCard>
         </Box>
       </ListLayout>
-
-      <GenerateSettlementDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
     </PageWrapper>
   );
 };

@@ -1,24 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
+  Button,
   Chip,
   Collapse,
   FormControlLabel,
-  Grid,
   IconButton,
   Stack,
   Switch,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import ContactPhoneIcon from '@mui/icons-material/ContactPhone';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import type { FormikProps } from 'formik';
-import { MainCard, TextField, DateField, TimeField } from '@mocho/ui/components';
+import { MainCard, TextField, DateField, TimeField, PhoneField, NumericField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import type { StopsFormShape } from '../../validators/loadSchema';
+import { SCHEDULING_TYPE_OPTIONS } from '../../constants';
+import type { SchedulingType } from '../../constants';
 import { AddressSearchField } from '../AddressSearchField';
 
 export interface StopFormCardProps<T extends StopsFormShape = StopsFormShape> {
@@ -53,8 +59,41 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
   const accentColor = isPickup ? 'primary.main' : 'success.main';
   const accentBg = isPickup ? 'primary.50' : 'success.50';
   const stopLabel = isPickup ? 'Pickup stop' : 'Delivery stop';
+  const schedulingType = (stop.schedulingType ?? 'APPOINTMENT') as SchedulingType;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const hasContactData = Boolean(stop.contactName || stop.contactPhone || stop.notes);
+  const [showContact, setShowContact] = useState(hasContactData || schedulingType === 'NOTIFICATION');
+  const hasCargoData = Boolean(
+    stop.commodity || stop.weight || stop.pieceCount || stop.isHazmat || stop.isTarp || stop.isTempControlled,
+  );
+  const [showCargo, setShowCargo] = useState(hasCargoData);
+
+  // Auto-expand contact when NOTIFICATION type is selected
+  useEffect(() => {
+    if (schedulingType === 'NOTIFICATION' && !showContact) {
+      setShowContact(true);
+    }
+  }, [schedulingType, showContact]);
+
+  // Auto-fill facility hours when date changes and place has stored hours
+  const appointmentDate = stop.appointmentDate;
+  const facilityHoursData = stop.facilityHoursData;
+  useEffect(() => {
+    if (
+      (schedulingType === 'FCFS' || schedulingType === 'OPEN') &&
+      facilityHoursData &&
+      appointmentDate
+    ) {
+      const dayOfWeek = new Date(appointmentDate).getUTCDay();
+      const hours = facilityHoursData as { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[];
+      const dayEntry = hours.find((h) => h.dayOfWeek === dayOfWeek);
+      if (dayEntry && !dayEntry.isClosed) {
+        void formik.setFieldValue(`${prefix}.facilityOpenTime`, dayEntry.openTime);
+        void formik.setFieldValue(`${prefix}.facilityCloseTime`, dayEntry.closeTime);
+      }
+    }
+  }, [appointmentDate, schedulingType, facilityHoursData, formik, prefix]);
 
   // Auto-expand when validation errors exist for this stop after submit attempt
   const stopErrors = formik.errors.stops?.[index];
@@ -83,11 +122,44 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
 
   const commoditySummary = stop.commodity ? stop.commodity : null;
 
+  const handleSchedulingTypeChange = useCallback(
+    (_e: React.MouseEvent<HTMLElement>, value: SchedulingType | null) => {
+      if (value === null) return;
+      void formik.setFieldValue(`${prefix}.schedulingType`, value);
+
+      // Clear fields not relevant to the new type
+      if (value !== 'APPOINTMENT') {
+        void formik.setFieldValue(`${prefix}.appointmentNumber`, '');
+        if (value !== 'NOTIFICATION') {
+          void formik.setFieldValue(`${prefix}.appointmentTime`, '');
+        }
+      }
+      if (value !== 'FCFS' && value !== 'OPEN') {
+        void formik.setFieldValue(`${prefix}.facilityOpenTime`, '');
+        void formik.setFieldValue(`${prefix}.facilityCloseTime`, '');
+      }
+      if (value !== 'NOTIFICATION') {
+        void formik.setFieldValue(`${prefix}.callByTime`, '');
+      }
+      if (value !== 'DROP_HOOK') {
+        void formik.setFieldValue(`${prefix}.trailerNumber`, '');
+        void formik.setFieldValue(`${prefix}.yardLocation`, '');
+      }
+    },
+    [formik, prefix],
+  );
+
+  const activeHint = SCHEDULING_TYPE_OPTIONS.find((o) => o.value === schedulingType)?.hint ?? '';
+
+  // Contact labels change for NOTIFICATION type
+  const contactNameLabel = schedulingType === 'NOTIFICATION' ? 'Notify Contact' : 'Contact Name';
+  const contactPhoneLabel = schedulingType === 'NOTIFICATION' ? 'Notify Phone' : 'Contact Phone';
+
   return (
     <MainCard
       content={false}
       sx={{
-        borderLeft: `2px solid`,
+        borderLeft: '2px solid',
         borderLeftColor: accentColor,
         boxShadow: 'none',
         overflow: 'hidden',
@@ -130,12 +202,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
           </Stack>
         )}
 
-        <Box
-          sx={{
-            backgroundColor: 'grey.100',
-            p: 0.5,
-          }}
-        >
+        <Box sx={{ backgroundColor: 'grey.100', p: 0.5 }}>
           <Typography color="text.secondary" sx={{ minWidth: 16 }} variant="caption">
             {index + 1}
           </Typography>
@@ -154,6 +221,14 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
           }}
         />
 
+        {/* Scheduling type indicator */}
+        <Chip
+          label={SCHEDULING_TYPE_OPTIONS.find((o) => o.value === schedulingType)?.label ?? schedulingType}
+          size="small"
+          variant="outlined"
+          sx={{ fontSize: 10, height: 20 }}
+        />
+
         {stop.facilityName ? (
           <Typography sx={{ color: 'text.primary', fontWeight: 500 }} variant="body2">
             {stop.facilityName}
@@ -170,6 +245,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
           <Chip label={commoditySummary} size="small" variant="outlined" sx={{ fontSize: 10 }} />
         ) : null}
 
+        {/* Type-aware badges */}
         {!stop.facilityName && !stop.placeId && (
           <Chip
             label="No facility"
@@ -181,7 +257,43 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
         )}
         {!stop.appointmentDate && (
           <Chip
-            label="No appt"
+            label="No date"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20 }}
+          />
+        )}
+        {schedulingType === 'APPOINTMENT' && !stop.appointmentTime && (
+          <Chip
+            label="No time"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20 }}
+          />
+        )}
+        {schedulingType === 'APPOINTMENT' && !stop.appointmentNumber && (
+          <Chip
+            label="No appt #"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20 }}
+          />
+        )}
+        {schedulingType === 'NOTIFICATION' && !stop.contactName && (
+          <Chip
+            label="No contact"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20 }}
+          />
+        )}
+        {schedulingType === 'DROP_HOOK' && !stop.trailerNumber && (
+          <Chip
+            label="No trailer"
             size="small"
             color="warning"
             variant="outlined"
@@ -209,57 +321,146 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
       {/* Body */}
       <Collapse in={expanded}>
         <Box sx={{ p: 1.5 }}>
-          <Grid container spacing={1.5}>
+          <Stack spacing={1.5}>
             {/* Address search */}
-            <Grid item xs={12}>
-              <AddressSearchField prefix={prefix} formik={formik} />
-            </Grid>
+            <AddressSearchField prefix={prefix} formik={formik} />
 
-            {/* Date/Time */}
-            <Grid item xs={12} md={4}>
-              <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TimeField name={`${prefix}.appointmentTime`} label="Time" formik={stopFormik} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                name={`${prefix}.appointmentNumber`}
-                label="Appt #"
-                formik={stopFormik}
-              />
-            </Grid>
-          </Grid>
-
-          {/* Commodity fields (pickup) */}
-          {isPickup && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-                Commodity
+            {/* Scheduling type pill selector */}
+            <Box>
+              <ToggleButtonGroup
+                value={schedulingType}
+                exclusive
+                onChange={handleSchedulingTypeChange}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    px: 1.5,
+                    py: 0.5,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: '#fff',
+                      '&:hover': { bgcolor: 'primary.dark' },
+                    },
+                  },
+                }}
+              >
+                {SCHEDULING_TYPE_OPTIONS.map((opt) => (
+                  <ToggleButton key={opt.value} value={opt.value} aria-label={opt.hint}>
+                    {opt.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic', color: 'text.disabled' }}>
+                {activeHint}
               </Typography>
-              <Grid container spacing={1.5}>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    name={`${prefix}.commodity`}
-                    label="Commodity"
-                    formik={stopFormik}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <TextField
-                    name={`${prefix}.weight`}
-                    label="Weight (lbs)"
-                    formik={stopFormik}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <TextField
-                    name={`${prefix}.pieceCount`}
-                    label="Pieces"
-                    formik={stopFormik}
-                  />
-                </Grid>
-                <Grid item xs={12}>
+            </Box>
+
+            {/* Conditional fields based on scheduling type */}
+
+            {/* APPOINTMENT: Date | Time (req) | Appt # (req) */}
+            {schedulingType === 'APPOINTMENT' && (
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Box sx={{ flex: 1 }}>
+                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.appointmentTime`} label="Appointment Time" formik={stopFormik} required />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TextField name={`${prefix}.appointmentNumber`} label="Appt #" formik={stopFormik} required />
+                </Box>
+              </Box>
+            )}
+
+            {/* FCFS: Date | Facility Open | Facility Close */}
+            {schedulingType === 'FCFS' && (
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Box sx={{ flex: 1 }}>
+                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.facilityOpenTime`} label="Facility Opens" formik={stopFormik} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.facilityCloseTime`} label="Facility Closes" formik={stopFormik} />
+                </Box>
+              </Box>
+            )}
+
+            {/* NOTIFICATION: Date | Preferred Time | Call-by — then contact auto-shows below */}
+            {schedulingType === 'NOTIFICATION' && (
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Box sx={{ flex: 1 }}>
+                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.appointmentTime`} label="Preferred Time" formik={stopFormik} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.callByTime`} label="Call By" formik={stopFormik} />
+                </Box>
+              </Box>
+            )}
+
+            {/* OPEN: Date | Facility Open | Facility Close */}
+            {schedulingType === 'OPEN' && (
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Box sx={{ flex: 1 }}>
+                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.facilityOpenTime`} label="Facility Opens" formik={stopFormik} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TimeField name={`${prefix}.facilityCloseTime`} label="Facility Closes" formik={stopFormik} />
+                </Box>
+              </Box>
+            )}
+
+            {/* DROP_HOOK: Date | Trailer # | Yard Location */}
+            {schedulingType === 'DROP_HOOK' && (
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Box sx={{ flex: 1 }}>
+                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TextField name={`${prefix}.trailerNumber`} label="Trailer #" formik={stopFormik} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <TextField name={`${prefix}.yardLocation`} label="Yard Location" formik={stopFormik} />
+                </Box>
+              </Box>
+            )}
+          </Stack>
+
+          {/* Cargo toggle (pickup only) */}
+          {isPickup && (
+            <Box sx={{ mt: 1.5 }}>
+              <Button
+                size="small"
+                variant="text"
+                startIcon={<InventoryIcon sx={{ fontSize: 16 }} />}
+                onClick={() => setShowCargo((prev) => !prev)}
+                sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'text.secondary' }}
+              >
+                {showCargo ? 'Hide cargo details' : 'Add cargo details'}
+              </Button>
+              <Collapse in={showCargo}>
+                <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <TextField name={`${prefix}.commodity`} label="Commodity" formik={stopFormik} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <NumericField name={`${prefix}.weight`} label="Weight" suffix="lbs" formik={stopFormik} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <NumericField name={`${prefix}.pieceCount`} label="Pieces" formik={stopFormik} />
+                    </Box>
+                  </Box>
                   <Stack direction="row" spacing={2}>
                     <FormControlLabel
                       control={
@@ -298,32 +499,45 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                       label={<Typography variant="caption">Temp Controlled</Typography>}
                     />
                   </Stack>
-                </Grid>
-              </Grid>
+                </Stack>
+              </Collapse>
             </Box>
           )}
 
-          {/* Contact */}
-          <Box sx={{ mt: 2 }}>
-            <Grid container spacing={1.5}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name={`${prefix}.contactName`}
-                  label="Contact Name"
-                  formik={stopFormik}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name={`${prefix}.contactPhone`}
-                  label="Contact Phone"
-                  formik={stopFormik}
-                />
-              </Grid>
-              <Grid item xs={12}>
+          {/* Contact toggle */}
+          <Box sx={{ mt: 1.5 }}>
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<ContactPhoneIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setShowContact((prev) => !prev)}
+              sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'text.secondary' }}
+            >
+              {showContact ? 'Hide contact & notes' : 'Add contact & notes'}
+            </Button>
+            <Collapse in={showContact}>
+              <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <TextField
+                      name={`${prefix}.contactName`}
+                      label={contactNameLabel}
+                      formik={stopFormik}
+                      required={schedulingType === 'NOTIFICATION'}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <PhoneField
+                      name={`${prefix}.contactPhone`}
+                      label={contactPhoneLabel}
+                      formik={stopFormik}
+                      required={schedulingType === 'NOTIFICATION'}
+                    />
+                  </Box>
+                </Box>
                 <TextField name={`${prefix}.notes`} label="Notes" formik={stopFormik} />
-              </Grid>
-            </Grid>
+              </Stack>
+            </Collapse>
           </Box>
         </Box>
       </Collapse>

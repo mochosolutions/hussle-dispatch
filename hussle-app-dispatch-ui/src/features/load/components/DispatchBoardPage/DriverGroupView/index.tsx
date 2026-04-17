@@ -12,7 +12,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PersonIcon from '@mui/icons-material/Person';
 import { useNavigate } from 'react-router-dom';
-import type { LoadListItem, LoadStatus } from '../../types';
+import type { LoadListItem, LoadStatus } from '../../../types';
 import { StatusBadge } from 'components/Statusbadge';
 
 // ---------------------------------------------------------------------------
@@ -54,11 +54,11 @@ const computeMetrics = (loads: LoadListItem[]) => {
   const activeLoads = loads.filter((load) => isActiveStatus(load.status));
 
   const totalRevenue = activeLoads.reduce((sum, load) => {
-    const rate = load.customerRate ? Number(load.customerRate) : 0;
+    const rate = load.financials.customerRate ? Number(load.financials.customerRate) : 0;
     return sum + rate;
   }, 0);
 
-  const totalMiles = activeLoads.reduce((sum, load) => sum + (load.totalMiles ?? 0), 0);
+  const totalMiles = activeLoads.reduce((sum, load) => sum + (load.route.totalMiles ?? 0), 0);
 
   const rpm = totalMiles > 0 ? totalRevenue / totalMiles : 0;
 
@@ -69,7 +69,7 @@ const groupLoadsByDriver = (
   loads: LoadListItem[],
 ): { assigned: DriverGroup[]; available: DriverGroup[] } => {
   const groupMap = loads.reduce<Record<string, DriverGroup>>((acc, load) => {
-    const driverId = load.driverId ?? 'unassigned';
+    const driverId = load.assignment.driverId ?? 'unassigned';
     const existing = acc[driverId];
 
     if (existing) {
@@ -77,7 +77,7 @@ const groupLoadsByDriver = (
     } else {
       acc[driverId] = {
         driverId,
-        driverName: load.driverName ?? 'Unassigned',
+        driverName: load.assignment.driverName ?? 'Unassigned',
         loads: [load],
       };
     }
@@ -137,13 +137,13 @@ const LoadRow: React.FC<{ load: LoadListItem }> = ({ load }) => {
     </Typography>
     <StatusBadge status={load.status} />
     <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-      {formatLocation(load.originCity, load.originState)}
+      {formatLocation(load.route.originCity, load.route.originState)}
     </Typography>
     <Typography variant="body2" color="text.disabled" sx={{ mx: 0.5 }}>
       &rarr;
     </Typography>
     <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-      {formatLocation(load.destinationCity, load.destinationState)}
+      {formatLocation(load.route.destinationCity, load.route.destinationState)}
     </Typography>
   </Box>
   );

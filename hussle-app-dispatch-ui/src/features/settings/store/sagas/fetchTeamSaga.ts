@@ -3,6 +3,7 @@ import { enqueueSnackbar } from 'notistack';
 import { getMembers, getInvitations, getSubscriptionUsage } from 'utils/api/team/teamApi';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import { fetchTeamSuccess, fetchTeamFailure } from '../reducers/teamSlice';
+import { teamEntityActions } from '../reducers/teamEntitySlice';
 
 export function* fetchTeamSaga(): Generator {
   try {
@@ -18,6 +19,7 @@ export function* fetchTeamSaga(): Generator {
       SagaReturnType<typeof getSubscriptionUsage>,
     ];
 
+    yield put(teamEntityActions.setAll(members));
     yield put(fetchTeamSuccess({ members, invitations, usage }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unable to load team data';

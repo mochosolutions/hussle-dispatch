@@ -42,6 +42,11 @@ const createStopBodySchema = Yup.object({
   isTarp: Yup.boolean().notRequired(),
   isTempControlled: Yup.boolean().notRequired(),
   notes: Yup.string().trim().max(2000, 'notes must be at most 2000 characters').notRequired(),
+  facilityOpenTime: optionalTrimmed,
+  facilityCloseTime: optionalTrimmed,
+  callByTime: optionalTrimmed,
+  trailerNumber: optionalTrimmed,
+  yardLocation: optionalTrimmed,
 });
 
 const updateStopBodySchema = Yup.object({
@@ -78,6 +83,11 @@ const updateStopBodySchema = Yup.object({
   isTarp: Yup.boolean().notRequired(),
   isTempControlled: Yup.boolean().notRequired(),
   notes: Yup.string().trim().max(2000, 'notes must be at most 2000 characters').notRequired(),
+  facilityOpenTime: optionalTrimmed,
+  facilityCloseTime: optionalTrimmed,
+  callByTime: optionalTrimmed,
+  trailerNumber: optionalTrimmed,
+  yardLocation: optionalTrimmed,
 }).test('has-any-field', 'At least one field must be provided', (value) => {
   if (value === undefined) {
     return false;

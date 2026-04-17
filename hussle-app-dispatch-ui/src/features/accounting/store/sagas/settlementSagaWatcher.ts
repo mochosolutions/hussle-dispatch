@@ -2,12 +2,10 @@ import { takeLatest } from 'redux-saga/effects';
 import { fetchSettlementsSaga } from './fetchSettlementsSaga';
 import { fetchSettlementDetailSaga } from './fetchSettlementDetailSaga';
 import { generateSettlementSaga } from './generateSettlementSaga';
-import {
-  approveSettlementSaga,
-  paySettlementSaga,
-  disputeSettlementSaga,
-  addAdjustmentSaga,
-} from './settlementActionSagas';
+import { approveSettlementSaga } from './approveSettlementSaga';
+import { paySettlementSaga } from './paySettlementSaga';
+import { disputeSettlementSaga } from './disputeSettlementSaga';
+import { addAdjustmentSaga } from './addAdjustmentSaga';
 import {
   settlementPageSlice,
   generateSettlementRequest,

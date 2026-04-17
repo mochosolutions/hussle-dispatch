@@ -1,6 +1,9 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createAction, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { DashboardKpis, WeeklyGrossItem, AttentionItem } from '../../types';
+
+// Action dispatched by DashboardPage on mount — triggers fetchDashboardSaga
+export const fetchDashboardRequest = createAction('dashboard/fetchDashboardRequest');
 
 // ---------------------------------------------------------------------------
 // State

@@ -314,3 +314,106 @@ export interface HelperTextProps {
 	variant?: 'caption' | 'body2';
 	color?: string;
 }
+
+/**
+ * Props for PhoneField component.
+ * Masked phone input: (###) ###-####
+ */
+export interface PhoneFieldProps {
+	name: string;
+	label: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
+	formik: FormikFieldProps;
+}
+
+/**
+ * Props for CurrencyField component.
+ * Currency input with $ prefix, thousand separators, 2 decimal places.
+ */
+export interface CurrencyFieldProps {
+	name: string;
+	label: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
+	formik: FormikFieldProps;
+}
+
+/**
+ * Props for NumericField component.
+ * Numeric input with thousand separators, configurable decimals and suffix.
+ */
+export interface NumericFieldProps {
+	name: string;
+	label: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
+	decimalScale?: number;
+	suffix?: string;
+	formik: FormikFieldProps;
+}
+
+/**
+ * Props for PercentField component.
+ * Percent input with % suffix, 0–100 range.
+ */
+export interface PercentFieldProps {
+	name: string;
+	label: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
+	formik: FormikFieldProps;
+}
+
+/**
+ * Props for StateField component.
+ * US state dropdown selector.
+ */
+export interface StateFieldProps {
+	name: string;
+	label: string;
+	required?: boolean;
+	placeholder?: string;
+	disabled?: boolean;
+	formik: FormikFieldProps;
+}
+
+/**
+ * Props for ZipCodeField component.
+ * Masked ZIP code input: ##### or #####-####
+ */
+export interface ZipCodeFieldProps {
+	name: string;
+	label: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
+	formik: FormikFieldProps;
+}
+
+/**
+ * Option for ContentSelectorField.
+ */
+export interface ContentSelectorOption {
+	value: string;
+	label: string;
+	icon?: React.ReactNode;
+}
+
+/**
+ * Props for ContentSelectorField component.
+ * Segmented toggle button group with optional icons.
+ */
+export interface ContentSelectorFieldProps {
+	name: string;
+	label: string;
+	options: ContentSelectorOption[];
+	required?: boolean;
+	disabled?: boolean;
+	exclusive?: boolean;
+	formik: FormikFieldProps;
+}

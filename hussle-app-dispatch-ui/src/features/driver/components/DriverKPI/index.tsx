@@ -1,6 +1,5 @@
-import { Box } from '@mui/material';
-import { KpiCell } from 'components/Typography';
-import getDriverDisplayName from 'utils/getDriverDisplayName';
+import { Box, Grid } from '@mui/material';
+import { KpiLabel, BodyStrong, BodyMuted } from 'components/Typography';
 import type { Driver } from 'features/carrier/types';
 
 interface DriverWithCarrierInfo extends Driver {
@@ -16,57 +15,57 @@ const formatLocation = (city: string | null, state: string | null): string => {
   if (city && state) return `${city}, ${state}`;
   if (city) return city;
   if (state) return state;
-  return '\u2014';
+  return '—';
 };
 
-export const DriverKPI: React.FC<DriverKPIProps> = ({ driver: d }) => {
-  console.log('DriverKPI render', { driver: d });
-  const kpis = [
-    { label: 'Location', value: formatLocation(d.currentCity, d.currentState) },
-    { label: 'Vehicle', value: '\u2014' },
-    { label: 'Hours Available', value: d.availableHours ? `${d.availableHours}h` : '\u2014' },
-    { label: 'Days Out', value: d.maxDaysOut !== null ? `${d.maxDaysOut}` : '\u2014' },
-    { label: 'Weekly Gross', value: '\u2014' },
-    { label: 'Last Delivered', value: '\u2014' },
-  ];
+export const DriverKPI: React.FC<DriverKPIProps> = ({ driver: d }) => (
+  <Grid container spacing={2}>
+    <Grid item sm={6} md={3}>
+      <KpiLabel>STATUS &amp; LOCATION</KpiLabel>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Status:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>{d.isAvailable ? 'Available' : 'Unavailable'}</BodyStrong>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Location:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>{formatLocation(d.currentCity, d.currentState)}</BodyStrong>
+      </Box>
+    </Grid>
 
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: 1,
-        bgcolor: 'grey.50',
-      }}
-    >
-      {kpis.map((kpi, i) => (
-        <Box
-          key={kpi.label}
-          sx={{
-            px: 2.5,
-            py: 1.5,
-            borderRight: i < 5 ? 1 : 0,
-            borderColor: 'divider',
-          }}
-        >
-          <KpiCell key={i} label={kpi.label} value={kpi.value} />
-        </Box>
-      ))}
-      {/*  <KpiCell label="Location" value={formatLocation(d.currentCity, d.currentState)} />
-      <KpiCell label="Vehicle" value={'\u2014'} />
-      <KpiCell
-        label="Hours Available"
-        value={d.availableHours ? `${d.availableHours}h` : '\u2014'}
-      />
-      <KpiCell label="Days Out" value={d.maxDaysOut !== null ? `${d.maxDaysOut}` : '\u2014'} />
-      <KpiCell label="Weekly Gross" value={'\u2014'} />
-      <KpiCell label="Last Delivered" value={'\u2014'} />
-     <KpiCell label="Total Loads" value={'\u2014'} />
-    <KpiCell label="On-Time Delivery" value={'\u2014'} />
-    <KpiCell label="Avg Rate/Mile" value={'\u2014'} />
-    <KpiCell label="Total Revenue" value={'\u2014'} /> */}
-    </Box>
-  );
-};
+    <Grid item sm={6} md={3}>
+      <KpiLabel>ASSIGNMENT</KpiLabel>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Carrier:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>{d.carrierName ?? '—'}</BodyStrong>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Vehicle:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>—</BodyStrong>
+      </Box>
+    </Grid>
+
+    <Grid item sm={6} md={3}>
+      <KpiLabel>AVAILABILITY</KpiLabel>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Hours Avail:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>{d.availableHours ? `${d.availableHours}h` : '—'}</BodyStrong>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Days Out:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>{d.maxDaysOut !== null ? `${d.maxDaysOut}` : '—'}</BodyStrong>
+      </Box>
+    </Grid>
+
+    <Grid item sm={6} md={3}>
+      <KpiLabel>PERFORMANCE</KpiLabel>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Weekly Gross:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>—</BodyStrong>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+        <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Last Delivered:</BodyMuted>
+        <BodyStrong sx={{ lineHeight: 1.3 }}>—</BodyStrong>
+      </Box>
+    </Grid>
+  </Grid>
+);

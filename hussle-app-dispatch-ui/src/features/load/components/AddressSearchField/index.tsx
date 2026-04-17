@@ -49,12 +49,27 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
         void formik.setFieldValue(`${prefix}.contactPhone`, selected.contactPhone ?? '');
         if (selected.appointmentRequired) {
           void formik.setFieldValue(`${prefix}.appointmentRequired`, true);
+          void formik.setFieldValue(`${prefix}.schedulingType`, 'APPOINTMENT');
+        } else if (selected.is24Hours) {
+          void formik.setFieldValue(`${prefix}.schedulingType`, 'OPEN');
         }
         if (selected.lumperRequired) {
           void formik.setFieldValue(`${prefix}.lumperRequired`, true);
         }
         if (selected.ppeRequired) {
           void formik.setFieldValue(`${prefix}.ppeRequired`, true);
+        }
+
+        // Store facility hours for date-based lookups and auto-fill open/close times
+        void formik.setFieldValue(`${prefix}.facilityHoursData`, selected.facilityHours);
+        if (selected.facilityHours && !selected.is24Hours) {
+          const stopDate = formik.values.stops[stopIndex]?.appointmentDate;
+          const targetDay = stopDate ? new Date(stopDate).getUTCDay() : 1;
+          const dayEntry = selected.facilityHours.find((h) => h.dayOfWeek === targetDay);
+          if (dayEntry && !dayEntry.isClosed) {
+            void formik.setFieldValue(`${prefix}.facilityOpenTime`, dayEntry.openTime);
+            void formik.setFieldValue(`${prefix}.facilityCloseTime`, dayEntry.closeTime);
+          }
         }
       } else {
         void formik.setFieldValue(`${prefix}.placeId`, '');

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Alert, Typography } from '@mui/material';
+import { Alert } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
+import { BodyMuted } from 'components/Typography';
 import { CarrierKPI } from '../../components/CarrierKPI';
 import { InviteCarrierButton } from '../../components/InviteCarrierButton';
 import { getCarrierStats } from 'utils/api/fleet/carrierApi';
@@ -15,15 +16,13 @@ import {
   carrierPageSelectors,
 } from '../../store/reducers/carrierNewPageSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
-import {
-  GeneralTab,
-  DriversTab,
-  VehiclesTab,
-  LoadHistoryTab,
-  NotesTab,
-  DocumentsTab,
-  OnboardingTab,
-} from './tabs';
+import { GeneralTab } from '../../components/CarrierDetailPage/GeneralTab';
+import { DriversTab } from '../../components/CarrierDetailPage/DriversTab';
+import { VehiclesTab } from '../../components/CarrierDetailPage/VehiclesTab';
+import { LoadHistoryTab } from '../../components/CarrierDetailPage/LoadHistoryTab';
+import { NotesTab } from '../../components/CarrierDetailPage/NotesTab';
+import { DocumentsTab } from '../../components/CarrierDetailPage/DocumentsTab';
+import { OnboardingTab } from '../../components/CarrierDetailPage/OnboardingTab';
 
 const CarrierDetailEditable: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -64,7 +63,7 @@ const CarrierDetailEditable: React.FC = () => {
 
   return (
     <PageWrapper isLoading={isLoading} isError={isError} errorContext="CarrierDetailPage">
-      <DataGuard data={carrier} emptyComponent={<Typography p={4}>Carrier not found.</Typography>}>
+      <DataGuard data={carrier} emptyComponent={<BodyMuted sx={{ p: 4 }}>Carrier not found.</BodyMuted>}>
         {(c) => (
           <DetailLayout
             id={c.name}

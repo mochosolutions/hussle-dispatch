@@ -31,6 +31,11 @@ export interface CreateStopInput {
   isTarp?: boolean;
   isTempControlled?: boolean;
   notes?: string;
+  facilityOpenTime?: string;
+  facilityCloseTime?: string;
+  callByTime?: string;
+  trailerNumber?: string;
+  yardLocation?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,6 +71,11 @@ export interface UpdateStopInput {
   isTarp?: boolean;
   isTempControlled?: boolean;
   notes?: string;
+  facilityOpenTime?: string;
+  facilityCloseTime?: string;
+  callByTime?: string;
+  trailerNumber?: string;
+  yardLocation?: string;
 }
 
 // ---------------------------------------------------------------------------

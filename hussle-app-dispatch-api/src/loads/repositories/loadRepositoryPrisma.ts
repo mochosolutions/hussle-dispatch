@@ -20,9 +20,11 @@ const LOAD_DETAIL_INCLUDE = {
   customer: true,
   statusHistory: {
     orderBy: { createdAt: 'desc' as const },
+    include: { changedBy: { select: { id: true, firstName: true, lastName: true } } },
   },
   checkCalls: {
     orderBy: { createdAt: 'desc' as const },
+    include: { calledBy: { select: { id: true, firstName: true, lastName: true } } },
   },
   accessorialCharges: {
     orderBy: { createdAt: 'asc' as const },
@@ -149,6 +151,11 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
             isTarp: stop.isTarp ?? false,
             isTempControlled: stop.isTempControlled ?? false,
             notes: stop.notes,
+            facilityOpenTime: stop.facilityOpenTime,
+            facilityCloseTime: stop.facilityCloseTime,
+            callByTime: stop.callByTime,
+            trailerNumber: stop.trailerNumber,
+            yardLocation: stop.yardLocation,
           })),
         },
         ...(accessorialCharges !== undefined && accessorialCharges.length > 0
@@ -251,6 +258,11 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
                   isTarp: stop.isTarp ?? false,
                   isTempControlled: stop.isTempControlled ?? false,
                   notes: stop.notes,
+                  facilityOpenTime: stop.facilityOpenTime,
+                  facilityCloseTime: stop.facilityCloseTime,
+                  callByTime: stop.callByTime,
+                  trailerNumber: stop.trailerNumber,
+                  yardLocation: stop.yardLocation,
                 })),
               },
             }

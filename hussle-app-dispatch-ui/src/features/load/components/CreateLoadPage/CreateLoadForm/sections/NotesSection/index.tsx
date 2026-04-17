@@ -1,7 +1,7 @@
 import { Grid } from '@mui/material';
 import { TextField } from '@mocho/ui/components';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
 import type { FormikProps } from 'formik';
 
 interface NotesSectionProps {

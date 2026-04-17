@@ -1,7 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import { enqueueSnackbar } from 'notistack';
 import { transitionStatus } from 'utils/api/loads/loadApi';
-import type { LoadListItem } from '../../types';
 import {
   transitionLoadStatusRequest,
   transitionLoadStatusSuccess,
@@ -9,6 +8,7 @@ import {
   showTransitionWarnings,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
+import { mapDetailToListItem } from './detailToListItemMapper';
 
 export function* transitionLoadStatusSaga(
   action: ReturnType<typeof transitionLoadStatusRequest>,
@@ -39,34 +39,7 @@ export function* transitionLoadStatusSaga(
     // Success — update entity in store
     if (response.load) {
       const { load } = response;
-      const origin = (load.stops ?? []).find((s) => s.type === 'PICKUP');
-      const deliveries = (load.stops ?? []).filter((s) => s.type === 'DELIVERY');
-      const lastDelivery = deliveries[deliveries.length - 1];
-
-      const changes: Partial<LoadListItem> = {
-        status: load.status,
-        equipmentType: load.equipmentType,
-        commodity: load.commodity,
-        customerRate: load.customerRate,
-        carrierPayout: load.carrierPayout,
-        totalMiles: load.totalMiles,
-        ratePerMile: load.ratePerMile,
-        ratePerTotalMile: load.ratePerTotalMile ?? null,
-        carrierId: load.carrierId,
-        carrierName: load.carrier?.name ?? null,
-        driverId: load.driverId,
-        driverName: load.driver
-          ? `${load.driver.firstName} ${load.driver.lastName}`
-          : null,
-        originCity: origin?.city ?? null,
-        originState: origin?.state ?? null,
-        destinationCity: lastDelivery?.city ?? null,
-        destinationState: lastDelivery?.state ?? null,
-        accessorialChargeCount: load.accessorialCharges.length,
-        updatedAt: load.updatedAt,
-      };
-
-      yield put(loadActions.updateOne({ id: loadId, changes }));
+      yield put(loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(load) }));
       yield put(loadActions.upsertOne(load));
     }
 

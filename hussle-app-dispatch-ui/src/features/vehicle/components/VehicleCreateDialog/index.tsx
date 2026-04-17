@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { TextField, SelectField } from '@mocho/ui/components';
 import { useDispatch } from 'store';
 import type { VehicleType, VehicleOwnership } from 'features/carrier/types';
@@ -70,41 +70,41 @@ export const VehicleCreateDrawer: React.FC<VehicleCreateDrawerProps> = ({
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <CarrierAutocomplete formik={formik} />
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <TextField name="unitNumber" label="Unit Number" formik={formik} required />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <SelectField
                 name="type"
                 label="Vehicle Type"
                 data={vehicleTypeOptions}
                 formik={formik}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
           <SelectField
             name="ownership"
             label="Ownership"
             data={ownershipOptions}
             formik={formik}
           />
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <TextField name="make" label="Make" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <TextField name="model" label="Model" formik={formik} />
-            </Grid>
-          </Grid>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <TextField name="year" label="Year" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <TextField name="vin" label="VIN" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Stack>
       )}
     </FormDrawer>

@@ -8,6 +8,8 @@ import {
   Paper,
   TextField as MuiTextField,
   Typography,
+  InputLabel,
+  Stack,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import WarehouseOutlined from '@mui/icons-material/WarehouseOutlined';
@@ -199,9 +201,7 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
         return;
       }
 
-      const display = [selected.address, selected.city, selected.state]
-        .filter(Boolean)
-        .join(', ');
+      const display = [selected.address, selected.city, selected.state].filter(Boolean).join(', ');
       justSelectedRef.current = true;
       setInputValue(display || selected.name);
       setResults([]);
@@ -262,15 +262,15 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
   );
 
   return (
-    <Box>
+    <Stack spacing={1}>
       {label ? (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontWeight: 600, textTransform: 'uppercase', mb: 0.5, display: 'block' }}
+        <InputLabel
+        // variant="caption"
+        // color="text.secondary"
+        // sx={{ fontWeight: 600, textTransform: 'uppercase', mb: 0.5, display: 'block' }}
         >
           {label}
-        </Typography>
+        </InputLabel>
       ) : null}
 
       <Autocomplete<AddressOption, false, false, false>
@@ -287,7 +287,9 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
         inputValue={inputValue}
         loading={loading}
         loadingText={
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 2 }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 2 }}
+          >
             <CircularProgress size={20} />
             <Typography variant="body2" color="text.secondary">
               Searching...
@@ -410,7 +412,7 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
           />
         )}
       />
-    </Box>
+    </Stack>
   );
 };
 

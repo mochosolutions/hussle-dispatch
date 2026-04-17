@@ -4,18 +4,12 @@ import {
   Box,
   Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
@@ -23,17 +17,15 @@ import { format } from 'date-fns';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
 import SectionCard from 'components/SectionCard';
-import { KpiCell, DetailRow, SectionLabel, LinkText, Body, BodyMuted } from 'components/Typography';
+import { KpiCell, DetailRow, Body, BodyMuted } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 import {
   fetchInvoiceDetailsRequest,
-  deleteInvoiceRequest,
   approveInvoiceRequest,
-  sendInvoiceRequest,
   voidInvoiceRequest,
   downloadPacketRequest,
   previewPdfRequest,
-  markPaidRequest,
 } from '../store/reducers';
 import {
   selectInvoiceById,
@@ -69,6 +61,7 @@ const InvoiceDetailPage = () => {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openModal } = useModalActions();
 
   const rawInvoice = useSelector(selectInvoiceById(invoiceId ?? ''));
   const isDetailLoading = useSelector(selectInvoiceDetailLoading(invoiceId ?? ''));
@@ -95,11 +88,6 @@ const InvoiceDetailPage = () => {
   const invoice = detailReady && hasDetailShape ? (rawInvoice as InvoiceDetail) : undefined;
   const isLoading = !detailReady;
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [sendDialogOpen, setSendDialogOpen] = useState(false);
-  const [sendEmail, setSendEmail] = useState('');
-  const [markPaidDialogOpen, setMarkPaidDialogOpen] = useState(false);
-
   const handleBack = useCallback(() => {
     navigate('/invoices');
   }, [navigate]);
@@ -110,48 +98,11 @@ const InvoiceDetailPage = () => {
     }
   }, [dispatch, invoiceId]);
 
-  const handleDelete = useCallback(() => {
-    if (invoiceId) {
-      dispatch(deleteInvoiceRequest({ id: invoiceId }));
-    }
-    setDeleteDialogOpen(false);
-  }, [dispatch, invoiceId]);
-
   const handleVoid = useCallback(() => {
     if (invoiceId) {
       dispatch(voidInvoiceRequest({ id: invoiceId }));
     }
   }, [dispatch, invoiceId]);
-
-  const handleSendInvoice = useCallback(() => {
-    if (!invoiceId || !sendEmail) {
-      return;
-    }
-    dispatch(sendInvoiceRequest({ id: invoiceId, recipientEmail: sendEmail }));
-    setSendDialogOpen(false);
-  }, [dispatch, invoiceId, sendEmail]);
-
-  const handleOpenSend = useCallback(() => {
-    setSendEmail(invoice?.sentToEmail ?? invoice?.sentTo ?? '');
-    setSendDialogOpen(true);
-  }, [invoice]);
-
-  const handleMarkPaid = useCallback(() => {
-    if (!invoiceId || !invoice) {
-      return;
-    }
-    dispatch(
-      markPaidRequest({
-        id: invoiceId,
-        payment: {
-          amount: Number(invoice.totalAmount) - Number(invoice.paidAmount ?? '0'),
-          method: 'ACH',
-          paidAt: new Date().toISOString(),
-        },
-      }),
-    );
-    setMarkPaidDialogOpen(false);
-  }, [dispatch, invoiceId, invoice]);
 
   const handlePreviewPdf = useCallback(() => {
     if (invoiceId) {
@@ -164,6 +115,29 @@ const InvoiceDetailPage = () => {
       dispatch(downloadPacketRequest({ id: invoiceId }));
     }
   }, [dispatch, invoiceId]);
+
+  const handleOpenDelete = useCallback(() => {
+    if (invoiceId) {
+      openModal('confirmDeleteInvoice', { invoiceId });
+    }
+  }, [invoiceId, openModal]);
+
+  const handleOpenSend = useCallback(() => {
+    if (invoiceId) {
+      openModal('sendInvoice', { invoiceId });
+    }
+  }, [invoiceId, openModal]);
+
+  const handleOpenMarkPaid = useCallback(
+    (inv: InvoiceDetail) => {
+      if (invoiceId) {
+        const balanceDue =
+          Number(inv.totalAmount ?? '0') - Number(inv.paidAmount ?? '0');
+        openModal('markInvoicePaid', { invoiceId, balanceDue });
+      }
+    },
+    [invoiceId, openModal],
+  );
 
   const isOverdue = useMemo(() => {
     if (!invoice) {
@@ -219,7 +193,7 @@ const InvoiceDetailPage = () => {
             key="markPaid"
             variant="contained"
             size="small"
-            onClick={() => setMarkPaidDialogOpen(true)}
+            onClick={() => handleOpenMarkPaid(inv)}
           >
             Mark Paid
           </Button>,
@@ -228,7 +202,7 @@ const InvoiceDetailPage = () => {
 
       return <>{buttons}</>;
     },
-    [handlePreviewPdf, handleDownloadPacket, handleApprove, handleVoid, handleOpenSend],
+    [handlePreviewPdf, handleDownloadPacket, handleApprove, handleVoid, handleOpenSend, handleOpenMarkPaid],
   );
 
   // ---------------------------------------------------------------------------
@@ -326,329 +300,267 @@ const InvoiceDetailPage = () => {
     <PageWrapper isLoading={isLoading} errorContext="InvoiceDetailPage">
       <DataGuard
         data={invoice}
-        emptyComponent={<Typography p={4}>Invoice not found.</Typography>}
+        emptyComponent={<BodyMuted sx={{ p: 4 }}>Invoice not found.</BodyMuted>}
       >
         {(inv) => (
-          <>
-            <DetailLayout
-              id={inv.invoiceNumber}
-              status={inv.status}
-              breadcrumb={{ label: 'Invoices', href: '/invoices' }}
-              onBack={handleBack}
-              actions={renderActions(inv)}
-              summary={renderSummary(inv)}
-              tabs={INVOICE_DETAIL_TABS}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            >
-              {/* Alerts */}
-              {inv.missingSignedBol && (
-                <Alert severity="warning" sx={{ mb: 3 }}>
-                  Signed Bill of Lading (BOL) was missing at time of invoice generation.
-                </Alert>
-              )}
-              {isOverdue && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  This invoice is overdue. Due date was{' '}
-                  {format(new Date(inv.dueDate), 'MMM dd, yyyy')}.
-                </Alert>
-              )}
+          <DetailLayout
+            id={inv.invoiceNumber}
+            status={inv.status}
+            breadcrumb={{ label: 'Invoices', href: '/invoices' }}
+            onBack={handleBack}
+            actions={renderActions(inv)}
+            summary={renderSummary(inv)}
+            tabs={INVOICE_DETAIL_TABS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          >
+            {/* Alerts */}
+            {inv.missingSignedBol && (
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                Signed Bill of Lading (BOL) was missing at time of invoice generation.
+              </Alert>
+            )}
+            {isOverdue && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                This invoice is overdue. Due date was{' '}
+                {format(new Date(inv.dueDate), 'MMM dd, yyyy')}.
+              </Alert>
+            )}
 
-              {/* Overview tab */}
-              {activeTab === 'overview' && (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', md: '1fr 320px' },
-                    gap: 3,
-                  }}
-                >
-                  {/* Left column */}
-                  <Stack spacing={3}>
-                    {/* Invoice Information */}
-                    <SectionCard title="Invoice Information">
-                      <DetailRow label="Invoice Number" value={inv.invoiceNumber} />
-                      <DetailRow label="Type" value={inv.type} />
-                      <DetailRow
-                        label="Created"
-                        value={format(new Date(inv.createdAt), 'MMM dd, yyyy')}
-                      />
-                      <DetailRow
-                        label="Due Date"
-                        value={format(new Date(inv.dueDate), 'MMM dd, yyyy')}
-                      />
-                      <DetailRow label="Payment Terms" value={inv.paymentTerms} />
-                      {inv.billingMethod && (
-                        <DetailRow label="Billing Method" value={inv.billingMethod} />
-                      )}
-                      {inv.deliveryMethod && (
-                        <DetailRow label="Delivery Method" value={inv.deliveryMethod} />
-                      )}
-                      {inv.sentToEmail && (
-                        <DetailRow label="Sent To" value={inv.sentToEmail} noBorder />
-                      )}
-                    </SectionCard>
+            {/* Overview tab */}
+            {activeTab === 'overview' && (
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', md: '1fr 320px' },
+                  gap: 3,
+                }}
+              >
+                {/* Left column */}
+                <Stack spacing={3}>
+                  {/* Invoice Information */}
+                  <SectionCard title="Invoice Information">
+                    <DetailRow label="Invoice Number" value={inv.invoiceNumber} />
+                    <DetailRow label="Type" value={inv.type} />
+                    <DetailRow
+                      label="Created"
+                      value={format(new Date(inv.createdAt), 'MMM dd, yyyy')}
+                    />
+                    <DetailRow
+                      label="Due Date"
+                      value={format(new Date(inv.dueDate), 'MMM dd, yyyy')}
+                    />
+                    <DetailRow label="Payment Terms" value={inv.paymentTerms} />
+                    {inv.billingMethod && (
+                      <DetailRow label="Billing Method" value={inv.billingMethod} />
+                    )}
+                    {inv.deliveryMethod && (
+                      <DetailRow label="Delivery Method" value={inv.deliveryMethod} />
+                    )}
+                    {inv.sentToEmail && (
+                      <DetailRow label="Sent To" value={inv.sentToEmail} noBorder />
+                    )}
+                  </SectionCard>
 
-                    {/* Load Reference */}
-                    <SectionCard title="Load Reference">
-                      {inv.load ? (
-                        (() => {
-                          const stops = inv.load.stops ?? [];
-                          const pickupStop = stops.find((s) => s.type === 'PICKUP');
-                          const deliveryStop = [...stops].reverse().find((s) => s.type === 'DELIVERY');
-                          const originLabel = pickupStop?.city && pickupStop?.state
+                  {/* Load Reference */}
+                  <SectionCard title="Load Reference">
+                    {inv.load ? (
+                      (() => {
+                        const stops = inv.load.stops ?? [];
+                        const pickupStop = stops.find((s) => s.type === 'PICKUP');
+                        const deliveryStop = [...stops].reverse().find((s) => s.type === 'DELIVERY');
+                        const originLabel =
+                          pickupStop?.city && pickupStop?.state
                             ? `${pickupStop.city}, ${pickupStop.state}`
                             : null;
-                          const destLabel = deliveryStop?.city && deliveryStop?.state
+                        const destLabel =
+                          deliveryStop?.city && deliveryStop?.state
                             ? `${deliveryStop.city}, ${deliveryStop.state}`
                             : null;
-                          const routeDisplay = originLabel && destLabel
+                        const routeDisplay =
+                          originLabel && destLabel
                             ? `${originLabel} \u2192 ${destLabel}`
                             : originLabel ?? destLabel ?? '\u2014';
-                          const pickupDate = pickupStop?.appointmentDate
-                            ? format(new Date(pickupStop.appointmentDate), 'MMM dd, yyyy')
-                            : '\u2014';
-                          const deliveryDate = deliveryStop?.appointmentDate
-                            ? format(new Date(deliveryStop.appointmentDate), 'MMM dd, yyyy')
-                            : '\u2014';
+                        const pickupDate = pickupStop?.appointmentDate
+                          ? format(new Date(pickupStop.appointmentDate), 'MMM dd, yyyy')
+                          : '\u2014';
+                        const deliveryDate = deliveryStop?.appointmentDate
+                          ? format(new Date(deliveryStop.appointmentDate), 'MMM dd, yyyy')
+                          : '\u2014';
 
-                          return (
-                            <>
-                              <DetailRow
-                                label="Load Number"
-                                value={
-                                  <Typography
-                                    component={RouterLink}
-                                    to={`/loads/${inv.load.id}`}
-                                    variant="body1"
-                                    sx={{
-                                      fontWeight: 600,
-                                      color: 'primary.main',
-                                      textDecoration: 'none',
-                                      '&:hover': { textDecoration: 'underline' },
-                                    }}
-                                  >
-                                    {inv.load.loadNumber}
-                                  </Typography>
-                                }
-                              />
-                              <DetailRow label="Load Status" value={inv.load.status} />
-                              <DetailRow label="Route" value={routeDisplay} />
-                              <DetailRow label="Pickup Date" value={pickupDate} />
-                              <DetailRow label="Delivery Date" value={deliveryDate} noBorder />
-                            </>
-                          );
-                        })()
-                      ) : (
-                        <BodyMuted sx={{ p: 2 }}>No load associated.</BodyMuted>
-                      )}
-                    </SectionCard>
-
-                    {/* Carrier */}
-                    <SectionCard title="Carrier">
-                      {inv.carrier ? (
-                        <>
-                          <DetailRow label="Name" value={inv.carrier.name} />
-                          <DetailRow
-                            label="MC #"
-                            value={inv.carrier.mcNumber ?? '\u2014'}
-                          />
-                          <DetailRow
-                            label="Phone"
-                            value={inv.carrier.phone ?? '\u2014'}
-                            noBorder
-                          />
-                        </>
-                      ) : (
-                        <BodyMuted sx={{ p: 2 }}>No carrier associated.</BodyMuted>
-                      )}
-                    </SectionCard>
-
-                    {/* Accessorials */}
-                    {(inv.accessorialItems?.length ?? 0) > 0 && (
-                      <SectionCard title="Accessorials">
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Description</TableCell>
-                              <TableCell align="right">Amount</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {(inv.accessorialItems ?? []).map((acc) => (
-                              <TableRow key={acc.id}>
-                                <TableCell>{acc.description ?? acc.id}</TableCell>
-                                <TableCell align="right">
-                                  {currencyFormatter.format(Number(acc.amount))}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </SectionCard>
+                        return (
+                          <>
+                            <DetailRow
+                              label="Load Number"
+                              value={
+                                <Typography
+                                  component={RouterLink}
+                                  to={`/loads/${inv.load.id}`}
+                                  variant="body1"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: 'primary.main',
+                                    textDecoration: 'none',
+                                    '&:hover': { textDecoration: 'underline' },
+                                  }}
+                                >
+                                  {inv.load.loadNumber}
+                                </Typography>
+                              }
+                            />
+                            <DetailRow label="Load Status" value={inv.load.status} />
+                            <DetailRow label="Route" value={routeDisplay} />
+                            <DetailRow label="Pickup Date" value={pickupDate} />
+                            <DetailRow label="Delivery Date" value={deliveryDate} noBorder />
+                          </>
+                        );
+                      })()
+                    ) : (
+                      <BodyMuted sx={{ p: 2 }}>No load associated.</BodyMuted>
                     )}
-                  </Stack>
+                  </SectionCard>
 
-                  {/* Right column */}
-                  <Stack spacing={3}>
-                    {/* Totals */}
-                    <SectionCard title="Totals">
-                      <DetailRow
-                        label="Subtotal"
-                        value={currencyFormatter.format(subtotalNum)}
-                      />
-                      <DetailRow
-                        label="Accessorials"
-                        value={currencyFormatter.format(accessorialsNum)}
-                      />
-                      <DetailRow
-                        label="Grand Total"
-                        value={currencyFormatter.format(totalAmountNum)}
-                        valueColor="success.main"
-                        sx={{ bgcolor: 'grey.50', fontWeight: 700 }}
-                        noBorder={paidAmount === 0}
-                      />
-                      {paidAmount > 0 && (
-                        <>
-                          <DetailRow
-                            label="Paid"
-                            value={currencyFormatter.format(paidAmount)}
-                          />
-                          <DetailRow
-                            label="Balance Due"
-                            value={currencyFormatter.format(totalAmountNum - paidAmount)}
-                            noBorder
-                          />
-                        </>
-                      )}
+                  {/* Carrier */}
+                  <SectionCard title="Carrier">
+                    {inv.carrier ? (
+                      <>
+                        <DetailRow label="Name" value={inv.carrier.name} />
+                        <DetailRow
+                          label="MC #"
+                          value={inv.carrier.mcNumber ?? '\u2014'}
+                        />
+                        <DetailRow
+                          label="Phone"
+                          value={inv.carrier.phone ?? '\u2014'}
+                          noBorder
+                        />
+                      </>
+                    ) : (
+                      <BodyMuted sx={{ p: 2 }}>No carrier associated.</BodyMuted>
+                    )}
+                  </SectionCard>
+
+                  {/* Accessorials */}
+                  {(inv.accessorialItems?.length ?? 0) > 0 && (
+                    <SectionCard title="Accessorials">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Description</TableCell>
+                            <TableCell align="right">Amount</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(inv.accessorialItems ?? []).map((acc) => (
+                            <TableRow key={acc.id}>
+                              <TableCell>{acc.description ?? acc.id}</TableCell>
+                              <TableCell align="right">
+                                {currencyFormatter.format(Number(acc.amount))}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </SectionCard>
-
-                    {/* Document Checklist */}
-                    <SectionCard title="Document Checklist">
-                      <Stack spacing={1.5} sx={{ p: 2 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Body>Rate Confirmation</Body>
-                          <Chip label="Present" size="small" color="success" variant="outlined" />
-                        </Stack>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Body>Bill of Lading (BOL)</Body>
-                          {inv.missingSignedBol ? (
-                            <Chip label="Missing" size="small" color="error" variant="outlined" />
-                          ) : (
-                            <Chip label="Present" size="small" color="success" variant="outlined" />
-                          )}
-                        </Stack>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Body>Proof of Delivery (POD)</Body>
-                          <Chip label="\u2014" size="small" variant="outlined" />
-                        </Stack>
-                      </Stack>
-                    </SectionCard>
-
-                    {/* Notes */}
-                    <SectionCard title="Notes">
-                      {inv.notes ? (
-                        <Body sx={{ p: 2 }}>{inv.notes}</Body>
-                      ) : (
-                        <BodyMuted sx={{ p: 2 }}>No notes.</BodyMuted>
-                      )}
-                    </SectionCard>
-                  </Stack>
-                </Box>
-              )}
-
-              {/* Documents tab */}
-              {activeTab === 'documents' && (
-                <SectionCard title="Documents">
-                  {inv.pdfUrl ? (
-                    <Stack spacing={1} sx={{ p: 2 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        href={inv.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View PDF
-                      </Button>
-                    </Stack>
-                  ) : (
-                    <BodyMuted sx={{ p: 2 }}>No documents available.</BodyMuted>
                   )}
-                </SectionCard>
-              )}
+                </Stack>
 
-              {/* Activity tab */}
-              {activeTab === 'activity' && (
-                <SectionCard title="Activity">
-                  <BodyMuted sx={{ p: 2 }}>No activity recorded yet.</BodyMuted>
-                </SectionCard>
-              )}
-            </DetailLayout>
+                {/* Right column */}
+                <Stack spacing={3}>
+                  {/* Totals */}
+                  <SectionCard title="Totals">
+                    <DetailRow
+                      label="Subtotal"
+                      value={currencyFormatter.format(subtotalNum)}
+                    />
+                    <DetailRow
+                      label="Accessorials"
+                      value={currencyFormatter.format(accessorialsNum)}
+                    />
+                    <DetailRow
+                      label="Grand Total"
+                      value={currencyFormatter.format(totalAmountNum)}
+                      valueColor="success.main"
+                      sx={{ bgcolor: 'grey.50', fontWeight: 700 }}
+                      noBorder={paidAmount === 0}
+                    />
+                    {paidAmount > 0 && (
+                      <>
+                        <DetailRow
+                          label="Paid"
+                          value={currencyFormatter.format(paidAmount)}
+                        />
+                        <DetailRow
+                          label="Balance Due"
+                          value={currencyFormatter.format(totalAmountNum - paidAmount)}
+                          noBorder
+                        />
+                      </>
+                    )}
+                  </SectionCard>
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-              <DialogTitle>Delete Invoice</DialogTitle>
-              <DialogContent>
-                <DialogContentText>
-                  Are you sure you want to delete invoice {inv.invoiceNumber}? This action cannot
-                  be undone.
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleDelete} color="error" variant="contained">
-                  Delete
-                </Button>
-              </DialogActions>
-            </Dialog>
+                  {/* Document Checklist */}
+                  <SectionCard title="Document Checklist">
+                    <Stack spacing={1.5} sx={{ p: 2 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Body>Rate Confirmation</Body>
+                        <Chip label="Present" size="small" color="success" variant="outlined" />
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Body>Bill of Lading (BOL)</Body>
+                        {inv.missingSignedBol ? (
+                          <Chip label="Missing" size="small" color="error" variant="outlined" />
+                        ) : (
+                          <Chip label="Present" size="small" color="success" variant="outlined" />
+                        )}
+                      </Stack>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Body>Proof of Delivery (POD)</Body>
+                        <Chip label="\u2014" size="small" variant="outlined" />
+                      </Stack>
+                    </Stack>
+                  </SectionCard>
 
-            {/* Send Invoice Dialog */}
-            <Dialog open={sendDialogOpen} onClose={() => setSendDialogOpen(false)}>
-              <DialogTitle>Send Invoice</DialogTitle>
-              <DialogContent>
-                <DialogContentText sx={{ mb: 2 }}>
-                  This will generate a PDF with all load documents and send it to the recipient.
-                </DialogContentText>
-                <TextField
-                  autoFocus
-                  fullWidth
-                  label="Recipient Email"
-                  type="email"
-                  value={sendEmail}
-                  onChange={(e) => setSendEmail(e.target.value)}
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => setSendDialogOpen(false)}>Cancel</Button>
-                <Button
-                  onClick={handleSendInvoice}
-                  variant="contained"
-                  disabled={!sendEmail}
-                >
-                  Send
-                </Button>
-              </DialogActions>
-            </Dialog>
+                  {/* Notes */}
+                  <SectionCard title="Notes">
+                    {inv.notes ? (
+                      <Body sx={{ p: 2 }}>{inv.notes}</Body>
+                    ) : (
+                      <BodyMuted sx={{ p: 2 }}>No notes.</BodyMuted>
+                    )}
+                  </SectionCard>
+                </Stack>
+              </Box>
+            )}
 
-            {/* Mark Paid Dialog */}
-            <Dialog open={markPaidDialogOpen} onClose={() => setMarkPaidDialogOpen(false)}>
-              <DialogTitle>Mark Invoice as Paid</DialogTitle>
-              <DialogContent>
-                <DialogContentText>
-                  This will record full payment of{' '}
-                  {currencyFormatter.format(totalAmountNum - paidAmount)} for invoice{' '}
-                  {inv.invoiceNumber}. Are you sure?
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => setMarkPaidDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleMarkPaid} variant="contained" color="success">
-                  Confirm Payment
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </>
+            {/* Documents tab */}
+            {activeTab === 'documents' && (
+              <SectionCard title="Documents">
+                {inv.pdfUrl ? (
+                  <Stack spacing={1} sx={{ p: 2 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      href={inv.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View PDF
+                    </Button>
+                  </Stack>
+                ) : (
+                  <BodyMuted sx={{ p: 2 }}>No documents available.</BodyMuted>
+                )}
+              </SectionCard>
+            )}
+
+            {/* Activity tab */}
+            {activeTab === 'activity' && (
+              <SectionCard title="Activity">
+                <BodyMuted sx={{ p: 2 }}>No activity recorded yet.</BodyMuted>
+              </SectionCard>
+            )}
+          </DetailLayout>
         )}
       </DataGuard>
     </PageWrapper>

@@ -796,6 +796,11 @@ model Stop {
   isTarp            Boolean        @default(false)
   isTempControlled  Boolean        @default(false)
   notes             String?
+  facilityOpenTime  String?
+  facilityCloseTime String?
+  callByTime        String?
+  trailerNumber     String?
+  yardLocation      String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   load                Load                @relation(fields: [loadId], references: [id], onDelete: Cascade)

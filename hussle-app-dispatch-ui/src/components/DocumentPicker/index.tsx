@@ -84,10 +84,10 @@ const formatFileSize = (bytes: number): string => {
 // ---------------------------------------------------------------------------
 
 export const DocumentPicker: React.FC<DocumentPickerProps> = ({
-  documents,
+  documents = [],
   onAdd,
   onRemove,
-  docTypes,
+  docTypes = [],
   maxFileSize = DEFAULT_MAX_FILE_SIZE,
   acceptedFormats = DEFAULT_ACCEPTED_FORMATS,
   addLabel = 'Add document',

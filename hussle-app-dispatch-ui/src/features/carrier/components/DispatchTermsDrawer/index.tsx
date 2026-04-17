@@ -1,7 +1,7 @@
 import React from 'react';
 import { Stack, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
-import { TextField, CheckboxField } from '../../../../mocho/components';
+import { CheckboxField, PercentField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { dispatchTermsSchema } from '../../validators/fleetSchema';
 import { selectCarrierById, selectUserRole } from '../../store/selectors/carrierSelectors';
@@ -43,10 +43,9 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
     >
       {(formikProps) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <TextField
+          <PercentField
             name="companyMarginPercent"
-            label="Company Margin %"
-            type="number"
+            label="Company Margin"
             formik={formikProps}
           />
 

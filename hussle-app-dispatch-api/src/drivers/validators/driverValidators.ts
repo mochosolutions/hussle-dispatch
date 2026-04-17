@@ -28,7 +28,11 @@ const createBodySchema = Yup.object({
   licenseType: Yup.string().oneOf(['CLASS_D', 'CLASS_M', 'CDL_A', 'CDL_B', 'CDL_C']).notRequired(),
   licenseNumber: optionalTrimmed,
   licenseState: stateCodeValidator.notRequired(),
-  licenseExpiry: Yup.date().notRequired(),
+  licenseExpiry: Yup.date()
+    .transform((value, originalValue) =>
+      originalValue === '' || originalValue === null ? undefined : value
+    )
+    .notRequired(),
   endorsements: Yup.array().of(Yup.string().oneOf(['H', 'N', 'X', 'T', 'P', 'S'])).notRequired(),
   availableHours: Yup.number().min(0).notRequired(),
   currentCity: optionalTrimmed,

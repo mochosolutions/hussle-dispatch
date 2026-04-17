@@ -17,8 +17,10 @@ export const selectInvoiceById = (id: string) => (state: RootState) =>
 // Page loading selectors
 // ---------------------------------------------------------------------------
 
-export const selectInvoiceListLoading = (state: RootState) =>
-  state.pages.invoices.loading['getAll'] === LoadingState.Pending;
+export const selectInvoiceListLoading = (state: RootState) => {
+  const status = state.pages.invoices.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectInvoiceDetailLoading = (id: string) => (state: RootState) =>
   state.pages.invoices.loading[`getById:${id}`] === LoadingState.Pending;

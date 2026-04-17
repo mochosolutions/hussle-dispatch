@@ -1,10 +1,15 @@
 import type React from 'react';
-import { Grid, Typography, Divider, Stack } from '@mui/material';
+import { Box, Typography, Divider, Stack } from '@mui/material';
 import {
   CheckboxField,
   DateField,
+  EmailField,
+  PercentField,
+  PhoneField,
   SelectField,
+  StateField,
   TextField,
+  ZipCodeField,
 } from '@mocho/ui/components';
 import type { Carrier } from '../../types';
 import { carrierEditSchema } from '../../validators/carrierSchema';
@@ -80,101 +85,101 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
           <Typography variant="subtitle2" sx={sectionLabelSx}>
             Basic Info
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 2 }}>
               <TextField name="name" label="Name" formik={formik} required />
-            </Grid>
-            <Grid item xs={12} md={4}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <SelectField name="type" label="Type" data={TYPE_OPTIONS} formik={formik} />
-            </Grid>
-          </Grid>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <TextField name="mcNumber" label="MC Number" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <TextField name="dotNumber" label="DOT Number" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <Divider />
 
           <Typography variant="subtitle2" sx={sectionLabelSx}>
             Contact
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="phone" label="Phone" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField name="email" label="Email" formik={formik} />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <PhoneField name="phone" label="Phone" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <EmailField name="email" label="Email" formik={formik} />
+            </Box>
+          </Box>
           <TextField name="address" label="Address" formik={formik} />
-          <Grid container spacing={2}>
-            <Grid item xs={5}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 5 }}>
               <TextField name="city" label="City" formik={formik} />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField name="state" label="State" formik={formik} />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField name="zip" label="ZIP" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+            <Box sx={{ flex: 4 }}>
+              <StateField name="state" label="State" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 3 }}>
+              <ZipCodeField name="zip" label="ZIP" formik={formik} />
+            </Box>
+          </Box>
 
           <Divider />
 
           <Typography variant="subtitle2" sx={sectionLabelSx}>
             Financial
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={4}>
-              <TextField name="companyMarginPercent" label="Company Margin %" type="number" formik={formik} />
-            </Grid>
-            <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <PercentField name="companyMarginPercent" label="Company Margin %" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
               <CheckboxField
                 name="feeIncludesAccessorials"
                 label="Fee Includes Accessorials"
                 formik={formik}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <Divider />
 
           <Typography variant="subtitle2" sx={sectionLabelSx}>
             Onboarding
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <CheckboxField
                 name="dispatchAgreementOnFile"
                 label="Dispatch Agreement on File"
                 formik={formik}
               />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <CheckboxField
                 name="insuranceCertOnFile"
                 label="Insurance Certificate on File"
                 formik={formik}
               />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
               <CheckboxField name="w9OnFile" label="W-9 on File" formik={formik} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <CheckboxField
                 name="carrierPacketOnFile"
                 label="Carrier Packet on File"
                 formik={formik}
               />
-            </Grid>
-            <Grid item xs={6}>
-              <DateField name="insuranceExpiry" label="Insurance Expiry" formik={formik} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
+          <DateField name="insuranceExpiry" label="Insurance Expiry" formik={formik} />
 
           <Divider />
 

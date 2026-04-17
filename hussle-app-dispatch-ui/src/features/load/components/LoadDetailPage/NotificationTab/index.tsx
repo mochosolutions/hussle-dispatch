@@ -99,6 +99,7 @@ export const NotificationTab: React.FC<NotificationPanelProps> = ({ loadId, cust
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // TODO: migrate to saga — notification data should flow through Redux
   const refreshData = useCallback(() => {
     setLoading(true);
     const promises: [

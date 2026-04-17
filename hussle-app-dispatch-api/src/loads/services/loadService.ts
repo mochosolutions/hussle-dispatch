@@ -108,13 +108,17 @@ export const validateStops = (stops: StopInput[]): void => {
       );
     }
 
-    if (
-      stop.schedulingType === 'NOTIFICATION' &&
-      (stop.notificationHours === undefined || stop.notificationHours === null)
-    ) {
-      throw new ValidationError(
-        `Stop ${String(index + 1)}: notificationHours is required when schedulingType is NOTIFICATION.`,
-      );
+    if (stop.schedulingType === 'NOTIFICATION') {
+      if (!stop.contactName) {
+        throw new ValidationError(
+          `Stop ${String(index + 1)}: contactName is required when schedulingType is NOTIFICATION.`,
+        );
+      }
+      if (!stop.contactPhone) {
+        throw new ValidationError(
+          `Stop ${String(index + 1)}: contactPhone is required when schedulingType is NOTIFICATION.`,
+        );
+      }
     }
 
     if (

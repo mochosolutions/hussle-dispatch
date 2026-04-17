@@ -13,8 +13,10 @@ export const selectAllPlaces = (state: RootState) => placeSelectors.selectAll(st
 export const selectPlaceById = (id: string) => (state: RootState) =>
   placeSelectors.selectById(state, id);
 
-export const selectPlaceListLoading = (state: RootState) =>
-  state.pages.places.loading['getAll'] === LoadingState.Pending;
+export const selectPlaceListLoading = (state: RootState) => {
+  const status = state.pages.places.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectPlaceCreateLoading = (state: RootState) =>
   state.pages.places.loading['create'] === LoadingState.Pending;

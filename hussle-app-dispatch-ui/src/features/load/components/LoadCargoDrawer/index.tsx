@@ -1,7 +1,7 @@
 import React from 'react';
-import { Grid, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import * as Yup from 'yup';
-import { TextField, SelectField, CheckboxField } from '@mocho/ui/components';
+import { TextField, SelectField, CheckboxField, NumericField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
@@ -30,11 +30,11 @@ export const LoadCargoDrawer: React.FC<LoadCargoDrawerProps> = ({ load, onClose 
 
   const initialValues: CargoFormValues = {
     equipmentType: load.equipmentType ?? '',
-    commodity: load.commodity ?? '',
-    weight: load.weight ?? undefined,
-    pieceCount: load.pieceCount ?? undefined,
-    isHazmat: load.isHazmat,
-    isTarp: load.isTarp,
+    commodity: load.cargo.commodity ?? '',
+    weight: load.cargo.weight ?? undefined,
+    pieceCount: load.cargo.pieceCount ?? undefined,
+    isHazmat: load.cargo.isHazmat,
+    isTarp: load.cargo.isTarp,
   };
 
   return (
@@ -59,14 +59,14 @@ export const LoadCargoDrawer: React.FC<LoadCargoDrawerProps> = ({ load, onClose 
               formik={formik}
             />
             <TextField name="commodity" label="Commodity" formik={formik} />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField name="weight" label="Weight (lbs)" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField name="pieceCount" label="Piece Count" formik={formik} />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <NumericField name="weight" label="Weight" suffix="lbs" formik={formik} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <NumericField name="pieceCount" label="Piece Count" formik={formik} />
+              </Box>
+            </Box>
             <Stack direction="row" spacing={2}>
               <CheckboxField name="isHazmat" label="Hazmat" formik={formik} />
               <CheckboxField name="isTarp" label="Tarp Required" formik={formik} />

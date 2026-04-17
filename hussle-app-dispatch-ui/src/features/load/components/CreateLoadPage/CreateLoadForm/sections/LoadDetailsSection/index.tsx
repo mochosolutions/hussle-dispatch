@@ -1,19 +1,19 @@
-import { Grid, InputAdornment, OutlinedInput } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { FormikProps } from 'formik';
-import { TextField, SelectField, BaseFieldWrapper } from '@mocho/ui/components';
+import { TextField, SelectField, CurrencyField, NumericField } from '@mocho/ui/components';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import ContactAutocomplete from 'features/contact/components/BrokerAutocomplete';
 import CustomerAutocomplete from 'features/customer/components/CustomerAutocomplete';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
 import {
   EQUIPMENT_OPTIONS,
   PAYMENT_TERMS_OPTIONS,
   REEFER_MODE_OPTIONS,
   FLATBED_LENGTH_OPTIONS,
   TARP_TYPE_OPTIONS,
-} from '../../../../../../constants';
+} from '../../../../../constants';
 
 interface LoadDetailsSectionProps {
   formik: FormikProps<LoadFormValues>;
@@ -62,119 +62,116 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
         complete ? <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} /> : undefined
       }
     >
-      <Grid container spacing={1.5}>
-        <Grid item xs={12} md={4}>
-          <CustomerAutocomplete
-            name="customerId"
-            required
-            formik={formikProps}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <ContactAutocomplete
-            name="contactId"
-            label="Contact"
-            required
-            formik={formikProps}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <TextField name="externalRefNumber" label="External Ref #" formik={formikProps} />
-        </Grid>
-
-        <Grid item xs={12} md={3}>
-          <BaseFieldWrapper
-            name="customerRate"
-            label="Rate"
-            required
-            error={formikProps.errors.customerRate as string | undefined}
-            touched={formikProps.touched.customerRate as boolean | undefined}
-            helperText="Total flat rate for this load"
-          >
-            <OutlinedInput
-              id="customerRate"
-              name="customerRate"
-              type="number"
-              value={formikProps.values.customerRate ?? ''}
-              onChange={formikProps.handleChange}
-              onBlur={formikProps.handleBlur}
-              fullWidth
-              error={Boolean(formikProps.touched.customerRate && formikProps.errors.customerRate)}
-              startAdornment={<InputAdornment position="start">$</InputAdornment>}
-              inputProps={{ min: 0, step: 1 }}
+      <Stack spacing={1.5}>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ flex: 1 }}>
+            <CustomerAutocomplete
+              name="customerId"
+              label="Broker / Shipper"
+              required
+              formik={formikProps}
             />
-          </BaseFieldWrapper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <SelectField
-            name="paymentTerms"
-            label="Payment Terms"
-            data={paymentTermsData}
-            formik={formikProps}
-          />
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <SelectField
-            name="equipmentType"
-            label="Equipment Type"
-            required
-            data={EQUIPMENT_OPTIONS}
-            formik={formikProps}
-          />
-        </Grid>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <ContactAutocomplete
+              name="contactId"
+              label="Broker Contact"
+              required
+              formik={formikProps}
+            />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <TextField name="externalRefNumber" label="External Ref #" formik={formikProps} />
+          </Box>
+        </Box>
 
-        <Grid item xs={12} md={3}>
-          <TextField name="loadedMiles" label="Trip Miles" formik={formikProps} />
-        </Grid>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ flex: 1 }}>
+            <CurrencyField name="customerRate" label="Rate" required formik={formikProps} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <SelectField
+              name="paymentTerms"
+              label="Payment Terms"
+              data={paymentTermsData}
+              formik={formikProps}
+            />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <SelectField
+              name="equipmentType"
+              label="Equipment Type"
+              required
+              data={EQUIPMENT_OPTIONS}
+              formik={formikProps}
+            />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <NumericField name="loadedMiles" label="Trip Miles" suffix="mi" formik={formikProps} />
+          </Box>
+        </Box>
 
         {isReefer && (
-          <>
-            <Grid item xs={6} md={3}>
-              <TextField name="reeferTempMin" label="Temp Min (\u00b0F)" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <TextField name="reeferTempMax" label="Temp Max (\u00b0F)" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6} md={3}>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={{ flex: 1 }}>
+              <NumericField
+                name="reeferTempMin"
+                label="Temp Min (\u00b0F)"
+                suffix="\u00b0F"
+                formik={formikProps}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <NumericField
+                name="reeferTempMax"
+                label="Temp Max (\u00b0F)"
+                suffix="\u00b0F"
+                formik={formikProps}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <SelectField
                 name="reeferMode"
                 label="Reefer Mode"
                 data={reeferModeData}
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <TextField name="reeferPrecool" label="Precool (\u00b0F)" formik={formikProps} />
-            </Grid>
-          </>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <NumericField
+                name="reeferPrecool"
+                label="Precool (\u00b0F)"
+                suffix="\u00b0F"
+                formik={formikProps}
+              />
+            </Box>
+          </Box>
         )}
 
         {isFlatbed && (
-          <>
-            <Grid item xs={6} md={4}>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={{ flex: 1 }}>
               <SelectField
                 name="flatbedLength"
                 label="Trailer Length"
                 data={flatbedLengthData}
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={6} md={4}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <SelectField
                 name="flatbedTarpType"
                 label="Tarp Type"
                 data={tarpTypeData}
                 formik={formikProps}
               />
-            </Grid>
-            <Grid item xs={6} md={4}>
-              <TextField name="flatbedStraps" label="Straps" formik={formikProps} />
-            </Grid>
-          </>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <NumericField name="flatbedStraps" label="Straps" formik={formikProps} />
+            </Box>
+          </Box>
         )}
-      </Grid>
+      </Stack>
     </SectionCard>
   );
 };

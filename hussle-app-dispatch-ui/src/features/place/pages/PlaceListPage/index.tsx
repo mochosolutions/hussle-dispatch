@@ -1,28 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import {
-  Stack,
-  TextField,
-  Box,
-  Typography,
-  Button,
-  MenuItem,
-  Select,
-  InputLabel,
-  OutlinedInput,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Box, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import {
-  ActionsCell,
-  MainCard,
-  NewDataGrid,
-  PageWrapper,
-} from '@mocho/ui/components';
+import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
+import { EmptyState } from 'mocho/components/EmptyState';
+import FilterBar from 'components/FilterBar';
+import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import ListKpiBar from 'components/ListKpiBar';
 import { ListLayout } from 'components/ListLayout';
 import { useDispatch, useSelector } from 'store';
-import type { PlaceListItem } from '../../types';
+import type { PlaceListItem, FacilityType } from '../../types';
 import { fetchPlacesRequest } from '../../store/reducers/placePageSlice';
 import {
   selectAllPlaces,
@@ -37,14 +24,18 @@ import {
   PlaceVisitsCellRenderer,
   PlaceLumperCellRenderer,
 } from '../../components/PlaceCellRenderers';
-import { FACILITY_TYPE_OPTIONS } from '../../constants';
+import { FACILITY_TYPE_OPTIONS, FACILITY_TYPE_LABELS } from '../../constants';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 const FILTER_ALL = 'all';
 
+const facilityTypeFilterOptions = [
+  { value: FILTER_ALL, label: 'All Facility Types' },
+  ...FACILITY_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+];
+
 const PlaceListPage = () => {
-  const [facilityTypeFilter, setFacilityTypeFilter] = useState(FILTER_ALL);
-  const [searchQuery, setSearchQuery] = useState('');
+  const facilityTypeRef = useRef(FILTER_ALL);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
@@ -52,49 +43,36 @@ const PlaceListPage = () => {
   const places = useSelector(selectAllPlaces);
   const isLoading = useSelector(selectPlaceListLoading);
 
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
     dispatch(fetchPlacesRequest({ page: 1, limit: 25 }));
   }, [dispatch]);
 
   const handleSearchChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const query = event.target.value;
-      setSearchQuery(query);
-
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-
-      searchDebounceRef.current = setTimeout(() => {
-        dispatch(
-          fetchPlacesRequest({
-            page: 1,
-            limit: 25,
-            search: query,
-            facilityType: facilityTypeFilter === FILTER_ALL ? undefined : facilityTypeFilter,
-          }),
-        );
-      }, 300);
-    },
-    [dispatch, facilityTypeFilter],
-  );
-
-  const handleFacilityTypeFilterChange = useCallback(
-    (event: SelectChangeEvent<string>) => {
-      const newFilter = event.target.value;
-      setFacilityTypeFilter(newFilter);
+    (value: string | number) => {
       dispatch(
         fetchPlacesRequest({
           page: 1,
           limit: 25,
-          search: searchQuery,
+          search: String(value),
+          facilityType: facilityTypeRef.current === FILTER_ALL ? undefined : facilityTypeRef.current,
+        }),
+      );
+    },
+    [dispatch],
+  );
+
+  const handleFacilityTypeFilterChange = useCallback(
+    (newFilter: string) => {
+      facilityTypeRef.current = newFilter;
+      dispatch(
+        fetchPlacesRequest({
+          page: 1,
+          limit: 25,
           facilityType: newFilter === FILTER_ALL ? undefined : newFilter,
         }),
       );
     },
-    [dispatch, searchQuery],
+    [dispatch],
   );
 
   const handleRowClicked = useCallback(
@@ -109,6 +87,49 @@ const PlaceListPage = () => {
   const handleOpenCreate = useCallback(() => {
     openDrawer('placeInfo', { placeId: undefined });
   }, [openDrawer]);
+
+  const kpiItems = useMemo(() => {
+    const counts = places.reduce<Partial<Record<FacilityType, number>>>((acc, place) => {
+      if (place.facilityType) {
+        acc[place.facilityType] = (acc[place.facilityType] ?? 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const topTypes = Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([type, count]) => ({
+        label: FACILITY_TYPE_LABELS[type as FacilityType],
+        value: count,
+      }));
+
+    return [{ label: 'Total Places', value: places.length }, ...topTypes];
+  }, [places]);
+
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: 'select',
+        name: 'facilityType',
+        label: 'Facility Type',
+        options: facilityTypeFilterOptions,
+        value: FILTER_ALL,
+        onChange: handleFacilityTypeFilterChange,
+      },
+    ],
+    [handleFacilityTypeFilterChange],
+  );
+
+  const searchConfig = useMemo<SearchConfig>(
+    () => ({
+      placeholder: 'Search by name, city, state...',
+      value: '',
+      onChange: handleSearchChange,
+      debounce: 300,
+    }),
+    [handleSearchChange],
+  );
 
   const actionsConfig = useMemo<ActionsCellConfig<PlaceListItem>>(
     () => ({
@@ -194,7 +215,7 @@ const PlaceListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="PlaceListPage" sx={{ gap: 2 }}>
+    <PageWrapper errorContext="PlaceListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Places"
         primaryAction={
@@ -206,6 +227,8 @@ const PlaceListPage = () => {
           </Stack>
         }
       >
+        <ListKpiBar items={kpiItems} sx={{ px: { xs: 2, sm: 3 }, pt: 2 }} />
+
         <Box
           sx={{
             px: { xs: 2, sm: 3 },
@@ -220,45 +243,7 @@ const PlaceListPage = () => {
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-              spacing={2}
-              sx={{ px: 2, py: 1.5 }}
-            >
-              <Stack spacing={1}>
-                <InputLabel>Facility Type</InputLabel>
-                <Select
-                  value={facilityTypeFilter}
-                  onChange={handleFacilityTypeFilterChange}
-                  size="small"
-                  sx={{ minWidth: 200 }}
-                >
-                  <MenuItem value={FILTER_ALL}>All Facility Types</MenuItem>
-                  {FACILITY_TYPE_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Stack>
-              <Stack spacing={1}>
-                <InputLabel>Search</InputLabel>
-                <OutlinedInput
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search by name, city, state..."
-                  size="small"
-                  sx={{ width: { xs: '100%', lg: 320 } }}
-                />
-              </Stack>
-              <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', alignSelf: 'flex-end', pb: 0.5 }}
-              >
-                {places.length} places
-              </Typography>
-            </Stack>
+            <FilterBar filters={filters} search={searchConfig} />
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box
@@ -274,14 +259,14 @@ const PlaceListPage = () => {
                   showRowCountFooter
                   totalRowCount={places.length}
                   rowCountLabel="places"
-                  noDataMessage="No places found"
+                  noDataComponent={<EmptyState variant="no-data" entityName="Places" />}
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,
                     paginationPageSize: 25,
                     suppressCellFocus: true,
                     headerHeight: 44,
-                    rowHeight: 62,
+                    rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
                   loading={isLoading}

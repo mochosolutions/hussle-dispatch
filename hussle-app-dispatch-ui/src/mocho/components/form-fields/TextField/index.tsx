@@ -1,5 +1,6 @@
 import React from 'react';
 import { OutlinedInput } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { TextFieldProps } from '../types';
 
@@ -24,8 +25,8 @@ export const TextField: React.FC<TextFieldProps> = ({
   formik,
   ...rest
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
 
   return (
     <BaseFieldWrapper name={name} label={label} required={required} error={error} touched={touched}>
@@ -33,7 +34,7 @@ export const TextField: React.FC<TextFieldProps> = ({
         id={name}
         name={name}
         type={type}
-        value={formik.values[name] || ''}
+        value={getIn(formik.values, name) || ''}
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
         placeholder={placeholder}

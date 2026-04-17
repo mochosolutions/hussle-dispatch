@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Button, Typography } from '@mui/material';
+import { Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
-import { KpiCell } from 'components/Typography';
+import { BodyMuted } from 'components/Typography';
 import { getCustomerStats } from 'utils/api/fleet/customerApi';
 import type { CustomerStats } from 'utils/api/fleet/customerApi';
 import { CUSTOMER_DETAIL_TAB_ITEMS } from '../../constants';
@@ -21,10 +21,8 @@ import {
   LoadHistoryTab,
   NotesTab,
   NotificationsTab,
-} from './tabs';
-
-const formatCurrency = (value: string): string =>
-  `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+} from '../../components/CustomerDetailPage';
+import { CustomerSummaryBar } from '../../components/CustomerDetailPage/CustomerSummaryBar';
 
 const CustomerDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -40,7 +38,7 @@ const CustomerDetailPage = () => {
   );
 
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
@@ -52,11 +50,26 @@ const CustomerDetailPage = () => {
     if (!id) {
       return;
     }
-    setStatsLoading(true);
+
+    let cancelled = false;
+
     getCustomerStats(id)
-      .then(setCustomerStats)
-      .catch(() => setCustomerStats(null))
-      .finally(() => setStatsLoading(false));
+      .then((data) => {
+        if (!cancelled) {
+          setCustomerStats(data);
+          setStatsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCustomerStats(null);
+          setStatsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleBack = () => {
@@ -65,7 +78,7 @@ const CustomerDetailPage = () => {
 
   return (
     <PageWrapper isLoading={isLoading} isError={isError} errorContext="CustomerDetailPage">
-      <DataGuard data={customer} emptyComponent={<Typography p={4}>Customer not found.</Typography>}>
+      <DataGuard data={customer} emptyComponent={<BodyMuted sx={{ p: 4 }}>Customer not found.</BodyMuted>}>
         {(c) => (
           <DetailLayout
             id={c.companyName}
@@ -84,69 +97,11 @@ const CustomerDetailPage = () => {
               </Button>
             }
             summary={
-              <>
-                <KpiCell
-                  label="MC / DOT"
-                  value={c.mcNumber ?? '\u2014'}
-                  sub={c.dotNumber ?? '\u2014'}
-                />
-                <KpiCell
-                  label="PRIMARY CONTACT"
-                  value={c.phone ?? '\u2014'}
-                  sub={c.email ?? '\u2014'}
-                />
-                <KpiCell
-                  label="PAYMENT TERMS"
-                  value={c.paymentTerms}
-                  sub={c.quickPayDiscount ? `Quick Pay ${c.quickPayDiscount}%` : '\u2014'}
-                />
-                <KpiCell
-                  label="AVG DAYS TO PAY"
-                  value={
-                    statsLoading
-                      ? '\u2026'
-                      : customerStats?.avgDaysToPay !== null &&
-                          customerStats?.avgDaysToPay !== undefined
-                        ? `${customerStats.avgDaysToPay} days`
-                        : '\u2014'
-                  }
-                />
-                <KpiCell
-                  label="OUTSTANDING AR"
-                  value={
-                    statsLoading
-                      ? '\u2026'
-                      : customerStats
-                        ? formatCurrency(customerStats.outstandingAR)
-                        : '\u2014'
-                  }
-                  valueProps={
-                    customerStats && Number(customerStats.outstandingAR) > 0
-                      ? { color: 'warning.main' }
-                      : undefined
-                  }
-                />
-                <KpiCell
-                  label="TOTAL REVENUE"
-                  value={
-                    statsLoading
-                      ? '\u2026'
-                      : customerStats
-                        ? formatCurrency(customerStats.totalRevenue)
-                        : '\u2014'
-                  }
-                  sub={
-                    statsLoading
-                      ? ''
-                      : `${customerStats?.loadCount ?? c._count.loads} loads`
-                  }
-                  valueProps={
-                    customerStats && Number(customerStats.totalRevenue) > 0
-                      ? { color: 'success.main' }
-                      : undefined
-                  }
-                />
-              </>
+              <CustomerSummaryBar
+                customer={c}
+                stats={customerStats}
+                statsLoading={statsLoading}
+              />
             }
             tabs={CUSTOMER_DETAIL_TAB_ITEMS}
             activeTab={activeTab}
@@ -164,7 +119,7 @@ const CustomerDetailPage = () => {
             {activeTab === 'loadHistory' && id && <LoadHistoryTab customerId={id} />}
 
             {activeTab === 'invoices' && id && (
-              <Typography color="text.secondary">Invoices coming soon.</Typography>
+              <BodyMuted>Invoices coming soon.</BodyMuted>
             )}
 
             {activeTab === 'notifications' && id && <NotificationsTab customerId={id} />}

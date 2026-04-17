@@ -8,6 +8,7 @@ import {
   removeMemberSuccess,
   removeMemberFailure,
 } from '../reducers/teamSlice';
+import { teamEntityActions } from '../reducers/teamEntitySlice';
 
 export function* removeMemberSaga(action: ReturnType<typeof removeMemberRequest>): Generator {
   const { membershipId } = action.payload;
@@ -17,6 +18,7 @@ export function* removeMemberSaga(action: ReturnType<typeof removeMemberRequest>
 
     yield call(removeMember, orgId, membershipId);
 
+    yield put(teamEntityActions.removeOne(membershipId));
     yield put(removeMemberSuccess({ membershipId }));
     yield call(enqueueSnackbar, 'Member removed', { variant: 'success' });
   } catch (error: unknown) {

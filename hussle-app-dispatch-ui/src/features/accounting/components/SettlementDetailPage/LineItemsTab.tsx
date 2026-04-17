@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Box, Button, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { MainCard, NewDataGrid } from '@mocho/ui/components';
-import { AddAdjustmentDrawer } from '../../../components/AddAdjustmentDrawer';
-import type { SettlementDetail, SettlementLineItem } from '../../../types';
+import { Amount, Body } from 'components/Typography';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
+import type { SettlementDetail } from '../../types';
 
 interface LineItemsTabProps {
   settlement: SettlementDetail;
@@ -23,7 +24,7 @@ const TypeCellRenderer = ({ value }: { value: string }) => (
 
 const CurrencyCellRenderer = ({ value }: { value: string }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-    {currencyFormatter.format(Number(value))}
+    <Amount>{currencyFormatter.format(Number(value))}</Amount>
   </Box>
 );
 
@@ -34,21 +35,19 @@ const DateCellRenderer = ({ value }: { value: string }) => {
   const date = new Date(value);
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+      <Body>
+        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+      </Body>
     </Box>
   );
 };
 
 export const LineItemsTab: React.FC<LineItemsTabProps> = ({ settlement }) => {
-  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
+  const { openDrawer } = useDrawerActions();
 
   const handleOpenAdjustment = useCallback(() => {
-    setAdjustmentOpen(true);
-  }, []);
-
-  const handleCloseAdjustment = useCallback(() => {
-    setAdjustmentOpen(false);
-  }, []);
+    openDrawer('addAdjustment', { settlementId: settlement.id });
+  }, [openDrawer, settlement.id]);
 
   const columnDefs = useMemo(
     () => [
@@ -63,11 +62,13 @@ export const LineItemsTab: React.FC<LineItemsTabProps> = ({ settlement }) => {
         field: 'description',
         minWidth: 200,
         flex: 2,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'Load #',
         field: 'loadNumber',
         minWidth: 120,
+        cellRenderer: ({ value }: { value: string }) => <Body>{value}</Body>,
       },
       {
         headerName: 'Amount',
@@ -97,46 +98,37 @@ export const LineItemsTab: React.FC<LineItemsTabProps> = ({ settlement }) => {
   );
 
   return (
-    <>
-      <MainCard
-        title="Line Items"
-        secondary={
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAdjustment}
-          >
-            Add Adjustment
-          </Button>
-        }
-        content={false}
-      >
-        <Box sx={{ minHeight: 300 }}>
-          <NewDataGrid
-            columnDefs={columnDefs}
-            rowData={settlement.lineItems}
-            defaultColDef={defaultColDef}
-            showRowCountFooter
-            totalRowCount={settlement.lineItems.length}
-            rowCountLabel="line items"
-            noDataMessage="No line items"
-            gridOptions={{
-              domLayout: 'autoHeight',
-              suppressCellFocus: true,
-              headerHeight: 44,
-              rowHeight: 48,
-            }}
-          />
-        </Box>
-      </MainCard>
-
-      {adjustmentOpen && (
-        <AddAdjustmentDrawer
-          settlementId={settlement.id}
-          onClose={handleCloseAdjustment}
+    <MainCard
+      title="Line Items"
+      secondary={
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<AddIcon />}
+          onClick={handleOpenAdjustment}
+        >
+          Add Adjustment
+        </Button>
+      }
+      content={false}
+    >
+      <Box sx={{ minHeight: 300 }}>
+        <NewDataGrid
+          columnDefs={columnDefs}
+          rowData={settlement.lineItems}
+          defaultColDef={defaultColDef}
+          showRowCountFooter
+          totalRowCount={settlement.lineItems.length}
+          rowCountLabel="line items"
+          noDataMessage="No line items"
+          gridOptions={{
+            domLayout: 'autoHeight',
+            suppressCellFocus: true,
+            headerHeight: 44,
+            rowHeight: 48,
+          }}
         />
-      )}
-    </>
+      </Box>
+    </MainCard>
   );
 };

@@ -1,6 +1,7 @@
 import type { PlaceRepositoryPort, TypeaheadPlaceResult } from '../types/placeTypes';
 import type { GeocodingProviderPort } from '@/shared/providers/awsLocationProviderTypes';
-import type { AddressSearchInput, AddressSearchResult } from '../types/addressSearchTypes';
+import type { AddressSearchInput, AddressSearchResult, FacilityDayHoursEntry } from '../types/addressSearchTypes';
+import { validateFacilityHoursJson } from '@/shared/utils/facilityHours';
 
 const MIN_QUERY_LENGTH_FOR_GEOCODING = 3;
 const PLACES_THRESHOLD = 3;
@@ -36,6 +37,15 @@ interface AddressSearchServiceDeps {
   geocodingProvider: GeocodingProviderPort;
 }
 
+const parseFacilityHours = (raw: unknown): FacilityDayHoursEntry[] | null => {
+  if (raw === null || raw === undefined) return null;
+  try {
+    return validateFacilityHoursJson(raw);
+  } catch {
+    return null;
+  }
+};
+
 const mapPlaceToResult = (place: TypeaheadPlaceResult): AddressSearchResult => ({
   source: 'SAVED',
   id: place.id,
@@ -49,9 +59,11 @@ const mapPlaceToResult = (place: TypeaheadPlaceResult): AddressSearchResult => (
   facilityType: place.facilityType,
   contactName: place.contactName,
   contactPhone: place.contactPhone,
-  appointmentRequired: false,
-  lumperRequired: false,
-  ppeRequired: false,
+  appointmentRequired: place.appointmentRequired ?? false,
+  lumperRequired: place.lumperRequired ?? false,
+  ppeRequired: place.ppeRequired ?? false,
+  facilityHours: parseFacilityHours(place.facilityHours),
+  is24Hours: place.is24Hours ?? false,
 });
 
 export const createAddressSearchService = (deps: AddressSearchServiceDeps) => ({
@@ -96,6 +108,8 @@ export const createAddressSearchService = (deps: AddressSearchServiceDeps) => ({
         appointmentRequired: false,
         lumperRequired: false,
         ppeRequired: false,
+        facilityHours: null,
+        is24Hours: false,
       }));
 
       return deduplicateResults(savedResults, externalResults);

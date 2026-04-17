@@ -1,7 +1,8 @@
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { Formik } from 'formik';
 import { DateField } from '../../../../mocho/components/form-fields/DateField';
 import { EmailField } from '../../../../mocho/components/form-fields/EmailField';
+import { PhoneField } from '../../../../mocho/components/form-fields/PhoneField';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';
 import type { DriverFormEntry } from '../../types';
 import { driverSchema } from '../../validators/driverSchema';
@@ -57,32 +58,32 @@ export const DriverInlineForm = ({
             opacity: 0.95,
           }}
         >
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+            <Box sx={{ flex: 6 }}>
               <TextField name="firstName" label="First Name" placeholder="First name" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 6 }}>
               <TextField name="lastName" label="Last Name" placeholder="Last name" formik={formikProps} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
-              <TextField name="phone" label="Phone" placeholder="(555) 123-4567" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+            <Box sx={{ flex: 6 }}>
+              <PhoneField name="phone" label="Phone" formik={formikProps} />
+            </Box>
+            <Box sx={{ flex: 6 }}>
               <EmailField name="email" label="Email" placeholder="driver@email.com" formik={formikProps} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+            <Box sx={{ flex: 6 }}>
               <TextField name="licenseNumber" label="License Number" placeholder="A123456789" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6}>
+            </Box>
+            <Box sx={{ flex: 6 }}>
               <DateField name="licenseExpiry" label="License Expiry" formik={formikProps} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
             <Button variant="outlined" size="small" onClick={onCancel}>

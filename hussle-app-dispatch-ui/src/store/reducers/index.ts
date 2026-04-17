@@ -23,6 +23,8 @@ import { customerReducer } from 'features/customer/store/reducers/customerEntity
 import { customerPageReducer } from 'features/customer/store/reducers/customerPageSlice';
 import { settingsSlice } from 'features/settings/store/reducers/settingsSlice';
 import { teamReducer } from 'features/settings/store/reducers/teamSlice';
+import { settingsEntityReducer } from 'features/settings/store/reducers/settingsEntitySlice';
+import { teamEntityReducer } from 'features/settings/store/reducers/teamEntitySlice';
 import { documentReducer } from 'features/documents/store/reducers/documentEntitySlice';
 import documentPageReducer from 'features/documents/store/reducers/documentPageSlice';
 import { carrierPortalReducer } from 'features/carrier-portal/store/slices/carrierPortalSlice';
@@ -62,6 +64,8 @@ const entities = combineReducers({
   customers: customerReducer,
   documents: documentReducer,
   settlements: settlementReducer,
+  orgSettings: settingsEntityReducer,
+  teamMembers: teamEntityReducer,
 });
 
 const rootReducer = combineReducers({

@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import { KpiCell, LinkText } from 'components/Typography';
 import { useSelector } from 'store';
 import { selectFormattedCustomerById } from 'features/customer/store/selectors/customerSelectors';
-import type { Contact } from '../../../types';
+import type { Contact } from '../../types';
 
 interface ContactSummaryBarProps {
   contact: Contact & { createdAt: string; updatedAt: string };

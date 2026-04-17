@@ -27,9 +27,9 @@ import {
   MARGIN_THRESHOLDS,
 } from '../../constants';
 import { stripUiOnlyFields } from '../../utils/stripUiOnlyFields';
-import { CreateLoadActions } from './components/CreateLoadActions';
-import { CreateLoadForm } from './components/CreateLoadForm';
-import { KpiGroup } from './components/KpiGroup';
+import { CreateLoadActions } from '../../components/CreateLoadPage/CreateLoadActions';
+import { CreateLoadForm } from '../../components/CreateLoadPage/CreateLoadForm';
+import { KpiGroup, CreateLoadSummaryBar } from '../../components/CreateLoadPage/CreateLoadKpiGroup';
 
 const CreateLoadPage = () => {
   const dispatch = useDispatch();
@@ -54,7 +54,8 @@ const CreateLoadPage = () => {
   const locationState = location.state as IntelLocationState | null;
   const intelPrefill = locationState?.intelPrefill;
 
-  const [loadType, setLoadType] = useState<string | null>(intelPrefill ? 'std' : null);
+  const loadType = 'std';
+  // const [loadType, setLoadType] = useState<string | null>(intelPrefill ? 'std' : null);
   const [template, setTemplate] = useState<LoadTemplate | undefined>();
   const [cancelled, setCancelled] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
@@ -89,34 +90,6 @@ const CreateLoadPage = () => {
     }
     wasCreating.current = isCreating;
   }, [isCreating]);
-
-  // const headerTitle = useMemo(() => {
-  //   const parts = ['New Load'];
-  //   if (loadType) {
-  //     parts.push(loadTypeLabel);
-  //   }
-  //   return parts.join(' — ');
-  // }, [loadType, loadTypeLabel]);
-
-  const handleCloseModal = useCallback(() => {
-    setCancelled(true);
-    dispatch(closeModalAction());
-    navigate('/loads');
-  }, [dispatch, navigate]);
-
-  // Open modal once on mount when no intel prefill
-  useEffect(() => {
-    if (intelPrefill || loadType || cancelled) {
-      return;
-    }
-    openModal('createLoadModal', {
-      onSelect: (type: string, tpl?: LoadTemplate) => {
-        setLoadType(type);
-        setTemplate(tpl);
-      },
-      onCancel: handleCloseModal,
-    });
-  }, [intelPrefill, loadType, cancelled, openModal, handleCloseModal]);
 
   const handleSubmit = useCallback(
     (payload: { data: CreateLoadInput; queuedDocuments: QueuedDocument[] }) => {
@@ -155,17 +128,6 @@ const CreateLoadPage = () => {
     navigate('/loads');
   }, [navigate]);
 
-  const handleReopenModal = useCallback(() => {
-    setCancelled(false);
-    openModal('createLoadModal', {
-      onSelect: (type: string, tpl?: LoadTemplate) => {
-        setLoadType(type);
-        setTemplate(tpl);
-      },
-      onCancel: handleCloseModal,
-    });
-  }, [openModal, handleCloseModal]);
-
   const draftSavedIndicator = draftSaved ? (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <FiberManualRecordIcon sx={{ fontSize: 8, color: 'success.main' }} />
@@ -175,87 +137,77 @@ const CreateLoadPage = () => {
     </Box>
   ) : null;
 
-  const marginColor = useMemo(() => {
-    if (financials.marginPct >= MARGIN_THRESHOLDS.good) {
-      return 'success.main';
-    }
-    if (financials.marginPct >= MARGIN_THRESHOLDS.ok) {
-      return 'warning.main';
-    }
-    return 'error.main';
-  }, [financials.marginPct]);
-
-  const summaryBar = loadType ? (
-    <Stack
-      direction={{ xs: 'column', md: 'row' }}
-      spacing={2}
-      divider={
-        <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
-      }
-      sx={{ width: '100%' }}
-    >
-      <KpiGroup label="Revenue">
-        <KpiCell
-          label="Cust Rate"
-          value={
-            financials.customerRate > 0 ? formatCurrencyCompact(financials.customerRate) : '\u2014'
-          }
-        />
-        <KpiCell
-          label="Margin"
-          value={
-            financials.customerRate > 0 ? formatCurrencyCompact(financials.grossMargin) : '\u2014'
-          }
-          valueProps={{ color: financials.customerRate > 0 ? marginColor : undefined }}
-        />
-        <KpiCell
-          label="Min Book"
-          value={financials.minBookRate ? formatCurrency(financials.minBookRate) : '\u2014'}
-        />
-      </KpiGroup>
-      <KpiGroup label="Route">
-        <Stack spacing={0.5}>
-          <Stack direction="row" spacing={2}>
-            <KpiCell
-              label="Trip Mi"
-              value={financials.tripMiles > 0 ? financials.tripMiles.toLocaleString() : '\u2014'}
-            />
-            <KpiCell
-              label="RPM"
-              value={
-                financials.ratePerMile > 0 ? `$${financials.ratePerMile.toFixed(2)}/mi` : '\u2014'
-              }
-            />
-          </Stack>
-          {financials.deadheadMiles > 0 && (
-            <Fade in timeout={200}>
-              <Stack direction="row" spacing={2}>
-                <Typography variant="caption" sx={{ color: 'grey.400' }}>
-                  +{financials.deadheadMiles.toLocaleString()} DH (
-                  {financials.totalMiles.toLocaleString()} tot)
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'grey.400' }}>
-                  Tot RPM ${financials.ratePerTotalMile.toFixed(2)}/mi
-                </Typography>
-              </Stack>
-            </Fade>
-          )}
-        </Stack>
-      </KpiGroup>
-      <KpiGroup label="Carrier">
-        <KpiCell
-          label="Carrier Pay"
-          value={financials.carrierPay > 0 ? formatCurrency(financials.carrierPay) : '\u2014'}
-        />
-        <KpiCell
-          label="Cost/Mi"
-          value={
-            financials.avgCostPerMile ? `$${financials.avgCostPerMile.toFixed(2)}/mi` : '\u2014'
-          }
-        />
-      </KpiGroup>
-    </Stack>
-  ) : undefined;
+  // const summaryBar = loadType ? (
+  //   <Stack
+  //     direction={{ xs: 'column', md: 'row' }}
+  //     spacing={2}
+  //     divider={
+  //       <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+  //     }
+  //     sx={{ width: '100%' }}
+  //   >
+  //     <KpiGroup label="Revenue">
+  //       <KpiCell
+  //         label="Cust Rate"
+  //         value={
+  //           financials.customerRate > 0 ? formatCurrencyCompact(financials.customerRate) : '\u2014'
+  //         }
+  //       />
+  //       <KpiCell
+  //         label="Margin"
+  //         value={
+  //           financials.customerRate > 0 ? formatCurrencyCompact(financials.grossMargin) : '\u2014'
+  //         }
+  //         valueProps={{ color: financials.customerRate > 0 ? marginColor : undefined }}
+  //       />
+  //       <KpiCell
+  //         label="Min Book"
+  //         value={financials.minBookRate ? formatCurrency(financials.minBookRate) : '\u2014'}
+  //       />
+  //     </KpiGroup>
+  //     <KpiGroup label="Route">
+  //       <Stack spacing={0.5}>
+  //         <Stack direction="row" spacing={2}>
+  //           <KpiCell
+  //             label="Trip Mi"
+  //             value={financials.tripMiles > 0 ? financials.tripMiles.toLocaleString() : '\u2014'}
+  //           />
+  //           <KpiCell
+  //             label="RPM"
+  //             value={
+  //               financials.ratePerMile > 0 ? `$${financials.ratePerMile.toFixed(2)}/mi` : '\u2014'
+  //             }
+  //           />
+  //         </Stack>
+  //         {financials.deadheadMiles > 0 && (
+  //           <Fade in timeout={200}>
+  //             <Stack direction="row" spacing={2}>
+  //               <Typography variant="caption" sx={{ color: 'grey.400' }}>
+  //                 +{financials.deadheadMiles.toLocaleString()} DH (
+  //                 {financials.totalMiles.toLocaleString()} tot)
+  //               </Typography>
+  //               <Typography variant="caption" sx={{ color: 'grey.400' }}>
+  //                 Tot RPM ${financials.ratePerTotalMile.toFixed(2)}/mi
+  //               </Typography>
+  //             </Stack>
+  //           </Fade>
+  //         )}
+  //       </Stack>
+  //     </KpiGroup>
+  //     <KpiGroup label="Carrier">
+  //       <KpiCell
+  //         label="Carrier Pay"
+  //         value={financials.carrierPay > 0 ? formatCurrency(financials.carrierPay) : '\u2014'}
+  //       />
+  //       <KpiCell
+  //         label="Cost/Mi"
+  //         value={
+  //           financials.avgCostPerMile ? `$${financials.avgCostPerMile.toFixed(2)}/mi` : '\u2014'
+  //         }
+  //       />
+  //     </KpiGroup>
+  //   </Stack>
+  // ) : undefined;
 
   const headerActions = loadType ? (
     <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -277,33 +229,33 @@ const CreateLoadPage = () => {
     </Stack>
   ) : null;
 
-  if (!loadType) {
-    return (
-      <PageWrapper errorContext="CreateLoadPage">
-        <DetailLayout
-          id="New Load"
-          breadcrumb={{ label: 'Loads', href: '/loads' }}
-          onBack={handleBack}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-            <Stack spacing={2} alignItems="center">
-              <Typography variant="body1" color="text.secondary">
-                Select a load type to get started
-              </Typography>
-              <Stack direction="row" spacing={2}>
-                <Button variant="contained" onClick={handleReopenModal}>
-                  Select Load Type
-                </Button>
-                <Button variant="outlined" onClick={handleBack}>
-                  Back to Loads
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </DetailLayout>
-      </PageWrapper>
-    );
-  }
+  // if (!loadType) {
+  //   return (
+  //     <PageWrapper errorContext="CreateLoadPage">
+  //       <DetailLayout
+  //         id="New Load"
+  //         breadcrumb={{ label: 'Loads', href: '/loads' }}
+  //         onBack={handleBack}
+  //       >
+  //         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+  //           <Stack spacing={2} alignItems="center">
+  //             <Typography variant="body1" color="text.secondary">
+  //               Select a load type to get started
+  //             </Typography>
+  //             <Stack direction="row" spacing={2}>
+  //               <Button variant="contained" onClick={handleReopenModal}>
+  //                 Select Load Type
+  //               </Button>
+  //               <Button variant="outlined" onClick={handleBack}>
+  //                 Back to Loads
+  //               </Button>
+  //             </Stack>
+  //           </Stack>
+  //         </Box>
+  //       </DetailLayout>
+  //     </PageWrapper>
+  //   );
+  // }
 
   return (
     <PageWrapper errorContext="CreateLoadPage">
@@ -312,7 +264,7 @@ const CreateLoadPage = () => {
         breadcrumb={{ label: 'Loads', href: '/loads' }}
         onBack={handleBack}
         actions={headerActions}
-        summary={summaryBar}
+        summary={<CreateLoadSummaryBar financials={financials} />}
       >
         <CreateLoadForm
           ref={formRef}

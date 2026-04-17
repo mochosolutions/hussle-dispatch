@@ -3,6 +3,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { enqueueSnackbar } from 'notistack';
 import { updateSettings } from 'utils/api/fleet/settingsApi';
 import { updateSettingsSuccess, updateSettingsFailure } from '../reducers/settingsSlice';
+import { settingsEntityActions } from '../reducers/settingsEntitySlice';
 import type { UpdateSettingsRequestPayload } from '../../types';
 
 export function* updateSettingsSaga(
@@ -13,6 +14,7 @@ export function* updateSettingsSaga(
 
     const response = (yield call(updateSettings, values)) as SagaReturnType<typeof updateSettings>;
 
+    yield put(settingsEntityActions.upsertOne(response.settings));
     yield put(updateSettingsSuccess(response.settings));
     yield call(enqueueSnackbar, 'Settings updated', { variant: 'success' });
   } catch (error: unknown) {

@@ -4,7 +4,7 @@ import {
   Box,
   Button,
   Card,
-  Grid,
+
   OutlinedInput,
   Stack,
   ToggleButton,
@@ -180,8 +180,8 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
           </ToggleButtonGroup> */}
 
           <SectionCard title="Company Information" subtitle="MC/DOT auto-lookups from FMCSA">
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: '0 0 calc(50% - 8px)' }}>
                 <BaseFieldWrapper
                   name="mcNumber"
                   label="MC Number"
@@ -206,30 +206,30 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                   />
                 </BaseFieldWrapper>
                 <MCLookupIndicator status={mcLookup} />
-              </Grid>
-              <Grid item xs={6}>
+              </Box>
+              <Box sx={{ flex: '0 0 calc(50% - 8px)' }}>
                 <TextField name="dotNumber" label="DOT Number" placeholder="Auto-filled or manual" formik={formik} />
-              </Grid>
-              <Grid item xs={12}>
+              </Box>
+              <Box sx={{ flex: '0 0 100%' }}>
                 <TextField name="name" label="Legal Name" placeholder="Legal business name" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
+              </Box>
+              <Box sx={{ flex: '0 0 calc(50% - 8px)' }}>
                 <SelectField
                   name="type"
                   label="Carrier Type"
                   data={CARRIER_TYPE_OPTIONS}
                   formik={formik}
                 />
-              </Grid>
-              <Grid item xs={12}>
+              </Box>
+              <Box sx={{ flex: '0 0 100%' }}>
                 <TextField name="address" label="Address" placeholder="789 Carrier Way, Elizabeth, NJ 07201" formik={formik} />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </SectionCard>
 
           <SectionCard title="Notes" subtitle="Optional notes about this carrier">
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
                 <CharCounterField
                   name="notes"
                   label="Notes"
@@ -238,8 +238,8 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                   rows={3}
                   formik={formik}
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </SectionCard>
 
           <SectionCard

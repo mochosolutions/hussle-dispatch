@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button } from '@mui/material';
 
 import { useSelector, useDispatch } from 'store';
 import MainCard from 'components/MainCard';
 import UpgradePlanDialog from 'components/UpgradePlanDialog';
+import { SectionTitle, BodyMuted } from 'components/Typography';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 import { fetchTeamRequest } from '../../store/reducers/teamSlice';
 import MemberTable from '../MemberTable';
 import { InvitationTable } from '../InvitationTable';
-import { InviteMemberDialog } from '../InviteMemberDialog';
 import type { RootState } from 'store';
 
 const TeamTab = () => {
   const dispatch = useDispatch();
+  const { openModal } = useModalActions();
   const organizationId = useSelector(organizationIdSelector);
   const teamState = useSelector((state: RootState) => state.pages.team);
   const members = teamState?.members ?? [];
@@ -21,7 +23,6 @@ const TeamTab = () => {
   const loading = teamState?.loading ?? {};
   const isLoading = loading.fetchTeam === 'Pending';
 
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ const TeamTab = () => {
     if (usage && usage.users.current >= usage.users.limit) {
       setUpgradeOpen(true);
     } else {
-      setInviteOpen(true);
+      openModal('inviteMember', { organizationId: organizationId ?? '' });
     }
   };
 
@@ -40,13 +41,11 @@ const TeamTab = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 800 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Team Members
-          </Typography>
+          <SectionTitle>Team Members</SectionTitle>
           {usage && (
-            <Typography variant="body2" color="text.secondary">
+            <BodyMuted>
               {usage.users.current} of {usage.users.limit} seats used
-            </Typography>
+            </BodyMuted>
           )}
         </Box>
         <Button variant="contained" color="primary" onClick={handleInviteClick}>
@@ -63,12 +62,6 @@ const TeamTab = () => {
           <InvitationTable invitations={invitations} />
         </MainCard>
       )}
-
-      <InviteMemberDialog
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        organizationId={organizationId ?? ''}
-      />
 
       <UpgradePlanDialog
         open={upgradeOpen}

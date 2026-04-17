@@ -1,34 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  FormControlLabel,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import { ActionsCell, EmptyState, NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import type { ActionsCellConfig } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
-import { StatusBadge } from 'components/Statusbadge';
+import MainCard from 'components/MainCard';
+import FilterBar from 'components/FilterBar';
+import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import { useDispatch, useSelector } from 'store';
 import { fetchInvoicesRequest } from '../store/reducers';
 import {
   selectInvoiceListLoading,
-  selectInvoiceStatusCounts,
-  selectOverdueInvoiceCount,
   selectFilteredInvoices,
 } from '../store/selectors/invoiceSelectors';
-import {
-  INVOICE_STATUS_LABELS,
-  INVOICE_TYPE_LABELS,
-  INVOICE_STATUS_OPTIONS,
-} from '../constants';
+import { INVOICE_STATUS_LABELS, INVOICE_STATUS_OPTIONS } from '../constants';
 import type { InvoiceListItem, InvoiceStatus } from '../types';
+import {
+  InvoiceStatusCellRenderer,
+  InvoiceTypeCellRenderer,
+  InvoiceBolFlagCellRenderer,
+} from '../components/InvoiceListPage/InvoiceCellRenderers';
 
 // ---------------------------------------------------------------------------
 // Currency formatter
@@ -41,46 +33,6 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 // ---------------------------------------------------------------------------
-// Cell renderers
-// ---------------------------------------------------------------------------
-
-const StatusCellRenderer = ({ data }: { data: InvoiceListItem & { isOverdue: boolean } }) => (
-  <StatusBadge status={data.status} />
-);
-
-const TypeCellRenderer = ({ data }: { data: InvoiceListItem }) => (
-  <Chip
-    label={INVOICE_TYPE_LABELS[data.type]}
-    size="small"
-    variant="filled"
-    sx={{ fontWeight: 500 }}
-  />
-);
-
-const BolFlagCellRenderer = ({ data }: { data: InvoiceListItem }) => {
-  if (data.missingSignedBol) {
-    return (
-      <Chip
-        label="Missing"
-        size="small"
-        color="warning"
-        variant="outlined"
-        sx={{ fontWeight: 600 }}
-      />
-    );
-  }
-  return (
-    <Chip
-      label="Present"
-      size="small"
-      color="success"
-      variant="outlined"
-      sx={{ fontWeight: 600 }}
-    />
-  );
-};
-
-// ---------------------------------------------------------------------------
 // Invoice List Page
 // ---------------------------------------------------------------------------
 
@@ -89,13 +41,10 @@ const InvoiceListPage = () => {
   const navigate = useNavigate();
 
   const isLoading = useSelector(selectInvoiceListLoading);
-  const statusCounts = useSelector(selectInvoiceStatusCounts);
-  const overdueCount = useSelector(selectOverdueInvoiceCount);
 
   const [selectedStatuses, setSelectedStatuses] = useState<InvoiceStatus[]>([]);
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [missingBolOnly, setMissingBolOnly] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     dispatch(fetchInvoicesRequest({ page: 1, limit: 25 }));
@@ -110,23 +59,30 @@ const InvoiceListPage = () => {
     [navigate],
   );
 
-  const handleStatusToggle = useCallback((status: InvoiceStatus) => {
-    setSelectedStatuses((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status],
-    );
-  }, []);
-
-  const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  }, []);
+  const handleSearchChange = useCallback(
+    (value: string | number) => {
+      dispatch(fetchInvoicesRequest({ page: 1, limit: 25, search: String(value) }));
+    },
+    [dispatch],
+  );
 
   const filteredSelector = useMemo(
-    () => selectFilteredInvoices({ selectedStatuses, overdueOnly, missingBolOnly, searchQuery }),
-    [selectedStatuses, overdueOnly, missingBolOnly, searchQuery],
+    () =>
+      selectFilteredInvoices({ selectedStatuses, overdueOnly, missingBolOnly, searchQuery: '' }),
+    [selectedStatuses, overdueOnly, missingBolOnly],
   );
   const filteredInvoices = useSelector(filteredSelector);
+
+  const actionsConfig = useMemo<ActionsCellConfig<InvoiceListItem>>(
+    () => ({
+      showView: true,
+      getViewRoute: (invoice) => `/invoices/${invoice.id}`,
+      showEdit: false,
+      showDelete: false,
+      viewTooltip: 'View Invoice',
+    }),
+    [],
+  );
 
   const columnDefs = useMemo(
     () => [
@@ -140,7 +96,7 @@ const InvoiceListPage = () => {
         headerName: 'Type',
         field: 'type',
         minWidth: 100,
-        cellRenderer: TypeCellRenderer,
+        cellRenderer: InvoiceTypeCellRenderer,
       },
       {
         headerName: 'Load #',
@@ -178,7 +134,7 @@ const InvoiceListPage = () => {
         headerName: 'Status',
         field: 'status',
         minWidth: 130,
-        cellRenderer: StatusCellRenderer,
+        cellRenderer: InvoiceStatusCellRenderer,
       },
       {
         headerName: 'Due Date',
@@ -191,7 +147,7 @@ const InvoiceListPage = () => {
         headerName: 'BOL',
         field: 'missingSignedBol',
         minWidth: 120,
-        cellRenderer: BolFlagCellRenderer,
+        cellRenderer: InvoiceBolFlagCellRenderer,
       },
       {
         headerName: 'Created',
@@ -200,8 +156,17 @@ const InvoiceListPage = () => {
         valueFormatter: (params: { value: string }) =>
           params.value ? format(new Date(params.value), 'MM/dd/yyyy') : '\u2014',
       },
+      {
+        headerName: '',
+        field: 'actions',
+        minWidth: 80,
+        maxWidth: 100,
+        sortable: false,
+        cellRenderer: ActionsCell,
+        cellRendererParams: { config: actionsConfig },
+      },
     ],
-    [],
+    [actionsConfig],
   );
 
   const defaultColDef = useMemo(
@@ -225,8 +190,55 @@ const InvoiceListPage = () => {
     [],
   );
 
+  const statusOptions = useMemo(
+    () =>
+      INVOICE_STATUS_OPTIONS.map((status) => ({
+        value: status,
+        label: INVOICE_STATUS_LABELS[status],
+      })),
+    [],
+  );
+
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: 'multiSelectChip',
+        name: 'status',
+        label: 'Status',
+        options: statusOptions,
+        value: selectedStatuses,
+        onChange: (values) => setSelectedStatuses(values as InvoiceStatus[]),
+      },
+      {
+        type: 'toggle',
+        name: 'overdueOnly',
+        label: 'Overdue',
+        checked: overdueOnly,
+        onChange: (checked) => setOverdueOnly(checked),
+      },
+      {
+        type: 'toggle',
+        name: 'missingBolOnly',
+        label: 'Missing BOL',
+        checked: missingBolOnly,
+        onChange: (checked) => setMissingBolOnly(checked),
+      },
+    ],
+    [statusOptions, selectedStatuses, overdueOnly, missingBolOnly],
+  );
+
+  const search = useMemo<SearchConfig>(
+    () => ({
+      placeholder: 'Search invoices...',
+      value: '',
+      onChange: handleSearchChange,
+      debounce: 300,
+    }),
+    [handleSearchChange],
+  );
+
   return (
-    <PageWrapper isLoading={false} errorContext="InvoiceListPage" sx={{ gap: 2 }}>
+    <PageWrapper errorContext="InvoiceListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Invoices"
         primaryAction={
@@ -236,115 +248,37 @@ const InvoiceListPage = () => {
           </Stack>
         }
       >
-        <Box sx={{ px: { xs: 2, sm: 3 }, pb: 3, pt: 2, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <MainCard
-            content={false}
-            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-          >
-            {/* Filter bar */}
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              alignItems={{ xs: 'stretch', md: 'center' }}
-              justifyContent="space-between"
-              spacing={2}
-              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-            >
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                {INVOICE_STATUS_OPTIONS.map((status) => {
-                  const count = statusCounts[status];
-                  const isSelected = selectedStatuses.includes(status);
-                  return (
-                    <Chip
-                      key={status}
-                      label={
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                            {count}
-                          </Typography>
-                          <Typography variant="caption">
-                            {INVOICE_STATUS_LABELS[status]}
-                          </Typography>
-                        </Stack>
-                      }
-                      size="small"
-                      variant={isSelected ? 'filled' : 'outlined'}
-                      color={isSelected ? 'primary' : 'default'}
-                      onClick={() => handleStatusToggle(status)}
-                      sx={{ cursor: 'pointer' }}
-                    />
-                  );
-                })}
-                {overdueCount > 0 && (
-                  <Chip
-                    label={`${overdueCount} OVERDUE`}
-                    size="small"
-                    color="error"
-                    variant="outlined"
-                    sx={{ fontWeight: 700 }}
-                  />
-                )}
-              </Stack>
+        <MainCard
+          content={false}
+          sx={{ mx: { xs: 2, sm: 3 }, mb: 3, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+        >
+          <FilterBar
+            filters={filters}
+            search={search}
+            sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+          />
 
-              <Stack direction="row" spacing={2} alignItems="center">
-                <FormControlLabel
-                  control={
-                    <Switch
-                      size="small"
-                      checked={overdueOnly}
-                      onChange={(_e, checked) => setOverdueOnly(checked)}
-                    />
-                  }
-                  label={<Typography variant="caption">Overdue</Typography>}
-                  sx={{ mr: 0 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      size="small"
-                      checked={missingBolOnly}
-                      onChange={(_e, checked) => setMissingBolOnly(checked)}
-                    />
-                  }
-                  label={<Typography variant="caption">Missing BOL</Typography>}
-                  sx={{ mr: 0 }}
-                />
-                <TextField
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search invoices..."
-                  size="small"
-                  sx={{ width: { xs: '100%', lg: 240 } }}
-                />
-              </Stack>
-            </Stack>
-
-            {/* Grid */}
-            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-              <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
-                <NewDataGrid
-                  columnDefs={columnDefs}
-                  rowData={filteredInvoices}
-                  defaultColDef={defaultColDef}
-                  showRowCountFooter
-                  totalRowCount={filteredInvoices.length}
-                  rowCountLabel="invoices"
-                  noDataMessage="No invoices found"
-                  gridOptions={{
-                    domLayout: 'normal',
-                    pagination: true,
-                    paginationPageSize: 25,
-                    suppressCellFocus: true,
-                    headerHeight: 44,
-                    rowHeight: 52,
-                    onRowClicked: handleRowClicked,
-                    getRowStyle,
-                  }}
-                  loading={isLoading}
-                />
-              </Box>
-            </Box>
-          </MainCard>
-        </Box>
+          <NewDataGrid
+            columnDefs={columnDefs}
+            rowData={filteredInvoices}
+            defaultColDef={defaultColDef}
+            showRowCountFooter
+            totalRowCount={filteredInvoices.length}
+            rowCountLabel="invoices"
+            noDataComponent={<EmptyState variant="no-results" entityName="Invoices" />}
+            gridOptions={{
+              domLayout: 'normal',
+              pagination: true,
+              paginationPageSize: 25,
+              suppressCellFocus: true,
+              headerHeight: 44,
+              rowHeight: 56,
+              onRowClicked: handleRowClicked,
+              getRowStyle,
+            }}
+            loading={isLoading}
+          />
+        </MainCard>
       </ListLayout>
     </PageWrapper>
   );

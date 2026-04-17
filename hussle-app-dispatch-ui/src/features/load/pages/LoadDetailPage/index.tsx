@@ -12,12 +12,12 @@ import {
   selectFormattedLoadById,
 } from '../../store/selectors/loadSelectors';
 import { LOAD_DETAIL_TABS } from '../../constants';
-import { LoadSummaryBar } from '../../components/LoadSummaryBar';
-import { OverviewTab } from './components/OverviewTab';
-import { FinancialsTab } from './components/FinancialsTab';
-import { DocumentsTab } from './components/DocumentsTab';
-import NotificationTab from './components/NotificationTab';
-import { LoadDetailActions } from './components/LoadDetailActions';
+import { LoadSummaryBar } from '../../components/LoadDetailPage/LoadSummaryBar';
+import { OverviewTab } from '../../components/LoadDetailPage/OverviewTab';
+import { FinancialsTab } from '../../components/LoadDetailPage/FinancialsTab';
+import { DocumentsTab } from '../../components/LoadDetailPage/DocumentsTab';
+import NotificationTab from '../../components/LoadDetailPage/NotificationTab';
+import { LoadDetailActions } from '../../components/LoadDetailPage/LoadDetailActions';
 import { openDrawer } from '../../../ui/store/reducers/uiSlice';
 
 const LoadDetailPage = () => {
@@ -75,9 +75,7 @@ const LoadDetailPage = () => {
             tabs={LOAD_DETAIL_TABS}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            summary={
-              formattedLoad ? <LoadSummaryBar summary={formattedLoad.summary} /> : undefined
-            }
+            summary={formattedLoad ? <LoadSummaryBar summary={formattedLoad.summary} /> : undefined}
             actions={<LoadDetailActions load={load} onCreateInvoice={handleCreateInvoice} />}
           >
             {load.status === 'DELIVERED' && (
@@ -111,7 +109,7 @@ const LoadDetailPage = () => {
             )}
 
             {activeTab === 'notifications' && (
-              <NotificationTab loadId={load.id} customerId={load.customerId ?? null} />
+              <NotificationTab loadId={load.id} customerId={load.customer?.id ?? null} />
             )}
           </DetailLayout>
         )}

@@ -17,8 +17,10 @@ export const selectAllCarriers = (state: RootState) => carrierSelectors.selectAl
 export const selectCarrierById = (id: string) => (state: RootState) =>
   carrierSelectors.selectById(state, id);
 
-export const selectCarrierListLoading = (state: RootState) =>
-  state.pages.carriers.loading['getAll'] === LoadingState.Pending;
+export const selectCarrierListLoading = (state: RootState) => {
+  const status = state.pages.carriers.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectCarrierCreateLoading = (state: RootState) =>
   state.pages.carriers.loading['create'] === LoadingState.Pending;

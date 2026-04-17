@@ -7,7 +7,7 @@ import { StatusBadge } from 'components/Statusbadge';
 import { useSelector } from 'store';
 import { selectFormattedCustomerById } from 'features/customer/store/selectors/customerSelectors';
 import type { ContactStats } from 'utils/api/fleet/contactApi';
-import type { Contact } from '../../../types';
+import type { Contact } from '../../types';
 
 interface OverviewTabProps {
   contact: Contact & { createdAt: string; updatedAt: string };

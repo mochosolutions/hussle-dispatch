@@ -1,5 +1,5 @@
 import { KpiCell } from 'components/Typography';
-import type { Customer } from '../../../types';
+import type { Customer } from '../../types';
 import type { CustomerStats } from 'utils/api/fleet/customerApi';
 
 const formatCurrency = (value: string): string =>

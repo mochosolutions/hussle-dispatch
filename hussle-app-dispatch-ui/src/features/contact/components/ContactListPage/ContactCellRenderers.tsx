@@ -1,7 +1,7 @@
 import { Box, Chip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Body, BodyStrong } from 'components/Typography';
-import type { Contact } from '../../../types';
+import type { Contact } from '../../types';
 
 interface ContactWithCustomer extends Contact {
   customer?: { companyName?: string } | null;

@@ -1,5 +1,6 @@
-import { Stack, Typography } from '@mui/material';
+import { Stack } from '@mui/material';
 import MainCard from 'components/MainCard';
+import { BodyMuted, Body, BodyStrong, Amount } from 'components/Typography';
 import type { SettlementDetail } from '../../types';
 
 interface SettlementTotalsCardProps {
@@ -18,24 +19,12 @@ const formatCurrency = (value: string | number): string =>
 interface TotalRowProps {
   label: string;
   value: string;
-  bold?: boolean;
-  color?: string;
 }
 
-const TotalRow: React.FC<TotalRowProps> = ({ label, value, bold, color }) => (
+const TotalRow: React.FC<TotalRowProps> = ({ label, value }) => (
   <Stack direction="row" justifyContent="space-between" alignItems="center">
-    <Typography variant="body2" color="text.secondary">
-      {label}
-    </Typography>
-    <Typography
-      variant="body2"
-      sx={{
-        fontWeight: bold ? 700 : 400,
-        color: color ?? 'text.primary',
-      }}
-    >
-      {value}
-    </Typography>
+    <BodyMuted>{label}</BodyMuted>
+    <Body>{value}</Body>
   </Stack>
 );
 
@@ -51,12 +40,8 @@ export const SettlementTotalsCard: React.FC<SettlementTotalsCardProps> = ({ sett
         alignItems="center"
         sx={{ pt: 1.5, borderTop: 1, borderColor: 'divider' }}
       >
-        <Typography variant="body1" sx={{ fontWeight: 700 }}>
-          Net Earnings
-        </Typography>
-        <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main' }}>
-          {formatCurrency(settlement.netEarnings)}
-        </Typography>
+        <BodyStrong>Net Earnings</BodyStrong>
+        <Amount sx={{ color: 'primary.main' }}>{formatCurrency(settlement.netEarnings)}</Amount>
       </Stack>
     </Stack>
   </MainCard>

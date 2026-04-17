@@ -1,6 +1,11 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { LoadingState, setPending, setFulfilled, setRejected } from '@mocho/ui/redux';
 import type { CreateDriverInput, UpdateDriverInput } from 'features/carrier/types';
+import type {
+  WeeklyScheduleEntry,
+  ScheduleOverride,
+  CreateScheduleOverrideInput,
+} from '../../types';
 
 interface DriverPageState {
   loading: Record<string, string>;
@@ -9,6 +14,8 @@ interface DriverPageState {
   limit: number;
   total: number;
   carrierIdFilter: string;
+  weeklySchedule: WeeklyScheduleEntry[];
+  scheduleOverrides: ScheduleOverride[];
 }
 
 const initialState: DriverPageState = {
@@ -18,6 +25,8 @@ const initialState: DriverPageState = {
   limit: 25,
   total: 0,
   carrierIdFilter: 'all',
+  weeklySchedule: [],
+  scheduleOverrides: [],
 };
 
 interface FetchDriversRequestPayload {
@@ -153,6 +162,88 @@ const driverPageSlice = createSlice({
     setCarrierIdFilter(state, action: PayloadAction<string>) {
       state.carrierIdFilter = action.payload;
     },
+
+    // ----- Schedule: fetch weekly + overrides -----
+    fetchScheduleRequest(state, _action: PayloadAction<{ driverId: string }>) {
+      setPending(state, { key: 'schedule' });
+    },
+    fetchScheduleSuccess(
+      state,
+      action: PayloadAction<{
+        weeklySchedule: WeeklyScheduleEntry[];
+        overrides: ScheduleOverride[];
+      }>,
+    ) {
+      setFulfilled(state, { loadingKey: 'schedule', errorKey: 'schedule' });
+      state.weeklySchedule = action.payload.weeklySchedule;
+      state.scheduleOverrides = action.payload.overrides;
+    },
+    fetchScheduleFailure(state, action: PayloadAction<FailurePayload>) {
+      setRejected(state, {
+        loadingKey: 'schedule',
+        errorKey: 'schedule',
+        failureMessage: action.payload.error,
+      });
+    },
+
+    // ----- Schedule: set weekly -----
+    setWeeklyScheduleRequest(
+      state,
+      _action: PayloadAction<{ driverId: string; entries: WeeklyScheduleEntry[] }>,
+    ) {
+      setPending(state, { key: 'setWeekly' });
+    },
+    setWeeklyScheduleSuccess(state, action: PayloadAction<WeeklyScheduleEntry[]>) {
+      setFulfilled(state, { loadingKey: 'setWeekly', errorKey: 'setWeekly' });
+      state.weeklySchedule = action.payload;
+    },
+    setWeeklyScheduleFailure(state, action: PayloadAction<FailurePayload>) {
+      setRejected(state, {
+        loadingKey: 'setWeekly',
+        errorKey: 'setWeekly',
+        failureMessage: action.payload.error,
+      });
+    },
+
+    // ----- Schedule: create override -----
+    createOverrideRequest(
+      state,
+      _action: PayloadAction<{ driverId: string; data: CreateScheduleOverrideInput }>,
+    ) {
+      setPending(state, { key: 'createOverride' });
+    },
+    createOverrideSuccess(state, action: PayloadAction<ScheduleOverride>) {
+      setFulfilled(state, { loadingKey: 'createOverride', errorKey: 'createOverride' });
+      state.scheduleOverrides = [...state.scheduleOverrides, action.payload];
+    },
+    createOverrideFailure(state, action: PayloadAction<FailurePayload>) {
+      setRejected(state, {
+        loadingKey: 'createOverride',
+        errorKey: 'createOverride',
+        failureMessage: action.payload.error,
+      });
+    },
+
+    // ----- Schedule: delete override -----
+    deleteOverrideRequest(
+      state,
+      _action: PayloadAction<{ driverId: string; overrideId: string }>,
+    ) {
+      setPending(state, { key: 'deleteOverride' });
+    },
+    deleteOverrideSuccess(state, action: PayloadAction<{ overrideId: string }>) {
+      setFulfilled(state, { loadingKey: 'deleteOverride', errorKey: 'deleteOverride' });
+      state.scheduleOverrides = state.scheduleOverrides.filter(
+        (o) => o.id !== action.payload.overrideId,
+      );
+    },
+    deleteOverrideFailure(state, action: PayloadAction<FailurePayload>) {
+      setRejected(state, {
+        loadingKey: 'deleteOverride',
+        errorKey: 'deleteOverride',
+        failureMessage: action.payload.error,
+      });
+    },
   },
 });
 
@@ -173,6 +264,18 @@ export const {
   deleteDriverSuccess,
   deleteDriverFailure,
   setCarrierIdFilter,
+  fetchScheduleRequest,
+  fetchScheduleSuccess,
+  fetchScheduleFailure,
+  setWeeklyScheduleRequest,
+  setWeeklyScheduleSuccess,
+  setWeeklyScheduleFailure,
+  createOverrideRequest,
+  createOverrideSuccess,
+  createOverrideFailure,
+  deleteOverrideRequest,
+  deleteOverrideSuccess,
+  deleteOverrideFailure,
 } = driverPageSlice.actions;
 
 export default driverPageSlice.reducer;

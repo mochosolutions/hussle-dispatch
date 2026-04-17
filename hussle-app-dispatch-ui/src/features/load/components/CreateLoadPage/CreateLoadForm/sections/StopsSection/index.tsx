@@ -8,10 +8,10 @@ import { FieldArray } from 'formik';
 import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
 import { MainCard } from '@mocho/ui/components';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
-import type { StopType } from '../../../../../../types';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
+import type { StopType } from '../../../../../types';
 import { StopFormCard } from 'features/load/components/StopFormCard';
-import { MapView } from 'features/load/components/MapView';
+import { MapView } from '../../../MapView';
 import { useRouteDistance } from './useRouteDistance';
 
 interface StopsSectionProps {
@@ -54,20 +54,25 @@ const LegConnector: React.FC<LegConnectorProps> = ({ miles, isEstimated = false 
       py: 0.5,
     }}
   >
-    <Box
+    {/* <Box
       sx={{
         borderLeft: '2px dashed',
         borderColor: 'divider',
         height: 24,
         position: 'relative',
       }}
-    />
+    /> */}
     <Chip
       size="small"
       label={miles !== null ? `${isEstimated ? '~' : ''}${miles.toLocaleString()} mi` : '\u2014 mi'}
       color={getLegChipColor(miles, isEstimated)}
       variant={getLegChipVariant(miles, isEstimated)}
-      sx={{ position: 'absolute', fontSize: 11 }}
+      sx={{
+        // position: 'absolute',
+        fontSize: 11,
+        pt: 1,
+        pb: 1,
+      }}
     />
   </Box>
 );
@@ -98,6 +103,13 @@ const EMPTY_STOP = {
   isHazmat: false,
   isTarp: false,
   isTempControlled: false,
+  schedulingType: 'APPOINTMENT',
+  facilityOpenTime: '',
+  facilityCloseTime: '',
+  callByTime: '',
+  trailerNumber: '',
+  yardLocation: '',
+  facilityHoursData: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -214,7 +226,9 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                 </Grid>
 
                 <Grid item xs={6}>
-                  <MapView stops={formik.values.stops} height="60%" />
+                  <Box sx={{ position: 'sticky', top: 16 }}>
+                    <MapView stops={formik.values.stops} height={500} />
+                  </Box>
                 </Grid>
               </Grid>
 
@@ -224,7 +238,6 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
         )}
       </FieldArray>
 
-      {/* Hazmat document section */}
       {hasHazmat && (
         <MainCard sx={{ mt: 2 }}>
           <Stack spacing={1.5}>

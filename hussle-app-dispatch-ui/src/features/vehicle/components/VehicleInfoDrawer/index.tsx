@@ -1,43 +1,52 @@
 import React from 'react';
-import { Divider, Grid, Stack } from '@mui/material';
+import { Box, Divider, Stack } from '@mui/material';
 import { FormDrawer } from 'mocho/components/FormDrawer';
-import { TextField } from '../../../../mocho/components/form-fields/TextField';
-import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
+import {
+  TextField,
+  SelectField,
+  StateField,
+  CurrencyField,
+  NumericField,
+  PhoneField,
+} from '../../../../mocho/components';
 import { DrawerSection } from 'components/EditDrawer';
 import { vehicleInfoSchema } from '../../validators/vehicleInfoSchema';
-import type { Vehicle, UpdateVehicleInput } from 'features/carrier/types';
+import type { UpdateVehicleInput } from 'features/carrier/types';
 import { VEHICLE_TYPE_LABELS, OWNERSHIP_LABELS } from '../../constants';
+import { useDispatch, useSelector } from 'store';
+import { selectVehicleById } from '../../store/selectors/vehicleSelectors';
+import { updateVehicleRequest } from '../../store/reducers';
 
 interface VehicleInfoDrawerProps {
-  open: boolean;
+  vehicleId: string;
   onClose: () => void;
-  data: Vehicle;
-  onSave: (values: UpdateVehicleInput) => void;
 }
 
-export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({
-  open,
-  onClose,
-  data,
-  onSave,
-}) => {
+export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId, onClose }) => {
+  const dispatch = useDispatch();
+  const vehicle = useSelector(selectVehicleById(vehicleId));
+
+  if (!vehicle) {
+    return null;
+  }
+
   const initialValues = {
-    unitNumber: data.unitNumber,
-    make: data.make ?? '',
-    model: data.model ?? '',
-    year: data.year ?? '',
-    vin: data.vin ?? '',
-    licensePlate: data.licensePlate ?? '',
-    licensePlateState: data.licensePlateState ?? '',
-    type: data.type,
-    ownership: data.ownership,
-    monthlyGrossTarget: data.monthlyGrossTarget ?? '',
-    monthlyMilesTarget: data.monthlyMilesTarget ?? '',
-    workingDaysPerMonth: data.workingDaysPerMonth ?? '',
-    emergencyContactName: data.emergencyContactName ?? '',
-    emergencyContactPhone: data.emergencyContactPhone ?? '',
-    warrantyInfo: data.warrantyInfo ?? '',
-    notes: data.notes ?? '',
+    unitNumber: vehicle.unitNumber,
+    make: vehicle.make ?? '',
+    model: vehicle.model ?? '',
+    year: vehicle.year ?? '',
+    vin: vehicle.vin ?? '',
+    licensePlate: vehicle.licensePlate ?? '',
+    licensePlateState: vehicle.licensePlateState ?? '',
+    type: vehicle.type,
+    ownership: vehicle.ownership,
+    monthlyGrossTarget: vehicle.monthlyGrossTarget ?? '',
+    monthlyMilesTarget: vehicle.monthlyMilesTarget ?? '',
+    workingDaysPerMonth: vehicle.workingDaysPerMonth ?? '',
+    emergencyContactName: vehicle.emergencyContactName ?? '',
+    emergencyContactPhone: vehicle.emergencyContactPhone ?? '',
+    warrantyInfo: vehicle.warrantyInfo ?? '',
+    notes: vehicle.notes ?? '',
   };
 
   const vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(([value, label]) => ({
@@ -50,38 +59,41 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({
     label,
   }));
 
+  const handleSubmit = (values: typeof initialValues) => {
+    const transformed: UpdateVehicleInput = {
+      unitNumber: values.unitNumber,
+      make: values.make || null,
+      model: values.model || null,
+      year: values.year !== '' ? Number(values.year) : null,
+      vin: values.vin || null,
+      licensePlate: values.licensePlate || null,
+      licensePlateState: values.licensePlateState || null,
+      type: values.type,
+      ownership: values.ownership,
+      monthlyGrossTarget:
+        values.monthlyGrossTarget !== '' ? String(values.monthlyGrossTarget) : null,
+      monthlyMilesTarget:
+        values.monthlyMilesTarget !== '' ? Number(values.monthlyMilesTarget) : null,
+      workingDaysPerMonth:
+        values.workingDaysPerMonth !== '' ? Number(values.workingDaysPerMonth) : null,
+      emergencyContactName: values.emergencyContactName || null,
+      emergencyContactPhone: values.emergencyContactPhone || null,
+      warrantyInfo: values.warrantyInfo || null,
+      notes: values.notes || null,
+    };
+    dispatch(updateVehicleRequest({ id: vehicleId, data: transformed }));
+    onClose();
+  };
+
   return (
     <FormDrawer
-      open={open}
+      open
       onClose={onClose}
       title="Edit Vehicle Information"
-      subtitle={data.unitNumber}
+      subtitle={vehicle.unitNumber}
       initialValues={initialValues}
       validationSchema={vehicleInfoSchema}
-      onSubmit={(values) => {
-        const transformed: UpdateVehicleInput = {
-          unitNumber: values.unitNumber,
-          make: values.make || null,
-          model: values.model || null,
-          year: values.year !== '' ? Number(values.year) : null,
-          vin: values.vin || null,
-          licensePlate: values.licensePlate || null,
-          licensePlateState: values.licensePlateState || null,
-          type: values.type,
-          ownership: values.ownership,
-          monthlyGrossTarget:
-            values.monthlyGrossTarget !== '' ? String(values.monthlyGrossTarget) : null,
-          monthlyMilesTarget:
-            values.monthlyMilesTarget !== '' ? Number(values.monthlyMilesTarget) : null,
-          workingDaysPerMonth:
-            values.workingDaysPerMonth !== '' ? Number(values.workingDaysPerMonth) : null,
-          emergencyContactName: values.emergencyContactName || null,
-          emergencyContactPhone: values.emergencyContactPhone || null,
-          warrantyInfo: values.warrantyInfo || null,
-          notes: values.notes || null,
-        };
-        onSave(transformed);
-      }}
+      onSubmit={handleSubmit}
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
@@ -95,78 +107,76 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({
               data={ownershipOptions}
               formik={formik}
             />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="make" label="Make" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="model" label="Model" formik={formik} />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="year" label="Year" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="vin" label="VIN" formik={formik} />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="licensePlate" label="License Plate" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField name="licensePlateState" label="License Plate State" formik={formik} />
-              </Grid>
-            </Grid>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <StateField name="licensePlateState" label="License Plate State" formik={formik} />
+              </Box>
+            </Box>
           </DrawerSection>
 
           <Divider sx={{ my: 0.5 }} />
 
           {/* Targets */}
           <DrawerSection label="Targets">
-            <TextField
+            <CurrencyField
               name="monthlyGrossTarget"
-              label="Monthly Gross Target ($)"
+              label="Monthly Gross Target"
               formik={formik}
             />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <NumericField
                   name="monthlyMilesTarget"
                   label="Miles Target / Month"
-                  type="number"
+                  suffix="mi"
                   formik={formik}
                 />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <NumericField
                   name="workingDaysPerMonth"
                   label="Working Days / Month"
-                  type="number"
                   formik={formik}
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </DrawerSection>
 
           <Divider sx={{ my: 0.5 }} />
 
           {/* Emergency Contact */}
           <DrawerSection label="Emergency Contact">
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="emergencyContactName" label="Contact Name" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <PhoneField
                   name="emergencyContactPhone"
                   label="Contact Phone"
-                  type="tel"
                   formik={formik}
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </DrawerSection>
 
           <Divider sx={{ my: 0.5 }} />

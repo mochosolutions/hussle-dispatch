@@ -30,6 +30,11 @@ export interface StopResponse {
   isTarp: boolean;
   isTempControlled: boolean;
   notes: string | null;
+  facilityOpenTime: string | null;
+  facilityCloseTime: string | null;
+  callByTime: string | null;
+  trailerNumber: string | null;
+  yardLocation: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,6 +69,11 @@ export const toStopResponse = (stop: Stop): StopResponse => ({
   isTarp: stop.isTarp,
   isTempControlled: stop.isTempControlled,
   notes: stop.notes,
+  facilityOpenTime: stop.facilityOpenTime,
+  facilityCloseTime: stop.facilityCloseTime,
+  callByTime: stop.callByTime,
+  trailerNumber: stop.trailerNumber,
+  yardLocation: stop.yardLocation,
   createdAt: stop.createdAt.toISOString(),
   updatedAt: stop.updatedAt.toISOString(),
 });

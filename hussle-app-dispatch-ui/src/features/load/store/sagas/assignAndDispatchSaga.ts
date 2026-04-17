@@ -2,13 +2,13 @@ import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import { enqueueSnackbar } from 'notistack';
 import { isAxiosError } from 'axios';
 import { assignLoad, transitionStatus } from 'utils/api/loads/loadApi';
-import type { LoadListItem } from '../../types';
 import {
   assignAndDispatchRequest,
   assignAndDispatchSuccess,
   assignAndDispatchFailure,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
+import { mapDetailToListItem } from './detailToListItemMapper';
 
 export function* assignAndDispatchSaga(
   action: ReturnType<typeof assignAndDispatchRequest>,
@@ -31,36 +31,8 @@ export function* assignAndDispatchSaga(
 
     // Update entity store after assignment
     const assignedLoad = assignResponse.load;
-    const origin = (assignedLoad.stops ?? []).find((s) => s.type === 'PICKUP');
-    const deliveries = (assignedLoad.stops ?? []).filter((s) => s.type === 'DELIVERY');
-    const lastDelivery = deliveries[deliveries.length - 1];
-
     yield put(
-      loadActions.updateOne({
-        id: loadId,
-        changes: {
-          status: assignedLoad.status,
-          equipmentType: assignedLoad.equipmentType,
-          commodity: assignedLoad.commodity,
-          customerRate: assignedLoad.customerRate,
-          carrierPayout: assignedLoad.carrierPayout,
-          totalMiles: assignedLoad.totalMiles,
-          ratePerMile: assignedLoad.ratePerMile,
-          ratePerTotalMile: assignedLoad.ratePerTotalMile ?? null,
-          carrierId: assignedLoad.carrierId,
-          carrierName: assignedLoad.carrier?.name ?? null,
-          driverId: assignedLoad.driverId,
-          driverName: assignedLoad.driver
-            ? `${assignedLoad.driver.firstName} ${assignedLoad.driver.lastName}`
-            : null,
-          originCity: origin?.city ?? null,
-          originState: origin?.state ?? null,
-          destinationCity: lastDelivery?.city ?? null,
-          destinationState: lastDelivery?.state ?? null,
-          accessorialChargeCount: assignedLoad.accessorialCharges.length,
-          updatedAt: assignedLoad.updatedAt,
-        } satisfies Partial<LoadListItem>,
-      }),
+      loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(assignedLoad) }),
     );
 
     // Step 2: Transition to DISPATCHED
@@ -78,37 +50,7 @@ export function* assignAndDispatchSaga(
     // Update entity store after transition
     if (transitionResponse.load) {
       const { load } = transitionResponse;
-      const tOrigin = (load.stops ?? []).find((s) => s.type === 'PICKUP');
-      const tDeliveries = (load.stops ?? []).filter((s) => s.type === 'DELIVERY');
-      const tLastDelivery = tDeliveries[tDeliveries.length - 1];
-
-      yield put(
-        loadActions.updateOne({
-          id: loadId,
-          changes: {
-            status: load.status,
-            equipmentType: load.equipmentType,
-            commodity: load.commodity,
-            customerRate: load.customerRate,
-            carrierPayout: load.carrierPayout,
-            totalMiles: load.totalMiles,
-            ratePerMile: load.ratePerMile,
-            ratePerTotalMile: load.ratePerTotalMile ?? null,
-            carrierId: load.carrierId,
-            carrierName: load.carrier?.name ?? null,
-            driverId: load.driverId,
-            driverName: load.driver
-              ? `${load.driver.firstName} ${load.driver.lastName}`
-              : null,
-            originCity: tOrigin?.city ?? null,
-            originState: tOrigin?.state ?? null,
-            destinationCity: tLastDelivery?.city ?? null,
-            destinationState: tLastDelivery?.state ?? null,
-            accessorialChargeCount: load.accessorialCharges.length,
-            updatedAt: load.updatedAt,
-          } satisfies Partial<LoadListItem>,
-        }),
-      );
+      yield put(loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(load) }));
       yield put(loadActions.upsertOne(load));
     }
 

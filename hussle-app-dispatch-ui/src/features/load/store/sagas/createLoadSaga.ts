@@ -9,9 +9,10 @@ import {
   confirmDocument,
 } from 'utils/api/documents/documentApi';
 import { createContact } from 'utils/api/fleet/contactApi';
-import type { CreateLoadInput, LoadListItem, QueuedDocument } from '../../types';
+import type { CreateLoadInput, QueuedDocument } from '../../types';
 import { createLoadSuccess, createLoadFailure, fetchLoadsRequest } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
+import { mapDetailToListItem } from './detailToListItemMapper';
 
 interface CreateLoadPayload {
   data: CreateLoadInput;
@@ -39,62 +40,19 @@ function* uploadQueuedDocuments(loadId: string, documents: QueuedDocument[]) {
   return failed;
 }
 
-// Remove automatic contact creation contacts should be created prior to load creation
-//
 export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Generator {
   try {
     const { data, queuedDocuments } = action.payload;
 
-    console.log('Creating load with data:', { data });
-
     const load = (yield call(createLoad, data)) as SagaReturnType<typeof createLoad>;
 
-    console.log('Load created successfully:', { load });
     // Upload queued documents after load creation
     let docsFailed = 0;
     if (queuedDocuments.length > 0) {
       docsFailed = (yield* uploadQueuedDocuments(load.id, queuedDocuments)) as number;
     }
 
-    // Map detail to list item for entity store
-    const origin = (load.stops ?? []).find((s) => s.type === 'PICKUP');
-    const deliveries = (load.stops ?? []).filter((s) => s.type === 'DELIVERY');
-    const lastDelivery = deliveries[deliveries.length - 1];
-
-    const loadListItem: LoadListItem = {
-      id: load.id,
-      loadNumber: load.loadNumber,
-      status: load.status,
-      equipmentType: load.equipmentType,
-      commodity: load.commodity,
-      customerRate: load.customerRate,
-      carrierPayout: load.carrierPayout,
-      companyMargin: load.companyMargin,
-      companyNet: load.companyNet,
-      totalMiles: load.totalMiles,
-      ratePerMile: load.ratePerMile,
-      ratePerTotalMile: load.ratePerTotalMile ?? null,
-      carrierId: load.carrierId,
-      carrierName: load.carrier?.name ?? null,
-      driverId: load.driverId,
-      driverName: load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : null,
-      customerName: load.customer?.companyName ?? null,
-      contactName: load.contact
-        ? `${load.contact.firstName} ${load.contact.lastName}`.trim()
-        : null,
-      contactEmail: load.contact?.email ?? null,
-      contactPhone: load.contact?.phone ?? null,
-      originCity: origin?.city ?? null,
-      originState: origin?.state ?? null,
-      destinationCity: lastDelivery?.city ?? null,
-      destinationState: lastDelivery?.state ?? null,
-      accessorialChargeCount: load.accessorialCharges.length,
-      createdAt: load.createdAt,
-      updatedAt: load.updatedAt,
-      pickupDate: origin?.appointmentDate ?? null,
-    };
-
-    yield put(loadActions.addOne(loadListItem));
+    yield put(loadActions.addOne(mapDetailToListItem(load)));
     yield put(createLoadSuccess({}));
 
     // Auto-save new contacts (have contactName but no contactId)

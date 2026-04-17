@@ -1,4 +1,4 @@
-import type { AddressSearchResult } from '../../types/addressSearchTypes';
+import type { AddressSearchResult, FacilityDayHoursEntry } from '../../types/addressSearchTypes';
 
 export interface AddressSearchResponse {
   source: string;
@@ -16,6 +16,8 @@ export interface AddressSearchResponse {
   appointmentRequired: boolean;
   lumperRequired: boolean;
   ppeRequired: boolean;
+  facilityHours: FacilityDayHoursEntry[] | null;
+  is24Hours: boolean;
 }
 
 export const toAddressSearchResponse = (
@@ -37,4 +39,6 @@ export const toAddressSearchResponse = (
     appointmentRequired: result.appointmentRequired,
     lumperRequired: result.lumperRequired,
     ppeRequired: result.ppeRequired,
+    facilityHours: result.facilityHours,
+    is24Hours: result.is24Hours,
   }));

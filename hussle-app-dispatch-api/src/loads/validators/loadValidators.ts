@@ -49,6 +49,11 @@ const stopSchema = Yup.object({
   isTarp: Yup.boolean().notRequired(),
   isTempControlled: Yup.boolean().notRequired(),
   notes: optionalTrimmed,
+  facilityOpenTime: optionalTrimmed,
+  facilityCloseTime: optionalTrimmed,
+  callByTime: optionalTrimmed,
+  trailerNumber: optionalTrimmed,
+  yardLocation: optionalTrimmed,
 });
 
 const accessorialChargeSchema = Yup.object({

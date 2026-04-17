@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { Box, Button, Card } from '@mui/material';
 import { CloudUploadOutlined } from '@ant-design/icons';
-import { DocumentTable } from '../../../../documents/components/DocumentTable';
-import { useDrawerActions } from '../../../../ui/hooks/useDrawerActions';
+import { DocumentTable } from '../../../documents/components/DocumentTable';
+import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 interface DocumentsTabProps {
   carrierId: string;

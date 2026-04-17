@@ -4,6 +4,7 @@ import { carrierPageSlice } from '../reducers/carrierNewPageSlice';
 import { fetchCarrierDetailsSaga } from './fetchCarrierDetailsSaga';
 import { createCarrierSaga } from './createCarrierSaga';
 import { updateCarrierSaga } from './updateCarrierSaga';
+import { deleteCarrierSaga } from './deleteCarrierSaga';
 import { fetchCarrierNotesSaga } from './fetchCarrierNotesSaga';
 import { createCarrierNoteSaga } from './createCarrierNoteSaga';
 import { fetchCarrierDriversSaga } from './fetchCarrierDriversSaga';
@@ -24,6 +25,7 @@ export function* carrierSagaWatcher(): Generator {
   yield takeLatest(carrierPageActions.fetchByIdRequest.type, fetchCarrierDetailsSaga);
   yield takeLatest(carrierPageActions.createRequest.type, createCarrierSaga);
   yield takeLatest(carrierPageActions.updateRequest.type, updateCarrierSaga);
+  yield takeLatest(carrierPageActions.deleteRequest.type, deleteCarrierSaga);
   yield takeLatest(fetchCarrierNotesRequest.type, fetchCarrierNotesSaga);
   yield takeLatest(createCarrierNoteRequest.type, createCarrierNoteSaga);
   yield takeLatest(fetchCarrierDriversRequest.type, fetchCarrierDriversSaga);

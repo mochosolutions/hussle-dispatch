@@ -1,18 +1,12 @@
 import { useEffect, useMemo } from 'react';
-import {
-  Box,
-  Chip,
-  Grid,
-  LinearProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, Grid, Stack } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { PageWrapper, MainCard } from '@mocho/ui/components';
+import { MainCard, PageWrapper } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
-import { KpiCell, SectionLabel } from 'components/Typography';
+import SectionCard from 'components/SectionCard';
+import { BodyMedium, BodyMuted, KpiCell, SectionTitle } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
-import { fetchDashboardRequest } from '../store/sagas/dashboardSagaWatcher';
+import { fetchDashboardRequest } from '../store/reducers/dashboardSlice';
 import {
   selectDashboardKpis,
   selectWeeklyGross,
@@ -23,8 +17,9 @@ import {
   selectTotalAttentionCount,
 } from '../store/selectors/dashboardSelectors';
 import { PendingCarriersCard } from 'features/carrier/components/PendingCarriersCard';
-import type { AttentionCategory, WeeklyGrossItem } from '../types';
+import type { AttentionCategory } from '../types';
 import { ATTENTION_CATEGORY_LABELS } from '../types';
+import { GrossBar } from './components/GrossBar';
 
 // ---------------------------------------------------------------------------
 // Currency formatter
@@ -37,67 +32,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 // ---------------------------------------------------------------------------
-// Weekly Gross Bar
-// ---------------------------------------------------------------------------
-
-const getBarColor = (revenue: number, target: number): string => {
-  if (target <= 0) {
-    return '#757575';
-  }
-  const pct = (revenue / target) * 100;
-  if (pct >= 100) {
-    return '#2e7d32';
-  }
-  if (pct >= 50) {
-    return '#ed6c02';
-  }
-  return '#d32f2f';
-};
-
-interface GrossBarProps {
-  item: WeeklyGrossItem;
-  maxRevenue: number;
-}
-
-const GrossBar: React.FC<GrossBarProps> = ({ item, maxRevenue }) => {
-  const pct = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0;
-  const color = getBarColor(item.revenue, item.target);
-
-  return (
-    <Stack spacing={0.5}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-          {item.unitNumber}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {currencyFormatter.format(item.revenue)}
-          {item.target > 0 && ` / ${currencyFormatter.format(item.target)}`}
-        </Typography>
-      </Stack>
-      <LinearProgress
-        variant="determinate"
-        value={Math.min(pct, 100)}
-        sx={{
-          height: 10,
-          borderRadius: 1,
-          bgcolor: 'grey.200',
-          '& .MuiLinearProgress-bar': {
-            bgcolor: color,
-            borderRadius: 1,
-          },
-        }}
-      />
-      {item.driverName && (
-        <Typography variant="caption" color="text.disabled">
-          {item.driverName} &middot; {item.loadCount} load{item.loadCount !== 1 ? 's' : ''}
-        </Typography>
-      )}
-    </Stack>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Attention Items Section
+// Constants
 // ---------------------------------------------------------------------------
 
 const CATEGORY_ORDER: AttentionCategory[] = [
@@ -118,17 +53,17 @@ const DashboardPage = () => {
 
   const kpis = useSelector(selectDashboardKpis);
   const weeklyGross = useSelector(selectWeeklyGross);
+  const attentionByCategory = useSelector(selectAttentionItemsByCategory);
+  const totalAttentionCount = useSelector(selectTotalAttentionCount);
   const kpisLoading = useSelector(selectKpisLoading);
   const weeklyGrossLoading = useSelector(selectWeeklyGrossLoading);
   const attentionLoading = useSelector(selectAttentionItemsLoading);
-  const attentionByCategory = useSelector(selectAttentionItemsByCategory);
-  const totalAttentionCount = useSelector(selectTotalAttentionCount);
+
+  const isLoading = kpisLoading || weeklyGrossLoading || attentionLoading;
 
   useEffect(() => {
     dispatch(fetchDashboardRequest());
   }, [dispatch]);
-
-  const isLoading = kpisLoading || weeklyGrossLoading || attentionLoading;
 
   // Build KPI data
   const kpiCards = useMemo(() => {
@@ -136,15 +71,18 @@ const DashboardPage = () => {
       return [];
     }
 
-    const activeTotal = (kpis?.kanbanCounts?.NEW ?? 0) + (kpis?.kanbanCounts?.BOOKED ?? 0)
-      + (kpis?.kanbanCounts?.ACTIVE ?? 0) + (kpis?.kanbanCounts?.ISSUES ?? 0);
+    const activeTotal =
+      (kpis.kanbanCounts.NEW ?? 0) +
+      (kpis.kanbanCounts.BOOKED ?? 0) +
+      (kpis.kanbanCounts.ACTIVE ?? 0) +
+      (kpis.kanbanCounts.ISSUES ?? 0);
 
-    const kanbanBreakdown = Object.entries(kpis?.kanbanCounts ?? {})
+    const kanbanBreakdown = Object.entries(kpis.kanbanCounts ?? {})
       .filter(([, count]) => count > 0)
       .map(([group, count]) => `${count} ${group}`)
       .join(', ');
 
-    const overdueTotal = Number(kpis?.overdueInvoices?.total ?? 0);
+    const overdueTotal = Number(kpis.overdueInvoices?.total ?? 0);
 
     return [
       {
@@ -154,39 +92,33 @@ const DashboardPage = () => {
       },
       {
         label: 'Weekly Revenue',
-        value: currencyFormatter.format(Number(kpis?.revenue?.revenueThisWeek ?? 0)),
+        value: currencyFormatter.format(Number(kpis.revenue?.revenueThisWeek ?? 0)),
       },
       {
         label: 'Monthly Revenue',
-        value: currencyFormatter.format(Number(kpis?.revenue?.revenueThisMonth ?? 0)),
+        value: currencyFormatter.format(Number(kpis.revenue?.revenueThisMonth ?? 0)),
       },
       {
         label: 'Company Margin',
-        value: currencyFormatter.format(Number(kpis?.revenue?.companyMarginThisMonth ?? 0)),
+        value: currencyFormatter.format(Number(kpis.revenue?.companyMarginThisMonth ?? 0)),
       },
       {
         label: 'Overdue Invoices',
-        value: String(kpis?.overdueInvoices?.count ?? 0),
-        sub: overdueTotal > 0
-          ? currencyFormatter.format(overdueTotal)
-          : undefined,
+        value: String(kpis.overdueInvoices?.count ?? 0),
+        sub: overdueTotal > 0 ? currencyFormatter.format(overdueTotal) : undefined,
       },
     ];
   }, [kpis]);
 
   // Max revenue for bar chart scaling
   const maxRevenue = useMemo(
-    () =>
-      weeklyGross.reduce((max, item) => Math.max(max, item.revenue, item.target), 0),
+    () => weeklyGross.reduce((max, item) => Math.max(max, item.revenue, item.target), 0),
     [weeklyGross],
   );
 
   // Non-empty attention categories
   const activeCategories = useMemo(
-    () =>
-      CATEGORY_ORDER.filter(
-        (cat) => (attentionByCategory[cat]?.length ?? 0) > 0,
-      ),
+    () => CATEGORY_ORDER.filter((cat) => (attentionByCategory[cat]?.length ?? 0) > 0),
     [attentionByCategory],
   );
 
@@ -207,8 +139,7 @@ const DashboardPage = () => {
         <Grid container spacing={2} sx={{ px: { xs: 2, sm: 3 }, pb: 3 }}>
           {/* Weekly Gross Tracker */}
           <Grid item xs={12} lg={8}>
-            <MainCard>
-              <SectionLabel sx={{ mb: 2 }}>Weekly Gross Tracker</SectionLabel>
+            <SectionCard title="Weekly Gross Tracker">
               {weeklyGross.length > 0 ? (
                 <Stack spacing={2}>
                   {weeklyGross.map((item) => (
@@ -216,11 +147,9 @@ const DashboardPage = () => {
                   ))}
                 </Stack>
               ) : (
-                <Typography variant="body2" color="text.disabled">
-                  No weekly gross data available
-                </Typography>
+                <BodyMuted>No weekly gross data available</BodyMuted>
               )}
-            </MainCard>
+            </SectionCard>
           </Grid>
 
           {/* Pending Carriers */}
@@ -228,31 +157,24 @@ const DashboardPage = () => {
             <PendingCarriersCard />
           </Grid>
 
-          {/* Attention Items */}
+          {/* Needs Attention */}
           <Grid item xs={12} lg={4}>
-            <MainCard>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <SectionLabel>Needs Attention</SectionLabel>
-                {totalAttentionCount > 0 && (
+            <SectionCard
+              title={<SectionTitle>Needs Attention</SectionTitle>}
+              actions={
+                totalAttentionCount > 0 ? (
                   <Chip
                     label={totalAttentionCount}
                     size="small"
                     color="warning"
                     sx={{ fontWeight: 700 }}
                   />
-                )}
-              </Stack>
-
+                ) : undefined
+              }
+            >
               {totalAttentionCount === 0 ? (
-                <Box
-                  sx={{
-                    py: 4,
-                    textAlign: 'center',
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    All clear &mdash; no items need attention
-                  </Typography>
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                  <BodyMuted>All clear &mdash; no items need attention</BodyMuted>
                 </Box>
               ) : (
                 <Stack spacing={2}>
@@ -261,12 +183,9 @@ const DashboardPage = () => {
                     return (
                       <Box key={category}>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                          <Typography
-                            variant="caption"
-                            sx={{ fontWeight: 700, textTransform: 'uppercase' }}
-                          >
+                          <BodyMuted sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.6875rem' }}>
                             {ATTENTION_CATEGORY_LABELS[category]}
-                          </Typography>
+                          </BodyMuted>
                           <Chip
                             label={items.length}
                             size="small"
@@ -293,14 +212,8 @@ const DashboardPage = () => {
                                 },
                               }}
                             >
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {item.title}
-                              </Typography>
-                              {item.subtitle && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {item.subtitle}
-                                </Typography>
-                              )}
+                              <BodyMedium>{item.title}</BodyMedium>
+                              {item.subtitle && <BodyMuted>{item.subtitle}</BodyMuted>}
                             </Box>
                           ))}
                         </Stack>
@@ -309,7 +222,7 @@ const DashboardPage = () => {
                   })}
                 </Stack>
               )}
-            </MainCard>
+            </SectionCard>
           </Grid>
         </Grid>
       </ListLayout>

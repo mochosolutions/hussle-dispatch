@@ -3,7 +3,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import SectionCard from 'components/SectionCard';
 import { DetailRow } from 'components/Typography';
-import type { LoadDetail } from '../../types';
+import type { LoadDetail } from '../../../types';
 
 interface BrokerCardProps {
   contact: LoadDetail['contact'];
@@ -41,7 +41,7 @@ export const BrokerCard: React.FC<BrokerCardProps> = ({ contact, externalRefNumb
   return (
     <SectionCard
       title="Contact"
-      contentSX={{ p: 0 }}
+      // contentSX={{ p: 0 }}
       actions={
         <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={onEdit}>
           Edit
@@ -65,10 +65,7 @@ export const BrokerCard: React.FC<BrokerCardProps> = ({ contact, externalRefNumb
         <DetailRow
           label="Email"
           value={
-            <Link
-              href={`mailto:${contact.email}`}
-              sx={{ fontWeight: 600, textDecoration: 'none' }}
-            >
+            <Link href={`mailto:${contact.email}`} sx={{ fontWeight: 600, textDecoration: 'none' }}>
               {contact.email}
             </Link>
           }

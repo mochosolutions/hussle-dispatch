@@ -15,8 +15,8 @@ import { useSelector, useDispatch } from 'store';
 import {
   fetchNotificationSettingsRequest,
   updateNotificationSettingsRequest,
-} from '../../../store/reducers/customerPageSlice';
-import type { NotificationSetting, NotificationTrigger, NotificationChannel } from '../../../types';
+} from '../../store/reducers/customerPageSlice';
+import type { NotificationSetting, NotificationTrigger, NotificationChannel } from '../../types';
 
 interface NotificationsTabProps {
   customerId: string;

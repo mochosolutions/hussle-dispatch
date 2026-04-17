@@ -9,12 +9,13 @@ import {
   setSourceFilter,
   startPolling,
   stopPolling,
-} from '../../../store/reducers/loadPageSlice';
-import type { LoadBoardSource } from '../../../types';
+} from '../../store/reducers/loadPageSlice';
+import type { LoadBoardSource } from '../../types';
 import {
   selectFilteredLoads,
   selectCommandCenterLayers,
-} from '../../../store/selectors/loadSelectors';
+} from '../../store/selectors/loadSelectors';
+import { selectAllDrivers } from 'features/driver/store/selectors/driverSelectors';
 
 import { CommandCenterMap } from './CommandCenterMap';
 import { CommandCenterPanel } from './CommandCenterPanel';
@@ -36,7 +37,7 @@ export const CommandCenterView: React.FC = () => {
   // Load board feed data (consolidated into load page slice)
   const loadPage = useSelector((state: RootState) => state.pages.loads);
   const feedLoads = loadPage.feedLoads;
-  const drivers: unknown[] = [];
+  const drivers = useSelector(selectAllDrivers);
   const sourceFilter = loadPage.sourceFilter;
   const datIngesting = loadPage.datIngesting;
   const meta = loadPage.feedMeta;
@@ -50,10 +51,9 @@ export const CommandCenterView: React.FC = () => {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
 
-  // Start loadboard polling + fetch drivers on mount
+  // Start loadboard polling on mount
   useEffect(() => {
     dispatch(startPolling());
-    // dispatch(fetchDriversRequest());
     return () => {
       dispatch(stopPolling());
     };

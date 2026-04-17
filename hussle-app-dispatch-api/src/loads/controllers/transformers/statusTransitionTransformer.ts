@@ -1,6 +1,6 @@
 import type { StatusTransitionResponse } from '../../types/loadStatusTypes';
+import type { LoadDetailResponse } from '../../types/loadTypes';
 import { toLoadDetailResponse } from './loadTransformer';
-import type { LoadDetailResponse } from './loadTransformer';
 
 export interface StatusTransitionApiResponse {
   success: boolean;

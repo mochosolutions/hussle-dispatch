@@ -3,7 +3,7 @@ import { DetailRow } from 'components/Typography';
 import SectionCard from 'components/SectionCard';
 import { ContextualAlert } from 'components/ContextualAlert';
 import type { PlaceStats } from 'utils/api/places/placeApi';
-import type { Place } from '../../../types';
+import type { Place } from '../../types';
 
 interface OverviewTabProps {
   place: Place;

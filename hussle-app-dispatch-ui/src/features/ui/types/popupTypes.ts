@@ -17,13 +17,23 @@ export type DrawerType =
   | 'carrierNote'
   | 'customerCompanyInfo'
   | 'vehicleInfo'
+  | 'vehicleExpenses'
+  | 'vehicleTargets'
   | 'vehicleCreate'
   | 'driverInfo'
+  | 'driverPreferences'
+  | 'driverLocation'
+  | 'driverWeeklySchedule'
+  | 'driverScheduleOverride'
   | 'driverCreate'
   | 'carrierForm'
   | 'contactCreate'
-  | 'loadDetail'
-  | 'documentUpload';
+  | 'contactInfo'
+  | 'documentUpload'
+  | 'disputeSettlement'
+  | 'addAdjustment'
+  | 'expenseQuickAdd'
+  | 'paySettlement';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
@@ -31,8 +41,13 @@ export interface DrawerTypeMap {
   carrierNote: { carrierId: string };
   customerCompanyInfo: { customerId: string };
   vehicleInfo: { vehicleId: string };
+  vehicleExpenses: { vehicleId: string };
+  vehicleTargets: { vehicleId: string };
   driverInfo: { driverId: string };
-  loadDetail: { loadId: string };
+  driverPreferences: { driverId: string };
+  driverLocation: { driverId: string };
+  driverWeeklySchedule: { driverId: string };
+  driverScheduleOverride: { driverId: string };
   vehicleCreate: { onClose: () => void };
   driverCreate: { onClose: () => void };
   carrierForm: {
@@ -46,6 +61,7 @@ export interface DrawerTypeMap {
     initialCompanyName?: string;
     onClose: () => void;
   };
+  contactInfo: { contactId: string };
   documentUpload: {
     context: import('../../documents/constants').DocumentContext;
     entityType: import('../../documents/types').DocumentEntityType;
@@ -53,13 +69,25 @@ export interface DrawerTypeMap {
     preselectedDocType?: import('../../documents/types').DocumentType;
     lockDocType?: boolean;
   };
+  disputeSettlement: { settlementId: string };
+  addAdjustment: { settlementId: string };
+  expenseQuickAdd: { onSuccess: () => void };
+  paySettlement: { settlementId: string };
 }
 
 // ---------------------------------------------------------------------------
 // Modals
 // ---------------------------------------------------------------------------
 
-export type ModalType = 'dirtyFormConfirm' | 'createLoadModal';
+export type ModalType =
+  | 'dirtyFormConfirm'
+  | 'createLoadModal'
+  | 'inviteMember'
+  | 'generateSettlement'
+  | 'carrierNote'
+  | 'confirmDeleteInvoice'
+  | 'sendInvoice'
+  | 'markInvoicePaid';
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
@@ -67,4 +95,10 @@ export interface ModalTypeMap {
     onSelect: (loadType: string, template?: import('../../load/types').LoadTemplate) => void;
     onCancel?: () => void;
   };
+  inviteMember: { organizationId: string };
+  generateSettlement: Record<string, never>;
+  carrierNote: { carrierId: string };
+  confirmDeleteInvoice: { invoiceId: string };
+  sendInvoice: { invoiceId: string };
+  markInvoicePaid: { invoiceId: string; balanceDue: number };
 }

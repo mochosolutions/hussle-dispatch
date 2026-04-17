@@ -1,22 +1,29 @@
 import React from 'react';
-import { Stack, TextField } from '@mui/material';
+import { Stack } from '@mui/material';
 import { FormDrawer } from 'mocho/components/FormDrawer';
+import { CurrencyField, NumericField } from '@mocho/ui/components';
 import { vehicleTargetsSchema } from '../../validators/vehicleTargetsSchema';
-import type { Vehicle, UpdateVehicleInput } from 'features/carrier/types';
+import type { UpdateVehicleInput } from 'features/carrier/types';
+import { useDispatch, useSelector } from 'store';
+import { selectVehicleById } from '../../store/selectors/vehicleSelectors';
+import { updateVehicleRequest } from '../../store/reducers';
 
 interface VehicleTargetsDrawerProps {
-  open: boolean;
+  vehicleId: string;
   onClose: () => void;
-  data: Vehicle;
-  onSave: (values: UpdateVehicleInput) => void;
 }
 
 export const VehicleTargetsDrawer: React.FC<VehicleTargetsDrawerProps> = ({
-  open,
+  vehicleId,
   onClose,
-  data,
-  onSave,
 }) => {
+  const dispatch = useDispatch();
+  const vehicle = useSelector(selectVehicleById(vehicleId));
+
+  if (!vehicle) {
+    return null;
+  }
+
   const handleSubmit = (values: {
     monthlyGrossTarget: string | null | undefined;
     monthlyMilesTarget: number | null | undefined;
@@ -30,69 +37,34 @@ export const VehicleTargetsDrawer: React.FC<VehicleTargetsDrawerProps> = ({
       workingDaysPerMonth:
         values.workingDaysPerMonth !== '' ? Number(values.workingDaysPerMonth) : null,
     };
-    onSave(transformed);
+    dispatch(updateVehicleRequest({ id: vehicleId, data: transformed }));
+    onClose();
   };
 
   return (
     <FormDrawer
-      open={open}
+      open
       onClose={onClose}
       title="Edit Vehicle Targets"
-      subtitle={data.unitNumber}
+      subtitle={vehicle.unitNumber}
       initialValues={{
-        monthlyGrossTarget: data.monthlyGrossTarget ?? '',
-        monthlyMilesTarget: data.monthlyMilesTarget ?? '',
-        workingDaysPerMonth: data.workingDaysPerMonth ?? '',
+        monthlyGrossTarget: vehicle.monthlyGrossTarget ?? '',
+        monthlyMilesTarget: vehicle.monthlyMilesTarget ?? '',
+        workingDaysPerMonth: vehicle.workingDaysPerMonth ?? '',
       }}
       validationSchema={vehicleTargetsSchema}
       onSubmit={handleSubmit}
     >
-      {({ values, errors, touched, handleChange, handleBlur }) => (
+      {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <TextField
-            fullWidth
-            name="monthlyGrossTarget"
-            label="Monthly Gross Target ($)"
-            value={values.monthlyGrossTarget}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={Boolean(touched.monthlyGrossTarget && errors.monthlyGrossTarget)}
-            helperText={
-              touched.monthlyGrossTarget
-                ? (errors.monthlyGrossTarget as string | undefined)
-                : undefined
-            }
-          />
-          <TextField
-            fullWidth
+          <CurrencyField name="monthlyGrossTarget" label="Monthly Gross Target" formik={formik} />
+          <NumericField
             name="monthlyMilesTarget"
             label="Monthly Miles Target"
-            type="number"
-            value={values.monthlyMilesTarget}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={Boolean(touched.monthlyMilesTarget && errors.monthlyMilesTarget)}
-            helperText={
-              touched.monthlyMilesTarget
-                ? (errors.monthlyMilesTarget as string | undefined)
-                : undefined
-            }
+            suffix="mi"
+            formik={formik}
           />
-          <TextField
-            fullWidth
-            name="workingDaysPerMonth"
-            label="Working Days Per Month"
-            type="number"
-            value={values.workingDaysPerMonth}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={Boolean(touched.workingDaysPerMonth && errors.workingDaysPerMonth)}
-            helperText={
-              touched.workingDaysPerMonth
-                ? (errors.workingDaysPerMonth as string | undefined)
-                : undefined
-            }
-          />
+          <NumericField name="workingDaysPerMonth" label="Working Days Per Month" formik={formik} />
         </Stack>
       )}
     </FormDrawer>

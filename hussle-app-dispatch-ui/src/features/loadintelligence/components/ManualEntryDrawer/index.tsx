@@ -1,7 +1,14 @@
 import React from 'react';
-import { Grid, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { useDispatch } from 'store';
-import { TextField, SelectField, DateField } from '@mocho/ui/components';
+import {
+  TextField,
+  SelectField,
+  DateField,
+  CurrencyField,
+  NumericField,
+  StateField,
+} from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { manualEntrySchema } from '../../validators/manualEntrySchema';
@@ -77,25 +84,25 @@ export const ManualEntryDrawer: React.FC<ManualEntryDrawerProps> = ({ onClose })
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <DrawerSection label="Origin">
-            <Grid container spacing={2}>
-              <Grid item xs={8}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 2 }}>
                 <TextField name="originCity" label="City" formik={formik} required />
-              </Grid>
-              <Grid item xs={4}>
-                <TextField name="originState" label="State" formik={formik} required />
-              </Grid>
-            </Grid>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <StateField name="originState" label="State" formik={formik} required />
+              </Box>
+            </Box>
           </DrawerSection>
 
           <DrawerSection label="Destination">
-            <Grid container spacing={2}>
-              <Grid item xs={8}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 2 }}>
                 <TextField name="destinationCity" label="City" formik={formik} required />
-              </Grid>
-              <Grid item xs={4}>
-                <TextField name="destinationState" label="State" formik={formik} required />
-              </Grid>
-            </Grid>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <StateField name="destinationState" label="State" formik={formik} required />
+              </Box>
+            </Box>
           </DrawerSection>
 
           <DrawerSection label="Load Details">
@@ -107,8 +114,8 @@ export const ManualEntryDrawer: React.FC<ManualEntryDrawerProps> = ({ onClose })
               formik={formik}
               required
             />
-            <TextField name="rate" label="Rate ($)" formik={formik} />
-            <TextField name="loadedMiles" label="Loaded Miles" formik={formik} />
+            <CurrencyField name="rate" label="Rate" formik={formik} />
+            <NumericField name="loadedMiles" label="Loaded Miles" suffix="mi" formik={formik} />
             <TextField name="brokerName" label="Broker Name" formik={formik} />
           </DrawerSection>
         </Stack>

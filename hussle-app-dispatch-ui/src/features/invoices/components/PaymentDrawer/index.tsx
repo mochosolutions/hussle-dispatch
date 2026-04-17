@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import { TextField, SelectField, DateField } from '@mocho/ui/components';
+import { TextField, SelectField, DateField, CurrencyField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
@@ -86,7 +86,7 @@ export const PaymentDrawer: React.FC<PaymentDrawerProps> = ({ invoiceId, balance
     >
       {(formik) => (
         <DrawerSection label="Payment Details">
-          <TextField name="amount" label="Amount" type="number" formik={formik} />
+          <CurrencyField name="amount" label="Amount" required formik={formik} />
           <SelectField
             name="method"
             label="Payment Method"

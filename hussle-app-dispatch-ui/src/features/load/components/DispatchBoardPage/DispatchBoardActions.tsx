@@ -5,7 +5,7 @@ import MapIcon from '@mui/icons-material/Map';
 // import PeopleIcon from '@mui/icons-material/People';
 import TableChartIcon from '@mui/icons-material/TableChart';
 // import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
-import type { BoardView } from '../../../types';
+import type { BoardView } from '../../types';
 
 export interface DispatchBoardActionsProps {
   boardView: BoardView;

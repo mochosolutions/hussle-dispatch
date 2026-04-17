@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns';
 import { DOCUMENT_CONTEXTS, DOC_TYPE_CONFIG } from 'features/documents/constants';
 import type { DocumentType } from 'features/documents/types';
 import type { ChipColor } from 'types/chipColor';
-import type { KanbanGroup, LoadStatus, Stop } from './types';
+import type { KanbanGroup, LoadStatus, Stop, StopType } from './types';
 
 export const LOAD_STATUSES: readonly LoadStatus[] = [
   'QUOTED',
@@ -251,6 +251,14 @@ export const getStopStatus = (
   return { label: 'Pending', color: 'default' };
 };
 
+export const STOP_TYPE_CONFIG: Record<StopType, { abbr: string; color: string }> = {
+  PICKUP: { abbr: 'P', color: 'primary.main' },
+  DELIVERY: { abbr: 'D', color: 'success.main' },
+  STOP_OFF: { abbr: 'S', color: 'warning.main' },
+  DROP_HOOK: { abbr: 'DH', color: 'secondary.main' },
+  LIVE_UNLOAD: { abbr: 'LU', color: 'info.main' },
+};
+
 export const EQUIPMENT_OPTIONS = [
   { label: 'Dry Van', value: 'DRY_VAN' },
   { label: 'Reefer', value: 'REEFER' },
@@ -398,6 +406,20 @@ export const CREATE_LOAD_DOC_CARD_CONFIG: readonly {
   { type: 'LUMPER_RECEIPT', shortLabel: 'Lumper Receipt', description: 'Lumper reimbursement' },
   { type: 'SCALE_TICKET', shortLabel: 'Weight Ticket', description: 'Scale weight ticket' },
 ];
+
+export const SCHEDULING_TYPE_OPTIONS = [
+  { value: 'APPOINTMENT', label: 'Appt', hint: 'Scheduled appointment \u2014 requires date, time, and confirmation #' },
+  { value: 'FCFS', label: 'FCFS', hint: 'First come first served \u2014 show up during facility hours' },
+  { value: 'NOTIFICATION', label: 'Notify', hint: 'Call ahead before arrival \u2014 requires contact info' },
+  { value: 'OPEN', label: 'Open', hint: 'Open dock \u2014 arrive any time during business hours' },
+  { value: 'DROP_HOOK', label: 'Drop', hint: 'Drop trailer at yard \u2014 no dock interaction needed' },
+] as const;
+
+export type SchedulingType = typeof SCHEDULING_TYPE_OPTIONS[number]['value'];
+
+export const SCHEDULING_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  SCHEDULING_TYPE_OPTIONS.map(({ value, label }) => [value, label]),
+);
 
 export const MARGIN_THRESHOLDS = { good: 20, ok: 10 } as const;
 export const MARKET_RPM = 3.8;

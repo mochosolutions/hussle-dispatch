@@ -8,8 +8,8 @@ import SectionCard from 'components/SectionCard';
 import { selectCarrierById } from 'features/carrier/store/selectors/carrierSelectors';
 import { useFormHandle } from 'mocho/hooks/useFormHandle';
 import type { FormHandle, FormStateChangeCallback } from 'mocho/types/form';
-import { loadSchema } from '../../../../validators/loadSchema';
-import type { LoadFormValues } from '../../../../validators/loadSchema';
+import { loadSchema } from '../../../validators/loadSchema';
+import type { LoadFormValues } from '../../../validators/loadSchema';
 import type {
   CreateLoadInput,
   FinancialSummary,
@@ -18,9 +18,9 @@ import type {
   QueuedDocument,
   SelectedDriverInfo,
   StopType,
-} from '../../../../types';
-import { LOAD_TYPE_STOP_CONFIG } from '../../../../constants';
-import { stripUiOnlyFields } from '../../../../utils/stripUiOnlyFields';
+} from '../../../types';
+import { LOAD_TYPE_STOP_CONFIG } from '../../../constants';
+import { stripUiOnlyFields } from '../../../utils/stripUiOnlyFields';
 import { LoadDetailsSection } from './sections/LoadDetailsSection';
 import { StopsSection } from './sections/StopsSection';
 import { DriverSection } from './sections/DriverSection';
@@ -159,18 +159,10 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
         contactId: undefined,
         externalRefNumber: template?.brokerRef ?? undefined,
         equipmentType: mappedEquipment,
-        isHazmat: false,
-        isTarp: false,
-        isTeamDriver: false,
-        commodity: undefined,
-        weight: undefined,
-        pieceCount: undefined,
         loadedMiles: intelPrefill?.miles ?? undefined,
         deadheadMiles: undefined,
         totalMiles: undefined,
         customerRate: customerRateInit,
-        // carrierPayout, companyMargin, ratePerMile are server-computed — not in initialValues.
-        // carrierPayout IS set via useEffect for DriverEconomicsSection display.
         dispatcherNotes: undefined,
         driverInstructions: undefined,
         stops,
@@ -186,8 +178,6 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
         paymentTerms: undefined,
         queuedDocuments: [],
         accessorials: [],
-        // Schema-defaulted fields — must match Yup .default() values so Formik
-        // doesn't see a diff on mount and report dirty without user interaction.
         calculatedTripMiles: null,
         isMilesEstimated: false,
         hazmatDocFile: null,
@@ -231,17 +221,9 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
           // Load details
           cv.customerRate !== iv.customerRate ||
           cv.equipmentType !== iv.equipmentType ||
-          cv.commodity !== iv.commodity ||
-          cv.weight !== iv.weight ||
-          cv.pieceCount !== iv.pieceCount ||
-          cv.loadedMiles !== iv.loadedMiles ||
           cv.deadheadMiles !== iv.deadheadMiles ||
           cv.paymentTerms !== iv.paymentTerms ||
           cv.externalRefNumber !== iv.externalRefNumber ||
-          // Flags
-          cv.isHazmat !== iv.isHazmat ||
-          cv.isTarp !== iv.isTarp ||
-          cv.isTeamDriver !== iv.isTeamDriver ||
           // Reefer fields
           cv.reeferTempMin !== iv.reeferTempMin ||
           cv.reeferTempMax !== iv.reeferTempMax ||
@@ -296,10 +278,7 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
       const { values } = formik;
       const custRate = Number(values.customerRate) || 0;
       const marginPct = selectedCarrier?.companyMarginPercent;
-      const carrierPct =
-        marginPct !== undefined && marginPct !== null
-          ? 100 - marginPct
-          : 80;
+      const carrierPct = marginPct !== undefined && marginPct !== null ? 100 - marginPct : 80;
       const carrierAmt = custRate > 0 ? Math.round((custRate * carrierPct) / 100) : 0;
       const accTotal = (values.accessorials ?? []).reduce(
         (sum, a) => sum + (Number(a.amount) || 0),

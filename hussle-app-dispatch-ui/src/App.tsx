@@ -1,6 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import { SnackbarProvider } from 'notistack';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
 import ThemeCustomization from '@mocho/ui/theme';
 import { useSelector, useDispatch } from 'store';
 import { setNavigate } from 'store/middleware/createSagaMiddleware';
@@ -31,6 +33,7 @@ const App = () => {
 
   return (
     <ThemeCustomization>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
       <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <Outlet />
         <DrawerManager
@@ -44,6 +47,7 @@ const App = () => {
           onClose={handleCloseModal}
         />
       </SnackbarProvider>
+      </LocalizationProvider>
     </ThemeCustomization>
   );
 };

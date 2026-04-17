@@ -4,12 +4,12 @@ import { PlusOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { useDispatch, useSelector } from 'store';
 import SectionCard from 'components/SectionCard';
-import { useDrawerActions } from '../../../../ui/hooks/useDrawerActions';
+import { useModalActions } from '../../../ui/hooks/useModalActions';
 import {
   selectCarrierNotes,
   selectCarrierNotesLoading,
-} from '../../../store/selectors/carrierSelectors';
-import { fetchCarrierNotesRequest } from '../../../store/reducers';
+} from '../../store/selectors/carrierSelectors';
+import { fetchCarrierNotesRequest } from '../../store/reducers';
 
 interface NotesTabProps {
   carrierId: string;
@@ -17,7 +17,7 @@ interface NotesTabProps {
 
 export const NotesTab: React.FC<NotesTabProps> = ({ carrierId }) => {
   const dispatch = useDispatch();
-  const { openDrawer } = useDrawerActions();
+  const { openModal } = useModalActions();
   const notes = useSelector(selectCarrierNotes(carrierId));
   const isLoading = useSelector(selectCarrierNotesLoading(carrierId));
 
@@ -26,7 +26,7 @@ export const NotesTab: React.FC<NotesTabProps> = ({ carrierId }) => {
   }, [dispatch, carrierId]);
 
   const handleAddNote = () => {
-    openDrawer('carrierNote', { carrierId });
+    openModal('carrierNote', { carrierId });
   };
 
   const addNoteButton = (

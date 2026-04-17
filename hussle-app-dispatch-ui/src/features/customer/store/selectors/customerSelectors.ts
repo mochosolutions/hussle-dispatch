@@ -10,8 +10,10 @@ export const selectAllCustomers = (state: RootState) => customerSelectors.select
 export const selectCustomerById = (id: string) => (state: RootState) =>
   customerSelectors.selectById(state, id);
 
-export const selectCustomerListLoading = (state: RootState) =>
-  state.pages.customers.loading['getAll'] === LoadingState.Pending;
+export const selectCustomerListLoading = (state: RootState) => {
+  const status = state.pages.customers.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectCustomerCreateLoading = (state: RootState) =>
   state.pages.customers.loading['create'] === LoadingState.Pending;

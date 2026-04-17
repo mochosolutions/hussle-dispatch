@@ -1,142 +1,102 @@
-import {
-  Box,
-  Button,
-  InputAdornment,
-  InputLabel,
-  MenuItem,
-  OutlinedInput,
-  Select,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { useMemo } from 'react';
+import { Box, Button, Tooltip } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import SearchIcon from '@mui/icons-material/Search';
 import { formatDistanceToNow } from 'date-fns';
-import { LOAD_STATUSES, STATUS_LABELS } from '../../../constants';
-import type { BoardView } from '../../../types';
-import type { selectLoadFilters } from '../../../store/selectors/loadSelectors';
+import { FilterBar } from 'components/FilterBar';
+import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import { LOAD_STATUSES, STATUS_LABELS } from '../../constants';
+import type { BoardView } from '../../types';
 
 export interface DispatchBoardToolbarProps {
   boardView: BoardView;
-  filters: ReturnType<typeof selectLoadFilters>;
-  handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   currentStatusFilter: string;
-  handleStatusFilterChange: (event: SelectChangeEvent) => void;
-  handleCarrierFilterChange: (event: SelectChangeEvent) => void;
+  onStatusFilterChange: (value: string) => void;
+  onCarrierFilterChange: (value: string) => void;
   uniqueCarriers: string[];
-  handleRefresh: () => void;
+  onRefresh: () => void;
+  onSearchChange: (value: string | number) => void;
   lastRefreshed?: string | null;
   currentCarrierFilter: string;
 }
 
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  ...LOAD_STATUSES.map((status) => ({ value: status, label: STATUS_LABELS[status] })),
+];
+
 export const DispatchBoardToolbar = ({
   boardView,
-  filters,
-  handleSearchChange,
   currentStatusFilter,
-  handleStatusFilterChange,
-  handleCarrierFilterChange,
+  onStatusFilterChange,
+  onCarrierFilterChange,
   uniqueCarriers,
-  handleRefresh,
+  onRefresh,
+  onSearchChange,
   lastRefreshed,
   currentCarrierFilter,
 }: DispatchBoardToolbarProps) => {
-  if (boardView !== 'intel' && boardView !== 'map') {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 1.5,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          px: { xs: 2, sm: 3 },
-          py: 1.5,
-        }}
-      >
-        <Stack spacing={1}>
-          <InputLabel>Search</InputLabel>
-          <OutlinedInput
-            size="small"
-            placeholder="Search loads, drivers, carriers..."
-            value={filters.search ?? ''}
-            onChange={handleSearchChange}
-            sx={{ minWidth: 260 }}
-            startAdornment={
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-              </InputAdornment>
-            }
-          />
-        </Stack>
-        <Stack spacing={1}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            size="small"
-            value={currentStatusFilter}
-            onChange={handleStatusFilterChange}
-            sx={{ minWidth: 160 }}
-          >
-            <MenuItem value="all">All Statuses</MenuItem>
-            {LOAD_STATUSES.map((status) => (
-              <MenuItem key={status} value={status}>
-                {STATUS_LABELS[status]}
-              </MenuItem>
-            ))}
-          </Select>
-        </Stack>
-        <Stack spacing={1}>
-          <InputLabel>Carrier</InputLabel>
-          <Select
-            size="small"
-            value={currentCarrierFilter}
-            onChange={handleCarrierFilterChange}
-            sx={{ minWidth: 160 }}
-          >
-            <MenuItem value="all">All Carriers</MenuItem>
-            {uniqueCarriers.map((carrier) => (
-              <MenuItem key={carrier} value={carrier}>
-                {carrier}
-              </MenuItem>
-            ))}
-          </Select>
-        </Stack>
-        <Stack
-          spacing={1}
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginLeft: 'auto',
-          }}
-        >
-          <Tooltip
-            title={`Updated ${formatDistanceToNow(new Date(lastRefreshed), { addSuffix: true })}`}
-          >
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={handleRefresh}
-            >
-              Refresh
-            </Button>
-          </Tooltip>
+  const carrierOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All Carriers' },
+      ...uniqueCarriers.map((carrier) => ({ value: carrier, label: carrier })),
+    ],
+    [uniqueCarriers],
+  );
 
-          {lastRefreshed && (
-            <Typography
-              variant="caption"
-              color="text.disabled"
-              sx={{
-                ml: 2,
-              }}
-            ></Typography>
-          )}
-        </Stack>
-      </Box>
-    );
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: 'select',
+        name: 'status',
+        label: 'Status',
+        options: STATUS_OPTIONS,
+        value: currentStatusFilter,
+        onChange: (value) => onStatusFilterChange(value),
+      },
+      {
+        type: 'select',
+        name: 'carrier',
+        label: 'Carrier',
+        options: carrierOptions,
+        value: currentCarrierFilter,
+        onChange: (value) => onCarrierFilterChange(value),
+      },
+    ],
+    [currentStatusFilter, onStatusFilterChange, carrierOptions, currentCarrierFilter, onCarrierFilterChange],
+  );
+
+  const searchConfig = useMemo<SearchConfig>(
+    () => ({
+      placeholder: 'Search loads, drivers, carriers...',
+      value: '',
+      onChange: onSearchChange,
+      debounce: 300,
+    }),
+    [onSearchChange],
+  );
+
+  if (boardView === 'intel' || boardView === 'map') {
+    return null;
   }
-  return null;
+
+  const refreshTooltip = lastRefreshed
+    ? `Updated ${formatDistanceToNow(new Date(lastRefreshed), { addSuffix: true })}`
+    : 'Refresh';
+
+  return (
+    <Box sx={{ px: 2, py: 1.5 }}>
+      <FilterBar
+        filters={filters}
+        search={searchConfig}
+        sx={{ alignItems: 'center' }}
+      />
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+        <Tooltip title={refreshTooltip}>
+          <Button variant="outlined" size="small" startIcon={<RefreshIcon />} onClick={onRefresh}>
+            Refresh
+          </Button>
+        </Tooltip>
+      </Box>
+    </Box>
+  );
 };

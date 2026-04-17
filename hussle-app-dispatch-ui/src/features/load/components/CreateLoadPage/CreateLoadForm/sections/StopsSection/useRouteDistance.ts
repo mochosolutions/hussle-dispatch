@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormikProps } from 'formik';
 import { calculateRouteDistance } from 'utils/api/places/placeApi';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
 
 const DEBOUNCE_MS = 400;
 

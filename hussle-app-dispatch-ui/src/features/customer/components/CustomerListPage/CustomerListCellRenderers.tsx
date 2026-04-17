@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { TwoLineCell, Amount } from 'components/Typography';
-import type { Customer } from '../../../types';
+import type { Customer } from '../../types';
 
 const formatCurrency = (value: number | null | undefined): string => {
   if (value === null || value === undefined) {

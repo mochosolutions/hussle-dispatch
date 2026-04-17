@@ -2,8 +2,8 @@ import { Button, Divider } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SectionCard from 'components/SectionCard';
 import { DetailRow } from 'components/Typography';
-import { formatCurrency } from '../../constants';
-import type { LoadDetail } from '../../types';
+import { formatCurrency } from '../../../constants';
+import type { LoadDetail } from '../../../types';
 
 interface FinancialsCardProps {
   load: LoadDetail;
@@ -16,34 +16,38 @@ export const FinancialsCard: React.FC<FinancialsCardProps> = ({
   onViewDetails,
   onEditRoute,
 }) => {
-  const marginPercent = load.marginPercent ? `${parseFloat(load.marginPercent).toFixed(1)}%` : '';
+  const { financials } = load;
+  const marginPercent = financials.marginPercent
+    ? `${parseFloat(financials.marginPercent).toFixed(1)}%`
+    : '';
 
   return (
     <SectionCard
       title="Financials"
-      contentSX={{ p: 0 }}
+      // contentSX={{ p: 0 }}
       actions={
         <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={onEditRoute}>
           Edit
         </Button>
       }
     >
-      <DetailRow label="Customer Rate" value={formatCurrency(load.customerRate)} />
+      <DetailRow label="Customer Rate" value={formatCurrency(financials.customerRate)} />
+      <DetailRow label="Carrier Payout" value={formatCurrency(financials.carrierPayout)} />
       <Divider />
       <DetailRow
         label={`Company Margin${marginPercent ? ` (${marginPercent})` : ''}`}
-        value={formatCurrency(load.companyMargin)}
+        value={formatCurrency(financials.companyMargin)}
       />
       <Divider />
-      <DetailRow label="Company Net" value={formatCurrency(load.companyNet)} />
-      {load.ratePerMile && (
+      <DetailRow label="Company Net" value={formatCurrency(financials.companyNet)} />
+      {financials.ratePerMile && (
         <DetailRow
           label="Rate / Mile"
-          value={`$${parseFloat(load.ratePerMile).toFixed(2)}`}
+          value={`$${parseFloat(financials.ratePerMile).toFixed(2)}`}
           noBorder
         />
       )}
-      {!load.ratePerMile && <DetailRow label="Rate / Mile" value={'\u2014'} noBorder />}
+      {!financials.ratePerMile && <DetailRow label="Rate / Mile" value={'\u2014'} noBorder />}
       {onViewDetails && (
         <Button
           size="small"

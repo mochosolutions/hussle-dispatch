@@ -148,6 +148,11 @@ export const placeRepositoryPrisma = (
         contactPhone: true,
         latitude: true,
         longitude: true,
+        appointmentRequired: true,
+        lumperRequired: true,
+        ppeRequired: true,
+        facilityHours: true,
+        is24Hours: true,
       },
       take: clampedLimit,
     });

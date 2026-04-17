@@ -336,8 +336,7 @@ export const createStopRequest = createAction<{
     city?: string;
     state?: string;
     zip?: string;
-    appointmentDate?: string;
-    appointmentTime?: string;
+    appointmentStart?: string;
     contactName?: string;
     contactPhone?: string;
     notes?: string;

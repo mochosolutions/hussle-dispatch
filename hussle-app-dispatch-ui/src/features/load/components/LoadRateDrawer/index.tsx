@@ -1,8 +1,7 @@
 import React from 'react';
-import { Alert, Grid, Stack } from '@mui/material';
+import { Alert, Stack } from '@mui/material';
 import * as Yup from 'yup';
-import { TextField } from '@mocho/ui/components';
-import { PercentSharp } from '@mui/icons-material';
+import { CurrencyField } from '@mocho/ui/components';
 import { DrawerSection } from 'components/EditDrawer';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { useDispatch } from 'store';
@@ -46,10 +45,10 @@ export const LoadRateDrawer: React.FC<LoadRateDrawerProps> = ({ load, onClose })
     // carrierId: load.carrierId ?? undefined,
     // driverId: load.driverId ?? undefined,
     // vehicleId: load.vehicleId ?? undefined,
-    customerRate: load.customerRate ? Number(load.customerRate) : undefined,
-    carrierPayout: load.carrierPayout ? Number(load.carrierPayout) : undefined,
-    companyMargin: load.companyMargin ? Number(load.companyMargin) : undefined,
-    isTeamDriver: load.isTeamDriver,
+    customerRate: load.financials.customerRate ? Number(load.financials.customerRate) : undefined,
+    carrierPayout: load.financials.carrierPayout ? Number(load.financials.carrierPayout) : undefined,
+    companyMargin: load.financials.companyMargin ? Number(load.financials.companyMargin) : undefined,
+    isTeamDriver: load.assignment.isTeamDriver,
   };
 
   const handleSubmit = (values: AssignmentFormValues) => {
@@ -84,40 +83,24 @@ export const LoadRateDrawer: React.FC<LoadRateDrawerProps> = ({ load, onClose })
                 Financial fields are locked after dispatch
               </Alert>
             )}
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  name="customerRate"
-                  label="Customer Rate"
-                  formik={formik}
-                  disabled={financialsLocked}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  name="carrierPayout"
-                  label="Carrier Payout"
-                  formik={formik}
-                  disabled={financialsLocked}
-                  endAdornment={
-                    <PercentSharp
-                      fontSize="small"
-                      // sx={{ color: 'text.secondary', mr: 1 }}
-                    />
-                  }
-                />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  name="companyMargin"
-                  label="Company Margin"
-                  formik={formik}
-                  disabled={financialsLocked}
-                />
-              </Grid>
-            </Grid>
+            <CurrencyField
+              name="customerRate"
+              label="Customer Rate"
+              formik={formik}
+              disabled={financialsLocked}
+            />
+            <CurrencyField
+              name="carrierPayout"
+              label="Carrier Payout"
+              formik={formik}
+              disabled={financialsLocked}
+            />
+            <CurrencyField
+              name="companyMargin"
+              label="Company Margin"
+              formik={formik}
+              disabled={financialsLocked}
+            />
           </DrawerSection>
         </Stack>
       )}

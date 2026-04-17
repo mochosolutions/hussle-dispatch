@@ -5,8 +5,8 @@ import SectionCard from 'components/SectionCard';
 import { DocumentPicker } from 'components/DocumentPicker';
 import type { QueuedDocument } from 'components/DocumentPicker';
 import { DOC_TYPE_CONFIG } from 'features/documents/constants';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
-import { CREATE_LOAD_DOC_CARD_CONFIG } from '../../../../../../constants';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
+import { CREATE_LOAD_DOC_CARD_CONFIG } from '../../../../../constants';
 
 export const DocumentsSection: React.FC<{ formik: FormikProps<LoadFormValues> }> = ({ formik }) => {
   const queuedDocuments = useMemo(

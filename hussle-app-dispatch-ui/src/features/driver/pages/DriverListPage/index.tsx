@@ -1,19 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import {
-  Stack,
-  TextField,
-  Box,
-  Grid,
-  Select,
-  Button,
-  MenuItem,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ActionsCell, ListSkeleton, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
+import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
+import { EmptyState } from 'mocho/components/EmptyState';
+import FilterBar from 'components/FilterBar';
+import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import ListKpiBar from 'components/ListKpiBar';
 import { ListLayout } from 'components/ListLayout';
-import { KpiCell } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
 import type { Driver } from 'features/carrier/types';
 import { selectAllCarriers } from 'features/carrier/store/selectors/carrierSelectors';
@@ -30,74 +24,62 @@ import {
   DriverLocationCellRenderer,
   DriverCarrierCellRenderer,
 } from '../../components/DriverCellRenderers';
-import { DriverCreateDrawer } from '../../components/DriverCreateDialog';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 
 const DriverListPage = () => {
   const [activeTab, setActiveTab] = useState<DriverTab>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const searchQueryRef = useRef('');
   const [selectedCarrierId, setSelectedCarrierId] = useState('all');
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openDrawer } = useDrawerActions();
 
   const isLoading = useSelector(selectDriverListLoading);
   const carriers = useSelector(selectAllCarriers);
   const kpiData = useSelector(selectDriverKpis);
 
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Initial fetch
   useEffect(() => {
     dispatch(fetchDriversRequest({ page: 1, limit: 25 }));
   }, [dispatch]);
 
   const handleSearchChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const query = event.target.value;
-      setSearchQuery(query);
-
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-
-      searchDebounceRef.current = setTimeout(() => {
-        dispatch(
-          fetchDriversRequest({
-            page: 1,
-            limit: 25,
-            search: query,
-            carrierId: selectedCarrierId !== 'all' ? selectedCarrierId : undefined,
-          }),
-        );
-      }, 300);
+    (value: string | number) => {
+      searchQueryRef.current = String(value);
+      dispatch(
+        fetchDriversRequest({
+          page: 1,
+          limit: 25,
+          search: String(value),
+          carrierId: selectedCarrierId !== 'all' ? selectedCarrierId : undefined,
+        }),
+      );
     },
     [dispatch, selectedCarrierId],
   );
 
   const handleCarrierFilterChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const carrierId = event.target.value;
+    (carrierId: string) => {
       setSelectedCarrierId(carrierId);
       dispatch(setCarrierIdFilter(carrierId));
       dispatch(
         fetchDriversRequest({
           page: 1,
           limit: 25,
-          search: searchQuery,
+          search: searchQueryRef.current,
           carrierId: carrierId !== 'all' ? carrierId : undefined,
         }),
       );
     },
-    [dispatch, searchQuery],
+    [dispatch],
   );
 
-  const handleOpenCreate = useCallback(() => {
-    setCreateDialogOpen(true);
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setActiveTab(value as DriverTab);
   }, []);
 
-  const handleCloseCreate = useCallback(() => {
-    setCreateDialogOpen(false);
-  }, []);
+  const handleOpenCreate = useCallback(() => {
+    openDrawer('driverCreate', { onClose: () => undefined });
+  }, [openDrawer]);
 
   const handleRowClicked = useCallback(
     (params: { data: Driver }) => {
@@ -121,6 +103,55 @@ const DriverListPage = () => {
       showEdit: false,
     }),
     [],
+  );
+
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All Drivers' },
+      { value: 'available', label: 'Available' },
+      { value: 'unavailable', label: 'Unavailable' },
+    ],
+    [],
+  );
+
+  const carrierOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All Carriers' },
+      ...carriers.map((c) => ({ value: c.id, label: c.name })),
+    ],
+    [carriers],
+  );
+
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: 'select',
+        name: 'status',
+        label: 'Status',
+        options: statusFilterOptions,
+        value: activeTab,
+        onChange: handleStatusFilterChange,
+      },
+      {
+        type: 'select',
+        name: 'carrier',
+        label: 'Carrier',
+        options: carrierOptions,
+        value: selectedCarrierId,
+        onChange: handleCarrierFilterChange,
+      },
+    ],
+    [statusFilterOptions, carrierOptions, activeTab, selectedCarrierId, handleStatusFilterChange, handleCarrierFilterChange],
+  );
+
+  const searchConfig = useMemo<SearchConfig>(
+    () => ({
+      placeholder: 'Search by name, CDL#, phone...',
+      value: '',
+      onChange: handleSearchChange,
+      debounce: 300,
+    }),
+    [handleSearchChange],
   );
 
   const columnDefs = useMemo(
@@ -187,22 +218,6 @@ const DriverListPage = () => {
     [actionsConfig],
   );
 
-  const statusFilterOptions: { value: DriverTab; label: string }[] = useMemo(
-    () => [
-      { value: 'all', label: 'All Drivers' },
-      { value: 'available', label: 'Available' },
-      { value: 'unavailable', label: 'Unavailable' },
-    ],
-    [],
-  );
-
-  const handleStatusFilterChange = useCallback(
-    (event: SelectChangeEvent<DriverTab>) => {
-      setActiveTab(event.target.value as DriverTab);
-    },
-    [],
-  );
-
   const defaultColDef = useMemo(
     () => ({
       flex: 1,
@@ -215,7 +230,7 @@ const DriverListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={isLoading} loadingComponent={<ListSkeleton rows={8} />} errorContext="DriverListPage" sx={{ gap: 2 }}>
+    <PageWrapper errorContext="DriverListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Drivers"
         primaryAction={
@@ -227,77 +242,28 @@ const DriverListPage = () => {
           </Stack>
         }
       >
-        <Grid container spacing={2} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}>
-          {kpiData.map((kpiItem) => (
-            <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
-              <MainCard sx={{ height: '100%' }}>
-                <KpiCell
-                  label={kpiItem.label}
-                  value={kpiItem.value}
-                  sub={kpiItem.subtitle}
-                />
-              </MainCard>
-            </Grid>
-          ))}
-        </Grid>
+        <ListKpiBar items={kpiData} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }} />
 
-        <Box sx={{ px: { xs: 2, sm: 3 }, pb: 3, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: 3,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}
+        >
           <MainCard
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              alignItems={{ xs: 'stretch', md: 'center' }}
-              justifyContent="space-between"
-              spacing={2}
-              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-            >
-              <Select<DriverTab>
-                value={activeTab}
-                onChange={handleStatusFilterChange}
-                size="small"
-                sx={{ minWidth: 160 }}
-              >
-                {statusFilterOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <TextField
-                  select
-                  value={selectedCarrierId}
-                  onChange={handleCarrierFilterChange}
-                  label="Carrier"
-                  size="small"
-                  sx={{ minWidth: 180 }}
-                >
-                  <MenuItem value="all">All Carriers</MenuItem>
-                  {carriers.map((carrier) => (
-                    <MenuItem key={carrier.id} value={carrier.id}>
-                      {carrier.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search by name, CDL#, phone..."
-                  size="small"
-                  sx={{ width: { xs: '100%', lg: 320 } }}
-                />
-              </Stack>
-            </Stack>
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filters} search={searchConfig} />
+            </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-              <Box
-                sx={{
-                  minHeight: { xs: 300, md: 420 },
-                  flex: 1,
-                }}
-              >
+              <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
                 <NewDataGrid
                   columnDefs={columnDefs}
                   rowData={filteredDrivers}
@@ -305,13 +271,14 @@ const DriverListPage = () => {
                   showRowCountFooter
                   totalRowCount={filteredDrivers.length}
                   rowCountLabel="drivers"
-                  noDataMessage="No drivers found"
+                  noDataComponent={<EmptyState variant="no-results" entityName="Drivers" compact />}
                   gridOptions={{
                     domLayout: 'normal',
-                    pagination: false,
+                    pagination: true,
+                    paginationPageSize: 25,
                     suppressCellFocus: true,
                     headerHeight: 44,
-                    rowHeight: 62,
+                    rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
                   loading={isLoading}
@@ -322,7 +289,6 @@ const DriverListPage = () => {
         </Box>
       </ListLayout>
 
-      {createDialogOpen && <DriverCreateDrawer onClose={handleCloseCreate} />}
     </PageWrapper>
   );
 };

@@ -2,8 +2,8 @@ import { Chip, Grid, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
-import type { LoadFormValues } from '../../../../../../validators/loadSchema';
-import type { SelectedDriverInfo } from '../../../../../../types';
+import type { LoadFormValues } from '../../../../../validators/loadSchema';
+import type { SelectedDriverInfo } from '../../../../../types';
 import AssignmentFieldGroup from 'features/load/components/AssignmentFieldGroup';
 
 interface DriverSectionProps {

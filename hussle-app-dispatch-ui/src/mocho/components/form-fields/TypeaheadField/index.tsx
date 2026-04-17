@@ -9,6 +9,7 @@ import {
   Paper,
   TextField as MuiTextField,
 } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { TypeaheadFieldProps, TypeaheadOption } from '../types';
 
@@ -40,10 +41,10 @@ export const TypeaheadField: React.FC<TypeaheadFieldProps> = ({
   renderOptionContent,
   startAdornment,
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
   const hasError = Boolean(touched && error);
-  const currentValue = (formik.values[name] as string | undefined) ?? '';
+  const currentValue = (getIn(formik.values, name) as string | undefined) ?? '';
 
   const selectedOption = useMemo(
     () => options.find((option) => option.value === currentValue) ?? null,

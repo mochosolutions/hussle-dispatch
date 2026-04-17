@@ -1,7 +1,7 @@
 import React from 'react';
-import { Grid, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { useDispatch } from 'store';
-import { TextField, EmailField } from '../../../../mocho/components';
+import { TextField, EmailField, PhoneField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { CustomerAutocomplete } from 'features/customer/components/CustomerAutocomplete';
@@ -72,14 +72,14 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           <DrawerSection label="Contact Details">
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="firstName" label="First Name" formik={formik} required />
-              </Grid>
-              <Grid item xs={6}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <TextField name="lastName" label="Last Name" formik={formik} required />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
 
             <CustomerAutocomplete name="customerId" formik={formik} />
 
@@ -90,14 +90,14 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
               placeholder="e.g. dispatch, billing, warehouse manager"
             />
 
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField name="phone" label="Phone" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <PhoneField name="phone" label="Phone" formik={formik} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <EmailField name="email" label="Email" formik={formik} />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </DrawerSection>
 
           <DrawerSection label="Notes">

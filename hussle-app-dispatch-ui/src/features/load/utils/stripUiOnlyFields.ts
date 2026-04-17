@@ -11,29 +11,42 @@ const APPLIES_TO_BILL_TO: Record<string, string> = {
  * Strips UI-only fields from formik values and maps them to the API create load input.
  */
 export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
-  const stops = (values.stops ?? []).map((stop, idx) => ({
-    type: stop.type as StopType,
-    sequence: idx,
-    contactId: stop.contactId || undefined,
-    placeId: stop.placeId || undefined,
-    facilityName: stop.facilityName || undefined,
-    address: stop.address || undefined,
-    city: stop.city || undefined,
-    state: stop.state || undefined,
-    zip: stop.zip || undefined,
-    appointmentDate: stop.appointmentDate || undefined,
-    appointmentTime: stop.appointmentTime || undefined,
-    appointmentNumber: stop.appointmentNumber || undefined,
-    contactName: stop.contactName || undefined,
-    contactPhone: stop.contactPhone || undefined,
-    commodity: stop.commodity || undefined,
-    weight: stop.weight ? Number(stop.weight) : undefined,
-    pieceCount: stop.pieceCount ? Number(stop.pieceCount) : undefined,
-    isHazmat: stop.isHazmat ?? false,
-    isTarp: stop.isTarp ?? false,
-    isTempControlled: stop.isTempControlled ?? false,
-    notes: stop.notes || undefined,
-  }));
+  const stops = (values.stops ?? []).map((stop, idx) => {
+    const schedType = stop.schedulingType ?? 'APPOINTMENT';
+    const includeTime = schedType === 'APPOINTMENT' || schedType === 'NOTIFICATION';
+    return {
+      type: stop.type as StopType,
+      sequence: idx,
+      contactId: stop.contactId || undefined,
+      placeId: stop.placeId || undefined,
+      facilityName: stop.facilityName || undefined,
+      address: stop.address || undefined,
+      city: stop.city || undefined,
+      state: stop.state || undefined,
+      zip: stop.zip || undefined,
+      schedulingType: schedType,
+      appointmentStart: includeTime
+        ? (stop.appointmentDate && stop.appointmentTime
+            ? `${stop.appointmentDate}T${stop.appointmentTime}`
+            : stop.appointmentDate || undefined)
+        : (stop.appointmentDate || undefined),
+      appointmentNumber: schedType === 'APPOINTMENT' ? (stop.appointmentNumber || undefined) : undefined,
+      contactName: stop.contactName || undefined,
+      contactPhone: stop.contactPhone || undefined,
+      commodity: stop.commodity || undefined,
+      weight: stop.weight ? Number(stop.weight) : undefined,
+      pieceCount: stop.pieceCount ? Number(stop.pieceCount) : undefined,
+      isHazmat: stop.isHazmat ?? false,
+      isTarp: stop.isTarp ?? false,
+      isTempControlled: stop.isTempControlled ?? false,
+      notes: stop.notes || undefined,
+      facilityOpenTime: (schedType === 'FCFS' || schedType === 'OPEN') ? (stop.facilityOpenTime || undefined) : undefined,
+      facilityCloseTime: (schedType === 'FCFS' || schedType === 'OPEN') ? (stop.facilityCloseTime || undefined) : undefined,
+      callByTime: schedType === 'NOTIFICATION' ? (stop.callByTime || undefined) : undefined,
+      trailerNumber: schedType === 'DROP_HOOK' ? (stop.trailerNumber || undefined) : undefined,
+      yardLocation: schedType === 'DROP_HOOK' ? (stop.yardLocation || undefined) : undefined,
+    };
+  });
 
   const customerRate = Number(values.customerRate) || undefined;
 

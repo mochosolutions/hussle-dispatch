@@ -1,8 +1,9 @@
-import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack } from '@mui/material';
 import MainCard from 'components/MainCard';
 import { StatusBadge } from 'components/Statusbadge';
-import { SettlementTotalsCard } from '../../../components/SettlementTotalsCard';
-import type { SettlementDetail } from '../../../types';
+import { Body, BodyMuted, ErrorText, BodyStrong } from 'components/Typography';
+import { SettlementTotalsCard } from '../../components/SettlementTotalsCard';
+import type { SettlementDetail } from '../../types';
 
 interface OverviewTabProps {
   settlement: SettlementDetail;
@@ -28,10 +29,8 @@ interface InfoRowProps {
 
 const InfoRow: React.FC<InfoRowProps> = ({ label, children }) => (
   <Stack direction="row" justifyContent="space-between" alignItems="center">
-    <Typography variant="body2" color="text.secondary">
-      {label}
-    </Typography>
-    <Typography variant="body2">{children}</Typography>
+    <BodyMuted>{label}</BodyMuted>
+    <Body>{children}</Body>
   </Stack>
 );
 
@@ -65,13 +64,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ settlement }) => (
                 alignItems="flex-start"
                 sx={{ pt: 1.5, borderTop: 1, borderColor: 'divider' }}
               >
-                <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-                  Dispute Reason
-                </Typography>
+                <ErrorText sx={{ fontWeight: 600 }}>Dispute Reason</ErrorText>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                {settlement.disputeReason}
-              </Typography>
+              <BodyMuted>{settlement.disputeReason}</BodyMuted>
             </>
           )}
         </Stack>

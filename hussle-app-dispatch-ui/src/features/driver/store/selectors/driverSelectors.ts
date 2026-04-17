@@ -4,6 +4,7 @@ import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { driverSelectors } from '../reducers/driverEntitySlice';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
+import { DAY_OF_WEEK_ORDER } from '../../types';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -16,8 +17,10 @@ export const selectAllDrivers = (state: RootState) => driverSelectors.selectAll(
 export const selectDriverById = (id: string) => (state: RootState) =>
   driverSelectors.selectById(state, id);
 
-export const selectDriverListLoading = (state: RootState) =>
-  state.pages.drivers.loading['getAll'] === LoadingState.Pending;
+export const selectDriverListLoading = (state: RootState) => {
+  const status = state.pages.drivers.loading['getAll'];
+  return status === undefined || status === LoadingState.Pending;
+};
 
 export const selectDriverCreateLoading = (state: RootState) =>
   state.pages.drivers.loading['create'] === LoadingState.Pending;
@@ -133,3 +136,29 @@ export const selectDriverWithCarrier = (driverId: string) =>
       };
     },
   );
+
+// ---------------------------------------------------------------------------
+// Schedule selectors
+// ---------------------------------------------------------------------------
+
+export const selectWeeklySchedule = createSelector(
+  [(state: RootState) => state.pages.drivers.weeklySchedule],
+  (entries) =>
+    [...entries].sort(
+      (a, b) => DAY_OF_WEEK_ORDER.indexOf(a.dayOfWeek) - DAY_OF_WEEK_ORDER.indexOf(b.dayOfWeek),
+    ),
+);
+
+export const selectScheduleOverrides = createSelector(
+  [(state: RootState) => state.pages.drivers.scheduleOverrides],
+  (overrides) => [...overrides].sort((a, b) => a.date.localeCompare(b.date)),
+);
+
+export const selectScheduleLoading = (state: RootState) =>
+  state.pages.drivers.loading['schedule'] === LoadingState.Pending;
+
+export const selectSetWeeklyLoading = (state: RootState) =>
+  state.pages.drivers.loading['setWeekly'] === LoadingState.Pending;
+
+export const selectCreateOverrideLoading = (state: RootState) =>
+  state.pages.drivers.loading['createOverride'] === LoadingState.Pending;

@@ -2,6 +2,7 @@ export const DRIVER_TABS = [
   { label: 'Overview', value: 'overview' },
   { label: 'Load History', value: 'load-history' },
   { label: 'Preferences', value: 'preferences' },
+  { label: 'Schedule', value: 'schedule' },
   { label: 'Documents', value: 'documents' },
 ];
 

@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material';
-import { STATUS_LABELS, formatTimestamp } from '../../constants';
-import type { LoadStatus, StatusHistoryEntry } from '../../types';
+import { STATUS_LABELS, formatTimestamp } from '../../../constants';
+import type { LoadStatus, StatusHistoryEntry } from '../../../types';
 
 interface StatusTimelineProps {
   history: StatusHistoryEntry[];

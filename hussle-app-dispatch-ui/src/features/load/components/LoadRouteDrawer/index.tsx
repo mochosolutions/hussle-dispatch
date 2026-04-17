@@ -44,65 +44,111 @@ const createEmptyStop = (type: StopType, sequence: number): StopFormValue => ({
   isTarp: false,
   isTempControlled: false,
   notes: '',
+  schedulingType: 'APPOINTMENT',
+  facilityOpenTime: '',
+  facilityCloseTime: '',
+  callByTime: '',
+  trailerNumber: '',
+  yardLocation: '',
+  facilityHoursData: null,
 });
 
 // ---------------------------------------------------------------------------
 // Map API Stop entity to form stop value
 // ---------------------------------------------------------------------------
 
-const mapStopToFormValue = (stop: Stop, index: number): StopFormValue => ({
-  type: stop.type,
-  sequence: index,
-  contactId: stop.contactId ?? undefined,
-  placeId: stop.placeId ?? undefined,
-  facilityName: stop.facilityName ?? '',
-  address: stop.address ?? '',
-  city: stop.city ?? '',
-  state: stop.state ?? '',
-  zip: stop.zip ?? '',
-  lat: null,
-  lng: null,
-  appointmentDate: stop.appointmentDate ?? '',
-  appointmentTime: stop.appointmentTime ?? '',
-  appointmentNumber: stop.appointmentNumber ?? '',
-  contactName: stop.contactName ?? '',
-  contactPhone: stop.contactPhone ?? '',
-  commodity: stop.commodity ?? '',
-  weight: stop.weight !== null ? String(stop.weight) : '',
-  pieceCount: stop.pieceCount !== null ? String(stop.pieceCount) : '',
-  isHazmat: stop.isHazmat ?? false,
-  isTarp: stop.isTarp ?? false,
-  isTempControlled: stop.isTempControlled ?? false,
-  notes: stop.notes ?? '',
-});
+const splitAppointmentStart = (
+  isoStr: string | null,
+): { date: string; time: string } => {
+  if (!isoStr) return { date: '', time: '' };
+  const dateOnly = isoStr.includes('T') ? isoStr.split('T')[0] : isoStr;
+  const timePart = isoStr.includes('T') ? isoStr.split('T')[1]?.split('.')[0] ?? '' : '';
+  return { date: dateOnly, time: timePart };
+};
+
+const mapStopToFormValue = (stop: Stop, index: number): StopFormValue => {
+  const { date, time } = splitAppointmentStart(stop.appointmentStart);
+  return {
+    type: stop.type,
+    sequence: index,
+    contactId: stop.contactId ?? undefined,
+    placeId: stop.placeId ?? undefined,
+    facilityName: stop.facilityName ?? '',
+    address: stop.address ?? '',
+    city: stop.city ?? '',
+    state: stop.state ?? '',
+    zip: stop.zip ?? '',
+    lat: null,
+    lng: null,
+    appointmentDate: date,
+    appointmentTime: time,
+    appointmentNumber: stop.appointmentNumber ?? '',
+    contactName: stop.contactName ?? '',
+    contactPhone: stop.contactPhone ?? '',
+    commodity: stop.commodity ?? '',
+    weight: stop.weight !== null ? String(stop.weight) : '',
+    pieceCount: stop.pieceCount !== null ? String(stop.pieceCount) : '',
+    isHazmat: stop.isHazmat ?? false,
+    isTarp: stop.isTarp ?? false,
+    isTempControlled: stop.isTempControlled ?? false,
+    notes: stop.notes ?? '',
+    schedulingType: stop.schedulingType ?? 'APPOINTMENT',
+    facilityOpenTime: stop.facilityOpenTime ?? '',
+    facilityCloseTime: stop.facilityCloseTime ?? '',
+    callByTime: stop.callByTime ?? '',
+    trailerNumber: stop.trailerNumber ?? '',
+    yardLocation: stop.yardLocation ?? '',
+    facilityHoursData: null,
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Map form stop value back to API StopInput
 // ---------------------------------------------------------------------------
 
-const mapFormValueToStopInput = (stop: StopFormValue, index: number): StopInput => ({
-  type: stop.type,
-  sequence: index,
-  contactId: stop.contactId ?? undefined,
-  placeId: stop.placeId ?? undefined,
-  facilityName: stop.facilityName || undefined,
-  address: stop.address || undefined,
-  city: stop.city || undefined,
-  state: stop.state || undefined,
-  zip: stop.zip || undefined,
-  appointmentDate: stop.appointmentDate || undefined,
-  appointmentTime: stop.appointmentTime || undefined,
-  appointmentNumber: stop.appointmentNumber || undefined,
-  contactName: stop.contactName || undefined,
-  contactPhone: stop.contactPhone || undefined,
-  commodity: stop.commodity || undefined,
-  weight: stop.weight ? Number(stop.weight) : undefined,
-  pieceCount: stop.pieceCount ? Number(stop.pieceCount) : undefined,
-  isHazmat: stop.isHazmat ?? false,
-  isTarp: stop.isTarp ?? false,
-  isTempControlled: stop.isTempControlled ?? false,
-  notes: stop.notes || undefined,
-});
+const combineAppointmentStart = (
+  date: string | undefined,
+  time: string | undefined,
+): string | undefined => {
+  if (!date) return undefined;
+  if (date && time) return `${date}T${time}`;
+  return date;
+};
+
+const mapFormValueToStopInput = (stop: StopFormValue, index: number): StopInput => {
+  const type = stop.schedulingType ?? 'APPOINTMENT';
+  const includeTime = type === 'APPOINTMENT' || type === 'NOTIFICATION';
+  return {
+    type: stop.type,
+    sequence: index,
+    contactId: stop.contactId ?? undefined,
+    placeId: stop.placeId ?? undefined,
+    facilityName: stop.facilityName || undefined,
+    address: stop.address || undefined,
+    city: stop.city || undefined,
+    state: stop.state || undefined,
+    zip: stop.zip || undefined,
+    schedulingType: type,
+    appointmentStart: includeTime
+      ? combineAppointmentStart(stop.appointmentDate, stop.appointmentTime)
+      : (stop.appointmentDate || undefined),
+    appointmentNumber: type === 'APPOINTMENT' ? (stop.appointmentNumber || undefined) : undefined,
+    contactName: stop.contactName || undefined,
+    contactPhone: stop.contactPhone || undefined,
+    commodity: stop.commodity || undefined,
+    weight: stop.weight ? Number(stop.weight) : undefined,
+    pieceCount: stop.pieceCount ? Number(stop.pieceCount) : undefined,
+    isHazmat: stop.isHazmat ?? false,
+    isTarp: stop.isTarp ?? false,
+    isTempControlled: stop.isTempControlled ?? false,
+    notes: stop.notes || undefined,
+    facilityOpenTime: (type === 'FCFS' || type === 'OPEN') ? (stop.facilityOpenTime || undefined) : undefined,
+    facilityCloseTime: (type === 'FCFS' || type === 'OPEN') ? (stop.facilityCloseTime || undefined) : undefined,
+    callByTime: type === 'NOTIFICATION' ? (stop.callByTime || undefined) : undefined,
+    trailerNumber: type === 'DROP_HOOK' ? (stop.trailerNumber || undefined) : undefined,
+    yardLocation: type === 'DROP_HOOK' ? (stop.yardLocation || undefined) : undefined,
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Props
@@ -121,8 +167,8 @@ export const LoadRouteDrawer: React.FC<LoadRouteDrawerProps> = ({ load, onClose 
   const dispatch = useDispatch();
 
   const sortedStops = useMemo(
-    () => [...(load.stops ?? [])].sort((a, b) => a.sequence - b.sequence),
-    [load.stops],
+    () => [...(load.route.stops ?? [])].sort((a, b) => a.sequence - b.sequence),
+    [load.route.stops],
   );
 
   const initialValues: RouteFormValues = useMemo(

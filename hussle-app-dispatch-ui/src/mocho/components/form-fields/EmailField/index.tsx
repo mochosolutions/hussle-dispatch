@@ -1,5 +1,6 @@
 import React from 'react';
 import { OutlinedInput } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { EmailFieldProps } from '../types';
 
@@ -21,8 +22,8 @@ export const EmailField: React.FC<EmailFieldProps> = ({
   autoComplete = 'email',
   formik,
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
 
   return (
     <BaseFieldWrapper
@@ -36,7 +37,7 @@ export const EmailField: React.FC<EmailFieldProps> = ({
         id={name}
         name={name}
         type="email"
-        value={formik.values[name] || ''}
+        value={getIn(formik.values, name) || ''}
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
         placeholder={placeholder}

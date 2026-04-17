@@ -34,4 +34,9 @@ export const updateStopMapper = (req: Request): UpdateStopInput => ({
   isTarp: req.body.isTarp,
   isTempControlled: req.body.isTempControlled,
   notes: req.body.notes,
+  facilityOpenTime: req.body.facilityOpenTime,
+  facilityCloseTime: req.body.facilityCloseTime,
+  callByTime: req.body.callByTime,
+  trailerNumber: req.body.trailerNumber,
+  yardLocation: req.body.yardLocation,
 });
