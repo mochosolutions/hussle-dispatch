@@ -75,12 +75,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
     contactId: null,
     externalRefNumber: null,
     equipmentType: null,
-    isHazmat: false,
-    isTarp: false,
     isTeamDriver: false,
-    commodity: null,
-    weight: null,
-    pieceCount: null,
     loadedMiles: 500,
     deadheadMiles: null,
     totalMiles: 500,
@@ -97,6 +92,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
     estimatedCost: null,
     dispatcherComm: null,
     dispatcherUserId: null,
+    version: 0,
     status: 'BOOKED' as const,
     rateConReceivedAt: null,
     bolUnsignedAt: null,
@@ -130,7 +126,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
 // Typed handler capture helper
 // ---------------------------------------------------------------------------
 
-type AccessorialEventData = { loadId: string; accessorialId: string };
+type AccessorialEventData = { loadId: string; organizationId: string; accessorialId: string };
 type SubscribeHandler = (data: AccessorialEventData) => Promise<void>;
 
 /**
@@ -162,6 +158,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
   const mockEventBus: jest.Mocked<EventBus> = {
     subscribe: jest.fn<EventBus['subscribe']>().mockResolvedValue(undefined),
     publish: jest.fn<EventBus['publish']>().mockResolvedValue(undefined),
+    publishDelayed: jest.fn<EventBus['publishDelayed']>().mockResolvedValue(undefined),
     close: jest.fn<EventBus['close']>().mockResolvedValue(undefined),
   };
 
@@ -228,7 +225,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
 
     const handler = getHandlerForEvent(mockEventBus.subscribe, 'accessorial.created');
 
-    await handler({ loadId: 'load-1', accessorialId: 'acc-1' });
+    await handler({ loadId: 'load-1', organizationId: 'org-1', accessorialId: 'acc-1' });
 
     expect(mockLoadFinder.findByIdUnscoped).toHaveBeenCalledWith('load-1');
     expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
@@ -248,7 +245,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
 
     const handler = getHandlerForEvent(mockEventBus.subscribe, 'accessorial.deleted');
 
-    await handler({ loadId: 'load-1', accessorialId: 'acc-1' });
+    await handler({ loadId: 'load-1', organizationId: 'org-1', accessorialId: 'acc-1' });
 
     expect(mockLoadFinder.findByIdUnscoped).toHaveBeenCalledWith('load-1');
     expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
@@ -263,7 +260,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
 
     const handler = getHandlerForEvent(mockEventBus.subscribe, 'accessorial.created');
 
-    await handler({ loadId: 'load-1', accessorialId: 'acc-1' });
+    await handler({ loadId: 'load-1', organizationId: 'org-1', accessorialId: 'acc-1' });
 
     expect(mockLogger.warn).toHaveBeenCalledWith(
       expect.stringContaining('no carrier'),
@@ -279,7 +276,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
 
     const handler = getHandlerForEvent(mockEventBus.subscribe, 'accessorial.created');
 
-    await handler({ loadId: 'load-1', accessorialId: 'acc-1' });
+    await handler({ loadId: 'load-1', organizationId: 'org-1', accessorialId: 'acc-1' });
 
     expect(mockLogger.warn).toHaveBeenCalledWith(
       expect.stringContaining('no customer rate'),
@@ -295,7 +292,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
 
     const handler = getHandlerForEvent(mockEventBus.subscribe, 'accessorial.created');
 
-    await handler({ loadId: 'load-missing', accessorialId: 'acc-1' });
+    await handler({ loadId: 'load-missing', organizationId: 'org-1', accessorialId: 'acc-1' });
 
     expect(mockLogger.warn).toHaveBeenCalledWith(
       'Load not found for financial recalculation',
@@ -313,7 +310,7 @@ describe('initializeFinancialRecalcSubscriber', () => {
 
     // Should not throw — error is caught inside the handler
     await expect(
-      handler({ loadId: 'load-1', accessorialId: 'acc-1' }),
+      handler({ loadId: 'load-1', organizationId: 'org-1', accessorialId: 'acc-1' }),
     ).resolves.toBeUndefined();
 
     expect(mockLogger.error).toHaveBeenCalledWith(

@@ -206,7 +206,7 @@ describe('customerService', () => {
       });
 
       expect(result.companyName).toBe('Updated Name');
-      expect(mockRepository.update).toHaveBeenCalledWith(CUSTOMER_ID, {
+      expect(mockRepository.update).toHaveBeenCalledWith(CUSTOMER_ID, ORG_ID, {
         companyName: 'Updated Name',
       });
     });
@@ -285,7 +285,7 @@ describe('customerService', () => {
         role: 'admin',
       });
 
-      expect(mockRepository.softDelete).toHaveBeenCalledWith(CUSTOMER_ID, expect.any(Date));
+      expect(mockRepository.softDelete).toHaveBeenCalledWith(CUSTOMER_ID, ORG_ID, expect.any(Date));
     });
 
     it('throws NotFoundError when customer does not exist', async () => {

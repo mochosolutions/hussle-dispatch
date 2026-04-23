@@ -13,9 +13,8 @@ export interface StopResponse {
   state: string | null;
   zip: string | null;
   schedulingType: string;
-  appointmentStart: string | null;
+  appointmentStart: string;
   appointmentEnd: string | null;
-  targetDate: string | null;
   notificationHours: number | null;
   notifiedAt: string | null;
   appointmentNumber: string | null;
@@ -30,8 +29,6 @@ export interface StopResponse {
   isTarp: boolean;
   isTempControlled: boolean;
   notes: string | null;
-  facilityOpenTime: string | null;
-  facilityCloseTime: string | null;
   callByTime: string | null;
   trailerNumber: string | null;
   yardLocation: string | null;
@@ -52,9 +49,8 @@ export const toStopResponse = (stop: Stop): StopResponse => ({
   state: stop.state,
   zip: stop.zip,
   schedulingType: stop.schedulingType,
-  appointmentStart: stop.appointmentStart?.toISOString() ?? null,
+  appointmentStart: stop.appointmentStart.toISOString(),
   appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
-  targetDate: stop.targetDate?.toISOString() ?? null,
   notificationHours: stop.notificationHours,
   notifiedAt: stop.notifiedAt?.toISOString() ?? null,
   appointmentNumber: stop.appointmentNumber,
@@ -69,8 +65,6 @@ export const toStopResponse = (stop: Stop): StopResponse => ({
   isTarp: stop.isTarp,
   isTempControlled: stop.isTempControlled,
   notes: stop.notes,
-  facilityOpenTime: stop.facilityOpenTime,
-  facilityCloseTime: stop.facilityCloseTime,
   callByTime: stop.callByTime,
   trailerNumber: stop.trailerNumber,
   yardLocation: stop.yardLocation,

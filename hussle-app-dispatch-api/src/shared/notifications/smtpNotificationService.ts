@@ -30,9 +30,13 @@ export const createSmtpNotificationService = (
 
   return {
     sendEmail: async (params) => {
+      const ccList = params.cc?.filter((email) => email.length > 0) ?? [];
+      const hasCc = ccList.length > 0;
+
       const mailOptions: Mail.Options = {
         from: params.from,
         to: params.to,
+        ...(hasCc ? { cc: ccList } : {}),
         replyTo: params.replyTo,
         subject: params.subject,
         html: params.html,
@@ -48,6 +52,7 @@ export const createSmtpNotificationService = (
       logger.info('SMTP email sent', {
         messageId: String(info.messageId),
         to: params.to,
+        ccCount: ccList.length,
         subject: params.subject,
       });
     },

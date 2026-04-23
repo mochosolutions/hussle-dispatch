@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
-import { Button, Divider, ListItemIcon, Menu, MenuItem } from '@mui/material';
+import { Box, Button, Divider, ListItemIcon, Menu, MenuItem, Tooltip } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
 import { useDispatch } from 'store';
 import { openModal } from 'features/ui/store/reducers/uiSlice';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 import {
   STATUS_LABELS,
   NEXT_STATUS,
@@ -16,10 +19,32 @@ import type { LoadDetail, LoadStatus } from '../../../types';
 interface LoadDetailActionsProps {
   load: LoadDetail;
   onCreateInvoice: () => void;
+  onCheckCall: () => void;
 }
 
-export const LoadDetailActions = ({ load, onCreateInvoice }: LoadDetailActionsProps) => {
+const CHECK_CALL_STATUSES: readonly LoadStatus[] = [
+  'DISPATCHED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'IN_TRANSIT',
+  'AT_DELIVERY',
+];
+
+const SMS_PROMPT_STATUSES: readonly LoadStatus[] = [
+  'DISPATCHED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'IN_TRANSIT',
+  'AT_DELIVERY',
+];
+
+export const LoadDetailActions = ({
+  load,
+  onCreateInvoice,
+  onCheckCall,
+}: LoadDetailActionsProps) => {
   const dispatch = useDispatch();
+  const { openModal: openModalAction } = useModalActions();
   const [alternativesAnchor, setAlternativesAnchor] = useState<null | HTMLElement>(null);
 
   const nextStatus = NEXT_STATUS[load.status];
@@ -30,11 +55,11 @@ export const LoadDetailActions = ({ load, onCreateInvoice }: LoadDetailActionsPr
       dispatch(
         openModal({
           modalType: 'statusChangeDialog',
-          modalProps: { loadId: load.id, targetStatus },
+          modalProps: { load, targetStatus },
         }),
       );
     },
-    [dispatch, load.id],
+    [dispatch, load],
   );
 
   const handlePrimaryAction = useCallback(() => {
@@ -72,17 +97,57 @@ export const LoadDetailActions = ({ load, onCreateInvoice }: LoadDetailActionsPr
     );
   }, [dispatch, load.id, load.loadNumber]);
 
+  const canCheckCall = CHECK_CALL_STATUSES.includes(load.status);
+  const canSendSms = SMS_PROMPT_STATUSES.includes(load.status);
+  const driverPhone = load.assignment?.driver?.phone ?? null;
+  const handleSendSms = () => openModalAction('loadSendSmsPrompt', { loadId: load.id });
+  const invoiceReadiness = load.tracking?.invoiceReadiness;
+  const invoiceReady = invoiceReadiness === 'READY' || invoiceReadiness === 'INVOICE_CREATED';
+  const sendInvoiceDisabledReason = invoiceReady
+    ? ''
+    : 'Required documents (Rate Con, signed BOL, POD) must be confirmed before sending.';
+
   return (
     <>
-      {load.status === 'DELIVERED' && (
+      {canCheckCall && (
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
-          startIcon={<ReceiptLongIcon />}
-          onClick={onCreateInvoice}
+          startIcon={<PhoneInTalkIcon />}
+          onClick={onCheckCall}
         >
-          Create Invoice
+          Check Call
         </Button>
+      )}
+      {canSendSms && (
+        <Tooltip title={driverPhone === null ? 'Driver has no phone number' : ''} placement="top">
+          <Box component="span" sx={{ display: 'inline-flex' }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<SmsOutlinedIcon />}
+              onClick={handleSendSms}
+              disabled={driverPhone === null}
+            >
+              Send Check-in SMS
+            </Button>
+          </Box>
+        </Tooltip>
+      )}
+      {load.status === 'DELIVERED' && (
+        <Tooltip title={sendInvoiceDisabledReason} placement="top">
+          <Box component="span" sx={{ display: 'inline-flex' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<ReceiptLongIcon />}
+              onClick={onCreateInvoice}
+              disabled={!invoiceReady}
+            >
+              Send Invoice
+            </Button>
+          </Box>
+        </Tooltip>
       )}
       {nextStatus && (
         <Button variant="contained" onClick={handlePrimaryAction}>

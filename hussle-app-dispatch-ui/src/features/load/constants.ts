@@ -131,13 +131,13 @@ export const ALTERNATIVE_STATUSES: Partial<Record<LoadStatus, LoadStatus[]>> = {
 
 export const TRANSITION_PREREQUISITES: Partial<Record<string, { field: string; label: string }[]>> =
   {
-    BOOKED: [{ field: 'carrierId', label: 'Carrier assigned' }],
+    BOOKED: [{ field: 'assignment.carrier.id', label: 'Carrier assigned' }],
     DISPATCHED: [
-      { field: 'carrierId', label: 'Carrier assigned' },
-      { field: 'driverId', label: 'Driver assigned' },
-      { field: 'vehicleId', label: 'Vehicle assigned' },
-      { field: 'customerRate', label: 'Customer rate set' },
-      { field: 'rateConReceivedAt', label: 'Rate confirmation on file' },
+      { field: 'assignment.carrier.id', label: 'Carrier assigned' },
+      { field: 'assignment.driver.id', label: 'Driver assigned' },
+      { field: 'assignment.vehicle.id', label: 'Vehicle assigned' },
+      { field: 'financials.customerRate', label: 'Customer rate set' },
+      { field: 'tracking.rateConReceivedAt', label: 'Rate confirmation on file' },
     ],
   };
 
@@ -408,14 +408,30 @@ export const CREATE_LOAD_DOC_CARD_CONFIG: readonly {
 ];
 
 export const SCHEDULING_TYPE_OPTIONS = [
-  { value: 'APPOINTMENT', label: 'Appt', hint: 'Scheduled appointment \u2014 requires date, time, and confirmation #' },
-  { value: 'FCFS', label: 'FCFS', hint: 'First come first served \u2014 show up during facility hours' },
-  { value: 'NOTIFICATION', label: 'Notify', hint: 'Call ahead before arrival \u2014 requires contact info' },
+  {
+    value: 'APPOINTMENT',
+    label: 'Appt',
+    hint: 'Scheduled appointment \u2014 requires date, time, and confirmation #',
+  },
+  {
+    value: 'FCFS',
+    label: 'FCFS',
+    hint: 'First come first served \u2014 show up during facility hours',
+  },
+  {
+    value: 'NOTIFICATION',
+    label: 'Notify',
+    hint: 'Call ahead before arrival \u2014 requires contact info',
+  },
   { value: 'OPEN', label: 'Open', hint: 'Open dock \u2014 arrive any time during business hours' },
-  { value: 'DROP_HOOK', label: 'Drop', hint: 'Drop trailer at yard \u2014 no dock interaction needed' },
+  {
+    value: 'DROP_HOOK',
+    label: 'Drop',
+    hint: 'Drop trailer at yard \u2014 no dock interaction needed',
+  },
 ] as const;
 
-export type SchedulingType = typeof SCHEDULING_TYPE_OPTIONS[number]['value'];
+export type SchedulingType = (typeof SCHEDULING_TYPE_OPTIONS)[number]['value'];
 
 export const SCHEDULING_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   SCHEDULING_TYPE_OPTIONS.map(({ value, label }) => [value, label]),
@@ -424,4 +440,3 @@ export const SCHEDULING_TYPE_LABELS: Record<string, string> = Object.fromEntries
 export const MARGIN_THRESHOLDS = { good: 20, ok: 10 } as const;
 export const MARKET_RPM = 3.8;
 export const MIN_BOOK = 900;
-

@@ -37,6 +37,8 @@ export interface CognitoProviderDeps {
 export interface AuthenticateUserInput {
   username: string;
   password: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export interface PasswordChallengeInput {

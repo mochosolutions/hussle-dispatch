@@ -267,7 +267,19 @@ export interface SubmitButtonProps {
 	fullWidth?: boolean;
 	size?: 'small' | 'medium' | 'large';
 	type?: 'submit' | 'button';
+	form?: string;
 	onClick?: () => void;
+}
+
+/**
+ * Props for CancelButton component.
+ */
+export interface CancelButtonProps {
+	label?: string;
+	disabled?: boolean;
+	fullWidth?: boolean;
+	size?: 'small' | 'medium' | 'large';
+	onClick: () => void;
 }
 
 /**

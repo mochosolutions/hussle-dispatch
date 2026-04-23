@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from 'store';
 import type { IntelPageState, LoadIntelFeedItem, FeedFilters, FeedStats, FeedSortBy } from '../../types';
+import formatPhone from 'utils/formatPhone';
 
 // ---------------------------------------------------------------------------
 // Base page state selector
@@ -12,8 +13,16 @@ const selectIntelPage = (state: RootState): IntelPageState => state.pages.intel;
 // Feed items
 // ---------------------------------------------------------------------------
 
-export const selectFeedItems = (state: RootState): LoadIntelFeedItem[] =>
-  selectIntelPage(state).feedItems;
+export const selectFeedItems = createSelector(
+  [(state: RootState) => selectIntelPage(state).feedItems],
+  (items) =>
+    items.map((item) => ({
+      ...item,
+      customer: item.customer
+        ? { ...item.customer, phone: formatPhone(item.customer.phone) }
+        : item.customer,
+    })),
+);
 
 // ---------------------------------------------------------------------------
 // Filters

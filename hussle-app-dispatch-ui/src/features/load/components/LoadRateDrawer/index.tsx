@@ -52,17 +52,17 @@ export const LoadRateDrawer: React.FC<LoadRateDrawerProps> = ({ load, onClose })
   };
 
   const handleSubmit = (values: AssignmentFormValues) => {
-    console.log('Submitting values:', values);
-    // dispatch(
-    //   assignLoadRequest({
-    //     loadId: load.id,
-    //     data: {
-    //       customerRate: values.customerRate ?? undefined,
-    //       carrierPayout: values.carrierPayout ?? undefined,
-    //       companyMargin: values.companyMargin ?? undefined,
-    //     },
-    //   }),
-    // );
+    dispatch(
+      assignLoadRequest({
+        loadId: load.id,
+        data: {
+          customerRate: values.customerRate ?? undefined,
+          carrierPayout: values.carrierPayout ?? undefined,
+          companyMargin: values.companyMargin ?? undefined,
+        },
+      }),
+    );
+    onClose();
   };
 
   return (

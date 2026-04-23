@@ -56,6 +56,7 @@ const makeDocument = (id: string, type: string) => ({
 
 const makeInput = (overrides: Partial<SendInvoiceEmailInput> = {}): SendInvoiceEmailInput => ({
   invoiceId: 'inv-1',
+  organizationId: 'org-1',
   recipientEmail: 'billing@customer.com',
   fromEmail: 'dispatch@hussle.com',
   replyToEmail: 'support@hussle.com',
@@ -299,6 +300,7 @@ describe('invoiceEmailService.sendInvoiceEmail', () => {
     expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledTimes(1);
     expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith(
       'inv-1',
+      'org-1',
       'SENT',
       expect.objectContaining({
         sentTo: 'billing@customer.com',
@@ -313,7 +315,7 @@ describe('invoiceEmailService.sendInvoiceEmail', () => {
     if (firstUpdate === undefined) {
       throw new Error('Expected updateStatus to have been called');
     }
-    const statusExtra = firstUpdate[2] as Record<string, unknown>;
+    const statusExtra = firstUpdate[3] as Record<string, unknown>;
     const sentAt = statusExtra.sentAt as Date;
     expect(sentAt).toBeInstanceOf(Date);
     expect(sentAt.getTime()).toBeGreaterThanOrEqual(beforeSend);

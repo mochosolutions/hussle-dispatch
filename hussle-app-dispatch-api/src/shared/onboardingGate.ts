@@ -18,8 +18,8 @@ export interface CarrierOnboardingResult {
  * Determines whether a carrier is allowed to be assigned to a load.
  *
  * COMPANY_ASSET carriers always pass.
- * EXTERNAL_CARRIER carriers must have dispatch agreement, valid insurance, and W-9.
- * OWNER_OPERATOR is rejected with a clear message (decision X-001).
+ * EXTERNAL_CARRIER and LEASED_CARRIER carriers must have dispatch agreement,
+ * valid insurance, and W-9.
  */
 export const checkCarrierOnboarding = (
   input: CarrierOnboardingInput,
@@ -28,11 +28,7 @@ export const checkCarrierOnboarding = (
     return { allowed: true, missingDocuments: [] };
   }
 
-  if (input.carrierType === CARRIER_TYPES.OWNER_OPERATOR) {
-    return { allowed: false, missingDocuments: ['Owner-operator support coming soon'] };
-  }
-
-  // EXTERNAL_CARRIER — collect all missing documents
+  // EXTERNAL_CARRIER / LEASED_CARRIER — collect all missing documents
   const missingDocuments: string[] = [];
 
   if (!input.dispatchAgreementOnFile) {

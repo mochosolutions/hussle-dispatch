@@ -3,6 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { DriverFormEntry } from '../../types';
+import formatPhone from 'utils/formatPhone';
 
 interface DriverSummaryCardProps {
   driver: DriverFormEntry;
@@ -17,7 +18,7 @@ export const DriverSummaryCard = ({ driver, onEdit, onRemove }: DriverSummaryCar
     .join('')
     .toUpperCase();
 
-  const details = [driver.licenseNumber, driver.phone].filter(Boolean);
+  const details = [driver.licenseNumber, formatPhone(driver.phone)].filter(Boolean);
 
   return (
     <Box

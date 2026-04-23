@@ -2,6 +2,7 @@ import type { CarrierType } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import {
   AssignmentValidationError,
+  ConflictError,
   NotFoundError,
   ProhibitedCommodityError,
   ValidationError,
@@ -24,6 +25,7 @@ import type {
   LoadRepoPort,
   LoadWithRelations,
   OrgSettingsQueryPort,
+  SettlementFreezeQueryPort,
   StopInput,
   UpdateLoadInput,
   VehicleAssignmentQueryPort,
@@ -99,12 +101,9 @@ export const validateStops = (stops: StopInput[]): void => {
   }
 
   stops.forEach((stop, index) => {
-    if (
-      stop.schedulingType === 'APPOINTMENT' &&
-      (stop.appointmentStart === undefined || stop.appointmentStart === null)
-    ) {
+    if (stop.appointmentStart === undefined || stop.appointmentStart === null) {
       throw new ValidationError(
-        `Stop ${String(index + 1)}: appointmentStart is required when schedulingType is APPOINTMENT.`,
+        `Stop ${String(index + 1)}: appointmentStart is required.`,
       );
     }
 
@@ -119,15 +118,6 @@ export const validateStops = (stops: StopInput[]): void => {
           `Stop ${String(index + 1)}: contactPhone is required when schedulingType is NOTIFICATION.`,
         );
       }
-    }
-
-    if (
-      stop.schedulingType === 'FCFS' &&
-      (stop.targetDate === undefined || stop.targetDate === null)
-    ) {
-      throw new ValidationError(
-        `Stop ${String(index + 1)}: targetDate is required when schedulingType is FCFS.`,
-      );
     }
   });
 };
@@ -223,6 +213,7 @@ interface LoadServiceDeps {
   loadStatusRepo?: Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>;
   vehicleCpmQuery?: VehicleCpmQueryPort;
   dispatcherProfileQuery?: DispatcherProfileQueryPort;
+  settlementFreezeQuery?: SettlementFreezeQueryPort;
   eventBus?: EventBus;
   logger?: Logger;
 }
@@ -632,6 +623,23 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     assertFinancialsNotChanged(existing.status, input as Record<string, unknown>);
 
+    if (deps.settlementFreezeQuery !== undefined) {
+      const touchesFinancials = FINANCIAL_FIELDS.some(
+        (field) => (input as Record<string, unknown>)[field] !== undefined,
+      );
+      if (touchesFinancials) {
+        const isFrozen = await deps.settlementFreezeQuery.hasNonDraftSettlementForLoad(
+          id,
+          organizationId,
+        );
+        if (isFrozen) {
+          throw new ConflictError(
+            'Cannot modify load financials: a settlement referencing this load has been approved or paid.',
+          );
+        }
+      }
+    }
+
     if (input.stops !== undefined) {
       validateStops(input.stops);
     }
@@ -787,6 +795,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
           customerId: load.customerId ?? null,
           contactEmail: load.contact?.email ?? null,
           contactPhone: load.contact?.phone ?? null,
+          contactCcEmails: load.contact?.ccEmails ?? [],
           location: input.location ?? null,
           status: input.status ?? null,
           eta: input.eta?.toISOString() ?? null,

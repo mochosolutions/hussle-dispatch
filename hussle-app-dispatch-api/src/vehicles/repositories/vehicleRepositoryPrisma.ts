@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   ListVehiclesRepositoryInput,
   VehicleExpenseInput,
@@ -98,14 +99,19 @@ export const vehicleRepositoryPrisma = (
       where: buildListWhere(organizationId, filters),
     }),
 
-  update: (id, input) =>
-    prisma.vehicle.update({
-      where: {
-        id,
-      },
+  update: async (id, organizationId, input) => {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id, deletedAt: null, carrier: { managedByOrgId: organizationId, deletedAt: null } },
+    });
+    if (!vehicle) {
+      throw new NotFoundError(`Vehicle with id ${id} not found`);
+    }
+    return prisma.vehicle.update({
+      where: { id },
       data: input,
       include: includeExpenses,
-    }),
+    });
+  },
 
   createExpense: (vehicleId, expense) =>
     prisma.truckExpense.create({
@@ -138,14 +144,16 @@ export const vehicleRepositoryPrisma = (
     }
   },
 
-  softDelete: async (id, deletedAt) => {
+  softDelete: async (id, organizationId, deletedAt) => {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id, deletedAt: null, carrier: { managedByOrgId: organizationId, deletedAt: null } },
+    });
+    if (!vehicle) {
+      throw new NotFoundError(`Vehicle with id ${id} not found`);
+    }
     await prisma.vehicle.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt,
-      },
+      where: { id },
+      data: { deletedAt },
     });
   },
 

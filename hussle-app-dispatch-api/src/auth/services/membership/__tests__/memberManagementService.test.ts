@@ -77,25 +77,30 @@ describe('memberManagementService', () => {
   });
 
   describe('changeMemberRole', () => {
-    it('updates role successfully', async () => {
-      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'dispatcher', status: 'active' };
+    it('updates role successfully and returns old and new role', async () => {
+      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'dispatcher', status: 'active', permissionsVersion: 1 };
       mockDeps.membershipRepository.findOneByFilter.mockResolvedValue(membership);
       mockDeps.membershipRepository.updateMembership.mockResolvedValue(undefined);
 
-      await service.changeMemberRole({
+      const result = await service.changeMemberRole({
         organizationId: ORG_ID,
         membershipId: MEMBERSHIP_ID,
         role: 'admin',
       });
 
+      expect(result).toEqual({ oldRole: 'dispatcher', newRole: 'admin' });
       expect(mockDeps.membershipRepository.updateMembership).toHaveBeenCalledWith(
         MEMBERSHIP_ID,
-        { role: 'admin' },
+        { role: 'admin', permissionsVersion: 2 },
       );
+      expect(mockDeps.tokenProvider.revokeUserOrgSessions).toHaveBeenCalledWith({
+        userId: USER_ID,
+        organizationId: ORG_ID,
+      });
     });
 
     it('throws LastAdminError when demoting the only admin', async () => {
-      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'admin', status: 'active' };
+      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'admin', status: 'active', permissionsVersion: 1 };
       mockDeps.membershipRepository.findOneByFilter.mockResolvedValue(membership);
       mockDeps.membershipRepository.findMembershipsByFilter.mockResolvedValue([
         makeMemberWithUser({ role: 'admin' }),
@@ -111,7 +116,7 @@ describe('memberManagementService', () => {
     });
 
     it('allows demoting admin when another admin exists', async () => {
-      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'admin', status: 'active' };
+      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'admin', status: 'active', permissionsVersion: 1 };
       mockDeps.membershipRepository.findOneByFilter.mockResolvedValue(membership);
       mockDeps.membershipRepository.findMembershipsByFilter.mockResolvedValue([
         makeMemberWithUser({ role: 'admin' }),
@@ -119,16 +124,21 @@ describe('memberManagementService', () => {
       ]);
       mockDeps.membershipRepository.updateMembership.mockResolvedValue(undefined);
 
-      await service.changeMemberRole({
+      const result = await service.changeMemberRole({
         organizationId: ORG_ID,
         membershipId: MEMBERSHIP_ID,
         role: 'dispatcher',
       });
 
+      expect(result).toEqual({ oldRole: 'admin', newRole: 'dispatcher' });
       expect(mockDeps.membershipRepository.updateMembership).toHaveBeenCalledWith(
         MEMBERSHIP_ID,
-        { role: 'dispatcher' },
+        { role: 'dispatcher', permissionsVersion: 2 },
       );
+      expect(mockDeps.tokenProvider.revokeUserOrgSessions).toHaveBeenCalledWith({
+        userId: USER_ID,
+        organizationId: ORG_ID,
+      });
     });
 
     it('throws ValidationError for invalid role', async () => {
@@ -156,7 +166,7 @@ describe('memberManagementService', () => {
 
   describe('removeMember', () => {
     it('soft-deletes membership and revokes sessions', async () => {
-      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'dispatcher', status: 'active' };
+      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'dispatcher', status: 'active', permissionsVersion: 1 };
       mockDeps.membershipRepository.findOneByFilter.mockResolvedValue(membership);
       mockDeps.membershipRepository.updateMembership.mockResolvedValue(undefined);
       mockDeps.tokenProvider.revokeUserOrgSessions.mockResolvedValue(1);
@@ -182,7 +192,7 @@ describe('memberManagementService', () => {
     });
 
     it('throws LastAdminError when removing the only admin', async () => {
-      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'admin', status: 'active' };
+      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'admin', status: 'active', permissionsVersion: 1 };
       mockDeps.membershipRepository.findOneByFilter.mockResolvedValue(membership);
       mockDeps.membershipRepository.findMembershipsByFilter.mockResolvedValue([
         makeMemberWithUser({ role: 'admin' }),
@@ -198,7 +208,7 @@ describe('memberManagementService', () => {
     });
 
     it('throws LastAdminError when user tries to remove themselves', async () => {
-      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'dispatcher', status: 'active' };
+      const membership = { membershipId: MEMBERSHIP_ID, userId: USER_ID, role: 'dispatcher', status: 'active', permissionsVersion: 1 };
       mockDeps.membershipRepository.findOneByFilter.mockResolvedValue(membership);
 
       await expect(

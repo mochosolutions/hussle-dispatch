@@ -39,6 +39,7 @@ export { RichTextEditorField } from './RichTextEditorField';
 
 // Button components
 export { SubmitButton } from './SubmitButton';
+export { CancelButton } from './CancelButton';
 export { SecondaryButton } from './SecondaryButton';
 
 // Navigation components

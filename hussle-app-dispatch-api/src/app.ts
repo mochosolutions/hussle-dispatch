@@ -30,6 +30,7 @@ import { settlementsRouter } from './settlements';
 // Side-effect imports: initialize subscribers on startup
 import './audit';
 import './notifications';
+import { smsPromptsRouter } from './sms-prompts';
 import { env } from './config/env';
 import { errorHandler } from './shared/middleware/errorHandler';
 import { createStorageProvider } from './shared/storage';
@@ -85,6 +86,7 @@ export const createApp = (): express.Application => {
   app.use('/api/v1/drivers', driversRouter);
   app.use('/api/v1/places', placesRouter);
   app.use('/api/v1/loads', loadsRouter);
+  app.use('/api/v1/loads', smsPromptsRouter);
   app.use('/api/v1/vehicles', vehiclesRouter);
   app.use('/api/v1/load-intel', loadIntelRouter);
   app.use('/api/v1/load-board', loadBoardRouter);

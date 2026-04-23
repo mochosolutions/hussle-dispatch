@@ -23,10 +23,10 @@ interface CarrierFormDrawerProps {
   onSubmit: (values: CarrierEditFormValues) => void;
 }
 
-// OWNER_OPERATOR excluded per decision L-010
 const TYPE_OPTIONS = [
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
+  { value: 'LEASED_CARRIER', label: 'Leased Carrier' },
 ];
 
 const sectionLabelSx = {

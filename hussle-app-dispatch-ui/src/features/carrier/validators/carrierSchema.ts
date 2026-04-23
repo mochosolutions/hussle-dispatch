@@ -8,7 +8,7 @@ import type { CarrierType } from '../types';
 export const carrierSchema = Yup.object({
   name: Yup.string().required('Legal name is required').min(2, 'Min 2 characters'),
   type: Yup.mixed<CarrierType>()
-    .oneOf(['COMPANY_ASSET', 'OWNER_OPERATOR', 'EXTERNAL_CARRIER'])
+    .oneOf(['COMPANY_ASSET', 'EXTERNAL_CARRIER', 'LEASED_CARRIER'])
     .required('Type is required'),
   mcNumber: Yup.string().min(5, 'Min 5 characters').default(''),
   dotNumber: Yup.string().default(''),
@@ -26,7 +26,7 @@ export type CarrierFormValues = InferType<typeof carrierSchema>;
 export const carrierEditSchema = Yup.object({
   name: Yup.string().required('Name is required').min(2, 'Min 2 characters'),
   type: Yup.mixed<CarrierType>()
-    .oneOf(['COMPANY_ASSET', 'OWNER_OPERATOR', 'EXTERNAL_CARRIER'])
+    .oneOf(['COMPANY_ASSET', 'EXTERNAL_CARRIER', 'LEASED_CARRIER'])
     .required('Type is required'),
   mcNumber: Yup.string(),
   dotNumber: Yup.string(),

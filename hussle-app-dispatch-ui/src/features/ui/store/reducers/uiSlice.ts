@@ -39,8 +39,12 @@ const uiSlice = createSlice({
     closeDrawer(state) {
       state.drawer = null;
     },
+    resetPopups(state) {
+      state.modal = null;
+      state.drawer = null;
+    },
   },
 });
 
-export const { openModal, closeModal, openDrawer, closeDrawer } = uiSlice.actions;
+export const { openModal, closeModal, openDrawer, closeDrawer, resetPopups } = uiSlice.actions;
 export default uiSlice.reducer;

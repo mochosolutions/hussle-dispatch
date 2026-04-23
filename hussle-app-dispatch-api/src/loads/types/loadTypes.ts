@@ -35,9 +35,8 @@ export interface StopInput {
   state?: string;
   zip?: string;
   schedulingType?: SchedulingType;
-  appointmentStart?: Date | string | null;
+  appointmentStart: Date | string;
   appointmentEnd?: Date | string | null;
-  targetDate?: Date | string | null;
   notificationHours?: number | null;
   appointmentNumber?: string;
   contactName?: string;
@@ -49,8 +48,6 @@ export interface StopInput {
   isTarp?: boolean;
   isTempControlled?: boolean;
   notes?: string;
-  facilityOpenTime?: string;
-  facilityCloseTime?: string;
   callByTime?: string;
   trailerNumber?: string;
   yardLocation?: string;
@@ -395,6 +392,13 @@ export interface DispatcherProfileQueryPort {
   } | null>;
 }
 
+export interface SettlementFreezeQueryPort {
+  hasNonDraftSettlementForLoad(
+    loadId: string,
+    organizationId: string,
+  ): Promise<boolean>;
+}
+
 // ---------------------------------------------------------------------------
 // Response types (API → client)
 // ---------------------------------------------------------------------------
@@ -411,9 +415,8 @@ export interface StopResponse {
   state: string | null;
   zip: string | null;
   schedulingType: string;
-  appointmentStart: string | null;
+  appointmentStart: string;
   appointmentEnd: string | null;
-  targetDate: string | null;
   notificationHours: number | null;
   notifiedAt: string | null;
   appointmentNumber: string | null;
@@ -428,8 +431,6 @@ export interface StopResponse {
   isTarp: boolean;
   isTempControlled: boolean;
   notes: string | null;
-  facilityOpenTime: string | null;
-  facilityCloseTime: string | null;
   callByTime: string | null;
   trailerNumber: string | null;
   yardLocation: string | null;
@@ -484,6 +485,7 @@ export interface DriverResponse {
   id: string;
   firstName: string;
   lastName: string;
+  phone: string | null;
 }
 
 export interface CarrierResponse {
@@ -571,6 +573,7 @@ export interface LoadDetailResponse {
   id: string;
   loadNumber: string;
   status: string;
+  version: number;
   organizationId: string;
   externalRefNumber: string | null;
   equipmentType: string | null;

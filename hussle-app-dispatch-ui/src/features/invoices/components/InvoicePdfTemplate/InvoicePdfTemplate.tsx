@@ -3,6 +3,7 @@ import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import type { InvoiceData, LineItem, Accessorial } from '../../types';
 import { formatCurrency } from './formatCurrency';
 import { pdfStyles } from './pdfStyles';
+import formatPhone from 'utils/formatPhone';
 
 interface InvoicePdfTemplateProps {
   invoice: InvoiceData;
@@ -59,7 +60,7 @@ const InvoiceDetailsSection: React.FC<{
       <Text style={pdfStyles.billToName}>{invoice.billTo.name}</Text>
       <Text style={pdfStyles.billToText}>{formatAddress(invoice.billTo.address)}</Text>
       {invoice.billTo.phone ? (
-        <Text style={pdfStyles.billToText}>{invoice.billTo.phone}</Text>
+        <Text style={pdfStyles.billToText}>{formatPhone(invoice.billTo.phone)}</Text>
       ) : null}
       {invoice.billTo.email ? (
         <Text style={pdfStyles.billToText}>{invoice.billTo.email}</Text>

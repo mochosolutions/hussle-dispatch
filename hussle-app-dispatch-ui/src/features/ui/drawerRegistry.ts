@@ -18,6 +18,8 @@ import { LoadCargoDrawer } from '../load/components/LoadCargoDrawer';
 import { LoadAssignmentDrawer } from '../load/components/LoadAssignmentDrawer';
 import { LoadRateDrawer } from '../load/components/LoadRateDrawer';
 import { LoadContactDrawer } from '../load/components/LoadContactDrawer';
+import { AccessorialDrawer } from '../load/components/AccessorialDrawer';
+import { LoadCheckCallDrawer } from '../load/components/LoadCheckCallDrawer';
 
 import { CustomerCompanyInfoDrawer } from '../customer/components/CustomerCompanyInfoDrawer';
 import { VehicleCreateDrawer } from '../vehicle/components/VehicleCreateDialog';
@@ -58,6 +60,8 @@ const drawerRegistry: PopupComponentMap = {
   loadRoute: LoadRouteDrawer,
   loadCargo: LoadCargoDrawer,
   loadAssignment: LoadAssignmentDrawer,
+  loadAccessorial: AccessorialDrawer,
+  loadCheckCall: LoadCheckCallDrawer,
 
   // Accounting drawers
   disputeSettlement: DisputeSettlementDrawer,

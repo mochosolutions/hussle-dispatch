@@ -57,6 +57,7 @@ const buildMockDeps = () => {
 
   const eventBus: jest.Mocked<EventBus> = {
     publish: jest.fn().mockResolvedValue(undefined),
+    publishDelayed: jest.fn().mockResolvedValue(undefined),
     subscribe: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
   };

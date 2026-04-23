@@ -69,7 +69,7 @@ const executeSideEffects = async (
 
       case 'AUTO_GENERATE_INVOICE':
         deps.logger.info('Side effect: auto-generate invoice (via domain event)', { loadId, targetStatus });
-        // Invoice generation will be wired in a future story.
+        // Handled by invoiceReadinessSubscriber via load.delivered and load.status.changed events.
         break;
 
       case 'AUTO_CREATE_TONU_ACCESSORIAL':
@@ -166,6 +166,7 @@ interface PublishDomainEventsInput {
   customerId: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  contactCcEmails: string[];
   eventBus: EventBus;
   logger: Logger;
 }
@@ -180,6 +181,7 @@ const publishDomainEvents = async (input: PublishDomainEventsInput): Promise<voi
     customerId,
     contactEmail,
     contactPhone,
+    contactCcEmails,
     eventBus,
     logger: log,
   } = input;
@@ -207,6 +209,7 @@ const publishDomainEvents = async (input: PublishDomainEventsInput): Promise<voi
     customerId,
     contactEmail,
     contactPhone,
+    contactCcEmails,
   });
 
   // Emit specific lifecycle events
@@ -219,7 +222,7 @@ const publishDomainEvents = async (input: PublishDomainEventsInput): Promise<voi
   const lifecycleEvent = lifecycleMap[targetStatus];
 
   if (lifecycleEvent !== undefined) {
-    await safePublish(lifecycleEvent, { loadId, status: targetStatus as string });
+    await safePublish(lifecycleEvent, { loadId, organizationId, status: targetStatus as string });
   }
 };
 
@@ -337,8 +340,8 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
       settingsQuery: deps.settingsQuery,
     });
 
-    // 5. Update the load status
-    const updatedLoad = await deps.loadStatusRepo.updateStatus(loadId, targetStatus);
+    // 5. Update the load status (with optimistic locking when version provided)
+    const updatedLoad = await deps.loadStatusRepo.updateStatus(loadId, targetStatus, input.version);
 
     // 6. Create status history record
     await deps.loadStatusRepo.createStatusHistory({
@@ -359,6 +362,7 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
       customerId: load.customerId ?? null,
       contactEmail: load.contact?.email ?? null,
       contactPhone: load.contact?.phone ?? null,
+      contactCcEmails: load.contact?.ccEmails ?? [],
       eventBus: deps.eventBus,
       logger: deps.logger,
     });

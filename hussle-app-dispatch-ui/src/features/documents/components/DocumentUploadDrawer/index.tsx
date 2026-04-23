@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { CancelButton } from '@mocho/ui/components/form-fields';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { EditDrawer } from 'components/EditDrawer';
@@ -143,9 +144,7 @@ const ComplianceForm: React.FC<ComplianceFormProps> = ({
           <Button variant="contained" size="small" onClick={handleSubmit}>
             Upload
           </Button>
-          <Button variant="outlined" size="small" onClick={onCancel}>
-            Cancel
-          </Button>
+          <CancelButton onClick={onCancel} size="small" />
         </Stack>
       </Stack>
     </Box>

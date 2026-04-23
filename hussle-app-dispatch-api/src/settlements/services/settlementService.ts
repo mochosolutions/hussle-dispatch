@@ -5,10 +5,11 @@ import {
   ConflictError,
   InvalidTransitionError,
   NotFoundError,
-  OwnerOperatorNotSupportedError,
   ValidationError,
 } from '../../shared/errors/commonErrors';
+import { round2 } from '../../shared/financials';
 import { buildPaginationMeta } from '../../shared/responseEnvelope';
+import { computeSettlementHash } from '../../shared/utils/snapshotHash';
 import type {
   ApproveSettlementInput,
   CarrierQueryPort,
@@ -21,10 +22,6 @@ import type {
   SettlementRepoPort,
   SettlementWithRelations,
 } from '../types/settlementTypes';
-
-const ROUNDING = Decimal.ROUND_HALF_EVEN;
-
-const round2 = (value: Decimal): string => value.toDecimalPlaces(2, ROUNDING).toFixed(2);
 
 interface SettlementLineItemData {
   type: 'LOAD_REVENUE' | 'DISPATCH_FEE' | 'ACCESSORIAL' | 'EXPENSE';
@@ -68,10 +65,6 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
       );
     }
 
-    if (carrier.type === CARRIER_TYPES.OWNER_OPERATOR) {
-      throw new OwnerOperatorNotSupportedError();
-    }
-
     // 3. Check idempotency
     const existing = await deps.settlementRepo.findOverlapping(
       input.organizationId,
@@ -100,14 +93,21 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
       throw new ValidationError('No delivered loads found for the specified period');
     }
 
-    // 5. Build line items
+    // 5. Build line items and accumulate full-precision totals in one pass.
+    // Line items are rounded once for DB storage, but totals sum the raw
+    // Decimal values to avoid round-then-sum accumulation drift.
     const lineItems: SettlementLineItemData[] = [];
+    let grossRevenue = new Decimal(0);
+    let dispatchFeeTotal = new Decimal(0);
+    let accessorialsTotal = new Decimal(0);
+    let expensesTotal = new Decimal(0);
 
     loads.forEach((load) => {
       const deliveredAt = load.deliveredAt ?? new Date();
 
       // LOAD_REVENUE
       const revenueAmount = new Decimal(String(load.carrierRate));
+      grossRevenue = grossRevenue.plus(revenueAmount);
       lineItems.push({
         type: 'LOAD_REVENUE',
         referenceId: load.id,
@@ -119,6 +119,7 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
 
       // DISPATCH_FEE (stored positive, subtracted in totals)
       const feeAmount = new Decimal(String(load.dispatchFee)).abs();
+      dispatchFeeTotal = dispatchFeeTotal.plus(feeAmount);
       lineItems.push({
         type: 'DISPATCH_FEE',
         referenceId: load.id,
@@ -130,6 +131,7 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
       // ACCESSORIAL charges
       load.accessorialCharges.forEach((charge) => {
         const chargeAmount = new Decimal(String(charge.amount));
+        accessorialsTotal = accessorialsTotal.plus(chargeAmount);
         lineItems.push({
           type: 'ACCESSORIAL',
           referenceId: charge.id,
@@ -155,6 +157,7 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
 
       expenses.forEach((expense) => {
         const expenseAmount = new Decimal(String(expense.amount)).abs();
+        expensesTotal = expensesTotal.plus(expenseAmount);
         lineItems.push({
           type: 'EXPENSE',
           referenceId: expense.id,
@@ -164,32 +167,6 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
         });
       });
     }
-
-    // 6. Compute totals from line items
-    let grossRevenue = new Decimal(0);
-    let dispatchFeeTotal = new Decimal(0);
-    let accessorialsTotal = new Decimal(0);
-    let expensesTotal = new Decimal(0);
-
-    lineItems.forEach((item) => {
-      const amount = new Decimal(item.amount);
-      switch (item.type) {
-        case 'LOAD_REVENUE':
-          grossRevenue = grossRevenue.plus(amount);
-          break;
-        case 'DISPATCH_FEE':
-          dispatchFeeTotal = dispatchFeeTotal.plus(amount);
-          break;
-        case 'ACCESSORIAL':
-          accessorialsTotal = accessorialsTotal.plus(amount);
-          break;
-        case 'EXPENSE':
-          expensesTotal = expensesTotal.plus(amount);
-          break;
-        default:
-          break;
-      }
-    });
 
     const netEarnings = grossRevenue
       .minus(dispatchFeeTotal)
@@ -204,7 +181,10 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
     // 7. Generate settlement number
     const settlementNumber = generateSettlementNumber();
 
-    // 8. Create settlement via repo
+    // 8. Compute snapshot hash over rounded line items for tamper detection
+    const snapshotHash = computeSettlementHash(lineItems);
+
+    // 9. Create settlement via repo
     const settlement = await deps.settlementRepo.create({
       organizationId: input.organizationId,
       settlementNumber,
@@ -218,6 +198,7 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
       dispatchFeeTotal: Number(round2(dispatchFeeTotal)),
       expensesTotal: Number(round2(expensesTotal)),
       netEarnings: Number(round2(netEarnings)),
+      snapshotHash,
       lineItems,
     });
 
@@ -280,6 +261,15 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
 
     if (settlement.status !== 'DRAFT' && settlement.status !== 'DISPUTED') {
       throw new InvalidTransitionError(settlement.status, 'APPROVED', ['DRAFT', 'DISPUTED']);
+    }
+
+    if (settlement.snapshotHash !== null && settlement.snapshotHash !== undefined) {
+      const currentHash = computeSettlementHash(settlement.lineItems);
+      if (currentHash !== settlement.snapshotHash) {
+        throw new ConflictError(
+          'Settlement financials changed since generation. Please regenerate before approving.',
+        );
+      }
     }
 
     const updated = await deps.settlementRepo.update(input.settlementId, input.organizationId, {

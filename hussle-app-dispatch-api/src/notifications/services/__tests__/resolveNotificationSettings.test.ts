@@ -29,6 +29,7 @@ const makeOverride = (
   enabled: true,
   recipientEmail: null,
   recipientPhone: null,
+  ccEmails: [],
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

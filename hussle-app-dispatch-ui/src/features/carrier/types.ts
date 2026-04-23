@@ -1,6 +1,6 @@
 // Derived from fleet-management API contract (openapi spec)
 
-export type CarrierType = 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
+export type CarrierType = 'COMPANY_ASSET' | 'EXTERNAL_CARRIER' | 'LEASED_CARRIER';
 
 export type CarrierStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'DRAFT';
 
@@ -159,6 +159,8 @@ export interface DriverNoGoZone {
 
 export type DriverLicenseType = 'CLASS_D' | 'CLASS_M' | 'CDL_A' | 'CDL_B' | 'CDL_C';
 
+export type DriverPayType = 'PERCENTAGE' | 'PER_MILE' | 'PER_HOUR' | 'FLAT_RATE';
+
 export const DRIVER_LICENSE_TYPE_OPTIONS: Array<{
   value: DriverLicenseType;
   label: string;
@@ -207,6 +209,8 @@ export interface Driver {
   maxDaysOut: number | null;
   preferredLanes: DriverPreferredLane[];
   noGoZones: DriverNoGoZone[];
+  payType: DriverPayType | null;
+  payRate: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -234,6 +238,8 @@ export interface CreateDriverInput {
   maxDaysOut?: number | null;
   preferredLanes?: DriverPreferredLane[] | null;
   noGoZones?: DriverNoGoZone[] | null;
+  payType?: DriverPayType | null;
+  payRate?: number | null;
   notes?: string | null;
 }
 
@@ -258,6 +264,8 @@ export interface UpdateDriverInput {
   maxDaysOut?: number | null;
   preferredLanes?: DriverPreferredLane[] | null;
   noGoZones?: DriverNoGoZone[] | null;
+  payType?: DriverPayType | null;
+  payRate?: number | null;
   notes?: string | null;
 }
 
@@ -341,6 +349,7 @@ export interface Contact {
   lastName: string;
   phone: string | null;
   email: string | null;
+  ccEmails: string[];
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -354,6 +363,7 @@ export interface CreateContactInput {
   lastName: string;
   phone?: string | null;
   email?: string | null;
+  ccEmails?: string[];
   notes?: string | null;
 }
 
@@ -364,6 +374,7 @@ export interface UpdateContactInput {
   lastName?: string;
   phone?: string | null;
   email?: string | null;
+  ccEmails?: string[];
   notes?: string | null;
 }
 

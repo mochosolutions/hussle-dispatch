@@ -175,7 +175,7 @@ describe('createInvoiceService', () => {
       });
 
       // Assert
-      expect(deps.invoiceRepo.update).toHaveBeenCalledWith('inv-1', { notes: 'updated' });
+      expect(deps.invoiceRepo.update).toHaveBeenCalledWith('inv-1', 'org-1', { notes: 'updated' });
       expect(result).toBe(updated);
     });
   });
@@ -244,7 +244,7 @@ describe('createInvoiceService', () => {
       });
 
       // Assert
-      expect(deps.invoiceRepo.delete).toHaveBeenCalledWith('inv-1');
+      expect(deps.invoiceRepo.delete).toHaveBeenCalledWith('inv-1', 'org-1');
       expect(deps.loadQuery.updateLoadStatus).toHaveBeenCalledWith('load-1', 'DELIVERED');
       expect(deps.logger.info).toHaveBeenCalledWith(
         'Invoice deleted, load reverted to DELIVERED',
@@ -306,7 +306,7 @@ describe('createInvoiceService', () => {
       });
 
       // Assert
-      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'APPROVED', {
+      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'org-1', 'APPROVED', {
         approvedByUserId: 'user-1',
         approvedAt: expect.any(Date),
       });
@@ -359,6 +359,7 @@ describe('createInvoiceService', () => {
       // Assert
       expect(deps.invoiceEmailService.sendInvoiceEmail).toHaveBeenCalledWith({
         invoiceId: 'inv-1',
+        organizationId: 'org-1',
         recipientEmail: 'recipient@example.com',
         fromEmail: 'invoices@fleetcommand.app',
         subject: 'Invoice from Test Carrier \u2014 Load #LD-001',
@@ -423,7 +424,7 @@ describe('createInvoiceService', () => {
       });
 
       // Assert
-      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'PARTIALLY_PAID', {
+      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'org-1', 'PARTIALLY_PAID', {
         paidAmount: 500,
         paymentMethod: 'ACH',
         paymentReference: 'REF-001',
@@ -460,7 +461,7 @@ describe('createInvoiceService', () => {
       });
 
       // Assert
-      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'PAID', {
+      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'org-1', 'PAID', {
         paidAmount: 1200,
         paymentMethod: 'CHECK',
         paymentReference: 'CHK-002',
@@ -501,7 +502,7 @@ describe('createInvoiceService', () => {
       });
 
       // Assert
-      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'PAID', {
+      expect(deps.invoiceRepo.updateStatus).toHaveBeenCalledWith('inv-1', 'org-1', 'PAID', {
         paidAmount: 1200,
         paymentMethod: 'WIRE',
         paymentReference: 'WIRE-001',

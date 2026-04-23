@@ -43,8 +43,8 @@ const getFileExtension = (fileName: string): string => {
 export const createDocumentPacketService = (
   deps: DocumentPacketServiceDeps,
 ): DocumentPacketPort => ({
-  generatePacket: async ({ invoiceId }): Promise<Buffer> => {
-    const invoice = await deps.invoiceRepo.findById(invoiceId);
+  generatePacket: async ({ invoiceId, organizationId }): Promise<Buffer> => {
+    const invoice = await deps.invoiceRepo.findById(invoiceId, organizationId);
 
     if (invoice === null) {
       throw new Error(`Invoice not found: ${invoiceId}`);

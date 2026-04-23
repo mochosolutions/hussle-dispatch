@@ -7,6 +7,7 @@ export const transitionStatusMapper = (req: Request): TransitionStatusInput => {
     status: LoadStatus;
     notes?: string;
     overrideWarnings?: boolean;
+    version?: number;
   };
 
   return {
@@ -17,5 +18,6 @@ export const transitionStatusMapper = (req: Request): TransitionStatusInput => {
     overrideWarnings: body.overrideWarnings,
     userId: req.user?.userId ?? '',
     userRole: req.user?.role ?? '',
+    version: body.version,
   };
 };

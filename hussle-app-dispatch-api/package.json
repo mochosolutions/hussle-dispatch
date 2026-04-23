@@ -101,6 +101,7 @@
       "**/*.test.ts"
     ],
     "moduleNameMapper": {
+      "^@hussle/emails$": "<rootDir>/../hussle-emails/src/index.ts",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
     "collectCoverageFrom": [

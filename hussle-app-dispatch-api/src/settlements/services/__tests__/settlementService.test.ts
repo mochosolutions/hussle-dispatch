@@ -1,10 +1,6 @@
 import Decimal from 'decimal.js';
 import { CarrierType } from '@prisma/client';
-import {
-  ConflictError,
-  OwnerOperatorNotSupportedError,
-  ValidationError,
-} from '@/shared/errors';
+import { ConflictError, ValidationError } from '@/shared/errors';
 import { createSettlementService } from '../settlementService';
 
 // ---------------------------------------------------------------------------
@@ -248,15 +244,6 @@ describe('settlementService.generate', () => {
     await expect(service.generate(BASE_INPUT)).rejects.toThrow(ValidationError);
   });
 
-  it('throws OwnerOperatorNotSupportedError for OWNER_OPERATOR', async () => {
-    // Arrange
-    const carrier = buildCarrier({ type: CarrierType.OWNER_OPERATOR });
-    mockCarrierQuery.findById.mockResolvedValue(carrier);
-
-    // Act & Assert
-    await expect(service.generate(BASE_INPUT)).rejects.toThrow(OwnerOperatorNotSupportedError);
-  });
-
   it('throws ConflictError when overlapping settlement exists', async () => {
     // Arrange
     const carrier = buildCarrier();
@@ -333,5 +320,139 @@ describe('settlementService.generate', () => {
     expect(createArg.expensesTotal).toBe(350);
     expect(createArg.netEarnings).toBe(4750);
     expect(createArg.totalMiles).toBe(1100);
+  });
+
+  it('sums full-precision totals (not the rounded line item amounts)', async () => {
+    // Three loads with carrierRate that each rounds the same whether
+    // summed before or after rounding. Use values that differ only in the 3rd
+    // decimal place to expose round-then-sum drift.
+    // Raw: 100.334 + 100.334 + 100.334 = 301.002 → rounds to 301.00
+    // Round-then-sum would be: 100.33 + 100.33 + 100.33 = 300.99 (WRONG)
+    const carrier = buildCarrier({ type: CarrierType.COMPANY_ASSET });
+    const loads = [
+      buildLoad({
+        id: 'load-1',
+        loadNumber: 'L-001',
+        carrierRate: new Decimal('100.334'),
+        dispatchFee: new Decimal('0'),
+        accessorialCharges: [],
+      }),
+      buildLoad({
+        id: 'load-2',
+        loadNumber: 'L-002',
+        carrierRate: new Decimal('100.334'),
+        dispatchFee: new Decimal('0'),
+        accessorialCharges: [],
+      }),
+      buildLoad({
+        id: 'load-3',
+        loadNumber: 'L-003',
+        carrierRate: new Decimal('100.334'),
+        dispatchFee: new Decimal('0'),
+        accessorialCharges: [],
+      }),
+    ];
+
+    mockCarrierQuery.findById.mockResolvedValue(carrier);
+    mockSettlementRepo.findOverlapping.mockResolvedValue(null);
+    mockLoadQuery.findDeliveredLoads.mockResolvedValue(loads);
+    mockExpenseQuery.findExpenses.mockResolvedValue([]);
+    mockSettlementRepo.create.mockResolvedValue({ id: 'settlement-1' });
+
+    await service.generate(BASE_INPUT);
+
+    const createArg = mockSettlementRepo.create.mock.calls[0][0];
+    expect(createArg.grossRevenue).toBe(301);
+  });
+
+  it('includes a snapshotHash on the create payload', async () => {
+    const carrier = buildCarrier();
+    const load = buildLoad();
+
+    mockCarrierQuery.findById.mockResolvedValue(carrier);
+    mockSettlementRepo.findOverlapping.mockResolvedValue(null);
+    mockLoadQuery.findDeliveredLoads.mockResolvedValue([load]);
+    mockExpenseQuery.findExpenses.mockResolvedValue([]);
+    mockSettlementRepo.create.mockResolvedValue({ id: 'settlement-1' });
+
+    await service.generate(BASE_INPUT);
+
+    const createArg = mockSettlementRepo.create.mock.calls[0][0];
+    expect(createArg.snapshotHash).toEqual(expect.stringMatching(/^[a-f0-9]{64}$/));
+  });
+});
+
+describe('settlementService.approve', () => {
+  const mockSettlementRepo = {
+    create: jest.fn(),
+    findById: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+    update: jest.fn(),
+    addLineItem: jest.fn(),
+    updateLineItem: jest.fn(),
+    deleteLineItem: jest.fn(),
+    findOverlapping: jest.fn(),
+    recalculateTotals: jest.fn(),
+  };
+
+  const mockLogger = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  };
+
+  const service = createSettlementService({
+    settlementRepo: mockSettlementRepo,
+    loadQuery: { findDeliveredLoads: jest.fn() },
+    expenseQuery: { findExpenses: jest.fn() },
+    carrierQuery: { findById: jest.fn() },
+    logger: mockLogger,
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('throws ConflictError when stored snapshotHash does not match current line items', async () => {
+    mockSettlementRepo.findById.mockResolvedValue({
+      id: 'settlement-1',
+      status: 'DRAFT',
+      snapshotHash: 'stale-hash-that-will-never-match',
+      lineItems: [
+        { type: 'LOAD_REVENUE', referenceId: 'load-1', amount: new Decimal('2500.00') },
+      ],
+    });
+
+    await expect(
+      service.approve({
+        organizationId: 'org-1',
+        settlementId: 'settlement-1',
+        userId: 'user-1',
+      }),
+    ).rejects.toThrow(ConflictError);
+
+    expect(mockSettlementRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('approves when snapshotHash is null (pre-hash settlement)', async () => {
+    mockSettlementRepo.findById.mockResolvedValue({
+      id: 'settlement-1',
+      status: 'DRAFT',
+      snapshotHash: null,
+      lineItems: [],
+    });
+    mockSettlementRepo.update.mockResolvedValue({ id: 'settlement-1', status: 'APPROVED' });
+
+    await service.approve({
+      organizationId: 'org-1',
+      settlementId: 'settlement-1',
+      userId: 'user-1',
+    });
+
+    expect(mockSettlementRepo.update).toHaveBeenCalledWith(
+      'settlement-1',
+      'org-1',
+      expect.objectContaining({ status: 'APPROVED' }),
+    );
   });
 });

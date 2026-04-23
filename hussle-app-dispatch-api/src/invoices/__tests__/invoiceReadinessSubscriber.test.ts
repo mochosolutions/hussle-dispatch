@@ -29,6 +29,7 @@ type SubscribeCall<K extends keyof EventMap> = [
 const buildMockDeps = () => {
   const eventBus: jest.Mocked<EventBus> = {
     publish: jest.fn(),
+    publishDelayed: jest.fn(),
     subscribe: jest.fn().mockResolvedValue(undefined),
     close: jest.fn(),
   };
@@ -193,6 +194,7 @@ describe('initializeReadinessSubscriber', () => {
         customerId: null,
         contactEmail: null,
         contactPhone: null,
+        contactCcEmails: [],
       });
 
       // Assert
@@ -225,6 +227,7 @@ describe('initializeReadinessSubscriber', () => {
         customerId: null,
         contactEmail: null,
         contactPhone: null,
+        contactCcEmails: [],
       });
 
       // Assert
@@ -311,6 +314,7 @@ describe('initializeReadinessSubscriber', () => {
         customerId: null,
         contactEmail: null,
         contactPhone: null,
+        contactCcEmails: [],
       });
 
       // Assert
@@ -328,11 +332,12 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadTonu({
         loadId: 'load-tonu-1',
+        organizationId: 'org-1',
         status: 'TONU',
       });
 
       // Assert
-      expect(mockedGenerateTonuInvoice).toHaveBeenCalledWith('load-tonu-1', {
+      expect(mockedGenerateTonuInvoice).toHaveBeenCalledWith('load-tonu-1', 'org-1', {
         invoiceRepo: deps.invoiceRepo,
         loadQuery: deps.loadQuery,
         logger: deps.logger,
@@ -347,6 +352,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadTonu({
         loadId: 'load-tonu-1',
+        organizationId: 'org-1',
         status: 'TONU',
       });
 
@@ -381,6 +387,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadDelivered({
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
 
@@ -411,6 +418,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadDelivered({
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
 
@@ -433,6 +441,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadDelivered({
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
 
@@ -452,6 +461,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadDelivered({
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
 
@@ -471,6 +481,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadDelivered({
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
 
@@ -500,6 +511,7 @@ describe('initializeReadinessSubscriber', () => {
         customerId: null,
         contactEmail: null,
         contactPhone: null,
+        contactCcEmails: [],
       });
 
       // Assert
@@ -521,6 +533,7 @@ describe('initializeReadinessSubscriber', () => {
         customerId: null,
         contactEmail: null,
         contactPhone: null,
+        contactCcEmails: [],
       });
 
       // Assert
@@ -551,6 +564,7 @@ describe('initializeReadinessSubscriber', () => {
       // Act
       await handlers.loadDelivered({
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
 

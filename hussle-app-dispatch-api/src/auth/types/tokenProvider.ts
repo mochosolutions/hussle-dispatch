@@ -19,7 +19,7 @@ export interface CreateSessionInput {
   ipAddress?: string;
   userAgent?: string;
   singleSession?: boolean;
-  // permissionsVersion?: number;
+  permissionsVersion?: number;
 }
 
 export interface CreateSessionResult {
@@ -51,6 +51,8 @@ export interface SessionData {
   orgSubscriptionTier: string;
   membershipId: string;
   role: string;
+  permissionsVersion: number;
+  contextHash?: string;
   isRevoked: boolean;
   refreshTokenHash: string;
   issuedAt: number;
@@ -78,7 +80,7 @@ export interface DeleteOrgSessionsInput {
 
 export interface ITokenProvider {
   createSession(input: CreateSessionInput): Promise<CreateSessionResult>;
-  refreshToken(input: { refreshToken: string }): Promise<CreateSessionResult | null>;
+  refreshToken(input: { refreshToken: string; ipAddress?: string; userAgent?: string }): Promise<CreateSessionResult | null>;
   verifyAccessToken(token: string): Promise<VerifyAccessTokenResult | null>;
   revokeSession(input: { sessionId: string; refreshToken: string }): Promise<void>;
   revokeUserOrgSessions(input: { userId: string; organizationId: string }): Promise<number>;

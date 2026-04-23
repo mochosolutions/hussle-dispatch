@@ -1,5 +1,4 @@
 import { calculateLoadFinancials } from '../financials';
-import { OwnerOperatorNotSupportedError } from '../errors';
 import { CARRIER_TYPES } from '../constants/carrierTypes';
 
 describe('calculateLoadFinancials', () => {
@@ -164,36 +163,6 @@ describe('calculateLoadFinancials', () => {
       const result = calculateLoadFinancials(input);
 
       expect(result.ratePerMile).toBeNull();
-    });
-  });
-
-  describe('OWNER_OPERATOR — typed error rejection', () => {
-    it('throws OwnerOperatorNotSupportedError for OWNER_OPERATOR carrier type', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.OWNER_OPERATOR },
-      };
-
-      expect(() => calculateLoadFinancials(input)).toThrow(
-        OwnerOperatorNotSupportedError,
-      );
-    });
-
-    it('error message says Not yet implemented', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.OWNER_OPERATOR },
-      };
-
-      expect(() => calculateLoadFinancials(input)).toThrow(
-        expect.objectContaining({ message: expect.stringContaining('not supported') }),
-      );
     });
   });
 

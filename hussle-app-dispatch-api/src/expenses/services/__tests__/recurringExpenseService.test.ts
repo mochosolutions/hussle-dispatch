@@ -41,6 +41,7 @@ describe('createRecurringExpenseService', () => {
 
   const mockEventBus = {
     publish: jest.fn().mockReturnValue(Promise.resolve()),
+    publishDelayed: jest.fn().mockReturnValue(Promise.resolve()),
     subscribe: jest.fn(),
     close: jest.fn(),
   };

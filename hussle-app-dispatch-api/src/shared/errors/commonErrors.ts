@@ -203,20 +203,6 @@ export class ConcurrentEditError extends CustomError {
   }
 }
 
-export class OwnerOperatorNotSupportedError extends CustomError {
-  statusCode = 422;
-  readonly code = 'OWNER_OPERATOR_NOT_SUPPORTED';
-
-  constructor() {
-    super('OWNER_OPERATOR carrier type is not supported in this release.');
-    Object.setPrototypeOf(this, OwnerOperatorNotSupportedError.prototype);
-  }
-
-  serializeErrors() {
-    return [{ message: this.message }];
-  }
-}
-
 export class SequenceError extends CustomError {
   statusCode = 500;
   readonly code = 'SEQUENCE_ERROR';

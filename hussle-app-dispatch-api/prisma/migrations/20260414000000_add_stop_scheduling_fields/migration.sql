@@ -1,0 +1,5 @@
+-- Known drift: this migration was applied to the DB before the migration.sql
+-- file was committed to the repo. The original SQL was lost. The DB state it
+-- produced is preserved (see _prisma_migrations table) and matches the current
+-- prisma/schema.prisma. This empty file is a placeholder so `prisma migrate
+-- status` reports the local history as in sync with the DB. Do not delete.

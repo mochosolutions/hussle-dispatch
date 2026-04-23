@@ -16,9 +16,9 @@ describe('computeCommoditySummary', () => {
 
     const result = computeCommoditySummary(stops);
 
-    expect(result.commodity).toBeUndefined();
-    expect(result.weight).toBeUndefined();
-    expect(result.pieceCount).toBeUndefined();
+    expect(result.commodity).toBeNull();
+    expect(result.weight).toBeNull();
+    expect(result.pieceCount).toBeNull();
     expect(result.isHazmat).toBe(false);
     expect(result.isTarp).toBe(false);
   });
@@ -95,8 +95,8 @@ describe('computeCommoditySummary', () => {
 
     const result = computeCommoditySummary(stops);
 
-    expect(result.weight).toBeUndefined();
-    expect(result.pieceCount).toBeUndefined();
+    expect(result.weight).toBeNull();
+    expect(result.pieceCount).toBeNull();
   });
 
   it('returns undefined commodity when no pickup has commodity set', () => {
@@ -107,16 +107,16 @@ describe('computeCommoditySummary', () => {
 
     const result = computeCommoditySummary(stops);
 
-    expect(result.commodity).toBeUndefined();
+    expect(result.commodity).toBeNull();
     expect(result.weight).toBe(10000);
   });
 
   it('handles empty stops array', () => {
     const result = computeCommoditySummary([]);
 
-    expect(result.commodity).toBeUndefined();
-    expect(result.weight).toBeUndefined();
-    expect(result.pieceCount).toBeUndefined();
+    expect(result.commodity).toBeNull();
+    expect(result.weight).toBeNull();
+    expect(result.pieceCount).toBeNull();
     expect(result.isHazmat).toBe(false);
     expect(result.isTarp).toBe(false);
   });

@@ -1,5 +1,6 @@
 import type { PrismaClient, Driver, Prisma } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   CarrierNoteInput,
   CarrierNoteRepositoryPort,
@@ -227,25 +228,30 @@ export const carrierRepositoryPrisma = (
       where: buildListWhere(organizationId, filters),
     }),
 
-  update: (id: string, input: UpdateCarrierInput): Promise<CarrierWithCounts> =>
-    prisma.carrier.update({
-      where: {
-        id,
-      },
-      data: {
-        ...input,
-      } as Prisma.CarrierUncheckedUpdateInput,
+  update: async (id: string, organizationId: string, input: UpdateCarrierInput): Promise<CarrierWithCounts> => {
+    const carrier = await prisma.carrier.findFirst({
+      where: { id, managedByOrgId: organizationId, deletedAt: null },
+    });
+    if (!carrier) {
+      throw new NotFoundError(`Carrier with id ${id} not found`);
+    }
+    return prisma.carrier.update({
+      where: { id },
+      data: { ...input } as Prisma.CarrierUncheckedUpdateInput,
       include: selectWithCounts,
-    }),
+    });
+  },
 
-  softDelete: async (id: string, deletedAt: Date): Promise<void> => {
+  softDelete: async (id: string, organizationId: string, deletedAt: Date): Promise<void> => {
+    const carrier = await prisma.carrier.findFirst({
+      where: { id, managedByOrgId: organizationId, deletedAt: null },
+    });
+    if (!carrier) {
+      throw new NotFoundError(`Carrier with id ${id} not found`);
+    }
     await prisma.carrier.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt,
-      },
+      where: { id },
+      data: { deletedAt },
     });
   },
 

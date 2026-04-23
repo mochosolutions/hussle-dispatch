@@ -19,7 +19,8 @@
     "noUncheckedIndexedAccess": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@hussle/emails": ["../hussle-emails/src/index.ts"]
     }
   },
   "include": ["src/**/*"],

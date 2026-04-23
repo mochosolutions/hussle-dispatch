@@ -1,6 +1,7 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
-import { Body, BodyMuted, Meta } from 'components/Typography';
+import { Box, Chip, Stack } from '@mui/material';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { Body, BodyMuted, Meta } from 'components/Typography';
 import {
   formatTimestamp,
   getStopStatus,
@@ -26,6 +27,8 @@ export const StopCard: React.FC<StopCardProps> = ({ stop, allStops, loadStatus }
     return 'grey.400';
   };
   const dotColor = getDotColor();
+
+  const timeDisplay = formatTimestamp(stop.appointmentStart);
 
   return (
     <Box
@@ -89,29 +92,31 @@ export const StopCard: React.FC<StopCardProps> = ({ stop, allStops, loadStatus }
             />
           )}
         </Stack>
+
         <BodyMuted sx={{ mt: 0.25 }}>
           {[stop.address, stop.city, stop.state, stop.zip].filter(Boolean).join(', ')}
         </BodyMuted>
 
-        {stop.appointmentStart && (
-          <Meta sx={{ display: 'block', mt: 0.5 }}>
-            Appt: {formatTimestamp(stop.appointmentStart)}
-          </Meta>
-        )}
+        {/* Schedule — prominent display */}
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+          <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+          <Body sx={{ fontWeight: 500, fontSize: '0.8125rem' }}>
+            {timeDisplay}
+          </Body>
+        </Stack>
 
-        {(stop.facilityOpenTime ?? stop.facilityCloseTime) && (
-          <Meta sx={{ display: 'block' }}>
-            Hours: {stop.facilityOpenTime ?? '?'} – {stop.facilityCloseTime ?? '?'}
-          </Meta>
-        )}
-
+        {/* Arrival / departure times */}
         {(stop.arrivalTime ?? stop.departureTime) && (
-          <Meta sx={{ display: 'block' }}>
-            {stop.arrivalTime ? `Arrived: ${formatTimestamp(stop.arrivalTime)}` : ''}
-            {stop.arrivalTime && stop.departureTime ? '  ' : ''}
-            {stop.departureTime ? `Departed: ${formatTimestamp(stop.departureTime)}` : ''}
-          </Meta>
+          <Stack direction="row" spacing={1.5} sx={{ mt: 0.25 }}>
+            {stop.arrivalTime && (
+              <Meta>Arrived: {formatTimestamp(stop.arrivalTime)}</Meta>
+            )}
+            {stop.departureTime && (
+              <Meta>Departed: {formatTimestamp(stop.departureTime)}</Meta>
+            )}
+          </Stack>
         )}
+
         {(stop.appointmentNumber ?? stop.notes) && (
           <Meta sx={{ display: 'block', mt: 0.25 }}>
             {stop.appointmentNumber ? `Ref: ${stop.appointmentNumber}` : ''}

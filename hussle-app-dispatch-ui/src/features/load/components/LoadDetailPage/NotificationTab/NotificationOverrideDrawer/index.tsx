@@ -1,11 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import {
+  Autocomplete,
   Box,
   Checkbox,
+  Chip,
   Collapse,
   FormControlLabel,
   OutlinedInput,
   Stack,
+  TextField as MuiTextField,
   Typography,
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
@@ -31,6 +34,7 @@ interface ChannelValues {
   enabled: boolean;
   recipientEmail: string;
   recipientPhone: string;
+  ccEmails: string[];
 }
 
 interface TriggerValues {
@@ -52,6 +56,9 @@ const channelSchema = Yup.object({
   enabled: Yup.boolean().required(),
   recipientEmail: Yup.string().email('Must be a valid email').default(''),
   recipientPhone: Yup.string().default(''),
+  ccEmails: Yup.array()
+    .of(Yup.string().trim().email('Each CC email must be valid').required())
+    .default([]),
 });
 
 const triggerSchema = Yup.object({
@@ -93,6 +100,7 @@ const buildInitialValues = (
       enabled: override?.enabled ?? setting?.enabled ?? true,
       recipientEmail: override?.recipientEmail ?? setting?.recipientEmail ?? '',
       recipientPhone: override?.recipientPhone ?? setting?.recipientPhone ?? '',
+      ccEmails: override?.ccEmails ?? [],
     };
   };
 
@@ -118,6 +126,7 @@ const formValuesToInputs = (values: NotificationOverrideFormValues): UpsertOverr
       channel: 'EMAIL',
       enabled: trigger.email.enabled,
       recipientEmail: trigger.email.recipientEmail || null,
+      ccEmails: trigger.email.ccEmails,
     });
     inputs.push({
       trigger: apiKey,
@@ -145,6 +154,11 @@ interface ChannelBlockProps {
   formik: FormikProps<NotificationOverrideFormValues>;
 }
 
+const sanitizeCcEmails = (values: string[]): string[] =>
+  values
+    .map((v) => v.trim())
+    .filter((v, idx, arr) => v.length > 0 && arr.indexOf(v) === idx);
+
 const ChannelBlock: React.FC<ChannelBlockProps> = ({
   triggerKey,
   channel,
@@ -157,8 +171,11 @@ const ChannelBlock: React.FC<ChannelBlockProps> = ({
 }) => {
   const enabledPath = `${triggerKey}.${channel}.enabled`;
   const recipientPath = `${triggerKey}.${channel}.${recipientField}`;
+  const ccEmailsPath = `${triggerKey}.${channel}.ccEmails`;
   const isEnabled = Boolean(getIn(formik.values, enabledPath));
   const recipientValue = (getIn(formik.values, recipientPath) ?? '') as string;
+  const ccEmailsValue = (getIn(formik.values, ccEmailsPath) ?? []) as string[];
+  const showCcEmails = channel === 'email';
 
   return (
     <Box
@@ -203,6 +220,47 @@ const ChannelBlock: React.FC<ChannelBlockProps> = ({
             fullWidth
           />
         </Box>
+        {showCcEmails && (
+          <Box sx={{ mt: 1.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mb: 0.5, display: 'block' }}
+            >
+              CC Emails
+            </Typography>
+            <Autocomplete
+              multiple
+              freeSolo
+              size="small"
+              options={[]}
+              value={ccEmailsValue}
+              onChange={(_event, next) => {
+                formik.setFieldValue(ccEmailsPath, sanitizeCcEmails(next));
+              }}
+              renderTags={(values, getTagProps) =>
+                values.map((option, index) => {
+                  const tagProps = getTagProps({ index });
+                  return (
+                    <Chip
+                      variant="outlined"
+                      label={option}
+                      size="small"
+                      {...tagProps}
+                      key={`${option}-${String(index)}`}
+                    />
+                  );
+                })
+              }
+              renderInput={(params) => (
+                <MuiTextField
+                  {...params}
+                  placeholder="Type an email and press Enter"
+                />
+              )}
+            />
+          </Box>
+        )}
       </Collapse>
     </Box>
   );

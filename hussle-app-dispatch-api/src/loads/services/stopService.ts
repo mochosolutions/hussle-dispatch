@@ -59,21 +59,11 @@ const findLoadOrThrow = async (
 };
 
 const validateSchedulingFields = (
-  schedulingType: SchedulingType | undefined,
   appointmentStart: Date | string | null | undefined,
   notificationHours: number | null | undefined,
-  targetDate: Date | string | null | undefined,
 ): void => {
-  if (schedulingType === 'APPOINTMENT' && (appointmentStart === undefined || appointmentStart === null)) {
-    throw new ValidationError('appointmentStart is required when schedulingType is APPOINTMENT.');
-  }
-
-  if (schedulingType === 'NOTIFICATION' && (notificationHours === undefined || notificationHours === null)) {
-    throw new ValidationError('notificationHours is required when schedulingType is NOTIFICATION.');
-  }
-
-  if (schedulingType === 'FCFS' && (targetDate === undefined || targetDate === null)) {
-    throw new ValidationError('targetDate is required when schedulingType is FCFS.');
+  if (appointmentStart === undefined || appointmentStart === null) {
+    throw new ValidationError('appointmentStart is required.');
   }
 };
 
@@ -115,7 +105,7 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
   return {
     createStop: async (input: CreateStopInput): Promise<Stop> => {
       await findLoadOrThrow(input.loadId, input.organizationId, deps);
-      validateSchedulingFields(input.schedulingType, input.appointmentStart, input.notificationHours, input.targetDate);
+      validateSchedulingFields(input.appointmentStart, input.notificationHours);
 
       let result: Stop;
 
@@ -140,7 +130,7 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
     },
 
     updateStop: async (input: UpdateStopInput): Promise<Stop> => {
-      validateSchedulingFields(input.schedulingType, input.appointmentStart, input.notificationHours, input.targetDate);
+      validateSchedulingFields(input.appointmentStart, input.notificationHours);
       const result = await deps.stopRepository.update(input);
 
       // Detention auto-detection when departureTime is set

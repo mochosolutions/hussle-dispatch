@@ -1,16 +1,15 @@
 import Decimal from 'decimal.js';
 import type { CarrierType } from './constants/carrierTypes';
 import { CARRIER_TYPES } from './constants/carrierTypes';
-import { OwnerOperatorNotSupportedError } from './errors';
 
 /**
  * Rounding mode applied to all financial calculations.
  * Banker's rounding (half to even) prevents systematic bias in batch processing.
  */
-const ROUNDING = Decimal.ROUND_HALF_EVEN;
+export const ROUNDING = Decimal.ROUND_HALF_EVEN;
 
 /** Round a Decimal to 2 decimal places using banker's rounding and serialize. */
-const round2 = (value: Decimal): string =>
+export const round2 = (value: Decimal): string =>
   value.toDecimalPlaces(2, ROUNDING).toFixed(2);
 
 interface CarrierInput {
@@ -116,17 +115,11 @@ const calculateDispatcherCommission = (config: {
  *
  * Uses Decimal.js with banker's rounding (ROUND_HALF_EVEN), 2 decimal places,
  * applied once at each final stored value (decision L-002).
- *
- * OWNER_OPERATOR is excluded in this release (decision X-001).
  */
 export const calculateLoadFinancials = (
   input: LoadFinancialsInput,
 ): LoadFinancialsResult => {
   const { customerRate, accessorials, loadedMiles, carrier } = input;
-
-  if (carrier.type === CARRIER_TYPES.OWNER_OPERATOR) {
-    throw new OwnerOperatorNotSupportedError();
-  }
 
   const rate = new Decimal(customerRate);
   const acc = new Decimal(accessorials);

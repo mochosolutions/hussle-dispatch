@@ -20,6 +20,8 @@ import {
   CharCounterField,
   MultiSelectChipField,
   ContentSelectorField,
+  SubmitButton,
+  CancelButton,
 } from '@mocho/ui/components/form-fields';
 import {
   HomeOutlined,
@@ -818,6 +820,81 @@ const FormFieldsPreview = () => {
                   disabled
                   formik={formik}
                 />
+              </Grid>
+            </Grid>
+          </Section>
+
+          {/* ── Buttons ── */}
+          <Section
+            title="SubmitButton & CancelButton"
+            description="Primary submit with loading state and grey cancel button. Used together in FormDrawer footers."
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Default (Full Width)
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <CancelButton onClick={() => {}} />
+                  <SubmitButton label="Save Changes" loading={false} />
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Compact (Drawer Footer Style)
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+                  <CancelButton onClick={() => {}} size="medium" />
+                  <SubmitButton
+                    label="Save Changes"
+                    loading={false}
+                    fullWidth={false}
+                    size="medium"
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Loading State
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+                  <CancelButton onClick={() => {}} size="medium" disabled />
+                  <SubmitButton
+                    label="Saving…"
+                    loading
+                    fullWidth={false}
+                    size="medium"
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Disabled (Form Not Dirty)
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+                  <CancelButton onClick={() => {}} size="medium" />
+                  <SubmitButton
+                    label="Save Changes"
+                    loading={false}
+                    disabled
+                    fullWidth={false}
+                    size="medium"
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  Custom Labels
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+                  <CancelButton label="Discard" onClick={() => {}} size="medium" />
+                  <SubmitButton
+                    label="Create Driver"
+                    loading={false}
+                    fullWidth={false}
+                    size="medium"
+                  />
+                </Box>
               </Grid>
             </Grid>
           </Section>

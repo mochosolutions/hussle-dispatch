@@ -195,39 +195,3 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing all documents', ()
   });
 });
 
-// ---------------------------------------------------------------------------
-// OWNER_OPERATOR — always rejected
-// ---------------------------------------------------------------------------
-
-describe('checkCarrierOnboarding — OWNER_OPERATOR', () => {
-  it('returns allowed:false with "Owner-operator support coming soon" message', () => {
-    const input: CarrierOnboardingInput = {
-      carrierType: 'OWNER_OPERATOR',
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      insuranceExpiry: new Date(),
-      w9OnFile: true,
-    };
-
-    const result = checkCarrierOnboarding(input);
-
-    expect(result.allowed).toBe(false);
-    expect(result.missingDocuments).toEqual(['Owner-operator support coming soon']);
-  });
-
-  it('returns allowed:false regardless of document status', () => {
-    const input: CarrierOnboardingInput = {
-      carrierType: 'OWNER_OPERATOR',
-      dispatchAgreementOnFile: false,
-      insuranceCertOnFile: false,
-      insuranceExpiry: null,
-      w9OnFile: false,
-    };
-
-    const result = checkCarrierOnboarding(input);
-
-    expect(result.allowed).toBe(false);
-    expect(result.missingDocuments).toHaveLength(1);
-    expect(result.missingDocuments[0]).toBe('Owner-operator support coming soon');
-  });
-});

@@ -10,6 +10,7 @@ import {
   Tooltip,
   ClickAwayListener,
 } from '@mui/material';
+import { CancelButton } from '@mocho/ui/components/form-fields';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 
@@ -88,9 +89,7 @@ export const InlineEditableNotes: React.FC<{
                 sx={{ mb: 1.5 }}
               />
               <Stack direction="row" spacing={1} justifyContent="flex-end">
-                <Button size="small" variant="outlined" onClick={handleCancel}>
-                  Cancel
-                </Button>
+                <CancelButton onClick={handleCancel} size="small" />
                 <Button
                   size="small"
                   variant="contained"

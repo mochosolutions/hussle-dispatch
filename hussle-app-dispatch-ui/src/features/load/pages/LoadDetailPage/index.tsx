@@ -19,11 +19,14 @@ import { DocumentsTab } from '../../components/LoadDetailPage/DocumentsTab';
 import NotificationTab from '../../components/LoadDetailPage/NotificationTab';
 import { LoadDetailActions } from '../../components/LoadDetailPage/LoadDetailActions';
 import { openDrawer } from '../../../ui/store/reducers/uiSlice';
+import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
+import { createFromLoadRequest } from '../../../invoices/store/reducers/invoicePageSlice';
 
 const LoadDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openDrawer: openDrawerAction } = useDrawerActions();
   const [searchParams] = useSearchParams();
 
   const load = useSelector(selectLoadDetailById(id ?? ''));
@@ -52,9 +55,15 @@ const LoadDetailPage = () => {
 
   const handleCreateInvoice = useCallback(() => {
     if (id) {
-      navigate(`/invoices/builder/${id}`);
+      dispatch(createFromLoadRequest({ loadId: id }));
     }
-  }, [navigate, id]);
+  }, [dispatch, id]);
+
+  const handleCheckCall = useCallback(() => {
+    if (id) {
+      openDrawerAction('loadCheckCall', { loadId: id });
+    }
+  }, [openDrawerAction, id]);
 
   const handleEditRoute = (drawerType: string) => {
     dispatch(openDrawer({ drawerType, drawerProps: { load: load } }));
@@ -76,7 +85,13 @@ const LoadDetailPage = () => {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             summary={formattedLoad ? <LoadSummaryBar summary={formattedLoad.summary} /> : undefined}
-            actions={<LoadDetailActions load={load} onCreateInvoice={handleCreateInvoice} />}
+            actions={
+              <LoadDetailActions
+                load={load}
+                onCreateInvoice={handleCreateInvoice}
+                onCheckCall={handleCheckCall}
+              />
+            }
           >
             {load.status === 'DELIVERED' && (
               <ContextualAlert
@@ -89,7 +104,7 @@ const LoadDetailPage = () => {
 
             {activeTab === 'overview' && (
               <OverviewTab
-                load={load}
+                load={formattedLoad ?? load}
                 onEditRoute={() => handleEditRoute('loadRoute')}
                 onEditAssignment={() => handleEditRoute('loadAssignment')}
                 onEditContact={() => handleEditRoute('loadContact')}

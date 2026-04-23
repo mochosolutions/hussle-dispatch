@@ -90,11 +90,11 @@ export interface VehicleRepositoryPort {
   findById(id: string, organizationId: string): Promise<VehicleWithExpenses | null>;
   list(input: ListVehiclesRepositoryInput): Promise<VehicleWithExpenses[]>;
   count(input: VehicleQueryInput): Promise<number>;
-  update(id: string, input: UpdateVehicleDataInput): Promise<VehicleWithExpenses>;
+  update(id: string, organizationId: string, input: UpdateVehicleDataInput): Promise<VehicleWithExpenses>;
   replaceExpenses(vehicleId: string, expenses: VehicleExpenseInput[]): Promise<void>;
   createExpense(vehicleId: string, expense: VehicleExpenseInput): Promise<TruckExpense>;
   findExpensesByVehicleId(vehicleId: string): Promise<TruckExpense[]>;
-  softDelete(id: string, deletedAt: Date): Promise<void>;
+  softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
   assignDriver(vehicleId: string, driverId: string): Promise<VehicleWithExpenses>;
   unassignDriver(vehicleId: string): Promise<VehicleWithExpenses>;
   findByDriverId(driverId: string): Promise<VehicleWithExpenses | null>;

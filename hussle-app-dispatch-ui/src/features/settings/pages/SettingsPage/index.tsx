@@ -25,6 +25,7 @@ import SectionCard from 'components/SectionCard';
 import { SectionTitle, BodyMuted, ErrorText } from 'components/Typography';
 import { settingsSchema } from '../../validators/settingsSchema';
 import TeamTab from '../../components/TeamTab';
+import { DriverCommunicationsSettings } from '../../components/DriverCommunicationsSettings';
 import type { SettingsFormValues } from '../../types';
 import {
   selectSettings,
@@ -51,6 +52,10 @@ const buildInitialValues = (settings: ReturnType<typeof selectSettings>): Settin
   loadIntelEmailAddress: settings?.loadIntelEmailAddress ?? '',
   sesFromEmail: settings?.sesFromEmail ?? '',
   companyLogoUrl: settings?.companyLogoUrl ?? '',
+  smsPrePickupLeadMinutes: settings?.smsPrePickupLeadMinutes ?? 60,
+  smsTransitIntervalMinutes: settings?.smsTransitIntervalMinutes ?? 180,
+  smsPostPickupEscalationMinutes: settings?.smsPostPickupEscalationMinutes ?? 30,
+  smsCooldownMinutes: settings?.smsCooldownMinutes ?? 15,
 });
 
 const SETTINGS_TABS = [
@@ -314,6 +319,8 @@ const SettingsPage = () => {
               />
             </Stack>
           </SectionCard>
+
+          <DriverCommunicationsSettings formikProps={formikProps} />
 
           {/* Save Button */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

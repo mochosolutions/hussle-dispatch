@@ -1,9 +1,11 @@
 import React, { useId } from 'react';
 import { Formik, Form, useFormikContext } from 'formik';
 import type { FormikProps, FormikValues } from 'formik';
-import { Box, Button, CircularProgress } from '@mui/material';
+import { Box } from '@mui/material';
 import type { ObjectSchema } from 'yup';
 import { EditDrawer } from '../../../components/EditDrawer';
+import { CancelButton } from '../form-fields/CancelButton';
+import { SubmitButton } from '../form-fields/SubmitButton';
 
 interface FormDrawerProps<TValues extends FormikValues> {
   /** Whether the drawer is open */
@@ -70,18 +72,16 @@ const FormDrawerContent = <TValues extends FormikValues>({
 
   const footer = (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-        Cancel
-      </Button>
-      <Button
+      <CancelButton onClick={onClose} disabled={isSubmitting} size="medium" />
+      <SubmitButton
+        label={isSubmitting ? savingLabel : saveLabel}
+        loading={isSubmitting}
+        disabled={!isValid || !dirty}
+        fullWidth={false}
+        size="medium"
         type="submit"
         form={formId}
-        variant="contained"
-        disabled={!isValid || !dirty || isSubmitting}
-        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-      >
-        {isSubmitting ? savingLabel : saveLabel}
-      </Button>
+      />
     </Box>
   );
 

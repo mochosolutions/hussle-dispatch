@@ -63,6 +63,21 @@ describe('computeMetrics', () => {
     expect(result.totalRevenue).toBe('3950.00');
   });
 
+  it('uses customerRate for totalRevenue when carrier is LEASED_CARRIER', () => {
+    const loads = [
+      buildMetricsLoad({
+        customerRate: new Decimal(2000),
+        dispatchFee: new Decimal(200),
+        carrier: { type: 'LEASED_CARRIER' },
+      }),
+    ];
+
+    const result = computeMetrics(loads);
+
+    // LEASED_CARRIER runs on our authority — revenue = customerRate, not dispatchFee
+    expect(result.totalRevenue).toBe('2000.00');
+  });
+
   it('uses customerRate for loads with null carrier', () => {
     const loads = [
       buildMetricsLoad({

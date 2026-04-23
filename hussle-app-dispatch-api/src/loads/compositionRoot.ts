@@ -6,6 +6,7 @@ import type { CityCoords } from '@/shared/geoLookup';
 import type { DriverModuleQueries } from '@/drivers/compositionRoot';
 import type { PlaceModuleQueries } from '@/places/compositionRoot';
 import { customerRepositoryPrisma } from '@/customers/repositories/customerRepositoryPrisma';
+import type { SettlementFreezeQueryPort } from './types/loadTypes';
 import { createAccessorialControllers } from './controllers/accessorialController';
 import { createLoadControllers } from './controllers/loadController';
 import { rankDriversController } from './controllers/rankDriversController';
@@ -45,6 +46,7 @@ interface LoadModuleDeps {
   driverQueries: DriverModuleQueries;
   placeQueries: PlaceModuleQueries;
   getCityCoords: (city: string, state: string) => Promise<CityCoords | null>;
+  settlementFreezeQuery?: SettlementFreezeQueryPort;
 }
 
 export const createLoadsModule = ({
@@ -54,6 +56,7 @@ export const createLoadsModule = ({
   driverQueries,
   placeQueries,
   getCityCoords,
+  settlementFreezeQuery,
 }: LoadModuleDeps): {
   controllers: LoadRouterControllers;
   stopControllers: ReturnType<typeof createStopControllers>;
@@ -88,6 +91,7 @@ export const createLoadsModule = ({
     loadStatusRepo,
     vehicleCpmQuery,
     dispatcherProfileQuery,
+    settlementFreezeQuery,
     eventBus,
     logger,
   });

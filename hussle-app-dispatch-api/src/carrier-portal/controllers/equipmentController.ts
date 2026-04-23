@@ -44,6 +44,7 @@ const mapRequestToInput = (req: Request): SaveEquipmentInput => {
 
   return {
     carrierId: portalContext.carrierId,
+    organizationId: portalContext.organizationId,
     vehicles: body.vehicles.map((v) => ({
       category: v.category,
       year: v.year,

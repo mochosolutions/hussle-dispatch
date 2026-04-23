@@ -401,7 +401,7 @@ const runSeed = async (): Promise<void> => {
       id: 'seed-carrier-owner-op-1',
       managedByOrgId: org.id,
       name: 'Williams Trucking',
-      type: 'OWNER_OPERATOR',
+      type: 'EXTERNAL_CARRIER',
       mcNumber: 'MC-615903',
       dotNumber: '2918473',
       phone: '615-555-0700',

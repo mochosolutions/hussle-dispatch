@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { contactSelectors } from '../reducers/contactEntitySlice';
+import formatPhone from 'utils/formatPhone';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -30,6 +31,11 @@ export const selectContactDeleteLoading = (id: string) => (state: RootState) =>
 export const selectContactDetailLoading = (id: string) => (state: RootState) =>
   state.pages.contacts.loading[`getById:${id}`] === LoadingState.Pending;
 
+export const selectFormattedContacts = createSelector(
+  [selectAllContacts],
+  (contacts) => contacts.map((c) => ({ ...c, phone: formatPhone(c.phone) })),
+);
+
 export const selectFormattedContactById = (id: string | undefined) =>
   createSelector(
     [(state: RootState) => (id ? contactSelectors.selectById(state, id) : undefined)],
@@ -39,6 +45,7 @@ export const selectFormattedContactById = (id: string | undefined) =>
       }
       return {
         ...contact,
+        phone: formatPhone(contact.phone),
         createdAt: formatDate(contact.createdAt),
         updatedAt: formatDate(contact.updatedAt),
       };

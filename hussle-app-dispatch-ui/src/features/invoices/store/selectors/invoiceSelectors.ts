@@ -3,6 +3,7 @@ import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { invoiceSelectors } from '../reducers/invoiceEntitySlice';
 import type { InvoiceCounts, InvoiceListItem, InvoiceStatus } from '../../types';
+import formatPhone from 'utils/formatPhone';
 
 // ---------------------------------------------------------------------------
 // Entity selectors
@@ -10,8 +11,19 @@ import type { InvoiceCounts, InvoiceListItem, InvoiceStatus } from '../../types'
 
 export const selectAllInvoices = (state: RootState) => invoiceSelectors.selectAll(state);
 
-export const selectInvoiceById = (id: string) => (state: RootState) =>
-  invoiceSelectors.selectById(state, id);
+export const selectInvoiceById = (id: string) =>
+  createSelector(
+    [(state: RootState) => invoiceSelectors.selectById(state, id)],
+    (invoice) => {
+      if (!invoice) return undefined;
+      return {
+        ...invoice,
+        carrier: invoice.carrier
+          ? { ...invoice.carrier, phone: formatPhone(invoice.carrier.phone) }
+          : invoice.carrier,
+      };
+    },
+  );
 
 // ---------------------------------------------------------------------------
 // Page loading selectors

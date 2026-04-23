@@ -82,6 +82,7 @@ export const createDriverPortalService = (deps: DriverPortalServiceDeps): Driver
         customerId: null,
         contactEmail: null,
         contactPhone: null,
+        contactCcEmails: [],
         location: input.location ?? null,
         status: input.status ?? null,
         eta: input.eta?.toISOString() ?? null,

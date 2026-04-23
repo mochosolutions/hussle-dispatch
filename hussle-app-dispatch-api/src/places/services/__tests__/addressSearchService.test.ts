@@ -23,6 +23,11 @@ const buildPlaceResult = (overrides: Partial<TypeaheadPlaceResult> = {}): Typeah
   contactPhone: '555-0100',
   latitude: 32.7767,
   longitude: -96.797,
+  appointmentRequired: false,
+  lumperRequired: false,
+  ppeRequired: false,
+  facilityHours: null,
+  is24Hours: false,
   ...overrides,
 });
 

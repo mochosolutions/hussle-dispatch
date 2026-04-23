@@ -51,6 +51,26 @@ export const settingsSchema = Yup.object({
   companyLogoUrl: Yup.string()
     .url('Must be a valid URL')
     .default(''),
+  smsPrePickupLeadMinutes: Yup.number()
+    .required('Pre-pickup lead time is required')
+    .integer('Must be a whole number')
+    .min(1, 'Must be at least 1 minute')
+    .max(1440, 'Must be 1,440 minutes (24 hours) or less'),
+  smsTransitIntervalMinutes: Yup.number()
+    .required('Transit check-in interval is required')
+    .integer('Must be a whole number')
+    .min(1, 'Must be at least 1 minute')
+    .max(1440, 'Must be 1,440 minutes (24 hours) or less'),
+  smsPostPickupEscalationMinutes: Yup.number()
+    .required('Post-pickup escalation is required')
+    .integer('Must be a whole number')
+    .min(1, 'Must be at least 1 minute')
+    .max(1440, 'Must be 1,440 minutes (24 hours) or less'),
+  smsCooldownMinutes: Yup.number()
+    .required('Cooldown is required')
+    .integer('Must be a whole number')
+    .min(1, 'Must be at least 1 minute')
+    .max(1440, 'Must be 1,440 minutes (24 hours) or less'),
 }).required();
 
 export type SettingsSchemaValues = InferType<typeof settingsSchema>;

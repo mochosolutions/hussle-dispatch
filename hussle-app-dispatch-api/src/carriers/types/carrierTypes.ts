@@ -167,8 +167,8 @@ export interface CarrierRepositoryPort {
   findById(id: string, organizationId: string): Promise<CarrierWithCounts | null>;
   list(input: ListCarriersRepositoryInput): Promise<CarrierWithCounts[]>;
   count(input: CarrierQueryInput): Promise<number>;
-  update(id: string, input: UpdateCarrierInput): Promise<CarrierWithCounts>;
-  softDelete(id: string, deletedAt: Date): Promise<void>;
+  update(id: string, organizationId: string, input: UpdateCarrierInput): Promise<CarrierWithCounts>;
+  softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
 }
 
 export interface LoadRepositoryPort {

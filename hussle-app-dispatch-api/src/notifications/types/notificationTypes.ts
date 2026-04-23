@@ -42,6 +42,7 @@ export interface UpsertNotificationOverrideInput {
   enabled: boolean;
   recipientEmail?: string | null;
   recipientPhone?: string | null;
+  ccEmails?: string[];
 }
 
 export interface CreateNotificationLogInput {
@@ -50,6 +51,7 @@ export interface CreateNotificationLogInput {
   channel: NotificationChannel;
   recipientEmail?: string | null;
   recipientPhone?: string | null;
+  ccEmails?: string[];
   subject?: string | null;
   status?: string;
   errorMessage?: string | null;
@@ -66,6 +68,7 @@ export interface ResolvedNotificationConfig {
   enabled: boolean;
   recipientEmail: string | null;
   recipientPhone: string | null;
+  ccEmails: string[];
 }
 
 // ---------------------------------------------------------------------------

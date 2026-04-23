@@ -64,7 +64,7 @@ export const createAppAuthMiddleware = (options: { redis: Redis; jwtSecret?: str
         return;
       }
 
-      const session: { isRevoked?: boolean } = JSON.parse(sessionRaw);
+      const session: { isRevoked?: boolean; permissionsVersion?: number } = JSON.parse(sessionRaw);
       if (session.isRevoked) {
         logger.warn('Auth middleware: revoked session accessed', {
           userId,
@@ -72,6 +72,22 @@ export const createAppAuthMiddleware = (options: { redis: Redis; jwtSecret?: str
           correlationId: req.correlationId,
         });
         res.status(401).json({ errors: [{ message: 'Session has been revoked' }] });
+        return;
+      }
+
+      if (
+        decoded.permissionsVersion !== undefined &&
+        session.permissionsVersion !== undefined &&
+        decoded.permissionsVersion !== session.permissionsVersion
+      ) {
+        logger.warn('Auth middleware: permissionsVersion mismatch', {
+          userId,
+          sessionId,
+          tokenVersion: decoded.permissionsVersion,
+          sessionVersion: session.permissionsVersion,
+          correlationId: req.correlationId,
+        });
+        res.status(401).json({ errors: [{ message: 'Permissions changed, please re-authenticate' }] });
         return;
       }
 

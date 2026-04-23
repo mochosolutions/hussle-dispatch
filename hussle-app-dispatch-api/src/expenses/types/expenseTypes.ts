@@ -93,8 +93,8 @@ export interface ExpenseRepoPort {
   create(data: CreateExpenseRepoInput): Promise<Expense>;
   findById(id: string, organizationId: string): Promise<Expense | null>;
   findMany(input: ListExpensesInput): Promise<PaginatedExpenses>;
-  update(id: string, data: Partial<CreateExpenseRepoInput>): Promise<Expense>;
-  softDelete(id: string): Promise<Expense>;
+  update(id: string, organizationId: string, data: Partial<CreateExpenseRepoInput>): Promise<Expense>;
+  softDelete(id: string, organizationId: string): Promise<Expense>;
   count(input: Omit<ListExpensesInput, 'page' | 'limit' | 'sort' | 'order'>): Promise<number>;
 }
 

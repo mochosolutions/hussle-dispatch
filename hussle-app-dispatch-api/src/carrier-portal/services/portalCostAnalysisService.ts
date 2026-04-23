@@ -14,9 +14,10 @@ interface PortalCostAnalysisServiceDeps {
 export const createPortalCostAnalysisService = (deps: PortalCostAnalysisServiceDeps) => ({
   saveCostAnalysis: async (
     carrierId: string,
+    organizationId: string,
     input: CostAnalysisInput,
   ): Promise<CostAnalysisResult> => {
-    const carrier = await deps.carrierCostProfileRepo.findById(carrierId);
+    const carrier = await deps.carrierCostProfileRepo.findById(carrierId, organizationId);
 
     if (!carrier) {
       throw new NotFoundError(`Carrier with id ${carrierId} not found`);
@@ -56,7 +57,7 @@ export const createPortalCostAnalysisService = (deps: PortalCostAnalysisServiceD
 
     const newVersion = carrier.costProfileVersion + 1;
 
-    await deps.carrierCostProfileRepo.updateCostProfile(carrierId, {
+    await deps.carrierCostProfileRepo.updateCostProfile(carrierId, organizationId, {
       minimumRatePerMile,
       costProfileVersion: newVersion,
       costProfileSource: 'onboarding_estimate',

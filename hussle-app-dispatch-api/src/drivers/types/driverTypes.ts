@@ -84,8 +84,8 @@ export interface DriverRepositoryPort {
   findById(id: string, organizationId: string): Promise<Driver | null>;
   list(input: ListDriversRepositoryInput): Promise<Driver[]>;
   count(input: DriverQueryInput): Promise<number>;
-  update(id: string, input: UpdateDriverInput): Promise<Driver>;
-  softDelete(id: string, deletedAt: Date): Promise<void>;
+  update(id: string, organizationId: string, input: UpdateDriverInput): Promise<Driver>;
+  softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
 }
 
 export interface CarrierRepositoryPort {

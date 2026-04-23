@@ -18,10 +18,8 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import type { FormikProps } from 'formik';
 import { MainCard, TextField, DateField, TimeField, PhoneField, NumericField } from '@mocho/ui/components';
-import type { FormikFieldProps } from '@mocho/ui/forms';
 import type { StopsFormShape } from '../../validators/loadSchema';
 import { SCHEDULING_TYPE_OPTIONS } from '../../constants';
 import type { SchedulingType } from '../../constants';
@@ -57,8 +55,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
   const stop = formik.values.stops[index];
   const isPickup = stop.type === 'PICKUP';
   const accentColor = isPickup ? 'primary.main' : 'success.main';
-  const accentBg = isPickup ? 'primary.50' : 'success.50';
-  const stopLabel = isPickup ? 'Pickup stop' : 'Delivery stop';
+  const stopLabel = isPickup ? 'Pickup' : 'Delivery';
   const schedulingType = (stop.schedulingType ?? 'APPOINTMENT') as SchedulingType;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -76,25 +73,6 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
     }
   }, [schedulingType, showContact]);
 
-  // Auto-fill facility hours when date changes and place has stored hours
-  const appointmentDate = stop.appointmentDate;
-  const facilityHoursData = stop.facilityHoursData;
-  useEffect(() => {
-    if (
-      (schedulingType === 'FCFS' || schedulingType === 'OPEN') &&
-      facilityHoursData &&
-      appointmentDate
-    ) {
-      const dayOfWeek = new Date(appointmentDate).getUTCDay();
-      const hours = facilityHoursData as { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[];
-      const dayEntry = hours.find((h) => h.dayOfWeek === dayOfWeek);
-      if (dayEntry && !dayEntry.isClosed) {
-        void formik.setFieldValue(`${prefix}.facilityOpenTime`, dayEntry.openTime);
-        void formik.setFieldValue(`${prefix}.facilityCloseTime`, dayEntry.closeTime);
-      }
-    }
-  }, [appointmentDate, schedulingType, facilityHoursData, formik, prefix]);
-
   // Auto-expand when validation errors exist for this stop after submit attempt
   const stopErrors = formik.errors.stops?.[index];
   useEffect(() => {
@@ -103,24 +81,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
     }
   }, [formik.submitCount, stopErrors, expanded]);
 
-  const stopValues = formik.values.stops[index];
-  const prefixedValues: Record<string, unknown> = {};
-  if (stopValues !== undefined) {
-    Object.entries(stopValues).forEach(([key, value]) => {
-      prefixedValues[`${prefix}.${key}`] = value;
-    });
-  }
-
-  const stopFormik: FormikFieldProps<Record<string, unknown>> = {
-    values: prefixedValues,
-    errors: {},
-    touched: {},
-    handleChange: formik.handleChange,
-    handleBlur: formik.handleBlur,
-    setFieldValue: formik.setFieldValue,
-  };
-
-  const commoditySummary = stop.commodity ? stop.commodity : null;
+  const stopFormik = formik;
 
   const handleSchedulingTypeChange = useCallback(
     (_e: React.MouseEvent<HTMLElement>, value: SchedulingType | null) => {
@@ -133,10 +94,6 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
         if (value !== 'NOTIFICATION') {
           void formik.setFieldValue(`${prefix}.appointmentTime`, '');
         }
-      }
-      if (value !== 'FCFS' && value !== 'OPEN') {
-        void formik.setFieldValue(`${prefix}.facilityOpenTime`, '');
-        void formik.setFieldValue(`${prefix}.facilityCloseTime`, '');
       }
       if (value !== 'NOTIFICATION') {
         void formik.setFieldValue(`${prefix}.callByTime`, '');
@@ -155,173 +112,163 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
   const contactNameLabel = schedulingType === 'NOTIFICATION' ? 'Notify Contact' : 'Contact Name';
   const contactPhoneLabel = schedulingType === 'NOTIFICATION' ? 'Notify Phone' : 'Contact Phone';
 
+  const schedulingLabel =
+    SCHEDULING_TYPE_OPTIONS.find((o) => o.value === schedulingType)?.label ?? schedulingType;
+
+  const locationSummary = stop.city && stop.state
+    ? `${stop.city}, ${stop.state.toUpperCase()}`
+    : null;
+
+  const facilitySummary = stop.facilityName || locationSummary || 'No facility';
+
   return (
     <MainCard
       content={false}
       sx={{
-        borderLeft: '2px solid',
+        borderLeft: '3px solid',
         borderLeftColor: accentColor,
         boxShadow: 'none',
         overflow: 'hidden',
       }}
     >
-      {/* Header bar */}
+      {/* Header — clickable to toggle expand */}
       <Box
+        onClick={() => setExpanded((prev) => !prev)}
         sx={{
-          alignItems: 'center',
-          backgroundColor: accentBg,
-          borderBottom: '1px solid',
+          cursor: 'pointer',
+          borderBottom: expanded ? '1px solid' : 'none',
           borderColor: 'divider',
-          display: 'flex',
-          gap: 1,
-          minHeight: 44,
-          px: 1.25,
-          py: 0.75,
+          '&:hover': { bgcolor: 'action.hover' },
+          transition: 'background-color 0.15s',
         }}
       >
-        {canReorder && (
-          <Stack direction="column" spacing={0} sx={{ mr: 0.5 }}>
-            <IconButton
-              size="small"
-              onClick={onMoveUp}
-              disabled={isFirst}
-              aria-label="Move stop up"
-              sx={{ p: 0.25 }}
-            >
-              <ArrowUpwardIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={onMoveDown}
-              disabled={isLast}
-              aria-label="Move stop down"
-              sx={{ p: 0.25 }}
-            >
-              <ArrowDownwardIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Stack>
-        )}
-
-        <Box sx={{ backgroundColor: 'grey.100', p: 0.5 }}>
-          <Typography color="text.secondary" sx={{ minWidth: 16 }} variant="caption">
-            {index + 1}
-          </Typography>
-        </Box>
-
-        {/* P/D badge */}
-        <Chip
-          size="small"
-          label={stopLabel}
+        {/* Top row: controls + summary */}
+        <Box
           sx={{
-            backgroundColor: accentColor,
-            color: 'common.white',
-            fontWeight: 700,
-            fontSize: 11,
-            height: 24,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1.5,
+            py: 1,
+            minHeight: 44,
           }}
-        />
-
-        {/* Scheduling type indicator */}
-        <Chip
-          label={SCHEDULING_TYPE_OPTIONS.find((o) => o.value === schedulingType)?.label ?? schedulingType}
-          size="small"
-          variant="outlined"
-          sx={{ fontSize: 10, height: 20 }}
-        />
-
-        {stop.facilityName ? (
-          <Typography sx={{ color: 'text.primary', fontWeight: 500 }} variant="body2">
-            {stop.facilityName}
-          </Typography>
-        ) : null}
-
-        {stop.city && stop.state ? (
-          <Typography color="text.secondary" variant="caption">
-            {`${stop.city}, ${stop.state.toUpperCase()}`}
-          </Typography>
-        ) : null}
-
-        {commoditySummary ? (
-          <Chip label={commoditySummary} size="small" variant="outlined" sx={{ fontSize: 10 }} />
-        ) : null}
-
-        {/* Type-aware badges */}
-        {!stop.facilityName && !stop.placeId && (
-          <Chip
-            label="No facility"
-            size="small"
-            color="error"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
-        {!stop.appointmentDate && (
-          <Chip
-            label="No date"
-            size="small"
-            color="warning"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
-        {schedulingType === 'APPOINTMENT' && !stop.appointmentTime && (
-          <Chip
-            label="No time"
-            size="small"
-            color="warning"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
-        {schedulingType === 'APPOINTMENT' && !stop.appointmentNumber && (
-          <Chip
-            label="No appt #"
-            size="small"
-            color="warning"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
-        {schedulingType === 'NOTIFICATION' && !stop.contactName && (
-          <Chip
-            label="No contact"
-            size="small"
-            color="warning"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
-        {schedulingType === 'DROP_HOOK' && !stop.trailerNumber && (
-          <Chip
-            label="No trailer"
-            size="small"
-            color="warning"
-            variant="outlined"
-            sx={{ fontSize: 10, height: 20 }}
-          />
-        )}
-
-        <Box sx={{ flex: 1 }} />
-
-        <IconButton
-          size="small"
-          onClick={() => setExpanded(!expanded)}
-          aria-label={expanded ? 'Collapse' : 'Expand'}
         >
-          {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-        </IconButton>
+          {/* Reorder arrows */}
+          {canReorder && (
+            <Stack
+              direction="column"
+              spacing={0}
+              sx={{ mr: 0.25 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconButton
+                size="small"
+                onClick={onMoveUp}
+                disabled={isFirst}
+                aria-label="Move stop up"
+                sx={{ p: 0.125 }}
+              >
+                <ArrowUpwardIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={onMoveDown}
+                disabled={isLast}
+                aria-label="Move stop down"
+                sx={{ p: 0.125 }}
+              >
+                <ArrowDownwardIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Stack>
+          )}
 
-        {canRemove && (
-          <IconButton size="small" onClick={onRemove} aria-label={`Remove stop ${index + 1}`}>
-            <DeleteOutlineIcon fontSize="small" color="error" />
-          </IconButton>
-        )}
+          {/* Sequence + type badge */}
+          <Chip
+            size="small"
+            label={`${index + 1}. ${stopLabel}`}
+            sx={{
+              backgroundColor: accentColor,
+              color: 'common.white',
+              fontWeight: 700,
+              fontSize: 11,
+              height: 22,
+              flexShrink: 0,
+            }}
+          />
+
+          {/* Scheduling type */}
+          <Chip
+            label={schedulingLabel}
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: 10, height: 20, flexShrink: 0 }}
+          />
+
+          {/* Facility / location — truncated */}
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 500,
+              color: stop.facilityName ? 'text.primary' : 'text.disabled',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            {facilitySummary}
+          </Typography>
+
+          {/* Date indicator — compact */}
+          {!stop.appointmentDate && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'warning.main',
+                fontWeight: 600,
+                fontSize: 10,
+                flexShrink: 0,
+              }}
+            >
+              No date
+            </Typography>
+          )}
+
+          {/* Expand chevron — rotates */}
+          <ExpandMoreIcon
+            fontSize="small"
+            sx={{
+              color: 'text.secondary',
+              flexShrink: 0,
+              transition: 'transform 0.2s',
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
+          />
+
+          {/* Action buttons — stop click propagation */}
+          <Box
+            onClick={(e) => e.stopPropagation()}
+            sx={{ display: 'flex', gap: 0.25, flexShrink: 0, ml: -0.5 }}
+          >
+            {canRemove && (
+              <IconButton
+                size="small"
+                onClick={onRemove}
+                aria-label={`Remove stop ${index + 1}`}
+                sx={{ p: 0.5 }}
+              >
+                <DeleteOutlineIcon sx={{ fontSize: 16 }} color="error" />
+              </IconButton>
+            )}
+          </Box>
+        </Box>
       </Box>
 
       {/* Body */}
       <Collapse in={expanded}>
-        <Box sx={{ p: 1.5 }}>
-          <Stack spacing={1.5}>
+        <Box sx={{ p: 2 }}>
+          <Stack spacing={2}>
             {/* Address search */}
             <AddressSearchField prefix={prefix} formik={formik} />
 
@@ -332,6 +279,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                 exclusive
                 onChange={handleSchedulingTypeChange}
                 size="small"
+                fullWidth
                 sx={{
                   '& .MuiToggleButton-root': {
                     px: 1.5,
@@ -367,7 +315,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                   <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.appointmentTime`} label="Appointment Time" formik={stopFormik} required />
+                  <TimeField name={`${prefix}.appointmentTime`} label="Time" formik={stopFormik} required />
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <TextField name={`${prefix}.appointmentNumber`} label="Appt #" formik={stopFormik} required />
@@ -375,22 +323,19 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
               </Box>
             )}
 
-            {/* FCFS: Date | Facility Open | Facility Close */}
+            {/* FCFS: Date | Time */}
             {schedulingType === 'FCFS' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
                   <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.facilityOpenTime`} label="Facility Opens" formik={stopFormik} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.facilityCloseTime`} label="Facility Closes" formik={stopFormik} />
+                  <TimeField name={`${prefix}.appointmentTime`} label="Arrival Time" formik={stopFormik} />
                 </Box>
               </Box>
             )}
 
-            {/* NOTIFICATION: Date | Preferred Time | Call-by — then contact auto-shows below */}
+            {/* NOTIFICATION: Date | Preferred Time | Call-by */}
             {schedulingType === 'NOTIFICATION' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
@@ -405,17 +350,14 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
               </Box>
             )}
 
-            {/* OPEN: Date | Facility Open | Facility Close */}
+            {/* OPEN: Date | Time */}
             {schedulingType === 'OPEN' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
                   <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.facilityOpenTime`} label="Facility Opens" formik={stopFormik} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.facilityCloseTime`} label="Facility Closes" formik={stopFormik} />
+                  <TimeField name={`${prefix}.appointmentTime`} label="Arrival Time" formik={stopFormik} />
                 </Box>
               </Box>
             )}
@@ -438,18 +380,18 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
 
           {/* Cargo toggle (pickup only) */}
           {isPickup && (
-            <Box sx={{ mt: 1.5 }}>
+            <Box sx={{ mt: 2 }}>
               <Button
                 size="small"
                 variant="text"
                 startIcon={<InventoryIcon sx={{ fontSize: 16 }} />}
                 onClick={() => setShowCargo((prev) => !prev)}
-                sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'text.secondary' }}
+                sx={{ textTransform: 'none', fontSize: '0.8125rem', color: 'text.secondary' }}
               >
                 {showCargo ? 'Hide cargo details' : 'Add cargo details'}
               </Button>
               <Collapse in={showCargo}>
-                <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+                <Stack spacing={1.5} sx={{ mt: 1 }}>
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
                     <Box sx={{ flex: 1 }}>
                       <TextField name={`${prefix}.commodity`} label="Commodity" formik={stopFormik} />
@@ -505,18 +447,18 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
           )}
 
           {/* Contact toggle */}
-          <Box sx={{ mt: 1.5 }}>
+          <Box sx={{ mt: 2 }}>
             <Button
               size="small"
               variant="text"
               startIcon={<ContactPhoneIcon sx={{ fontSize: 16 }} />}
               onClick={() => setShowContact((prev) => !prev)}
-              sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'text.secondary' }}
+              sx={{ textTransform: 'none', fontSize: '0.8125rem', color: 'text.secondary' }}
             >
               {showContact ? 'Hide contact & notes' : 'Add contact & notes'}
             </Button>
             <Collapse in={showContact}>
-              <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+              <Stack spacing={1.5} sx={{ mt: 1 }}>
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                   <Box sx={{ flex: 1 }}>
                     <TextField

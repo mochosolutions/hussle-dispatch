@@ -24,7 +24,9 @@ import type {
 interface InvoiceEmailPort {
   sendInvoiceEmail(input: {
     invoiceId: string;
+    organizationId: string;
     recipientEmail: string;
+    ccEmails?: string[];
     replyToEmail?: string;
     fromEmail: string;
     subject: string;
@@ -42,8 +44,8 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
   listInvoices: async ({ organizationId, filters }) =>
     deps.invoiceRepo.findAll(organizationId, filters),
 
-  getInvoiceById: async ({ id }) => {
-    const invoice = await deps.invoiceRepo.findById(id);
+  getInvoiceById: async ({ id, organizationId }) => {
+    const invoice = await deps.invoiceRepo.findById(id, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -52,8 +54,8 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
     return invoice;
   },
 
-  updateInvoice: async ({ id, input }) => {
-    const invoice = await deps.invoiceRepo.findById(id);
+  updateInvoice: async ({ id, organizationId, input }) => {
+    const invoice = await deps.invoiceRepo.findById(id, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -63,15 +65,15 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
       throw new ValidationError('Only DRAFT invoices can be edited');
     }
 
-    return deps.invoiceRepo.update(id, input);
+    return deps.invoiceRepo.update(id, organizationId, input);
   },
 
-  deleteInvoice: async ({ id, role }) => {
+  deleteInvoice: async ({ id, organizationId, role }) => {
     if (role !== ROLES.ADMIN) {
       throw new ForbiddenError('Only ADMIN can delete invoices');
     }
 
-    const invoice = await deps.invoiceRepo.findById(id);
+    const invoice = await deps.invoiceRepo.findById(id, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -81,7 +83,7 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
       throw new ValidationError('Only DRAFT invoices can be deleted');
     }
 
-    await deps.invoiceRepo.delete(id);
+    await deps.invoiceRepo.delete(id, organizationId);
 
     // Revert load to DELIVERED
     await deps.loadQuery.updateLoadStatus(invoice.loadId, 'DELIVERED');
@@ -92,12 +94,12 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
     });
   },
 
-  approveInvoice: async ({ id, role, userId }) => {
+  approveInvoice: async ({ id, organizationId, role, userId }) => {
     if (role !== ROLES.ADMIN) {
       throw new ForbiddenError('Only ADMIN can approve invoices');
     }
 
-    const invoice = await deps.invoiceRepo.findById(id);
+    const invoice = await deps.invoiceRepo.findById(id, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -107,7 +109,7 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
       throw new ValidationError('Only DRAFT invoices can be approved');
     }
 
-    const updated = await deps.invoiceRepo.updateStatus(id, 'APPROVED', {
+    const updated = await deps.invoiceRepo.updateStatus(id, organizationId, 'APPROVED', {
       approvedByUserId: userId,
       approvedAt: new Date(),
     });
@@ -117,8 +119,8 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
     return updated;
   },
 
-  sendInvoice: async ({ id, email }) => {
-    const invoice = await deps.invoiceRepo.findById(id);
+  sendInvoice: async ({ id, organizationId, email, ccEmails }) => {
+    const invoice = await deps.invoiceRepo.findById(id, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -131,13 +133,15 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
     // Send invoice email with PDF + load document attachments
     await deps.invoiceEmailService.sendInvoiceEmail({
       invoiceId: id,
+      organizationId,
       recipientEmail: email,
+      ccEmails,
       fromEmail: 'invoices@fleetcommand.app',
       subject: `Invoice from ${invoice.carrier?.name ?? 'Carrier'} — Load #${invoice.load.loadNumber}`,
     });
 
     // Status update happens inside invoiceEmailService, re-fetch
-    const updated = await deps.invoiceRepo.findById(id);
+    const updated = await deps.invoiceRepo.findById(id, organizationId);
 
     if (updated === null) {
       throw new NotFoundError('Invoice not found after send');
@@ -151,8 +155,8 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
   getDraftCount: async (organizationId: string): Promise<number> =>
     deps.invoiceRepo.countByStatus(organizationId, 'DRAFT'),
 
-  markPaid: async ({ id, amount, method, reference, date }) => {
-    const invoice = await deps.invoiceRepo.findById(id);
+  markPaid: async ({ id, organizationId, amount, method, reference, date }) => {
+    const invoice = await deps.invoiceRepo.findById(id, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -176,7 +180,7 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
     const isFullPayment = cumulativePaid.gte(totalAmount);
     const newStatus = isFullPayment ? 'PAID' : 'PARTIALLY_PAID';
 
-    const updated = await deps.invoiceRepo.updateStatus(id, newStatus, {
+    const updated = await deps.invoiceRepo.updateStatus(id, organizationId, newStatus, {
       paidAmount: cumulativePaid.toNumber(),
       paymentMethod: method,
       paymentReference: reference,

@@ -1,5 +1,6 @@
 import type { PrismaClient, Expense, Prisma } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   CreateExpenseRepoInput,
   ExpenseRepoPort,
@@ -85,17 +86,31 @@ export const expenseRepositoryPrisma = (
     return { data, meta };
   },
 
-  update: (id: string, data: Partial<CreateExpenseRepoInput>): Promise<Expense> =>
-    prisma.expense.update({
+  update: async (id: string, organizationId: string, data: Partial<CreateExpenseRepoInput>): Promise<Expense> => {
+    const expense = await prisma.expense.findFirst({
+      where: { id, organizationId, deletedAt: null },
+    });
+    if (!expense) {
+      throw new NotFoundError(`Expense with id ${id} not found`);
+    }
+    return prisma.expense.update({
       where: { id },
       data,
-    }),
+    });
+  },
 
-  softDelete: (id: string): Promise<Expense> =>
-    prisma.expense.update({
+  softDelete: async (id: string, organizationId: string): Promise<Expense> => {
+    const expense = await prisma.expense.findFirst({
+      where: { id, organizationId, deletedAt: null },
+    });
+    if (!expense) {
+      throw new NotFoundError(`Expense with id ${id} not found`);
+    }
+    return prisma.expense.update({
       where: { id },
       data: { deletedAt: new Date() },
-    }),
+    });
+  },
 
   count: (input: Omit<ListExpensesInput, 'page' | 'limit' | 'sort' | 'order'>): Promise<number> =>
     prisma.expense.count({

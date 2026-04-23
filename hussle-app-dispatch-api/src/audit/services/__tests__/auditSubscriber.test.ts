@@ -13,6 +13,7 @@ type OrgCreatedHandler = (data: EventMap['organization.created']) => Promise<voi
 describe('initializeAuditSubscriber', () => {
   const mockEventBus: jest.Mocked<EventBus> = {
     publish: jest.fn(),
+    publishDelayed: jest.fn(),
     subscribe: jest.fn(),
     close: jest.fn(),
   };

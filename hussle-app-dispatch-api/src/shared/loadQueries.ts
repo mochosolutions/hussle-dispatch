@@ -69,8 +69,13 @@ export const computeMetrics = (
       totalGross = totalGross.plus(load.customerRate);
     }
 
-    // OWNER_OPERATOR intentionally excluded — not supported in this release (decision X-001).
-    if (load.carrier === null || load.carrier.type === 'COMPANY_ASSET') {
+    // LEASED_CARRIER runs on YOUR authority — revenue is the customerRate you bill,
+    // same as COMPANY_ASSET. Only EXTERNAL_CARRIER contributes dispatchFee.
+    if (
+      load.carrier === null ||
+      load.carrier.type === 'COMPANY_ASSET' ||
+      load.carrier.type === 'LEASED_CARRIER'
+    ) {
       if (load.customerRate !== null) {
         totalRevenue = totalRevenue.plus(load.customerRate);
       }

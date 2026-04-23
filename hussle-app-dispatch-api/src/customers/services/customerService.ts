@@ -123,11 +123,11 @@ export const createCustomerService = (deps: CustomerServiceDeps): CustomerServic
       }
     }
 
-    return deps.customerRepository.update(id, input);
+    return deps.customerRepository.update(id, organizationId, input);
   },
 
   deleteCustomer: async ({ id, organizationId }: DeleteCustomerServiceInput) => {
     await findCustomerOrThrow(id, organizationId, deps);
-    await deps.customerRepository.softDelete(id, new Date());
+    await deps.customerRepository.softDelete(id, organizationId, new Date());
   },
 });

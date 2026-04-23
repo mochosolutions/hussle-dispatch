@@ -27,7 +27,14 @@ const syncInvoiceAccessorials = async (
   loadId: string,
   deps: Omit<AccessorialSyncSubscriberDeps, 'eventBus'>,
 ): Promise<void> => {
-  const invoice = await deps.invoiceRepo.findByLoadId(loadId);
+  const load = await deps.loadQuery.findLoadById(loadId);
+
+  if (!load) {
+    deps.logger.warn('Load not found when syncing accessorials', { loadId });
+    return;
+  }
+
+  const invoice = await deps.invoiceRepo.findByLoadId(loadId, load.organizationId);
 
   if (!invoice) {
     deps.logger.info('No invoice found for load — skipping accessorial sync', { loadId });
@@ -43,20 +50,13 @@ const syncInvoiceAccessorials = async (
     return;
   }
 
-  const load = await deps.loadQuery.findLoadById(loadId);
-
-  if (!load) {
-    deps.logger.warn('Load not found when syncing accessorials', { loadId });
-    return;
-  }
-
   const accessorialsTotal = sumAccessorials(load.accessorialCharges);
   const subtotal = typeof invoice.subtotal === 'number'
     ? invoice.subtotal
     : Number(invoice.subtotal);
   const totalAmount = subtotal + accessorialsTotal;
 
-  await deps.invoiceRepo.update(invoice.id, {
+  await deps.invoiceRepo.update(invoice.id, load.organizationId, {
     accessorials: accessorialsTotal,
     totalAmount,
   });

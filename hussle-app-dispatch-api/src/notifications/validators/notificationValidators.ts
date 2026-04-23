@@ -55,6 +55,11 @@ export const bulkUpsertSettingsSchema = yup.object({
   }),
 });
 
+const ccEmailsSchema = yup
+  .array()
+  .of(yup.string().email('ccEmails entries must be valid email addresses').required())
+  .notRequired();
+
 export const upsertOverrideSchema = yup.object({
   params: yup.object({
     loadId: yup.string().uuid().required(),
@@ -65,6 +70,7 @@ export const upsertOverrideSchema = yup.object({
     enabled: yup.boolean().required(),
     recipientEmail: yup.string().email().nullable(),
     recipientPhone: yup.string().nullable(),
+    ccEmails: ccEmailsSchema,
   }),
 });
 
@@ -82,6 +88,7 @@ export const bulkUpsertOverridesSchema = yup.object({
           enabled: yup.boolean().required(),
           recipientEmail: yup.string().email().nullable(),
           recipientPhone: yup.string().nullable(),
+          ccEmails: ccEmailsSchema,
         }),
       )
       .required()

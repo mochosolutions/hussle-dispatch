@@ -76,6 +76,7 @@ export const ShipmentColumn: React.FC<{
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 cursor: 'pointer',
+                textTransform: 'capitalize',
               }}
               onClick={() => {
                 navigate(link);

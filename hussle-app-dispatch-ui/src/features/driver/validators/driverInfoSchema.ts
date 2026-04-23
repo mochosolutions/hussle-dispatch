@@ -22,6 +22,19 @@ export const driverInfoSchema = Yup.object({
     .nullable(),
   homeBaseCity: Yup.string().nullable().trim(),
   homeBaseState: stateCodeValidator.nullable(),
+  payType: Yup.string()
+    .nullable()
+    .oneOf(['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE', null]),
+  payRate: Yup.number()
+    .nullable()
+    .when('payType', {
+      is: (val: unknown): boolean => Boolean(val),
+      then: (schema) =>
+        schema
+          .required('Pay rate is required when pay type is set')
+          .min(0, 'Pay rate must be 0 or greater'),
+      otherwise: (schema) => schema.nullable(),
+    }),
   notes: Yup.string().nullable().trim(),
 }).required();
 

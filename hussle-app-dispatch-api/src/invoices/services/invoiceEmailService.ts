@@ -29,7 +29,7 @@ export const createInvoiceEmailService = (
   deps: InvoiceEmailServiceDeps,
 ): InvoiceEmailService => ({
   sendInvoiceEmail: async (input: SendInvoiceEmailInput): Promise<void> => {
-    const invoice = await deps.invoiceRepo.findById(input.invoiceId);
+    const invoice = await deps.invoiceRepo.findById(input.invoiceId, input.organizationId);
 
     if (invoice === null) {
       throw new Error(`Invoice not found: ${input.invoiceId}`);
@@ -92,6 +92,7 @@ export const createInvoiceEmailService = (
     await deps.notificationService.sendEmail({
       from: input.fromEmail,
       to: input.recipientEmail,
+      cc: input.ccEmails !== undefined && input.ccEmails.length > 0 ? input.ccEmails : undefined,
       replyTo: input.replyToEmail,
       subject,
       html,
@@ -99,7 +100,7 @@ export const createInvoiceEmailService = (
     });
 
     // Update invoice status
-    await deps.invoiceRepo.updateStatus(invoice.id, 'SENT', {
+    await deps.invoiceRepo.updateStatus(invoice.id, input.organizationId, 'SENT', {
       sentAt: new Date(),
       sentTo: input.recipientEmail,
       sentToEmail: input.recipientEmail,

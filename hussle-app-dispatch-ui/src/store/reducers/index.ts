@@ -10,6 +10,7 @@ import { placeReducer } from 'features/place/store/reducers/placeEntitySlice';
 import { placePageSlice } from 'features/place/store/reducers/placePageSlice';
 import { loadReducer } from 'features/load/store/reducers/loadEntitySlice';
 import { loadPageReducer } from 'features/load/store/reducers/loadPageSlice';
+import { smsPromptEntityReducer } from 'features/load/store/reducers/smsPromptEntitySlice';
 import { authReducer } from 'features/auth/store';
 import carrierNotesReducer from 'features/carrier/store/reducers/carrierNotesSlice';
 import intelPageSlice from 'features/loadintelligence/store/reducers/intelPageSlice';
@@ -59,6 +60,7 @@ const entities = combineReducers({
   drivers: driverReducer,
   places: placeReducer,
   loads: loadReducer,
+  smsPrompts: smsPromptEntityReducer,
   contacts: contactReducer,
   invoices: invoiceReducer,
   customers: customerReducer,

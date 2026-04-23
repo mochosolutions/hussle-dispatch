@@ -7,6 +7,7 @@ import { EntityAutocomplete } from 'components/EntityAutocomplete';
 import type { EntityAutocompleteOption } from 'components/EntityAutocomplete';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { getContacts } from 'utils/api/fleet/contactApi';
+import formatPhone from 'utils/formatPhone';
 
 interface BrokerAutocompleteProps {
   name?: string;
@@ -70,7 +71,7 @@ export const BrokerAutocomplete: React.FC<BrokerAutocompleteProps> = ({
         const hasName = fullName.length > 0;
         const contactLabel = hasName
           ? fullName
-          : (contact.email || contact.phone || '(Unnamed Contact)');
+          : (contact.email || formatPhone(contact.phone) || '(Unnamed Contact)');
         const descriptionParts: string[] = [];
 
         if (hasName && contact.email) {

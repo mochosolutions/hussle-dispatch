@@ -41,6 +41,7 @@ interface PrismaMembershipWithOrg {
   organizationId: string;
   role: string;
   status: string;
+  permissionsVersion?: number;
   createdAt: Date;
   updatedAt: Date;
   organization?: {
@@ -78,7 +79,7 @@ export const formatMembership = (
   enumConfig?: AuthEnumConfig,
 ): Membership => {
   try {
-    const { id, userId, organizationId, organization, role, status, createdAt, updatedAt } =
+    const { id, userId, organizationId, organization, role, status, permissionsVersion, createdAt, updatedAt } =
       membership;
 
     const defaultTier = enumConfig?.subscriptionTier.default ?? 'TRIAL';
@@ -92,6 +93,7 @@ export const formatMembership = (
     return {
       role,
       status,
+      permissionsVersion: permissionsVersion ?? 1,
       membershipId: id,
       userId,
       orgName,

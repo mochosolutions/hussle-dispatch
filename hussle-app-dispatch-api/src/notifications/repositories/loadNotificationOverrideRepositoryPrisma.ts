@@ -27,11 +27,13 @@ export const loadNotificationOverrideRepositoryPrisma = (
         enabled: input.enabled,
         recipientEmail: input.recipientEmail ?? null,
         recipientPhone: input.recipientPhone ?? null,
+        ccEmails: input.ccEmails ?? [],
       },
       update: {
         enabled: input.enabled,
         recipientEmail: input.recipientEmail ?? null,
         recipientPhone: input.recipientPhone ?? null,
+        ccEmails: input.ccEmails ?? [],
       },
     }),
 

@@ -27,9 +27,10 @@ export interface CarrierCostProfile {
 }
 
 export interface CarrierCostProfilePort {
-  findById(id: string): Promise<CarrierCostProfile | null>;
+  findById(carrierId: string, organizationId: string): Promise<CarrierCostProfile | null>;
   updateCostProfile(
-    id: string,
+    carrierId: string,
+    organizationId: string,
     data: {
       minimumRatePerMile: number;
       costProfileVersion: number;

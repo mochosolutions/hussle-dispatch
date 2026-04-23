@@ -52,17 +52,8 @@ interface RankDriversDeps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const resolveTargetArrivalUtc = (pickup: PickupDetails): Date => {
-  if (pickup.schedulingType === 'APPOINTMENT' && pickup.appointmentStart !== null) {
-    return pickup.appointmentStart;
-  }
-
-  if (pickup.targetDate !== null) {
-    return pickup.targetDate;
-  }
-
-  return new Date(Date.now() + DEFAULT_LEAD_HOURS * MS_PER_HOUR);
-};
+const resolveTargetArrivalUtc = (pickup: PickupDetails): Date =>
+  pickup.appointmentStart;
 
 const buildGreyDriver = (driver: EligibleDriver): RankedDriver => ({
   driverId: driver.id,

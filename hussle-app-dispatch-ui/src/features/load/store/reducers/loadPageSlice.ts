@@ -3,6 +3,8 @@ import type { UnknownAction } from '@reduxjs/toolkit';
 import type { RootState } from 'store';
 import { createCrudSlice, createCrudSelectors, LoadingState } from '@mocho/ui/redux';
 import type { CrudPageState } from '@mocho/ui/redux';
+import type { PaginationMeta } from 'features/carrier/types';
+import type { SmsPromptScheduleResponse } from 'utils/api/loads/smsPromptApi';
 import type {
   AssignLoadInput,
   BoardView,
@@ -443,3 +445,41 @@ export const ingestDatFailure = createAction<string>('load/ingestDatFailure');
 export const startPolling = createAction('load/startPolling');
 
 export const stopPolling = createAction('load/stopPolling');
+
+// ---------------------------------------------------------------------------
+// SMS prompt actions
+// ---------------------------------------------------------------------------
+
+export const sendSmsPromptRequest = createAction<{ loadId: string }>('load/sendSmsPromptRequest');
+
+export const sendSmsPromptSuccess = createAction<{
+  loadId: string;
+  prompt: SmsPromptScheduleResponse;
+}>('load/sendSmsPromptSuccess');
+
+export const sendSmsPromptFailure = createAction<{ loadId: string; error: string }>(
+  'load/sendSmsPromptFailure',
+);
+
+export const fetchSmsPromptHistoryRequest = createAction<{
+  loadId: string;
+  page?: number;
+  limit?: number;
+}>('load/fetchSmsPromptHistoryRequest');
+
+export const fetchSmsPromptHistorySuccess = createAction<{
+  loadId: string;
+  data: SmsPromptScheduleResponse[];
+  meta: PaginationMeta;
+}>('load/fetchSmsPromptHistorySuccess');
+
+export const fetchSmsPromptHistoryFailure = createAction<{ loadId: string; error: string }>(
+  'load/fetchSmsPromptHistoryFailure',
+);
+
+// Polling actions — saga wiring is US-06's responsibility.
+export const startSmsPromptPolling = createAction<{ loadId: string }>(
+  'load/startSmsPromptPolling',
+);
+
+export const stopSmsPromptPolling = createAction('load/stopSmsPromptPolling');

@@ -32,9 +32,8 @@ const toStopResponse = (stop: LoadWithRelations['stops'][number]): StopResponse 
   state: stop.state,
   zip: stop.zip,
   schedulingType: stop.schedulingType,
-  appointmentStart: stop.appointmentStart?.toISOString() ?? null,
+  appointmentStart: stop.appointmentStart.toISOString(),
   appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
-  targetDate: stop.targetDate?.toISOString() ?? null,
   notificationHours: stop.notificationHours,
   notifiedAt: stop.notifiedAt?.toISOString() ?? null,
   appointmentNumber: stop.appointmentNumber,
@@ -49,8 +48,6 @@ const toStopResponse = (stop: LoadWithRelations['stops'][number]): StopResponse 
   isTarp: stop.isTarp,
   isTempControlled: stop.isTempControlled,
   notes: stop.notes,
-  facilityOpenTime: stop.facilityOpenTime,
-  facilityCloseTime: stop.facilityCloseTime,
   callByTime: stop.callByTime,
   trailerNumber: stop.trailerNumber,
   yardLocation: stop.yardLocation,
@@ -152,6 +149,7 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
   return {
     id: load.id,
     status: load.status,
+    version: load.version,
     organizationId: load.organizationId,
     loadNumber: load.loadNumber,
     externalRefNumber: load.externalRefNumber,
@@ -209,7 +207,12 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
           : null,
       driver:
         load.driver !== null
-          ? { id: load.driver.id, firstName: load.driver.firstName, lastName: load.driver.lastName }
+          ? {
+              id: load.driver.id,
+              firstName: load.driver.firstName,
+              lastName: load.driver.lastName,
+              phone: load.driver.phone ?? null,
+            }
           : null,
       vehicle:
         load.vehicle !== null

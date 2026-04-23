@@ -150,7 +150,7 @@ export const createReceiptService = (deps: ReceiptServiceDeps): ReceiptServicePo
       throw new ValidationError('Receipt file not found in storage');
     }
 
-    const updated = await deps.expenseRepo.update(input.expenseId, {
+    const updated = await deps.expenseRepo.update(input.expenseId, input.organizationId, {
       receiptUrl: receiptKey,
     });
 

@@ -47,6 +47,7 @@ export interface SendInvoiceServiceInput {
   organizationId: string;
   role: string;
   email: string;
+  ccEmails?: string[];
 }
 
 export interface MarkPaidServiceInput {

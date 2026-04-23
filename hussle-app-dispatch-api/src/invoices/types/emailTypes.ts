@@ -4,7 +4,9 @@
 
 export interface SendInvoiceEmailInput {
   invoiceId: string;
+  organizationId: string;
   recipientEmail: string;
+  ccEmails?: string[];
   replyToEmail?: string;
   fromEmail: string;
   subject: string;

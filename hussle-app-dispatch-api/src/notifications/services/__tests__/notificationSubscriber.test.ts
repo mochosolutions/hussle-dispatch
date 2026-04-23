@@ -20,6 +20,7 @@ const createMockDeps = () => {
 
   const eventBus: EventBus = {
     publish: jest.fn(),
+    publishDelayed: jest.fn(),
     subscribe: jest.fn(async (event: string, _group: string, handler: Handler) => {
       handlers.set(event, handler);
     }),
@@ -126,6 +127,7 @@ describe('notificationSubscriber', () => {
       customerId: null,
       contactEmail: null,
       contactPhone: null,
+      contactCcEmails: [],
     } satisfies EventMap['load.status.changed']);
 
     expect(deps.settingsRepo.findByCustomerId).not.toHaveBeenCalled();
@@ -160,6 +162,7 @@ describe('notificationSubscriber', () => {
       customerId: 'cust-1',
       contactEmail: null,
       contactPhone: null,
+      contactCcEmails: [],
     } satisfies EventMap['load.status.changed']);
 
     expect(deps.emailService.sendEmail).toHaveBeenCalledTimes(1);
@@ -199,6 +202,7 @@ describe('notificationSubscriber', () => {
       customerId: 'cust-1',
       contactEmail: null,
       contactPhone: null,
+      contactCcEmails: [],
       location: 'Memphis, TN',
       status: 'On time',
       eta: '2026-03-20T14:00:00Z',
@@ -240,6 +244,7 @@ describe('notificationSubscriber', () => {
       customerId: 'cust-1',
       contactEmail: 'load-contact@broker.com',
       contactPhone: null,
+      contactCcEmails: [],
     } satisfies EventMap['load.status.changed']);
 
     expect(deps.emailService.sendEmail).toHaveBeenCalledWith(
@@ -277,6 +282,7 @@ describe('notificationSubscriber', () => {
       customerId: 'cust-1',
       contactEmail: null,
       contactPhone: null,
+      contactCcEmails: [],
     } satisfies EventMap['load.status.changed']);
 
     expect(deps.emailService.sendEmail).toHaveBeenCalledWith(
@@ -302,6 +308,7 @@ describe('notificationSubscriber', () => {
       customerId: 'cust-1',
       contactEmail: null,
       contactPhone: null,
+      contactCcEmails: [],
     } satisfies EventMap['load.status.changed']);
 
     expect(deps.emailService.sendEmail).not.toHaveBeenCalled();
@@ -324,6 +331,7 @@ describe('notificationSubscriber', () => {
       customerId: 'cust-1',
       contactEmail: null,
       contactPhone: null,
+      contactCcEmails: [],
     } satisfies EventMap['load.status.changed']);
 
     expect(deps.logger.error).toHaveBeenCalledWith(

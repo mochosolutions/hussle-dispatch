@@ -17,9 +17,8 @@ export interface CreateStopInput {
   state?: string;
   zip?: string;
   schedulingType?: SchedulingType;
-  appointmentStart?: Date | string | null;
+  appointmentStart: Date | string;
   appointmentEnd?: Date | string | null;
-  targetDate?: Date | string | null;
   notificationHours?: number | null;
   appointmentNumber?: string;
   contactName?: string;
@@ -31,8 +30,6 @@ export interface CreateStopInput {
   isTarp?: boolean;
   isTempControlled?: boolean;
   notes?: string;
-  facilityOpenTime?: string;
-  facilityCloseTime?: string;
   callByTime?: string;
   trailerNumber?: string;
   yardLocation?: string;
@@ -55,9 +52,8 @@ export interface UpdateStopInput {
   state?: string;
   zip?: string;
   schedulingType?: SchedulingType;
-  appointmentStart?: Date | string | null;
+  appointmentStart?: Date | string;
   appointmentEnd?: Date | string | null;
-  targetDate?: Date | string | null;
   notificationHours?: number | null;
   appointmentNumber?: string;
   arrivalTime?: Date;
@@ -71,8 +67,6 @@ export interface UpdateStopInput {
   isTarp?: boolean;
   isTempControlled?: boolean;
   notes?: string;
-  facilityOpenTime?: string;
-  facilityCloseTime?: string;
   callByTime?: string;
   trailerNumber?: string;
   yardLocation?: string;

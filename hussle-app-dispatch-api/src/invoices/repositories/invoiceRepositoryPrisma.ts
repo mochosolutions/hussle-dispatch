@@ -1,5 +1,6 @@
 import type { PrismaClient, InvoiceStatus, LoadStatus } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   InvoiceRepoPort,
   InvoiceListFilters,
@@ -121,21 +122,21 @@ export const invoiceRepositoryPrisma = (
       include: INVOICE_DETAIL_INCLUDE,
     }),
 
-  findById: async (id) =>
-    prisma.invoice.findUnique({
-      where: { id },
-      include: INVOICE_DETAIL_INCLUDE,
-    }),
-
-  findByLoadId: async (loadId) =>
+  findById: async (id, organizationId) =>
     prisma.invoice.findFirst({
-      where: { loadId },
+      where: { id, load: { organizationId } },
       include: INVOICE_DETAIL_INCLUDE,
     }),
 
-  findManyByLoadId: async (loadId) =>
+  findByLoadId: async (loadId, organizationId) =>
+    prisma.invoice.findFirst({
+      where: { loadId, load: { organizationId } },
+      include: INVOICE_DETAIL_INCLUDE,
+    }),
+
+  findManyByLoadId: async (loadId, organizationId) =>
     prisma.invoice.findMany({
-      where: { loadId },
+      where: { loadId, load: { organizationId } },
       include: INVOICE_DETAIL_INCLUDE,
     }),
 
@@ -146,21 +147,41 @@ export const invoiceRepositoryPrisma = (
       orderBy: { createdAt: 'desc' },
     }),
 
-  update: async (id, data) =>
-    prisma.invoice.update({
+  update: async (id, organizationId, data) => {
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, load: { organizationId } },
+    });
+    if (!invoice) {
+      throw new NotFoundError(`Invoice with id ${id} not found`);
+    }
+    return prisma.invoice.update({
       where: { id },
       data,
       include: INVOICE_DETAIL_INCLUDE,
-    }),
+    });
+  },
 
-  updateStatus: async (id, status, extra = {}) =>
-    prisma.invoice.update({
+  updateStatus: async (id, organizationId, status, extra = {}) => {
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, load: { organizationId } },
+    });
+    if (!invoice) {
+      throw new NotFoundError(`Invoice with id ${id} not found`);
+    }
+    return prisma.invoice.update({
       where: { id },
       data: { status, ...extra },
       include: INVOICE_DETAIL_INCLUDE,
-    }),
+    });
+  },
 
-  delete: async (id) => {
+  delete: async (id, organizationId) => {
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, load: { organizationId } },
+    });
+    if (!invoice) {
+      throw new NotFoundError(`Invoice with id ${id} not found`);
+    }
     await prisma.invoice.delete({ where: { id } });
   },
 
@@ -172,10 +193,11 @@ export const invoiceRepositoryPrisma = (
       },
     }),
 
-  findNonVoidByLoadId: async (loadId) =>
+  findNonVoidByLoadId: async (loadId, organizationId) =>
     prisma.invoice.findFirst({
       where: {
         loadId,
+        load: { organizationId },
         status: { not: 'VOID' as InvoiceStatus },
       },
       include: INVOICE_DETAIL_INCLUDE,

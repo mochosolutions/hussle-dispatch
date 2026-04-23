@@ -36,7 +36,6 @@ export const loadPickupQueryPrisma = (
         : null,
       appointmentStart: stop.appointmentStart,
       appointmentEnd: stop.appointmentEnd,
-      targetDate: stop.targetDate,
       schedulingType: stop.schedulingType,
     };
   },

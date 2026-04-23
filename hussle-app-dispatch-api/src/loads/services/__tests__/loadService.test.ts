@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import Decimal from 'decimal.js';
-import { AssignmentValidationError, ValidationError } from '../../../shared/errors';
+import { AssignmentValidationError, ConflictError, ValidationError } from '../../../shared/errors';
 import { createLoadService } from '../loadService';
 import type {
   CarrierAssignmentQueryPort,
@@ -45,6 +45,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     estimatedCost: null,
     dispatcherComm: null,
     dispatcherUserId: null,
+    version: 0,
     status: 'BOOKED',
     rateConReceivedAt: null,
     bolUnsignedAt: null,
@@ -581,9 +582,8 @@ describe('updateLoad financial recalculation', () => {
           state: 'TX',
           zip: null,
           schedulingType: 'FCFS',
-          appointmentStart: null,
+          appointmentStart: new Date(),
           appointmentEnd: null,
-          targetDate: null,
           notificationHours: null,
           notifiedAt: null,
           appointmentNumber: null,
@@ -598,6 +598,9 @@ describe('updateLoad financial recalculation', () => {
           isTarp: false,
           isTempControlled: false,
           notes: null,
+          callByTime: null,
+          trailerNumber: null,
+          yardLocation: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -614,9 +617,8 @@ describe('updateLoad financial recalculation', () => {
           state: 'TX',
           zip: null,
           schedulingType: 'FCFS',
-          appointmentStart: null,
+          appointmentStart: new Date(),
           appointmentEnd: null,
-          targetDate: null,
           notificationHours: null,
           notifiedAt: null,
           appointmentNumber: null,
@@ -631,6 +633,9 @@ describe('updateLoad financial recalculation', () => {
           isTarp: false,
           isTempControlled: false,
           notes: null,
+          callByTime: null,
+          trailerNumber: null,
+          yardLocation: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -656,8 +661,8 @@ describe('updateLoad financial recalculation', () => {
         customerRate: 2800,
         loadedMiles: 500,
         stops: [
-          { type: 'PICKUP', sequence: 0, city: 'Dallas', state: 'TX', commodity: 'Steel', weight: 40000, pieceCount: 1 },
-          { type: 'DELIVERY', sequence: 1, city: 'Houston', state: 'TX' },
+          { type: 'PICKUP', sequence: 0, appointmentStart: new Date(), city: 'Dallas', state: 'TX', commodity: 'Steel', weight: 40000, pieceCount: 1 },
+          { type: 'DELIVERY', sequence: 1, appointmentStart: new Date(), city: 'Houston', state: 'TX' },
         ],
       },
     });
@@ -686,5 +691,45 @@ describe('updateLoad financial recalculation', () => {
         input: { customerRate: 3000 },
       }),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('rejects financial field change when an approved settlement references the load', async () => {
+    mockLoadRepository.findById.mockResolvedValue(
+      buildLoad({
+        customerRate: new Decimal('2800'),
+        carrierId: 'carrier-1',
+        carrier: companyCarrier,
+        loadedMiles: 500,
+        status: 'BOOKED',
+      }),
+    );
+
+    const settlementFreezeQuery = {
+      hasNonDraftSettlementForLoad: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
+    };
+
+    const scopedService = createLoadService({
+      loadRepository: mockLoadRepository,
+      orgSettingsQuery: mockOrgSettingsQuery,
+      carrierAssignmentQuery: mockCarrierAssignmentQuery,
+      driverAssignmentQuery: mockDriverAssignmentQuery,
+      vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+      loadStatusRepo: mockLoadStatusRepo,
+      settlementFreezeQuery,
+    });
+
+    await expect(
+      scopedService.updateLoad({
+        id: 'load-1',
+        organizationId: 'org-1',
+        role: 'admin',
+        input: { customerRate: 3000 },
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+
+    expect(settlementFreezeQuery.hasNonDraftSettlementForLoad).toHaveBeenCalledWith(
+      'load-1',
+      'org-1',
+    );
   });
 });

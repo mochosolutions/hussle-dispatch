@@ -13,6 +13,7 @@ describe('switchOrgService', () => {
       orgSubscriptionTier: 'pro',
       orgStatus: 'ACTIVE',
       role: 'owner',
+      permissionsVersion: 1,
       status: 'active',
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
@@ -26,6 +27,7 @@ describe('switchOrgService', () => {
       orgSubscriptionTier: 'starter',
       orgStatus: 'ACTIVE',
       role: 'admin',
+      permissionsVersion: 1,
       status: 'active',
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
@@ -120,6 +122,7 @@ describe('switchOrgService', () => {
       membershipId: 'mem-2',
       orgStatus: 'ACTIVE',
       role: 'admin',
+      permissionsVersion: 1,
     });
 
     expect(result.accessToken).toBe('new-access-token');

@@ -3,16 +3,22 @@
  * Uses a topic exchange for routing domain events by name.
  * Handles automatic reconnection on connection loss.
  * Retries failed messages up to 3 times via x-death header tracking.
+ *
+ * Delayed delivery requires the `rabbitmq_delayed_message_exchange` plugin.
+ * See docs/infra-rabbitmq-delayed-messages.md.
  */
 import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 import amqplib from 'amqplib';
 
+import { ValidationError } from '../errors/commonErrors';
 import type { Logger } from '../utils/logger';
-import type { EventBus, PublishOptions } from './eventBus';
+import type { EventBus } from './eventBus';
 import type { EventMap } from './eventMap';
 
 const EXCHANGE_NAME = 'fleet-command.events';
 const EXCHANGE_TYPE = 'topic';
+const DELAYED_EXCHANGE_NAME = 'fleet-command.delayed';
+const DELAYED_EXCHANGE_TYPE = 'x-delayed-message';
 const RECONNECT_DELAY_MS = 5000;
 const MAX_RETRIES = 3;
 
@@ -35,23 +41,24 @@ class EventBusNotConnectedError extends Error {
 }
 
 /**
- * Typed error for unsupported publish options.
+ * Typed error thrown when `publishDelayed` is called but the RabbitMQ server
+ * does not have the `rabbitmq_delayed_message_exchange` plugin installed.
  */
-class DelayedPublishNotSupportedError extends Error {
-  readonly code = 'DELAYED_PUBLISH_NOT_SUPPORTED';
+class DelayedExchangeUnavailableError extends Error {
+  readonly code = 'DELAYED_EXCHANGE_UNAVAILABLE';
 
   constructor() {
-    super('Delayed publishing is not yet supported by RabbitMQ EventBus');
-    Object.setPrototypeOf(this, DelayedPublishNotSupportedError.prototype);
+    super(
+      'Delayed exchange unavailable — rabbitmq_delayed_message_exchange plugin required for publishDelayed',
+    );
+    Object.setPrototypeOf(this, DelayedExchangeUnavailableError.prototype);
   }
 }
 
 /**
  * Type guard for x-death entries with a numeric count field.
  */
-const isXDeathWithCount = (
-  value: unknown,
-): value is { count: number } => {
+const isXDeathWithCount = (value: unknown): value is { count: number } => {
   if (typeof value !== 'object' || value === null || !('count' in value)) {
     return false;
   }
@@ -85,12 +92,31 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
   let channelModel: ChannelModel | null = null;
   let channel: Channel | null = null;
   let closing = false;
+  let delayedExchangeAvailable = false;
   const pendingSubscriptions: PendingSubscription[] = [];
+
+  const assertDelayedExchange = async (ch: Channel): Promise<void> => {
+    try {
+      await ch.assertExchange(DELAYED_EXCHANGE_NAME, DELAYED_EXCHANGE_TYPE, {
+        durable: true,
+        arguments: { 'x-delayed-type': 'topic' },
+      });
+      delayedExchangeAvailable = true;
+      logger.info('RabbitMQ delayed exchange ready', { exchange: DELAYED_EXCHANGE_NAME });
+    } catch (error: unknown) {
+      delayedExchangeAvailable = false;
+      logger.warn(
+        'delayed exchange unavailable — rabbitmq_delayed_message_exchange plugin required for publishDelayed',
+        { exchange: DELAYED_EXCHANGE_NAME, error: String(error) },
+      );
+    }
+  };
 
   const connect = async (): Promise<void> => {
     channelModel = await amqplib.connect(url);
     channel = await channelModel.createChannel();
     await channel.assertExchange(EXCHANGE_NAME, EXCHANGE_TYPE, { durable: true });
+    await assertDelayedExchange(channel);
 
     channelModel.on('error', (error: unknown) => {
       logger.error('RabbitMQ connection error', { error: String(error) });
@@ -137,6 +163,9 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     const queueName = `fleet-command.${queueGroup}.${event}`;
     await ch.assertQueue(queueName, { durable: true });
     await ch.bindQueue(queueName, EXCHANGE_NAME, event);
+    if (delayedExchangeAvailable) {
+      await ch.bindQueue(queueName, DELAYED_EXCHANGE_NAME, event);
+    }
 
     await ch.consume(queueName, (msg) => {
       if (!msg) {
@@ -186,12 +215,7 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
   const publish = async <K extends keyof EventMap>(
     event: K,
     data: EventMap[K],
-    options?: PublishOptions,
   ): Promise<void> => {
-    if (options?.delay !== undefined) {
-      throw new DelayedPublishNotSupportedError();
-    }
-
     const ch = ensureChannel();
     const message = Buffer.from(JSON.stringify(data), 'utf-8');
     ch.publish(EXCHANGE_NAME, String(event), message, {
@@ -199,6 +223,41 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
       contentType: 'application/json',
     });
     logger.info('Event published', { event: String(event) });
+  };
+
+  /**
+   * Publishes a message that is held by the broker for `delayMs` before being
+   * routed to the normal queues.
+   *
+   * Requires the `rabbitmq_delayed_message_exchange` plugin on the RabbitMQ
+   * server. If the plugin is missing, assertExchange fails at connect time
+   * and this method throws `DelayedExchangeUnavailableError`.
+   *
+   * Subscribers do NOT need a separate API: `subscribe` binds each queue to
+   * both the normal and delayed exchanges using the event name as the routing
+   * key, so delayed-then-released messages reach the same handlers as
+   * immediate publications.
+   */
+  const publishDelayed = async <K extends keyof EventMap>(
+    event: K,
+    data: EventMap[K],
+    delayMs: number,
+  ): Promise<void> => {
+    if (delayMs < 0) {
+      throw new ValidationError('delayMs must be >= 0', [`delayMs=${delayMs}`]);
+    }
+    if (!delayedExchangeAvailable) {
+      throw new DelayedExchangeUnavailableError();
+    }
+
+    const ch = ensureChannel();
+    const message = Buffer.from(JSON.stringify(data), 'utf-8');
+    ch.publish(DELAYED_EXCHANGE_NAME, String(event), message, {
+      persistent: true,
+      contentType: 'application/json',
+      headers: { 'x-delay': delayMs },
+    });
+    logger.info('Delayed event published', { event: String(event), delayMs });
   };
 
   const subscribe = async <K extends keyof EventMap>(
@@ -238,5 +297,5 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     scheduleReconnect();
   });
 
-  return { publish, subscribe, close };
+  return { publish, publishDelayed, subscribe, close };
 };

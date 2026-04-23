@@ -19,7 +19,7 @@ export const createDocumentPacketControllers = (
 ): DocumentPacketControllers => ({
   downloadPacket: async (req: Request, res: Response): Promise<void> => {
     const input = documentPacketMapper(req);
-    const invoice = await deps.invoiceRepo.findById(input.invoiceId);
+    const invoice = await deps.invoiceRepo.findById(input.invoiceId, input.organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');

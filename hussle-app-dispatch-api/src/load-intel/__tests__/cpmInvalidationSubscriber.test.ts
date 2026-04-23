@@ -17,6 +17,7 @@ type SubscribeCall<K extends keyof EventMap> = [
 const buildMockDeps = () => {
   const eventBus: jest.Mocked<EventBus> = {
     publish: jest.fn(),
+    publishDelayed: jest.fn(),
     subscribe: jest.fn().mockResolvedValue(undefined),
     close: jest.fn(),
   };

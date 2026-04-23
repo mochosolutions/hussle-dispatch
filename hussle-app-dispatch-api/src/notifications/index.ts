@@ -66,3 +66,7 @@ export const notificationsRouter = createNotificationRouter(notificationModule.c
 export const notificationSettingsService = notificationModule.settingsService;
 export const notificationOverrideService = notificationModule.overrideService;
 export const trackingTokenService = notificationModule.trackingTokenService;
+
+// Exposed for sibling modules (e.g. sms-prompts) that need to send SMS without
+// rebuilding the adapter from env every time.
+export { smsService };

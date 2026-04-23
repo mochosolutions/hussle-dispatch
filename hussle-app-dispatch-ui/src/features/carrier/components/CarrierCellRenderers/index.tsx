@@ -5,8 +5,8 @@ import type { CarrierListItem, CarrierType } from '../../types';
 
 export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
   COMPANY_ASSET: 'Company Asset',
-  OWNER_OPERATOR: 'Owner Operator',
   EXTERNAL_CARRIER: 'External Carrier',
+  LEASED_CARRIER: 'Leased Carrier',
 };
 
 export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => {

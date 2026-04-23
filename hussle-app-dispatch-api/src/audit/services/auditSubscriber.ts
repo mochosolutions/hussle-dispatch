@@ -47,5 +47,27 @@ export const initializeAuditSubscriber = async (
     }
   });
 
+  await deps.eventBus.subscribe('invitation.created', 'audit-service', async (data) => {
+    try {
+      await deps.auditLogRepo.create(data.organizationId, {
+        userId: null,
+        action: 'INVITE_SENT',
+        entityType: 'Invitation',
+        entityId: data.inviteId,
+        changes: null,
+        metadata: {
+          recipientEmail: data.recipientEmail,
+          role: data.role,
+          inviterName: data.inviterName,
+        },
+      });
+    } catch (error: unknown) {
+      deps.logger.error('Failed to create audit log for invite sent', {
+        inviteId: data.inviteId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   deps.logger.info('Audit subscriber initialized');
 };

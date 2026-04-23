@@ -11,6 +11,7 @@ export const createConsoleNotificationService = (
   sendEmail: async (params) => {
     logger.info('NotificationService: email sent (console)', {
       to: params.to,
+      cc: params.cc ?? [],
       from: params.from,
       subject: params.subject,
       hasAttachments: params.attachments !== undefined && params.attachments.length > 0,

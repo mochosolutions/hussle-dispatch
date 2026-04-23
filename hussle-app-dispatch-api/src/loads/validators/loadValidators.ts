@@ -35,9 +35,8 @@ const stopSchema = Yup.object({
   schedulingType: Yup.mixed<SchedulingType>()
     .oneOf(schedulingTypeValues, 'schedulingType must be a valid SchedulingType')
     .notRequired(),
-  appointmentStart: Yup.date().nullable().notRequired(),
+  appointmentStart: Yup.date().required('appointmentStart is required'),
   appointmentEnd: Yup.date().nullable().notRequired(),
-  targetDate: Yup.date().nullable().notRequired(),
   notificationHours: Yup.number().integer().nullable().notRequired(),
   appointmentNumber: optionalTrimmed,
   contactName: optionalTrimmed,
@@ -49,8 +48,6 @@ const stopSchema = Yup.object({
   isTarp: Yup.boolean().notRequired(),
   isTempControlled: Yup.boolean().notRequired(),
   notes: optionalTrimmed,
-  facilityOpenTime: optionalTrimmed,
-  facilityCloseTime: optionalTrimmed,
   callByTime: optionalTrimmed,
   trailerNumber: optionalTrimmed,
   yardLocation: optionalTrimmed,

@@ -28,6 +28,7 @@ interface NotificationSubscriberDeps {
 interface LoadContactInfo {
   contactEmail: string | null;
   contactPhone: string | null;
+  contactCcEmails: string[];
 }
 
 const buildTrackingUrl = (baseUrl: string, token: string): string =>
@@ -62,6 +63,20 @@ const resolveRecipientPhone = (
 ): string | null =>
   contact.contactPhone ?? config.recipientPhone;
 
+/**
+ * Resolve CC emails. Override CC takes precedence; fallback to contact CC.
+ */
+const resolveCcEmails = (
+  config: ResolvedNotificationConfig,
+  contact: LoadContactInfo,
+): string[] => {
+  if (config.ccEmails.length > 0) {
+    return config.ccEmails;
+  }
+
+  return contact.contactCcEmails;
+};
+
 const sendNotification = async (
   config: ResolvedNotificationConfig,
   content: { subject: string; html: string; smsBody: string },
@@ -72,10 +87,12 @@ const sendNotification = async (
 ): Promise<void> => {
   if (config.channel === 'EMAIL') {
     const recipientEmail = resolveRecipientEmail(config, contact);
+    const ccEmails = resolveCcEmails(config, contact);
 
     if (recipientEmail !== null) {
       await deps.emailService.sendEmail({
         to: recipientEmail,
+        cc: ccEmails.length > 0 ? ccEmails : undefined,
         from: fromEmail,
         subject: content.subject,
         html: content.html,
@@ -86,6 +103,7 @@ const sendNotification = async (
         trigger: config.trigger,
         channel: 'EMAIL',
         recipientEmail,
+        ccEmails,
         subject: content.subject,
         status: 'sent',
       });
@@ -150,6 +168,7 @@ export const initializeNotificationSubscriber = async (
         const contact: LoadContactInfo = {
           contactEmail: data.contactEmail,
           contactPhone: data.contactPhone,
+          contactCcEmails: data.contactCcEmails,
         };
 
         for (const config of configs) {
@@ -203,6 +222,7 @@ export const initializeNotificationSubscriber = async (
         const contact: LoadContactInfo = {
           contactEmail: data.contactEmail,
           contactPhone: data.contactPhone,
+          contactCcEmails: data.contactCcEmails,
         };
 
         for (const config of configs) {

@@ -32,6 +32,7 @@ import type {
   NotificationLogEntry,
 } from 'utils/api/notifications/notificationApi';
 import { NotificationOverrideDrawer } from './NotificationOverrideDrawer';
+import { SmsPromptHistorySection } from './SmsPromptHistorySection';
 
 // ---------------------------------------------------------------------------
 // Types & Constants
@@ -261,11 +262,23 @@ export const NotificationTab: React.FC<NotificationPanelProps> = ({ loadId, cust
                           </Box>
                         }
                         secondary={
-                          <Typography variant="caption" color="text.secondary">
-                            {entry.recipientEmail ?? entry.recipientPhone ?? 'Unknown recipient'}
-                            {' \u00B7 '}
-                            {format(parseISO(entry.createdAt), 'MMM d, yyyy h:mm a')}
-                          </Typography>
+                          <Box component="span" sx={{ display: 'block' }}>
+                            <Typography component="span" variant="caption" color="text.secondary">
+                              {entry.recipientEmail ?? entry.recipientPhone ?? 'Unknown recipient'}
+                              {' \u00B7 '}
+                              {format(parseISO(entry.createdAt), 'MMM d, yyyy h:mm a')}
+                            </Typography>
+                            {entry.ccEmails.length > 0 && (
+                              <Typography
+                                component="span"
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block' }}
+                              >
+                                {`CC: ${entry.ccEmails.join(', ')}`}
+                              </Typography>
+                            )}
+                          </Box>
                         }
                       />
                     </ListItem>
@@ -275,6 +288,8 @@ export const NotificationTab: React.FC<NotificationPanelProps> = ({ loadId, cust
             )}
           </CardContent>
         </Card>
+
+        <SmsPromptHistorySection loadId={loadId} />
       </Box>
 
       {/* Edit drawer */}

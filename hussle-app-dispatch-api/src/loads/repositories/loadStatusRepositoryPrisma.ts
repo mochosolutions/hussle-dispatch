@@ -1,5 +1,7 @@
 import type { PrismaClient, LoadStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { ConflictError } from '@/shared/errors';
 import type { LoadStatusRepoPort } from '../types/loadStatusTypes';
 
 const LOAD_DETAIL_INCLUDE = {
@@ -27,12 +29,29 @@ const LOAD_DETAIL_INCLUDE = {
 export const loadStatusRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
 ): LoadStatusRepoPort => ({
-  updateStatus: async (loadId: string, status: LoadStatus) =>
-    prisma.load.update({
-      where: { id: loadId },
-      data: { status },
-      include: LOAD_DETAIL_INCLUDE,
-    }),
+  updateStatus: async (loadId: string, status: LoadStatus, expectedVersion?: number) => {
+    try {
+      const where = expectedVersion !== undefined
+        ? { id: loadId, version: expectedVersion }
+        : { id: loadId };
+
+      return await prisma.load.update({
+        where,
+        data: { status, version: { increment: 1 } },
+        include: LOAD_DETAIL_INCLUDE,
+      });
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new ConflictError(
+          'Load was modified by another user. Please refresh and try again.',
+        );
+      }
+      throw error;
+    }
+  },
 
   createStatusHistory: async (data) => {
     await prisma.loadStatusHistory.create({

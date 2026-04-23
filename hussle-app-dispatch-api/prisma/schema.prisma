@@ -50,6 +50,7 @@ model Organization {
   recurringExpenses   RecurringExpense[]
   settlements         Settlement[]
   loans               Loan[]
+  smsPromptSchedules  SmsPromptSchedule[]
 
   @@index([slug])
   @@index([deleted, status])
@@ -74,16 +75,17 @@ model User {
 }
 
 model Membership {
-  id             String       @id @default(uuid())
-  userId         String
-  organizationId String
-  role           String
-  status         String       @default("active")
-  invitedById    String?
-  deleted        Boolean      @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                 String       @id @default(uuid())
+  userId             String
+  organizationId     String
+  role               String
+  status             String       @default("active")
+  permissionsVersion Int          @default(1)
+  invitedById        String?
+  deleted            Boolean      @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
   user           User         @relation("UserMemberships", fields: [userId], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id])
   invitedBy          User?              @relation("InvitedBy", fields: [invitedById], references: [id])
@@ -128,6 +130,7 @@ model AuditLog {
 
   @@index([organizationId, timestamp])
   @@index([userId])
+  @@index([organizationId, entityType, entityId])
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +173,6 @@ enum InvitationStatus {
 enum CarrierType {
   COMPANY_ASSET
   LEASED_CARRIER
-  OWNER_OPERATOR
   EXTERNAL_CARRIER
 }
 
@@ -586,6 +588,7 @@ model Contact {
   lastName                 String
   phone                    String?
   email                    String?
+  ccEmails                 String[]     @default([])
   notes                    String?
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
@@ -639,6 +642,7 @@ model Driver {
   scheduleOverrides DriverScheduleOverride[]
   expenses          Expense[]
   settlements       Settlement[]
+  smsPromptSchedules SmsPromptSchedule[]
 
   @@index([carrierId])
 }
@@ -728,6 +732,7 @@ model Load {
   estimatedCost         Decimal?                   @db.Decimal(10, 2)
   dispatcherComm        Decimal?                   @db.Decimal(10, 2)
   dispatcherUserId      String?
+  version               Int                        @default(0)
   status                LoadStatus                 @default(QUOTED)
   invoiceReadiness      InvoiceReadiness           @default(NOT_READY)
   rateConReceivedAt     DateTime?
@@ -757,6 +762,7 @@ model Load {
   trackingTokens        LoadTrackingToken[]
   notificationLogs      NotificationLog[]
   stateMiles            LoadStateMiles[]
+  smsPromptSchedules    SmsPromptSchedule[]
 
   @@unique([organizationId, loadNumber])
   @@index([organizationId])
@@ -764,6 +770,8 @@ model Load {
   @@index([carrierId])
   @@index([contactId])
   @@index([customerId])
+  @@index([driverId])
+  @@index([vehicleId])
 }
 
 model Stop {
@@ -779,9 +787,8 @@ model Stop {
   state             String?
   zip               String?
   schedulingType    SchedulingType @default(FCFS)
-  appointmentStart  DateTime?
+  appointmentStart  DateTime
   appointmentEnd    DateTime?
-  targetDate        DateTime?
   notificationHours Int?
   notifiedAt        DateTime?
   appointmentNumber String?
@@ -796,8 +803,6 @@ model Stop {
   isTarp            Boolean        @default(false)
   isTempControlled  Boolean        @default(false)
   notes             String?
-  facilityOpenTime  String?
-  facilityCloseTime String?
   callByTime        String?
   trailerNumber     String?
   yardLocation      String?
@@ -953,6 +958,7 @@ model Invoice {
   @@index([loadId])
   @@index([status])
   @@index([customerId])
+  @@index([carrierId])
 }
 
 model Document {
@@ -1005,6 +1011,10 @@ model OrgSettings {
   sesFromEmail              String?
   companyLogoUrl            String?
   invoiceWorkflow           InvoiceWorkflow @default(AUTO_REVIEW)
+  smsPrePickupLeadMinutes        Int        @default(60)
+  smsTransitIntervalMinutes      Int        @default(180)
+  smsPostPickupEscalationMinutes Int        @default(30)
+  smsCooldownMinutes             Int        @default(15)
   organization              Organization    @relation(fields: [organizationId], references: [id])
 }
 
@@ -1084,6 +1094,7 @@ model LoadNotificationOverride {
   enabled        Boolean
   recipientEmail String?
   recipientPhone String?
+  ccEmails       String[]            @default([])
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   load           Load                @relation(fields: [loadId], references: [id], onDelete: Cascade)
@@ -1122,6 +1133,7 @@ model NotificationLog {
   channel        NotificationChannel
   recipientEmail String?
   recipientPhone String?
+  ccEmails       String[]            @default([])
   subject        String?
   status         String              @default("sent")
   errorMessage   String?
@@ -1298,6 +1310,7 @@ model Settlement {
   disputeReason    String?
   sentAt           DateTime?
   sentToEmail      String?
+  snapshotHash     String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -1309,6 +1322,7 @@ model Settlement {
 
   @@index([organizationId, periodStart])
   @@index([carrierId])
+  @@index([driverId])
 }
 
 model SettlementLineItem {
@@ -1323,6 +1337,8 @@ model SettlementLineItem {
   createdAt    DateTime           @default(now())
 
   settlement Settlement @relation(fields: [settlementId], references: [id])
+
+  @@index([settlementId])
 }
 
 model LoadStateMiles {
@@ -1373,4 +1389,45 @@ model LoanPayment {
   createdAt   DateTime @default(now())
 
   loan Loan @relation(fields: [loanId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// SMS Prompt Scheduling (Track 3)
+// ---------------------------------------------------------------------------
+
+enum SmsPromptAnchor {
+  DISPATCHED
+  PRE_PICKUP
+  POST_PICKUP
+  TRANSIT_INTERVAL
+  MANUAL
+}
+
+enum SmsPromptStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELED
+}
+
+model SmsPromptSchedule {
+  id                String          @id @default(uuid())
+  loadId            String
+  driverId          String
+  organizationId    String
+  anchor            SmsPromptAnchor
+  scheduledAt       DateTime
+  status            SmsPromptStatus @default(PENDING)
+  sentAt            DateTime?
+  twilioMessageSid  String?
+  failureReason     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  load         Load         @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  driver       Driver       @relation(fields: [driverId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([loadId, status])
+  @@index([organizationId, scheduledAt])
 }

@@ -5,6 +5,7 @@ import { LoadingState } from '@mocho/ui/redux';
 import { vehicleSelectors } from '../reducers/vehicleEntitySlice';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { driverSelectors } from 'features/driver/store/reducers/driverEntitySlice';
+import formatPhone from 'utils/formatPhone';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -58,6 +59,7 @@ export const selectVehicleWithCarrier = (vehicleId: string) =>
       const driver = vehicle.driverId ? driverEntities[vehicle.driverId] : undefined;
       return {
         ...vehicle,
+        emergencyContactPhone: formatPhone(vehicle.emergencyContactPhone),
         carrierName: carrier?.name ?? null,
         carrierType: carrier?.type ?? null,
         driverName: driver ? `${driver.firstName} ${driver.lastName}` : null,

@@ -14,7 +14,7 @@ import type { Contact } from '../../types';
 import { fetchContactsRequest } from '../../store/reducers/contactPageSlice';
 import {
   selectContactListLoading,
-  selectAllContacts,
+  selectFormattedContacts,
 } from '../../store/selectors/contactSelectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import {
@@ -46,7 +46,7 @@ const ContactListPage = () => {
   const { openDrawer } = useDrawerActions();
 
   const isLoading = useSelector(selectContactListLoading);
-  const contacts = useSelector(selectAllContacts);
+  const contacts = useSelector(selectFormattedContacts);
 
   useEffect(() => {
     dispatch(fetchContactsRequest({ page: 1, limit: 25 }));

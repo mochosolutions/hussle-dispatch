@@ -34,8 +34,8 @@ export interface CarrierSummary {
 }
 
 interface CarrierRepo {
-  findById(id: string): Promise<Carrier | null>;
-  update(id: string, data: Record<string, unknown>): Promise<Carrier>;
+  findByIdScoped(carrierId: string, organizationId: string): Promise<Carrier>;
+  update(carrierId: string, organizationId: string, data: Record<string, unknown>): Promise<Carrier>;
 }
 
 interface ContactRepo {
@@ -78,13 +78,10 @@ const splitName = (fullName: string): { firstName: string; lastName: string } =>
 export const createPortalCompanyService = (deps: PortalCompanyServiceDeps) => ({
   saveCompany: async (
     carrierId: string,
+    organizationId: string,
     fields: SaveCompanyRequest,
   ): Promise<CarrierSummary> => {
-    const existing = await deps.carrierRepo.findById(carrierId);
-
-    if (!existing) {
-      throw new NotFoundError(`Carrier with id ${carrierId} not found`);
-    }
+    const existing = await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
 
     const {
       primaryContactName,
@@ -120,7 +117,7 @@ export const createPortalCompanyService = (deps: PortalCompanyServiceDeps) => ({
       updateData.primaryContactId = primaryContactId;
     }
 
-    const updated = await deps.carrierRepo.update(carrierId, updateData);
+    const updated = await deps.carrierRepo.update(carrierId, organizationId, updateData);
 
     return toCarrierSummary(updated);
   },

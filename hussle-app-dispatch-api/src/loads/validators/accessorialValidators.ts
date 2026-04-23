@@ -10,8 +10,14 @@ const createAccessorialBodySchema = Yup.object({
   amount: Yup.number()
     .positive('amount must be positive')
     .required('amount is required'),
-  description: Yup.string().trim().max(500, 'description must be at most 500 characters')
-    .notRequired(),
+  description: Yup.string()
+    .trim()
+    .max(500, 'description must be at most 500 characters')
+    .when('type', {
+      is: AccessorialType.OTHER,
+      then: (schema) => schema.required('description is required when type is OTHER'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   billTo: Yup.string().trim().max(100, 'billTo must be at most 100 characters').notRequired(),
   notes: Yup.string().trim().max(2000, 'notes must be at most 2000 characters').notRequired(),
 });
@@ -21,8 +27,14 @@ const updateAccessorialBodySchema = Yup.object({
     .oneOf(accessorialTypeValues, 'type must be a valid AccessorialType')
     .notRequired(),
   amount: Yup.number().positive('amount must be positive').notRequired(),
-  description: Yup.string().trim().max(500, 'description must be at most 500 characters')
-    .notRequired(),
+  description: Yup.string()
+    .trim()
+    .max(500, 'description must be at most 500 characters')
+    .when('type', {
+      is: AccessorialType.OTHER,
+      then: (schema) => schema.required('description is required when type is OTHER'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   billTo: Yup.string().trim().max(100, 'billTo must be at most 100 characters').notRequired(),
   notes: Yup.string().trim().max(2000, 'notes must be at most 2000 characters').notRequired(),
 }).test('has-any-field', 'At least one field must be provided', (value) => {

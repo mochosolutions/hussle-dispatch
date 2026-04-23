@@ -5,6 +5,7 @@ import { LoadingState } from '@mocho/ui/redux';
 import { driverSelectors } from '../reducers/driverEntitySlice';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { DAY_OF_WEEK_ORDER } from '../../types';
+import formatPhone from 'utils/formatPhone';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -41,6 +42,7 @@ export const selectFormattedDriverById = (id: string | undefined) =>
       if (!driver) return undefined;
       return {
         ...driver,
+        phone: formatPhone(driver.phone),
         createdAt: formatDate(driver.createdAt),
         updatedAt: formatDate(driver.updatedAt),
         licenseExpiry: formatNullableDate(driver.licenseExpiry),
@@ -130,6 +132,7 @@ export const selectDriverWithCarrier = (driverId: string) =>
       const carrier = driver.carrierId ? carrierEntities[driver.carrierId] : undefined;
       return {
         ...driver,
+        phone: formatPhone(driver.phone),
         carrierName: carrier?.name ?? null,
         carrierType: carrier?.type ?? null,
         companyMarginPercent: carrier?.companyMarginPercent ?? null,

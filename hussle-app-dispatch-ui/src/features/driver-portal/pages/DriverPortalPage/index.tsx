@@ -18,6 +18,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import type { DriverPortalLoad } from 'utils/api/driver-portal/driverPortalApi';
+import formatPhone from 'utils/formatPhone';
 import {
   getLoadSummary,
   advanceStatus,
@@ -392,7 +393,7 @@ const DriverPortalPage = () => {
                     {stop.contactName && (
                       <Typography variant="caption" color="text.secondary" display="block">
                         Contact: {stop.contactName}
-                        {stop.contactPhone ? ` \u2014 ${stop.contactPhone}` : ''}
+                        {stop.contactPhone ? ` \u2014 ${formatPhone(stop.contactPhone)}` : ''}
                       </Typography>
                     )}
                   </Box>

@@ -131,6 +131,7 @@ export interface SettlementRepoPort {
     dispatchFeeTotal: number;
     expensesTotal: number;
     netEarnings: number;
+    snapshotHash?: string;
     lineItems: {
       type: SettlementItemType;
       referenceId?: string;

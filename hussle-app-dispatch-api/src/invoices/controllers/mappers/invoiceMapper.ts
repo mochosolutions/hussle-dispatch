@@ -64,11 +64,13 @@ export const approveInvoiceMapper = (req: Request): ApproveInvoiceServiceInput =
 
 export const sendInvoiceMapper = (req: Request): SendInvoiceServiceInput => {
   const { organizationId, role } = getContext(req);
+  const body = req.body as { email: string; ccEmails?: string[] };
   return {
     id: req.params['id'] ?? '',
     organizationId,
     role,
-    email: (req.body as { email: string }).email,
+    email: body.email,
+    ccEmails: body.ccEmails,
   };
 };
 

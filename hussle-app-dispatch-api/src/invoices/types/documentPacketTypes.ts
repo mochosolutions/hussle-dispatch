@@ -10,6 +10,7 @@ export interface PacketDocument {
 
 export interface DocumentPacketInput {
   invoiceId: string;
+  organizationId: string;
 }
 
 export interface DocumentQueryPort {

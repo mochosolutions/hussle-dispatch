@@ -37,7 +37,7 @@ const buildVehicle = () => ({
     {
       id: 'ab66be57-c6f3-4ec4-a9c5-f6988988d83f',
       vehicleId: '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
-      category: 'FIXED',
+      category: 'INSURANCE',
       expenseKey: 'insurance',
       label: 'Insurance',
       monthlyAmount: new Decimal('300.00'),
@@ -97,6 +97,7 @@ describe('vehicleService', () => {
 
   const mockEventBus = {
     publish: jest.fn().mockResolvedValue(undefined),
+    publishDelayed: jest.fn().mockResolvedValue(undefined),
     subscribe: jest.fn(),
     close: jest.fn().mockResolvedValue(undefined),
   };
@@ -179,13 +180,13 @@ describe('vehicleService', () => {
         input: {
           expenses: [
             {
-              category: 'FIXED',
+              category: 'INSURANCE',
               expenseKey: 'insurance',
               label: 'Insurance #1',
               monthlyAmount: 100,
             },
             {
-              category: 'VARIABLE',
+              category: 'FUEL',
               expenseKey: 'insurance',
               label: 'Insurance #2',
               monthlyAmount: 120,
@@ -212,7 +213,7 @@ describe('vehicleService', () => {
         unitNumber: 'TRK-009',
         expenses: [
           {
-            category: 'FIXED',
+            category: 'INSURANCE',
             expenseKey: 'insurance',
             label: 'Insurance',
             monthlyAmount: 350,
@@ -223,6 +224,7 @@ describe('vehicleService', () => {
 
     expect(mockVehicleRepository.update).toHaveBeenCalledWith(
       '4f83f8d0-0f18-4f7a-95f1-85c293f23f70',
+      'f370736f-8d57-47f7-9d7d-a5d6f7a59dad',
       expect.objectContaining({
         unitNumber: 'TRK-009',
       }),
@@ -340,7 +342,7 @@ describe('vehicleService', () => {
         input: {
           expenses: [
             {
-              category: 'FIXED',
+              category: 'INSURANCE',
               expenseKey: 'insurance',
               label: 'Insurance',
               monthlyAmount: 350,
@@ -389,7 +391,7 @@ describe('vehicleService', () => {
       mockVehicleRepository.createExpense.mockResolvedValue({
         id: expenseId,
         vehicleId,
-        category: 'VARIABLE',
+        category: 'FUEL',
         expenseKey: 'fuel',
         label: 'Fuel',
         monthlyAmount: new Decimal('500.00'),
@@ -403,7 +405,7 @@ describe('vehicleService', () => {
         organizationId,
         role: 'admin',
         input: {
-          category: 'VARIABLE',
+          category: 'FUEL',
           expenseKey: 'fuel',
           label: 'Fuel',
           monthlyAmount: 500,

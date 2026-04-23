@@ -80,6 +80,7 @@ export const switchOrgService = async (
     membershipId: membership.membershipId,
     orgStatus: membership.orgStatus,
     role: membership.role,
+    permissionsVersion: membership.permissionsVersion,
   });
 
   return {

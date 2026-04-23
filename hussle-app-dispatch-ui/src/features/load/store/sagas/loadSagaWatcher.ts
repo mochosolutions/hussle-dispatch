@@ -8,6 +8,9 @@ import { transitionLoadStatusSaga } from './transitionLoadStatusSaga';
 import { assignLoadSaga } from './assignLoadSaga';
 import { assignAndDispatchSaga } from './assignAndDispatchSaga';
 import { createCheckCallSaga } from './createCheckCallSaga';
+import { sendSmsPromptSaga } from './sendSmsPromptSaga';
+import { fetchSmsPromptHistorySaga } from './fetchSmsPromptHistorySaga';
+import { smsPromptPollingSaga } from './smsPromptPollingSaga';
 import { createStopSaga } from './createStopSaga';
 import { updateStopSaga } from './updateStopSaga';
 import { deleteStopSaga } from './deleteStopSaga';
@@ -21,6 +24,9 @@ import {
   assignLoadRequest,
   assignAndDispatchRequest,
   createCheckCallRequest,
+  sendSmsPromptRequest,
+  fetchSmsPromptHistoryRequest,
+  startSmsPromptPolling,
   createStopRequest,
   updateStopRequest,
   deleteStopRequest,
@@ -42,6 +48,9 @@ export function* loadSagaWatcher(): Generator {
   yield takeLatest(assignLoadRequest.type, assignLoadSaga);
   yield takeLatest(assignAndDispatchRequest.type, assignAndDispatchSaga);
   yield takeLatest(createCheckCallRequest.type, createCheckCallSaga);
+  yield takeLatest(sendSmsPromptRequest.type, sendSmsPromptSaga);
+  yield takeLatest(fetchSmsPromptHistoryRequest.type, fetchSmsPromptHistorySaga);
+  yield takeLatest(startSmsPromptPolling.type, smsPromptPollingSaga);
   yield takeLatest(createStopRequest.type, createStopSaga);
   yield takeLatest(updateStopRequest.type, updateStopSaga);
   yield takeLatest(deleteStopRequest.type, deleteStopSaga);

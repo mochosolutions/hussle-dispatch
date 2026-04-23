@@ -1,6 +1,15 @@
 import type { CarrierListItem, CarrierNote, CarrierOnboardingStatus } from 'features/carrier/types';
 
-export const mockCarriers: CarrierListItem[] = [
+// Wire-level fixture shape: the real API emits `dispatchFeePercent` (the Prisma
+// column name), not `companyMarginPercent`. The carrierApi client translates on
+// read so the UI domain keeps using `companyMarginPercent`. Fixtures stay
+// aligned with the API wire so mocks exercise the translation path.
+type MockCarrierWire = Omit<Partial<CarrierListItem>, 'companyMarginPercent'> & {
+  id: string;
+  dispatchFeePercent: string;
+};
+
+export const mockCarriers: MockCarrierWire[] = [
   {
     id: 'carrier-001',
     name: 'Acme Freight LLC',
@@ -15,7 +24,7 @@ export const mockCarriers: CarrierListItem[] = [
     city: 'Dallas',
     state: 'TX',
     zip: '75201',
-    companyMarginPercent: '10.00',
+    dispatchFeePercent: '10.00',
 
     feeIncludesAccessorials: true,
     dispatchAgreementOnFile: true,
@@ -34,8 +43,8 @@ export const mockCarriers: CarrierListItem[] = [
   },
   {
     id: 'carrier-002',
-    name: "Mike's Owner Op",
-    type: 'OWNER_OPERATOR',
+    name: "Mike's Leased Carrier",
+    type: 'LEASED_CARRIER',
     status: 'DRAFT',
     mcNumber: 'MC-654321',
     dotNumber: '7654321',
@@ -46,7 +55,7 @@ export const mockCarriers: CarrierListItem[] = [
     city: 'Houston',
     state: 'TX',
     zip: '77001',
-    companyMarginPercent: '12.00',
+    dispatchFeePercent: '12.00',
 
     feeIncludesAccessorials: false,
     dispatchAgreementOnFile: true,
@@ -77,7 +86,7 @@ export const mockCarriers: CarrierListItem[] = [
     city: 'Phoenix',
     state: 'AZ',
     zip: null,
-    companyMarginPercent: '8.00',
+    dispatchFeePercent: '8.00',
 
     feeIncludesAccessorials: false,
     dispatchAgreementOnFile: false,

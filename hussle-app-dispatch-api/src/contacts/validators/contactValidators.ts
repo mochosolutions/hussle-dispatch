@@ -2,6 +2,10 @@ import * as Yup from 'yup';
 
 const optionalTrimmed = Yup.string().trim().notRequired();
 
+const ccEmailsSchema = Yup.array()
+  .of(Yup.string().trim().email('ccEmails entries must be valid email addresses').required())
+  .notRequired();
+
 const createBodySchema = Yup.object({
   customerId: Yup.string().uuid('customerId must be a valid uuid').nullable().notRequired(),
   role: optionalTrimmed,
@@ -9,6 +13,7 @@ const createBodySchema = Yup.object({
   lastName: Yup.string().trim().min(3, 'lastName must be at least 3 characters').required('lastName is required'),
   phone: optionalTrimmed,
   email: Yup.string().trim().email('email must be valid').notRequired(),
+  ccEmails: ccEmailsSchema,
   notes: optionalTrimmed,
 });
 

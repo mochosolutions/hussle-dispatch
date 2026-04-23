@@ -54,9 +54,8 @@ export interface Stop {
   state: string | null;
   zip: string | null;
   schedulingType: string;
-  appointmentStart: string | null;
+  appointmentStart: string;
   appointmentEnd: string | null;
-  targetDate: string | null;
   notificationHours: number | null;
   notifiedAt: string | null;
   appointmentNumber: string | null;
@@ -71,8 +70,6 @@ export interface Stop {
   isTarp: boolean;
   isTempControlled: boolean;
   notes: string | null;
-  facilityOpenTime: string | null;
-  facilityCloseTime: string | null;
   callByTime: string | null;
   trailerNumber: string | null;
   yardLocation: string | null;
@@ -91,9 +88,8 @@ export interface StopInput {
   state?: string;
   zip?: string;
   schedulingType?: string;
-  appointmentStart?: string;
+  appointmentStart: string;
   appointmentEnd?: string;
-  targetDate?: string;
   notificationHours?: number;
   appointmentNumber?: string;
   contactName?: string;
@@ -105,8 +101,6 @@ export interface StopInput {
   isTarp?: boolean;
   isTempControlled?: boolean;
   notes?: string;
-  facilityOpenTime?: string;
-  facilityCloseTime?: string;
   callByTime?: string;
   trailerNumber?: string;
   yardLocation?: string;
@@ -193,6 +187,7 @@ export interface DriverDetail {
   id: string;
   firstName: string;
   lastName: string;
+  phone: string | null;
 }
 
 export interface VehicleDetail {

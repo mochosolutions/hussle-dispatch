@@ -6,6 +6,7 @@ import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
 import { CustomerAutocomplete } from 'features/customer/components/CustomerAutocomplete';
 import { contactSchema } from '../../validators/contactSchema';
+import { EmailChipsField } from '../EmailChipsField';
 import type { Contact, CreateContactInput, UpdateContactInput } from '../../types';
 import { createContactRequest, updateContactRequest } from '../../store/reducers/contactPageSlice';
 
@@ -29,6 +30,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
     lastName: contact?.lastName ?? '',
     phone: contact?.phone ?? '',
     email: contact?.email ?? '',
+    ccEmails: contact?.ccEmails ?? [],
     notes: contact?.notes ?? '',
   };
 
@@ -41,6 +43,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
         role: values.role || null,
         email: values.email || null,
         phone: values.phone || null,
+        ccEmails: values.ccEmails,
         notes: values.notes || null,
       };
       dispatch(updateContactRequest({ id: contact.id, data: updateData }));
@@ -52,6 +55,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
         role: values.role || null,
         email: values.email || null,
         phone: values.phone || null,
+        ccEmails: values.ccEmails,
         notes: values.notes || null,
       };
       dispatch(createContactRequest({ data: createData }));
@@ -98,6 +102,14 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ contact, o
                 <EmailField name="email" label="Email" formik={formik} />
               </Box>
             </Box>
+
+            <EmailChipsField
+              name="ccEmails"
+              label="CC Emails"
+              formik={formik}
+              placeholder="Type an email and press Enter"
+              helperText="Notifications will also be sent to these addresses"
+            />
           </DrawerSection>
 
           <DrawerSection label="Notes">

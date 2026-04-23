@@ -13,6 +13,7 @@ export const notificationLogRepositoryPrisma = (
         channel: input.channel,
         recipientEmail: input.recipientEmail ?? null,
         recipientPhone: input.recipientPhone ?? null,
+        ccEmails: input.ccEmails ?? [],
         subject: input.subject ?? null,
         status: input.status ?? 'sent',
         errorMessage: input.errorMessage ?? null,

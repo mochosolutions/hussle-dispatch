@@ -48,7 +48,7 @@ const issueInvite = async (
     expiresAt,
   });
 
-  await deps.carrierRepo.update(input.carrierId, {
+  await deps.carrierRepo.update(input.carrierId, input.organizationId, {
     inviteSentAt: now,
   } satisfies UpdateCarrierInput);
 
@@ -88,7 +88,7 @@ export const createCarrierInviteService = (deps: CarrierInviteServiceDeps) => ({
       throw new ConflictError('Carrier onboarding is already completed or approved');
     }
 
-    await deps.carrierRepo.update(input.carrierId, {
+    await deps.carrierRepo.update(input.carrierId, input.organizationId, {
       onboardingStatus: 'NOT_STARTED',
       entryMethod: 'INVITE',
     } satisfies UpdateCarrierInput);

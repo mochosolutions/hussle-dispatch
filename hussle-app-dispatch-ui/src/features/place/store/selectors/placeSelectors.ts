@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { placeSelectors } from '../reducers/placeEntitySlice';
+import formatPhone from 'utils/formatPhone';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -27,6 +28,11 @@ export const selectPlaceUpdateLoading = (id: string) => (state: RootState) =>
 export const selectPlaceDeleteLoading = (id: string) => (state: RootState) =>
   state.pages.places.loading[`delete:${id}`] === LoadingState.Pending;
 
+export const selectFormattedPlaces = createSelector(
+  [selectAllPlaces],
+  (places) => places.map((p) => ({ ...p, contactPhone: formatPhone(p.contactPhone) })),
+);
+
 export const selectFormattedPlaceById = (id: string | undefined) =>
   createSelector(
     [(state: RootState) => (id ? placeSelectors.selectById(state, id) : undefined)],
@@ -36,6 +42,7 @@ export const selectFormattedPlaceById = (id: string | undefined) =>
       }
       return {
         ...place,
+        contactPhone: formatPhone(place.contactPhone),
         createdAt: formatDate(place.createdAt),
         updatedAt: formatDate(place.updatedAt),
       };

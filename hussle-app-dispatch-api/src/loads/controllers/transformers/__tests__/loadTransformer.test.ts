@@ -32,6 +32,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
     estimatedHours: null,
     estimatedCost: null,
     dispatcherComm: null,
+    version: 0,
     status: 'BOOKED',
     invoiceReadiness: 'NOT_READY',
     rateConReceivedAt: null,
@@ -89,6 +90,7 @@ const buildListItem = (overrides?: Partial<LoadListItem>): LoadListItem => {
     estimatedHours: null,
     estimatedCost: null,
     dispatcherComm: null,
+    version: 0,
     status: 'BOOKED',
     invoiceReadiness: 'NOT_READY',
     rateConReceivedAt: null,
@@ -381,6 +383,7 @@ describe('toLoadDetailResponse', () => {
         id: 'd-1',
         firstName: 'John',
         lastName: 'Doe',
+        phone: null,
       });
       expect(result.assignment.carrier).toBeNull();
       expect(result.assignment.vehicle).toBeNull();

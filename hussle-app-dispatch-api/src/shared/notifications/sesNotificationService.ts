@@ -32,9 +32,13 @@ export const createSesNotificationService = (
 
   return {
     sendEmail: async (params) => {
+      const ccList = params.cc?.filter((email) => email.length > 0) ?? [];
+      const hasCc = ccList.length > 0;
+
       const mailOptions: Mail.Options = {
         from: params.from,
         to: params.to,
+        ...(hasCc ? { cc: ccList } : {}),
         replyTo: params.replyTo,
         subject: params.subject,
         html: params.html,
@@ -49,11 +53,14 @@ export const createSesNotificationService = (
       const info = await mimeBuilder.sendMail(mailOptions);
       const rawMessage = await streamToBuffer(info.message as Readable);
 
+      // SES destinations must include every recipient (to + cc)
+      const destinations = [params.to, ...ccList];
+
       // Send via SES
       const command = new SendRawEmailCommand({
         RawMessage: { Data: rawMessage },
         Source: params.from,
-        Destinations: [params.to],
+        Destinations: destinations,
       });
 
       const result = await sesClient.send(command);
@@ -61,6 +68,7 @@ export const createSesNotificationService = (
       logger.info('SES email sent', {
         messageId: result.MessageId,
         to: params.to,
+        ccCount: ccList.length,
         subject: params.subject,
       });
     },

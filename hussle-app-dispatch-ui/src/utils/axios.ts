@@ -1,9 +1,10 @@
 import type { AxiosRequestConfig, AxiosError } from 'axios';
 import axios from 'axios';
-import { enqueueSnackbar } from 'notistack';
+import { closeSnackbar, enqueueSnackbar } from 'notistack';
 import config from '../config';
 import { store } from 'store';
 import { logoutSuccess } from '../features/auth/store/authSlice';
+import { resetPopups } from '../features/ui/store/reducers/uiSlice';
 import { getNavigate } from 'utils/getNavigate';
 
 interface QueuedRequest {
@@ -34,9 +35,24 @@ const processQueue = (error: unknown | null) => {
   failedQueue = [];
 };
 
+const AUTH_BYPASS_PATHS = ['/auth/login', '/auth/logout', '/auth/token/refresh'];
+
+const isAuthBypassRequest = (url: string | undefined): boolean => {
+  if (!url) {
+    return false;
+  }
+  return AUTH_BYPASS_PATHS.some((path) => url.includes(path));
+};
+
 const handleAuthFailure = () => {
   localStorage.removeItem('rememberMe');
   store.dispatch(logoutSuccess());
+
+  // Close any open drawers/modals so post-logout state is clean
+  store.dispatch(resetPopups());
+
+  // Dismiss any active notistack toasts (in-app notifications)
+  closeSnackbar();
 
   try {
     const navigate = getNavigate();
@@ -53,8 +69,6 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-const ORG_SUSPENDED_MESSAGE = 'Organization is suspended or inactive';
-
 const extractErrorMessage = (error: AxiosError): string => {
   const data = error.response?.data as { errors?: Array<{ message: string }> } | undefined;
   const firstError = data?.errors?.[0];
@@ -65,10 +79,16 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryableRequestConfig | undefined;
+    const requestUrl = originalRequest?.url;
+
+    // Skip auth-failure handling for login/logout/refresh endpoints to avoid redirect loops
+    const isAuthRequest = isAuthBypassRequest(requestUrl);
 
     if (error.response?.status === 403) {
       const message = extractErrorMessage(error);
-      if (message.includes(ORG_SUSPENDED_MESSAGE)) {
+      if (!isAuthRequest) {
+        // 403 on any non-auth request means the user has lost access (org suspended,
+        // permissions revoked, permissionsVersion mismatch). Force a clean logout.
         handleAuthFailure();
       } else {
         enqueueSnackbar(message, { variant: 'error' });
@@ -80,7 +100,7 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (loggingOut) {
+    if (loggingOut || isAuthRequest) {
       return Promise.reject(error);
     }
 

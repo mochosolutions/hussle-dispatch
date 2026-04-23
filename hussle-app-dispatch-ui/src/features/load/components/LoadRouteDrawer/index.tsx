@@ -1,8 +1,11 @@
 import { useMemo, useCallback } from 'react';
 import { Button, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { CancelButton } from '@mocho/ui/components/form-fields';
+import { SubmitButton } from '@mocho/ui/components/form-fields';
 import { Formik, FieldArray } from 'formik';
 import type { FormikProps } from 'formik';
+import { parseISO, format, isValid } from 'date-fns';
 import { EditDrawer, DrawerSection } from 'components/EditDrawer';
 import { useDispatch } from 'store';
 import { updateLoadRequest } from '../../store/reducers';
@@ -45,12 +48,9 @@ const createEmptyStop = (type: StopType, sequence: number): StopFormValue => ({
   isTempControlled: false,
   notes: '',
   schedulingType: 'APPOINTMENT',
-  facilityOpenTime: '',
-  facilityCloseTime: '',
   callByTime: '',
   trailerNumber: '',
   yardLocation: '',
-  facilityHoursData: null,
 });
 
 // ---------------------------------------------------------------------------
@@ -58,12 +58,16 @@ const createEmptyStop = (type: StopType, sequence: number): StopFormValue => ({
 // ---------------------------------------------------------------------------
 
 const splitAppointmentStart = (
-  isoStr: string | null,
+  isoStr: string,
 ): { date: string; time: string } => {
-  if (!isoStr) return { date: '', time: '' };
-  const dateOnly = isoStr.includes('T') ? isoStr.split('T')[0] : isoStr;
-  const timePart = isoStr.includes('T') ? isoStr.split('T')[1]?.split('.')[0] ?? '' : '';
-  return { date: dateOnly, time: timePart };
+  const d = parseISO(isoStr);
+  if (!isValid(d)) {
+    return { date: '', time: '' };
+  }
+  return {
+    date: format(d, 'yyyy-MM-dd'),
+    time: format(d, 'HH:mm'),
+  };
 };
 
 const mapStopToFormValue = (stop: Stop, index: number): StopFormValue => {
@@ -93,12 +97,9 @@ const mapStopToFormValue = (stop: Stop, index: number): StopFormValue => {
     isTempControlled: stop.isTempControlled ?? false,
     notes: stop.notes ?? '',
     schedulingType: stop.schedulingType ?? 'APPOINTMENT',
-    facilityOpenTime: stop.facilityOpenTime ?? '',
-    facilityCloseTime: stop.facilityCloseTime ?? '',
     callByTime: stop.callByTime ?? '',
     trailerNumber: stop.trailerNumber ?? '',
     yardLocation: stop.yardLocation ?? '',
-    facilityHoursData: null,
   };
 };
 
@@ -117,7 +118,6 @@ const combineAppointmentStart = (
 
 const mapFormValueToStopInput = (stop: StopFormValue, index: number): StopInput => {
   const type = stop.schedulingType ?? 'APPOINTMENT';
-  const includeTime = type === 'APPOINTMENT' || type === 'NOTIFICATION';
   return {
     type: stop.type,
     sequence: index,
@@ -129,9 +129,7 @@ const mapFormValueToStopInput = (stop: StopFormValue, index: number): StopInput 
     state: stop.state || undefined,
     zip: stop.zip || undefined,
     schedulingType: type,
-    appointmentStart: includeTime
-      ? combineAppointmentStart(stop.appointmentDate, stop.appointmentTime)
-      : (stop.appointmentDate || undefined),
+    appointmentStart: combineAppointmentStart(stop.appointmentDate, stop.appointmentTime) ?? stop.appointmentDate,
     appointmentNumber: type === 'APPOINTMENT' ? (stop.appointmentNumber || undefined) : undefined,
     contactName: stop.contactName || undefined,
     contactPhone: stop.contactPhone || undefined,
@@ -142,8 +140,6 @@ const mapFormValueToStopInput = (stop: StopFormValue, index: number): StopInput 
     isTarp: stop.isTarp ?? false,
     isTempControlled: stop.isTempControlled ?? false,
     notes: stop.notes || undefined,
-    facilityOpenTime: (type === 'FCFS' || type === 'OPEN') ? (stop.facilityOpenTime || undefined) : undefined,
-    facilityCloseTime: (type === 'FCFS' || type === 'OPEN') ? (stop.facilityCloseTime || undefined) : undefined,
     callByTime: type === 'NOTIFICATION' ? (stop.callByTime || undefined) : undefined,
     trailerNumber: type === 'DROP_HOOK' ? (stop.trailerNumber || undefined) : undefined,
     yardLocation: type === 'DROP_HOOK' ? (stop.yardLocation || undefined) : undefined,
@@ -223,16 +219,16 @@ const RouteDrawerContent: React.FC<RouteDrawerContentProps> = ({ formik, load, o
 
   const footer = (
     <Stack direction="row" spacing={1.5} justifyContent="flex-end">
-      <Button variant="outlined" onClick={onClose}>
-        Cancel
-      </Button>
-      <Button
-        variant="contained"
+      <CancelButton onClick={onClose} disabled={isSubmitting} size="medium" />
+      <SubmitButton
+        label="Save Changes"
+        loading={isSubmitting}
+        disabled={!dirty}
+        fullWidth={false}
+        size="medium"
+        type="button"
         onClick={() => formik.handleSubmit()}
-        disabled={!dirty || isSubmitting}
-      >
-        Save Changes
-      </Button>
+      />
     </Stack>
   );
 

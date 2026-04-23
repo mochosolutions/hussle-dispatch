@@ -24,6 +24,7 @@ export interface NotificationOverride {
   enabled: boolean;
   recipientEmail: string | null;
   recipientPhone: string | null;
+  ccEmails: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +36,7 @@ export interface NotificationLogEntry {
   channel: string;
   recipientEmail: string | null;
   recipientPhone: string | null;
+  ccEmails: string[];
   subject: string | null;
   status: string;
   errorMessage: string | null;
@@ -63,6 +65,7 @@ export interface UpsertOverrideInput {
   enabled: boolean;
   recipientEmail?: string | null;
   recipientPhone?: string | null;
+  ccEmails?: string[];
 }
 
 // ---------------------------------------------------------------------------

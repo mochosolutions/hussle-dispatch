@@ -24,13 +24,54 @@ interface GetCarriersParams {
   order?: 'asc' | 'desc';
 }
 
+// ---------------------------------------------------------------------------
+// Field naming bridge: UI <-> API
+//
+// UI domain uses `companyMarginPercent`. API/Prisma column is `dispatchFeePercent`.
+// The financial model redesign plans to rename the API column post-MVP; until
+// then we translate at the HTTP boundary so the UI stays domain-pure.
+// ---------------------------------------------------------------------------
+
+interface WireCarrier extends Omit<Carrier, 'companyMarginPercent'> {
+  dispatchFeePercent?: number | string | null;
+}
+
+interface WireCarrierListItem extends Omit<CarrierListItem, 'companyMarginPercent'> {
+  dispatchFeePercent?: number | string | null;
+}
+
+const fromWireCarrier = <T extends { dispatchFeePercent?: number | string | null }>(
+  wire: T,
+): Omit<T, 'dispatchFeePercent'> & { companyMarginPercent: number } => {
+  const { dispatchFeePercent, ...rest } = wire;
+  const parsed =
+    typeof dispatchFeePercent === 'string' ? Number(dispatchFeePercent) : dispatchFeePercent;
+  return {
+    ...rest,
+    companyMarginPercent: parsed ?? 0,
+  };
+};
+
+const toWireCarrierInput = <T extends { companyMarginPercent?: number | null }>(
+  input: T,
+): Omit<T, 'companyMarginPercent'> & { dispatchFeePercent?: number | null } => {
+  const { companyMarginPercent, ...rest } = input;
+  if (companyMarginPercent === undefined) {
+    return rest;
+  }
+  return {
+    ...rest,
+    dispatchFeePercent: companyMarginPercent,
+  };
+};
+
 interface GetCarriersResponse {
-  data: CarrierListItem[];
+  data: WireCarrierListItem[];
   meta: PaginationMeta;
 }
 
 interface GetCarrierResponse {
-  data: Carrier;
+  data: WireCarrier;
 }
 
 interface CarrierOnboardingResponse {
@@ -41,25 +82,34 @@ export const getCarriers = async (
   params: GetCarriersParams,
 ): Promise<{ data: CarrierListItem[]; meta: PaginationMeta }> => {
   const response = await axiosInstance.get<GetCarriersResponse>('/carriers', { params });
-  return response.data;
+  return {
+    data: response.data.data.map((c) => fromWireCarrier(c) as CarrierListItem),
+    meta: response.data.meta,
+  };
 };
 
 export const getCarrier = async (id: string): Promise<Carrier> => {
   const response = await axiosInstance.get<GetCarrierResponse>(`/carriers/${id}`);
-  return response.data.data;
+  return fromWireCarrier(response.data.data) as Carrier;
 };
 
 export const createCarrier = async (data: CreateCarrierInput): Promise<Carrier> => {
-  const response = await axiosInstance.post<GetCarrierResponse>('/carriers', data);
-  return response.data.data;
+  const response = await axiosInstance.post<GetCarrierResponse>(
+    '/carriers',
+    toWireCarrierInput(data),
+  );
+  return fromWireCarrier(response.data.data) as Carrier;
 };
 
 export const updateCarrier = async (
   id: string,
   data: UpdateCarrierInput,
 ): Promise<Carrier> => {
-  const response = await axiosInstance.patch<GetCarrierResponse>(`/carriers/${id}`, data);
-  return response.data.data;
+  const response = await axiosInstance.patch<GetCarrierResponse>(
+    `/carriers/${id}`,
+    toWireCarrierInput(data),
+  );
+  return fromWireCarrier(response.data.data) as Carrier;
 };
 
 export const deleteCarrier = async (id: string): Promise<void> => {
@@ -190,8 +240,12 @@ export interface CarrierWithAssets extends Carrier {
   vehicles: Vehicle[];
 }
 
+interface WireCarrierWithAssets extends Omit<CarrierWithAssets, 'companyMarginPercent'> {
+  dispatchFeePercent?: number | string | null;
+}
+
 interface GetCarrierWithAssetsResponse {
-  data: CarrierWithAssets;
+  data: WireCarrierWithAssets;
 }
 
 export const createCarrierWithAssets = async (
@@ -199,9 +253,9 @@ export const createCarrierWithAssets = async (
 ): Promise<CarrierWithAssets> => {
   const response = await axiosInstance.post<GetCarrierWithAssetsResponse>(
     '/carriers/with-assets',
-    data,
+    toWireCarrierInput(data),
   );
-  return response.data.data;
+  return fromWireCarrier(response.data.data) as CarrierWithAssets;
 };
 
 // ---------------------------------------------------------------------------

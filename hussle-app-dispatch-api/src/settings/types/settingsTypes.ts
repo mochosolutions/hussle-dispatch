@@ -20,6 +20,10 @@ export interface OrgSettingsResponse {
   loadIntelEmailAddress: string | null;
   sesFromEmail: string | null;
   companyLogoUrl: string | null;
+  smsPrePickupLeadMinutes: number;
+  smsTransitIntervalMinutes: number;
+  smsPostPickupEscalationMinutes: number;
+  smsCooldownMinutes: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,6 +45,10 @@ export interface UpdateSettingsInput {
   loadIntelEmailAddress?: string;
   sesFromEmail?: string;
   companyLogoUrl?: string;
+  smsPrePickupLeadMinutes?: number;
+  smsTransitIntervalMinutes?: number;
+  smsPostPickupEscalationMinutes?: number;
+  smsCooldownMinutes?: number;
 }
 
 // ---------------------------------------------------------------------------

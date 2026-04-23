@@ -65,8 +65,8 @@ export const STATUS_OPTIONS: { value: CarrierStatus; label: string; color: strin
 
 export const CARRIER_TYPE_OPTIONS = [
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
-  { value: 'OWNER_OPERATOR', label: 'Owner Operator' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
+  { value: 'LEASED_CARRIER', label: 'Leased Carrier' },
 ];
 
 export const CARRIER_DETAIL_TAB_ITEMS: readonly { value: string; label: string }[] = [

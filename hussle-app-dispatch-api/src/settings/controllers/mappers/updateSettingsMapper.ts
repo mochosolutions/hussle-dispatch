@@ -43,6 +43,18 @@ export const updateSettingsMapper = (req: Request): UpdateSettingsInput => {
   if (req.body.companyLogoUrl !== undefined) {
     input.companyLogoUrl = req.body.companyLogoUrl;
   }
+  if (req.body.smsPrePickupLeadMinutes !== undefined) {
+    input.smsPrePickupLeadMinutes = req.body.smsPrePickupLeadMinutes;
+  }
+  if (req.body.smsTransitIntervalMinutes !== undefined) {
+    input.smsTransitIntervalMinutes = req.body.smsTransitIntervalMinutes;
+  }
+  if (req.body.smsPostPickupEscalationMinutes !== undefined) {
+    input.smsPostPickupEscalationMinutes = req.body.smsPostPickupEscalationMinutes;
+  }
+  if (req.body.smsCooldownMinutes !== undefined) {
+    input.smsCooldownMinutes = req.body.smsCooldownMinutes;
+  }
 
   return input;
 };

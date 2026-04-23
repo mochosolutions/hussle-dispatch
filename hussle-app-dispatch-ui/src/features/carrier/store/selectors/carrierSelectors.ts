@@ -5,6 +5,7 @@ import { LoadingState } from '@mocho/ui/redux';
 import { carrierSelectors } from '../reducers/carrierEntitySlice';
 import { driverSelectors } from '../../../driver/store/reducers/driverEntitySlice';
 import { vehicleSelectors } from '../../../vehicle/store/reducers/vehicleEntitySlice';
+import formatPhone from 'utils/formatPhone';
 
 const DATE_FORMAT = 'MM/dd/yyyy';
 
@@ -48,6 +49,7 @@ export const selectFormattedCarrierById = (id: string | undefined) =>
       if (!carrier) return undefined;
       return {
         ...carrier,
+        phone: formatPhone(carrier.phone),
         createdAt: formatDate(carrier.createdAt),
         updatedAt: formatDate(carrier.updatedAt),
         insuranceExpiry: formatNullableDate(carrier.insuranceExpiry),
@@ -64,7 +66,10 @@ export const selectCarrierNotesLoading = (carrierId: string) => (state: RootStat
 export const selectDriversByCarrierId = (carrierId: string) =>
   createSelector(
     [(state: RootState) => driverSelectors.selectAll(state)],
-    (drivers) => drivers.filter((d) => d.carrierId === carrierId),
+    (drivers) =>
+      drivers
+        .filter((d) => d.carrierId === carrierId)
+        .map((d) => ({ ...d, phone: formatPhone(d.phone) })),
   );
 
 export const selectVehiclesByCarrierId = (carrierId: string) =>
@@ -95,17 +100,18 @@ export type CarrierTab = 'all' | 'active' | 'inactive' | 'onboarding';
 
 export const selectFilteredCarriers = (activeTab: CarrierTab) =>
   createSelector([selectAllCarriers], (carriers) => {
+    const formatted = carriers.map((c) => ({ ...c, phone: formatPhone(c.phone) }));
     if (activeTab === 'all') {
-      return [...carriers];
+      return [...formatted];
     }
     if (activeTab === 'active') {
-      return carriers.filter((carrier) => carrier.status === 'ACTIVE');
+      return formatted.filter((carrier) => carrier.status === 'ACTIVE');
     }
     if (activeTab === 'inactive') {
-      return carriers.filter((carrier) => carrier.status !== 'ACTIVE');
+      return formatted.filter((carrier) => carrier.status !== 'ACTIVE');
     }
     // onboarding
-    return carriers.filter((carrier) => !carrier.onboardingComplete);
+    return formatted.filter((carrier) => !carrier.onboardingComplete);
   });
 
 export const selectCarrierTabCounts = createSelector(

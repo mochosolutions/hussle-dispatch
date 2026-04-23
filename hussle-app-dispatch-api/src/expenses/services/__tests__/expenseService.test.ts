@@ -51,6 +51,7 @@ describe('createExpenseService', () => {
 
   const mockEventBus = {
     publish: jest.fn().mockReturnValue(Promise.resolve()),
+    publishDelayed: jest.fn().mockReturnValue(Promise.resolve()),
     subscribe: jest.fn(),
     close: jest.fn(),
   };
@@ -339,7 +340,7 @@ describe('createExpenseService', () => {
       await service.softDeleteExpense({ id: 'exp-1', organizationId: 'org-1' });
 
       // Assert
-      expect(mockExpenseRepo.softDelete).toHaveBeenCalledWith('exp-1');
+      expect(mockExpenseRepo.softDelete).toHaveBeenCalledWith('exp-1', 'org-1');
       expect(mockEventBus.publish).toHaveBeenCalledWith('expense.deleted', {
         expenseId: 'exp-1',
         vehicleId: 'veh-1',

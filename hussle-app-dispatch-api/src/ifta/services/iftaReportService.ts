@@ -1,4 +1,6 @@
+import Decimal from 'decimal.js';
 import type { Logger } from '@/shared/utils/logger';
+import { ROUNDING } from '@/shared/financials';
 import type {
   IftaReportQueryPort,
   IftaReportInput,
@@ -38,7 +40,8 @@ const deriveQuarterDates = (
   return { startDate, endDate, periodStart, periodEnd };
 };
 
-const roundTwo = (value: number): number => Math.round(value * 100) / 100;
+const roundTwo = (value: number): number =>
+  new Decimal(value).toDecimalPlaces(2, ROUNDING).toNumber();
 
 const buildVehicleMap = (
   milesRows: MilesByStateRow[],

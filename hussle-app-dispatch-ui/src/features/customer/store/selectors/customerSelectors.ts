@@ -4,6 +4,7 @@ import { LoadingState } from '@mocho/ui/redux';
 import { customerSelectors } from '../reducers/customerEntitySlice';
 import type { CustomerPageState } from '../reducers/customerPageSlice';
 import type { CustomerFilters } from '../../types';
+import formatPhone from 'utils/formatPhone';
 
 export const selectAllCustomers = (state: RootState) => customerSelectors.selectAll(state);
 
@@ -56,5 +57,14 @@ export const selectFilteredCustomers = createSelector(
   },
 );
 
-export const selectFormattedCustomerById = (id: string | undefined) => (state: RootState) =>
-  id ? customerSelectors.selectById(state, id) : undefined;
+export const selectFormattedCustomerById = (id: string | undefined) =>
+  createSelector(
+    [(state: RootState) => (id ? customerSelectors.selectById(state, id) : undefined)],
+    (customer) => {
+      if (!customer) return undefined;
+      return {
+        ...customer,
+        phone: formatPhone(customer.phone),
+      };
+    },
+  );

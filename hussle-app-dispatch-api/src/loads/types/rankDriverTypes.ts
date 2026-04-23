@@ -18,9 +18,8 @@ export interface PickupDetails {
   placeId: string | null;
   lat: number | null;
   lng: number | null;
-  appointmentStart: Date | null;
+  appointmentStart: Date;
   appointmentEnd: Date | null;
-  targetDate: Date | null;
   schedulingType: SchedulingType;
 }
 

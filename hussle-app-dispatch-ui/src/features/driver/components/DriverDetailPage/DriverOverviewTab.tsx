@@ -5,6 +5,7 @@ import { FieldRow } from 'components/FieldRow';
 import SectionCard from 'components/SectionCard';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import type { Driver } from 'features/carrier/types';
+import { PAY_TYPE_LABELS } from '../../constants';
 
 interface DriverWithCarrierInfo extends Driver {
   carrierName: string | null;
@@ -18,6 +19,18 @@ interface DriverOverviewTabProps {
   onEditPreferences: () => void;
   onEditLocation: () => void;
 }
+
+const formatPayRate = (
+  payType: Driver['payType'],
+  payRate: Driver['payRate'],
+): string => {
+  if (!payType || payRate === null) return '—';
+  const rate = parseFloat(payRate);
+  if (payType === 'PERCENTAGE') return `${rate}%`;
+  if (payType === 'PER_MILE') return `$${rate}/mi`;
+  if (payType === 'PER_HOUR') return `$${rate}/hr`;
+  return `$${rate}`;
+};
 
 const formatLocation = (city: string | null, state: string | null): string => {
   if (city && state) return `${city}, ${state}`;
@@ -57,6 +70,11 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
           <FieldRow label="Carrier" value={d.carrierName} />
           <FieldRow label="Vehicle" value={'\u2014'} />
           <FieldRow label="Home Base" value={formatLocation(d.homeBaseCity, d.homeBaseState)} />
+          <FieldRow
+            label="Pay Type"
+            value={d.payType ? (PAY_TYPE_LABELS[d.payType] ?? d.payType) : '\u2014'}
+          />
+          <FieldRow label="Pay Rate" value={formatPayRate(d.payType, d.payRate)} />
           <FieldRow
             label="Company Margin"
             value={d.companyMarginPercent !== null ? `${d.companyMarginPercent}%` : '\u2014'}

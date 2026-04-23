@@ -111,7 +111,7 @@ export const signupInvitedUserUseCase = async (
         {
           userId: user.id,
           organizationId,
-          role: ROLES.ADMIN,
+          role,
           status: MembershipStatus.ACTIVE,
         },
         tx

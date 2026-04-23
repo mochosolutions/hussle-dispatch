@@ -20,13 +20,14 @@ export interface EventMap {
     customerId: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
+    contactCcEmails: string[];
   };
-  'load.delivered': { loadId: string; status: string };
-  'load.canceled': { loadId: string; status: string };
-  'load.tonu': { loadId: string; status: string };
-  'accessorial.created': { loadId: string; accessorialId: string };
-  'accessorial.updated': { loadId: string; accessorialId: string };
-  'accessorial.deleted': { loadId: string; accessorialId: string };
+  'load.delivered': { loadId: string; organizationId: string; status: string };
+  'load.canceled': { loadId: string; organizationId: string; status: string };
+  'load.tonu': { loadId: string; organizationId: string; status: string };
+  'accessorial.created': { loadId: string; organizationId: string; accessorialId: string };
+  'accessorial.updated': { loadId: string; organizationId: string; accessorialId: string };
+  'accessorial.deleted': { loadId: string; organizationId: string; accessorialId: string };
   'load.checkcall.logged': {
     loadId: string;
     organizationId: string;
@@ -35,6 +36,7 @@ export interface EventMap {
     customerId: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
+    contactCcEmails: string[];
     location: string | null;
     status: string | null;
     eta: string | null;
@@ -169,5 +171,16 @@ export interface EventMap {
     billableHours: number;
     rate: number;
     amount: number;
+  };
+  'sms.prompt.due': {
+    smsPromptScheduleId: string;
+    loadId: string;
+    organizationId: string;
+    anchor: 'DISPATCHED' | 'PRE_PICKUP' | 'POST_PICKUP' | 'TRANSIT_INTERVAL' | 'MANUAL';
+  };
+  'sms.prompt.canceled': {
+    smsPromptScheduleId: string;
+    loadId: string;
+    reason: string;
   };
 }

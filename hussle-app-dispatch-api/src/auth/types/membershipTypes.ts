@@ -8,6 +8,7 @@ export interface Membership {
   orgSubscriptionTier: string;
   orgStatus: string;
   role: string;
+  permissionsVersion: number;
   status: string;
   createdAt: string;
   updatedAt: string;

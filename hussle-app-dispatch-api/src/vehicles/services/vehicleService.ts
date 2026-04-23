@@ -236,7 +236,7 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
     const updateData = toUpdateVehicleData(input);
 
     if (input.expenses === undefined) {
-      return deps.vehicleRepository.update(id, updateData);
+      return deps.vehicleRepository.update(id, organizationId, updateData);
     }
 
     const expensesToReplace = input.expenses;
@@ -245,7 +245,7 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
 
     const updatedVehicle = await deps.transactionManager.runInTransaction(async (tx) => {
       const txVehicleRepository = deps.vehicleRepositoryFactory(tx);
-      await txVehicleRepository.update(id, updateData);
+      await txVehicleRepository.update(id, organizationId, updateData);
       await txVehicleRepository.replaceExpenses(id, expensesToReplace);
 
       const result = await txVehicleRepository.findById(id, organizationId);
@@ -278,7 +278,7 @@ export const createVehicleService = (deps: VehicleServiceDeps): VehicleService =
       );
     }
 
-    await deps.vehicleRepository.softDelete(id, new Date());
+    await deps.vehicleRepository.softDelete(id, organizationId, new Date());
   },
 
   assignDriver: async ({ id, organizationId, role, driverId }: AssignDriverServiceInput) => {

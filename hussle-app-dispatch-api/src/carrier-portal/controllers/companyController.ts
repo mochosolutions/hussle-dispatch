@@ -38,24 +38,27 @@ interface SaveCompanyFields {
 // The service creates/updates a Contact record and sets primaryContactId on the carrier.
 
 interface CompanyService {
-  saveCompany(carrierId: string, fields: SaveCompanyFields): Promise<CarrierSummary>;
+  saveCompany(carrierId: string, organizationId: string, fields: SaveCompanyFields): Promise<CarrierSummary>;
 }
 
 interface CompanyControllerDeps {
   companyService: CompanyService;
 }
 
-const getCarrierId = (req: Request): string => {
+const getPortalContext = (req: Request): { carrierId: string; organizationId: string } => {
   if (!req.carrierPortal) {
     throw new UnauthorizedError('Carrier portal context is required');
   }
-  return req.carrierPortal.carrierId;
+  return {
+    carrierId: req.carrierPortal.carrierId,
+    organizationId: req.carrierPortal.organizationId,
+  };
 };
 
 export const createCompanyControllers = (deps: CompanyControllerDeps) => ({
   saveCompany: async (req: Request, res: Response) => {
-    const carrierId = getCarrierId(req);
-    const result = await deps.companyService.saveCompany(carrierId, req.body);
+    const { carrierId, organizationId } = getPortalContext(req);
+    const result = await deps.companyService.saveCompany(carrierId, organizationId, req.body);
     sendSingle(res, result);
   },
 });

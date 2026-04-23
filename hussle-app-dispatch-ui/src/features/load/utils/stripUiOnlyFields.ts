@@ -13,7 +13,9 @@ const APPLIES_TO_BILL_TO: Record<string, string> = {
 export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
   const stops = (values.stops ?? []).map((stop, idx) => {
     const schedType = stop.schedulingType ?? 'APPOINTMENT';
-    const includeTime = schedType === 'APPOINTMENT' || schedType === 'NOTIFICATION';
+    const appointmentStart = stop.appointmentDate && stop.appointmentTime
+      ? `${stop.appointmentDate}T${stop.appointmentTime}`
+      : (stop.appointmentDate || '');
     return {
       type: stop.type as StopType,
       sequence: idx,
@@ -25,11 +27,7 @@ export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
       state: stop.state || undefined,
       zip: stop.zip || undefined,
       schedulingType: schedType,
-      appointmentStart: includeTime
-        ? (stop.appointmentDate && stop.appointmentTime
-            ? `${stop.appointmentDate}T${stop.appointmentTime}`
-            : stop.appointmentDate || undefined)
-        : (stop.appointmentDate || undefined),
+      appointmentStart,
       appointmentNumber: schedType === 'APPOINTMENT' ? (stop.appointmentNumber || undefined) : undefined,
       contactName: stop.contactName || undefined,
       contactPhone: stop.contactPhone || undefined,
@@ -40,8 +38,6 @@ export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
       isTarp: stop.isTarp ?? false,
       isTempControlled: stop.isTempControlled ?? false,
       notes: stop.notes || undefined,
-      facilityOpenTime: (schedType === 'FCFS' || schedType === 'OPEN') ? (stop.facilityOpenTime || undefined) : undefined,
-      facilityCloseTime: (schedType === 'FCFS' || schedType === 'OPEN') ? (stop.facilityCloseTime || undefined) : undefined,
       callByTime: schedType === 'NOTIFICATION' ? (stop.callByTime || undefined) : undefined,
       trailerNumber: schedType === 'DROP_HOOK' ? (stop.trailerNumber || undefined) : undefined,
       yardLocation: schedType === 'DROP_HOOK' ? (stop.yardLocation || undefined) : undefined,

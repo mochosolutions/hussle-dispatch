@@ -115,22 +115,23 @@ export interface InvoiceListFilters {
 
 export interface InvoiceRepoPort {
   create(data: CreateInvoiceInput): Promise<InvoiceWithRelations>;
-  findById(id: string): Promise<InvoiceWithRelations | null>;
-  findByLoadId(loadId: string): Promise<InvoiceWithRelations | null>;
+  findById(id: string, organizationId: string): Promise<InvoiceWithRelations | null>;
+  findByLoadId(loadId: string, organizationId: string): Promise<InvoiceWithRelations | null>;
   findAll(
     organizationId: string,
     filters: InvoiceListFilters,
   ): Promise<InvoiceListItem[]>;
-  update(id: string, data: UpdateInvoiceInput): Promise<InvoiceWithRelations>;
+  update(id: string, organizationId: string, data: UpdateInvoiceInput): Promise<InvoiceWithRelations>;
   updateStatus(
     id: string,
+    organizationId: string,
     status: InvoiceStatus,
     extra?: Record<string, unknown>,
   ): Promise<InvoiceWithRelations>;
-  findManyByLoadId(loadId: string): Promise<InvoiceWithRelations[]>;
-  delete(id: string): Promise<void>;
+  findManyByLoadId(loadId: string, organizationId: string): Promise<InvoiceWithRelations[]>;
+  delete(id: string, organizationId: string): Promise<void>;
   countByStatus(organizationId: string, status: string): Promise<number>;
-  findNonVoidByLoadId(loadId: string): Promise<InvoiceWithRelations | null>;
+  findNonVoidByLoadId(loadId: string, organizationId: string): Promise<InvoiceWithRelations | null>;
 }
 
 // ---------------------------------------------------------------------------

@@ -3,7 +3,14 @@ import type { CarrierListItem, CarrierNote } from 'features/carrier/types';
 import { BASE, defaultMeta } from '../mockUtils';
 import { mockCarriers, mockOnboardingStatuses, mockCarrierNotes } from '../fixtures/carriers';
 
-let db: CarrierListItem[] = [...mockCarriers];
+// Wire-level record shape (uses `dispatchFeePercent`, matching the real API).
+// The carrierApi client maps to/from the UI domain `companyMarginPercent` at the boundary.
+type MockCarrierWire = Omit<Partial<CarrierListItem>, 'companyMarginPercent'> & {
+  id: string;
+  dispatchFeePercent: string;
+};
+
+let db: MockCarrierWire[] = [...mockCarriers];
 const notesDb: Record<string, CarrierNote[]> = { ...mockCarrierNotes };
 
 export const carrierHandlers = [
@@ -16,8 +23,8 @@ export const carrierHandlers = [
   }),
 
   http.post(`${BASE}/carriers`, async ({ request }) => {
-    const body = (await request.json()) as Partial<CarrierListItem>;
-    const created: CarrierListItem = {
+    const body = (await request.json()) as Partial<MockCarrierWire>;
+    const created = {
       id: `carrier-${Date.now()}`,
       name: '',
       type: 'COMPANY_ASSET',
@@ -30,7 +37,7 @@ export const carrierHandlers = [
       city: null,
       state: null,
       zip: null,
-      companyMarginPercent: '10.00',
+      dispatchFeePercent: '10.00',
       feeIncludesAccessorials: false,
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: false,
@@ -46,13 +53,13 @@ export const carrierHandlers = [
       vehicleCount: 0,
       onboardingComplete: false,
       ...body,
-    };
+    } as MockCarrierWire;
     db.push(created);
     return HttpResponse.json({ data: created }, { status: 201 });
   }),
 
   http.patch(`${BASE}/carriers/:id`, async ({ params, request }) => {
-    const body = (await request.json()) as Partial<CarrierListItem>;
+    const body = (await request.json()) as Partial<MockCarrierWire>;
     const index = db.findIndex((c) => c.id === params.id);
     if (index === -1) return new HttpResponse(null, { status: 404 });
     db[index] = { ...db[index], ...body, updatedAt: new Date().toISOString() };

@@ -28,6 +28,10 @@ const DEFAULT_SETTINGS: Omit<OrgSettingsResponse, 'id' | 'organizationId'> = {
   loadIntelEmailAddress: null,
   sesFromEmail: null,
   companyLogoUrl: null,
+  smsPrePickupLeadMinutes: 60,
+  smsTransitIntervalMinutes: 180,
+  smsPostPickupEscalationMinutes: 30,
+  smsCooldownMinutes: 15,
 };
 
 const toResponse = (settings: OrgSettings): OrgSettingsResponse => ({
@@ -46,6 +50,10 @@ const toResponse = (settings: OrgSettings): OrgSettingsResponse => ({
   loadIntelEmailAddress: settings.loadIntelEmailAddress,
   sesFromEmail: settings.sesFromEmail,
   companyLogoUrl: settings.companyLogoUrl,
+  smsPrePickupLeadMinutes: settings.smsPrePickupLeadMinutes,
+  smsTransitIntervalMinutes: settings.smsTransitIntervalMinutes,
+  smsPostPickupEscalationMinutes: settings.smsPostPickupEscalationMinutes,
+  smsCooldownMinutes: settings.smsCooldownMinutes,
 });
 
 export const createSettingsService = (deps: SettingsServiceDeps): SettingsService => ({

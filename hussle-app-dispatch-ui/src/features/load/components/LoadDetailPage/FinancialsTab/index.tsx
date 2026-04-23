@@ -9,7 +9,6 @@ import {
   Divider,
   Grid,
   IconButton,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -22,50 +21,36 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { Formik, Form } from 'formik';
-import * as Yup from 'yup';
-import { TextField, SelectField } from '@mocho/ui/components';
 import SectionCard from 'components/SectionCard';
 import { DetailRow, SectionLabel } from 'components/Typography';
 import { useDispatch } from 'store';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { StatusTimeline } from '../StatusTimeline';
 import { formatCurrency } from '../../../constants';
-import {
-  createAccessorialRequest,
-  updateAccessorialRequest,
-  deleteAccessorialRequest,
-} from '../../../store/reducers';
+import { deleteAccessorialRequest } from '../../../store/reducers';
 import type { AccessorialCharge, LoadDetail } from '../../../types';
 
 // ---------------------------------------------------------------------------
-// Accessorial form schema
+// Display labels
 // ---------------------------------------------------------------------------
 
-const ACCESSORIAL_TYPE_OPTIONS = [
-  { value: 'DETENTION', label: 'Detention' },
-  { value: 'LAYOVER', label: 'Layover' },
-  { value: 'LUMPER', label: 'Lumper' },
-  { value: 'TARP', label: 'Tarp' },
-  { value: 'TONU', label: 'TONU' },
-  { value: 'DRIVER_ASSIST', label: 'Driver Assist' },
-  { value: 'FUEL_SURCHARGE', label: 'Fuel Surcharge' },
-  { value: 'TOLL', label: 'Toll' },
-  { value: 'OTHER', label: 'Other' },
-];
+const ACCESSORIAL_TYPE_LABELS: Record<string, string> = {
+  DETENTION: 'Detention',
+  LAYOVER: 'Layover',
+  LUMPER: 'Lumper',
+  TARP: 'Tarp',
+  TONU: 'TONU',
+  DRIVER_ASSIST: 'Driver Assist',
+  FUEL_SURCHARGE: 'Fuel Surcharge',
+  TOLL: 'Toll',
+  OTHER: 'Custom',
+};
 
-const BILL_TO_OPTIONS = [
-  { value: 'CARRIER', label: 'Carrier' },
-  { value: 'CUSTOMER', label: 'Customer' },
-  { value: 'BOTH', label: 'Both' },
-];
-
-const ACCESSORIAL_TYPE_LABELS: Record<string, string> = Object.fromEntries(
-  ACCESSORIAL_TYPE_OPTIONS.map(({ value, label }) => [value, label]),
-);
-
-const BILL_TO_LABELS: Record<string, string> = Object.fromEntries(
-  BILL_TO_OPTIONS.map(({ value, label }) => [value, label]),
-);
+const BILL_TO_LABELS: Record<string, string> = {
+  CARRIER: 'Carrier',
+  CUSTOMER: 'Customer',
+  BOTH: 'Both',
+};
 
 const APPROVAL_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pending',
@@ -79,92 +64,6 @@ const APPROVAL_STATUS_COLORS: Record<string, 'warning' | 'success' | 'error'> = 
   DISPUTED: 'error',
 };
 
-const accessorialSchema = Yup.object({
-  type: Yup.string().required('Type is required'),
-  description: Yup.string().default(''),
-  amount: Yup.number().min(0, 'Amount must be positive').required('Amount is required'),
-  billTo: Yup.string().oneOf(['CARRIER', 'CUSTOMER', 'BOTH']).required('Bill to is required'),
-}).required();
-
-type AccessorialFormValues = Yup.InferType<typeof accessorialSchema>;
-
-// ---------------------------------------------------------------------------
-// Accessorial Dialog
-// ---------------------------------------------------------------------------
-
-interface AccessorialDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (values: AccessorialFormValues) => void;
-  initialValues?: AccessorialFormValues;
-  title: string;
-}
-
-const AccessorialDialog: React.FC<AccessorialDialogProps> = ({
-  open,
-  onClose,
-  onSubmit,
-  initialValues,
-  title,
-}) => {
-  const defaults: AccessorialFormValues = initialValues ?? {
-    type: '',
-    description: '',
-    amount: 0,
-    billTo: 'BOTH',
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
-      <Formik
-        initialValues={defaults}
-        validationSchema={accessorialSchema}
-        onSubmit={(values) => {
-          onSubmit(values);
-          onClose();
-        }}
-        enableReinitialize
-      >
-        {(formik) => (
-          <Form>
-            <DialogContent>
-              <Stack spacing={2} sx={{ mt: 0.5 }}>
-                <SelectField
-                  name="type"
-                  label="Type"
-                  data={ACCESSORIAL_TYPE_OPTIONS}
-                  formik={formik}
-                  required
-                />
-                <TextField name="description" label="Description" formik={formik} />
-                <TextField name="amount" label="Amount ($)" formik={formik} required />
-                <SelectField
-                  name="billTo"
-                  label="Bill To"
-                  data={BILL_TO_OPTIONS}
-                  formik={formik}
-                  required
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-              <Button onClick={onClose}>Cancel</Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!formik.isValid || formik.isSubmitting}
-              >
-                {initialValues ? 'Update' : 'Add'}
-              </Button>
-            </DialogActions>
-          </Form>
-        )}
-      </Formik>
-    </Dialog>
-  );
-};
-
 // ---------------------------------------------------------------------------
 // FinancialsTab
 // ---------------------------------------------------------------------------
@@ -175,9 +74,8 @@ interface FinancialsTabProps {
 
 export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
   const dispatch = useDispatch();
+  const { openDrawer } = useDrawerActions();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingCharge, setEditingCharge] = useState<AccessorialCharge | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const accessorialTotal = load.activity.accessorialCharges.reduce(
@@ -190,40 +88,21 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
     : '';
 
   const handleAddClick = useCallback(() => {
-    setEditingCharge(null);
-    setDialogOpen(true);
-  }, []);
+    openDrawer('loadAccessorial', { loadId: load.id });
+  }, [openDrawer, load.id]);
 
-  const handleEditClick = useCallback((charge: AccessorialCharge) => {
-    setEditingCharge(charge);
-    setDialogOpen(true);
-  }, []);
-
-  const handleDialogClose = useCallback(() => {
-    setDialogOpen(false);
-    setEditingCharge(null);
-  }, []);
-
-  const handleDialogSubmit = useCallback(
-    (values: AccessorialFormValues) => {
-      if (editingCharge) {
-        dispatch(
-          updateAccessorialRequest({
-            loadId: load.id,
-            accessorialId: editingCharge.id,
-            data: values,
-          }),
-        );
-      } else {
-        dispatch(createAccessorialRequest({ loadId: load.id, data: values }));
-      }
+  const handleEditClick = useCallback(
+    (charge: AccessorialCharge) => {
+      openDrawer('loadAccessorial', { loadId: load.id, accessorialId: charge.id });
     },
-    [dispatch, load.id, editingCharge],
+    [openDrawer, load.id],
   );
 
   const handleDeleteConfirm = useCallback(() => {
     if (deleteConfirmId) {
-      dispatch(deleteAccessorialRequest({ loadId: load.id, accessorialId: deleteConfirmId }));
+      dispatch(
+        deleteAccessorialRequest({ loadId: load.id, accessorialId: deleteConfirmId }),
+      );
       setDeleteConfirmId(null);
     }
   }, [dispatch, load.id, deleteConfirmId]);
@@ -257,7 +136,7 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
             value={
               load.financials.ratePerMile
                 ? `$${parseFloat(load.financials.ratePerMile).toFixed(2)}`
-                : '\u2014'
+                : '—'
             }
             noBorder
             sx={{ '& .MuiTypography-root:last-child': { fontSize: '1rem' } }}
@@ -273,7 +152,7 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
               startIcon={<AddIcon />}
               onClick={handleAddClick}
             >
-              Add
+              Add Accessorial
             </Button>
           }
         >
@@ -303,7 +182,7 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
                           />
                         )}
                       </TableCell>
-                      <TableCell>{charge.description ?? '\u2014'}</TableCell>
+                      <TableCell>{charge.description ?? '—'}</TableCell>
                       <TableCell align="right">{formatCurrency(charge.amount)}</TableCell>
                       <TableCell>{BILL_TO_LABELS[charge.billTo] ?? charge.billTo}</TableCell>
                       <TableCell>
@@ -321,7 +200,12 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Edit">
-                          <IconButton size="small" onClick={() => handleEditClick(charge)}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditClick(charge)}
+                            disabled={charge.isAutoGenerated}
+                            aria-label={`Edit ${charge.type} charge`}
+                          >
                             <EditIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
@@ -330,6 +214,8 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
                             size="small"
                             color="error"
                             onClick={() => setDeleteConfirmId(charge.id)}
+                            disabled={charge.isAutoGenerated}
+                            aria-label={`Remove ${charge.type} charge`}
                           >
                             <DeleteOutlineIcon sx={{ fontSize: 16 }} />
                           </IconButton>
@@ -363,24 +249,6 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
           <StatusTimeline history={load.activity.statusHistory ?? []} />
         </SectionCard>
       </Grid>
-
-      {/* Accessorial add/edit dialog */}
-      <AccessorialDialog
-        open={dialogOpen}
-        onClose={handleDialogClose}
-        onSubmit={handleDialogSubmit}
-        title={editingCharge ? 'Edit Accessorial Charge' : 'Add Accessorial Charge'}
-        initialValues={
-          editingCharge
-            ? {
-                type: editingCharge.type,
-                description: editingCharge.description ?? '',
-                amount: parseFloat(editingCharge.amount),
-                billTo: editingCharge.billTo,
-              }
-            : undefined
-        }
-      />
 
       {/* Delete confirmation */}
       <Dialog

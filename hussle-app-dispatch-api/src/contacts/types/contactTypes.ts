@@ -8,6 +8,7 @@ export interface CreateContactInput {
   lastName: string;
   phone?: string;
   email?: string;
+  ccEmails?: string[];
   notes?: string;
 }
 
@@ -18,6 +19,7 @@ export interface UpdateContactInput {
   lastName?: string;
   phone?: string;
   email?: string;
+  ccEmails?: string[];
   notes?: string;
 }
 

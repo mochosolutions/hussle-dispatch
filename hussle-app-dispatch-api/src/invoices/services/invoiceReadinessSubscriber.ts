@@ -35,7 +35,7 @@ const evaluateReadiness = async (
   }
 
   // Check for existing non-void invoice
-  const existingInvoice = await deps.invoiceRepo.findNonVoidByLoadId(loadId);
+  const existingInvoice = await deps.invoiceRepo.findNonVoidByLoadId(loadId, load.organizationId);
   if (existingInvoice !== null) {
     await deps.loadQuery.updateLoadStatus(loadId, 'INVOICE_PENDING');
     return;
@@ -161,7 +161,7 @@ export const initializeReadinessSubscriber = async (
       };
 
       try {
-        await generateTonuInvoice(data.loadId, tonuDeps);
+        await generateTonuInvoice(data.loadId, data.organizationId, tonuDeps);
       } catch (error: unknown) {
         deps.logger.error('Failed to generate TONU invoice from event', {
           loadId: data.loadId,

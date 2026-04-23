@@ -28,6 +28,7 @@ import type {
   PortalDocument,
   StatePreferenceEntry,
 } from '../../onboardingTypes';
+import formatPhone from 'utils/formatPhone';
 
 interface OnboardingTabProps {
   carrierId: string;
@@ -76,10 +77,10 @@ const CompanySection: React.FC<{ carrier: Record<string, unknown> }> = ({ carrie
           <FieldRow label="EIN" value={String(carrier.ein ?? '')} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <FieldRow label="Phone" value={String(carrier.phone ?? '')} />
+          <FieldRow label="Phone" value={formatPhone(String(carrier.phone ?? ''))} />
           <FieldRow label="Email" value={String(carrier.email ?? '')} isLink />
           <FieldRow label="Contact" value={String(carrier.primaryContactName ?? '')} />
-          <FieldRow label="Contact Phone" value={String(carrier.primaryContactPhone ?? '')} />
+          <FieldRow label="Contact Phone" value={formatPhone(String(carrier.primaryContactPhone ?? ''))} />
           <FieldRow label="Contact Email" value={String(carrier.primaryContactEmail ?? '')} isLink />
         </Grid>
         <Grid item xs={12} md={6}>
@@ -175,7 +176,7 @@ const DriversSection: React.FC<{ drivers: Record<string, unknown>[] }> = ({ driv
               return (
                 <TableRow key={String(d.email ?? idx)}>
                   <TableCell>{name || '—'}</TableCell>
-                  <TableCell>{String(d.phone ?? '—')}</TableCell>
+                  <TableCell>{formatPhone(String(d.phone ?? '')) || '—'}</TableCell>
                   <TableCell>{String(d.email ?? '—')}</TableCell>
                   <TableCell>{String(d.payType ?? '—')}</TableCell>
                   <TableCell align="right">{payRate}</TableCell>

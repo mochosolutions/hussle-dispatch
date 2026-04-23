@@ -46,7 +46,7 @@ export const createInvoiceBuilderService = (
     }
 
     // Check for existing non-void invoice
-    const existing = await deps.invoiceRepo.findNonVoidByLoadId(input.loadId);
+    const existing = await deps.invoiceRepo.findNonVoidByLoadId(input.loadId, input.organizationId);
     if (existing !== null) {
       throw new ValidationError('A non-void invoice already exists for this load');
     }
@@ -68,10 +68,13 @@ export const createInvoiceBuilderService = (
       new Decimal(0),
     );
 
-    const isCompanyAsset = carrierType === 'COMPANY_ASSET';
-    const invoiceType = isCompanyAsset ? 'CUSTOMER' : 'DISPATCH_FEE';
-    const subtotal = isCompanyAsset ? customerRate : dispatchFee;
-    const totalAmount = isCompanyAsset ? subtotal.add(accessorialsTotal) : subtotal;
+    // LEASED_CARRIER uses YOUR authority — you invoice the customer like COMPANY_ASSET.
+    // Only EXTERNAL_CARRIER results in a DISPATCH_FEE invoice.
+    const billsCustomer =
+      carrierType === 'COMPANY_ASSET' || carrierType === 'LEASED_CARRIER';
+    const invoiceType = billsCustomer ? 'CUSTOMER' : 'DISPATCH_FEE';
+    const subtotal = billsCustomer ? customerRate : dispatchFee;
+    const totalAmount = billsCustomer ? subtotal.add(accessorialsTotal) : subtotal;
 
     const paymentTerms = load.customer?.paymentTerms ?? 'net_30';
     const paymentTermsDays = load.customer?.paymentTermsDays ?? 30;
@@ -111,7 +114,7 @@ export const createInvoiceBuilderService = (
   },
 
   voidInvoice: async (input: VoidInvoiceInput): Promise<InvoiceWithRelations> => {
-    const invoice = await deps.invoiceRepo.findById(input.invoiceId);
+    const invoice = await deps.invoiceRepo.findById(input.invoiceId, input.organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -124,7 +127,7 @@ export const createInvoiceBuilderService = (
       );
     }
 
-    const updated = await deps.invoiceRepo.updateStatus(invoice.id, 'VOID');
+    const updated = await deps.invoiceRepo.updateStatus(invoice.id, input.organizationId, 'VOID');
 
     // Revert load to DELIVERED
     await deps.loadQuery.updateLoadStatus(invoice.loadId, 'DELIVERED');

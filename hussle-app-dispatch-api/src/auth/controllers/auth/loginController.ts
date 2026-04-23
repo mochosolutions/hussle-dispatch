@@ -39,7 +39,7 @@ export const createLoginController = ({
     const authProvider = await getAuthProvider();
 
     const authResponse = await authenticateUserService(
-      { username: loginInput.email, password: loginInput.password },
+      { username: loginInput.email, password: loginInput.password, ipAddress: req.ip, userAgent: req.headers['user-agent'] },
       {
         decodeToken,
         authProvider,
@@ -65,6 +65,7 @@ export const createLoginController = ({
             changes: null,
             metadata: {
               loginMethod: 'password',
+              ip: req.ip,
             },
           })
           .catch(() => {

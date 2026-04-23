@@ -4,7 +4,6 @@ import {
   ActiveLoadsConflictError,
   ForbiddenError,
   NotFoundError,
-  ValidationError,
 } from '@/shared/errors';
 import { createCarrierService } from '../carrierService';
 
@@ -99,19 +98,6 @@ describe('carrierService', () => {
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
-  it('rejects OWNER_OPERATOR carrier type with validation error', async () => {
-    await expect(
-      carrierService.createCarrier({
-        organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
-        input: {
-          name: 'Unsupported Carrier',
-          type: CarrierType.OWNER_OPERATOR,
-        },
-        role: 'admin',
-      }),
-    ).rejects.toBeInstanceOf(ValidationError);
-  });
-
   it('returns enriched carrier with counts and no partnerSplitPercent for non-admin role', async () => {
     mockCarrierRepository.findById.mockResolvedValue(buildCarrier());
 
@@ -185,6 +171,7 @@ describe('carrierService', () => {
 
     expect(mockCarrierRepository.softDelete).toHaveBeenCalledWith(
       '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+      'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
       expect.any(Date),
     );
   });
@@ -266,17 +253,5 @@ describe('carrierService', () => {
       ).rejects.toBeInstanceOf(ForbiddenError);
     });
 
-    it('rejects OWNER_OPERATOR carrier type', async () => {
-      await expect(
-        carrierService.createCarrierWithAssets({
-          organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
-          input: {
-            name: 'Unsupported Carrier',
-            type: CarrierType.OWNER_OPERATOR,
-          },
-          role: 'admin',
-        }),
-      ).rejects.toBeInstanceOf(ValidationError);
-    });
   });
 });

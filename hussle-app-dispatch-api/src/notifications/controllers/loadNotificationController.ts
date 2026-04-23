@@ -33,6 +33,7 @@ const toOverrideResponse = (record: {
   enabled: boolean;
   recipientEmail: string | null;
   recipientPhone: string | null;
+  ccEmails: string[];
   createdAt: Date;
   updatedAt: Date;
 }) => ({
@@ -43,6 +44,7 @@ const toOverrideResponse = (record: {
   enabled: record.enabled,
   recipientEmail: record.recipientEmail,
   recipientPhone: record.recipientPhone,
+  ccEmails: record.ccEmails,
   createdAt: record.createdAt.toISOString(),
   updatedAt: record.updatedAt.toISOString(),
 });
@@ -54,6 +56,7 @@ const toLogResponse = (record: {
   channel: string;
   recipientEmail: string | null;
   recipientPhone: string | null;
+  ccEmails: string[];
   subject: string | null;
   status: string;
   errorMessage: string | null;
@@ -65,6 +68,7 @@ const toLogResponse = (record: {
   channel: record.channel,
   recipientEmail: record.recipientEmail,
   recipientPhone: record.recipientPhone,
+  ccEmails: record.ccEmails,
   subject: record.subject,
   status: record.status,
   errorMessage: record.errorMessage,
@@ -82,7 +86,7 @@ export const createLoadNotificationControllers = (
 
   upsertOverride: async (req: Request, res: Response): Promise<void> => {
     const loadId = requireParam(req.params, 'loadId');
-    const { trigger, channel, enabled, recipientEmail, recipientPhone } = req.body;
+    const { trigger, channel, enabled, recipientEmail, recipientPhone, ccEmails } = req.body;
 
     const result = await deps.overrideService.upsert({
       loadId,
@@ -91,6 +95,7 @@ export const createLoadNotificationControllers = (
       enabled,
       recipientEmail,
       recipientPhone,
+      ccEmails,
     });
 
     sendSingle(res, toOverrideResponse(result));
@@ -106,6 +111,7 @@ export const createLoadNotificationControllers = (
       enabled: boolean;
       recipientEmail?: string;
       recipientPhone?: string;
+      ccEmails?: string[];
     }>).map((o) => ({
       loadId,
       trigger: o.trigger as NotificationTrigger,
@@ -113,6 +119,7 @@ export const createLoadNotificationControllers = (
       enabled: o.enabled,
       recipientEmail: o.recipientEmail,
       recipientPhone: o.recipientPhone,
+      ccEmails: o.ccEmails,
     }));
 
     const results = await deps.overrideService.bulkUpsert(inputs);

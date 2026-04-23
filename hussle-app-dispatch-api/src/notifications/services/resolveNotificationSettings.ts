@@ -38,6 +38,7 @@ export const resolveNotificationSettings = (
         enabled: override.enabled,
         recipientEmail: override.recipientEmail ?? setting.recipientEmail,
         recipientPhone: override.recipientPhone ?? setting.recipientPhone,
+        ccEmails: override.ccEmails,
       });
       overrideMap.delete(setting.channel);
     } else {
@@ -47,6 +48,7 @@ export const resolveNotificationSettings = (
         enabled: setting.enabled,
         recipientEmail: setting.recipientEmail,
         recipientPhone: setting.recipientPhone,
+        ccEmails: [],
       });
     }
   });
@@ -59,6 +61,7 @@ export const resolveNotificationSettings = (
       enabled: override.enabled,
       recipientEmail: override.recipientEmail,
       recipientPhone: override.recipientPhone,
+      ccEmails: override.ccEmails,
     });
   });
 

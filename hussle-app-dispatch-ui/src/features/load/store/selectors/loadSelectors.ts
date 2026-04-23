@@ -4,6 +4,7 @@ import { LoadingState } from '@mocho/ui/redux';
 import { loadSelectors } from '../reducers/loadEntitySlice';
 import { STATUS_TO_KANBAN_GROUP, formatEquipmentType } from '../../constants';
 import { formatTimestamp, formatCurrencyCompact } from '../../constants';
+import formatPhone from 'utils/formatPhone';
 import { isLoadDetail } from '../../types';
 import type {
   BoardView,
@@ -166,7 +167,7 @@ const buildStopAddress = (stop: Stop | undefined): string => {
 };
 
 const formatSchedule = (stop: Stop | undefined): string => {
-  if (!stop?.appointmentStart) return '\u2014';
+  if (!stop) return '\u2014';
   return formatTimestamp(stop.appointmentStart);
 };
 
@@ -195,8 +196,17 @@ export const selectFormattedLoadById = (id: string | undefined) =>
 
       const milesStr = milesItems.length > 0 ? milesItems.join(' + ') : '';
 
+      const formattedStops = load.route.stops.map((s) => ({
+        ...s,
+        contactPhone: formatPhone(s.contactPhone),
+      }));
+
       return {
         ...load,
+        contact: load.contact
+          ? { ...load.contact, phone: formatPhone(load.contact.phone) }
+          : load.contact,
+        route: { ...load.route, stops: formattedStops },
         summary: {
           pickup: {
             facilityName: origin?.facilityName ?? '\u2014',

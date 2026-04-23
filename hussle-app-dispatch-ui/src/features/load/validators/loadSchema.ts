@@ -36,12 +36,9 @@ const stopSchema = Yup.object().shape({
   notes: Yup.string(),
   lat: Yup.number().nullable(),
   lng: Yup.number().nullable(),
-  facilityOpenTime: Yup.string(),
-  facilityCloseTime: Yup.string(),
   callByTime: Yup.string(),
   trailerNumber: Yup.string(),
   yardLocation: Yup.string(),
-  facilityHoursData: Yup.mixed().nullable(),
 });
 
 // ---------------------------------------------------------------------------

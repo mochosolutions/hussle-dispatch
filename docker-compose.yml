@@ -72,7 +72,9 @@ services:
       retries: 5
 
   hussle-app-rabbitmq:
-    image: rabbitmq:3-management
+    image: fleet-command/rabbitmq:3.13-delayed
+    build:
+      context: ./docker/rabbitmq
     container_name: hussle-app-rabbitmq
     ports:
       - "5672:5672"

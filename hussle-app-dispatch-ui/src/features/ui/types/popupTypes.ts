@@ -7,6 +7,10 @@
  * Generic popup interfaces live in mocho/types/popup.ts.
  */
 
+import type { DocumentContext } from '../../documents/constants';
+import type { DocumentEntityType, DocumentType } from '../../documents/types';
+import type { LoadDetail, LoadStatus, LoadTemplate } from '../../load/types';
+
 // ---------------------------------------------------------------------------
 // Drawers
 // ---------------------------------------------------------------------------
@@ -33,7 +37,9 @@ export type DrawerType =
   | 'disputeSettlement'
   | 'addAdjustment'
   | 'expenseQuickAdd'
-  | 'paySettlement';
+  | 'paySettlement'
+  | 'loadAccessorial'
+  | 'loadCheckCall';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
@@ -63,16 +69,18 @@ export interface DrawerTypeMap {
   };
   contactInfo: { contactId: string };
   documentUpload: {
-    context: import('../../documents/constants').DocumentContext;
-    entityType: import('../../documents/types').DocumentEntityType;
+    context: DocumentContext;
+    entityType: DocumentEntityType;
     entityId: string;
-    preselectedDocType?: import('../../documents/types').DocumentType;
+    preselectedDocType?: DocumentType;
     lockDocType?: boolean;
   };
   disputeSettlement: { settlementId: string };
   addAdjustment: { settlementId: string };
   expenseQuickAdd: { onSuccess: () => void };
   paySettlement: { settlementId: string };
+  loadAccessorial: { loadId: string; accessorialId?: string };
+  loadCheckCall: { loadId: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -82,18 +90,30 @@ export interface DrawerTypeMap {
 export type ModalType =
   | 'dirtyFormConfirm'
   | 'createLoadModal'
+  | 'statusChangeDialog'
+  | 'confirmDeleteLoadDialog'
   | 'inviteMember'
   | 'generateSettlement'
   | 'carrierNote'
   | 'confirmDeleteInvoice'
   | 'sendInvoice'
-  | 'markInvoicePaid';
+  | 'markInvoicePaid'
+  | 'loadSendSmsPrompt';
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
   createLoadModal: {
-    onSelect: (loadType: string, template?: import('../../load/types').LoadTemplate) => void;
+    onSelect: (loadType: string, template?: LoadTemplate) => void;
     onCancel?: () => void;
+  };
+  statusChangeDialog: {
+    load: LoadDetail;
+    targetStatus: LoadStatus;
+  };
+  confirmDeleteLoadDialog: {
+    open: boolean;
+    loadId: string;
+    loadNumber: string;
   };
   inviteMember: { organizationId: string };
   generateSettlement: Record<string, never>;
@@ -101,4 +121,5 @@ export interface ModalTypeMap {
   confirmDeleteInvoice: { invoiceId: string };
   sendInvoice: { invoiceId: string };
   markInvoicePaid: { invoiceId: string; balanceDue: number };
+  loadSendSmsPrompt: { loadId: string };
 }

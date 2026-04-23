@@ -6,12 +6,18 @@ import { DetailRow } from 'components/Typography';
 import type { LoadDetail } from '../../../types';
 
 interface BrokerCardProps {
+  customer: LoadDetail['customer'];
   contact: LoadDetail['contact'];
   externalRefNumber: string | null;
   onEdit: () => void;
 }
 
-export const BrokerCard: React.FC<BrokerCardProps> = ({ contact, externalRefNumber, onEdit }) => {
+export const BrokerCard: React.FC<BrokerCardProps> = ({
+  contact,
+  externalRefNumber,
+  onEdit,
+  customer,
+}) => {
   const isEmpty = !contact && !externalRefNumber;
 
   if (isEmpty) {
@@ -40,28 +46,48 @@ export const BrokerCard: React.FC<BrokerCardProps> = ({ contact, externalRefNumb
 
   return (
     <SectionCard
-      title="Contact"
-      // contentSX={{ p: 0 }}
+      title="Customer"
       actions={
         <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={onEdit}>
           Edit
         </Button>
       }
     >
-      {name && <DetailRow label="Name" value={name} />}
+      <DetailRow label="Company" value={customer?.companyName} />
+      <DetailRow label="Name" value={name ? name : '-'} />
       <DetailRow label="Ref #" value={externalRefNumber ?? '\u2014'} />
-      {contact?.role && <DetailRow label="Role" value={contact.role} />}
-      {contact?.phone && (
-        <DetailRow
-          label="Phone"
-          value={
+      <DetailRow label="Role" value={contact?.role ? contact.role : '-'} />
+
+      <DetailRow
+        label="Phone"
+        value={
+          contact?.phone ? (
             <Link href={`tel:${contact.phone}`} sx={{ fontWeight: 600, textDecoration: 'none' }}>
               {contact.phone}
             </Link>
-          }
-        />
-      )}
-      {contact?.email && (
+          ) : (
+            '-'
+          )
+        }
+      />
+
+      <DetailRow
+        label="Email"
+        value={
+          contact?.email ? (
+            <Link
+              href={`mailto:${contact?.email}`}
+              sx={{ fontWeight: 600, textDecoration: 'none' }}
+            >
+              {contact?.email}
+            </Link>
+          ) : (
+            '-'
+          )
+        }
+        noBorder
+      />
+      {/* {contact?.email && (
         <DetailRow
           label="Email"
           value={
@@ -71,7 +97,7 @@ export const BrokerCard: React.FC<BrokerCardProps> = ({ contact, externalRefNumb
           }
           noBorder
         />
-      )}
+      )} */}
     </SectionCard>
   );
 };

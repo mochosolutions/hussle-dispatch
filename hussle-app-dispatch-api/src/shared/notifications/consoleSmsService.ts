@@ -14,5 +14,6 @@ export const createConsoleSmsService = (
       bodyLength: params.body.length,
       bodyPreview: params.body.slice(0, 100),
     });
+    return { messageSid: null };
   },
 });

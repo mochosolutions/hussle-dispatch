@@ -11,6 +11,7 @@ export interface EmailAttachment {
 export interface NotificationService {
   sendEmail(params: {
     to: string;
+    cc?: string[];
     from: string;
     replyTo?: string;
     subject: string;

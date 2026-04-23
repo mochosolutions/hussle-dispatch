@@ -40,6 +40,7 @@ const createMockLoad = (overrides: Partial<LoadWithRelations> = {}): LoadWithRel
   estimatedCost: null,
   dispatcherComm: null,
   dispatcherUserId: null,
+  version: 0,
   rateConReceivedAt: null,
   bolUnsignedAt: null,
   bolSignedAt: null,
@@ -89,6 +90,7 @@ const createMockDeps = () => {
 
   const eventBus: jest.Mocked<EventBus> = {
     publish: jest.fn().mockResolvedValue(undefined),
+    publishDelayed: jest.fn().mockResolvedValue(undefined),
     subscribe: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
   };
@@ -479,6 +481,7 @@ describe('loadStatusService', () => {
 
       expect(deps.eventBus.publish).toHaveBeenCalledWith('load.delivered', {
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'DELIVERED',
       });
     });
@@ -501,6 +504,7 @@ describe('loadStatusService', () => {
 
       expect(deps.eventBus.publish).toHaveBeenCalledWith('load.canceled', {
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'CANCELED',
       });
     });
@@ -527,6 +531,7 @@ describe('loadStatusService', () => {
 
       expect(deps.eventBus.publish).toHaveBeenCalledWith('load.tonu', {
         loadId: 'load-1',
+        organizationId: 'org-1',
         status: 'TONU',
       });
     });

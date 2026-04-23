@@ -13,6 +13,7 @@ export interface TransitionStatusInput {
   overrideWarnings?: boolean;
   userId: string | null;
   userRole: string;
+  version?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,7 +43,7 @@ export interface StatusTransitionResponse {
 // ---------------------------------------------------------------------------
 
 export interface LoadStatusRepoPort {
-  updateStatus(loadId: string, status: LoadStatus): Promise<LoadWithRelations>;
+  updateStatus(loadId: string, status: LoadStatus, expectedVersion?: number): Promise<LoadWithRelations>;
   createStatusHistory(data: {
     loadId: string;
     fromStatus: LoadStatus;

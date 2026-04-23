@@ -40,6 +40,9 @@ export const sendInvoiceValidator = Yup.object({
   }),
   body: Yup.object({
     email: Yup.string().email('email must be valid').required('email is required'),
+    ccEmails: Yup.array()
+      .of(Yup.string().email('ccEmails entries must be valid email addresses').required())
+      .notRequired(),
   }),
 });
 

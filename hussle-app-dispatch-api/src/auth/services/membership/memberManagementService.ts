@@ -10,7 +10,7 @@ interface MembershipRepositoryPort {
   ): Promise<MembershipWithUser[] | null>;
   findOneByFilter(
     filter: Record<string, unknown>,
-  ): Promise<{ membershipId: string; userId: string; role: string; status: string } | null>;
+  ): Promise<{ membershipId: string; userId: string; role: string; status: string; permissionsVersion: number } | null>;
   updateMembership(
     id: string,
     data: Record<string, unknown>,
@@ -32,6 +32,11 @@ interface ChangeMemberRoleInput {
   role: Role;
 }
 
+export interface ChangeMemberRoleResult {
+  oldRole: string;
+  newRole: Role;
+}
+
 interface RemoveMemberInput {
   organizationId: string;
   membershipId: string;
@@ -40,7 +45,7 @@ interface RemoveMemberInput {
 
 export interface MemberManagementService {
   listMembers(input: ListMembersInput): Promise<MembershipWithUser[]>;
-  changeMemberRole(input: ChangeMemberRoleInput): Promise<void>;
+  changeMemberRole(input: ChangeMemberRoleInput): Promise<ChangeMemberRoleResult>;
   removeMember(input: RemoveMemberInput): Promise<void>;
 }
 
@@ -100,7 +105,18 @@ export const createMemberManagementService = (
       }
     }
 
-    await deps.membershipRepository.updateMembership(membershipId, { role });
+    const newVersion = (membership.permissionsVersion ?? 1) + 1;
+    await deps.membershipRepository.updateMembership(membershipId, {
+      role,
+      permissionsVersion: newVersion,
+    });
+
+    await deps.tokenProvider.revokeUserOrgSessions({
+      userId: membership.userId,
+      organizationId,
+    });
+
+    return { oldRole: membership.role, newRole: role };
   },
 
   removeMember: async ({ organizationId, membershipId, requestingUserId }) => {

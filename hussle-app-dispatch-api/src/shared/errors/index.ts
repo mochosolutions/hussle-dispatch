@@ -16,7 +16,6 @@ export {
   ProhibitedCommodityError,
   InsuranceExpiredError,
   ConcurrentEditError,
-  OwnerOperatorNotSupportedError,
   SequenceError,
   SeatLimitReachedError,
   LastAdminError,

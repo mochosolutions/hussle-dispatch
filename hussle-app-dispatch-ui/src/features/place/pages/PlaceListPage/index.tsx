@@ -12,7 +12,7 @@ import { useDispatch, useSelector } from 'store';
 import type { PlaceListItem, FacilityType } from '../../types';
 import { fetchPlacesRequest } from '../../store/reducers/placePageSlice';
 import {
-  selectAllPlaces,
+  selectFormattedPlaces,
   selectPlaceListLoading,
 } from '../../store/selectors/placeSelectors';
 import {
@@ -40,7 +40,7 @@ const PlaceListPage = () => {
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
 
-  const places = useSelector(selectAllPlaces);
+  const places = useSelector(selectFormattedPlaces);
   const isLoading = useSelector(selectPlaceListLoading);
 
   useEffect(() => {

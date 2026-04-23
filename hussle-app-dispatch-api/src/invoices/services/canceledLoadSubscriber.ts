@@ -19,7 +19,7 @@ export const initializeCanceledLoadSubscriber = async (
 ): Promise<void> => {
   await deps.eventBus.subscribe('load.canceled', 'invoices-service', async (data) => {
     try {
-      const invoices = await deps.invoiceRepo.findManyByLoadId(data.loadId);
+      const invoices = await deps.invoiceRepo.findManyByLoadId(data.loadId, data.organizationId);
       const voidable = invoices.filter((inv) => VOIDABLE_STATUSES.has(inv.status));
 
       if (voidable.length === 0) {
@@ -30,7 +30,7 @@ export const initializeCanceledLoadSubscriber = async (
       }
 
       await Promise.all(
-        voidable.map((inv) => deps.invoiceRepo.updateStatus(inv.id, 'VOID')),
+        voidable.map((inv) => deps.invoiceRepo.updateStatus(inv.id, data.organizationId, 'VOID')),
       );
 
       deps.logger.info('Voided invoices for canceled load', {

@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   CreateCustomerInput,
   CustomerQueryInput,
@@ -138,14 +139,27 @@ export const customerRepositoryPrisma = (
       where: buildListWhere(organizationId, filters),
     }),
 
-  update: (id: string, input: UpdateCustomerInput): Promise<CustomerWithCounts> =>
-    prisma.customer.update({
+  update: async (id: string, organizationId: string, input: UpdateCustomerInput): Promise<CustomerWithCounts> => {
+    const customer = await prisma.customer.findFirst({
+      where: { id, organizationId, deleted: false },
+    });
+    if (!customer) {
+      throw new NotFoundError(`Customer with id ${id} not found`);
+    }
+    return prisma.customer.update({
       where: { id },
       data: { ...input },
       include: selectWithCounts,
-    }),
+    });
+  },
 
-  softDelete: async (id: string, deletedAt: Date): Promise<void> => {
+  softDelete: async (id: string, organizationId: string, deletedAt: Date): Promise<void> => {
+    const customer = await prisma.customer.findFirst({
+      where: { id, organizationId, deleted: false },
+    });
+    if (!customer) {
+      throw new NotFoundError(`Customer with id ${id} not found`);
+    }
     await prisma.customer.update({
       where: { id },
       data: {

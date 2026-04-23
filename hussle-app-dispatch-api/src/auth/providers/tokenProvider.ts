@@ -11,7 +11,7 @@ import { verifyRefreshToken } from './jwtTokenProvider/verifyRefreshToken';
 
 export const tokenProvider = ({
   client,
-  singleSession = false,
+  singleSession = true,
 }: TokenProviderDeps): ITokenProvider => ({
   createSession: async (args) =>
     createSessionRedis({ ...args, singleSession }, { redisClient: client }),

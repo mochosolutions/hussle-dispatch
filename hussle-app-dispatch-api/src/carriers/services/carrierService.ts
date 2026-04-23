@@ -1,11 +1,9 @@
-import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { CARRIER_BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import {
   ActiveLoadsConflictError,
   ForbiddenError,
   NotFoundError,
-  ValidationError,
 } from '@/shared/errors';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
@@ -37,12 +35,6 @@ const listSortableFields = ['createdAt', 'updatedAt', 'name', 'insuranceExpiry']
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
     throw new ForbiddenError('Owner-operator access to fleet management is not supported.');
-  }
-};
-
-const assertCarrierTypeSupported = (type: string): void => {
-  if (type === CARRIER_TYPES.OWNER_OPERATOR) {
-    throw new ValidationError('Owner-operator support coming soon');
   }
 };
 
@@ -139,7 +131,6 @@ const findCarrierOrThrow = async (
 export const createCarrierService = (deps: CarrierServiceDeps): CarrierService => ({
   createCarrier: async ({ organizationId, role, input }: CreateCarrierServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
-    assertCarrierTypeSupported(input.type);
 
     const carrier = await deps.carrierRepository.create(organizationId, input);
     return enrichCarrier(carrier, role);
@@ -151,7 +142,6 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     input,
   }: CreateCarrierWithAssetsServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
-    assertCarrierTypeSupported(input.type);
 
     const carrier = await deps.carrierRepository.createWithAssets(organizationId, {
       carrier: input,
@@ -201,12 +191,8 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
   updateCarrier: async ({ id, organizationId, input, role }: UpdateCarrierServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
 
-    if (input.type !== undefined) {
-      assertCarrierTypeSupported(input.type);
-    }
-
     await findCarrierOrThrow(id, organizationId, deps);
-    const carrier = await deps.carrierRepository.update(id, input);
+    const carrier = await deps.carrierRepository.update(id, organizationId, input);
     return enrichCarrier(carrier, role);
   },
 
@@ -228,7 +214,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       );
     }
 
-    await deps.carrierRepository.softDelete(id, new Date());
+    await deps.carrierRepository.softDelete(id, organizationId, new Date());
   },
 
   getCarrierOnboardingStatus: async ({

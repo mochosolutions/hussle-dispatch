@@ -104,12 +104,9 @@ const EMPTY_STOP = {
   isTarp: false,
   isTempControlled: false,
   schedulingType: 'APPOINTMENT',
-  facilityOpenTime: '',
-  facilityCloseTime: '',
   callByTime: '',
   trailerNumber: '',
   yardLocation: '',
-  facilityHoursData: null,
 };
 
 // ---------------------------------------------------------------------------

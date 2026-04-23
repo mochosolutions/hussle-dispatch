@@ -16,7 +16,6 @@ export const updateStopMapper = (req: Request): UpdateStopInput => ({
   schedulingType: req.body.schedulingType,
   appointmentStart: req.body.appointmentStart,
   appointmentEnd: req.body.appointmentEnd,
-  targetDate: req.body.targetDate,
   notificationHours: req.body.notificationHours,
   appointmentNumber: req.body.appointmentNumber,
   arrivalTime: req.body.arrivalTime !== undefined
@@ -34,8 +33,6 @@ export const updateStopMapper = (req: Request): UpdateStopInput => ({
   isTarp: req.body.isTarp,
   isTempControlled: req.body.isTempControlled,
   notes: req.body.notes,
-  facilityOpenTime: req.body.facilityOpenTime,
-  facilityCloseTime: req.body.facilityCloseTime,
   callByTime: req.body.callByTime,
   trailerNumber: req.body.trailerNumber,
   yardLocation: req.body.yardLocation,

@@ -56,6 +56,26 @@ const updateSettingsBodySchema = Yup.object({
     .url('companyLogoUrl must be a valid URL')
     .max(2048, 'companyLogoUrl must be at most 2048 characters')
     .notRequired(),
+  smsPrePickupLeadMinutes: Yup.number()
+    .integer('smsPrePickupLeadMinutes must be an integer')
+    .min(1, 'smsPrePickupLeadMinutes must be at least 1')
+    .max(1440, 'smsPrePickupLeadMinutes must be at most 1440')
+    .notRequired(),
+  smsTransitIntervalMinutes: Yup.number()
+    .integer('smsTransitIntervalMinutes must be an integer')
+    .min(1, 'smsTransitIntervalMinutes must be at least 1')
+    .max(1440, 'smsTransitIntervalMinutes must be at most 1440')
+    .notRequired(),
+  smsPostPickupEscalationMinutes: Yup.number()
+    .integer('smsPostPickupEscalationMinutes must be an integer')
+    .min(1, 'smsPostPickupEscalationMinutes must be at least 1')
+    .max(1440, 'smsPostPickupEscalationMinutes must be at most 1440')
+    .notRequired(),
+  smsCooldownMinutes: Yup.number()
+    .integer('smsCooldownMinutes must be an integer')
+    .min(1, 'smsCooldownMinutes must be at least 1')
+    .max(1440, 'smsCooldownMinutes must be at most 1440')
+    .notRequired(),
 }).test('has-any-field', 'At least one field must be provided', (value) => {
   if (value === undefined) {
     return false;

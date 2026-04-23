@@ -113,7 +113,7 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
       await assertCarrierExists(input.carrierId, organizationId, deps);
     }
 
-    return deps.driverRepository.update(id, input);
+    return deps.driverRepository.update(id, organizationId, input);
   },
 
   deleteDriver: async ({ id, organizationId, role }: DeleteDriverServiceInput) => {
@@ -132,7 +132,7 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
       );
     }
 
-    await deps.driverRepository.softDelete(id, new Date());
+    await deps.driverRepository.softDelete(id, organizationId, new Date());
   },
 
   getLoadHistory: async ({ id, organizationId, role, query }: GetDriverLoadHistoryServiceInput) => {

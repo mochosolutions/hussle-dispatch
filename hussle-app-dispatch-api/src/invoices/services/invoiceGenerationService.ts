@@ -12,6 +12,7 @@ interface InvoiceGenerationDeps {
 /**
  * Generates an invoice from a delivered load.
  * - COMPANY_ASSET carrier → CUSTOMER invoice (subtotal = customerRate + accessorials)
+ * - LEASED_CARRIER carrier → CUSTOMER invoice (your authority; you bill the customer)
  * - EXTERNAL_CARRIER carrier → DISPATCH_FEE invoice (subtotal = dispatchFee)
  * - Idempotency guard: skips if invoice already exists for this load
  * - Checks bolSignedAt: if null, sets missingSignedBol=true
@@ -19,10 +20,11 @@ interface InvoiceGenerationDeps {
  */
 export const generateFromDelivery = async (
   loadId: string,
+  organizationId: string,
   deps: InvoiceGenerationDeps,
 ): Promise<void> => {
   // Idempotency guard
-  const existing = await deps.invoiceRepo.findNonVoidByLoadId(loadId);
+  const existing = await deps.invoiceRepo.findNonVoidByLoadId(loadId, organizationId);
 
   if (existing !== null) {
     deps.logger.info('Non-void invoice already exists for load, skipping', { loadId });
@@ -54,10 +56,13 @@ export const generateFromDelivery = async (
     new Decimal(0),
   );
 
-  const isCompanyAsset = carrierType === 'COMPANY_ASSET';
-  const invoiceType = isCompanyAsset ? 'CUSTOMER' : 'DISPATCH_FEE';
-  const subtotal = isCompanyAsset ? customerRate : dispatchFee;
-  const totalAmount = isCompanyAsset ? subtotal.add(accessorialsTotal) : subtotal;
+  // LEASED_CARRIER uses YOUR authority — you invoice the customer like COMPANY_ASSET.
+  // Only EXTERNAL_CARRIER results in a DISPATCH_FEE invoice.
+  const billsCustomer =
+    carrierType === 'COMPANY_ASSET' || carrierType === 'LEASED_CARRIER';
+  const invoiceType = billsCustomer ? 'CUSTOMER' : 'DISPATCH_FEE';
+  const subtotal = billsCustomer ? customerRate : dispatchFee;
+  const totalAmount = billsCustomer ? subtotal.add(accessorialsTotal) : subtotal;
 
   // Get payment terms from customer, fallback to net_30
   const paymentTerms = load.customer?.paymentTerms ?? 'net_30';
@@ -107,10 +112,11 @@ export const generateFromDelivery = async (
  */
 export const generateTonuInvoice = async (
   loadId: string,
+  organizationId: string,
   deps: InvoiceGenerationDeps,
 ): Promise<void> => {
   // Idempotency guard
-  const existing = await deps.invoiceRepo.findNonVoidByLoadId(loadId);
+  const existing = await deps.invoiceRepo.findNonVoidByLoadId(loadId, organizationId);
 
   if (existing !== null) {
     deps.logger.info('Non-void invoice already exists for TONU load, skipping', { loadId });

@@ -22,8 +22,8 @@ export enum VehicleCategory {
 
 export enum CarrierType {
   COMPANY_ASSET = 'COMPANY_ASSET',
-  OWNER_OPERATOR = 'OWNER_OPERATOR',
   EXTERNAL_CARRIER = 'EXTERNAL_CARRIER',
+  LEASED_CARRIER = 'LEASED_CARRIER',
 }
 
 export enum PayType {

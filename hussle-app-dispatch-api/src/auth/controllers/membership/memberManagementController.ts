@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from 'express';
 import type { Role } from '@/config/roles';
 import type { MembershipWithUser } from '../../types/membershipTypes';
+import type { CreateAuditLogInput } from '../../types/auditLogPort';
 import { sendSingle } from '@/shared/responseEnvelope';
 import { listMembersMapper } from './mappers/listMembersMapper';
 import { changeMemberRoleMapper } from './mappers/changeMemberRoleMapper';
@@ -13,7 +14,7 @@ interface MemberManagementServicePort {
     organizationId: string;
     membershipId: string;
     role: Role;
-  }): Promise<void>;
+  }): Promise<{ oldRole: string; newRole: Role }>;
   removeMember(input: {
     organizationId: string;
     membershipId: string;
@@ -23,6 +24,9 @@ interface MemberManagementServicePort {
 
 interface MemberManagementControllerDeps {
   memberManagementService: MemberManagementServicePort;
+  auditLogRepo?: {
+    create: (organizationId: string, input: CreateAuditLogInput) => Promise<unknown>;
+  };
 }
 
 export const createListMembersController =
@@ -37,7 +41,21 @@ export const createChangeMemberRoleController =
   (deps: MemberManagementControllerDeps): RequestHandler =>
   async (req: Request, res: Response) => {
     const input = changeMemberRoleMapper(req);
-    await deps.memberManagementService.changeMemberRole(input);
+    const { oldRole, newRole } = await deps.memberManagementService.changeMemberRole(input);
+
+    if (deps.auditLogRepo && req.user?.userId) {
+      deps.auditLogRepo
+        .create(input.organizationId, {
+          userId: req.user.userId,
+          action: 'ROLE_CHANGE',
+          entityType: 'Membership',
+          entityId: input.membershipId,
+          changes: { role: { old: oldRole, new: newRole } },
+          metadata: { ip: req.ip },
+        })
+        .catch(() => {});
+    }
+
     sendSingle(res, { updated: true });
   };
 

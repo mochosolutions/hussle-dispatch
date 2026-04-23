@@ -101,7 +101,7 @@ export interface CustomerRepositoryPort {
   findByIdWithDetails(id: string, organizationId: string): Promise<CustomerWithDetails | null>;
   list(input: ListCustomersRepositoryInput): Promise<CustomerWithCounts[]>;
   count(input: CustomerQueryInput): Promise<number>;
-  update(id: string, input: UpdateCustomerInput): Promise<CustomerWithCounts>;
-  softDelete(id: string, deletedAt: Date): Promise<void>;
+  update(id: string, organizationId: string, input: UpdateCustomerInput): Promise<CustomerWithCounts>;
+  softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
   countByOrganization(organizationId: string): Promise<number>;
 }

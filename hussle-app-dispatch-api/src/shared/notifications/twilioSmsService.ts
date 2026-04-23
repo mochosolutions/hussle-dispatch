@@ -52,6 +52,8 @@ export const createTwilioSmsService = (
         sid: result.sid,
         bodyLength: params.body.length,
       });
+
+      return { messageSid: result.sid };
     },
   };
 };

@@ -1,4 +1,5 @@
 import { Box, Button } from '@mui/material';
+import { CancelButton } from '@mocho/ui/components/form-fields';
 import { Formik } from 'formik';
 import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';
@@ -97,9 +98,7 @@ export const VehicleInlineForm = ({
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button variant="outlined" size="small" onClick={onCancel}>
-              Cancel
-            </Button>
+            <CancelButton onClick={onCancel} size="small" />
             <Button
               type="button"
               variant="contained"

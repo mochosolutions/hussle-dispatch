@@ -13,18 +13,18 @@ export const loadBoardRoutes = (controllers: LoadBoardControllers): Router => {
   const router = Router();
 
   // POST /ingest — ingest loads from extension or UI
-  // TODO: re-enable appAuth once extension auth flow is finalized
   router.post(
     '/ingest',
+    appAuth,
     express.json({ limit: '1mb' }),
     validateRequest(ingestValidator),
     controllers.ingest,
   );
 
   // GET /feed — all staged loads for org
-  // TODO: re-enable appAuth once extension auth flow is finalized
   router.get(
     '/feed',
+    appAuth,
     validateRequest(getFeedValidator),
     controllers.getFeed,
   );

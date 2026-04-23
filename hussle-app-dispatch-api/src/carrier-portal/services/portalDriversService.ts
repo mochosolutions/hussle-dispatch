@@ -1,5 +1,5 @@
-import type { PrismaClient } from '@prisma/client';
-import type { PrismaTransaction } from '@/config/database';
+import type { PortalDriverRepoPort } from '../repositories/portalDriverRepoPrisma';
+import { DriverStatus } from '@prisma/client';
 
 interface DriverEntry {
   firstName: string;
@@ -23,7 +23,7 @@ interface SavedDriver {
 }
 
 interface PortalDriversServiceDeps {
-  prisma: PrismaClient | PrismaTransaction;
+  driverRepo: PortalDriverRepoPort;
 }
 
 export interface PortalDriversService {
@@ -55,10 +55,7 @@ export const createPortalDriversService = (
     const { carrierId, hasAdditionalDrivers, drivers } = input;
 
     if (!hasAdditionalDrivers) {
-      await deps.prisma.driver.deleteMany({
-        where: { carrierId },
-      });
-
+      await deps.driverRepo.deleteByCarrierId(carrierId);
       return [];
     }
 
@@ -66,30 +63,22 @@ export const createPortalDriversService = (
       return [];
     }
 
-    await deps.prisma.driver.deleteMany({
-      where: { carrierId },
-    });
+    await deps.driverRepo.deleteByCarrierId(carrierId);
 
     const created: SavedDriver[] = [];
 
     for (const entry of drivers) {
-      const driver = await deps.prisma.driver.create({
-        data: {
-          carrierId,
-          firstName: entry.firstName,
-          lastName: entry.lastName,
-          phone: entry.phone ?? null,
-          email: entry.email ?? null,
-          status: 'ACTIVE',
-          notes: buildPayNotes(entry.payType, entry.payRate),
-        },
+      const driver = await deps.driverRepo.create({
+        carrierId,
+        firstName: entry.firstName,
+        lastName: entry.lastName,
+        phone: entry.phone ?? null,
+        email: entry.email ?? null,
+        status: DriverStatus.ACTIVE,
+        notes: buildPayNotes(entry.payType, entry.payRate),
       });
 
-      created.push({
-        id: driver.id,
-        firstName: driver.firstName,
-        lastName: driver.lastName,
-      });
+      created.push(driver);
     }
 
     return created;

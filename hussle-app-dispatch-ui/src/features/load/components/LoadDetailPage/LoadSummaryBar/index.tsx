@@ -64,6 +64,8 @@ export const LoadSummaryBar: React.FC<LoadSummaryBarProps> = ({ summary }) => {
     weight: summary.load.weight ? `${summary.load.weight}lbs` : '',
   });
 
+  // console.log('summaryTages', summaryTags);
+
   return (
     <Grid container spacing={2}>
       <Grid item sm={6} md={3}>
@@ -90,22 +92,26 @@ export const LoadSummaryBar: React.FC<LoadSummaryBarProps> = ({ summary }) => {
 
         <Box sx={BOX_SX}>
           <BodyMuted sx={LABEL_SX}>Total Miles:</BodyMuted>
-          <BodyStrong sx={{ lineHeight: 1.3 }}>
+          <BodyStrong sx={{ lineHeight: 1.3, textTransform: 'capitalize' }}>
             {summary.load.miles ? `${summary.load.miles} miles` : '-'}
           </BodyStrong>
         </Box>
 
         <Box sx={BOX_SX}>
           <BodyMuted sx={LABEL_SX}>Commodity:</BodyMuted>
-          <BodyStrong sx={{ lineHeight: 1.3 }}>{summary.load.cargo || '-'}</BodyStrong>
+          <BodyStrong sx={{ lineHeight: 1.3, textTransform: 'capitalize' }}>
+            {summary.load.cargo || '-'}
+          </BodyStrong>
         </Box>
 
-        {summaryTags.length > 0 && (
-          <Box sx={BOX_SX}>
-            <BodyMuted sx={LABEL_SX}>Details:</BodyMuted>
-            <BodyStrong sx={{ lineHeight: 1.3 }}>{summaryTags}</BodyStrong>
-          </Box>
-        )}
+        {/* {summaryTags.length > 0 && ( */}
+        <Box sx={BOX_SX}>
+          <BodyMuted sx={LABEL_SX}>Commodity Details:</BodyMuted>
+          <BodyStrong sx={{ lineHeight: 1.3, textTransform: 'capitalize' }}>
+            {summaryTags.length || '-'}
+          </BodyStrong>
+        </Box>
+        {/* )} */}
       </Grid>
 
       <Grid item sm={6} md={3}>

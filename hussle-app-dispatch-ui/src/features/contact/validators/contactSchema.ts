@@ -8,6 +8,9 @@ export const contactSchema = Yup.object({
   lastName: Yup.string().trim().min(3, 'Last name must be at least 3 characters').required('Last name is required'),
   phone: Yup.string().default(''),
   email: Yup.string().email('Invalid email').default(''),
+  ccEmails: Yup.array()
+    .of(Yup.string().trim().email('Each CC email must be a valid email').required())
+    .default([]),
   notes: Yup.string().default(''),
 }).required();
 

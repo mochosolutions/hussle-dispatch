@@ -51,7 +51,7 @@ const isInvalidCredentialsError = (error: unknown): boolean => {
 };
 
 export const authenticateUserService = async (
-  { username, password }: AuthenticateUserInput,
+  { username, password, ipAddress, userAgent }: AuthenticateUserInput,
   {
     authProvider,
     tokenProvider,
@@ -129,6 +129,9 @@ export const authenticateUserService = async (
     orgStatus: membership.orgStatus,
     membershipId: membership.membershipId,
     role: membership.role,
+    permissionsVersion: membership.permissionsVersion,
+    ipAddress,
+    userAgent,
   };
 
   const { accessToken, refreshToken } = await tokenProvider.createSession(sessionPayload);

@@ -1,54 +1,77 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Box,
+  Button,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
+  Grid,
+  IconButton,
+  LinearProgress,
+  Stack,
   TextField,
   Typography,
-  Stack,
   Alert,
-  Grid,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { StatusBadge } from 'components/Statusbadge';
 import { SubmitButton } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
 import { transitionLoadStatusRequest, assignAndDispatchRequest } from '../../store/reducers';
 import { closeModal } from 'features/ui/store/reducers/uiSlice';
+import { uploadDocumentRequest } from 'features/documents/store/reducers/documentPageSlice';
 import {
-  selectLoadDetailById,
+  selectUploadStatus,
+  selectUploadError,
+} from 'features/documents/store/selectors/documentSelectors';
+import {
   selectLoadTransitionLoading,
   selectLoadTransitionFulfilled,
   selectLoadAssignAndDispatchLoading,
   selectLoadAssignAndDispatchFulfilled,
 } from '../../store/selectors/loadSelectors';
+import { DocumentType } from 'features/documents/types';
 import { STATUS_LABELS, TRANSITION_PREREQUISITES } from '../../constants';
-import type { LoadStatus } from '../../types';
+import type { LoadDetail, LoadStatus } from '../../types';
 import AssignmentFieldGroup from '../AssignmentFieldGroup';
 
+const getNestedValue = (obj: Record<string, unknown>, path: string): unknown =>
+  path.split('.').reduce<unknown>((acc, key) => (acc as Record<string, unknown>)?.[key], obj);
+
 interface StatusChangeDialogProps {
-  loadId: string;
+  load: LoadDetail;
   targetStatus: LoadStatus;
 }
 
 const NOTES_REQUIRED_STATUSES: LoadStatus[] = ['EXCEPTION', 'CANCELED', 'TONU'];
 const DESTRUCTIVE_STATUSES: LoadStatus[] = ['CANCELED', 'EXCEPTION', 'TONU'];
 
-const ASSIGNMENT_FIELDS = ['carrierId', 'driverId', 'vehicleId'] as const;
+const ASSIGNMENT_FIELDS = [
+  'assignment.carrier.id',
+  'assignment.driver.id',
+  'assignment.vehicle.id',
+] as const;
 
-export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
-  loadId,
-  targetStatus,
-}) => {
+const RATE_CON_FIELD = 'tracking.rateConReceivedAt';
+
+const ASSIGNMENT_FIELD_TO_KEY: Record<string, 'carrierId' | 'driverId' | 'vehicleId'> = {
+  'assignment.carrier.id': 'carrierId',
+  'assignment.driver.id': 'driverId',
+  'assignment.vehicle.id': 'vehicleId',
+};
+
+export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, targetStatus }) => {
   const dispatch = useDispatch();
-  const isOpen = useSelector(
-    (state) => state.pages.ui?.modal?.modalType === 'statusChangeDialog',
-  );
-  const load = useSelector(selectLoadDetailById(loadId));
+  const isOpen = useSelector((state) => state.pages.ui?.modal?.modalType === 'statusChangeDialog');
+
+  const loadId = load.id;
 
   const isTransitionLoading = useSelector(selectLoadTransitionLoading(loadId));
   const isAssignAndDispatchLoading = useSelector(selectLoadAssignAndDispatchLoading(loadId));
@@ -72,6 +95,20 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
 
   const [notes, setNotes] = useState('');
 
+  // Inline rate con upload state
+  const [rateConUpload, setRateConUpload] = useState<{
+    clientId: string;
+    fileName: string;
+  } | null>(null);
+  const rateConInputRef = useRef<HTMLInputElement>(null);
+  const rateConUploadStatus = useSelector(
+    selectUploadStatus(rateConUpload?.clientId ?? ''),
+  );
+  const rateConUploadError = useSelector(
+    selectUploadError(rateConUpload?.clientId ?? ''),
+  );
+  const isRateConUploaded = rateConUploadStatus === 'Fulfilled';
+
   // Assignment form state for inline dispatch flow
   const [assignmentValues, setAssignmentValues] = useState({
     carrierId: load?.assignment.carrier?.id ?? '',
@@ -79,44 +116,56 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
     vehicleId: load?.assignment.vehicle?.id ?? '',
   });
 
-  const prerequisites = useMemo(() => {
-    if (!load) {
-      return [];
-    }
-    return (TRANSITION_PREREQUISITES[targetStatus] ?? []).map((prereq) => ({
-      label: prereq.label,
-      met: Boolean(load[prereq.field as keyof typeof load]),
-      field: prereq.field,
-    }));
-  }, [load, targetStatus]);
+  const prerequisites = useMemo(
+    () =>
+      (TRANSITION_PREREQUISITES[targetStatus] ?? []).map((prereq) => ({
+        label: prereq.label,
+        met: Boolean(getNestedValue(load as unknown as Record<string, unknown>, prereq.field)),
+        field: prereq.field,
+      })),
+    [load, targetStatus],
+  );
 
   const needsInlineAssignment =
     targetStatus === 'DISPATCHED' &&
     prerequisites.some(
-      (p) => !p.met && p.field && ASSIGNMENT_FIELDS.includes(p.field as typeof ASSIGNMENT_FIELDS[number]),
+      (p) =>
+        !p.met &&
+        p.field &&
+        ASSIGNMENT_FIELDS.includes(p.field as (typeof ASSIGNMENT_FIELDS)[number]),
     );
 
-  // Dynamic prerequisites — check assignment form values instead of static load data
+  const needsRateConUpload =
+    targetStatus === 'DISPATCHED' &&
+    prerequisites.some((p) => !p.met && p.field === RATE_CON_FIELD);
+
+  // Dynamic prerequisites — check assignment form values and rate con upload status
   const dynamicPrerequisites = useMemo(() => {
-    if (!needsInlineAssignment) {
+    if (!needsInlineAssignment && !needsRateConUpload) {
       return prerequisites;
     }
 
     return prerequisites.map((prereq) => {
-      if (prereq.field && ASSIGNMENT_FIELDS.includes(prereq.field as typeof ASSIGNMENT_FIELDS[number])) {
+      if (
+        prereq.field &&
+        ASSIGNMENT_FIELDS.includes(prereq.field as (typeof ASSIGNMENT_FIELDS)[number])
+      ) {
+        const key = ASSIGNMENT_FIELD_TO_KEY[prereq.field];
         return {
           ...prereq,
-          met: Boolean(assignmentValues[prereq.field as keyof typeof assignmentValues]),
+          met: Boolean(key && assignmentValues[key]),
         };
+      }
+      if (prereq.field === RATE_CON_FIELD && isRateConUploaded) {
+        return { ...prereq, met: true };
       }
       return prereq;
     });
-  }, [prerequisites, needsInlineAssignment, assignmentValues]);
+  }, [prerequisites, needsInlineAssignment, needsRateConUpload, assignmentValues, isRateConUploaded]);
 
   const hasUnmetPrereqs = dynamicPrerequisites.some((p) => !p.met);
   const isNotesRequired = NOTES_REQUIRED_STATUSES.includes(targetStatus);
-  const isConfirmDisabled =
-    hasUnmetPrereqs || (isNotesRequired && notes.trim().length === 0);
+  const isConfirmDisabled = hasUnmetPrereqs || (isNotesRequired && notes.trim().length === 0);
 
   // Formik-compatible interface for AssignmentFieldGroup
   const assignmentFormik = useMemo(
@@ -130,6 +179,26 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       setFieldTouched: (_field: string, _touched?: boolean) => Promise.resolve(),
     }),
     [assignmentValues],
+  );
+
+  const handleRateConFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const clientId = crypto.randomUUID();
+      setRateConUpload({ clientId, fileName: file.name });
+      dispatch(
+        uploadDocumentRequest({
+          file,
+          documentType: DocumentType.BROKER_RATE_CON,
+          entityType: 'load',
+          entityId: loadId,
+          clientId,
+        }),
+      );
+      e.target.value = '';
+    },
+    [dispatch, loadId],
   );
 
   const handleClose = (_event: object, reason?: 'backdropClick' | 'escapeKeyDown') => {
@@ -165,31 +234,15 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
     }
     // Modal closes via the Pending → Fulfilled effect above, not here,
     // so the spinner stays visible until the saga resolves.
-  }, [
-    dispatch,
-    loadId,
-    targetStatus,
-    notes,
-    needsInlineAssignment,
-    assignmentValues,
-  ]);
+  }, [dispatch, loadId, targetStatus, notes, needsInlineAssignment, assignmentValues]);
 
-  const handleNotesChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setNotes(event.target.value);
-    },
-    [],
-  );
-
-  if (!load) {
-    return null;
-  }
+  const handleNotesChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setNotes(event.target.value);
+  }, []);
 
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        Change Status: {load.loadNumber}
-      </DialogTitle>
+      <DialogTitle>Change Status: {load.loadNumber}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -202,8 +255,8 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
 
           {DESTRUCTIVE_STATUSES.includes(targetStatus) && (
             <Alert severity="error">
-              This action cannot be easily reversed. The load will be marked
-              as {STATUS_LABELS[targetStatus]}.
+              This action cannot be easily reversed. The load will be marked as{' '}
+              {STATUS_LABELS[targetStatus]}.
             </Alert>
           )}
 
@@ -240,6 +293,78 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
               <Grid container spacing={2}>
                 <AssignmentFieldGroup formik={assignmentFormik} />
               </Grid>
+            </Box>
+          )}
+
+          {needsRateConUpload && (
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+                Upload Rate Confirmation
+              </Typography>
+              {!rateConUpload ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<CloudUploadOutlinedIcon />}
+                    onClick={() => rateConInputRef.current?.click()}
+                  >
+                    Select Rate Con
+                  </Button>
+                  <input
+                    ref={rateConInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    onChange={handleRateConFileChange}
+                    style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+                  />
+                </>
+              ) : (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: 'action.hover' }}
+                >
+                  {rateConUploadStatus === 'Pending' && (
+                    <LinearProgress
+                      sx={{ width: 24, height: 4, borderRadius: 1, flexShrink: 0 }}
+                    />
+                  )}
+                  {rateConUploadStatus === 'Fulfilled' && (
+                    <CheckCircleOutlineIcon sx={{ fontSize: 20, color: 'success.main' }} />
+                  )}
+                  {rateConUploadStatus === 'Rejected' && (
+                    <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
+                  )}
+                  <Chip label="Rate Con" size="small" variant="outlined" color="primary" />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {rateConUpload.fileName}
+                  </Typography>
+                  {rateConUploadStatus === 'Rejected' && rateConUploadError && (
+                    <Typography variant="caption" color="error.main">
+                      {rateConUploadError}
+                    </Typography>
+                  )}
+                  {rateConUploadStatus === 'Rejected' && (
+                    <IconButton
+                      size="small"
+                      aria-label="Remove failed upload"
+                      onClick={() => setRateConUpload(null)}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Stack>
+              )}
             </Box>
           )}
 

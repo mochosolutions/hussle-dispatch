@@ -19,6 +19,7 @@ interface VehicleInput {
 
 export interface SaveEquipmentInput {
   carrierId: string;
+  organizationId: string;
   vehicles: VehicleInput[];
   medicalCourierCompliance?: Record<string, unknown>;
 }

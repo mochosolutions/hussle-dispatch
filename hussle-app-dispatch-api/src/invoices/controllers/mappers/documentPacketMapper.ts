@@ -3,4 +3,5 @@ import type { DocumentPacketInput } from '../../types/documentPacketTypes';
 
 export const documentPacketMapper = (req: Request): DocumentPacketInput => ({
   invoiceId: req.params['id'] ?? '',
+  organizationId: req.organizationId ?? '',
 });

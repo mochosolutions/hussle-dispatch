@@ -25,8 +25,8 @@ export interface PdfControllers {
 
 export const createPdfControllers = (deps: PdfControllerDeps): PdfControllers => ({
   generatePdf: async (req: Request, res: Response): Promise<void> => {
-    const { invoiceId } = pdfMapper(req);
-    const invoice = await deps.invoiceRepo.findById(invoiceId);
+    const { invoiceId, organizationId } = pdfMapper(req);
+    const invoice = await deps.invoiceRepo.findById(invoiceId, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');
@@ -44,14 +44,14 @@ export const createPdfControllers = (deps: PdfControllerDeps): PdfControllers =>
     const pdfUrl = await deps.storageProvider.put(s3Key, pdfBuffer, 'application/pdf');
 
     // Persist the pdfUrl on the invoice using updateStatus with current status
-    await deps.invoiceRepo.updateStatus(invoiceId, invoice.status, { pdfUrl });
+    await deps.invoiceRepo.updateStatus(invoiceId, organizationId, invoice.status, { pdfUrl });
 
     sendSingle(res, { pdfUrl });
   },
 
   previewPdf: async (req: Request, res: Response): Promise<void> => {
-    const { invoiceId } = pdfMapper(req);
-    const invoice = await deps.invoiceRepo.findById(invoiceId);
+    const { invoiceId, organizationId } = pdfMapper(req);
+    const invoice = await deps.invoiceRepo.findById(invoiceId, organizationId);
 
     if (invoice === null) {
       throw new NotFoundError('Invoice not found');

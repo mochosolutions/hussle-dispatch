@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type {
   CreateExpenseInput,
@@ -12,6 +13,7 @@ import type {
   UpdateExpenseInput,
 } from '../types/expenseTypes';
 import { NotFoundError, ValidationError } from '@/shared/errors';
+import { ROUNDING } from '@/shared/financials';
 
 const FUEL_FIELD_NAMES = ['amount', 'gallons', 'pricePerGallon'] as const;
 const FUEL_ONLY_FIELDS = ['gallons', 'pricePerGallon', 'fuelType', 'odometer'] as const;
@@ -39,18 +41,32 @@ const resolveFuelFields = (input: {
   }
 
   if (isFuelFieldProvided(gallons) && isFuelFieldProvided(pricePerGallon)) {
-    return { amount: gallons * pricePerGallon, gallons, pricePerGallon };
+    const computedAmount = new Decimal(gallons)
+      .times(pricePerGallon)
+      .toDecimalPlaces(2, ROUNDING)
+      .toNumber();
+    return { amount: computedAmount, gallons, pricePerGallon };
   }
 
   if (isFuelFieldProvided(amount) && isFuelFieldProvided(pricePerGallon)) {
-    return { amount, gallons: amount / pricePerGallon, pricePerGallon };
+    const computedGallons = new Decimal(amount)
+      .dividedBy(pricePerGallon)
+      .toDecimalPlaces(3, ROUNDING)
+      .toNumber();
+    return { amount, gallons: computedGallons, pricePerGallon };
   }
 
   // amount and gallons provided
+  const resolvedAmount = amount as number;
+  const resolvedGallons = gallons as number;
+  const computedPricePerGallon = new Decimal(resolvedAmount)
+    .dividedBy(resolvedGallons)
+    .toDecimalPlaces(4, ROUNDING)
+    .toNumber();
   return {
-    amount: amount as number,
-    gallons: gallons as number,
-    pricePerGallon: (amount as number) / (gallons as number),
+    amount: resolvedAmount,
+    gallons: resolvedGallons,
+    pricePerGallon: computedPricePerGallon,
   };
 };
 
@@ -258,7 +274,7 @@ export const createExpenseService = (
       updateData.odometer = input.odometer;
     }
 
-    const updated = await deps.expenseRepo.update(input.id, updateData);
+    const updated = await deps.expenseRepo.update(input.id, input.organizationId, updateData);
 
     deps.eventBus
       .publish('expense.updated', {
@@ -280,7 +296,7 @@ export const createExpenseService = (
       throw new NotFoundError(`Expense with id ${input.id} not found`);
     }
 
-    const deleted = await deps.expenseRepo.softDelete(input.id);
+    const deleted = await deps.expenseRepo.softDelete(input.id, input.organizationId);
 
     deps.eventBus
       .publish('expense.deleted', {
