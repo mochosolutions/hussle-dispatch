@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "version": "1.1",
+  "name": "FleetCommand",
+  "description": "Load board ingestion for DAT and Amazon Relay",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["http://localhost:3001/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FleetCommand Extension"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://relay.amazon.com/*"],
+      "js": ["relayContentScript.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://one.dat.com/*", "https://power.dat.com/*"],
+      "js": ["contentScript.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["relayScript.js"],
+      "matches": ["https://relay.amazon.com/*"]
+    },
+    {
+      "resources": ["script.js"],
+      "matches": ["https://one.dat.com/*", "https://power.dat.com/*"]
+    }
+  ]
+}

@@ -1,0 +1,1447 @@
+{
+    "data": {
+        "viewer": {
+            "marketplace_listing_sets": {
+                "edges": [
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "2408132432688335",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "527705736199269",
+                                "marketplace_listing_title": "Studio 0 Baths - Apartment",
+                                "formatted_price": {
+                                    "text": "$2,500"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "Photo",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-2.xx.fbcdn.net\/v\/t39.30808-6\/340900901_752648179918051_8162039083184446013_n.jpg?stp=c43.0.260.260a_dst-jpg_p261x260&_nc_cat=109&ccb=1-7&_nc_sid=843cd7&_nc_ohc=OJ4obl1SNDYAX8ZNfG6&_nc_ht=scontent-lga3-2.xx&oh=00_AfDI5iG-a3LL-dPyPWfWX-u9egVq1abSN4W20MhQ1I_GHg&oe=643D03A2"
+                                    },
+                                    "id": "6966371893379089"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 6,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/527705736199269\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo1Mjc3MDU3MzYxOTkyNjk="
+                                },
+                                "reportable_ent_id": "230209302916678",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": false
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": {
+                                    "thread_key": {
+                                        "thread_fbid": "5328600660576510"
+                                    },
+                                    "id": "bWVzc2FnZV90aHJlYWQ6NTMyODYwMDY2MDU3NjUxMA"
+                                },
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6321383114550664"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,500"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "Studio 0 Baths - Apartment",
+                                "creation_time": 1681236826,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 5
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRVXAaiCjvHnoR8ti4W0aREHY12jVVMC6EQrRI-6ppCpNWg27bv15p1MXkZmKxiZwUgqfZSKHpV6uatio6bXWFWg"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "1628236124267143",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "170687422546573",
+                                "marketplace_listing_title": "1 Bed 1 Bath - Apartment",
+                                "formatted_price": {
+                                    "text": "$1,900"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "Photo",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-2.xx.fbcdn.net\/v\/t39.30808-6\/340818723_1550151238828233_1510768517154196064_n.jpg?stp=c0.128.1284.1284a_dst-jpg_s261x260&_nc_cat=100&ccb=1-7&_nc_sid=843cd7&_nc_ohc=yhDfZDDbsLAAX8bFUWz&_nc_ht=scontent-lga3-2.xx&oh=00_AfCKLbwCBBU2Zjw5kqXa3uBRaV7elgmibDbr4LjKyBHo-A&oe=643B634B"
+                                    },
+                                    "id": "6963514453664833"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": true,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 5,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/170687422546573\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzoxNzA2ODc0MjI1NDY1NzM="
+                                },
+                                "reportable_ent_id": "791940239012386",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": false
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": true,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": {
+                                    "thread_key": {
+                                        "thread_fbid": "5894137680708004"
+                                    },
+                                    "id": "bWVzc2FnZV90aHJlYWQ6NTg5NDEzNzY4MDcwODAwNA"
+                                },
+                                "product_item": {
+                                    "promoted_listing": null,
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6090240961059627"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$1,900"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "1 Bed 1 Bath - Apartment",
+                                "creation_time": 1681160955,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 420
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRr5JbL-HSOYM-TadO2jRexf16JKcJeE8YUHMqjnt4eQ35t0nckEN82ElhsovToXoBNRUFLL2_rZLWBoHYfQq-1g"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "252614777190608",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "1026323988746973",
+                                "marketplace_listing_title": "1 Bed 1 Bath - Apartment",
+                                "formatted_price": {
+                                    "text": "$4,700"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "Photo",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-2.xx.fbcdn.net\/v\/t39.30808-6\/340471154_1595994797570312_7206936980191463718_n.jpg?stp=c67.0.260.260a_dst-jpg_p261x260&_nc_cat=104&ccb=1-7&_nc_sid=843cd7&_nc_ohc=tKPXS5p3pD8AX80Cn8-&_nc_ht=scontent-lga3-2.xx&oh=00_AfDmFAD1sfu3sxa5hBaSPG5z-olZgFTDPpCCIUBs1PQLpw&oe=643D0739"
+                                    },
+                                    "id": "6960531317296480"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 5,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/1026323988746973\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzoxMDI2MzIzOTg4NzQ2OTcz"
+                                },
+                                "reportable_ent_id": "752627463250598",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": true
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": null,
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6220690834648966"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$4,700"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "1 Bed 1 Bath - Apartment",
+                                "creation_time": 1681083359,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 2
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHR0N13DyzsHY5VHkem18NRj1OL18kC5W0ZCBmBnbj_LWWeFEfpYrCbA1hVYZzE8sKZSCo6SxA_MKEAXFZqwqchBQ"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "934095554388195",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "952280082465774",
+                                "marketplace_listing_title": "2 Beds 1 Bath Apartment",
+                                "formatted_price": {
+                                    "text": "$2,790"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-2.xx.fbcdn.net\/v\/t45.5328-4\/340489583_6027161650654909_6593381806544610254_n.jpg?stp=c0.43.261.261a_dst-jpg_p261x260&_nc_cat=109&ccb=1-7&_nc_sid=c48759&_nc_ohc=2vDu3zsG4B0AX_Hf7iK&_nc_ht=scontent-lga3-2.xx&oh=00_AfDBOoPU50UvntsJnzu1a0_0epdK6ao5UkWam-L4p28JvQ&oe=643BD99A"
+                                    },
+                                    "id": "6027161647321576"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/952280082465774\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo5NTIyODAwODI0NjU3NzQ="
+                                },
+                                "reportable_ent_id": "6061889987260597",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": true
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": null,
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6061889987260597"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,790"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "2 Beds 1 Bath Apartment",
+                                "creation_time": 1681076830,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 13
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHR3g2YBstMzq2rLm8BLdJszj6iFsrstdNfbrjjG-GgVHdsWvbMPZTdVzVh0Hzn9k6AjQNaE6ZoiMstxQVXTvWy0A"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "703355421539101",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "781240013342937",
+                                "marketplace_listing_title": "2 Beds 1 Bath Apartment",
+                                "formatted_price": {
+                                    "text": "$2,650"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-1.xx.fbcdn.net\/v\/t45.5328-4\/340041959_6035400883164309_554841766098548310_n.jpg?stp=c0.43.261.261a_dst-jpg_p261x260&_nc_cat=108&ccb=1-7&_nc_sid=c48759&_nc_ohc=d4F9zlkFcT8AX_Fmvsr&_nc_ht=scontent-lga3-1.xx&oh=00_AfA8s9ECahfn9TjtzdRljB5AutJah-sCzcesr4CWp8Hp7Q&oe=643BAEDA"
+                                    },
+                                    "id": "6035400879830976"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/781240013342937\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo3ODEyNDAwMTMzNDI5Mzc="
+                                },
+                                "reportable_ent_id": "6076291075785606",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": true
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": null,
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6076291075785606"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,650"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "2 Beds 1 Bath Apartment",
+                                "creation_time": 1681076223,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 35
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRYZH6LlVG3ZjKJ9LcIVtITzG6N16qOCSoj3X9fTpefxCafRGIHcCXe2z8mUcut9lDJ0ZjtJ064JLfh8xv7taF_A"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "1429488367880142",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "607177241296541",
+                                "marketplace_listing_title": "3 Beds 2 Baths Apartment",
+                                "formatted_price": {
+                                    "text": "$3,995"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-1.xx.fbcdn.net\/v\/t45.5328-4\/339533827_5745285492248146_5092880458232675772_n.jpg?stp=c78.0.260.260a_dst-jpg_p261x260&_nc_cat=110&ccb=1-7&_nc_sid=c48759&_nc_ohc=TVhsMys676MAX_pCPGf&_nc_ht=scontent-lga3-1.xx&oh=00_AfDC68uAYKGqR7cMHk2qEKrVfyoVpLSVYp6L0Sa283VXhA&oe=643B6D9F"
+                                    },
+                                    "id": "5745285488914813"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/607177241296541\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo2MDcxNzcyNDEyOTY1NDE="
+                                },
+                                "reportable_ent_id": "9046888698717235",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": true
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": null,
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "9046888698717235"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$3,995"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "3 Beds 2 Baths Apartment",
+                                "creation_time": 1681075224,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 9
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRbt4gWB25mgfRW4bUjeZvb7hfh1npv1R1LHqiw2bgBiQQmaP7hsSVdg7CzU1_9SlUPXmFvjwut9YrQRTLUiVuvQ"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "1010526070322254",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_approved",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "903011910957728",
+                                "marketplace_listing_title": "1 Bed 1 Bath Apartment",
+                                "formatted_price": {
+                                    "text": "$2,650"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-1.xx.fbcdn.net\/v\/t45.5328-4\/340690176_5755546071221876_6968644507178034178_n.jpg?stp=c0.43.261.261a_dst-jpg_p261x260&_nc_cat=111&ccb=1-7&_nc_sid=c48759&_nc_ohc=FvzniuVfn8wAX9X-ws4&_nc_ht=scontent-lga3-1.xx&oh=00_AfCR8pcSaMhyBr8-eFw82VPWVTqKSx12mmY6TzBm1vLU_g&oe=643C4856"
+                                    },
+                                    "id": "5755546067888543"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/903011910957728\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo5MDMwMTE5MTA5NTc3Mjg="
+                                },
+                                "reportable_ent_id": "9615837441767653",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": true
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": null,
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "9615837441767653"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,650"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "1 Bed 1 Bath Apartment",
+                                "creation_time": 1681074752,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 21
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRzfoIDXZ1L53bX9LI6OsQ6C-3Gd_SF4Eeim61uj-PZYgbeZT2bHj03bTwU5KggLEtEsojE_2_za37zb12-mhy0g"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "939334013870409",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "6650009198376429",
+                                "marketplace_listing_title": "Studio 1 Bath Apartment",
+                                "formatted_price": {
+                                    "text": "$2,525"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-2.xx.fbcdn.net\/v\/t45.5328-4\/340635100_9400714463302305_6540665057349817108_n.jpg?stp=c64.0.260.260a_dst-jpg_p261x260&_nc_cat=109&ccb=1-7&_nc_sid=c48759&_nc_ohc=FrXsa2UJQK4AX_KJM8z&_nc_ht=scontent-lga3-2.xx&oh=00_AfAzLeQ62pQJZLjWuV52gzMZA2rY4Qek6URXKwsa9IuFVw&oe=643CD084"
+                                    },
+                                    "id": "9400714459968972"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": true,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/6650009198376429\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo2NjUwMDA5MTk4Mzc2NDI5"
+                                },
+                                "reportable_ent_id": "6106201502801724",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": false
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": true,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": {
+                                    "thread_key": {
+                                        "thread_fbid": "5538962729541145"
+                                    },
+                                    "id": "bWVzc2FnZV90aHJlYWQ6NTUzODk2MjcyOTU0MTE0NQ"
+                                },
+                                "product_item": {
+                                    "promoted_listing": null,
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6106201502801724"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,525"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "Studio 1 Bath Apartment",
+                                "creation_time": 1681069081,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 67
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRe2WWwH4sIRzhI-bWEks-cnlXqLTgfFFF2IhA4fw1mBF5lE862RA5j_XBGFPuEhUpY_DdCtytRw8y7hhmYupRoQ"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "973963090631865",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_not_exist",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "1347857455786252",
+                                "marketplace_listing_title": "2 Beds 1 Bath Apartment",
+                                "formatted_price": {
+                                    "text": "$2,400"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-2.xx.fbcdn.net\/v\/t45.5328-4\/340644190_6756645971030014_2756974522811082532_n.jpg?stp=c64.0.260.260a_dst-jpg_p261x260&_nc_cat=100&ccb=1-7&_nc_sid=c48759&_nc_ohc=GEfto9QhBo4AX8RFrfl&_nc_ht=scontent-lga3-2.xx&oh=00_AfCVUzih3eWdfFRggmrFCnZM2LM7L8pjU66W40rJ4AsMfw&oe=643C9E26"
+                                    },
+                                    "id": "6756645967696681"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/1347857455786252\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzoxMzQ3ODU3NDU1Nzg2MjUy"
+                                },
+                                "reportable_ent_id": "6060266447402959",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": false
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": {
+                                    "thread_key": {
+                                        "thread_fbid": "5936901429739137"
+                                    },
+                                    "id": "bWVzc2FnZV90aHJlYWQ6NTkzNjkwMTQyOTczOTEzNw"
+                                },
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6060266447402959"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,400"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "2 Beds 1 Bath Apartment",
+                                "creation_time": 1681068401,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 37
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHRKMpUmT7bWeSDTj0qZPwZ_zcBooLwDQiY5nJgI36VEjSol0OOHLKtpMksFMjWZgjFnn5SVmNoYUlzPhl03Wx89w"
+                    },
+                    {
+                        "node": {
+                            "__typename": "MarketplaceIndexedListingSet",
+                            "id": "774647783879918",
+                            "first_listing": {
+                                "__typename": "GroupCommerceProductItem",
+                                "__isMarketplaceListingRenderable": "GroupCommerceProductItem",
+                                "is_viewer_seller": true,
+                                "appeal_status": "appeal_approved",
+                                "is_duplicate": false,
+                                "low_quality_suggestion_type": "no_notify",
+                                "__isMarketplaceListingWithMiVhState": "GroupCommerceProductItem",
+                                "mi_vh_item_verification_state": {
+                                    "__typename": "MiVhItemEvaluationResults",
+                                    "is_approved": true
+                                },
+                                "__isMarketplaceListingWithIntegrityStatus": "GroupCommerceProductItem",
+                                "listing_is_rejected": false,
+                                "integrity_status_indicator": null,
+                                "__isMarketplaceListingSellerNotices": "GroupCommerceProductItem",
+                                "listing_status_indicator": null,
+                                "id": "975126903851670",
+                                "marketplace_listing_title": "3 Beds 1 Bath Apartment",
+                                "formatted_price": {
+                                    "text": "$2,400"
+                                },
+                                "primary_listing_photo": {
+                                    "__typename": "ProductImage",
+                                    "image": {
+                                        "uri": "https:\/\/scontent-lga3-1.xx.fbcdn.net\/v\/t45.5328-4\/320834035_9043205079087555_222217220624128496_n.jpg?stp=c42.0.260.260a_dst-jpg_p261x260&_nc_cat=106&ccb=1-7&_nc_sid=c48759&_nc_ohc=DoQQMSEaB80AX97XQAk&_nc_ht=scontent-lga3-1.xx&oh=00_AfCjDOaf573uVzQ4DlKSc2Vw99u76JjMPM3KAXRLLjgUsg&oe=643CE224"
+                                    },
+                                    "id": "9043205075754222"
+                                },
+                                "can_seller_edit": true,
+                                "__isMarketplaceListingWithVariants": "GroupCommerceProductItem",
+                                "default_variant_listing": null,
+                                "is_profile_selling_post": false,
+                                "is_pending": false,
+                                "is_sold": false,
+                                "is_draft": false,
+                                "listing_inventory_type": "SINGLE_QUANTITY",
+                                "marketplace_listing_category_id": "1468271819871448",
+                                "is_on_marketplace": true,
+                                "__isMarketplaceListingWithCheckoutOffers": "GroupCommerceProductItem",
+                                "activeOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0
+                                },
+                                "counterOffers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count_up_to": 0,
+                                    "count": 0
+                                },
+                                "is_multi_variant_listing": false,
+                                "marketplace_bump_info": {
+                                    "bump_count": 0,
+                                    "days_until_next_bump": 4,
+                                    "max_bump_count": 5
+                                },
+                                "__isNode": "GroupCommerceProductItem",
+                                "__isMarketplaceListingHideableFromFriends": "GroupCommerceProductItem",
+                                "hidden_from_friends": null,
+                                "can_share": true,
+                                "story": {
+                                    "__isEntity": "Story",
+                                    "url": "https:\/\/www.facebook.com\/marketplace\/item\/975126903851670\/",
+                                    "__isNode": "Story",
+                                    "id": "UzpfSTEwMDAwMDE5MDQxMjE1NTpWSzo5NzUxMjY5MDM4NTE2NzA="
+                                },
+                                "reportable_ent_id": "6768734526475507",
+                                "__isGroupCommerceProductItemIsDeprecated": "GroupCommerceProductItem",
+                                "all_message_threads": {
+                                    "is_empty": false
+                                },
+                                "__isMarketplaceListingWithChildListings": "GroupCommerceProductItem",
+                                "has_children": false,
+                                "can_seller_change_availability": true,
+                                "should_show_txn_survey_on_mas": false,
+                                "__isMarketplaceListingWithDeliveryOptions": "GroupCommerceProductItem",
+                                "is_mark_as_available_enabled": false,
+                                "incentive_campaign_for_free_shipping": null,
+                                "offers": {
+                                    "__typename": "GroupCommerceProductItemOffersConnection",
+                                    "count": 0
+                                },
+                                "__isMarketplaceMessageable": "GroupCommerceProductItem",
+                                "seller_message_thread": {
+                                    "thread_key": {
+                                        "thread_fbid": "7181020368580099"
+                                    },
+                                    "id": "bWVzc2FnZV90aHJlYWQ6NzE4MTAyMDM2ODU4MDA5OQ"
+                                },
+                                "product_item": {
+                                    "promoted_listing": {
+                                        "page_posted_from": {
+                                            "id": "100286152184665"
+                                        },
+                                        "product_item_override": null,
+                                        "button_text": "Boost Listing",
+                                        "page_id": "100286152184665",
+                                        "coupon_offer_id": null
+                                    },
+                                    "boosted_marketplace_listing": null,
+                                    "id": "6768734526475507"
+                                },
+                                "most_recent_active_order_as_buyer": null,
+                                "order_summaries": [],
+                                "__isMarketplaceListingWithCopyAndDelete": "GroupCommerceProductItem",
+                                "can_copy_and_delete": false,
+                                "c2c_shipping_eligible": false,
+                                "is_shipping_offered": false,
+                                "is_view_order_enabled": false,
+                                "__isMarketplaceListingWithReservation": "GroupCommerceProductItem",
+                                "has_accepted_or_received_reservation": false,
+                                "__isMarketplaceListingWithCopy": "GroupCommerceProductItem",
+                                "can_copy": false,
+                                "__isMarketplaceListingWithRenew": "GroupCommerceProductItem",
+                                "can_renew_listing": true,
+                                "listing_price": {
+                                    "formatted_amount": "$2,400"
+                                },
+                                "strikethrough_price": null,
+                                "base_marketplace_listing_title": "3 Beds 1 Bath Apartment",
+                                "creation_time": 1681067763,
+                                "is_live": true,
+                                "inventory_count": null,
+                                "total_inventory": null,
+                                "__isMarketplaceListingWithCrossposting": "GroupCommerceProductItem",
+                                "cross_post_info": {
+                                    "count": 1,
+                                    "is_posted_to_marketplace": true
+                                },
+                                "origin_group": null,
+                                "__isMarketplaceListingWithInsights": "GroupCommerceProductItem",
+                                "listing_insights": {
+                                    "insights": [
+                                        {
+                                            "count": 220
+                                        }
+                                    ]
+                                },
+                                "is_hidden": false
+                            }
+                        },
+                        "cursor": "AQHR0ZY_20IYpLM0w969eK82q9KJQIwVRXtNzMeTU6GRjj97K6IfYtrl3nMNqhfABDtoHd14rO024XET2meo0B_TRQ"
+                    }
+                ]
+            }
+        }
+    },
+    "extensions": {
+        "is_final": false
+    }
+} {
+    "label": "MarketplaceYouSellingFastActiveSection_viewerConnection$defer$MarketplaceYouSellingFastActiveSection_marketplace_listing_sets$page_info",
+    "path": [
+        "viewer",
+        "marketplace_listing_sets"
+    ],
+    "data": {
+        "page_info": {
+            "end_cursor": "AQHRwJPZkRUP7xN-cHk9Koo-Z5jM1f6cFv5WHghkLTS5qxdWJ6EMLkkDyAzvmYxbD1ci968O9Twb2yKQVifvDJqI_w",
+            "has_next_page": true
+        }
+    },
+    "extensions": {
+        "is_final": true
+    }
+}

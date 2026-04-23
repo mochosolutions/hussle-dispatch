@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-03-24T00:00:00.000Z",
+  "ecosystem": "js",
+  "monorepo": false,
+  "rootCommands": { "validateAll": null, "buildAll": "npm run build", "testAll": null },
+  "packages": [
+    {
+      "serviceKey": "dat-load-scraper",
+      "name": "dat-load-scraper",
+      "path": "./",
+      "type": "frontend",
+      "registryFile": "REGISTRY-dat-load-scraper.md",
+      "stack": ["typescript", "react", "redux-toolkit", "redux-saga", "webpack", "chrome-extension-mv3"],
+      "manifest": "package.json",
+      "commands": {
+        "test": null,
+        "lint": null,
+        "typecheck": "npx tsc --noEmit",
+        "build": "npm run build",
+        "testRelated": null
+      }
+    }
+  ]
+}
