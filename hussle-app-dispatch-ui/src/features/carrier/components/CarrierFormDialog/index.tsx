@@ -2,6 +2,7 @@ import type React from 'react';
 import { Box, Typography, Divider, Stack } from '@mui/material';
 import {
   CheckboxField,
+  CurrencyField,
   DateField,
   EmailField,
   PercentField,
@@ -11,7 +12,7 @@ import {
   TextField,
   ZipCodeField,
 } from '@mocho/ui/components';
-import type { Carrier } from '../../types';
+import type { Carrier, DispatchFeeType } from '../../types';
 import { carrierEditSchema } from '../../validators/carrierSchema';
 import type { CarrierEditFormValues } from '../../validators/carrierSchema';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
@@ -27,6 +28,11 @@ const TYPE_OPTIONS = [
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
   { value: 'LEASED_CARRIER', label: 'Leased Carrier' },
+];
+
+const FEE_TYPE_OPTIONS = [
+  { value: 'PERCENTAGE', label: 'Percentage' },
+  { value: 'FLAT', label: 'Flat' },
 ];
 
 const sectionLabelSx = {
@@ -57,7 +63,9 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
     state: carrier?.state ?? '',
     zip: carrier?.zip ?? '',
     companyMarginPercent: carrier?.companyMarginPercent ?? 10,
-    feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
+    dispatchFeeType: (carrier?.dispatchFeeType ?? 'PERCENTAGE') as DispatchFeeType,
+    dispatchFeeAmount: carrier?.dispatchFeeAmount ?? 0,
+    feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? true,
     dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
     insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
     w9OnFile: carrier?.w9OnFile ?? false,
@@ -135,16 +143,34 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <PercentField name="companyMarginPercent" label="Company Margin %" formik={formik} />
-            </Box>
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-              <CheckboxField
-                name="feeIncludesAccessorials"
-                label="Fee Includes Accessorials"
+              <SelectField
+                name="dispatchFeeType"
+                label="Fee Type"
+                data={FEE_TYPE_OPTIONS}
                 formik={formik}
               />
             </Box>
+            <Box sx={{ flex: 1 }}>
+              {formik.values.dispatchFeeType === 'FLAT' ? (
+                <CurrencyField
+                  name="dispatchFeeAmount"
+                  label="Dispatch Fee Amount"
+                  formik={formik}
+                />
+              ) : (
+                <PercentField
+                  name="companyMarginPercent"
+                  label="Company Margin %"
+                  formik={formik}
+                />
+              )}
+            </Box>
           </Box>
+          <CheckboxField
+            name="feeIncludesAccessorials"
+            label="Fee Includes Accessorials"
+            formik={formik}
+          />
 
           <Divider />
 

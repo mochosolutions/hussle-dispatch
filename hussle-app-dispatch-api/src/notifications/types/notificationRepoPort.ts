@@ -18,7 +18,7 @@ export interface NotificationSettingsRepoPort {
 }
 
 export interface LoadNotificationOverrideRepoPort {
-  findByLoadId(loadId: string): Promise<NotificationOverrideRecord[]>;
+  findByLoadId(loadId: string, organizationId: string): Promise<NotificationOverrideRecord[]>;
   upsert(input: UpsertNotificationOverrideInput): Promise<NotificationOverrideRecord>;
   deleteByLoadIdAndTriggerChannel(
     loadId: string,
@@ -29,5 +29,5 @@ export interface LoadNotificationOverrideRepoPort {
 
 export interface NotificationLogRepoPort {
   create(input: CreateNotificationLogInput): Promise<NotificationLogRecord>;
-  findByLoadId(loadId: string): Promise<NotificationLogRecord[]>;
+  findByLoadId(loadId: string, organizationId: string): Promise<NotificationLogRecord[]>;
 }

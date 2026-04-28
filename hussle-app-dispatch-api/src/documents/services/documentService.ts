@@ -7,14 +7,15 @@ import type {
   BulkDownloadResult,
   ConfirmInput,
   DocumentRepoPort,
+  DocumentWithUploader,
   DownloadDocumentInput,
   GetDocumentInput,
   ListDocumentsInput,
+  LoadContactQueryPort,
   PresignInput,
   PresignResult,
 } from '../types/documentTypes';
 import type { DocumentService } from '../types/documentServiceTypes';
-import type { Document } from '@prisma/client';
 import {
   DocumentNotFoundError,
   DocumentUploadNotConfirmedError,
@@ -26,6 +27,7 @@ interface DocumentServiceDeps {
   documentRepository: DocumentRepoPort;
   storageProvider: StorageProvider;
   eventBus: EventBus;
+  loadContactQuery?: LoadContactQueryPort;
 }
 
 /**
@@ -55,7 +57,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       fileName: input.fileName,
       mimeType: input.mimeType,
       s3Key,
-      s3Url: presignedUrl,
+      url: presignedUrl,
       uploadStatus: UPLOAD_STATUS.PENDING,
       uploadedByUserId: input.uploadedByUserId,
       ...(input.expiresAt !== undefined && { expiresAt: new Date(input.expiresAt) }),
@@ -71,7 +73,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
     };
   },
 
-  confirm: async (input: ConfirmInput): Promise<Document> => {
+  confirm: async (input: ConfirmInput): Promise<DocumentWithUploader> => {
     const document = await deps.documentRepository.findById(input.documentId, input.organizationId);
 
     if (document === null) {
@@ -94,6 +96,30 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       UPLOAD_STATUS.CONFIRMED,
     );
 
+    // Look up load context for notification enrichment
+    let enrichedFields: {
+      loadId?: string;
+      customerId?: string | null;
+      loadNumber?: string;
+      contactEmail?: string | null;
+      contactPhone?: string | null;
+      contactCcEmails?: string[];
+    } = {};
+
+    if (document.entityType === 'load' && deps.loadContactQuery !== undefined) {
+      const load = await deps.loadContactQuery.findById(document.entityId);
+      if (load !== null) {
+        enrichedFields = {
+          loadId: load.id,
+          customerId: load.customerId,
+          loadNumber: load.loadNumber,
+          contactEmail: load.contactEmail,
+          contactPhone: load.contactPhone,
+          contactCcEmails: load.contactCcEmails,
+        };
+      }
+    }
+
     // Publish event — archiving logic is handled by the subscriber
     await deps.eventBus.publish('document.confirmed', {
       documentId: document.id,
@@ -101,15 +127,17 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       entityId: document.entityId,
       documentType: document.type,
       organizationId: document.organizationId,
+      requestingUserId: input.requestingUserId ?? null,
+      ...enrichedFields,
     });
 
     return confirmed;
   },
 
-  list: async (input: ListDocumentsInput): Promise<Document[]> =>
+  list: async (input: ListDocumentsInput): Promise<DocumentWithUploader[]> =>
     deps.documentRepository.findMany(input),
 
-  getById: async (input: GetDocumentInput): Promise<Document> => {
+  getById: async (input: GetDocumentInput): Promise<DocumentWithUploader> => {
     const document = await deps.documentRepository.findById(input.id, input.organizationId);
 
     if (document === null) {
@@ -138,7 +166,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
     return presignedUrl;
   },
 
-  archive: async (input: ArchiveDocumentInput): Promise<Document> => {
+  archive: async (input: ArchiveDocumentInput): Promise<DocumentWithUploader> => {
     const document = await deps.documentRepository.findById(input.id, input.organizationId);
 
     if (document === null) {
@@ -146,6 +174,16 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
     }
 
     const archived = await deps.documentRepository.archive(input.id);
+
+    await deps.eventBus.publish('document.archived', {
+      documentId: archived.id,
+      organizationId: archived.organizationId,
+      fileName: archived.fileName,
+      type: archived.type,
+      entityType: archived.entityType,
+      entityId: archived.entityId,
+      requestingUserId: input.requestingUserId ?? null,
+    });
 
     return archived;
   },

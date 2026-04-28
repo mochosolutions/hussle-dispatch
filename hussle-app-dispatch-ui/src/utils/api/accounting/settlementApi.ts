@@ -81,6 +81,13 @@ export const disputeSettlement = async (
   return response.data.data;
 };
 
+export const downloadSettlementPdf = async (id: string): Promise<Blob> => {
+  const response = await axiosInstance.get(`/settlements/${id}/pdf`, {
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};
+
 export const addAdjustment = async (
   settlementId: string,
   input: CreateAdjustmentInput,

@@ -12,7 +12,7 @@ export const ROUNDING = Decimal.ROUND_HALF_EVEN;
 export const round2 = (value: Decimal): string =>
   value.toDecimalPlaces(2, ROUNDING).toFixed(2);
 
-interface CarrierInput {
+export interface CarrierInput {
   type: CarrierType;
   dispatchFeePercent: string;
   partnerSplitPercent: string;

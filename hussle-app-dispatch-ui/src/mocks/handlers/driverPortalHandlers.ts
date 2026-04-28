@@ -19,8 +19,8 @@ const mockPortalLoad = {
       city: 'Chicago',
       state: 'IL',
       zip: '60601',
-      appointmentDate: '2026-03-22',
-      appointmentTime: '08:00',
+      appointmentStart: '2026-03-22T13:00:00.000Z',
+      appointmentEnd: '2026-03-22T15:00:00.000Z',
       contactName: 'Mike Johnson',
       contactPhone: '(312) 555-0100',
       notes: null,
@@ -34,8 +34,8 @@ const mockPortalLoad = {
       city: 'Dallas',
       state: 'TX',
       zip: '75201',
-      appointmentDate: '2026-03-23',
-      appointmentTime: '14:00',
+      appointmentStart: '2026-03-23T19:00:00.000Z',
+      appointmentEnd: '2026-03-23T21:00:00.000Z',
       contactName: 'Sarah Williams',
       contactPhone: '(214) 555-0200',
       notes: 'Dock 7',
@@ -45,9 +45,11 @@ const mockPortalLoad = {
 };
 
 export const driverPortalHandlers = [
-  // Send driver link (dispatcher-facing)
-  http.post(`${BASE}/driver-portal/loads/:loadId/send-driver-link`, () =>
-    HttpResponse.json({ data: { message: 'Driver link sent', token: `mock-token-${Date.now()}` } }),
+  // Get driver portal link (dispatcher-facing, copy-link affordance)
+  http.get(`${BASE}/driver-portal/loads/:loadId/driver-portal-link`, () =>
+    HttpResponse.json({
+      data: { url: `http://localhost:5173/driver-portal/mock-token-${Date.now()}` },
+    }),
   ),
 
   // Public portal: get load summary

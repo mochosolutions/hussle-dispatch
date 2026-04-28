@@ -17,7 +17,10 @@ import { createCarrierApprovalService } from './services/carrierApprovalService'
 import { createCarrierOnboardingDetailService } from './services/carrierOnboardingDetailService';
 import { createCarrierService } from './services/carrierService';
 import { createCarrierInviteService } from './services/carrierInviteService';
+import { createDispatchOverrideService } from './services/dispatchOverrideService';
 import { initializeCarrierSubscriber } from './services/carrierSubscriber';
+import { createDispatchOverrideControllers } from './controllers/dispatchOverrideController';
+import type { DispatchOverrideControllers } from './controllers/dispatchOverrideController';
 import type { CarrierApprovalPort } from './types/approvalTypes';
 import type { OnboardingDetailPort, OnboardingDetail } from './types/onboardingDetailTypes';
 
@@ -32,7 +35,7 @@ export const createCarriersModule = ({
   eventBus,
   logger,
 }: CarrierModuleDeps): {
-  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers;
+  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers;
   initializeSubscriber: () => Promise<void>;
 } => {
   const repositories = carrierRepositoryPrisma(prismaClient);
@@ -165,11 +168,85 @@ export const createCarriersModule = ({
     carrierOnboardingDetailService,
   });
 
+  const dispatchOverrideService = createDispatchOverrideService({
+    carrierQuery: {
+      findById: (id: string, organizationId: string) =>
+        prismaClient.carrier.findFirst({
+          where: { id, managedByOrgId: organizationId, deletedAt: null },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            dispatchAgreementOnFile: true,
+            insuranceCertOnFile: true,
+            insuranceExpiry: true,
+            w9OnFile: true,
+          },
+        }),
+    },
+    loadQuery: {
+      findById: (id: string, organizationId: string) =>
+        prismaClient.load.findFirst({
+          where: { id, organizationId, deletedAt: null },
+          select: {
+            id: true,
+            organizationId: true,
+            onboardingOverride: true,
+            onboardingOverrideReason: true,
+          },
+        }),
+      updateOverride: (
+        id: string,
+        data: { onboardingOverride: boolean; onboardingOverrideReason: string },
+      ) =>
+        prismaClient.load.update({
+          where: { id },
+          data,
+          select: {
+            id: true,
+            organizationId: true,
+            onboardingOverride: true,
+            onboardingOverrideReason: true,
+          },
+        }),
+    },
+    auditLog: {
+      create: (
+        organizationId: string,
+        input: {
+          userId: string | null;
+          action: string;
+          entityType: string;
+          entityId: string;
+          changes: Record<string, { old: unknown; new: unknown }> | null;
+          metadata: Record<string, unknown> | null;
+        },
+      ) =>
+        prismaClient.auditLog.create({
+          data: {
+            organizationId,
+            userId: input.userId,
+            action: input.action,
+            entityType: input.entityType,
+            entityId: input.entityId,
+            changes: input.changes as unknown as import('@prisma/client').Prisma.InputJsonValue,
+            metadata: input.metadata as unknown as import('@prisma/client').Prisma.InputJsonValue,
+            timestamp: new Date(),
+          },
+        }),
+    },
+  });
+
+  const dispatchOverrideControllers = createDispatchOverrideControllers({
+    dispatchOverrideService,
+  });
+
   const controllers = {
     ...carrierControllers,
     ...inviteControllers,
     ...approvalControllers,
     ...onboardingDetailControllers,
+    ...dispatchOverrideControllers,
   };
 
   const initializeSubscriber = () =>

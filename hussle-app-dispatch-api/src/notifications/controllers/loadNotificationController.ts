@@ -80,7 +80,8 @@ export const createLoadNotificationControllers = (
 ): LoadNotificationControllers => ({
   getOverrides: async (req: Request, res: Response): Promise<void> => {
     const loadId = requireParam(req.params, 'loadId');
-    const overrides = await deps.overrideService.getByLoadId(loadId);
+    const organizationId = req.organizationId ?? '';
+    const overrides = await deps.overrideService.getByLoadId(loadId, organizationId);
     sendSingle(res, overrides.map(toOverrideResponse));
   },
 
@@ -128,7 +129,8 @@ export const createLoadNotificationControllers = (
 
   getHistory: async (req: Request, res: Response): Promise<void> => {
     const loadId = requireParam(req.params, 'loadId');
-    const logs = await deps.logRepo.findByLoadId(loadId);
+    const organizationId = req.organizationId ?? '';
+    const logs = await deps.logRepo.findByLoadId(loadId, organizationId);
     sendSingle(res, logs.map(toLogResponse));
   },
 });

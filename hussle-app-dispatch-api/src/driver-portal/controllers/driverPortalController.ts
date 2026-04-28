@@ -13,6 +13,9 @@ interface DriverPortalControllerDeps {
   documentService: DocumentService;
 }
 
+// FIXME: Driver-uploadable document types are hard-coded. Move to org-level
+// config (or a shared documents-policy module) so dispatchers can extend the
+// allow-list without a code change. Deferred to post-MVP.
 const DRIVER_DOCUMENT_TYPES: readonly DocumentType[] = ['BOL_SIGNED', 'POD'] as const;
 
 export interface DriverPortalControllers {
@@ -60,6 +63,7 @@ const transformLoadSummary = (load: DriverPortalLoadSummary) => {
     zip: stop.zip,
     appointmentStart: stop.appointmentStart?.toISOString() ?? null,
     appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
+    schedulingType: stop.schedulingType,
     contactName: stop.contactName,
     contactPhone: stop.contactPhone,
     notes: stop.notes,

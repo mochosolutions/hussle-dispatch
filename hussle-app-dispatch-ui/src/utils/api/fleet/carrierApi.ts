@@ -32,29 +32,52 @@ interface GetCarriersParams {
 // then we translate at the HTTP boundary so the UI stays domain-pure.
 // ---------------------------------------------------------------------------
 
-interface WireCarrier extends Omit<Carrier, 'companyMarginPercent'> {
+interface WireCarrier
+  extends Omit<Carrier, 'companyMarginPercent' | 'dispatchFeeAmount'> {
   dispatchFeePercent?: number | string | null;
+  dispatchFeeAmount?: number | string | null;
 }
 
-interface WireCarrierListItem extends Omit<CarrierListItem, 'companyMarginPercent'> {
+interface WireCarrierListItem
+  extends Omit<CarrierListItem, 'companyMarginPercent' | 'dispatchFeeAmount'> {
   dispatchFeePercent?: number | string | null;
+  dispatchFeeAmount?: number | string | null;
 }
 
-const fromWireCarrier = <T extends { dispatchFeePercent?: number | string | null }>(
+const fromWireCarrier = <
+  T extends {
+    dispatchFeePercent?: number | string | null;
+    dispatchFeeAmount?: number | string | null;
+  },
+>(
   wire: T,
-): Omit<T, 'dispatchFeePercent'> & { companyMarginPercent: number } => {
-  const { dispatchFeePercent, ...rest } = wire;
-  const parsed =
+): Omit<T, 'dispatchFeePercent' | 'dispatchFeeAmount'> & {
+  companyMarginPercent: number;
+  dispatchFeeAmount: number;
+} => {
+  const { dispatchFeePercent, dispatchFeeAmount, ...rest } = wire;
+  const parsedPercent =
     typeof dispatchFeePercent === 'string' ? Number(dispatchFeePercent) : dispatchFeePercent;
+  const parsedAmount =
+    typeof dispatchFeeAmount === 'string' ? Number(dispatchFeeAmount) : dispatchFeeAmount;
   return {
     ...rest,
-    companyMarginPercent: parsed ?? 0,
+    companyMarginPercent: parsedPercent ?? 0,
+    dispatchFeeAmount: parsedAmount ?? 0,
   };
 };
 
-const toWireCarrierInput = <T extends { companyMarginPercent?: number | null }>(
+const toWireCarrierInput = <
+  T extends {
+    companyMarginPercent?: number | null;
+    dispatchFeeType?: 'PERCENTAGE' | 'FLAT' | null;
+    dispatchFeeAmount?: number | null;
+  },
+>(
   input: T,
-): Omit<T, 'companyMarginPercent'> & { dispatchFeePercent?: number | null } => {
+): Omit<T, 'companyMarginPercent'> & {
+  dispatchFeePercent?: number | null;
+} => {
   const { companyMarginPercent, ...rest } = input;
   if (companyMarginPercent === undefined) {
     return rest;
@@ -240,8 +263,10 @@ export interface CarrierWithAssets extends Carrier {
   vehicles: Vehicle[];
 }
 
-interface WireCarrierWithAssets extends Omit<CarrierWithAssets, 'companyMarginPercent'> {
+interface WireCarrierWithAssets
+  extends Omit<CarrierWithAssets, 'companyMarginPercent' | 'dispatchFeeAmount'> {
   dispatchFeePercent?: number | string | null;
+  dispatchFeeAmount?: number | string | null;
 }
 
 interface GetCarrierWithAssetsResponse {

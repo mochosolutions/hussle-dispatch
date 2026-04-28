@@ -18,7 +18,7 @@ export interface PortalDocumentRepoPort {
     type: string;
     fileName: string;
     s3Key: string;
-    s3Url: string;
+    url: string;
     uploadStatus: string;
   }): Promise<PortalDocument>;
   findById(id: string): Promise<PortalDocument | null>;

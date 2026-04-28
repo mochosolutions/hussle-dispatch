@@ -26,8 +26,14 @@ const createStopBodySchema = Yup.object({
   schedulingType: Yup.mixed<SchedulingType>()
     .oneOf(schedulingTypeValues, 'schedulingType must be a valid SchedulingType')
     .notRequired(),
-  appointmentStart: Yup.date().required('appointmentStart is required'),
-  appointmentEnd: Yup.date().nullable().notRequired(),
+  appointmentStart: Yup.date()
+    .nullable()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .required('Appointment date is required'),
+  appointmentEnd: Yup.date()
+    .nullable()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .notRequired(),
   notificationHours: Yup.number().integer().nullable().notRequired(),
   appointmentNumber: optionalTrimmed,
   contactName: Yup.string().trim().max(255, 'contactName must be at most 255 characters')
@@ -62,8 +68,14 @@ const updateStopBodySchema = Yup.object({
   schedulingType: Yup.mixed<SchedulingType>()
     .oneOf(schedulingTypeValues, 'schedulingType must be a valid SchedulingType')
     .notRequired(),
-  appointmentStart: Yup.date().notRequired(),
-  appointmentEnd: Yup.date().nullable().notRequired(),
+  appointmentStart: Yup.date()
+    .nullable()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .notRequired(),
+  appointmentEnd: Yup.date()
+    .nullable()
+    .transform((value, originalValue) => (originalValue === '' ? null : value))
+    .notRequired(),
   notificationHours: Yup.number().integer().nullable().notRequired(),
   appointmentNumber: optionalTrimmed,
   arrivalTime: Yup.date().notRequired(),

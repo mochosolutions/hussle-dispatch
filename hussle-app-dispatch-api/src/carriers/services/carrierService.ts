@@ -1,3 +1,5 @@
+import { BadRequestError } from '@mocho/common';
+import { CarrierType, DispatchFeeType } from '@prisma/client';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { CARRIER_BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import {
@@ -35,6 +37,33 @@ const listSortableFields = ['createdAt', 'updatedAt', 'name', 'insuranceExpiry']
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
     throw new ForbiddenError('Owner-operator access to fleet management is not supported.');
+  }
+};
+
+const toNumericFee = (value: string | number | null | undefined): number => {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+  return typeof value === 'number' ? value : Number(value);
+};
+
+const assertExternalCarrierHasNonZeroFee = (
+  carrierType: CarrierType,
+  feeType: DispatchFeeType,
+  dispatchFeePercent: string | number | null | undefined,
+  dispatchFeeAmount: string | number | null | undefined,
+): void => {
+  if (carrierType !== CarrierType.EXTERNAL_CARRIER) {
+    return;
+  }
+
+  const resolvedFee =
+    feeType === DispatchFeeType.FLAT
+      ? toNumericFee(dispatchFeeAmount)
+      : toNumericFee(dispatchFeePercent);
+
+  if (resolvedFee <= 0) {
+    throw new BadRequestError('EXTERNAL_CARRIER requires a non-zero dispatch fee');
   }
 };
 
@@ -132,6 +161,13 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
   createCarrier: async ({ organizationId, role, input }: CreateCarrierServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
 
+    assertExternalCarrierHasNonZeroFee(
+      input.type,
+      input.dispatchFeeType ?? DispatchFeeType.PERCENTAGE,
+      input.dispatchFeePercent,
+      input.dispatchFeeAmount,
+    );
+
     const carrier = await deps.carrierRepository.create(organizationId, input);
     return enrichCarrier(carrier, role);
   },
@@ -142,6 +178,13 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     input,
   }: CreateCarrierWithAssetsServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
+
+    assertExternalCarrierHasNonZeroFee(
+      input.type,
+      input.dispatchFeeType ?? DispatchFeeType.PERCENTAGE,
+      input.dispatchFeePercent,
+      input.dispatchFeeAmount,
+    );
 
     const carrier = await deps.carrierRepository.createWithAssets(organizationId, {
       carrier: input,
@@ -191,7 +234,30 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
   updateCarrier: async ({ id, organizationId, input, role }: UpdateCarrierServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
 
-    await findCarrierOrThrow(id, organizationId, deps);
+    const existing = await findCarrierOrThrow(id, organizationId, deps);
+
+    const typeChanged = input.type !== undefined && input.type !== existing.type;
+    const feeTypeChanged =
+      input.dispatchFeeType !== undefined && input.dispatchFeeType !== existing.dispatchFeeType;
+    const feePercentChanged = input.dispatchFeePercent !== undefined;
+    const feeAmountChanged = input.dispatchFeeAmount !== undefined;
+
+    if (typeChanged || feeTypeChanged || feePercentChanged || feeAmountChanged) {
+      const effectiveType = input.type ?? existing.type;
+      const effectiveFeeType = input.dispatchFeeType ?? existing.dispatchFeeType;
+      const effectivePercent =
+        input.dispatchFeePercent ?? (existing.dispatchFeePercent as unknown as string | number | null);
+      const effectiveAmount =
+        input.dispatchFeeAmount ?? (existing.dispatchFeeAmount as unknown as string | number | null);
+
+      assertExternalCarrierHasNonZeroFee(
+        effectiveType,
+        effectiveFeeType,
+        effectivePercent,
+        effectiveAmount,
+      );
+    }
+
     const carrier = await deps.carrierRepository.update(id, organizationId, input);
     return enrichCarrier(carrier, role);
   },

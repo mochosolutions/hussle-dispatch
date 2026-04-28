@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Alert, Box } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { checkIn } from 'utils/api/driver-portal/driverPortalApi';
+import { PORTAL_GEOLOCATION_TIMEOUT_MS, PORTAL_SUCCESS_DISMISS_MS } from '../../constants';
 
 interface DriverLocationButtonProps {
   token: string;
@@ -11,38 +12,95 @@ export const DriverLocationButton: React.FC<DriverLocationButtonProps> = ({ toke
   const [sharing, setSharing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const handleShareLocation = async () => {
+  useEffect(
+    () => () => {
+      if (successTimerRef.current !== null) {
+        clearTimeout(successTimerRef.current);
+      }
+      if (abortRef.current !== null) {
+        abortRef.current.abort();
+      }
+    },
+    [],
+  );
+
+  const dismissSuccess = () => {
+    if (successTimerRef.current !== null) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+    setSuccess(false);
+  };
+
+  const handleShareLocation = () => {
     if (!navigator.geolocation) {
-      setError('Location services are not available on this device');
+      setError('Location services are not available on this device.');
       return;
     }
 
+    if (abortRef.current !== null) {
+      abortRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setSharing(true);
     setError(null);
-    setSuccess(false);
+    dismissSuccess();
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        if (controller.signal.aborted) {
+          if (abortRef.current === controller) {
+            abortRef.current = null;
+          }
+          setSharing(false);
+          return;
+        }
         try {
-          await checkIn(token, {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            status: 'Location shared',
-          });
+          await checkIn(
+            token,
+            {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+            controller.signal,
+          );
+          if (controller.signal.aborted) {
+            return;
+          }
           setSuccess(true);
-          setTimeout(() => setSuccess(false), 3000);
+          successTimerRef.current = setTimeout(() => {
+            setSuccess(false);
+            successTimerRef.current = null;
+          }, PORTAL_SUCCESS_DISMISS_MS);
         } catch {
-          setError('Failed to share location');
+          if (controller.signal.aborted) {
+            return;
+          }
+          setError('Failed to share location. Please try again.');
         } finally {
+          if (abortRef.current === controller) {
+            abortRef.current = null;
+          }
           setSharing(false);
         }
       },
       () => {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
+        if (controller.signal.aborted) {
+          setSharing(false);
+          return;
+        }
         setError('Location permission denied. Please enable location access.');
         setSharing(false);
       },
-      { timeout: 10000, enableHighAccuracy: true },
+      { timeout: PORTAL_GEOLOCATION_TIMEOUT_MS, enableHighAccuracy: true },
     );
   };
 
@@ -59,12 +117,12 @@ export const DriverLocationButton: React.FC<DriverLocationButtonProps> = ({ toke
         {sharing ? 'Sharing Location...' : 'Share My Location'}
       </Button>
       {success && (
-        <Alert severity="success" sx={{ mt: 1 }}>
-          Location shared successfully
+        <Alert severity="success" sx={{ mt: 1 }} onClose={dismissSuccess}>
+          Location shared
         </Alert>
       )}
       {error && (
-        <Alert severity="warning" sx={{ mt: 1 }}>
+        <Alert severity="error" sx={{ mt: 1 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}

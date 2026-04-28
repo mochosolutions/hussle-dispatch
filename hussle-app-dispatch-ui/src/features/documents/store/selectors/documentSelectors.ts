@@ -27,3 +27,15 @@ export const selectUploadError = (clientId: string) => (state: RootState) =>
 
 export const selectBulkDownloadLoading = (state: RootState) =>
   state.pages.documents.loading['bulkDownload'] === 'Pending';
+
+export const selectDocumentById = (id: string) => (state: RootState) =>
+  documentSelectors.selectById(state, id);
+
+export const selectDownloadUrlByDocId = (id: string) => (state: RootState) =>
+  state.pages.documents.downloadUrls[id];
+
+export const selectDownloadUrlLoading = (id: string) => (state: RootState) =>
+  state.pages.documents.loading[`download:${id}`] === 'Pending';
+
+export const selectDownloadUrlError = (id: string) => (state: RootState) =>
+  state.pages.documents.errors[`download:${id}`] ?? '';

@@ -1,13 +1,26 @@
-import { AccessorialType, EquipmentType, LoadStatus, SchedulingType, StopType } from '@prisma/client';
+import {
+  AccessorialType,
+  DispatchFeeType,
+  EquipmentType,
+  LoadStatus,
+  SchedulingType,
+  StopType,
+} from '@prisma/client';
 import * as Yup from 'yup';
+import {
+  isDeliveryAfterPickup,
+  DELIVERY_BEFORE_PICKUP_MESSAGE,
+} from '../utils/deliveryAfterPickup';
 
 const equipmentTypeValues = Object.values(EquipmentType);
 const loadStatusValues = Object.values(LoadStatus);
 const schedulingTypeValues = Object.values(SchedulingType);
 const stopTypeValues = Object.values(StopType);
 const accessorialTypeValues = Object.values(AccessorialType);
+const dispatchFeeTypeValues = Object.values(DispatchFeeType);
 
 const optionalTrimmed = Yup.string().trim().notRequired();
+
 const optionalUuid = Yup.string()
   .trim()
   .transform((_value, originalValue) => {
@@ -90,8 +103,17 @@ const createBodySchema = Yup.object({
   stops: Yup.array()
     .of(stopSchema)
     .min(1, 'At least one stop is required')
-    .required('stops are required'),
+    .required('stops are required')
+    .test('delivery-after-pickup', DELIVERY_BEFORE_PICKUP_MESSAGE, isDeliveryAfterPickup),
   accessorialCharges: Yup.array().of(accessorialChargeSchema).notRequired(),
+  dispatchFeeOverrideType: Yup.mixed<DispatchFeeType>()
+    .oneOf(dispatchFeeTypeValues, 'dispatchFeeOverrideType must be PERCENTAGE or FLAT')
+    .nullable()
+    .notRequired(),
+  dispatchFeeOverrideAmount: Yup.number()
+    .min(0, 'dispatchFeeOverrideAmount must be non-negative')
+    .nullable()
+    .notRequired(),
 });
 
 const updateBodySchema = Yup.object({
@@ -118,8 +140,20 @@ const updateBodySchema = Yup.object({
   bolSignedAt: Yup.date().notRequired(),
   dispatcherNotes: optionalTrimmed,
   driverInstructions: optionalTrimmed,
-  stops: Yup.array().of(stopSchema).min(1, 'At least one stop is required').notRequired(),
+  stops: Yup.array()
+    .of(stopSchema)
+    .min(1, 'At least one stop is required')
+    .notRequired()
+    .test('delivery-after-pickup', DELIVERY_BEFORE_PICKUP_MESSAGE, isDeliveryAfterPickup),
   accessorialCharges: Yup.array().of(accessorialChargeSchema).notRequired(),
+  dispatchFeeOverrideType: Yup.mixed<DispatchFeeType>()
+    .oneOf(dispatchFeeTypeValues, 'dispatchFeeOverrideType must be PERCENTAGE or FLAT')
+    .nullable()
+    .notRequired(),
+  dispatchFeeOverrideAmount: Yup.number()
+    .min(0, 'dispatchFeeOverrideAmount must be non-negative')
+    .nullable()
+    .notRequired(),
 }).test('has-any-field', 'At least one field must be provided', (value) => {
   if (value === undefined) {
     return false;

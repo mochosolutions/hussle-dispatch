@@ -11,5 +11,6 @@ export const confirmMapper = (req: Request): ConfirmInput => {
   return {
     documentId,
     organizationId: req.organizationId ?? '',
+    ...(req.user?.userId !== undefined && { requestingUserId: req.user.userId }),
   };
 };

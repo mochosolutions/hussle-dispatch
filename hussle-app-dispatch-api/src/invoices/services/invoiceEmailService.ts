@@ -74,6 +74,8 @@ export const createInvoiceEmailService = (
     const totalDecimal = new Decimal(String(invoice.totalAmount));
     const carrierName = invoice.carrier?.name ?? 'Unknown Carrier';
 
+    const senderName = invoice.load.organization?.name ?? carrierName;
+
     const { subject, html } = await renderInvoiceEmail({
       invoiceNumber: invoice.invoiceNumber,
       loadNumber: invoice.load.loadNumber,
@@ -86,6 +88,8 @@ export const createInvoiceEmailService = (
       }),
       paymentTerms: invoice.paymentTerms,
       replyToEmail,
+      invoiceType: invoice.type,
+      senderName,
     });
 
     // Send via the shared notification service

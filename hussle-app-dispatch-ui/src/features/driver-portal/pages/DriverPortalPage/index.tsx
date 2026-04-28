@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
 import {
   Box,
   Card,
@@ -25,8 +26,10 @@ import {
   checkIn,
 } from 'utils/api/driver-portal/driverPortalApi';
 import type { ChipColor } from 'types/chipColor';
+import { DocumentType } from 'features/documents/types';
 import type { DriverPortalStatus } from '../../types';
-import { DriverDocumentUpload } from '../../components/DriverDocumentUpload';
+import { PORTAL_GEOLOCATION_TIMEOUT_MS, PORTAL_SUCCESS_DISMISS_MS } from '../../constants';
+import { PortalDocumentUpload } from '../../components/PortalDocumentUpload';
 import { DriverLocationButton } from '../../components/DriverLocationButton';
 
 // Status display names
@@ -40,6 +43,15 @@ const STATUS_LABELS: Record<string, string> = {
   INVOICE_PENDING: 'Delivered',
   INVOICED: 'Delivered',
   PAID: 'Delivered',
+};
+
+// Stop scheduling type display names
+const SCHEDULING_TYPE_LABELS: Record<string, string> = {
+  APPOINTMENT: 'Scheduled appointment',
+  FCFS: 'First-come, first-served',
+  NOTIFICATION: 'Notification required',
+  OPEN: 'Open dock',
+  DROP_HOOK: 'Drop & hook',
 };
 
 // Next status in the driver flow
@@ -93,9 +105,26 @@ const captureLocation = (): Promise<{ latitude: number; longitude: number } | nu
       (position) =>
         resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
       () => resolve(null),
-      { timeout: 5000, enableHighAccuracy: false },
+      { timeout: PORTAL_GEOLOCATION_TIMEOUT_MS, enableHighAccuracy: false },
     );
   });
+
+// Format ISO timestamp to "Apr 26, 4:00 PM" (matches dispatcher view).
+const formatAppointment = (iso: string): string => format(parseISO(iso), 'MMM d, h:mm a');
+
+const formatAppointmentRange = (
+  start: string | null,
+  end: string | null,
+): string | null => {
+  if (start === null) {
+    return null;
+  }
+  if (end === null) {
+    return formatAppointment(start);
+  }
+  return `${formatAppointment(start)} – ${format(parseISO(end), 'h:mm a')}`;
+};
+
 
 // Axios error type guard
 interface AxiosLikeError {
@@ -118,36 +147,38 @@ interface ErrorLayoutProps {
 }
 
 const ErrorLayout: React.FC<ErrorLayoutProps> = ({ title, message, onRetry }) => (
-  <Box
-    sx={{ maxWidth: 480, mx: 'auto', px: 3, py: 8, textAlign: 'center', minHeight: '100vh', bgcolor: 'grey.50' }}
-  >
-    <LocalShippingIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-    <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-      {title}
-    </Typography>
-    <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-      {message}
-    </Typography>
-    {onRetry && (
-      <Button variant="contained" onClick={onRetry} sx={{ py: 1.5, px: 4 }}>
-        Try Again
-      </Button>
-    )}
+  <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <Box sx={{ maxWidth: { xs: 480, md: 720 }, mx: 'auto', px: 3, py: 8, textAlign: 'center' }}>
+      <LocalShippingIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
+        {title}
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        {message}
+      </Typography>
+      {onRetry && (
+        <Button variant="contained" onClick={onRetry} sx={{ py: 1.5, px: 4 }}>
+          Try Again
+        </Button>
+      )}
+    </Box>
   </Box>
 );
 
 // FE-003: Loading skeleton
 const LoadingSkeleton: React.FC = () => (
-  <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, py: 3, minHeight: '100vh', bgcolor: 'grey.50' }}>
-    <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-      <Skeleton variant="circular" width={24} height={24} />
-      <Skeleton variant="text" width={140} />
-      <Skeleton variant="rounded" width={80} height={24} />
-    </Stack>
-    <Skeleton variant="rounded" height={56} sx={{ mb: 3 }} />
-    <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
-    <Skeleton variant="rounded" height={120} sx={{ mb: 2 }} />
-    <Skeleton variant="rounded" height={160} />
+  <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <Box sx={{ maxWidth: { xs: 480, md: 720 }, mx: 'auto', px: 2, py: 3 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+        <Skeleton variant="circular" width={24} height={24} />
+        <Skeleton variant="text" width={140} />
+        <Skeleton variant="rounded" width={80} height={24} />
+      </Stack>
+      <Skeleton variant="rounded" height={56} sx={{ mb: 3 }} />
+      <Skeleton variant="rounded" height={200} sx={{ mb: 2 }} />
+      <Skeleton variant="rounded" height={120} sx={{ mb: 2 }} />
+      <Skeleton variant="rounded" height={160} />
+    </Box>
   </Box>
 );
 
@@ -160,6 +191,20 @@ const DriverPortalPage = () => {
   const [checkInSubmitting, setCheckInSubmitting] = useState(false);
   const [checkInSuccess, setCheckInSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const checkInAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      if (successTimerRef.current !== null) {
+        clearTimeout(successTimerRef.current);
+      }
+      if (checkInAbortRef.current !== null) {
+        checkInAbortRef.current.abort();
+      }
+    },
+    [],
+  );
 
   const fetchLoad = useCallback(async () => {
     if (!token) {
@@ -228,22 +273,57 @@ const DriverPortalPage = () => {
       return;
     }
 
+    if (checkInAbortRef.current !== null) {
+      checkInAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    checkInAbortRef.current = controller;
+
     setCheckInSubmitting(true);
     setCheckInSuccess(false);
+    if (successTimerRef.current !== null) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
 
     try {
       const coords = await captureLocation();
-      await checkIn(token, {
-        notes: notes.trim(),
-        latitude: coords?.latitude,
-        longitude: coords?.longitude,
-      });
+      if (controller.signal.aborted) {
+        return;
+      }
+      await checkIn(
+        token,
+        {
+          notes: notes.trim(),
+          latitude: coords?.latitude,
+          longitude: coords?.longitude,
+        },
+        controller.signal,
+      );
+      if (controller.signal.aborted) {
+        return;
+      }
       setNotes('');
       setCheckInSuccess(true);
-      setTimeout(() => setCheckInSuccess(false), 3000);
+      successTimerRef.current = setTimeout(() => {
+        setCheckInSuccess(false);
+        successTimerRef.current = null;
+      }, PORTAL_SUCCESS_DISMISS_MS);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to submit note');
+      if (controller.signal.aborted) {
+        return;
+      }
+      if (isAxiosError(err) && err.response?.data?.errors?.[0]?.message) {
+        setError(err.response.data.errors[0].message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to submit note');
+      }
     } finally {
+      if (checkInAbortRef.current === controller) {
+        checkInAbortRef.current = null;
+      }
       setCheckInSubmitting(false);
     }
   };
@@ -301,9 +381,8 @@ const DriverPortalPage = () => {
   const showPodUpload = POD_UPLOAD_STATUSES.has(load.status);
 
   return (
-    <Box
-      sx={{ maxWidth: 480, mx: 'auto', px: 2, py: 3, minHeight: '100vh', bgcolor: 'grey.50' }}
-    >
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+      <Box sx={{ maxWidth: { xs: 480, md: 720 }, mx: 'auto', px: 2, py: 3 }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
         <LocalShippingIcon color="primary" />
@@ -384,12 +463,20 @@ const DriverPortalPage = () => {
                     <Typography variant="body2" color="text.secondary">
                       {[stop.city, stop.state, stop.zip].filter(Boolean).join(', ')}
                     </Typography>
-                    {stop.appointmentDate && (
-                      <Typography variant="caption" color="text.secondary">
-                        Appt: {stop.appointmentDate}
-                        {stop.appointmentTime ? ` at ${stop.appointmentTime}` : ''}
-                      </Typography>
-                    )}
+                    {(() => {
+                      const range = formatAppointmentRange(
+                        stop.appointmentStart,
+                        stop.appointmentEnd,
+                      );
+                      return range ? (
+                        <Typography variant="caption" color="text.secondary">
+                          Appt: {range}
+                        </Typography>
+                      ) : null;
+                    })()}
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {SCHEDULING_TYPE_LABELS[stop.schedulingType] ?? stop.schedulingType}
+                    </Typography>
                     {stop.contactName && (
                       <Typography variant="caption" color="text.secondary" display="block">
                         Contact: {stop.contactName}
@@ -465,6 +552,8 @@ const DriverPortalPage = () => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               size="small"
+              inputProps={{ maxLength: 2000 }}
+              helperText={`${notes.length}/2000`}
               sx={{ mb: 1.5 }}
             />
             <Button
@@ -477,8 +566,18 @@ const DriverPortalPage = () => {
               {checkInSubmitting ? <CircularProgress size={20} /> : 'Submit Note'}
             </Button>
             {checkInSuccess && (
-              <Alert severity="success" sx={{ mt: 1 }}>
-                Note submitted successfully
+              <Alert
+                severity="success"
+                sx={{ mt: 1 }}
+                onClose={() => {
+                  if (successTimerRef.current !== null) {
+                    clearTimeout(successTimerRef.current);
+                    successTimerRef.current = null;
+                  }
+                  setCheckInSuccess(false);
+                }}
+              >
+                Note submitted
               </Alert>
             )}
           </CardContent>
@@ -493,9 +592,9 @@ const DriverPortalPage = () => {
               Document Upload
             </Typography>
             {showBolUpload && (
-              <DriverDocumentUpload
+              <PortalDocumentUpload
                 token={token}
-                documentType="BOL_SIGNED"
+                documentType={DocumentType.BOL_SIGNED}
                 label="Bill of Lading (BOL)"
                 sx={{ mb: showPodUpload ? 2 : 0 }}
               />
@@ -503,9 +602,9 @@ const DriverPortalPage = () => {
             {showPodUpload && (
               <>
                 {showBolUpload && <Divider sx={{ my: 2 }} />}
-                <DriverDocumentUpload
+                <PortalDocumentUpload
                   token={token}
-                  documentType="POD"
+                  documentType={DocumentType.POD}
                   label="Proof of Delivery (POD)"
                 />
               </>
@@ -522,6 +621,7 @@ const DriverPortalPage = () => {
       >
         Powered by Hussle Dispatch
       </Typography>
+      </Box>
     </Box>
   );
 };

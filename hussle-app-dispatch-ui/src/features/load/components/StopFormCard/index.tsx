@@ -19,7 +19,14 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { FormikProps } from 'formik';
-import { MainCard, TextField, DateField, TimeField, PhoneField, NumericField } from '@mocho/ui/components';
+import {
+  MainCard,
+  TextField,
+  DateField,
+  TimeField,
+  PhoneField,
+  NumericField,
+} from '@mocho/ui/components';
 import type { StopsFormShape } from '../../validators/loadSchema';
 import { SCHEDULING_TYPE_OPTIONS } from '../../constants';
 import type { SchedulingType } from '../../constants';
@@ -60,9 +67,16 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
 
   const [expanded, setExpanded] = useState(defaultExpanded);
   const hasContactData = Boolean(stop.contactName || stop.contactPhone || stop.notes);
-  const [showContact, setShowContact] = useState(hasContactData || schedulingType === 'NOTIFICATION');
+  const [showContact, setShowContact] = useState(
+    hasContactData || schedulingType === 'NOTIFICATION',
+  );
   const hasCargoData = Boolean(
-    stop.commodity || stop.weight || stop.pieceCount || stop.isHazmat || stop.isTarp || stop.isTempControlled,
+    stop.commodity ||
+    stop.weight ||
+    stop.pieceCount ||
+    stop.isHazmat ||
+    stop.isTarp ||
+    stop.isTempControlled,
   );
   const [showCargo, setShowCargo] = useState(hasCargoData);
 
@@ -115,9 +129,8 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
   const schedulingLabel =
     SCHEDULING_TYPE_OPTIONS.find((o) => o.value === schedulingType)?.label ?? schedulingType;
 
-  const locationSummary = stop.city && stop.state
-    ? `${stop.city}, ${stop.state.toUpperCase()}`
-    : null;
+  const locationSummary =
+    stop.city && stop.state ? `${stop.city}, ${stop.state.toUpperCase()}` : null;
 
   const facilitySummary = stop.facilityName || locationSummary || 'No facility';
 
@@ -301,24 +314,41 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
-              <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic', color: 'text.disabled' }}>
+              <Typography
+                variant="caption"
+                sx={{ display: 'block', mt: 0.5, fontStyle: 'italic', color: 'text.disabled' }}
+              >
                 {activeHint}
               </Typography>
             </Box>
 
             {/* Conditional fields based on scheduling type */}
 
-            {/* APPOINTMENT: Date | Time (req) | Appt # (req) */}
+            {/* APPOINTMENT: Date | Time (req) | Appt # (optional) */}
             {schedulingType === 'APPOINTMENT' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
-                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                  <DateField
+                    name={`${prefix}.appointmentDate`}
+                    label="Date"
+                    formik={stopFormik}
+                    required
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.appointmentTime`} label="Time" formik={stopFormik} required />
+                  <TimeField
+                    name={`${prefix}.appointmentTime`}
+                    label="Time"
+                    formik={stopFormik}
+                    required
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TextField name={`${prefix}.appointmentNumber`} label="Appt #" formik={stopFormik} required />
+                  <TextField
+                    name={`${prefix}.appointmentNumber`}
+                    label="Appt #"
+                    formik={stopFormik}
+                  />
                 </Box>
               </Box>
             )}
@@ -327,10 +357,19 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
             {schedulingType === 'FCFS' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
-                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                  <DateField
+                    name={`${prefix}.appointmentDate`}
+                    label="Date"
+                    formik={stopFormik}
+                    required
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.appointmentTime`} label="Arrival Time" formik={stopFormik} />
+                  <TimeField
+                    name={`${prefix}.appointmentTime`}
+                    label="Arrival Time"
+                    formik={stopFormik}
+                  />
                 </Box>
               </Box>
             )}
@@ -339,10 +378,19 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
             {schedulingType === 'NOTIFICATION' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
-                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                  <DateField
+                    name={`${prefix}.appointmentDate`}
+                    label="Date"
+                    formik={stopFormik}
+                    required
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.appointmentTime`} label="Preferred Time" formik={stopFormik} />
+                  <TimeField
+                    name={`${prefix}.appointmentTime`}
+                    label="Preferred Time"
+                    formik={stopFormik}
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <TimeField name={`${prefix}.callByTime`} label="Call By" formik={stopFormik} />
@@ -354,10 +402,19 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
             {schedulingType === 'OPEN' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
-                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                  <DateField
+                    name={`${prefix}.appointmentDate`}
+                    label="Date"
+                    formik={stopFormik}
+                    required
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TimeField name={`${prefix}.appointmentTime`} label="Arrival Time" formik={stopFormik} />
+                  <TimeField
+                    name={`${prefix}.appointmentTime`}
+                    label="Arrival Time"
+                    formik={stopFormik}
+                  />
                 </Box>
               </Box>
             )}
@@ -366,13 +423,26 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
             {schedulingType === 'DROP_HOOK' && (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <Box sx={{ flex: 1 }}>
-                  <DateField name={`${prefix}.appointmentDate`} label="Date" formik={stopFormik} required />
+                  <DateField
+                    name={`${prefix}.appointmentDate`}
+                    label="Date"
+                    formik={stopFormik}
+                    required
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TextField name={`${prefix}.trailerNumber`} label="Trailer #" formik={stopFormik} />
+                  <TextField
+                    name={`${prefix}.trailerNumber`}
+                    label="Trailer #"
+                    formik={stopFormik}
+                  />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <TextField name={`${prefix}.yardLocation`} label="Yard Location" formik={stopFormik} />
+                  <TextField
+                    name={`${prefix}.yardLocation`}
+                    label="Yard Location"
+                    formik={stopFormik}
+                  />
                 </Box>
               </Box>
             )}
@@ -394,13 +464,26 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                 <Stack spacing={1.5} sx={{ mt: 1 }}>
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
                     <Box sx={{ flex: 1 }}>
-                      <TextField name={`${prefix}.commodity`} label="Commodity" formik={stopFormik} />
+                      <TextField
+                        name={`${prefix}.commodity`}
+                        label="Commodity"
+                        formik={stopFormik}
+                      />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <NumericField name={`${prefix}.weight`} label="Weight" suffix="lbs" formik={stopFormik} />
+                      <NumericField
+                        name={`${prefix}.weight`}
+                        label="Weight"
+                        suffix="lbs"
+                        formik={stopFormik}
+                      />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <NumericField name={`${prefix}.pieceCount`} label="Pieces" formik={stopFormik} />
+                      <NumericField
+                        name={`${prefix}.pieceCount`}
+                        label="Pieces"
+                        formik={stopFormik}
+                      />
                     </Box>
                   </Box>
                   <Stack direction="row" spacing={2}>

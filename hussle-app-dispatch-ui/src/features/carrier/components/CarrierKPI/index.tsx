@@ -1,8 +1,9 @@
-import { Box, CircularProgress, Grid } from '@mui/material';
+import { Box, Chip, CircularProgress, Grid } from '@mui/material';
 import { differenceInCalendarDays, format, parse } from 'date-fns';
 import type { CarrierListItem } from '../../types';
 import type { CarrierStats } from 'utils/api/fleet/carrierApi';
 import { BodyMuted, BodyStrong, KpiLabel, LinkText } from 'components/Typography';
+import { getInsuranceExpiryStatus } from 'utils/getInsuranceExpiryStatus';
 
 interface CarrierKPIProps {
   /** CarrierListItem from selectFormattedCarrierById — dates are pre-formatted as MM/dd/yyyy */
@@ -93,6 +94,7 @@ export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c, stats, statsLoading }
     stats && Number(stats.lifetimeRevenue) > 0 ? 'success.main' : undefined;
 
   const insuranceInfo = formatInsuranceExpiry(c.insuranceExpiry);
+  const insuranceExpiryStatus = getInsuranceExpiryStatus(c.insuranceExpiry);
   const { driverCount, vehicleCount } = c;
 
   return (
@@ -146,6 +148,16 @@ export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c, stats, statsLoading }
           value={insuranceInfo.display}
           color={insuranceInfo.color}
         />
+        {insuranceExpiryStatus && (
+          <Box sx={{ mt: 0.5 }}>
+            <Chip
+              label={insuranceExpiryStatus.label}
+              size="small"
+              color={insuranceExpiryStatus.color}
+              sx={{ height: 20, fontSize: '0.6875rem' }}
+            />
+          </Box>
+        )}
       </Grid>
     </Grid>
   );

@@ -1,5 +1,6 @@
 import { env } from './config/env';
 // import { runGeoBootstrap } from './config/geoBootstrap';
+import { prisma } from './config/database';
 import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
 import { createRabbitMqEventBus } from './shared/messaging';
@@ -11,7 +12,7 @@ const start = async (): Promise<void> => {
 
   const eventBus = createRabbitMqEventBus(env.RABBITMQ_URL, logger);
 
-  const app = createApp();
+  const app = createApp({ prisma, redis: redisClient });
 
   // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {

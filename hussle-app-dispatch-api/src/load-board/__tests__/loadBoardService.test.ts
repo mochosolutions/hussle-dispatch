@@ -79,6 +79,7 @@ const buildDatRaw = (): Record<string, unknown> => ({
 describe('createLoadBoardService', () => {
   const mockRedisPort: jest.Mocked<LoadBoardRedisPort> = {
     snapshotReplace: jest.fn(),
+    addIfAbsent: jest.fn(),
     getAllLoads: jest.fn(),
     getLoadById: jest.fn(),
     clearSource: jest.fn(),
@@ -101,9 +102,9 @@ describe('createLoadBoardService', () => {
   beforeEach(() => jest.clearAllMocks());
 
   describe('ingest', () => {
-    it('calls snapshotReplace with correct orgId and source for relay', async () => {
+    it('calls addIfAbsent with correct orgId and source for relay', async () => {
       // Arrange
-      mockRedisPort.snapshotReplace.mockResolvedValue(undefined);
+      mockRedisPort.addIfAbsent.mockResolvedValue(true);
       mockRedisPort.updateMeta.mockResolvedValue(undefined);
 
       // Act
@@ -114,16 +115,16 @@ describe('createLoadBoardService', () => {
       });
 
       // Assert
-      expect(mockRedisPort.snapshotReplace).toHaveBeenCalledWith(
+      expect(mockRedisPort.addIfAbsent).toHaveBeenCalledWith(
         'org-1',
         'relay',
-        expect.arrayContaining([expect.objectContaining({ source: 'relay' })]),
+        expect.objectContaining({ source: 'relay' }),
       );
     });
 
-    it('calls snapshotReplace with correct orgId and source for dat', async () => {
+    it('calls addIfAbsent with correct orgId and source for dat', async () => {
       // Arrange
-      mockRedisPort.snapshotReplace.mockResolvedValue(undefined);
+      mockRedisPort.addIfAbsent.mockResolvedValue(true);
       mockRedisPort.updateMeta.mockResolvedValue(undefined);
 
       // Act
@@ -134,16 +135,16 @@ describe('createLoadBoardService', () => {
       });
 
       // Assert
-      expect(mockRedisPort.snapshotReplace).toHaveBeenCalledWith(
+      expect(mockRedisPort.addIfAbsent).toHaveBeenCalledWith(
         'org-1',
         'dat',
-        expect.arrayContaining([expect.objectContaining({ source: 'dat' })]),
+        expect.objectContaining({ source: 'dat' }),
       );
     });
 
-    it('returns count matching number of mapped loads', async () => {
+    it('returns ingested + skipped + total counts', async () => {
       // Arrange
-      mockRedisPort.snapshotReplace.mockResolvedValue(undefined);
+      mockRedisPort.addIfAbsent.mockResolvedValue(true);
       mockRedisPort.updateMeta.mockResolvedValue(undefined);
       const rawLoads = [buildRelayRaw(), buildRelayRaw()];
 
@@ -155,12 +156,12 @@ describe('createLoadBoardService', () => {
       });
 
       // Assert
-      expect(result.count).toBe(2);
+      expect(result).toEqual({ ingested: 2, skipped: 0, total: 2 });
     });
 
-    it('calls updateMeta with count after snapshotReplace', async () => {
+    it('calls updateMeta with newly-added count after addIfAbsent', async () => {
       // Arrange
-      mockRedisPort.snapshotReplace.mockResolvedValue(undefined);
+      mockRedisPort.addIfAbsent.mockResolvedValue(true);
       mockRedisPort.updateMeta.mockResolvedValue(undefined);
 
       // Act

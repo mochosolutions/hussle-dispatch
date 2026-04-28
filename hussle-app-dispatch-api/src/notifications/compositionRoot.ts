@@ -83,6 +83,44 @@ export const createNotificationModule = (
       logger: deps.logger,
       portalBaseUrl: deps.portalBaseUrl,
       frontendUrl: deps.frontendUrl,
+      membershipQuery: {
+        findAdminByOrgId: async (organizationId: string) => {
+          const membership = await deps.prismaClient.membership.findFirst({
+            where: {
+              organizationId,
+              role: { in: ['admin', 'ADMIN'] },
+              deleted: false,
+              status: 'active',
+            },
+            include: {
+              user: {
+                select: { email: true, firstName: true, lastName: true },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          if (!membership?.user) {
+            return null;
+          }
+
+          return {
+            email: membership.user.email,
+            firstName: membership.user.firstName ?? '',
+            lastName: membership.user.lastName ?? '',
+          };
+        },
+      },
+      organizationQuery: {
+        findNameById: async (organizationId: string) => {
+          const org = await deps.prismaClient.organization.findUnique({
+            where: { id: organizationId },
+            select: { name: true },
+          });
+
+          return org;
+        },
+      },
     });
   };
 

@@ -316,9 +316,7 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
     ) {
       const warnings: StatusTransitionWarning[] = validationResult.warnings.map(
         (message) => ({
-          code: message.includes('missing appointment number')
-            ? 'APPOINTMENT_NUMBER_MISSING'
-            : 'TRANSITION_WARNING',
+          code: 'TRANSITION_WARNING',
           message,
         }),
       );

@@ -1,13 +1,16 @@
 import { useState, useCallback } from 'react';
 import { Box, Button, Divider, ListItemIcon, Menu, MenuItem, Tooltip } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
+import { enqueueSnackbar } from 'notistack';
 import { useDispatch } from 'store';
 import { openModal } from 'features/ui/store/reducers/uiSlice';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
+import { getDriverPortalLink } from 'utils/api/driver-portal/driverPortalDispatcherApi';
 import {
   STATUS_LABELS,
   NEXT_STATUS,
@@ -84,6 +87,19 @@ export const LoadDetailActions = ({
     setAlternativesAnchor(null);
   }, []);
 
+  const handleCopyPortalLink = useCallback(async () => {
+    setAlternativesAnchor(null);
+    try {
+      const url = await getDriverPortalLink(load.id);
+      await navigator.clipboard.writeText(url);
+      enqueueSnackbar('Portal link copied', { variant: 'success' });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to copy driver portal link';
+      enqueueSnackbar(message, { variant: 'error' });
+    }
+  }, [load.id]);
+
   const handleDeleteClick = useCallback(() => {
     dispatch(
       openModal({
@@ -99,6 +115,7 @@ export const LoadDetailActions = ({
 
   const canCheckCall = CHECK_CALL_STATUSES.includes(load.status);
   const canSendSms = SMS_PROMPT_STATUSES.includes(load.status);
+  const canCopyPortalLink = SMS_PROMPT_STATUSES.includes(load.status);
   const driverPhone = load.assignment?.driver?.phone ?? null;
   const handleSendSms = () => openModalAction('loadSendSmsPrompt', { loadId: load.id });
   const invoiceReadiness = load.tracking?.invoiceReadiness;
@@ -173,6 +190,15 @@ export const LoadDetailActions = ({
           </MenuItem>
         ))}
         {altStatuses.length > 0 && <Divider />}
+        {canCopyPortalLink && (
+          <MenuItem onClick={handleCopyPortalLink}>
+            <ListItemIcon>
+              <ContentCopyIcon fontSize="small" />
+            </ListItemIcon>
+            Copy Driver Portal Link
+          </MenuItem>
+        )}
+        {canCopyPortalLink && <Divider />}
         <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteOutlineIcon fontSize="small" sx={{ color: 'error.main' }} />

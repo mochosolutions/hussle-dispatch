@@ -7,6 +7,10 @@ jest.mock('@hussle/emails', () => ({
     subject: 'Load LD-001 — Check Call Update',
     html: '<p>Check call</p>',
   }),
+  renderDocumentUploadedEmail: jest.fn().mockResolvedValue({
+    subject: 'Load LD-001 — Document uploaded: BOL_SIGNED',
+    html: '<p>Document uploaded</p>',
+  }),
 }));
 
 import { initializeNotificationSubscriber } from '../notificationSubscriber';
@@ -92,11 +96,11 @@ const createMockDeps = () => {
 describe('notificationSubscriber', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('subscribes to load.status.changed, load.checkcall.logged, and invitation.created', async () => {
+  it('subscribes to load.status.changed, load.checkcall.logged, invitation.created, and document.confirmed', async () => {
     const { deps } = createMockDeps();
     await initializeNotificationSubscriber(deps);
 
-    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(3);
+    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(4);
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'load.status.changed',
       'notifications-service',
@@ -109,6 +113,11 @@ describe('notificationSubscriber', () => {
     );
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'invitation.created',
+      'notifications-service',
+      expect.any(Function),
+    );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'document.confirmed',
       'notifications-service',
       expect.any(Function),
     );
@@ -338,5 +347,160 @@ describe('notificationSubscriber', () => {
       'Failed to process status change notification',
       expect.objectContaining({ loadId: 'load-1' }),
     );
+  });
+
+  describe('document.confirmed handler', () => {
+    const documentConfirmedData: EventMap['document.confirmed'] = {
+      documentId: 'doc-1',
+      entityType: 'load',
+      entityId: 'load-1',
+      documentType: 'BOL_SIGNED',
+      organizationId: 'org-1',
+      loadId: 'load-1',
+      customerId: 'cust-1',
+      loadNumber: 'LD-001',
+      contactEmail: 'customer@test.com',
+      contactPhone: '+15551234567',
+      contactCcEmails: [],
+    };
+
+    it('sends email when customer has DOCUMENT_UPLOADED EMAIL enabled', async () => {
+      const { deps, invokeHandler } = createMockDeps();
+
+      deps.settingsRepo.findByCustomerId.mockResolvedValue([
+        {
+          id: 's-1',
+          customerId: 'cust-1',
+          trigger: 'DOCUMENT_UPLOADED',
+          channel: 'EMAIL',
+          enabled: true,
+          recipientEmail: 'broker@test.com',
+          recipientPhone: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      await initializeNotificationSubscriber(deps);
+      await invokeHandler('document.confirmed', documentConfirmedData);
+
+      expect(deps.emailService.sendEmail).toHaveBeenCalledTimes(1);
+      expect(deps.emailService.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'customer@test.com',
+          subject: expect.stringContaining('LD-001'),
+        }),
+      );
+    });
+
+    it('sends SMS when customer has DOCUMENT_UPLOADED SMS enabled', async () => {
+      const { deps, invokeHandler } = createMockDeps();
+
+      deps.settingsRepo.findByCustomerId.mockResolvedValue([
+        {
+          id: 's-1',
+          customerId: 'cust-1',
+          trigger: 'DOCUMENT_UPLOADED',
+          channel: 'SMS',
+          enabled: true,
+          recipientEmail: null,
+          recipientPhone: '+15559999999',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      await initializeNotificationSubscriber(deps);
+      await invokeHandler('document.confirmed', documentConfirmedData);
+
+      expect(deps.smsService.sendSms).toHaveBeenCalledTimes(1);
+      expect(deps.smsService.sendSms).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: '+15551234567',
+        }),
+      );
+    });
+
+    it('does not send when DOCUMENT_UPLOADED is disabled', async () => {
+      const { deps, invokeHandler } = createMockDeps();
+
+      deps.settingsRepo.findByCustomerId.mockResolvedValue([
+        {
+          id: 's-1',
+          customerId: 'cust-1',
+          trigger: 'DOCUMENT_UPLOADED',
+          channel: 'EMAIL',
+          enabled: false,
+          recipientEmail: 'broker@test.com',
+          recipientPhone: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      await initializeNotificationSubscriber(deps);
+      await invokeHandler('document.confirmed', documentConfirmedData);
+
+      expect(deps.emailService.sendEmail).not.toHaveBeenCalled();
+      expect(deps.smsService.sendSms).not.toHaveBeenCalled();
+    });
+
+    it('skips non-load entity types', async () => {
+      const { deps, invokeHandler } = createMockDeps();
+
+      await initializeNotificationSubscriber(deps);
+      await invokeHandler('document.confirmed', {
+        ...documentConfirmedData,
+        entityType: 'carrier',
+      });
+
+      expect(deps.settingsRepo.findByCustomerId).not.toHaveBeenCalled();
+      expect(deps.emailService.sendEmail).not.toHaveBeenCalled();
+      expect(deps.smsService.sendSms).not.toHaveBeenCalled();
+    });
+
+    it('skips when customerId is null', async () => {
+      const { deps, invokeHandler } = createMockDeps();
+
+      await initializeNotificationSubscriber(deps);
+      await invokeHandler('document.confirmed', {
+        ...documentConfirmedData,
+        customerId: null,
+      });
+
+      expect(deps.settingsRepo.findByCustomerId).not.toHaveBeenCalled();
+      expect(deps.emailService.sendEmail).not.toHaveBeenCalled();
+      expect(deps.smsService.sendSms).not.toHaveBeenCalled();
+    });
+
+    it('creates notification log entry on send', async () => {
+      const { deps, invokeHandler } = createMockDeps();
+
+      deps.settingsRepo.findByCustomerId.mockResolvedValue([
+        {
+          id: 's-1',
+          customerId: 'cust-1',
+          trigger: 'DOCUMENT_UPLOADED',
+          channel: 'EMAIL',
+          enabled: true,
+          recipientEmail: 'broker@test.com',
+          recipientPhone: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      await initializeNotificationSubscriber(deps);
+      await invokeHandler('document.confirmed', documentConfirmedData);
+
+      expect(deps.logRepo.create).toHaveBeenCalledTimes(1);
+      expect(deps.logRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          trigger: 'DOCUMENT_UPLOADED',
+          channel: 'EMAIL',
+          loadId: 'load-1',
+        }),
+      );
+    });
   });
 });

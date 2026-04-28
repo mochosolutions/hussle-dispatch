@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
-import { CarrierType } from '@prisma/client';
+import { BadRequestError } from '@mocho/common';
+import { CarrierType, DispatchFeeType } from '@prisma/client';
 import {
   ActiveLoadsConflictError,
   ForbiddenError,
@@ -23,8 +24,10 @@ const buildCarrier = () => ({
   state: 'TX',
   zip: '78701',
   dispatchFeePercent: new Decimal('10.00'),
+  dispatchFeeType: DispatchFeeType.PERCENTAGE,
+  dispatchFeeAmount: new Decimal('0'),
   partnerSplitPercent: new Decimal('50.00'),
-  feeIncludesAccessorials: false,
+  feeIncludesAccessorials: true,
   ownerOpPayPercent: null,
   dispatchAgreementOnFile: true,
   dispatchAgreementSignedAt: null,
@@ -185,13 +188,20 @@ describe('carrierService', () => {
         input: {
           name: 'Blue Bird Logistics',
           type: CarrierType.EXTERNAL_CARRIER,
+          dispatchFeeType: DispatchFeeType.PERCENTAGE,
+          dispatchFeePercent: 10,
         },
         role: 'admin',
       });
 
       expect(mockCarrierRepository.create).toHaveBeenCalledWith(
         'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
-        { name: 'Blue Bird Logistics', type: CarrierType.EXTERNAL_CARRIER },
+        {
+          name: 'Blue Bird Logistics',
+          type: CarrierType.EXTERNAL_CARRIER,
+          dispatchFeeType: DispatchFeeType.PERCENTAGE,
+          dispatchFeePercent: 10,
+        },
       );
       expect(result.driverCount).toBe(2);
       expect(result.vehicleCount).toBe(1);
@@ -216,6 +226,8 @@ describe('carrierService', () => {
         input: {
           name: 'Blue Bird Logistics',
           type: CarrierType.EXTERNAL_CARRIER,
+          dispatchFeeType: DispatchFeeType.PERCENTAGE,
+          dispatchFeePercent: 10,
           drivers: [{ firstName: 'John', lastName: 'Doe' }],
           vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
         },
@@ -228,6 +240,8 @@ describe('carrierService', () => {
           carrier: {
             name: 'Blue Bird Logistics',
             type: CarrierType.EXTERNAL_CARRIER,
+            dispatchFeeType: DispatchFeeType.PERCENTAGE,
+            dispatchFeePercent: 10,
             drivers: [{ firstName: 'John', lastName: 'Doe' }],
             vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
           },
@@ -253,5 +267,107 @@ describe('carrierService', () => {
       ).rejects.toBeInstanceOf(ForbiddenError);
     });
 
+  });
+
+  describe('dispatch fee business rules', () => {
+    const ORG = 'd73084dd-d6e7-4b79-af2b-63d17b4f4349';
+
+    it('rejects EXTERNAL_CARRIER with PERCENTAGE fee of 0', async () => {
+      await expect(
+        carrierService.createCarrier({
+          organizationId: ORG,
+          role: 'admin',
+          input: {
+            name: 'Zero Fee Carrier',
+            type: CarrierType.EXTERNAL_CARRIER,
+            dispatchFeeType: DispatchFeeType.PERCENTAGE,
+            dispatchFeePercent: 0,
+          },
+        }),
+      ).rejects.toBeInstanceOf(BadRequestError);
+    });
+
+    it('rejects EXTERNAL_CARRIER with FLAT fee of 0', async () => {
+      await expect(
+        carrierService.createCarrier({
+          organizationId: ORG,
+          role: 'admin',
+          input: {
+            name: 'Zero Flat Carrier',
+            type: CarrierType.EXTERNAL_CARRIER,
+            dispatchFeeType: DispatchFeeType.FLAT,
+            dispatchFeeAmount: 0,
+          },
+        }),
+      ).rejects.toBeInstanceOf(BadRequestError);
+    });
+
+    it('accepts EXTERNAL_CARRIER with PERCENTAGE fee > 0', async () => {
+      mockCarrierRepository.create.mockResolvedValue(buildCarrier());
+
+      await expect(
+        carrierService.createCarrier({
+          organizationId: ORG,
+          role: 'admin',
+          input: {
+            name: 'Valid PCT Carrier',
+            type: CarrierType.EXTERNAL_CARRIER,
+            dispatchFeeType: DispatchFeeType.PERCENTAGE,
+            dispatchFeePercent: 10,
+          },
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('accepts EXTERNAL_CARRIER with FLAT fee > 0', async () => {
+      mockCarrierRepository.create.mockResolvedValue(buildCarrier());
+
+      await expect(
+        carrierService.createCarrier({
+          organizationId: ORG,
+          role: 'admin',
+          input: {
+            name: 'Valid Flat Carrier',
+            type: CarrierType.EXTERNAL_CARRIER,
+            dispatchFeeType: DispatchFeeType.FLAT,
+            dispatchFeeAmount: 300,
+          },
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('accepts COMPANY_ASSET with fee of 0', async () => {
+      mockCarrierRepository.create.mockResolvedValue(buildCarrier());
+
+      await expect(
+        carrierService.createCarrier({
+          organizationId: ORG,
+          role: 'admin',
+          input: {
+            name: 'Company Asset',
+            type: CarrierType.COMPANY_ASSET,
+            dispatchFeeType: DispatchFeeType.PERCENTAGE,
+            dispatchFeePercent: 0,
+          },
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('accepts LEASED_CARRIER with fee of 0', async () => {
+      mockCarrierRepository.create.mockResolvedValue(buildCarrier());
+
+      await expect(
+        carrierService.createCarrier({
+          organizationId: ORG,
+          role: 'admin',
+          input: {
+            name: 'Leased Carrier',
+            type: CarrierType.LEASED_CARRIER,
+            dispatchFeeType: DispatchFeeType.PERCENTAGE,
+            dispatchFeePercent: 0,
+          },
+        }),
+      ).resolves.toBeDefined();
+    });
   });
 });

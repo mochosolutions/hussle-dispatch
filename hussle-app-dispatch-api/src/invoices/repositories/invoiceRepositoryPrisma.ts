@@ -24,6 +24,9 @@ const INVOICE_DETAIL_INCLUDE = {
           appointmentEnd: true,
         },
       },
+      organization: {
+        select: { id: true, name: true },
+      },
     },
   },
   carrier: true,
@@ -220,13 +223,36 @@ export const invoiceLoadQueryPrisma = (
         customerRate: true,
         carrierRate: true,
         dispatchFee: true,
+        dispatchFeeOverrideType: true,
+        dispatchFeeOverrideAmount: true,
         bolSignedAt: true,
         status: true,
+        contact: {
+          select: { id: true, email: true },
+        },
         carrier: {
-          select: { id: true, name: true, type: true },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            dispatchFeeType: true,
+            dispatchFeePercent: true,
+            dispatchFeeAmount: true,
+            feeIncludesAccessorials: true,
+            primaryContact: {
+              select: { id: true, email: true },
+            },
+          },
         },
         customer: {
-          select: { id: true, companyName: true, paymentTerms: true, paymentTermsDays: true },
+          select: {
+            id: true,
+            companyName: true,
+            email: true,
+            paymentTerms: true,
+            paymentTermsDays: true,
+            billingMethod: true,
+          },
         },
         accessorialCharges: true,
       },

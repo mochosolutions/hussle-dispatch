@@ -57,17 +57,17 @@
     },
     {
       "serviceKey": "extension",
-      "name": "fleetcommand-extension",
-      "path": "extension/",
+      "name": "dat-load-scraper",
+      "path": "dat-load-scraper/",
       "type": "library",
-      "stack": ["chrome-extension", "esbuild"],
+      "stack": ["chrome-extension", "webpack", "react", "redux-toolkit"],
       "manifest": "package.json",
       "commands": {
-        "test": "cd extension && node --experimental-vm-modules node_modules/.bin/jest",
+        "test": "cd dat-load-scraper && npx jest",
         "lint": null,
         "typecheck": null,
-        "build": "cd extension && node build.mjs",
-        "testRelated": "cd extension && npx jest --findRelatedTests"
+        "build": "cd dat-load-scraper && npx webpack --config webpack.prod.js",
+        "testRelated": "cd dat-load-scraper && npx jest --findRelatedTests"
       }
     }
   ]

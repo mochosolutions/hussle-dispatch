@@ -42,6 +42,10 @@ const createBodySchema = Yup.object({
   maxDaysOut: Yup.number().integer().min(1).notRequired(),
   preferredLanes: Yup.array().of(preferredLaneSchema).notRequired(),
   noGoZones: Yup.array().of(noGoZoneSchema).notRequired(),
+  payType: Yup.string()
+    .oneOf(['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE'])
+    .required('payType is required'),
+  payRate: Yup.number().min(0).required('payRate is required'),
   isAvailable: Yup.boolean().notRequired(),
   status: optionalTrimmed,
   notes: optionalTrimmed,
@@ -53,6 +57,10 @@ const updateBodySchema = createBodySchema
     carrierId: Yup.string().uuid('carrierId must be a valid uuid').notRequired(),
     firstName: Yup.string().trim().notRequired(),
     lastName: Yup.string().trim().notRequired(),
+    payType: Yup.string()
+      .oneOf(['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE'])
+      .notRequired(),
+    payRate: Yup.number().min(0).notRequired(),
   })
   .test('has-any-field', 'At least one field must be provided', (value) => {
     if (value === undefined) {

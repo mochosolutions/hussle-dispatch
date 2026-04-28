@@ -30,3 +30,6 @@ export type { CarrierRejectedEmailData } from './carrierRejected/renderCarrierRe
 
 export { renderSettlementEmail } from './settlement/renderSettlementEmail';
 export type { SettlementEmailData } from './settlement/renderSettlementEmail';
+
+export { renderDocumentUploadedEmail } from './documentUploaded/renderDocumentUploadedEmail';
+export type { DocumentUploadedEmailData } from './documentUploaded/renderDocumentUploadedEmail';

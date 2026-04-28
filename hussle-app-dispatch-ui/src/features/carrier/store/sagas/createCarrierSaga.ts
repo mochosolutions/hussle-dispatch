@@ -25,7 +25,8 @@ export function* createCarrierSaga(
     const { drivers, vehicles, ...carrierFields } = action.payload.data;
 
     const mappedDrivers = drivers.map((d) => ({
-      name: d.name,
+      firstName: d.firstName,
+      lastName: d.lastName,
       phone: d.phone,
       email: d.email || undefined,
       licenseNumber: d.licenseNumber || undefined,

@@ -1,9 +1,9 @@
-import type { Document } from '@prisma/client';
 import type {
   ArchiveDocumentInput,
   BulkDownloadInput,
   BulkDownloadResult,
   ConfirmInput,
+  DocumentWithUploader,
   DownloadDocumentInput,
   GetDocumentInput,
   ListDocumentsInput,
@@ -13,10 +13,10 @@ import type {
 
 export interface DocumentService {
   presign(input: PresignInput): Promise<PresignResult>;
-  confirm(input: ConfirmInput): Promise<Document>;
-  list(input: ListDocumentsInput): Promise<Document[]>;
-  getById(input: GetDocumentInput): Promise<Document>;
+  confirm(input: ConfirmInput): Promise<DocumentWithUploader>;
+  list(input: ListDocumentsInput): Promise<DocumentWithUploader[]>;
+  getById(input: GetDocumentInput): Promise<DocumentWithUploader>;
   getDownloadUrl(input: DownloadDocumentInput): Promise<string>;
-  archive(input: ArchiveDocumentInput): Promise<Document>;
+  archive(input: ArchiveDocumentInput): Promise<DocumentWithUploader>;
   bulkDownload(input: BulkDownloadInput): Promise<BulkDownloadResult>;
 }

@@ -151,6 +151,7 @@ export const settlementRepositoryPrisma = (prisma: PrismaClient): SettlementRepo
     let accessorialsTotal = new Decimal(0);
     let expensesTotal = new Decimal(0);
     let adjustmentsTotal = new Decimal(0);
+    let driverPayTotal = new Decimal(0);
     let totalMiles = 0;
 
     lineItems.forEach((item) => {
@@ -175,12 +176,16 @@ export const settlementRepositoryPrisma = (prisma: PrismaClient): SettlementRepo
         case 'ADJUSTMENT':
           adjustmentsTotal = adjustmentsTotal.plus(amount);
           break;
+        case 'DRIVER_PAY':
+          driverPayTotal = driverPayTotal.plus(amount);
+          break;
         default:
           break;
       }
     });
 
     const netEarnings = grossRevenue
+      .plus(driverPayTotal)
       .minus(dispatchFeeTotal)
       .plus(accessorialsTotal)
       .minus(expensesTotal)

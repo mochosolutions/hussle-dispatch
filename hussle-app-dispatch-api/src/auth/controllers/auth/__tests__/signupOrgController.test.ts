@@ -46,8 +46,14 @@ const createMockRes = (): Partial<Response> => {
   return res;
 };
 
-const createMockEventBus = (): { publish: jest.Mock; subscribe: jest.Mock; close: jest.Mock } => ({
+const createMockEventBus = (): {
+  publish: jest.Mock;
+  publishDelayed: jest.Mock;
+  subscribe: jest.Mock;
+  close: jest.Mock;
+} => ({
   publish: jest.fn().mockResolvedValue(undefined),
+  publishDelayed: jest.fn().mockResolvedValue(undefined),
   subscribe: jest.fn().mockResolvedValue(undefined),
   close: jest.fn().mockResolvedValue(undefined),
 });

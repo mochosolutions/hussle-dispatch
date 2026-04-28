@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { Box, CircularProgress, Typography } from '@mui/material';
 
-import type { InvoiceData } from '../../types';
+import type { InvoiceData } from './types';
 import { generateInvoicePdf } from './generateInvoicePdf';
 
 interface InvoicePdfPreviewProps {

@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 
-import type { InvoiceData, LineItem, Accessorial } from '../../types';
+import type { InvoiceData, LineItem, Accessorial } from './types';
 import { formatCurrency } from './formatCurrency';
 import { pdfStyles } from './pdfStyles';
 import formatPhone from 'utils/formatPhone';

@@ -1,4 +1,13 @@
-import type { Carrier, CarrierType, LoadStatus, Driver, BillingMethod, FactoringSubmission, EmailMode } from '@prisma/client';
+import type {
+  Carrier,
+  CarrierType,
+  LoadStatus,
+  Driver,
+  BillingMethod,
+  FactoringSubmission,
+  EmailMode,
+  DispatchFeeType,
+} from '@prisma/client';
 import type { SortOrder } from '@/shared/pagination';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import type { CreateDriverInput } from '@/drivers/types/driverTypes';
@@ -18,6 +27,8 @@ export interface CreateCarrierInput {
   state?: string;
   zip?: string;
   dispatchFeePercent?: string | number;
+  dispatchFeeType?: DispatchFeeType;
+  dispatchFeeAmount?: string | number;
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
@@ -61,6 +72,8 @@ export interface UpdateCarrierInput {
   state?: string;
   zip?: string;
   dispatchFeePercent?: string | number;
+  dispatchFeeType?: DispatchFeeType;
+  dispatchFeeAmount?: string | number;
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;

@@ -12,6 +12,16 @@ import {
 const DEFAULT_FROM_EMAIL = 'notifications@hussle.app';
 const QUEUE_GROUP = 'carrier-onboarding-notifications';
 
+interface AdminInfo {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface OrgInfo {
+  name: string;
+}
+
 interface CarrierOnboardingSubscriberDeps {
   eventBus: EventBus;
   emailService: NotificationService;
@@ -19,6 +29,12 @@ interface CarrierOnboardingSubscriberDeps {
   logger: Logger;
   portalBaseUrl: string;
   frontendUrl: string;
+  membershipQuery: {
+    findAdminByOrgId: (organizationId: string) => Promise<AdminInfo | null>;
+  };
+  organizationQuery: {
+    findNameById: (organizationId: string) => Promise<OrgInfo | null>;
+  };
 }
 
 export const initializeCarrierOnboardingSubscriber = async (
@@ -70,17 +86,35 @@ export const initializeCarrierOnboardingSubscriber = async (
       organizationId: data.organizationId,
     });
 
+    const admin = await deps.membershipQuery.findAdminByOrgId(data.organizationId);
+
+    if (!admin) {
+      deps.logger.warn('No admin found for organization — onboarding complete email not sent', {
+        carrierId: data.carrierId,
+        organizationId: data.organizationId,
+      });
+      return;
+    }
+
+    const org = await deps.organizationQuery.findNameById(data.organizationId);
+    const organizationName = org?.name ?? 'Your Organization';
+
     const { subject, html } = await renderCarrierOnboardingCompleteEmail({
       carrierName: data.carrierName,
-      organizationName: data.organizationId,
+      organizationName,
       reviewUrl,
     });
 
-    // TODO: Look up org admin email to send notification
-    deps.logger.info('Carrier onboarding complete email rendered (not sent — no dispatcher email)', {
-      carrierId: data.carrierId,
+    await deps.emailService.sendEmail({
+      to: admin.email,
+      from: DEFAULT_FROM_EMAIL,
       subject,
-      htmlLength: html.length,
+      html,
+    });
+
+    deps.logger.info('Carrier onboarding complete email sent', {
+      carrierId: data.carrierId,
+      adminEmail: admin.email,
     });
   });
 

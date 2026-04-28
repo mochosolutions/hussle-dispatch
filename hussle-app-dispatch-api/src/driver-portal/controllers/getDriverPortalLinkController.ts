@@ -1,17 +1,13 @@
 import type { Request, Response } from 'express';
 import type { Logger } from '@/shared/utils/logger';
 import type { TrackingTokenService } from '../../notifications/services/trackingTokenService';
-import type { SmsService } from '@/shared/notifications/smsService';
-import type { NotificationLogRepoPort } from '../../notifications/types/notificationRepoPort';
 import type { DriverPortalLoadQueryPort } from '../types/driverPortalTypes';
 import { ValidationError } from '@/shared/errors';
 import { sendSingle } from '@/shared/responseEnvelope';
 
-interface SendDriverLinkControllerDeps {
+interface GetDriverPortalLinkControllerDeps {
   loadQuery: DriverPortalLoadQueryPort;
   trackingTokenService: TrackingTokenService;
-  smsService: SmsService;
-  logRepo: NotificationLogRepoPort;
   logger: Logger;
   trackingBaseUrl: string;
 }
@@ -28,7 +24,15 @@ const DISPATCHED_OR_LATER = [
   'PAID',
 ];
 
-export const createSendDriverLinkController = (deps: SendDriverLinkControllerDeps) =>
+/**
+ * Returns the driver portal URL for a load. Reuses the same token as the
+ * Send Driver Link SMS flow (`getOrCreateDriverToken`) so the dispatcher
+ * can copy a link without sending an SMS.
+ *
+ * Auth: ADMIN/DISPATCHER only — wired via `requireAuth` + `requireRole`
+ * in the route layer (mirrors `sendDriverLink`).
+ */
+export const createGetDriverPortalLinkController = (deps: GetDriverPortalLinkControllerDeps) =>
   async (req: Request<{ loadId: string }>, res: Response): Promise<void> => {
     const { loadId } = req.params;
 
@@ -39,35 +43,13 @@ export const createSendDriverLinkController = (deps: SendDriverLinkControllerDep
     }
 
     if (!DISPATCHED_OR_LATER.includes(loadSummary.status)) {
-      throw new ValidationError('Load must be dispatched before sending driver link');
-    }
-
-    const driverInfo = await deps.loadQuery.findDriverPhoneByLoadId(loadId);
-
-    if (driverInfo === null) {
-      throw new ValidationError('No driver assigned or driver has no phone number');
+      throw new ValidationError('Load must be dispatched before generating a driver link');
     }
 
     const tokenRecord = await deps.trackingTokenService.getOrCreateDriverToken(loadId);
     const portalUrl = `${deps.trackingBaseUrl}/driver-portal/${tokenRecord.token}`;
 
-    const smsBody = `Load ${loadSummary.loadNumber} has been dispatched to you. View details and update status: ${portalUrl}`;
+    deps.logger.info('Driver portal link issued', { loadId });
 
-    await deps.smsService.sendSms({
-      to: driverInfo.phone,
-      body: smsBody,
-    });
-
-    await deps.logRepo.create({
-      loadId,
-      trigger: 'STATUS_CHANGE',
-      channel: 'SMS',
-      recipientPhone: driverInfo.phone,
-      status: 'sent',
-      metadata: { type: 'driver_portal_link', driverName: driverInfo.driverName },
-    });
-
-    deps.logger.info('Driver portal link sent manually', { loadId });
-
-    sendSingle(res, { sent: true });
+    sendSingle(res, { url: portalUrl });
   };

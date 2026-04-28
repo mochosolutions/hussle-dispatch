@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import type { ColDef, ValueGetterParams } from 'ag-grid-community';
 import { Box, Card, Chip, Typography } from '@mui/material';
 import AgGridTable from '../../../../mocho/components/NewDataGrid';
 import { useDispatch, useSelector } from 'store';
@@ -20,7 +21,7 @@ export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
     dispatch(fetchCarrierVehiclesRequest({ carrierId }));
   }, [dispatch, carrierId]);
 
-  const columnDefs = useMemo(
+  const columnDefs = useMemo<ColDef<Vehicle>[]>(
     () => [
       {
         field: 'unitNumber',
@@ -31,32 +32,38 @@ export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
         field: 'type',
         headerName: 'Type',
         width: 140,
-        valueGetter: (params: { data: Vehicle }) =>
-          EQUIPMENT_OPTIONS.find((e) => e.value === params.data.type)?.label ?? params.data.type,
+        valueGetter: (params: ValueGetterParams<Vehicle>) => {
+          if (!params.data) return '';
+          return (
+            EQUIPMENT_OPTIONS.find((e) => e.value === params.data?.type)?.label ??
+            params.data.type
+          );
+        },
       },
       {
         field: 'ownership',
         headerName: 'Ownership',
         width: 120,
-        valueGetter: (params: { data: Vehicle }) =>
-          params.data.ownership === 'OWNED' ? 'Owned' : 'Leased',
+        valueGetter: (params: ValueGetterParams<Vehicle>) =>
+          params.data?.ownership === 'OWNED' ? 'Owned' : 'Leased',
       },
       {
-        field: 'yearMakeModel',
+        colId: 'yearMakeModel',
         headerName: 'Year / Make / Model',
         flex: 1,
         minWidth: 180,
-        valueGetter: (params: { data: Vehicle }) =>
-          [params.data.year, params.data.make, params.data.model]
-            .filter(Boolean)
-            .join(' ') || '—',
+        valueGetter: (params: ValueGetterParams<Vehicle>) =>
+          params.data
+            ? [params.data.year, params.data.make, params.data.model].filter(Boolean).join(' ') ||
+              '—'
+            : '—',
       },
       {
         field: 'isActive',
         headerName: 'Active',
         width: 100,
-        valueGetter: (params: { data: Vehicle }) =>
-          params.data.isActive ? 'Active' : 'Inactive',
+        valueGetter: (params: ValueGetterParams<Vehicle>) =>
+          params.data?.isActive ? 'Active' : 'Inactive',
       },
     ],
     [],

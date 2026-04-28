@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Chip,
-  Grid,
-  InputAdornment,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Chip, Grid, InputAdornment, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import type { CarrierListItem, Driver, Vehicle } from 'features/carrier/types';
 import type { FormikFieldProps, TypeaheadOption } from '@mocho/ui/forms';
@@ -238,7 +231,6 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
   const driverMeta = formik.getFieldMeta('driverId');
   const vehicleMeta = formik.getFieldMeta('vehicleId');
 
-
   const pairingWarning = useMemo(() => {
     if (!selectedDriver || !selectedVehicle) {
       return null;
@@ -305,10 +297,17 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
       setFieldValue: handleSetFieldValue,
     }),
     [
-      formik.values.carrierId, formik.values.driverId, formik.values.vehicleId,
-      carrierError, driverError, vehicleError,
-      carrierMeta.touched, driverMeta.touched, vehicleMeta.touched,
-      handleFieldBlur, handleSetFieldValue,
+      formik.values.carrierId,
+      formik.values.driverId,
+      formik.values.vehicleId,
+      carrierError,
+      driverError,
+      vehicleError,
+      carrierMeta.touched,
+      driverMeta.touched,
+      vehicleMeta.touched,
+      handleFieldBlur,
+      handleSetFieldValue,
     ],
   );
 
@@ -374,7 +373,11 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
       initialCarrierId: formik.values.carrierId,
       onClose: () => {
         if (formik.values.carrierId) {
-          fetchDriversAndVehicles(formik.values.carrierId, driverSearchRef.current, vehicleSearchRef.current);
+          fetchDriversAndVehicles(
+            formik.values.carrierId,
+            driverSearchRef.current,
+            vehicleSearchRef.current,
+          );
         }
       },
     });
@@ -385,7 +388,11 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
       initialCarrierId: formik.values.carrierId,
       onClose: () => {
         if (formik.values.carrierId) {
-          fetchDriversAndVehicles(formik.values.carrierId, driverSearchRef.current, vehicleSearchRef.current);
+          fetchDriversAndVehicles(
+            formik.values.carrierId,
+            driverSearchRef.current,
+            vehicleSearchRef.current,
+          );
         }
       },
     });
@@ -481,6 +488,7 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
           onOptionSelect={handleCarrierSelect}
           renderOptionContent={renderCarrierOption}
           startAdornment={searchAdornment}
+          required
         />
       </Grid>
 

@@ -161,4 +161,165 @@ describe('initializeAuditSubscriber', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith('Audit subscriber initialized');
   });
+
+  describe('document.archived subscription', () => {
+    type ArchivedHandler = (data: EventMap['document.archived']) => Promise<void>;
+
+    const captureArchivedHandler = async (): Promise<ArchivedHandler> => {
+      await initializeAuditSubscriber({
+        eventBus: mockEventBus,
+        auditLogRepo: mockAuditLogRepo,
+        logger: mockLogger,
+      });
+
+      const call = mockEventBus.subscribe.mock.calls.find(
+        (c) => c[0] === 'document.archived',
+      );
+      if (!call) {
+        throw new Error('document.archived subscription not registered');
+      }
+      return call[2] as ArchivedHandler;
+    };
+
+    const buildPayload = (
+      overrides: Partial<EventMap['document.archived']> = {},
+    ): EventMap['document.archived'] => ({
+      documentId: 'doc-1',
+      organizationId: 'org-1',
+      fileName: 'rate.pdf',
+      type: 'BROKER_RATE_CON',
+      entityType: 'load',
+      entityId: 'load-1',
+      requestingUserId: 'user-7',
+      ...overrides,
+    });
+
+    it('creates audit log with DOCUMENT_ARCHIVED action and metadata', async () => {
+      // Arrange
+      mockAuditLogRepo.create.mockResolvedValue({});
+      const handler = await captureArchivedHandler();
+
+      // Act
+      await handler(buildPayload());
+
+      // Assert
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith('org-1', {
+        userId: 'user-7',
+        action: 'DOCUMENT_ARCHIVED',
+        entityType: 'Document',
+        entityId: 'doc-1',
+        changes: null,
+        metadata: {
+          fileName: 'rate.pdf',
+          type: 'BROKER_RATE_CON',
+          entityType: 'load',
+          entityId: 'load-1',
+        },
+      });
+    });
+
+    it('uses null userId when requestingUserId is missing', async () => {
+      // Arrange
+      mockAuditLogRepo.create.mockResolvedValue({});
+      const handler = await captureArchivedHandler();
+
+      // Act
+      await handler(buildPayload({ requestingUserId: null }));
+
+      // Assert
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith(
+        'org-1',
+        expect.objectContaining({ userId: null }),
+      );
+    });
+
+    it('logs error without throwing when audit creation fails', async () => {
+      // Arrange
+      mockAuditLogRepo.create.mockRejectedValue(new Error('boom'));
+      const handler = await captureArchivedHandler();
+
+      // Act
+      await handler(buildPayload());
+
+      // Assert
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to create audit log for document.archived',
+        expect.objectContaining({ documentId: 'doc-1', error: 'boom' }),
+      );
+    });
+  });
+
+  describe('document.replaced subscription', () => {
+    type ReplacedHandler = (data: EventMap['document.replaced']) => Promise<void>;
+
+    const captureReplacedHandler = async (): Promise<ReplacedHandler> => {
+      await initializeAuditSubscriber({
+        eventBus: mockEventBus,
+        auditLogRepo: mockAuditLogRepo,
+        logger: mockLogger,
+      });
+
+      const call = mockEventBus.subscribe.mock.calls.find(
+        (c) => c[0] === 'document.replaced',
+      );
+      if (!call) {
+        throw new Error('document.replaced subscription not registered');
+      }
+      return call[2] as ReplacedHandler;
+    };
+
+    const buildPayload = (
+      overrides: Partial<EventMap['document.replaced']> = {},
+    ): EventMap['document.replaced'] => ({
+      priorDocumentId: 'prior-1',
+      priorS3Key: 's3/prior-1',
+      replacedBy: 'new-1',
+      entityType: 'load',
+      entityId: 'load-1',
+      organizationId: 'org-1',
+      documentType: 'BROKER_RATE_CON',
+      requestingUserId: 'user-9',
+      ...overrides,
+    });
+
+    it('creates audit log with DOCUMENT_REPLACED action and metadata', async () => {
+      // Arrange
+      mockAuditLogRepo.create.mockResolvedValue({});
+      const handler = await captureReplacedHandler();
+
+      // Act
+      await handler(buildPayload());
+
+      // Assert
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith('org-1', {
+        userId: 'user-9',
+        action: 'DOCUMENT_REPLACED',
+        entityType: 'Document',
+        entityId: 'prior-1',
+        changes: null,
+        metadata: {
+          replacedBy: 'new-1',
+          priorS3Key: 's3/prior-1',
+          type: 'BROKER_RATE_CON',
+          entityType: 'load',
+          entityId: 'load-1',
+        },
+      });
+    });
+
+    it('logs error without throwing when audit creation fails', async () => {
+      // Arrange
+      mockAuditLogRepo.create.mockRejectedValue(new Error('kaboom'));
+      const handler = await captureReplacedHandler();
+
+      // Act
+      await handler(buildPayload());
+
+      // Assert
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to create audit log for document.replaced',
+        expect.objectContaining({ priorDocumentId: 'prior-1', error: 'kaboom' }),
+      );
+    });
+  });
 });

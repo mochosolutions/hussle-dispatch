@@ -70,6 +70,7 @@ export {
 	DeferredImageUploadField,
 	RichTextEditorField,
 	SubmitButton,
+	CancelButton,
 	SecondaryButton,
 	FormLink,
 	TermsNotice,

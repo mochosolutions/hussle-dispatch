@@ -34,6 +34,7 @@ export type DrawerType =
   | 'contactCreate'
   | 'contactInfo'
   | 'documentUpload'
+  | 'documentDetail'
   | 'disputeSettlement'
   | 'addAdjustment'
   | 'expenseQuickAdd'
@@ -75,6 +76,7 @@ export interface DrawerTypeMap {
     preselectedDocType?: DocumentType;
     lockDocType?: boolean;
   };
+  documentDetail: { documentId: string };
   disputeSettlement: { settlementId: string };
   addAdjustment: { settlementId: string };
   expenseQuickAdd: { onSuccess: () => void };
@@ -98,7 +100,9 @@ export type ModalType =
   | 'confirmDeleteInvoice'
   | 'sendInvoice'
   | 'markInvoicePaid'
-  | 'loadSendSmsPrompt';
+  | 'loadSendSmsPrompt'
+  | 'dispatchOverride'
+  | 'confirmDeleteDocument';
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
@@ -122,4 +126,11 @@ export interface ModalTypeMap {
   sendInvoice: { invoiceId: string };
   markInvoicePaid: { invoiceId: string; balanceDue: number };
   loadSendSmsPrompt: { loadId: string };
+  dispatchOverride: {
+    carrierId: string;
+    carrierName: string;
+    loadId: string;
+    missingDocuments: string[];
+  };
+  confirmDeleteDocument: { documentId: string; fileName: string; type: DocumentType };
 }

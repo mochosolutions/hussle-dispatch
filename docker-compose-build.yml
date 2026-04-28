@@ -1,0 +1,40 @@
+# Build-only configuration for CI pipeline
+# Usage:
+#   Build all:     docker compose -f docker-compose-build.yml --profile api --profile ui --profile emails --profile rabbitmq build --push
+#   Build one:     docker compose -f docker-compose-build.yml --profile api build --push
+# Required env vars: ECR_REGISTRY, IMAGE_TAG, VITE_API_URL (ui only)
+
+services:
+  api:
+    profiles: ["api"]
+    platform: linux/amd64
+    build:
+      context: ./hussle-app-dispatch-api
+      dockerfile: Dockerfile.prod
+    image: ${ECR_REGISTRY}/fleet-api:${IMAGE_TAG}
+
+  ui:
+    profiles: ["ui"]
+    platform: linux/amd64
+    build:
+      context: ./hussle-app-dispatch-ui
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    image: ${ECR_REGISTRY}/fleet-ui:${IMAGE_TAG}
+
+  emails:
+    profiles: ["emails"]
+    platform: linux/amd64
+    build:
+      context: ./hussle-emails
+      dockerfile: Dockerfile.prod
+    image: ${ECR_REGISTRY}/fleet-emails:${IMAGE_TAG}
+
+  rabbitmq:
+    profiles: ["rabbitmq"]
+    platform: linux/amd64
+    build:
+      context: ./docker/rabbitmq
+      dockerfile: Dockerfile
+    image: ${ECR_REGISTRY}/fleet-rabbitmq:${IMAGE_TAG}

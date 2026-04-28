@@ -276,12 +276,14 @@ const validateAssignmentState = async (
   organizationId: string,
   loadId: string | undefined,
   deps: LoadServiceDeps,
+  options?: { onboardingOverride?: boolean },
 ): Promise<LoadAssignmentWarning[]> => {
   const blockers: {
     code: string;
     message: string;
     field?: string;
     blockingLoadIds?: string[];
+    metadata?: Record<string, unknown>;
   }[] = [];
   const warnings: LoadAssignmentWarning[] = [];
 
@@ -367,7 +369,7 @@ const validateAssignmentState = async (
     }
   }
 
-  if (carrier !== null) {
+  if (carrier !== null && options?.onboardingOverride !== true) {
     const onboardingResult = checkCarrierOnboarding({
       carrierType: carrier.type,
       dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
@@ -381,6 +383,11 @@ const validateAssignmentState = async (
         code: 'CARRIER_ONBOARDING_INCOMPLETE',
         field: 'carrierId',
         message: `${carrier.name} cannot be assigned until onboarding is complete.`,
+        metadata: {
+          carrierId: carrier.id,
+          carrierName: carrier.name,
+          missingDocuments: onboardingResult.missingDocuments,
+        },
       });
     }
   }
@@ -680,7 +687,9 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         normalizedAssignmentInput,
       );
 
-      await validateAssignmentState(resolvedAssignment, organizationId, id, deps);
+      await validateAssignmentState(resolvedAssignment, organizationId, id, deps, {
+        onboardingOverride: existing.onboardingOverride,
+      });
 
       load = await deps.loadRepository.update(id, {
         ...mergedInput,
@@ -724,7 +733,9 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       normalizedAssignmentInput,
     );
 
-    const warnings = await validateAssignmentState(resolvedAssignment, organizationId, id, deps);
+    const warnings = await validateAssignmentState(resolvedAssignment, organizationId, id, deps, {
+      onboardingOverride: existing.onboardingOverride,
+    });
 
     let deadheadMiles: number | undefined;
 

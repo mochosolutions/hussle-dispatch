@@ -20,7 +20,6 @@ interface InvoiceEmailPort {
     recipientEmail: string;
     replyToEmail?: string;
     fromEmail: string;
-    subject: string;
   }): Promise<void>;
 }
 
@@ -362,7 +361,6 @@ describe('createInvoiceService', () => {
         organizationId: 'org-1',
         recipientEmail: 'recipient@example.com',
         fromEmail: 'invoices@fleetcommand.app',
-        subject: 'Invoice from Test Carrier \u2014 Load #LD-001',
       });
       expect(deps.invoiceRepo.findById).toHaveBeenCalledTimes(2);
       expect(result).toBe(sent);

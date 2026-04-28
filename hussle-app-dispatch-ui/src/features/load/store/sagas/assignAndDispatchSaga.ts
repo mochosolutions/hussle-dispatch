@@ -6,9 +6,9 @@ import {
   assignAndDispatchRequest,
   assignAndDispatchSuccess,
   assignAndDispatchFailure,
+  setOnboardingBlock,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
-import { mapDetailToListItem } from './detailToListItemMapper';
 
 export function* assignAndDispatchSaga(
   action: ReturnType<typeof assignAndDispatchRequest>,
@@ -29,11 +29,10 @@ export function* assignAndDispatchSaga(
       });
     }
 
-    // Update entity store after assignment
+    // Update entity store after assignment — upsert the full detail so route.stops
+    // and other detail fields stay intact for any subscribers (e.g. detail page selectors).
     const assignedLoad = assignResponse.load;
-    yield put(
-      loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(assignedLoad) }),
-    );
+    yield put(loadActions.upsertOne(assignedLoad));
 
     // Step 2: Transition to DISPATCHED
     const transitionResponse = (yield call(transitionStatus, loadId, {
@@ -47,11 +46,9 @@ export function* assignAndDispatchSaga(
       return;
     }
 
-    // Update entity store after transition
+    // Update entity store after transition — upsert the full detail (preserves route.stops).
     if (transitionResponse.load) {
-      const { load } = transitionResponse;
-      yield put(loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(load) }));
-      yield put(loadActions.upsertOne(load));
+      yield put(loadActions.upsertOne(transitionResponse.load));
     }
 
     yield put(assignAndDispatchSuccess({ loadId }));
@@ -62,6 +59,19 @@ export function* assignAndDispatchSaga(
 
       // 422 blocker errors from assignment validation
       if (error.response.status === 422 && Array.isArray(data.blockers) && data.blockers.length > 0) {
+        // Check for onboarding blocker — store structured data for override UI
+        const onboardingBlocker = data.blockers.find(
+          (b: { code: string }) => b.code === 'CARRIER_ONBOARDING_INCOMPLETE',
+        );
+        if (onboardingBlocker?.metadata) {
+          const { carrierId, carrierName, missingDocuments } = onboardingBlocker.metadata as {
+            carrierId: string;
+            carrierName: string;
+            missingDocuments: string[];
+          };
+          yield put(setOnboardingBlock({ loadId, carrierId, carrierName, missingDocuments }));
+        }
+
         const blockerMessages = data.blockers
           .map((b: { message: string }) => b.message)
           .join('\n');

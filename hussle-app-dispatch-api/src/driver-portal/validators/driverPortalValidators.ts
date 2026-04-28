@@ -1,6 +1,6 @@
 import * as yup from 'yup';
 
-export const sendDriverLinkSchema = yup.object({
+export const getDriverPortalLinkSchema = yup.object({
   params: yup.object({
     loadId: yup.string().uuid().required(),
   }),
@@ -21,7 +21,20 @@ export const checkInSchema = yup.object({
     latitude: yup.number().min(-90).max(90).optional(),
     longitude: yup.number().min(-180).max(180).optional(),
     status: yup.string().trim().max(100).optional(),
-    eta: yup.string().optional(),
+    eta: yup
+      .string()
+      .optional()
+      .test(
+        'is-iso-date',
+        'eta must be a valid ISO 8601 date-time string',
+        (value) => {
+          if (value === undefined || value === null || value === '') {
+            return true;
+          }
+          const parsed = new Date(value);
+          return !Number.isNaN(parsed.getTime());
+        },
+      ),
     notes: yup.string().trim().max(2000).optional(),
   }),
 });

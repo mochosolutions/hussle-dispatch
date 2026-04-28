@@ -14,6 +14,7 @@ export const InvoiceTypeCellRenderer = ({ data }: { data: InvoiceListItem }) => 
     label={INVOICE_TYPE_LABELS[data.type]}
     size="small"
     variant="filled"
+    color={data.type === 'DISPATCH_FEE' ? 'secondary' : 'default'}
     sx={{ fontWeight: 500 }}
   />
 );

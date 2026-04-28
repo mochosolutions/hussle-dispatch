@@ -185,7 +185,7 @@ const ExpenseListPage = () => {
       },
       {
         headerName: 'Actions',
-        field: 'actions',
+        colId: 'actions',
         width: 100,
         sortable: false,
         filter: false,

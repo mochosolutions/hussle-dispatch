@@ -1,13 +1,21 @@
-import cors from 'cors';
 import type { Application } from 'express';
+import cors from 'cors';
 import helmet from 'helmet';
+import { logger } from '@/shared/utils/logger';
+
+const parseList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
 
 /**
- * Configure security middleware for the Express application
- * Includes Helmet for security headers and CORS for cross-origin requests
+ * Configure security middleware for the Express application.
+ * Applies Helmet headers, additional response headers, and CORS with an
+ * allowlist driven by `ALLOW_ORIGINS` and (optionally) `ALLOWED_EXTENSION_IDS`.
  */
 export const configureSecurity = (app: Application): void => {
-  // Helmet.js - Security headers
+  // Helmet — security headers
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -23,8 +31,8 @@ export const configureSecurity = (app: Application): void => {
           frameSrc: ["'none'"],
         },
       },
-      crossOriginEmbedderPolicy: false, // Allow embedding for admin UI
-      crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin requests
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       hsts:
         process.env.NODE_ENV === 'production'
           ? { maxAge: 31536000, includeSubDomains: true, preload: true }
@@ -32,45 +40,50 @@ export const configureSecurity = (app: Application): void => {
     }),
   );
 
-  console.log('Security middleware configured: Helmet with custom CSP and CORS enabled', {
-    origin: process.env.ALLOW_ORIGINS,
-  });
+  const allowedOrigins =
+    process.env.ALLOW_ORIGINS !== undefined && process.env.ALLOW_ORIGINS !== ''
+      ? parseList(process.env.ALLOW_ORIGINS)
+      : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3002'];
 
-  // CORS Configuration
-  const allowedOrigins = process.env.ALLOW_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:3002',
-  ];
+  const allowedExtensionIds = parseList(process.env['ALLOWED_EXTENSION_IDS'] ?? '');
+  const allowedExtensionOrigins = allowedExtensionIds.map((id) => `chrome-extension://${id}`);
+
+  logger.debug('Security middleware configured', {
+    allowedOrigins,
+    allowedExtensionOrigins,
+  });
 
   app.use(
     cors({
       origin: (origin, callback) => {
         // Reject requests with no origin in production (prevents CORS bypass)
-        if (!origin) {
+        if (origin === undefined) {
           if (process.env.NODE_ENV === 'production') {
-            return callback(new Error('Not allowed by CORS'));
+            callback(new Error('Not allowed by CORS'));
+            return;
           }
           // Allow no-origin in development (server-to-server, Postman, etc.)
-          return callback(null, true);
+          callback(null, true);
+          return;
         }
 
-        if (allowedOrigins.includes(origin) || origin.startsWith('chrome-extension://')) {
+        if (allowedOrigins.includes(origin) || allowedExtensionOrigins.includes(origin)) {
           callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
+          return;
         }
+
+        callback(new Error('Not allowed by CORS'));
       },
-      credentials: true, // Allow cookies
+      credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
       exposedHeaders: ['Content-Range', 'X-Content-Range'],
-      maxAge: 86400, // 24 hours
+      maxAge: 86400,
     }),
   );
 
   // Additional security headers
-  app.use((req, res, next) => {
+  app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');

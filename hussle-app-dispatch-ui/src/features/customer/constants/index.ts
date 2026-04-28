@@ -1,4 +1,4 @@
-import type { CustomerType, CustomerStatus } from '../types';
+import type { BillingMethod, CustomerType, CustomerStatus } from '../types';
 
 export const CUSTOMER_TYPE_OPTIONS: readonly { value: CustomerType; label: string }[] = [
   { value: 'BROKER', label: 'Broker' },
@@ -15,6 +15,11 @@ export const CUSTOMER_TYPE_LABELS: Record<CustomerType, string> = {
 export const CUSTOMER_STATUS_OPTIONS: readonly { value: CustomerStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Active' },
   { value: 'INACTIVE', label: 'Inactive' },
+];
+
+export const BILLING_METHOD_OPTIONS: { value: BillingMethod; label: string }[] = [
+  { value: 'DIRECT', label: 'Direct' },
+  { value: 'FACTORED', label: 'Factoring' },
 ];
 
 export const PAYMENT_TERMS_OPTIONS = [

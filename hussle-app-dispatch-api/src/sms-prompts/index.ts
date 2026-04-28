@@ -4,6 +4,7 @@ import { smsService, trackingTokenService } from '@/notifications';
 import { settingsRepositoryPrisma } from '@/settings/repositories/settingsRepositoryPrisma';
 import { logger } from '@/shared/utils/logger';
 import { env } from '@/config/env';
+import { shortLinkService } from '@/short-links';
 import { createSmsPromptsModule } from './compositionRoot';
 import { createSmsPromptRoutes } from './routes/smsPromptRoutes';
 
@@ -14,9 +15,11 @@ const smsPromptsModule = createSmsPromptsModule({
   eventBus: sharedEventBus,
   smsService,
   trackingTokenService,
+  shortLinkService,
   settingsRepo,
   logger,
   trackingBaseUrl: env.TRACKING_BASE_URL,
+  publicShortBaseUrl: env.PUBLIC_SHORT_BASE_URL,
 });
 
 // Initialize subscribers — fire-and-forget; errors are logged, not fatal.

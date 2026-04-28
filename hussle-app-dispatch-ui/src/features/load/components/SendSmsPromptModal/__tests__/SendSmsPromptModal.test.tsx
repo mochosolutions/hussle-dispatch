@@ -134,7 +134,8 @@ describe('SendSmsPromptModal', () => {
   it('renders an honest preview with a placeholder for the check-in link', () => {
     renderModal(loadWithDriver);
 
-    expect(screen.getByText(/driver portal check-in link/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hussle: Load #.* needs a check-in/)).toBeInTheDocument();
+    expect(screen.getByText('<short check-in link>')).toBeInTheDocument();
     expect(screen.queryByText(/\[tracking link\]/i)).not.toBeInTheDocument();
   });
 

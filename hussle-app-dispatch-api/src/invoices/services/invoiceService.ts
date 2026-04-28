@@ -29,7 +29,6 @@ interface InvoiceEmailPort {
     ccEmails?: string[];
     replyToEmail?: string;
     fromEmail: string;
-    subject: string;
   }): Promise<void>;
 }
 
@@ -137,7 +136,6 @@ export const createInvoiceService = (deps: InvoiceServiceDeps): InvoiceService =
       recipientEmail: email,
       ccEmails,
       fromEmail: 'invoices@fleetcommand.app',
-      subject: `Invoice from ${invoice.carrier?.name ?? 'Carrier'} — Load #${invoice.load.loadNumber}`,
     });
 
     // Status update happens inside invoiceEmailService, re-fetch

@@ -4,7 +4,7 @@
   "name": "FleetCommand",
   "description": "Load board ingestion for DAT and Amazon Relay",
   "permissions": ["storage", "tabs"],
-  "host_permissions": ["http://localhost:3001/*"],
+  "host_permissions": ["http://localhost:3001/*", "https://*.fleetcommand.app/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "FleetCommand Extension"

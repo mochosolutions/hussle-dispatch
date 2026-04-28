@@ -5,7 +5,7 @@ import { validateRequest } from '@/shared/middleware/validateRequest';
 import { publicRateLimiter, uploadRateLimiter } from '@/shared/middleware/rateLimiter';
 import type { DriverPortalControllers } from '../controllers/driverPortalController';
 import {
-  sendDriverLinkSchema,
+  getDriverPortalLinkSchema,
   advanceStatusSchema,
   checkInSchema,
   presignDocumentSchema,
@@ -13,7 +13,7 @@ import {
 } from '../validators/driverPortalValidators';
 
 interface DriverPortalRouteControllers {
-  sendDriverLink: express.RequestHandler<{ loadId: string }>;
+  getDriverPortalLink: express.RequestHandler<{ loadId: string }>;
   portal: DriverPortalControllers;
 }
 
@@ -28,12 +28,12 @@ export const createDriverPortalRouter = (
   const router = express.Router();
 
   // --- Authenticated dispatcher endpoints ---
-  router.post(
-    '/loads/:loadId/send-driver-link',
+  router.get(
+    '/loads/:loadId/driver-portal-link',
     requireAuth,
     requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
-    validateRequest(sendDriverLinkSchema),
-    controllers.sendDriverLink,
+    validateRequest(getDriverPortalLinkSchema),
+    controllers.getDriverPortalLink,
   );
 
   // --- Public driver portal endpoints (token auth) ---

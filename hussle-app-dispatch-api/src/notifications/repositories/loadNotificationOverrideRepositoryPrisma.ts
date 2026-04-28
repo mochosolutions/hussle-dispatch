@@ -5,9 +5,9 @@ import type { LoadNotificationOverrideRepoPort } from '../types/notificationRepo
 export const loadNotificationOverrideRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
 ): LoadNotificationOverrideRepoPort => ({
-  findByLoadId: async (loadId) =>
+  findByLoadId: async (loadId, organizationId) =>
     prisma.loadNotificationOverride.findMany({
-      where: { loadId },
+      where: { loadId, load: { organizationId } },
       orderBy: { createdAt: 'asc' },
     }),
 

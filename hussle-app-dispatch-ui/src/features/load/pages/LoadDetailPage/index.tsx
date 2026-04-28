@@ -18,6 +18,7 @@ import { FinancialsTab } from '../../components/LoadDetailPage/FinancialsTab';
 import { DocumentsTab } from '../../components/LoadDetailPage/DocumentsTab';
 import NotificationTab from '../../components/LoadDetailPage/NotificationTab';
 import { LoadDetailActions } from '../../components/LoadDetailPage/LoadDetailActions';
+import { BolUploadAlert } from '../../components/LoadDetailPage/BolUploadAlert';
 import { openDrawer } from '../../../ui/store/reducers/uiSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 import { createFromLoadRequest } from '../../../invoices/store/reducers/invoicePageSlice';
@@ -93,11 +94,15 @@ const LoadDetailPage = () => {
               />
             }
           >
-            {load.status === 'DELIVERED' && (
+            {load.status === 'DELIVERED' && !load.tracking?.bolSignedAt && (
+              <BolUploadAlert loadId={load.id} />
+            )}
+
+            {load.status === 'DELIVERED' && load.tracking?.bolSignedAt && (
               <ContextualAlert
                 severity="success"
                 title="Load delivered — ready to invoice"
-                description="POD has been uploaded. All required documents are present."
+                description="Signed BOL is on file."
                 action={{ label: 'Create Invoice', onClick: handleCreateInvoice }}
               />
             )}

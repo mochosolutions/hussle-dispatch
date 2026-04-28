@@ -1,7 +1,8 @@
-import { CarrierType } from '@prisma/client';
+import { CarrierType, DispatchFeeType } from '@prisma/client';
 import * as Yup from 'yup';
 
 const carrierTypeValues = Object.values(CarrierType);
+const dispatchFeeTypeValues = Object.values(DispatchFeeType);
 
 const optionalTrimmed = Yup.string().trim().notRequired();
 
@@ -20,6 +21,16 @@ const createBodySchema = Yup.object({
   state: optionalTrimmed,
   zip: optionalTrimmed,
   dispatchFeePercent: Yup.number().min(0).max(100).notRequired(),
+  dispatchFeeType: Yup.mixed<DispatchFeeType>()
+    .oneOf(dispatchFeeTypeValues, 'dispatchFeeType must be PERCENTAGE or FLAT')
+    .required('dispatchFeeType is required'),
+  dispatchFeeAmount: Yup.number()
+    .min(0, 'dispatchFeeAmount must be non-negative')
+    .when('dispatchFeeType', {
+      is: 'FLAT',
+      then: (schema) => schema.required('dispatchFeeAmount is required when dispatchFeeType is FLAT'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   partnerSplitPercent: Yup.number().min(0).max(100).notRequired(),
   feeIncludesAccessorials: Yup.boolean().notRequired(),
   ownerOpPayPercent: Yup.number().min(0).max(100).notRequired(),
@@ -40,6 +51,10 @@ const updateBodySchema = createBodySchema
   .shape({
     name: Yup.string().trim().notRequired(),
     type: Yup.mixed<CarrierType>().oneOf(carrierTypeValues, 'type must be a valid CarrierType'),
+    dispatchFeeType: Yup.mixed<DispatchFeeType>()
+      .oneOf(dispatchFeeTypeValues, 'dispatchFeeType must be PERCENTAGE or FLAT')
+      .notRequired(),
+    dispatchFeeAmount: Yup.number().min(0, 'dispatchFeeAmount must be non-negative').notRequired(),
   })
   .test('has-any-field', 'At least one field must be provided', (value) => {
     if (value === undefined) {

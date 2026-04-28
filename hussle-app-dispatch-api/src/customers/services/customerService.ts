@@ -1,10 +1,22 @@
-import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors';
+import { NotificationChannel, NotificationTrigger } from '@prisma/client';
+import { ConflictError, NotFoundError } from '@/shared/errors';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
+  CustomerNotificationSettingInput,
   CustomerRepositoryPort,
   CustomerWithCounts,
   CustomerWithDetails,
 } from '../types/customerTypes';
+
+const DEFAULT_CUSTOMER_NOTIFICATION_SETTINGS: CustomerNotificationSettingInput[] = [
+  { trigger: NotificationTrigger.STATUS_CHANGE, channel: NotificationChannel.EMAIL, enabled: true },
+  { trigger: NotificationTrigger.CHECK_CALL, channel: NotificationChannel.EMAIL, enabled: true },
+  {
+    trigger: NotificationTrigger.DOCUMENT_UPLOADED,
+    channel: NotificationChannel.EMAIL,
+    enabled: true,
+  },
+];
 import type {
   CreateCustomerServiceInput,
   CustomerService,
@@ -61,7 +73,12 @@ export const createCustomerService = (deps: CustomerServiceDeps): CustomerServic
       );
     }
 
-    return deps.customerRepository.create(organizationId, input);
+    const customer = await deps.customerRepository.create(organizationId, input);
+    await deps.customerRepository.createNotificationSettings(
+      customer.id,
+      DEFAULT_CUSTOMER_NOTIFICATION_SETTINGS,
+    );
+    return customer;
   },
 
   getCustomerById: async ({

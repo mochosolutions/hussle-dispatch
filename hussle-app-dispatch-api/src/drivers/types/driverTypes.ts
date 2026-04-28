@@ -1,4 +1,4 @@
-import type { Driver, DriverLicenseType, DriverStatus, LoadStatus, Prisma } from '@prisma/client';
+import type { Driver, DriverLicenseType, DriverPayType, DriverStatus, LoadStatus, Prisma } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 
 export interface PreferredLaneInput {
@@ -35,6 +35,8 @@ export interface CreateDriverInput {
   isAvailable?: boolean;
   status?: DriverStatus;
   timezone?: string;
+  payType: DriverPayType;
+  payRate: number;
   notes?: string;
 }
 
@@ -50,8 +52,8 @@ export interface UpdateDriverInput {
   licenseExpiry?: Date;
   endorsements?: string[];
   availableHours?: string | number;
-  currentCity?: string;
-  currentState?: string;
+  currentCity?: string | null;
+  currentState?: string | null;
   homeBaseCity?: string;
   homeBaseState?: string;
   maxDaysOut?: number;
@@ -59,6 +61,10 @@ export interface UpdateDriverInput {
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
   status?: DriverStatus;
+  currentLatitude?: number | null;
+  currentLongitude?: number | null;
+  payType?: DriverPayType;
+  payRate?: number;
   timezone?: string;
   notes?: string;
 }

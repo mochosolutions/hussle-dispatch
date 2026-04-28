@@ -1,10 +1,10 @@
 import 'express-async-errors';
 import Decimal from 'decimal.js';
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
 import express, { Request, Response } from 'express';
-import helmet from 'helmet';
 import morgan from 'morgan';
+import type { PrismaClient } from '@prisma/client';
+import { apiKeyRouter } from './api-keys';
 import { rootAuthRouter } from './auth';
 import { carriersRouter } from './carriers';
 import { contactsRouter } from './contacts';
@@ -31,6 +31,7 @@ import { settlementsRouter } from './settlements';
 import './audit';
 import './notifications';
 import { smsPromptsRouter } from './sms-prompts';
+import { shortLinksRouter } from './short-links';
 import { env } from './config/env';
 import { errorHandler } from './shared/middleware/errorHandler';
 import { createStorageProvider } from './shared/storage';
@@ -50,15 +51,55 @@ const decimalReplacer = (_key: string, value: unknown): unknown => {
   return value;
 };
 
-export const createApp = (): express.Application => {
+/**
+ * Minimal port for the Redis client used by the health check. Avoids tying
+ * `app.ts` to the concrete `ioredis` implementation while keeping the test
+ * surface small (only `ping` is required).
+ */
+export interface HealthRedisPort {
+  ping: () => Promise<string>;
+}
+
+export interface CreateAppDeps {
+  prisma: PrismaClient;
+  redis: HealthRedisPort;
+}
+
+type CheckStatus = 'ok' | 'fail';
+
+interface HealthCheckResult {
+  status: 'ok' | 'degraded';
+  checks: { db: CheckStatus; redis: CheckStatus };
+}
+
+export const createApp = (deps: CreateAppDeps): express.Application => {
   const app = express();
 
   // Serialize Decimal.js instances as strings in all JSON responses
   app.set('json replacer', decimalReplacer);
 
-  // Health check
-  app.get('/api/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', service: 'hussle-app-dispatch-api' });
+  // Health check — pings DB + Redis so the orchestrator can detect dependency outages
+  app.get('/api/health', async (_req: Request, res: Response) => {
+    const [dbResult, redisResult] = await Promise.allSettled([
+      deps.prisma.$queryRaw`SELECT 1`,
+      deps.redis.ping(),
+    ]);
+
+    const result: HealthCheckResult = {
+      status: 'ok',
+      checks: {
+        db: dbResult.status === 'fulfilled' ? 'ok' : 'fail',
+        redis: redisResult.status === 'fulfilled' ? 'ok' : 'fail',
+      },
+    };
+
+    if (result.checks.db === 'fail' || result.checks.redis === 'fail') {
+      result.status = 'degraded';
+      res.status(503).json(result);
+      return;
+    }
+
+    res.status(200).json(result);
   });
 
   configureSecurity(app);
@@ -78,7 +119,11 @@ export const createApp = (): express.Application => {
   // Auth routes
   app.use(rootAuthRouter);
 
+  // Public short-link redirect — mounted outside /api/v1 (no auth required)
+  app.use('/s', shortLinksRouter);
+
   // // Feature routes mount here (added by each feature story)
+  app.use('/api/v1/api-keys', apiKeyRouter);
   app.use('/api/v1/carriers', carriersRouter);
   app.use('/api/v1/contacts', contactsRouter);
   app.use('/api/v1/customers', customersRouter);

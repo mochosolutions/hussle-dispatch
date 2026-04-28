@@ -49,9 +49,10 @@ export const SendSmsPromptModal: React.FC<SendSmsPromptModalProps> = ({ loadId, 
 
   const previewBody = load ? (
     <>
-      Load #{load.loadNumber}: please check in.{' '}
+      Hussle: Load #{load.loadNumber} needs a check-in.
+      <br />
       <Box component="span" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-        &lt;driver portal check-in link&gt;
+        &lt;short check-in link&gt;
       </Box>
     </>
   ) : null;

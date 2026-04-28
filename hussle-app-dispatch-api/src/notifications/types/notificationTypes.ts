@@ -99,3 +99,9 @@ export interface CheckCallContext {
   eta: string | null;
   trackingUrl: string | null;
 }
+
+export interface DocumentUploadedContext {
+  loadNumber: string;
+  documentType: string;
+  trackingUrl: string | null;
+}

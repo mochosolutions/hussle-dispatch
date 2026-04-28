@@ -69,5 +69,52 @@ export const initializeAuditSubscriber = async (
     }
   });
 
+  await deps.eventBus.subscribe('document.archived', 'audit-service', async (data) => {
+    try {
+      await deps.auditLogRepo.create(data.organizationId, {
+        userId: data.requestingUserId ?? null,
+        action: 'DOCUMENT_ARCHIVED',
+        entityType: 'Document',
+        entityId: data.documentId,
+        changes: null,
+        metadata: {
+          fileName: data.fileName,
+          type: data.type,
+          entityType: data.entityType,
+          entityId: data.entityId,
+        },
+      });
+    } catch (error: unknown) {
+      deps.logger.error('Failed to create audit log for document.archived', {
+        documentId: data.documentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  await deps.eventBus.subscribe('document.replaced', 'audit-service', async (data) => {
+    try {
+      await deps.auditLogRepo.create(data.organizationId, {
+        userId: data.requestingUserId ?? null,
+        action: 'DOCUMENT_REPLACED',
+        entityType: 'Document',
+        entityId: data.priorDocumentId,
+        changes: null,
+        metadata: {
+          replacedBy: data.replacedBy,
+          priorS3Key: data.priorS3Key,
+          type: data.documentType,
+          entityType: data.entityType,
+          entityId: data.entityId,
+        },
+      });
+    } catch (error: unknown) {
+      deps.logger.error('Failed to create audit log for document.replaced', {
+        priorDocumentId: data.priorDocumentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   deps.logger.info('Audit subscriber initialized');
 };

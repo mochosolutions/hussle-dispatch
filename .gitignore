@@ -9,3 +9,4 @@ hussle-app-dispatch-api/node_modules/
 .env.bak
 
 **/dist/*
+mocho-infra-modules/

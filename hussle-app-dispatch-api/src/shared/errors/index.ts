@@ -27,3 +27,7 @@ export { AuthRequestError } from './authError';
 export { RequestValidationError } from './requestValidationError';
 
 export { GoneError } from './goneError';
+
+export { MissingEstimatedHoursError } from './missingEstimatedHoursError';
+
+export { MissingEnvError } from './missingEnvError';

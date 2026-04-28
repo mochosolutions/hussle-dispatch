@@ -6,7 +6,7 @@ import type { NotificationSettingsRepoPort, LoadNotificationOverrideRepoPort, No
 import type { TrackingTokenRepoPort } from '../types/trackingTokenTypes';
 import type { ResolvedNotificationConfig } from '../types/notificationTypes';
 import { resolveNotificationSettings } from './resolveNotificationSettings';
-import { buildStatusChangeContent, buildCheckCallContent, buildInvitationContent } from './notificationContentBuilder';
+import { buildStatusChangeContent, buildCheckCallContent, buildInvitationContent, buildDocumentUploadedContent } from './notificationContentBuilder';
 
 interface NotificationSubscriberDeps {
   eventBus: EventBus;
@@ -147,7 +147,7 @@ export const initializeNotificationSubscriber = async (
 
         const [settings, overrides] = await Promise.all([
           deps.settingsRepo.findByCustomerId(data.customerId),
-          deps.overrideRepo.findByLoadId(data.loadId),
+          deps.overrideRepo.findByLoadId(data.loadId, data.organizationId),
         ]);
 
         const configs = resolveNotificationSettings(settings, overrides, 'STATUS_CHANGE');
@@ -200,7 +200,7 @@ export const initializeNotificationSubscriber = async (
 
         const [settings, overrides] = await Promise.all([
           deps.settingsRepo.findByCustomerId(data.customerId),
-          deps.overrideRepo.findByLoadId(data.loadId),
+          deps.overrideRepo.findByLoadId(data.loadId, data.organizationId),
         ]);
 
         const configs = resolveNotificationSettings(settings, overrides, 'CHECK_CALL');
@@ -273,6 +273,65 @@ export const initializeNotificationSubscriber = async (
         deps.logger.error('Failed to send invitation email', {
           error: error instanceof Error ? error.message : String(error),
           inviteId: data.inviteId,
+        });
+      }
+    },
+  );
+
+  // Subscribe to document confirmed events
+  await deps.eventBus.subscribe(
+    'document.confirmed',
+    'notifications-service',
+    async (data) => {
+      try {
+        if (data.entityType !== 'load') {
+          return;
+        }
+
+        const customerId = data.customerId ?? null;
+        if (customerId === null) {
+          return;
+        }
+
+        const loadId = data.loadId ?? data.entityId;
+
+        const [settings, overrides] = await Promise.all([
+          deps.settingsRepo.findByCustomerId(customerId),
+          deps.overrideRepo.findByLoadId(loadId, data.organizationId),
+        ]);
+
+        const configs = resolveNotificationSettings(settings, overrides, 'DOCUMENT_UPLOADED');
+
+        if (configs.length === 0) {
+          return;
+        }
+
+        const trackingUrl = await getOrCreateTrackingUrl(loadId, deps);
+
+        const content = await buildDocumentUploadedContent({
+          loadNumber: data.loadNumber ?? loadId,
+          documentType: data.documentType,
+          trackingUrl,
+        });
+
+        const contact: LoadContactInfo = {
+          contactEmail: data.contactEmail ?? null,
+          contactPhone: data.contactPhone ?? null,
+          contactCcEmails: data.contactCcEmails ?? [],
+        };
+
+        for (const config of configs) {
+          await sendNotification(config, content, loadId, DEFAULT_FROM_EMAIL, contact, deps);
+        }
+
+        deps.logger.info('Document uploaded notifications sent', {
+          loadId,
+          configCount: configs.length,
+        });
+      } catch (error: unknown) {
+        deps.logger.error('Failed to process document uploaded notification', {
+          entityId: data.entityId,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     },

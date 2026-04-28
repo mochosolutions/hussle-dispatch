@@ -5,16 +5,15 @@ import {
   DocumentUploadNotConfirmedError,
 } from '../../types/documentErrors';
 import { PRESIGN_EXPIRATION_SECONDS, UPLOAD_STATUS } from '../../types/documentTypes';
-import type { DocumentRepoPort } from '../../types/documentTypes';
+import type { DocumentRepoPort, DocumentWithUploader } from '../../types/documentTypes';
 import type { StorageProvider } from '../../../shared/storage/storageProvider';
 import type { EventBus } from '../../../shared/messaging/eventBus';
-import type { Document } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const makeDocument = (overrides: Partial<Document> = {}): Document => ({
+const makeDocument = (overrides: Partial<DocumentWithUploader> = {}): DocumentWithUploader => ({
   id: 'doc-1',
   organizationId: 'org-1',
   entityType: 'load',
@@ -23,17 +22,24 @@ const makeDocument = (overrides: Partial<Document> = {}): Document => ({
   fileName: 'bol.pdf',
   mimeType: 'application/pdf',
   s3Key: 'org-1/loads/load-1/bol_signed/bol.pdf',
-  s3Url: 'https://s3.example.com/presigned-put',
+  url: 'https://s3.example.com/presigned-put',
   uploadStatus: UPLOAD_STATUS.PENDING,
   isArchived: false,
   uploadedByUserId: 'user-1',
+  uploadedByUser: { firstName: 'Alice', lastName: 'Adams' },
+  notes: null,
   expiresAt: null,
   metadata: null,
   fileSize: null,
+  reviewStatus: 'pending_review',
+  reviewedAt: null,
+  reviewedByUserId: null,
+  rejectionReason: null,
+  signatureData: null,
+  signedAt: null,
   createdAt: new Date('2026-01-01'),
-  updatedAt: new Date('2026-01-01'),
   ...overrides,
-} as Document);
+} as DocumentWithUploader);
 
 const buildMockDeps = () => {
   const documentRepository: jest.Mocked<DocumentRepoPort> = {
@@ -191,8 +197,27 @@ describe('createDocumentService', () => {
         entityId: 'load-1',
         documentType: 'BOL_SIGNED',
         organizationId: 'org-1',
+        requestingUserId: null,
       });
       expect(result).toEqual(confirmedDoc);
+    });
+
+    it('forwards requestingUserId in document.confirmed event when provided', async () => {
+      // Arrange
+      const doc = makeDocument({ uploadStatus: UPLOAD_STATUS.PENDING });
+      const confirmedDoc = makeDocument({ uploadStatus: UPLOAD_STATUS.CONFIRMED });
+      deps.documentRepository.findById.mockResolvedValue(doc);
+      deps.storageProvider.exists.mockResolvedValue(true);
+      deps.documentRepository.updateUploadStatus.mockResolvedValue(confirmedDoc);
+
+      // Act
+      await service.confirm({ ...confirmInput, requestingUserId: 'user-42' });
+
+      // Assert
+      expect(deps.eventBus.publish).toHaveBeenCalledWith(
+        'document.confirmed',
+        expect.objectContaining({ requestingUserId: 'user-42' }),
+      );
     });
   });
 
@@ -272,6 +297,45 @@ describe('createDocumentService', () => {
       // Assert
       expect(deps.documentRepository.archive).toHaveBeenCalledWith('doc-1');
       expect(result).toEqual(archivedDoc);
+    });
+
+    it('publishes document.archived event after successful archive', async () => {
+      // Arrange
+      const doc = makeDocument();
+      const archivedDoc = makeDocument({ isArchived: true });
+      deps.documentRepository.findById.mockResolvedValue(doc);
+      deps.documentRepository.archive.mockResolvedValue(archivedDoc);
+
+      // Act
+      await service.archive({ ...archiveInput, requestingUserId: 'admin-7' });
+
+      // Assert
+      expect(deps.eventBus.publish).toHaveBeenCalledWith('document.archived', {
+        documentId: archivedDoc.id,
+        organizationId: archivedDoc.organizationId,
+        fileName: archivedDoc.fileName,
+        type: archivedDoc.type,
+        entityType: archivedDoc.entityType,
+        entityId: archivedDoc.entityId,
+        requestingUserId: 'admin-7',
+      });
+    });
+
+    it('publishes document.archived event with null requestingUserId when missing', async () => {
+      // Arrange
+      const doc = makeDocument();
+      const archivedDoc = makeDocument({ isArchived: true });
+      deps.documentRepository.findById.mockResolvedValue(doc);
+      deps.documentRepository.archive.mockResolvedValue(archivedDoc);
+
+      // Act
+      await service.archive(archiveInput);
+
+      // Assert
+      expect(deps.eventBus.publish).toHaveBeenCalledWith(
+        'document.archived',
+        expect.objectContaining({ requestingUserId: null }),
+      );
     });
   });
 

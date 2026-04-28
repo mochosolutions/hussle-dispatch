@@ -6,6 +6,7 @@ import { approveSettlementSaga } from './approveSettlementSaga';
 import { paySettlementSaga } from './paySettlementSaga';
 import { disputeSettlementSaga } from './disputeSettlementSaga';
 import { addAdjustmentSaga } from './addAdjustmentSaga';
+import { downloadSettlementPdfSaga } from './downloadSettlementPdfSaga';
 import {
   settlementPageSlice,
   generateSettlementRequest,
@@ -13,6 +14,7 @@ import {
   paySettlementRequest,
   disputeSettlementRequest,
   addAdjustmentRequest,
+  downloadSettlementPdfRequest,
 } from '../reducers/settlementPageSlice';
 
 const { actions: settlementPageActions } = settlementPageSlice;
@@ -25,4 +27,5 @@ export function* settlementSagaWatcher(): Generator {
   yield takeLatest(paySettlementRequest.type, paySettlementSaga);
   yield takeLatest(disputeSettlementRequest.type, disputeSettlementSaga);
   yield takeLatest(addAdjustmentRequest.type, addAdjustmentSaga);
+  yield takeLatest(downloadSettlementPdfRequest.type, downloadSettlementPdfSaga);
 }

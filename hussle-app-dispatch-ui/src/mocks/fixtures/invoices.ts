@@ -1,4 +1,49 @@
-const baseInvoice = {
+interface MockAccessorialItem {
+  id: string;
+  type: string;
+  description: string;
+  amount: string;
+}
+
+interface MockInvoiceFixture {
+  id: string;
+  loadId: string;
+  carrierId: string;
+  customerId: string;
+  invoiceNumber: string;
+  type: string;
+  subtotal: string;
+  accessorials: string;
+  totalAmount: string;
+  paymentTerms: string;
+  paymentTermsDays: number;
+  dueDate: string;
+  missingSignedBol: boolean;
+  status: string;
+  sentAt: string | null;
+  sentTo: string | null;
+  paidAt: string | null;
+  paidAmount: string | null;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  approvedAt: string | null;
+  pdfUrl: string | null;
+  billingMethod: string;
+  deliveryMethod: string | null;
+  sentToEmail: string | null;
+  factoringAdvance: string | null;
+  factoringFeeAmount: string | null;
+  reserveAmount: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  accessorialItems: MockAccessorialItem[];
+  load: { id: string; loadNumber: string; status: string };
+  carrier: { id: string; name: string };
+  customer: { id: string; companyName: string };
+}
+
+const baseInvoice: MockInvoiceFixture = {
   id: 'inv-001',
   loadId: 'load-001',
   carrierId: 'carrier-001',

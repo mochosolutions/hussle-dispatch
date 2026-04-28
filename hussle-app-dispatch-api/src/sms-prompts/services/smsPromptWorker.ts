@@ -7,7 +7,9 @@ import type { TrackingTokenService } from '@/notifications/services/trackingToke
 import type { SmsPromptScheduleRepoPort } from '../types/smsPromptScheduleRepoPort';
 import type { LoadSchedulerQueryPort } from '../types/loadSchedulerQueryPort';
 import type { DriverQueryPort } from '../types/driverQueryPort';
+import type { ShortLinkServicePort } from '../types/shortLinkServicePort';
 import { resolveSmsSettings } from './resolveSmsSettings';
+import { composeSmsBody } from './composeSmsBody';
 
 const QUEUE_GROUP = 'sms-prompts-service';
 
@@ -20,9 +22,11 @@ export interface SmsPromptWorkerDeps {
   driverRepo: DriverQueryPort;
   settingsRepo: SettingsRepoPort;
   trackingTokenService: TrackingTokenService;
+  shortLinkService: ShortLinkServicePort;
   smsService: SmsService;
   logger: Logger;
   trackingBaseUrl: string;
+  publicShortBaseUrl: string;
 }
 
 const errorMessage = (error: unknown): string =>
@@ -108,8 +112,30 @@ const processPromptDue = async (
     const tokenRecord = await deps.trackingTokenService.getOrCreateDriverToken(
       loadId,
     );
-    const url = `${deps.trackingBaseUrl}/driver-portal/${tokenRecord.token}`;
-    const body = `Load #${load.loadNumber}: please check in. ${url}`;
+    const longUrl = `${deps.trackingBaseUrl}/driver-portal/${tokenRecord.token}`;
+
+    let slug: string;
+    try {
+      const created = await deps.shortLinkService.createShortLink({
+        targetUrl: longUrl,
+        loadId,
+        purpose: 'DRIVER_PORTAL',
+        expiresAt: tokenRecord.expiresAt,
+      });
+      slug = created.slug;
+    } catch (error: unknown) {
+      const message = errorMessage(error);
+      await deps.scheduleRepo.markFailed(smsPromptScheduleId, message);
+      deps.logger.error('SMS prompt short-link creation failed', {
+        smsPromptScheduleId,
+        loadId,
+        error: message,
+      });
+      return;
+    }
+
+    const shortUrl = `${deps.publicShortBaseUrl}/s/${slug}`;
+    const body = composeSmsBody({ anchor, load, shortUrl });
 
     let messageSid: string | null;
     try {

@@ -47,6 +47,8 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
       state: carrier?.state ?? '',
       zip: carrier?.zip ?? '',
       companyMarginPercent: carrier?.companyMarginPercent ?? 10,
+      dispatchFeeType: carrier?.dispatchFeeType ?? 'PERCENTAGE',
+      dispatchFeeAmount: carrier?.dispatchFeeAmount ?? 0,
       feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
       dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
       insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,

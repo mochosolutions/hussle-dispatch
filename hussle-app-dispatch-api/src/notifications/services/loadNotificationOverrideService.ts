@@ -5,7 +5,7 @@ import type {
 } from '../types/notificationTypes';
 
 export interface LoadNotificationOverrideService {
-  getByLoadId(loadId: string): Promise<NotificationOverrideRecord[]>;
+  getByLoadId(loadId: string, organizationId: string): Promise<NotificationOverrideRecord[]>;
   upsert(input: UpsertNotificationOverrideInput): Promise<NotificationOverrideRecord>;
   bulkUpsert(inputs: UpsertNotificationOverrideInput[]): Promise<NotificationOverrideRecord[]>;
 }
@@ -17,8 +17,8 @@ interface LoadNotificationOverrideServiceDeps {
 export const createLoadNotificationOverrideService = (
   deps: LoadNotificationOverrideServiceDeps,
 ): LoadNotificationOverrideService => ({
-  getByLoadId: async (loadId) =>
-    deps.overrideRepo.findByLoadId(loadId),
+  getByLoadId: async (loadId, organizationId) =>
+    deps.overrideRepo.findByLoadId(loadId, organizationId),
 
   upsert: async (input) =>
     deps.overrideRepo.upsert(input),

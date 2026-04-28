@@ -68,6 +68,7 @@ export const driverPortalLoadQueryPrisma = (
         zip: stop.zip,
         appointmentStart: stop.appointmentStart,
         appointmentEnd: stop.appointmentEnd,
+        schedulingType: stop.schedulingType,
         contactName: stop.contactName,
         contactPhone: stop.contactPhone,
         commodity: stop.commodity,

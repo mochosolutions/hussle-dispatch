@@ -9,7 +9,6 @@ export interface SendInvoiceEmailInput {
   ccEmails?: string[];
   replyToEmail?: string;
   fromEmail: string;
-  subject: string;
 }
 
 export interface EmailAttachment {

@@ -15,6 +15,7 @@ import {
   updateCustomerRequest,
 } from '../../store/reducers/customerPageSlice';
 import {
+  BILLING_METHOD_OPTIONS,
   CUSTOMER_TYPE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
   PAYMENT_TERMS_OPTIONS,
@@ -62,6 +63,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
     paymentTermsDays: customer?.paymentTermsDays ?? 30,
     quickPayDiscount: customer?.quickPayDiscount ?? '',
     notes: customer?.notes ?? '',
+    billingMethod: customer?.billingMethod ?? 'DIRECT',
     status: customer?.status ?? 'ACTIVE',
   };
 
@@ -83,6 +85,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
         paymentTermsDays: values.paymentTermsDays,
         quickPayDiscount: values.quickPayDiscount || null,
         notes: values.notes || null,
+        billingMethod: values.billingMethod,
         status: values.status,
       };
       dispatch(updateCustomerRequest({ id: customer.id, data: updateData }));
@@ -103,6 +106,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
         paymentTermsDays: values.paymentTermsDays,
         quickPayDiscount: values.quickPayDiscount || null,
         notes: values.notes || null,
+        billingMethod: values.billingMethod,
         status: values.status,
       };
       dispatch(createCustomerRequest({ data: createData, onCreated }));
@@ -181,7 +185,19 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
               <NumericField name="paymentTermsDays" label="Days" formik={formik} />
             </Box>
           </Box>
-          <PercentField name="quickPayDiscount" label="Quick Pay Discount" formik={formik} />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <SelectField
+                name="billingMethod"
+                label="Billing Method"
+                data={BILLING_METHOD_OPTIONS}
+                formik={formik}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <PercentField name="quickPayDiscount" label="Quick Pay Discount" formik={formik} />
+            </Box>
+          </Box>
 
           <Divider sx={{ my: 0.5 }} />
 

@@ -20,6 +20,7 @@ export interface CustomerResponse {
   paymentTermsDays: number | null;
   quickPayDiscount: number | null;
   notes: string | null;
+  billingMethod: string;
   status: string;
   _count: {
     loads: number;

@@ -7,6 +7,7 @@ import { settlementRepositoryPrisma } from './repositories/settlementRepositoryP
 import { settlementLoadQueryPrisma } from './repositories/settlementLoadQueryPrisma';
 import { settlementExpenseQueryPrisma } from './repositories/settlementExpenseQueryPrisma';
 import { settlementCarrierQueryPrisma } from './repositories/settlementCarrierQueryPrisma';
+import { settlementDriverQueryPrisma } from './repositories/settlementDriverQueryPrisma';
 import { createSettlementService } from './services/settlementService';
 import { createSettlementAdjustmentService } from './services/settlementAdjustmentService';
 import { buildSettlementPdfData } from './services/settlementPdfDataBuilder';
@@ -42,6 +43,7 @@ export const createSettlementModule = ({
   const loadQuery = settlementLoadQueryPrisma(prismaClient);
   const expenseQuery = settlementExpenseQueryPrisma(prismaClient);
   const carrierQuery = settlementCarrierQueryPrisma(prismaClient);
+  const driverQuery = settlementDriverQueryPrisma(prismaClient);
 
   // Services
   const settlementService = createSettlementService({
@@ -49,6 +51,7 @@ export const createSettlementModule = ({
     loadQuery,
     expenseQuery,
     carrierQuery,
+    driverQuery,
     logger,
   });
 

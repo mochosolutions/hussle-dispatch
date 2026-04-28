@@ -6,6 +6,8 @@ export type CarrierStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'DRAFT';
 
 export type InsuranceWarning = '30_DAY' | '7_DAY' | 'EXPIRED' | null;
 
+export type DispatchFeeType = 'PERCENTAGE' | 'FLAT';
+
 export type VehicleType =
   | 'DRY_VAN'
   | 'REEFER'
@@ -63,6 +65,8 @@ export interface Carrier {
   state: string | null;
   zip: string | null;
   companyMarginPercent: number;
+  dispatchFeeType: DispatchFeeType;
+  dispatchFeeAmount: number;
   feeIncludesAccessorials: boolean;
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
@@ -115,6 +119,8 @@ export interface CreateCarrierInput {
   state?: string | null;
   zip?: string | null;
   companyMarginPercent?: number | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | null;
   feeIncludesAccessorials?: boolean | null;
   dispatchAgreementOnFile?: boolean | null;
   insuranceCertOnFile?: boolean | null;
@@ -136,6 +142,8 @@ export interface UpdateCarrierInput {
   state?: string | null;
   zip?: string | null;
   companyMarginPercent?: number | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | null;
   feeIncludesAccessorials?: boolean | null;
   dispatchAgreementOnFile?: boolean | null;
   insuranceCertOnFile?: boolean | null;

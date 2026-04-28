@@ -31,6 +31,8 @@ export const updateLoadMapper = (req: Request): UpdateLoadServiceInput => {
     driverInstructions: body.driverInstructions,
     stops: body.stops,
     accessorialCharges: body.accessorialCharges,
+    dispatchFeeOverrideType: body.dispatchFeeOverrideType,
+    dispatchFeeOverrideAmount: body.dispatchFeeOverrideAmount,
   };
 
   return { ...context, id, input };

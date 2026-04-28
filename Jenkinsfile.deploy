@@ -1,0 +1,145 @@
+// Fleet Command — Deploy Pipeline
+// Validates ECR images, re-tags as <env>-latest, triggers Dokploy redeploy
+// Requires Jenkins credentials: DOKPLOY_API_TOKEN, DOKPLOY_URL, DOKPLOY_APPLICATION_ID
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'prod'], description: 'Target deployment environment')
+        string(name: 'API_IMAGE_TAG', defaultValue: '', description: 'API image tag (e.g. sha-abc123d). Leave empty to skip.')
+        string(name: 'UI_IMAGE_TAG', defaultValue: '', description: 'UI image tag (e.g. sha-abc123d). Leave empty to skip.')
+        string(name: 'EMAILS_IMAGE_TAG', defaultValue: '', description: 'Emails image tag (e.g. sha-abc123d). Leave empty to skip.')
+        string(name: 'RABBITMQ_IMAGE_TAG', defaultValue: '', description: 'RabbitMQ image tag (e.g. sha-abc123d). Leave empty to skip.')
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = "${sh(script: 'aws sts get-caller-identity --query Account --output text', returnStdout: true).trim()}.dkr.ecr.us-east-1.amazonaws.com"
+    }
+
+    stages {
+        stage('Validate') {
+            steps {
+                script {
+                    if (!params.API_IMAGE_TAG && !params.UI_IMAGE_TAG && !params.EMAILS_IMAGE_TAG && !params.RABBITMQ_IMAGE_TAG) {
+                        error('At least one image tag must be provided.')
+                    }
+
+                    sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}'
+
+                    def serviceTags = [
+                        'fleet-api'     : params.API_IMAGE_TAG,
+                        'fleet-ui'      : params.UI_IMAGE_TAG,
+                        'fleet-emails'  : params.EMAILS_IMAGE_TAG,
+                        'fleet-rabbitmq': params.RABBITMQ_IMAGE_TAG,
+                    ]
+
+                    serviceTags.each { repo, tag ->
+                        if (tag) {
+                            echo "Verifying ${repo}:${tag} exists in ECR..."
+                            sh """
+                                aws ecr describe-images \
+                                    --repository-name ${repo} \
+                                    --image-ids imageTag=${tag} \
+                                    --region ${AWS_REGION} \
+                                    --output text
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Tag Images') {
+            steps {
+                script {
+                    def envLatest = "${params.ENVIRONMENT}-latest"
+
+                    def serviceTags = [
+                        'fleet-api'     : params.API_IMAGE_TAG,
+                        'fleet-ui'      : params.UI_IMAGE_TAG,
+                        'fleet-emails'  : params.EMAILS_IMAGE_TAG,
+                        'fleet-rabbitmq': params.RABBITMQ_IMAGE_TAG,
+                    ]
+
+                    serviceTags.each { repo, tag ->
+                        if (tag) {
+                            def source = "${ECR_REGISTRY}/${repo}:${tag}"
+                            def target = "${ECR_REGISTRY}/${repo}:${envLatest}"
+                            echo "Tagging ${source} → ${target}"
+                            sh """
+                                docker pull ${source}
+                                docker tag ${source} ${target}
+                                docker push ${target}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Approval') {
+            when { expression { params.ENVIRONMENT == 'prod' } }
+            steps {
+                script {
+                    def summary = [
+                        params.API_IMAGE_TAG      ? "  fleet-api:      ${params.API_IMAGE_TAG}"      : null,
+                        params.UI_IMAGE_TAG       ? "  fleet-ui:       ${params.UI_IMAGE_TAG}"       : null,
+                        params.EMAILS_IMAGE_TAG   ? "  fleet-emails:   ${params.EMAILS_IMAGE_TAG}"   : null,
+                        params.RABBITMQ_IMAGE_TAG ? "  fleet-rabbitmq: ${params.RABBITMQ_IMAGE_TAG}" : null,
+                    ].findAll { it != null }.join('\n')
+
+                    input(
+                        message: "Deploy to PRODUCTION?\n\nServices being deployed:\n${summary}",
+                        ok: 'Deploy to Production',
+                    )
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'DOKPLOY_API_TOKEN', variable: 'DOKPLOY_API_TOKEN'),
+                    string(credentialsId: 'DOKPLOY_URL', variable: 'DOKPLOY_URL'),
+                    string(credentialsId: 'DOKPLOY_APPLICATION_ID', variable: 'DOKPLOY_APPLICATION_ID'),
+                ]) {
+                    sh '''
+                        DOKPLOY_URL=${DOKPLOY_URL} \
+                        DOKPLOY_API_TOKEN=${DOKPLOY_API_TOKEN} \
+                        DOKPLOY_APPLICATION_ID=${DOKPLOY_APPLICATION_ID} \
+                        python3 scripts/dokploy_deploy.py
+                    '''
+                }
+            }
+        }
+
+        stage('Output') {
+            steps {
+                script {
+                    def envLatest = "${params.ENVIRONMENT}-latest"
+                    echo "Environment: ${params.ENVIRONMENT}"
+                    echo "Env-latest tag: ${envLatest}"
+                    echo "Services deployed:"
+                    if (params.API_IMAGE_TAG)      echo "  fleet-api:      ${params.API_IMAGE_TAG} → ${envLatest}"
+                    if (params.UI_IMAGE_TAG)        echo "  fleet-ui:       ${params.UI_IMAGE_TAG} → ${envLatest}"
+                    if (params.EMAILS_IMAGE_TAG)    echo "  fleet-emails:   ${params.EMAILS_IMAGE_TAG} → ${envLatest}"
+                    if (params.RABBITMQ_IMAGE_TAG)  echo "  fleet-rabbitmq: ${params.RABBITMQ_IMAGE_TAG} → ${envLatest}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deploy to ${params.ENVIRONMENT} complete."
+        }
+        failure {
+            echo "Deploy to ${params.ENVIRONMENT} failed."
+        }
+        cleanup {
+            sh 'docker system prune -f || true'
+        }
+    }
+}

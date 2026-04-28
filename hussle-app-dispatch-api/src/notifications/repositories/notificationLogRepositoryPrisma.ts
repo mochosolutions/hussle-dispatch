@@ -23,9 +23,9 @@ export const notificationLogRepositoryPrisma = (
       },
     }),
 
-  findByLoadId: async (loadId) =>
+  findByLoadId: async (loadId, organizationId) =>
     prisma.notificationLog.findMany({
-      where: { loadId },
+      where: { loadId, load: { organizationId } },
       orderBy: { createdAt: 'desc' },
     }),
 });

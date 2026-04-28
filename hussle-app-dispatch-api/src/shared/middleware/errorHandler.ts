@@ -3,6 +3,7 @@ import { CustomError } from '@mocho/common';
 import {
   ActiveLoadsConflictError,
   AssignmentValidationError,
+  MissingEstimatedHoursError,
   SeatLimitReachedError,
 } from '@/shared/errors';
 import { logger } from '@/shared/utils/logger';
@@ -49,6 +50,25 @@ export const errorHandler = (
     res.status(error.statusCode).json({
       errors: error.serializeErrors(),
       blockers: error.blockers,
+    });
+    return;
+  }
+
+  if (error instanceof MissingEstimatedHoursError) {
+    logger.warn('Handled error', {
+      type: error.constructor.name,
+      statusCode: error.statusCode,
+      message: error.message,
+    });
+    res.status(error.statusCode).json({
+      errors: [
+        {
+          code: error.code,
+          message: error.message,
+          loads: error.loads,
+          loadIds: error.loadIds,
+        },
+      ],
     });
     return;
   }

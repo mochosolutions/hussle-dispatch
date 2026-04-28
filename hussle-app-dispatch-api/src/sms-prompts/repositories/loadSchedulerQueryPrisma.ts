@@ -16,6 +16,7 @@ export const loadSchedulerQueryPrisma = (
         organizationId: true,
         driverId: true,
         status: true,
+        equipmentType: true,
         stops: {
           orderBy: { sequence: 'asc' },
           select: {
@@ -24,6 +25,8 @@ export const loadSchedulerQueryPrisma = (
             appointmentEnd: true,
             departureTime: true,
             type: true,
+            city: true,
+            state: true,
           },
         },
       },
@@ -39,12 +42,15 @@ export const loadSchedulerQueryPrisma = (
       organizationId: load.organizationId,
       driverId: load.driverId,
       status: load.status,
+      equipmentType: load.equipmentType,
       stops: load.stops.map((stop) => ({
         sequence: stop.sequence,
         appointmentStart: stop.appointmentStart,
         appointmentEnd: stop.appointmentEnd,
         departureTime: stop.departureTime,
         type: stop.type,
+        city: stop.city,
+        state: stop.state,
       })),
     };
 

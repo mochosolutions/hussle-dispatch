@@ -26,6 +26,13 @@ export interface CommandCenterLayers {
   showActiveLoads: boolean;
 }
 
+export interface OnboardingBlockInfo {
+  loadId: string;
+  carrierId: string;
+  carrierName: string;
+  missingDocuments: string[];
+}
+
 export interface LoadPageState extends CrudPageState {
   boardView: BoardView;
   filters: LoadFilters;
@@ -37,6 +44,7 @@ export interface LoadPageState extends CrudPageState {
   feedLoading: boolean;
   feedError: string | null;
   datIngesting: boolean;
+  onboardingBlock: OnboardingBlockInfo | null;
 }
 
 const loadPageInitialExtras: Pick<
@@ -51,6 +59,7 @@ const loadPageInitialExtras: Pick<
   | 'feedLoading'
   | 'feedError'
   | 'datIngesting'
+  | 'onboardingBlock'
 > = {
   boardView: 'table',
   filters: {},
@@ -62,6 +71,7 @@ const loadPageInitialExtras: Pick<
   feedLoading: false,
   feedError: null,
   datIngesting: false,
+  onboardingBlock: null,
 };
 
 export const loadPageSlice = createCrudSlice({
@@ -122,6 +132,7 @@ const preserveCustomFields = (
   feedLoading: customState.feedLoading,
   feedError: customState.feedError,
   datIngesting: customState.datIngesting,
+  onboardingBlock: customState.onboardingBlock,
 });
 
 export const loadPageReducer = (
@@ -192,6 +203,14 @@ export const loadPageReducer = (
   }
   if (transitionLoadStatusFailure.match(action)) {
     return setLoadRejected(state, `transition:${action.payload.loadId}`, action.payload.error);
+  }
+
+  // Onboarding block actions
+  if (setOnboardingBlock.match(action)) {
+    return { ...state, onboardingBlock: action.payload };
+  }
+  if (clearOnboardingBlock.match(action)) {
+    return { ...state, onboardingBlock: null };
   }
 
   // Assign-and-dispatch lifecycle — composite-key loading state per load
@@ -441,6 +460,10 @@ export const ingestDatRequest = createAction('load/ingestDatRequest');
 export const ingestDatSuccess = createAction('load/ingestDatSuccess');
 
 export const ingestDatFailure = createAction<string>('load/ingestDatFailure');
+
+export const setOnboardingBlock = createAction<OnboardingBlockInfo>('load/setOnboardingBlock');
+
+export const clearOnboardingBlock = createAction('load/clearOnboardingBlock');
 
 export const startPolling = createAction('load/startPolling');
 

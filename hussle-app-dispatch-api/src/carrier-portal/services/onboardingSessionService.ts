@@ -5,7 +5,9 @@ import type {
 } from '../types/onboardingSessionRepoPort';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
-import { NotFoundError, ValidationError } from '@/shared/errors/commonErrors';
+import { NotFoundError, OnboardingBlockError, ValidationError } from '@/shared/errors/commonErrors';
+import { checkCarrierOnboarding } from '@/shared/onboardingGate';
+import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
 
 const TOTAL_PHASES = 6;
 
@@ -106,14 +108,32 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
       );
     }
 
+    const carrier = await deps.carrierRepo.findById(carrierId);
+    const carrierName = carrier?.name ?? 'Unknown';
+
+    if (
+      carrier &&
+      carrier.type !== CARRIER_TYPES.COMPANY_ASSET
+    ) {
+      const onboardingResult = checkCarrierOnboarding({
+        carrierType: carrier.type,
+        dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
+        insuranceCertOnFile: carrier.insuranceCertOnFile,
+        insuranceExpiry: carrier.insuranceExpiry,
+        w9OnFile: carrier.w9OnFile,
+      });
+
+      if (!onboardingResult.allowed) {
+        throw new OnboardingBlockError(carrierName, onboardingResult.missingDocuments);
+      }
+    }
+
     const updated = await deps.sessionRepo.update(session.id, {
       completedAt: new Date(),
     });
 
     await deps.carrierRepo.update(carrierId, { onboardingStatus: 'COMPLETED' });
 
-    const carrier = await deps.carrierRepo.findById(carrierId);
-    const carrierName = carrier?.name ?? 'Unknown';
     const organizationId = carrier?.managedByOrgId ?? '';
 
     await deps.eventBus.publish('carrier.onboarding.completed', {

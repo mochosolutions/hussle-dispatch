@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import type { InferType } from 'yup';
 import { TextField, DateField, CurrencyField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
@@ -11,11 +12,7 @@ const adjustmentSchema = Yup.object({
   date: Yup.string().required('Date is required'),
 }).required();
 
-interface AdjustmentFormValues {
-  description: string;
-  amount: number;
-  date: string;
-}
+type AdjustmentFormValues = InferType<typeof adjustmentSchema>;
 
 interface AddAdjustmentDrawerProps {
   settlementId: string;

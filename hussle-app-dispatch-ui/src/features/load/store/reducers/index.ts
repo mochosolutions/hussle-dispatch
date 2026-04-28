@@ -1,3 +1,5 @@
+export type { OnboardingBlockInfo } from './loadPageSlice';
+
 export {
   loadPageSlice,
   loadPageReducer,
@@ -29,6 +31,8 @@ export {
   assignAndDispatchRequest,
   assignAndDispatchSuccess,
   assignAndDispatchFailure,
+  setOnboardingBlock,
+  clearOnboardingBlock,
   createCheckCallRequest,
   createCheckCallSuccess,
   createCheckCallFailure,

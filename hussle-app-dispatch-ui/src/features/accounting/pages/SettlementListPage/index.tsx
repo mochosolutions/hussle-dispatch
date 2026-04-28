@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react';
+import type { ColDef, RowClickedEvent } from 'ag-grid-community';
 import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +23,7 @@ import {
   selectSettlementFilters,
 } from '../../store/selectors/settlementSelectors';
 import type { SettlementListItem } from '../../types';
+import { MissingEstimatedHoursDialog } from '../../components/MissingEstimatedHoursDialog';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -65,9 +67,9 @@ const SettlementListPage = () => {
   );
 
   const handleRowClicked = useCallback(
-    (params: { data: SettlementListItem }) => {
-      if (params.data) {
-        navigate(`/accounting/settlements/${params.data.id}`);
+    (event: RowClickedEvent<SettlementListItem>) => {
+      if (event.data) {
+        navigate(`/accounting/settlements/${event.data.id}`);
       }
     },
     [navigate],
@@ -87,7 +89,7 @@ const SettlementListPage = () => {
     [filters.status, handleStatusChange],
   );
 
-  const columnDefs = useMemo(
+  const columnDefs = useMemo<ColDef<SettlementListItem>[]>(
     () => [
       {
         headerName: 'Settlement #',
@@ -159,7 +161,7 @@ const SettlementListPage = () => {
       },
       {
         headerName: 'Actions',
-        field: 'actions',
+        colId: 'actions',
         width: 80,
         sortable: false,
         filter: false,
@@ -277,6 +279,7 @@ const SettlementListPage = () => {
           </MainCard>
         </Box>
       </ListLayout>
+      <MissingEstimatedHoursDialog />
     </PageWrapper>
   );
 };

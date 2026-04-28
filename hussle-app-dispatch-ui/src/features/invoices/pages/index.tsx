@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type {
+  ColDef,
+  RowClickedEvent,
+  RowClassParams,
+  ValueFormatterParams,
+  ValueGetterParams,
+} from 'ag-grid-community';
 import { Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -14,8 +21,8 @@ import {
   selectInvoiceListLoading,
   selectFilteredInvoices,
 } from '../store/selectors/invoiceSelectors';
-import { INVOICE_STATUS_LABELS, INVOICE_STATUS_OPTIONS } from '../constants';
-import type { InvoiceListItem, InvoiceStatus } from '../types';
+import { INVOICE_STATUS_LABELS, INVOICE_STATUS_OPTIONS, INVOICE_TYPE_LABELS } from '../constants';
+import type { InvoiceListItem, InvoiceStatus, InvoiceType } from '../types';
 import {
   InvoiceStatusCellRenderer,
   InvoiceTypeCellRenderer,
@@ -43,15 +50,22 @@ const InvoiceListPage = () => {
   const isLoading = useSelector(selectInvoiceListLoading);
 
   const [selectedStatuses, setSelectedStatuses] = useState<InvoiceStatus[]>([]);
+  const [selectedType, setSelectedType] = useState<'' | InvoiceType>('');
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [missingBolOnly, setMissingBolOnly] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchInvoicesRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    dispatch(
+      fetchInvoicesRequest({
+        page: 1,
+        limit: 25,
+        ...(selectedType ? { type: selectedType } : {}),
+      }),
+    );
+  }, [dispatch, selectedType]);
 
   const handleRowClicked = useCallback(
-    (params: { data: InvoiceListItem }) => {
+    (params: RowClickedEvent<InvoiceListItem>) => {
       if (params.data) {
         navigate(`/invoices/${params.data.id}`);
       }
@@ -71,7 +85,12 @@ const InvoiceListPage = () => {
       selectFilteredInvoices({ selectedStatuses, overdueOnly, missingBolOnly, searchQuery: '' }),
     [selectedStatuses, overdueOnly, missingBolOnly],
   );
-  const filteredInvoices = useSelector(filteredSelector);
+  const filteredInvoicesRaw = useSelector(filteredSelector);
+  const filteredInvoices = useMemo(
+    () =>
+      selectedType ? filteredInvoicesRaw.filter((inv) => inv.type === selectedType) : filteredInvoicesRaw,
+    [filteredInvoicesRaw, selectedType],
+  );
 
   const actionsConfig = useMemo<ActionsCellConfig<InvoiceListItem>>(
     () => ({
@@ -84,7 +103,7 @@ const InvoiceListPage = () => {
     [],
   );
 
-  const columnDefs = useMemo(
+  const columnDefs = useMemo<ColDef<InvoiceListItem>[]>(
     () => [
       {
         headerName: 'Invoice #',
@@ -102,21 +121,21 @@ const InvoiceListPage = () => {
         headerName: 'Load #',
         field: 'load.loadNumber',
         minWidth: 120,
-        valueGetter: (params: { data: InvoiceListItem }) =>
-          params.data.load?.loadNumber ?? '\u2014',
+        valueGetter: (params: ValueGetterParams<InvoiceListItem>) =>
+          params.data?.load?.loadNumber ?? '\u2014',
       },
       {
         headerName: 'Carrier',
         field: 'carrier.name',
         minWidth: 140,
-        valueGetter: (params: { data: InvoiceListItem }) =>
-          params.data.carrier?.name ?? '\u2014',
+        valueGetter: (params: ValueGetterParams<InvoiceListItem>) =>
+          params.data?.carrier?.name ?? '\u2014',
       },
       {
         headerName: 'Subtotal',
         field: 'subtotal',
         minWidth: 110,
-        valueFormatter: (params: { value: string | null | undefined }) =>
+        valueFormatter: (params: ValueFormatterParams<InvoiceListItem>) =>
           params.value !== null && params.value !== undefined
             ? currencyFormatter.format(Number(params.value))
             : '',
@@ -125,7 +144,7 @@ const InvoiceListPage = () => {
         headerName: 'Total',
         field: 'totalAmount',
         minWidth: 110,
-        valueFormatter: (params: { value: string | null | undefined }) =>
+        valueFormatter: (params: ValueFormatterParams<InvoiceListItem>) =>
           params.value !== null && params.value !== undefined
             ? currencyFormatter.format(Number(params.value))
             : '',
@@ -140,7 +159,7 @@ const InvoiceListPage = () => {
         headerName: 'Due Date',
         field: 'dueDate',
         minWidth: 120,
-        valueFormatter: (params: { value: string }) =>
+        valueFormatter: (params: ValueFormatterParams<InvoiceListItem>) =>
           params.value ? format(new Date(params.value), 'MM/dd/yyyy') : '\u2014',
       },
       {
@@ -153,12 +172,12 @@ const InvoiceListPage = () => {
         headerName: 'Created',
         field: 'createdAt',
         minWidth: 120,
-        valueFormatter: (params: { value: string }) =>
+        valueFormatter: (params: ValueFormatterParams<InvoiceListItem>) =>
           params.value ? format(new Date(params.value), 'MM/dd/yyyy') : '\u2014',
       },
       {
         headerName: '',
-        field: 'actions',
+        colId: 'actions',
         minWidth: 80,
         maxWidth: 100,
         sortable: false,
@@ -181,8 +200,9 @@ const InvoiceListPage = () => {
   );
 
   const getRowStyle = useCallback(
-    (params: { data: InvoiceListItem & { isOverdue: boolean } }) => {
-      if (params.data?.isOverdue) {
+    (params: RowClassParams<InvoiceListItem>) => {
+      const data: (InvoiceListItem & { isOverdue?: boolean }) | undefined = params.data;
+      if (data?.isOverdue) {
         return { backgroundColor: 'rgba(211, 47, 47, 0.06)' };
       }
       return undefined;
@@ -199,6 +219,15 @@ const InvoiceListPage = () => {
     [],
   );
 
+  const typeOptions = useMemo(
+    () => [
+      { value: '', label: 'All Types' },
+      { value: 'CUSTOMER', label: INVOICE_TYPE_LABELS.CUSTOMER },
+      { value: 'DISPATCH_FEE', label: INVOICE_TYPE_LABELS.DISPATCH_FEE },
+    ],
+    [],
+  );
+
   const filters = useMemo<FilterConfig[]>(
     () => [
       {
@@ -208,6 +237,14 @@ const InvoiceListPage = () => {
         options: statusOptions,
         value: selectedStatuses,
         onChange: (values) => setSelectedStatuses(values as InvoiceStatus[]),
+      },
+      {
+        type: 'select',
+        name: 'type',
+        label: 'Type',
+        options: typeOptions,
+        value: selectedType,
+        onChange: (value) => setSelectedType(value as '' | InvoiceType),
       },
       {
         type: 'toggle',
@@ -224,7 +261,7 @@ const InvoiceListPage = () => {
         onChange: (checked) => setMissingBolOnly(checked),
       },
     ],
-    [statusOptions, selectedStatuses, overdueOnly, missingBolOnly],
+    [statusOptions, selectedStatuses, typeOptions, selectedType, overdueOnly, missingBolOnly],
   );
 
   const search = useMemo<SearchConfig>(

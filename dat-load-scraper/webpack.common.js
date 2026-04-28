@@ -1,6 +1,9 @@
 const path = require('path');
+const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlPlugin = require('html-webpack-plugin');
+
+const API_URL = process.env.API_URL || 'http://localhost:3001';
 
 module.exports = {
     entry: {
@@ -9,7 +12,8 @@ module.exports = {
         script: path.resolve('src/contentScript/script.ts'),
         relayContentScript: path.resolve('src/contentScript/relayContentScript.ts'),
         relayScript: path.resolve('src/contentScript/relayScript.ts'),
-    }, 
+        background: path.resolve('src/contentScript/background.ts'),
+    },
     module: {
         rules: [
             {
@@ -37,17 +41,14 @@ module.exports = {
         globalObject: 'this'
     },
     plugins: [
+        new webpack.DefinePlugin({
+            'process.env.API_URL': JSON.stringify(API_URL),
+        }),
         new CopyPlugin({
             patterns: [
                 {
                     from: path.resolve('src/static'),
                     to: path.resolve('dist')
-                },
-                {
-                    // Copy background.js directly — MV3 service workers must be plain scripts,
-                    // not webpack module bundles
-                    from: path.resolve('src/contentScript/background.js'),
-                    to: path.resolve('dist/background.js')
                 }
             ]
         }),
@@ -56,22 +57,5 @@ module.exports = {
             filename: `popup.html`,
             chunks: ['popup']
         })
-        // ...getHtmlPlugins([
-        //     'popup',
-        //     'options',
-        // ])
     ],
-    // optimization: {
-    //     splitChunks: {
-    //         chunks: 'all',
-    //     }
-    // }
 }
-
-// function getHtmlPlugins(chunks){
-//     return chunks.map(chunk => new HtmlPlugin({
-//         title: 'React Extension',
-//         filename: `${chunk}.html`,
-//         chunks: [chunk]
-//     }))
-// }

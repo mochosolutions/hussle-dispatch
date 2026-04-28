@@ -7,6 +7,7 @@ declare global {
       organizationId?: string;
       orgSlug?: string;
       correlationId?: string;
+      authMethod?: 'apiKey' | 'session';
     }
   }
 }

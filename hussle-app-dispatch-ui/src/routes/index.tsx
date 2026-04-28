@@ -2,7 +2,6 @@ import { createBrowserRouter } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import DashboardRoutes from 'features/dashboard/routes/DashboardRoutes';
 import LoginRoutes from 'features/auth/routes/LoginRoutes';
-// import DispatchBoardRoutes from 'features/dispatchboard/routes/DispatchBoardRoutes';
 import CarrierRoutes from 'features/carrier/routes/carrierRoutes';
 import VehicleRoutes from 'features/vehicle/routes/vehicleRoutes';
 import DriverRoutes from 'features/driver/routes/driverRoutes';
@@ -18,6 +17,7 @@ import CarrierPortalRoutes from 'features/carrier-portal/routes';
 import DevRoutes from 'features/dev/routes/devRoutes';
 import ErrorPage from 'components/ErrorPage';
 import App from '../App';
+
 export const routes: RouteObject[] = [
   DriverPortalRoutes,
   CarrierPortalRoutes,
@@ -27,18 +27,16 @@ export const routes: RouteObject[] = [
       ...DevRoutes,
       LoginRoutes,
       DashboardRoutes,
-      // DispatchBoardRoutes,
       LoadRoutes,
       CarrierRoutes,
       VehicleRoutes,
       DriverRoutes,
-      InvoiceRoutes,
       PlaceRoutes,
       ContactRoutes,
       CustomerRoutes,
       SettingsRoutes,
-      AccountingRoutes,
-
+      // InvoiceRoutes,
+      // AccountingRoutes,
       {
         path: '*',
         element: <ErrorPage />,

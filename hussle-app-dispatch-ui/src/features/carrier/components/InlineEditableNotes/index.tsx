@@ -10,7 +10,7 @@ import {
   Tooltip,
   ClickAwayListener,
 } from '@mui/material';
-import { CancelButton } from '@mocho/ui/components/form-fields';
+import { CancelButton } from '@mocho/ui/components';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 

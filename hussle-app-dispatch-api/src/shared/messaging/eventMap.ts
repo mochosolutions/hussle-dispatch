@@ -47,6 +47,33 @@ export interface EventMap {
     entityId: string;
     documentType: string;
     organizationId: string;
+    requestingUserId?: string | null;
+    // Enriched fields (present when entityType === 'load')
+    loadId?: string;
+    customerId?: string | null;
+    loadNumber?: string;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    contactCcEmails?: string[];
+  };
+  'document.archived': {
+    documentId: string;
+    organizationId: string;
+    fileName: string;
+    type: string;
+    entityType: string;
+    entityId: string;
+    requestingUserId?: string | null;
+  };
+  'document.replaced': {
+    priorDocumentId: string;
+    priorS3Key: string;
+    replacedBy: string;
+    entityType: string;
+    entityId: string;
+    organizationId: string;
+    documentType: string;
+    requestingUserId?: string | null;
   };
   'invoice.draft.created': {
     invoiceId: string;

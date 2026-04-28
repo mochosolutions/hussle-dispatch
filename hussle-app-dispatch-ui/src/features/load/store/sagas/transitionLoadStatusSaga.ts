@@ -8,7 +8,6 @@ import {
   showTransitionWarnings,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
-import { mapDetailToListItem } from './detailToListItemMapper';
 
 export function* transitionLoadStatusSaga(
   action: ReturnType<typeof transitionLoadStatusRequest>,
@@ -36,15 +35,21 @@ export function* transitionLoadStatusSaga(
       return;
     }
 
-    // Success — update entity in store
-    if (response.load) {
-      const { load } = response;
-      yield put(loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(load) }));
-      yield put(loadActions.upsertOne(load));
+    // Success — update entity in store. Upsert the full detail so route.stops
+    // and other detail fields stay intact for any subscribers (e.g. detail page selectors).
+    const updatedLoad = response.load;
+    if (updatedLoad) {
+      yield put(loadActions.upsertOne(updatedLoad));
     }
 
     yield put(transitionLoadStatusSuccess({ loadId, newStatus: input.status }));
-    yield call(enqueueSnackbar, 'Status updated', { variant: 'success' });
+
+    const isBolMissingAfterDelivery =
+      input.status === 'DELIVERED' && updatedLoad?.tracking?.bolSignedAt == null;
+    const successMessage = isBolMissingAfterDelivery
+      ? 'Delivered. Invoice will be created once the signed BOL is uploaded.'
+      : 'Status updated';
+    yield call(enqueueSnackbar, successMessage, { variant: 'success' });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to transition status';
     yield put(transitionLoadStatusFailure({ loadId, error: errorMessage }));

@@ -1,8 +1,11 @@
 import Decimal from 'decimal.js';
+import { Prisma } from '@prisma/client';
 import type { Logger } from '../../shared/utils/logger';
 import { generateSequenceNumber } from '../../shared/sequenceGenerator';
 import type { InvoiceRepoPort, InvoiceLoadQueryPort, InvoiceWithRelations } from '../types/invoiceTypes';
 import { NotFoundError, ValidationError } from '../../shared/errors';
+import { resolveDispatchFee, computeDispatchFeeAmount } from '../../shared/utils/resolveDispatchFee';
+import { isBilledToCustomer } from '../../shared/utils/accessorialBillTo';
 
 interface InvoiceBuilderDeps {
   invoiceRepo: InvoiceRepoPort;
@@ -22,15 +25,25 @@ export interface VoidInvoiceInput {
   userId: string;
 }
 
+export interface CreateFromLoadResult {
+  invoice: InvoiceWithRelations;
+  // Resolved dispatch fee amount in dollars, for EXTERNAL_CARRIER follow-up
+  // DISPATCH_FEE invoice. Null when carrier is not EXTERNAL_CARRIER.
+  dispatchFeeAmount: Decimal | null;
+}
+
 export interface InvoiceBuilderService {
   createFromLoad(input: CreateFromLoadInput): Promise<InvoiceWithRelations>;
+  createFromLoadWithFee(input: CreateFromLoadInput): Promise<CreateFromLoadResult>;
   voidInvoice(input: VoidInvoiceInput): Promise<InvoiceWithRelations>;
 }
 
 export const createInvoiceBuilderService = (
   deps: InvoiceBuilderDeps,
-): InvoiceBuilderService => ({
-  createFromLoad: async (input: CreateFromLoadInput): Promise<InvoiceWithRelations> => {
+): InvoiceBuilderService => {
+  const createFromLoadWithFee = async (
+    input: CreateFromLoadInput,
+  ): Promise<CreateFromLoadResult> => {
     const load = await deps.loadQuery.findLoadById(input.loadId);
 
     if (load === null) {
@@ -57,24 +70,18 @@ export const createInvoiceBuilderService = (
         ? String(load.customerRate)
         : '0',
     );
-    const dispatchFee = new Decimal(
-      load.dispatchFee !== null && load.dispatchFee !== undefined
-        ? String(load.dispatchFee)
-        : '0',
-    );
 
-    const accessorialsTotal = load.accessorialCharges.reduce(
+    // Customer-billable accessorials (CUSTOMER or BOTH) are line items on the CUSTOMER invoice.
+    const customerAccessorials = load.accessorialCharges.filter((c) =>
+      isBilledToCustomer(c.billTo),
+    );
+    const customerAccessorialsTotal = customerAccessorials.reduce(
       (sum, charge) => sum.add(new Decimal(String(charge.amount))),
       new Decimal(0),
     );
 
-    // LEASED_CARRIER uses YOUR authority — you invoice the customer like COMPANY_ASSET.
-    // Only EXTERNAL_CARRIER results in a DISPATCH_FEE invoice.
-    const billsCustomer =
-      carrierType === 'COMPANY_ASSET' || carrierType === 'LEASED_CARRIER';
-    const invoiceType = billsCustomer ? 'CUSTOMER' : 'DISPATCH_FEE';
-    const subtotal = billsCustomer ? customerRate : dispatchFee;
-    const totalAmount = billsCustomer ? subtotal.add(accessorialsTotal) : subtotal;
+    const subtotal = customerRate;
+    const totalAmount = subtotal.add(customerAccessorialsTotal);
 
     const paymentTerms = load.customer?.paymentTerms ?? 'net_30';
     const paymentTermsDays = load.customer?.paymentTermsDays ?? 30;
@@ -83,16 +90,16 @@ export const createInvoiceBuilderService = (
     dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
     const missingSignedBol = load.bolSignedAt === null;
-    const invoiceNumber = await generateSequenceNumber('INVOICE', load.organizationId);
+    const invoiceNumber = await generateSequenceNumber('INVOICE', input.organizationId);
 
     const invoice = await deps.invoiceRepo.create({
       loadId: load.id,
       carrierId: load.carrierId ?? undefined,
       customerId: load.customerId ?? undefined,
       invoiceNumber,
-      type: invoiceType,
+      type: 'CUSTOMER',
       subtotal: subtotal.toNumber(),
-      accessorials: accessorialsTotal.toNumber(),
+      accessorials: customerAccessorialsTotal.toNumber(),
       totalAmount: totalAmount.toNumber(),
       paymentTerms,
       paymentTermsDays,
@@ -103,40 +110,81 @@ export const createInvoiceBuilderService = (
     // Transition load to INVOICE_PENDING
     await deps.loadQuery.updateLoadStatus(load.id, 'INVOICE_PENDING');
 
+    // Resolve dispatch fee for EXTERNAL_CARRIER (billed via separate DISPATCH_FEE invoice).
+    let dispatchFeeAmount: Decimal | null = null;
+    if (carrierType === 'EXTERNAL_CARRIER' && load.carrier !== null) {
+      const carrier = load.carrier;
+      const resolved = resolveDispatchFee({
+        load: {
+          dispatchFeeOverrideType: load.dispatchFeeOverrideType,
+          dispatchFeeOverrideAmount:
+            load.dispatchFeeOverrideAmount !== null && load.dispatchFeeOverrideAmount !== undefined
+              ? new Prisma.Decimal(String(load.dispatchFeeOverrideAmount))
+              : null,
+        },
+        carrier: {
+          dispatchFeeType: carrier.dispatchFeeType,
+          dispatchFeePercent: new Prisma.Decimal(String(carrier.dispatchFeePercent)),
+          dispatchFeeAmount: new Prisma.Decimal(String(carrier.dispatchFeeAmount)),
+        },
+      });
+
+      // Base: customerRate + customer/both accessorials (if feeIncludesAccessorials), else customerRate only.
+      const feeBase = carrier.feeIncludesAccessorials
+        ? new Prisma.Decimal(customerRate.toString()).add(
+            new Prisma.Decimal(customerAccessorialsTotal.toString()),
+          )
+        : new Prisma.Decimal(customerRate.toString());
+
+      const feeAmount = computeDispatchFeeAmount({ resolvedFee: resolved, baseAmount: feeBase });
+      dispatchFeeAmount = new Decimal(feeAmount.toString());
+    }
+
     deps.logger.info('Invoice created from builder', {
       invoiceId: invoice.id,
       invoiceNumber,
       loadId: load.id,
-      type: invoiceType,
+      type: 'CUSTOMER',
+      dispatchFeeAmount:
+        dispatchFeeAmount !== null ? dispatchFeeAmount.toFixed(2) : undefined,
     });
 
-    return invoice;
-  },
+    return { invoice, dispatchFeeAmount };
+  };
 
-  voidInvoice: async (input: VoidInvoiceInput): Promise<InvoiceWithRelations> => {
-    const invoice = await deps.invoiceRepo.findById(input.invoiceId, input.organizationId);
+  return {
+    createFromLoad: async (input) => {
+      const { invoice } = await createFromLoadWithFee(input);
+      return invoice;
+    },
 
-    if (invoice === null) {
-      throw new NotFoundError('Invoice not found');
-    }
+    createFromLoadWithFee,
 
-    const voidableStatuses = ['DRAFT', 'APPROVED'];
-    if (!voidableStatuses.includes(invoice.status)) {
-      throw new ValidationError(
-        `Only DRAFT or APPROVED invoices can be voided. Current: ${invoice.status}`,
-      );
-    }
+    voidInvoice: async (input: VoidInvoiceInput): Promise<InvoiceWithRelations> => {
+      const invoice = await deps.invoiceRepo.findById(input.invoiceId, input.organizationId);
 
-    const updated = await deps.invoiceRepo.updateStatus(invoice.id, input.organizationId, 'VOID');
+      if (invoice === null) {
+        throw new NotFoundError('Invoice not found');
+      }
 
-    // Revert load to DELIVERED
-    await deps.loadQuery.updateLoadStatus(invoice.loadId, 'DELIVERED');
+      const voidableStatuses = ['DRAFT', 'APPROVED'];
+      if (!voidableStatuses.includes(invoice.status)) {
+        throw new ValidationError(
+          `Only DRAFT or APPROVED invoices can be voided. Current: ${invoice.status}`,
+        );
+      }
 
-    deps.logger.info('Invoice voided', {
-      invoiceId: invoice.id,
-      loadId: invoice.loadId,
-    });
+      const updated = await deps.invoiceRepo.updateStatus(invoice.id, input.organizationId, 'VOID');
 
-    return updated;
-  },
-});
+      // Revert load to DELIVERED
+      await deps.loadQuery.updateLoadStatus(invoice.loadId, 'DELIVERED');
+
+      deps.logger.info('Invoice voided', {
+        invoiceId: invoice.id,
+        loadId: invoice.loadId,
+      });
+
+      return updated;
+    },
+  };
+};

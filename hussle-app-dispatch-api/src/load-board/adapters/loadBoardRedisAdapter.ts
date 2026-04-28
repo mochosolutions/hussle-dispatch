@@ -68,6 +68,27 @@ export const createLoadBoardRedisAdapter = (redis: Redis): LoadBoardRedisPort =>
     await pipeline.exec();
   },
 
+  addIfAbsent: async (
+    orgId: string,
+    source: LoadSource,
+    load: StagedLoad,
+  ): Promise<boolean> => {
+    const lKey = loadKey(orgId, source, load.sourceId);
+    const ttl = calculateLoadTtl(load.firstPickupTime);
+
+    // SET NX EX — only sets if the key does not already exist. Returns null
+    // when the key existed; returns 'OK' when newly written.
+    const result = await redis.set(lKey, JSON.stringify(load), 'EX', ttl, 'NX');
+
+    if (result === null) {
+      return false;
+    }
+
+    await redis.sadd(setKey(orgId, source), load.sourceId);
+    await redis.expire(setKey(orgId, source), DEFAULT_TTL);
+    return true;
+  },
+
   getAllLoads: async (orgId: string, source?: LoadSource): Promise<StagedLoad[]> => {
     const sourcesToQuery = source !== undefined ? [source] : SOURCES;
 

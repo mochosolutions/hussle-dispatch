@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import type Redis from 'ioredis';
 import type { PrismaTransaction } from '@/config/database';
 import { getCityCoords } from '@/shared/geoLookup';
+import type { Logger } from '@/shared/utils/logger';
 import type { EligibleDriverQueryPort } from '@/loads/types/rankDriverTypes';
 import type { DriverAvailabilityWindow } from './types/driverAvailabilityTypes';
 import { createLoadQueries } from '@/shared/loadQueries';
@@ -18,6 +19,7 @@ import type { DriverRouterControllers } from './routes/driverRoutes';
 interface DriverModuleDeps {
   prismaClient: PrismaClient | PrismaTransaction;
   redis: Redis;
+  logger: Logger;
 }
 
 export interface DriverModuleQueries extends EligibleDriverQueryPort {
@@ -31,6 +33,7 @@ export interface DriverModuleQueries extends EligibleDriverQueryPort {
 export const createDriversModule = ({
   prismaClient,
   redis,
+  logger,
 }: DriverModuleDeps): {
   controllers: DriverRouterControllers;
   queries: DriverModuleQueries;
@@ -45,6 +48,9 @@ export const createDriversModule = ({
     carrierRepository: repositories,
     loadRepository: repositories,
     loadQueryPort,
+    redis,
+    getCityCoords,
+    logger,
   });
 
   const availabilityDeps = {

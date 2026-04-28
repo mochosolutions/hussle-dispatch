@@ -166,24 +166,10 @@ export const validateTransition = (
   }
 
   // 5. Soft warnings
+  // BOL_SIGNED on DELIVERED and APPOINTMENT-stop appointmentNumber on DISPATCHED are
+  // intentionally NOT enforced here. Invoice readiness is gated downstream by
+  // invoiceReadinessSubscriber (BOL); appointmentNumber has no downstream business logic.
   const warnings: string[] = [];
-
-  if (toStatus === 'DELIVERED' && context.load.bolSignedAt === null) {
-    warnings.push('No signed BOL on file');
-  }
-
-  if (toStatus === 'DISPATCHED' && context.load.stops !== undefined) {
-    context.load.stops.forEach((stop) => {
-      if (
-        stop.schedulingType === 'APPOINTMENT' &&
-        (stop.appointmentNumber === null ||
-          stop.appointmentNumber === undefined ||
-          stop.appointmentNumber.trim() === '')
-      ) {
-        warnings.push(`Stop ${stop.sequence}: APPOINTMENT stop is missing appointment number`);
-      }
-    });
-  }
 
   return {
     valid: true,

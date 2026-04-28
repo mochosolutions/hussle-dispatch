@@ -75,6 +75,7 @@ const customerInitialValues: CustomerFormValues = {
   paymentTermsDays: 30,
   quickPayDiscount: '',
   notes: '',
+  billingMethod: 'DIRECT',
   status: 'ACTIVE',
 };
 

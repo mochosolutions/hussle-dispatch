@@ -28,11 +28,11 @@ import {
 import type { DriverPayType, EndorsementCode } from 'features/carrier/types';
 import { PAY_TYPE_OPTIONS } from '../../constants';
 
-const toDriverPayType = (val: string): DriverPayType | null => {
+const toDriverPayType = (val: string): DriverPayType => {
   if (val === 'PERCENTAGE' || val === 'PER_MILE' || val === 'PER_HOUR' || val === 'FLAT_RATE') {
     return val;
   }
-  return null;
+  return 'PERCENTAGE';
 };
 import CarrierAutocomplete from 'features/carrier/components/CarrierAutocomplete';
 import { selectDriverWithCarrier } from '../../store/selectors/driverSelectors';
@@ -56,8 +56,8 @@ const EMPTY_VALUES = {
   endorsements: [] as EndorsementCode[],
   homeBaseCity: '',
   homeBaseState: '',
-  payType: '' as string,
-  payRate: '' as string,
+  payType: 'PERCENTAGE' as DriverPayType,
+  payRate: 30 as number,
   notes: '',
 };
 
@@ -93,8 +93,8 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
           endorsements: driver.endorsements ?? ([] as EndorsementCode[]),
           homeBaseCity: driver.homeBaseCity ?? '',
           homeBaseState: driver.homeBaseState ?? '',
-          payType: driver.payType ?? '',
-          payRate: driver.payRate ?? '',
+          payType: (driver.payType ?? 'PERCENTAGE') as DriverPayType,
+          payRate: driver.payRate ?? 30,
           notes: driver.notes ?? '',
         }
       : {
@@ -103,10 +103,8 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
         };
 
   const handleSubmit = (values: typeof initialValues) => {
-    const payType = toDriverPayType(String(values.payType ?? ''));
-    const payRate = values.payRate !== '' && values.payRate !== null
-      ? parseFloat(String(values.payRate))
-      : null;
+    const payType = toDriverPayType(String(values.payType));
+    const payRate = parseFloat(String(values.payRate));
 
     if (isEditing && driverId) {
       dispatch(updateDriverRequest({ id: driverId, data: { ...values, payType, payRate } }));
@@ -232,10 +230,9 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
               label="Pay Type"
               data={PAY_TYPE_OPTIONS}
               formik={formik}
+              required
             />
-            {formik.values.payType && (
-              <TextField name="payRate" label="Pay Rate" formik={formik} type="number" />
-            )}
+            <TextField name="payRate" label="Pay Rate" formik={formik} type="number" required />
           </DrawerSection>
 
           <Divider sx={{ my: 0.5 }} />

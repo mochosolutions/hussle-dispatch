@@ -9,7 +9,7 @@ import { settlementFreezeQueryPrisma } from '@/settlements/repositories/settleme
 import { createLoadsModule } from './compositionRoot';
 import { createLoadsRouter } from './routes/loadRoutes';
 
-const driversModule = createDriversModule({ prismaClient: prisma, redis: redisClient });
+const driversModule = createDriversModule({ prismaClient: prisma, redis: redisClient, logger });
 const placesModule = createPlacesModule({ prismaClient: prisma, redis: redisClient });
 const settlementFreezeQuery = settlementFreezeQueryPrisma(prisma);
 

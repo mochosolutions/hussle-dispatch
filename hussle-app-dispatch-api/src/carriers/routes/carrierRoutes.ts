@@ -6,6 +6,7 @@ import type { ApprovalControllers } from '../controllers/approvalController';
 import type { CarrierControllers } from '../controllers/carrierController';
 import type { InviteControllers } from '../controllers/inviteController';
 import type { OnboardingDetailControllers } from '../controllers/onboardingDetailController';
+import type { DispatchOverrideControllers } from '../controllers/dispatchOverrideController';
 import {
   carrierIdParamValidator,
   carrierNotesParamValidator,
@@ -19,9 +20,10 @@ import {
   approveCarrierValidator,
   rejectCarrierValidator,
 } from '../validators/approvalValidators';
+import { dispatchOverrideValidator } from '../validators/dispatchOverrideValidator';
 
 export const createCarriersRouter = (
-  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers,
+  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers,
 ): express.Router => {
   const router = express.Router();
 
@@ -111,6 +113,13 @@ export const createCarriersRouter = (
     requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(rejectCarrierValidator),
     controllers.reject,
+  );
+  router.post(
+    '/:id/dispatch-override',
+    requireAuth,
+    requireRole([ROLES.ADMIN]),
+    validateRequest(dispatchOverrideValidator),
+    controllers.dispatchOverride,
   );
 
   return router;

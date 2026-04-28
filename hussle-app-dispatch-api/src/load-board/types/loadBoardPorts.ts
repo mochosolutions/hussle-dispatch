@@ -5,9 +5,17 @@ import type { FeedMeta, LoadSource, StagedLoad } from './loadBoardTypes';
  */
 export interface LoadBoardRedisPort {
   /**
+   * @deprecated Use `addIfAbsent` per-record for ingestion.
    * Atomically replaces all loads for a given source + org combination.
    */
   snapshotReplace(orgId: string, source: LoadSource, loads: StagedLoad[]): Promise<void>;
+
+  /**
+   * Atomically inserts a single load only if no load with the same key already
+   * exists for the given org/source/sourceId. Returns true when the load was
+   * newly added, false when it was already present (deduplication hit).
+   */
+  addIfAbsent(orgId: string, source: LoadSource, load: StagedLoad): Promise<boolean>;
 
   /**
    * Returns all loads for an org, optionally filtered by source.

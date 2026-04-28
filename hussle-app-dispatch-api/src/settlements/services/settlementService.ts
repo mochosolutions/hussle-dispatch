@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import { Prisma } from '@prisma/client';
 import type { Logger } from '../../shared/utils/logger';
 import { CARRIER_TYPES } from '../../shared/constants/carrierTypes';
 import {
@@ -7,8 +8,13 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../shared/errors/commonErrors';
+import { MissingEstimatedHoursError } from '../../shared/errors/missingEstimatedHoursError';
 import { round2 } from '../../shared/financials';
 import { buildPaginationMeta } from '../../shared/responseEnvelope';
+import {
+  computeDispatchFeeAmount,
+  resolveDispatchFee,
+} from '../../shared/utils/resolveDispatchFee';
 import { computeSettlementHash } from '../../shared/utils/snapshotHash';
 import type {
   ApproveSettlementInput,
@@ -17,6 +23,7 @@ import type {
   GenerateSettlementInput,
   ListSettlementsInput,
   PaySettlementInput,
+  SettlementDriverQueryPort,
   SettlementExpenseQueryPort,
   SettlementLoadQueryPort,
   SettlementRepoPort,
@@ -24,7 +31,7 @@ import type {
 } from '../types/settlementTypes';
 
 interface SettlementLineItemData {
-  type: 'LOAD_REVENUE' | 'DISPATCH_FEE' | 'ACCESSORIAL' | 'EXPENSE';
+  type: 'LOAD_REVENUE' | 'DISPATCH_FEE' | 'ACCESSORIAL' | 'EXPENSE' | 'DRIVER_PAY';
   referenceId?: string;
   description: string;
   miles?: number;
@@ -37,8 +44,49 @@ interface SettlementServiceDeps {
   loadQuery: SettlementLoadQueryPort;
   expenseQuery: SettlementExpenseQueryPort;
   carrierQuery: CarrierQueryPort;
+  driverQuery: SettlementDriverQueryPort;
   logger: Logger;
 }
+
+/**
+ * Compute per-load DRIVER_PAY amount based on the driver's pay configuration.
+ * Returns null when required inputs (e.g. estimatedHours for PER_HOUR) are
+ * unavailable. PER_HOUR missing hours is guarded upstream before this helper
+ * is called, so in practice only non-PER_HOUR nulls return here.
+ */
+const computeDriverPay = (config: {
+  payType: string;
+  payRate: Decimal;
+  carrierPayout: unknown | null;
+  loadedMiles: number | null;
+  estimatedHours: unknown | null;
+}): Decimal | null => {
+  switch (config.payType) {
+    case 'PERCENTAGE': {
+      if (config.carrierPayout === null || config.carrierPayout === undefined) {
+        return null;
+      }
+      const payout = new Decimal(String(config.carrierPayout));
+      return payout.times(config.payRate).dividedBy(100);
+    }
+    case 'PER_MILE': {
+      if (config.loadedMiles === null || config.loadedMiles === undefined) {
+        return null;
+      }
+      return config.payRate.times(config.loadedMiles);
+    }
+    case 'PER_HOUR': {
+      if (config.estimatedHours === null || config.estimatedHours === undefined) {
+        return null;
+      }
+      return config.payRate.times(new Decimal(String(config.estimatedHours)));
+    }
+    case 'FLAT_RATE':
+      return config.payRate;
+    default:
+      return null;
+  }
+};
 
 const generateSettlementNumber = (): string => {
   const now = new Date();
@@ -93,6 +141,26 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
       throw new ValidationError('No delivered loads found for the specified period');
     }
 
+    const isCompanyAsset = carrier.type === CARRIER_TYPES.COMPANY_ASSET;
+
+    // For COMPANY_ASSET driver settlements, load driver pay configuration
+    // and pre-validate PER_HOUR has estimatedHours on every in-scope load.
+    let driver: { id: string; payType: string | null; payRate: unknown } | null = null;
+    if (isCompanyAsset && input.driverId !== undefined) {
+      driver = (await deps.driverQuery.findById(input.driverId)) ?? null;
+
+      if (driver?.payType === 'PER_HOUR') {
+        const missing = loads.filter(
+          (load) => load.estimatedHours === null || load.estimatedHours === undefined,
+        );
+        if (missing.length > 0) {
+          throw new MissingEstimatedHoursError(
+            missing.map((load) => ({ id: load.id, loadNumber: load.loadNumber })),
+          );
+        }
+      }
+    }
+
     // 5. Build line items and accumulate full-precision totals in one pass.
     // Line items are rounded once for DB storage, but totals sum the raw
     // Decimal values to avoid round-then-sum accumulation drift.
@@ -101,6 +169,7 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
     let dispatchFeeTotal = new Decimal(0);
     let accessorialsTotal = new Decimal(0);
     let expensesTotal = new Decimal(0);
+    let driverPayTotal = new Decimal(0);
 
     loads.forEach((load) => {
       const deliveredAt = load.deliveredAt ?? new Date();
@@ -117,29 +186,111 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
         date: deliveredAt,
       });
 
-      // DISPATCH_FEE (stored positive, subtracted in totals)
-      const feeAmount = new Decimal(String(load.dispatchFee)).abs();
-      dispatchFeeTotal = dispatchFeeTotal.plus(feeAmount);
-      lineItems.push({
-        type: 'DISPATCH_FEE',
-        referenceId: load.id,
-        description: `Dispatch fee - Load ${load.loadNumber}`,
-        amount: Number(round2(feeAmount)),
-        date: deliveredAt,
-      });
+      if (isCompanyAsset) {
+        // DRIVER_PAY for COMPANY_ASSET driver. No DISPATCH_FEE is ever deducted
+        // on a COMPANY_ASSET driver settlement regardless of carrier config.
+        if (
+          driver !== null &&
+          driver.payType !== null &&
+          driver.payType !== undefined &&
+          driver.payRate !== null &&
+          driver.payRate !== undefined
+        ) {
+          const payRate = new Decimal(String(driver.payRate));
+          const driverPayAmount = computeDriverPay({
+            payType: driver.payType,
+            payRate,
+            carrierPayout: load.carrierPayout,
+            loadedMiles: load.loadedMiles,
+            estimatedHours: load.estimatedHours,
+          });
 
-      // ACCESSORIAL charges
-      load.accessorialCharges.forEach((charge) => {
-        const chargeAmount = new Decimal(String(charge.amount));
-        accessorialsTotal = accessorialsTotal.plus(chargeAmount);
-        lineItems.push({
-          type: 'ACCESSORIAL',
-          referenceId: charge.id,
-          description: charge.description ?? charge.type,
-          amount: Number(round2(chargeAmount)),
-          date: deliveredAt,
+          if (driverPayAmount !== null) {
+            driverPayTotal = driverPayTotal.plus(driverPayAmount);
+            lineItems.push({
+              type: 'DRIVER_PAY',
+              referenceId: load.id,
+              description: `Driver pay - Load ${load.loadNumber}`,
+              amount: Number(round2(driverPayAmount)),
+              date: deliveredAt,
+            });
+          }
+        }
+
+        // ACCESSORIAL charges — company-asset driver sees all accessorials
+        // (preserves pre-existing behavior).
+        load.accessorialCharges.forEach((charge) => {
+          const chargeAmount = new Decimal(String(charge.amount));
+          accessorialsTotal = accessorialsTotal.plus(chargeAmount);
+          lineItems.push({
+            type: 'ACCESSORIAL',
+            referenceId: charge.id,
+            description: charge.description ?? charge.type,
+            amount: Number(round2(chargeAmount)),
+            date: deliveredAt,
+          });
         });
-      });
+      } else {
+        // LEASED_CARRIER settlement: compute DISPATCH_FEE using carrier config
+        // + load overrides, with fee base respecting feeIncludesAccessorials.
+        const resolvedFee = resolveDispatchFee({
+          load: {
+            dispatchFeeOverrideType: load.dispatchFeeOverrideType,
+            dispatchFeeOverrideAmount:
+              load.dispatchFeeOverrideAmount === null
+                ? null
+                : new Prisma.Decimal(String(load.dispatchFeeOverrideAmount)),
+          },
+          carrier,
+        });
+
+        const customerRateDecimal = new Prisma.Decimal(String(load.customerRate ?? 0));
+        const customerAccessorialsSum = load.accessorialCharges.reduce((sum, charge) => {
+          const billTo = charge.billTo.toUpperCase();
+          return billTo === 'CUSTOMER' || billTo === 'BOTH'
+            ? sum.plus(new Prisma.Decimal(String(charge.amount)))
+            : sum;
+        }, new Prisma.Decimal(0));
+
+        const feeBase = carrier.feeIncludesAccessorials
+          ? customerRateDecimal.plus(customerAccessorialsSum)
+          : customerRateDecimal;
+
+        const feeAmount = computeDispatchFeeAmount({
+          resolvedFee,
+          baseAmount: feeBase,
+        });
+
+        if (feeAmount.gt(0)) {
+          const feeDecimal = new Decimal(feeAmount.toString());
+          dispatchFeeTotal = dispatchFeeTotal.plus(feeDecimal);
+          lineItems.push({
+            type: 'DISPATCH_FEE',
+            referenceId: load.id,
+            description: `Dispatch fee - Load ${load.loadNumber}`,
+            amount: Number(round2(feeDecimal)),
+            date: deliveredAt,
+          });
+        }
+
+        // ACCESSORIAL charges on carrier settlement — only CARRIER / BOTH are
+        // carrier-passthrough deductions.
+        load.accessorialCharges.forEach((charge) => {
+          const billTo = charge.billTo.toUpperCase();
+          if (billTo !== 'CARRIER' && billTo !== 'BOTH') {
+            return;
+          }
+          const chargeAmount = new Decimal(String(charge.amount));
+          accessorialsTotal = accessorialsTotal.plus(chargeAmount);
+          lineItems.push({
+            type: 'ACCESSORIAL',
+            referenceId: charge.id,
+            description: charge.description ?? charge.type,
+            amount: Number(round2(chargeAmount)),
+            date: deliveredAt,
+          });
+        });
+      }
     });
 
     // Expenses for COMPANY_ASSET or LEASED_CARRIER with includeExpensesOnSettlement
@@ -169,6 +320,7 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
     }
 
     const netEarnings = grossRevenue
+      .plus(driverPayTotal)
       .minus(dispatchFeeTotal)
       .plus(accessorialsTotal)
       .minus(expensesTotal);

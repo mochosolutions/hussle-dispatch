@@ -9,6 +9,7 @@ import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import {
   fetchSettlementDetailRequest,
   approveSettlementRequest,
+  downloadSettlementPdfRequest,
 } from '../../store/reducers/settlementPageSlice';
 import {
   selectSettlementDetailById,
@@ -16,6 +17,7 @@ import {
 } from '../../store/selectors/settlementSelectors';
 import { OverviewTab } from '../../components/SettlementDetailPage/OverviewTab';
 import { LineItemsTab } from '../../components/SettlementDetailPage/LineItemsTab';
+import { MissingEstimatedHoursDialog } from '../../components/MissingEstimatedHoursDialog';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -73,6 +75,15 @@ const SettlementDetailPage = () => {
     }
   }, [dispatch, id]);
 
+  const handleDownloadPdf = useCallback(
+    (shortId: string) => {
+      if (id) {
+        dispatch(downloadSettlementPdfRequest({ id, shortId }));
+      }
+    },
+    [dispatch, id],
+  );
+
   const handleOpenPayModal = useCallback(() => {
     if (id) {
       openDrawer('paySettlement', { settlementId: id });
@@ -92,6 +103,13 @@ const SettlementDetailPage = () => {
 
     return (
       <>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => handleDownloadPdf(settlement.settlementNumber)}
+        >
+          Download PDF
+        </Button>
         {settlement.status === 'DRAFT' && (
           <Button variant="contained" size="small" onClick={handleApprove}>
             Approve
@@ -160,6 +178,7 @@ const SettlementDetailPage = () => {
           </DetailLayout>
         )}
       </DataGuard>
+      <MissingEstimatedHoursDialog />
     </PageWrapper>
   );
 };

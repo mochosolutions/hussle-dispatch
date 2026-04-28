@@ -15,12 +15,28 @@ import type {
 // Extended state — adds filters to the standard CRUD page state
 // ---------------------------------------------------------------------------
 
-export interface SettlementPageState extends CrudPageState {
-  filters: SettlementFilters;
+export interface MissingEstimatedHoursLoad {
+  id: string;
+  loadNumber: string;
 }
 
-const settlementPageInitialExtras: Pick<SettlementPageState, 'filters'> = {
+export interface MissingEstimatedHoursState {
+  loadIds: string[];
+  loads: MissingEstimatedHoursLoad[];
+  message: string;
+}
+
+export interface SettlementPageState extends CrudPageState {
+  filters: SettlementFilters;
+  generateMissingHours: MissingEstimatedHoursState | null;
+}
+
+const settlementPageInitialExtras: Pick<
+  SettlementPageState,
+  'filters' | 'generateMissingHours'
+> = {
   filters: {},
+  generateMissingHours: null,
 };
 
 export const settlementPageSlice = createCrudSlice({
@@ -52,9 +68,21 @@ export const settlementPageReducer = (
     return { ...state, filters: action.payload };
   }
 
+  if (generateSettlementErrorsReceived.match(action)) {
+    return { ...state, generateMissingHours: action.payload };
+  }
+
+  if (clearGenerateSettlementErrors.match(action)) {
+    return { ...state, generateMissingHours: null };
+  }
+
   if (fetchSettlementsSuccess.match(action)) {
     const nextCrud = crudReducer(state, action);
-    return { ...nextCrud, filters: state.filters };
+    return {
+      ...nextCrud,
+      filters: state.filters,
+      generateMissingHours: state.generateMissingHours,
+    };
   }
 
   const nextCrudState = crudReducer(state, action);
@@ -66,6 +94,7 @@ export const settlementPageReducer = (
   return {
     ...nextCrudState,
     filters: state.filters,
+    generateMissingHours: state.generateMissingHours,
   };
 };
 
@@ -138,6 +167,25 @@ export const disputeSettlementSuccess = createAction<{ id: string }>(
 );
 export const disputeSettlementFailure = createAction<{ id: string; error: string }>(
   'settlement/disputeSettlementFailure',
+);
+
+export const downloadSettlementPdfRequest = createAction<{ id: string; shortId?: string }>(
+  'settlement/downloadSettlementPdfRequest',
+);
+export const downloadSettlementPdfSuccess = createAction<{ id: string }>(
+  'settlement/downloadSettlementPdfSuccess',
+);
+export const downloadSettlementPdfFailure = createAction<{ id: string; error: string }>(
+  'settlement/downloadSettlementPdfFailure',
+);
+
+export const generateSettlementErrorsReceived = createAction<{
+  loadIds: string[];
+  loads: MissingEstimatedHoursLoad[];
+  message: string;
+}>('settlement/generateSettlementErrorsReceived');
+export const clearGenerateSettlementErrors = createAction(
+  'settlement/clearGenerateSettlementErrors',
 );
 
 export const addAdjustmentRequest = createAction<{

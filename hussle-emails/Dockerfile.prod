@@ -1,0 +1,40 @@
+# ============================================
+# Builder Stage - Compile TypeScript
+# ============================================
+FROM node:20-alpine AS builder
+WORKDIR /usr/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies for TypeScript compilation)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Compile TypeScript to JavaScript (outputs to dist/)
+RUN npm run build
+
+# ============================================
+# Runner Stage - Production Runtime
+# ============================================
+FROM node:20-alpine AS runner
+WORKDIR /usr/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ONLY production dependencies
+RUN npm ci --omit=dev --ignore-scripts
+
+# Copy compiled JavaScript from builder stage
+COPY --from=builder /usr/app/dist ./dist
+
+USER node
+
+# No HEALTHCHECK — hussle-emails is a pure library package (no HTTP server).
+# It exposes render functions consumed by the dispatch API at import time,
+# not a long-running process. This container is not intended to run standalone.
+
+CMD ["node", "dist/index.js"]

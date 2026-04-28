@@ -4,6 +4,7 @@ import { ValidationError } from '@/shared/errors';
 export interface DocumentIdInput {
   id: string;
   organizationId: string;
+  requestingUserId?: string;
 }
 
 export const documentIdMapper = (req: Request): DocumentIdInput => {
@@ -12,5 +13,9 @@ export const documentIdMapper = (req: Request): DocumentIdInput => {
     throw new ValidationError('Missing required id parameter');
   }
 
-  return { id, organizationId: req.organizationId ?? '' };
+  return {
+    id,
+    organizationId: req.organizationId ?? '',
+    ...(req.user?.userId !== undefined && { requestingUserId: req.user.userId }),
+  };
 };

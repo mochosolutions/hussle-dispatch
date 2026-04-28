@@ -6,7 +6,7 @@ const mapDocumentRow = (row: {
   id: string;
   type: string;
   fileName: string;
-  s3Url: string;
+  url: string;
   reviewStatus: string | null;
   signatureData: string | null;
   signedAt: Date | null;
@@ -15,7 +15,7 @@ const mapDocumentRow = (row: {
   id: row.id,
   documentType: row.type,
   fileName: row.fileName,
-  fileUrl: row.s3Url,
+  fileUrl: row.url,
   reviewStatus: row.reviewStatus,
   signatureData: row.signatureData,
   signedAt: row.signedAt,
@@ -42,7 +42,7 @@ export const portalDocumentRepoPrisma = (
         type: data.type as 'DISPATCH_AGREEMENT' | 'INSURANCE_CERT' | 'W9' | 'CARRIER_PACKET',
         fileName: data.fileName,
         s3Key: data.s3Key,
-        s3Url: data.s3Url,
+        url: data.url,
         uploadStatus: data.uploadStatus,
       },
     });

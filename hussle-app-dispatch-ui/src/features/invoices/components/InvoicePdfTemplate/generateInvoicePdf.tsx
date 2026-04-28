@@ -1,6 +1,6 @@
 import { pdf } from '@react-pdf/renderer';
 
-import type { InvoiceData } from '../../types';
+import type { InvoiceData } from './types';
 import { InvoicePdfTemplate } from './InvoicePdfTemplate';
 
 /**

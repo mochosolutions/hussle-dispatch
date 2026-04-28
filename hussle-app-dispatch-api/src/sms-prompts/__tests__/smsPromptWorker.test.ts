@@ -11,6 +11,7 @@ import type { DriverQueryPort } from '../types/driverQueryPort';
 import type { SettingsRepoPort } from '@/settings/types/settingsTypes';
 import type { SmsService } from '@/shared/notifications/smsService';
 import type { TrackingTokenService } from '@/notifications/services/trackingTokenService';
+import type { ShortLinkServicePort } from '../types/shortLinkServicePort';
 
 type Handler = (data: never) => Promise<void>;
 
@@ -39,6 +40,7 @@ const baseLoad = (
   organizationId: 'org-1',
   driverId: 'driver-1',
   status: 'DISPATCHED',
+  equipmentType: null,
   stops: [],
   ...overrides,
 });
@@ -127,6 +129,10 @@ const buildMocks = () => {
     sendSms: jest.fn().mockResolvedValue({ messageSid: 'SM_TEST_SID' }),
   };
 
+  const shortLinkService: jest.Mocked<ShortLinkServicePort> = {
+    createShortLink: jest.fn().mockResolvedValue({ slug: 'AbCd1234' }),
+  };
+
   const trackingTokenService: jest.Mocked<TrackingTokenService> = {
     getOrCreate: jest.fn(),
     getOrCreateDriverToken: jest.fn().mockResolvedValue({
@@ -167,8 +173,10 @@ const buildMocks = () => {
       settingsRepo,
       smsService,
       trackingTokenService,
+      shortLinkService,
       logger,
       trackingBaseUrl: 'https://app.example.com',
+      publicShortBaseUrl: 'https://h.example.com',
     },
     invokeHandler,
   };
@@ -214,9 +222,13 @@ describe('initializeSmsPromptWorker', () => {
     const smsCall = deps.smsService.sendSms.mock.calls[0]?.[0];
     expect(smsCall?.to).toBe('+15551234567');
     expect(smsCall?.body).toContain('LD-001');
-    expect(smsCall?.body).toContain(
-      'https://app.example.com/driver-portal/driver-token-abc',
-    );
+    expect(smsCall?.body).toContain('https://h.example.com/s/AbCd1234');
+    expect(deps.shortLinkService.createShortLink).toHaveBeenCalledWith({
+      targetUrl: 'https://app.example.com/driver-portal/driver-token-abc',
+      loadId: 'load-1',
+      purpose: 'DRIVER_PORTAL',
+      expiresAt: new Date('2099-01-01T00:00:00Z'),
+    });
     expect(deps.scheduleRepo.markSent).toHaveBeenCalledWith(
       'row-1',
       'SM_TEST_SID',
@@ -394,5 +406,151 @@ describe('initializeSmsPromptWorker', () => {
     expect(deps.scheduleRepo.markSent).toHaveBeenCalled();
     expect(deps.scheduleRepo.create).not.toHaveBeenCalled();
     expect(deps.eventBus.publishDelayed).not.toHaveBeenCalled();
+  });
+
+  it('mints a short link and sends a DISPATCHED rich body matching the regex', async () => {
+    // Arrange
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'DISPATCHED' }),
+    );
+    deps.loadRepo.findForScheduling.mockResolvedValue(
+      baseLoad({
+        equipmentType: 'REEFER',
+        stops: [
+          {
+            sequence: 1,
+            type: 'PICKUP',
+            appointmentStart: new Date('2026-05-01T12:00:00Z'),
+            appointmentEnd: null,
+            departureTime: null,
+            city: 'Houston',
+            state: 'TX',
+          },
+          {
+            sequence: 2,
+            type: 'DELIVERY',
+            appointmentStart: new Date('2026-05-02T17:00:00Z'),
+            appointmentEnd: null,
+            departureTime: null,
+            city: 'Atlanta',
+            state: 'GA',
+          },
+        ],
+      }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    // Act
+    await invokeHandler(
+      'sms.prompt.due',
+      promptDuePayload({ anchor: 'DISPATCHED' }),
+    );
+
+    // Assert
+    expect(deps.shortLinkService.createShortLink).toHaveBeenCalledWith({
+      targetUrl: 'https://app.example.com/driver-portal/driver-token-abc',
+      loadId: 'load-1',
+      purpose: 'DRIVER_PORTAL',
+      expiresAt: new Date('2099-01-01T00:00:00Z'),
+    });
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(
+      /^Hussle: Load #\S+ dispatched\n.+ → .+\n🕖 PU: .+ \| 🕛 DEL: .+\n(?:(?:❄️ Reefer|🚛 Dry Van|🛻 Flatbed)\n)?https?:\/\/.+\/s\/[a-zA-Z0-9]{8}$/,
+    );
+  });
+
+  it('sends the PRE_PICKUP body matching its regex', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'PRE_PICKUP' }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler(
+      'sms.prompt.due',
+      promptDuePayload({ anchor: 'PRE_PICKUP' }),
+    );
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(
+      /^Hussle: Load #\S+ pickup is coming up\. Confirm you're en route\.\nhttps?:\/\/.+\/s\/[a-zA-Z0-9]{8}$/,
+    );
+  });
+
+  it('sends the POST_PICKUP body matching its regex', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'POST_PICKUP' }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler(
+      'sms.prompt.due',
+      promptDuePayload({ anchor: 'POST_PICKUP' }),
+    );
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(
+      /^Hussle: Load #\S+ — pickup window passed\. Update status now\.\n.+$/,
+    );
+  });
+
+  it('sends the TRANSIT_INTERVAL body matching its regex', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'TRANSIT_INTERVAL' }),
+    );
+    deps.loadRepo.findForScheduling.mockResolvedValue(
+      baseLoad({ status: 'IN_TRANSIT' }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler(
+      'sms.prompt.due',
+      promptDuePayload({ anchor: 'TRANSIT_INTERVAL' }),
+    );
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(
+      /^Hussle: Load #\S+ status check\. Tap to share current location\.\n.+$/,
+    );
+  });
+
+  it('sends the MANUAL body matching its regex', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'MANUAL' }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler(
+      'sms.prompt.due',
+      promptDuePayload({ anchor: 'MANUAL' }),
+    );
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(/^Hussle: Load #\S+ needs a check-in\.\n.+$/);
+  });
+
+  it('marks FAILED and does not send when short-link creation throws', async () => {
+    // Arrange
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(makeScheduleRow());
+    deps.shortLinkService.createShortLink.mockRejectedValueOnce(
+      new Error('slug exhausted'),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    // Act
+    await invokeHandler('sms.prompt.due', promptDuePayload());
+
+    // Assert
+    expect(deps.smsService.sendSms).not.toHaveBeenCalled();
+    expect(deps.scheduleRepo.markFailed).toHaveBeenCalledWith(
+      'row-1',
+      'slug exhausted',
+    );
+    expect(deps.scheduleRepo.markSent).not.toHaveBeenCalled();
   });
 });

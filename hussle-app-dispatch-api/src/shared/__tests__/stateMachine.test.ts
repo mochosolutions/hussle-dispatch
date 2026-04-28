@@ -487,30 +487,19 @@ describe('validateTransition — notes required: CANCELED', () => {
 // ---------------------------------------------------------------------------
 
 describe('validateTransition — warnings', () => {
-  it('warns when transitioning to DELIVERED and bolSignedAt is null', () => {
-    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
-      userRole: 'DISPATCHER',
-      load: { bolSignedAt: null },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings).toEqual(
-      expect.arrayContaining(['No signed BOL on file']),
-    );
-  });
-
-  it('does not warn when transitioning to DELIVERED and bolSignedAt is set', () => {
-    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
-      userRole: 'DISPATCHER',
-      load: { bolSignedAt: new Date() },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings ?? []).not.toContain('No signed BOL on file');
-  });
-
   it('does not include warnings key when there are no warnings', () => {
     const result = validateTransition('QUOTED', 'BOOKED', {
       userRole: 'DISPATCHER',
       load: { carrierId: 'c-1' },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it('does not warn when transitioning to DELIVERED without bolSignedAt (gate is invoiceReadinessSubscriber)', () => {
+    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
+      userRole: 'DISPATCHER',
+      load: { bolSignedAt: null },
     });
     expect(result.valid).toBe(true);
     expect(result.warnings).toBeUndefined();
@@ -598,91 +587,6 @@ describe('validateTransition — DRIVER role restrictions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// validateTransition — appointment number warnings
+// appointmentNumber is intentionally not enforced at the state-machine layer.
+// Removed warning intentionally — no downstream business logic depends on it.
 // ---------------------------------------------------------------------------
-
-describe('validateTransition — appointment number warnings', () => {
-  const dispatchReadyLoad = {
-    carrierId: 'c-1',
-    driverId: 'd-1',
-    vehicleId: 'v-1',
-    rateConReceivedAt: new Date(),
-  };
-
-  it('warns when BOOKED→DISPATCHED with APPOINTMENT stop missing appointmentNumber', () => {
-    const result = validateTransition('BOOKED', 'DISPATCHED', {
-      userRole: 'DISPATCHER',
-      load: {
-        ...dispatchReadyLoad,
-        stops: [
-          { sequence: 1, schedulingType: 'APPOINTMENT', appointmentNumber: null },
-        ],
-      },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings).toBeDefined();
-    expect(result.warnings).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('missing appointment number'),
-      ]),
-    );
-    expect(result.warnings).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('Stop 1'),
-      ]),
-    );
-  });
-
-  it('returns no appointmentNumber warnings when all APPOINTMENT stops have appointmentNumber', () => {
-    const result = validateTransition('BOOKED', 'DISPATCHED', {
-      userRole: 'DISPATCHER',
-      load: {
-        ...dispatchReadyLoad,
-        stops: [
-          { sequence: 1, schedulingType: 'APPOINTMENT', appointmentNumber: 'APT-123' },
-          { sequence: 2, schedulingType: 'APPOINTMENT', appointmentNumber: 'APT-456' },
-        ],
-      },
-    });
-    expect(result.valid).toBe(true);
-    const appointmentWarnings = (result.warnings ?? []).filter((w) =>
-      w.includes('missing appointment number'),
-    );
-    expect(appointmentWarnings).toHaveLength(0);
-  });
-
-  it('returns no appointmentNumber warnings for FCFS stops without appointmentNumber', () => {
-    const result = validateTransition('BOOKED', 'DISPATCHED', {
-      userRole: 'DISPATCHER',
-      load: {
-        ...dispatchReadyLoad,
-        stops: [
-          { sequence: 1, schedulingType: 'FCFS', appointmentNumber: null },
-          { sequence: 2, schedulingType: 'FCFS', appointmentNumber: null },
-        ],
-      },
-    });
-    expect(result.valid).toBe(true);
-    const appointmentWarnings = (result.warnings ?? []).filter((w) =>
-      w.includes('missing appointment number'),
-    );
-    expect(appointmentWarnings).toHaveLength(0);
-  });
-
-  it('does not check appointmentNumber for non-DISPATCHED transitions', () => {
-    const result = validateTransition('QUOTED', 'BOOKED', {
-      userRole: 'DISPATCHER',
-      load: {
-        carrierId: 'c-1',
-        stops: [
-          { sequence: 1, schedulingType: 'APPOINTMENT', appointmentNumber: null },
-        ],
-      },
-    });
-    expect(result.valid).toBe(true);
-    const appointmentWarnings = (result.warnings ?? []).filter((w) =>
-      w.includes('missing appointment number'),
-    );
-    expect(appointmentWarnings).toHaveLength(0);
-  });
-});

@@ -87,7 +87,7 @@ export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) =
       type: input.documentType,
       fileName: input.fileName,
       s3Key,
-      s3Url: url,
+      url,
       uploadStatus: 'pending',
     });
 

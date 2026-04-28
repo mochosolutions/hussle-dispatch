@@ -2,6 +2,8 @@ export type CustomerType = 'BROKER' | 'DIRECT_SHIPPER' | 'THREE_PL';
 
 export type CustomerStatus = 'ACTIVE' | 'INACTIVE';
 
+export type BillingMethod = 'DIRECT' | 'FACTORED';
+
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -28,6 +30,7 @@ export interface Customer {
   paymentTermsDays: number;
   quickPayDiscount: string | null;
   notes: string | null;
+  billingMethod: BillingMethod;
   status: CustomerStatus;
   _count: {
     loads: number;
@@ -54,6 +57,7 @@ export interface CreateCustomerPayload {
   paymentTermsDays?: number;
   quickPayDiscount?: string | null;
   notes?: string | null;
+  billingMethod?: BillingMethod;
   status?: CustomerStatus;
 }
 
@@ -73,6 +77,7 @@ export interface UpdateCustomerPayload {
   paymentTermsDays?: number;
   quickPayDiscount?: string | null;
   notes?: string | null;
+  billingMethod?: BillingMethod;
   status?: CustomerStatus;
 }
 

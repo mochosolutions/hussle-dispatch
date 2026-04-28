@@ -27,6 +27,7 @@ import { CarrierFormDrawer } from '../carrier/components/CarrierFormDialog';
 import { ContactInfoDrawer } from '../contact/components/ContactInfoDrawer';
 import { ContactEditDrawer } from '../contact/components/ContactEditDrawer';
 import { DocumentUploadDrawer } from '../documents/components/DocumentUploadDrawer';
+import { DocumentDetailDrawer } from '../documents/components/DocumentDetailDrawer';
 import { DisputeSettlementDrawer } from '../accounting/components/DisputeSettlementDrawer';
 import { AddAdjustmentDrawer } from '../accounting/components/AddAdjustmentDrawer';
 import { ExpenseQuickAddDrawer } from '../accounting/components/ExpenseQuickAddDrawer';
@@ -53,6 +54,7 @@ const drawerRegistry: PopupComponentMap = {
   contactCreate: ContactInfoDrawer,
   contactInfo: ContactEditDrawer,
   documentUpload: DocumentUploadDrawer,
+  documentDetail: DocumentDetailDrawer,
 
   // Load specific drawers
   loadRate: LoadRateDrawer,

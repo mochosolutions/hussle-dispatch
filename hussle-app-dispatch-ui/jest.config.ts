@@ -41,6 +41,7 @@ export default {
     // mocho-ui subpath mappings (local source, mirrors tsconfig paths)
     '^@mocho/ui/redux$': '<rootDir>/src/mocho/redux',
     '^@mocho/ui/components$': '<rootDir>/src/mocho/components',
+    '^@mocho/ui/components/(.*)$': '<rootDir>/src/mocho/components/$1',
     '^@mocho/ui/forms$': '<rootDir>/src/mocho/forms',
     '^@mocho/ui/hooks$': '<rootDir>/src/mocho/hooks',
     '^@mocho/ui/utils$': '<rootDir>/src/mocho/utils',

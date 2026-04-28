@@ -72,6 +72,7 @@ export interface AssignmentBlocker {
   message: string;
   field?: string;
   blockingLoadIds?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class AssignmentValidationError extends CustomError {

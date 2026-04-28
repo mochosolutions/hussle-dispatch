@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth } from '@/middleware/auth';
+import { requireAuth, requireRole } from '@/middleware/auth';
 import { validateRequest } from '@/shared/middleware/validateRequest';
 import type { DocumentControllers } from '../controllers/documentController';
 import {
@@ -51,6 +51,7 @@ export const createDocumentRoutes = (controllers: DocumentControllers): express.
   router.patch(
     '/:id/archive',
     requireAuth,
+    requireRole(['ADMIN']),
     validateRequest(documentIdValidator),
     controllers.archive,
   );

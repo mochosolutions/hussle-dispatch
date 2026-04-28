@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import type { InferType } from 'yup';
 import { TextField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
@@ -9,9 +10,7 @@ const disputeSchema = Yup.object({
   disputeReason: Yup.string().required('Dispute reason is required').min(1),
 }).required();
 
-interface DisputeFormValues {
-  disputeReason: string;
-}
+type DisputeFormValues = InferType<typeof disputeSchema>;
 
 interface DisputeSettlementDrawerProps {
   settlementId: string;
@@ -55,7 +54,7 @@ export const DisputeSettlementDrawer: React.FC<DisputeSettlementDrawerProps> = (
             label="Reason for Dispute"
             formik={formik}
             multiline
-            rows={4}
+            minRows={4}
           />
         </DrawerSection>
       )}

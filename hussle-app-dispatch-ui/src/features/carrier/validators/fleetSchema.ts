@@ -14,8 +14,15 @@ export const companyInfoSchema = Yup.object().shape({
 });
 
 export const dispatchTermsSchema = Yup.object().shape({
-  companyMarginPercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').required('Required'),
-  feeIncludesAccessorials: Yup.boolean(),
-  dispatchAgreementOnFile: Yup.boolean(),
-  dispatchAgreementSignedAt: Yup.string().nullable(),
+  companyMarginPercent: Yup.number()
+    .min(0, 'Min 0%')
+    .max(100, 'Max 100%')
+    .default(0),
+  dispatchFeeType: Yup.mixed<'PERCENTAGE' | 'FLAT'>()
+    .oneOf(['PERCENTAGE', 'FLAT'])
+    .default('PERCENTAGE'),
+  dispatchFeeAmount: Yup.number().min(0, 'Min 0').default(0),
+  feeIncludesAccessorials: Yup.boolean().default(true),
+  dispatchAgreementOnFile: Yup.boolean().default(false),
+  dispatchAgreementSignedAt: Yup.string().nullable().default(null),
 });

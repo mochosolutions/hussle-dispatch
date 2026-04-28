@@ -1,9 +1,12 @@
+import type Decimal from 'decimal.js';
 import type { EventBus } from '../../shared/messaging/eventBus';
 import type { Logger } from '../../shared/utils/logger';
 import type { InvoiceRepoPort, InvoiceLoadQueryPort } from '../types/invoiceTypes';
 import type { DocumentQueryPort } from '../types/documentPacketTypes';
 import type { OrgSettingsQueryPort } from '../types/readinessTypes';
 import type { InvoiceBuilderService } from './invoiceBuilderService';
+import type { InvoiceEmailService } from './invoiceEmailService';
+import { generateSequenceNumber } from '../../shared/sequenceGenerator';
 import { generateTonuInvoice } from './invoiceGenerationService';
 
 interface ReadinessSubscriberDeps {
@@ -13,8 +16,89 @@ interface ReadinessSubscriberDeps {
   documentQuery: DocumentQueryPort;
   orgSettingsQuery: OrgSettingsQueryPort;
   invoiceBuilderService: InvoiceBuilderService;
+  invoiceEmailService: InvoiceEmailService;
   logger: Logger;
 }
+
+const createDispatchFeeInvoice = async (
+  params: {
+    loadId: string;
+    organizationId: string;
+    loadNumber: string;
+    carrierId: string;
+    carrierPrimaryContactEmail: string | null;
+    dispatchFeeAmount: Decimal;
+  },
+  deps: ReadinessSubscriberDeps,
+): Promise<void> => {
+  // Idempotency: skip if a DISPATCH_FEE invoice already exists for this load.
+  const existingInvoices = await deps.invoiceRepo.findManyByLoadId(
+    params.loadId,
+    params.organizationId,
+  );
+  const alreadyExists = existingInvoices.some(
+    (inv) => inv.type === 'DISPATCH_FEE' && inv.status !== 'VOID',
+  );
+  if (alreadyExists) {
+    deps.logger.info('DISPATCH_FEE invoice already exists for load, skipping', {
+      loadId: params.loadId,
+    });
+    return;
+  }
+
+  const invoiceNumber = await generateSequenceNumber('INVOICE', params.organizationId);
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 30);
+
+  const feeAmount = params.dispatchFeeAmount.toNumber();
+
+  const invoice = await deps.invoiceRepo.create({
+    loadId: params.loadId,
+    carrierId: params.carrierId,
+    invoiceNumber,
+    type: 'DISPATCH_FEE',
+    subtotal: feeAmount,
+    accessorials: 0,
+    totalAmount: feeAmount,
+    paymentTerms: 'net_30',
+    paymentTermsDays: 30,
+    dueDate,
+    missingSignedBol: false,
+    notes: `Dispatch fee for load #${params.loadNumber}`,
+  });
+
+  deps.logger.info('DISPATCH_FEE invoice created', {
+    invoiceId: invoice.id,
+    loadId: params.loadId,
+    amount: params.dispatchFeeAmount.toFixed(2),
+  });
+
+  // Route to carrier primary contact email. If missing, flag and skip send.
+  if (
+    params.carrierPrimaryContactEmail === null ||
+    params.carrierPrimaryContactEmail.length === 0
+  ) {
+    deps.logger.warn('DISPATCH_FEE invoice created without carrier primary contact email; skipping send', {
+      invoiceId: invoice.id,
+      carrierId: params.carrierId,
+    });
+    return;
+  }
+
+  try {
+    await deps.invoiceEmailService.sendInvoiceEmail({
+      invoiceId: invoice.id,
+      organizationId: params.organizationId,
+      recipientEmail: params.carrierPrimaryContactEmail,
+      fromEmail: 'invoices@fleetcommand.app',
+    });
+  } catch (error: unknown) {
+    deps.logger.error('Failed to send DISPATCH_FEE invoice email', {
+      invoiceId: invoice.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
 
 const REQUIRED_DOC_TYPES = ['BROKER_RATE_CON', 'BOL_SIGNED', 'POD'];
 
@@ -71,15 +155,79 @@ const evaluateReadiness = async (
 
     if (workflow === 'AUTO_REVIEW' || workflow === 'AUTO_SEND') {
       try {
-        await deps.invoiceBuilderService.createFromLoad({
-          loadId,
-          organizationId: load.organizationId,
-          userId: 'system',
-        });
+        const { invoice: customerInvoice, dispatchFeeAmount } =
+          await deps.invoiceBuilderService.createFromLoadWithFee({
+            loadId,
+            organizationId: load.organizationId,
+            userId: 'system',
+          });
 
         readiness = 'INVOICE_CREATED';
 
         deps.logger.info('Auto-created invoice draft', { loadId, workflow });
+
+        // Auto-send CUSTOMER invoice email (gated by customer.billingMethod).
+        // Skip if customer is FACTORED — those go via factoring submission, not
+        // direct email. Also skip if invoice is not in DRAFT (idempotency).
+        if (customerInvoice.status === 'DRAFT') {
+          const customerBillingMethod = load.customer?.billingMethod ?? 'DIRECT';
+
+          if (customerBillingMethod === 'FACTORED') {
+            deps.logger.info('customer_invoice_auto_send_skipped_factoring', {
+              invoiceId: customerInvoice.id,
+              customerId: load.customerId,
+            });
+          } else {
+            const recipientEmail =
+              load.contact?.email ?? load.customer?.email ?? null;
+
+            if (recipientEmail === null || recipientEmail.length === 0) {
+              deps.logger.warn(
+                'CUSTOMER invoice auto-send skipped: no recipient email found',
+                {
+                  invoiceId: customerInvoice.id,
+                  loadId,
+                  customerId: load.customerId,
+                },
+              );
+            } else {
+              try {
+                await deps.invoiceEmailService.sendInvoiceEmail({
+                  invoiceId: customerInvoice.id,
+                  organizationId: load.organizationId,
+                  recipientEmail,
+                  fromEmail: 'invoices@fleetcommand.app',
+                });
+              } catch (error: unknown) {
+                deps.logger.error('Failed to auto-send CUSTOMER invoice email', {
+                  invoiceId: customerInvoice.id,
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              }
+            }
+          }
+        }
+
+        // For EXTERNAL_CARRIER, create a second DISPATCH_FEE invoice billed to the carrier.
+        if (
+          dispatchFeeAmount !== null &&
+          load.carrier?.type === 'EXTERNAL_CARRIER' &&
+          load.carrierId !== null &&
+          load.carrierId !== undefined &&
+          dispatchFeeAmount.gt(0)
+        ) {
+          await createDispatchFeeInvoice(
+            {
+              loadId,
+              organizationId: load.organizationId,
+              loadNumber: load.loadNumber,
+              carrierId: load.carrierId,
+              carrierPrimaryContactEmail: load.carrier.primaryContact?.email ?? null,
+              dispatchFeeAmount,
+            },
+            deps,
+          );
+        }
       } catch (error: unknown) {
         deps.logger.warn('Auto-invoice creation failed', {
           loadId,

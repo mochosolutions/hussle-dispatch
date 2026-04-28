@@ -36,9 +36,9 @@ const renderCarrierOption = (option: EntityAutocompleteOption) => (
       <Typography variant="body2" sx={{ fontWeight: 600 }}>
         {option.label}
       </Typography>
-      {option.metadata?.type && (
+      {typeof option.metadata?.type === 'string' && (
         <Chip
-          label={String(option.metadata.type)}
+          label={option.metadata.type}
           size="small"
           variant="outlined"
           sx={{ height: 20, fontSize: '0.625rem' }}

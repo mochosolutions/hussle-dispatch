@@ -1,4 +1,13 @@
-import type { Contact, Customer, CustomerType, CustomerStatus, Load } from '@prisma/client';
+import type {
+  BillingMethod,
+  Contact,
+  Customer,
+  CustomerType,
+  CustomerStatus,
+  Load,
+  NotificationChannel,
+  NotificationTrigger,
+} from '@prisma/client';
 import type { SortOrder } from '@/shared/pagination';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 
@@ -22,6 +31,7 @@ export interface CreateCustomerInput {
   paymentTermsDays?: number;
   quickPayDiscount?: number;
   notes?: string;
+  billingMethod?: BillingMethod;
   status?: CustomerStatus;
 }
 
@@ -41,6 +51,7 @@ export interface UpdateCustomerInput {
   paymentTermsDays?: number;
   quickPayDiscount?: number;
   notes?: string;
+  billingMethod?: BillingMethod;
   status?: CustomerStatus;
 }
 
@@ -104,4 +115,14 @@ export interface CustomerRepositoryPort {
   update(id: string, organizationId: string, input: UpdateCustomerInput): Promise<CustomerWithCounts>;
   softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
   countByOrganization(organizationId: string): Promise<number>;
+  createNotificationSettings(
+    customerId: string,
+    settings: CustomerNotificationSettingInput[],
+  ): Promise<void>;
+}
+
+export interface CustomerNotificationSettingInput {
+  trigger: NotificationTrigger;
+  channel: NotificationChannel;
+  enabled: boolean;
 }

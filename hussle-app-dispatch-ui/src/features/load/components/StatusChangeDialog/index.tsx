@@ -24,8 +24,13 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { StatusBadge } from 'components/Statusbadge';
 import { SubmitButton } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
-import { transitionLoadStatusRequest, assignAndDispatchRequest } from '../../store/reducers';
-import { closeModal } from 'features/ui/store/reducers/uiSlice';
+import {
+  transitionLoadStatusRequest,
+  assignAndDispatchRequest,
+  clearOnboardingBlock,
+  fetchLoadDetailsRequest,
+} from '../../store/reducers';
+import { closeModal, openModal } from 'features/ui/store/reducers/uiSlice';
 import { uploadDocumentRequest } from 'features/documents/store/reducers/documentPageSlice';
 import {
   selectUploadStatus,
@@ -36,7 +41,9 @@ import {
   selectLoadTransitionFulfilled,
   selectLoadAssignAndDispatchLoading,
   selectLoadAssignAndDispatchFulfilled,
+  selectOnboardingBlock,
 } from '../../store/selectors/loadSelectors';
+import { formattedCurrentUserSelector } from 'features/auth/store/selectors/authSelector';
 import { DocumentType } from 'features/documents/types';
 import { STATUS_LABELS, TRANSITION_PREREQUISITES } from '../../constants';
 import type { LoadDetail, LoadStatus } from '../../types';
@@ -78,8 +85,17 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
   const isTransitionFulfilled = useSelector(selectLoadTransitionFulfilled(loadId));
   const isAssignAndDispatchFulfilled = useSelector(selectLoadAssignAndDispatchFulfilled(loadId));
 
+  const onboardingBlock = useSelector(selectOnboardingBlock);
+  const currentUserFormatted = useSelector(formattedCurrentUserSelector);
+  const isAdmin = currentUserFormatted.role === 'admin' || currentUserFormatted.role === 'ADMIN';
+
   const isSubmitting = isTransitionLoading || isAssignAndDispatchLoading;
   const isFulfilled = isTransitionFulfilled || isAssignAndDispatchFulfilled;
+
+  // Clear onboarding block when dialog opens
+  useEffect(() => {
+    dispatch(clearOnboardingBlock());
+  }, [dispatch]);
 
   // Close the modal on the Pending → Fulfilled edge.
   // Tracking the previous Pending state ensures we only fire on a real
@@ -108,6 +124,30 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
     selectUploadError(rateConUpload?.clientId ?? ''),
   );
   const isRateConUploaded = rateConUploadStatus === 'Fulfilled';
+
+  // Optional BOL upload state (Mark Delivered flow). Does NOT gate submit —
+  // BOL is only required at invoice creation, enforced server-side by
+  // invoiceReadinessSubscriber. Lets dispatcher satisfy the invoice gate
+  // in one step when they have the file on hand.
+  const [bolUpload, setBolUpload] = useState<{
+    clientId: string;
+    fileName: string;
+  } | null>(null);
+  const bolInputRef = useRef<HTMLInputElement>(null);
+  const bolUploadStatus = useSelector(selectUploadStatus(bolUpload?.clientId ?? ''));
+  const bolUploadError = useSelector(selectUploadError(bolUpload?.clientId ?? ''));
+  const isBolUploaded = bolUploadStatus === 'Fulfilled';
+
+  // Refetch load detail once BOL upload settles so tracking.bolSignedAt
+  // reflects the loadTimestampSubscriber-stamped value. Section will then
+  // self-hide on next render.
+  const bolRefetchedRef = useRef(false);
+  useEffect(() => {
+    if (isBolUploaded && !bolRefetchedRef.current) {
+      bolRefetchedRef.current = true;
+      dispatch(fetchLoadDetailsRequest({ id: loadId }));
+    }
+  }, [isBolUploaded, dispatch, loadId]);
 
   // Assignment form state for inline dispatch flow
   const [assignmentValues, setAssignmentValues] = useState({
@@ -138,6 +178,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
   const needsRateConUpload =
     targetStatus === 'DISPATCHED' &&
     prerequisites.some((p) => !p.met && p.field === RATE_CON_FIELD);
+
+  const needsOptionalBolUpload =
+    targetStatus === 'DELIVERED' && !load.tracking?.bolSignedAt;
 
   // Dynamic prerequisites — check assignment form values and rate con upload status
   const dynamicPrerequisites = useMemo(() => {
@@ -201,6 +244,32 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
     [dispatch, loadId],
   );
 
+  const handleBolFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        setBolUpload({ clientId: '', fileName: file.name });
+        e.target.value = '';
+        return;
+      }
+      const clientId = crypto.randomUUID();
+      bolRefetchedRef.current = false;
+      setBolUpload({ clientId, fileName: file.name });
+      dispatch(
+        uploadDocumentRequest({
+          file,
+          documentType: DocumentType.BOL_SIGNED,
+          entityType: 'load',
+          entityId: loadId,
+          clientId,
+        }),
+      );
+      e.target.value = '';
+    },
+    [dispatch, loadId],
+  );
+
   const handleClose = (_event: object, reason?: 'backdropClick' | 'escapeKeyDown') => {
     if (reason === 'backdropClick') {
       return;
@@ -239,6 +308,22 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
   const handleNotesChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setNotes(event.target.value);
   }, []);
+
+  const handleDispatchOverride = useCallback(() => {
+    if (!onboardingBlock) return;
+    dispatch(closeModal());
+    dispatch(
+      openModal({
+        modalType: 'dispatchOverride',
+        modalProps: {
+          carrierId: onboardingBlock.carrierId,
+          carrierName: onboardingBlock.carrierName,
+          loadId: onboardingBlock.loadId,
+          missingDocuments: onboardingBlock.missingDocuments,
+        },
+      }),
+    );
+  }, [dispatch, onboardingBlock]);
 
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -368,6 +453,91 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
             </Box>
           )}
 
+          {needsOptionalBolUpload && (
+            <Alert
+              severity="info"
+              icon={<CloudUploadOutlinedIcon />}
+              sx={{ alignItems: 'flex-start' }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Signed BOL (optional)
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>
+                Upload now to start the invoice. You can mark delivered without it; the
+                invoice will be created automatically once the signed BOL is on file.
+              </Typography>
+              {!bolUpload ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<CloudUploadOutlinedIcon />}
+                    onClick={() => bolInputRef.current?.click()}
+                  >
+                    Select Signed BOL
+                  </Button>
+                  <input
+                    ref={bolInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    onChange={handleBolFileChange}
+                    style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+                  />
+                </>
+              ) : (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: 'background.paper' }}
+                >
+                  {bolUploadStatus === 'Pending' && (
+                    <LinearProgress
+                      sx={{ width: 24, height: 4, borderRadius: 1, flexShrink: 0 }}
+                    />
+                  )}
+                  {bolUploadStatus === 'Fulfilled' && (
+                    <CheckCircleOutlineIcon sx={{ fontSize: 20, color: 'success.main' }} />
+                  )}
+                  {(bolUploadStatus === 'Rejected' || bolUpload.clientId === '') && (
+                    <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
+                  )}
+                  <Chip label="BOL" size="small" variant="outlined" color="primary" />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {bolUpload.fileName}
+                  </Typography>
+                  {bolUpload.clientId === '' && (
+                    <Typography variant="caption" color="error.main">
+                      File exceeds 10 MB
+                    </Typography>
+                  )}
+                  {bolUploadStatus === 'Rejected' && bolUploadError && (
+                    <Typography variant="caption" color="error.main">
+                      {bolUploadError}
+                    </Typography>
+                  )}
+                  {(bolUploadStatus === 'Rejected' || bolUpload.clientId === '') && (
+                    <IconButton
+                      size="small"
+                      aria-label="Remove failed upload"
+                      onClick={() => setBolUpload(null)}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Stack>
+              )}
+            </Alert>
+          )}
+
           <TextField
             label="Notes"
             multiline
@@ -382,6 +552,27 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
                 : 'Optional notes for this status change'
             }
           />
+
+          {onboardingBlock && onboardingBlock.loadId === loadId && (
+            <Alert
+              severity="warning"
+              action={
+                isAdmin ? (
+                  <Button
+                    color="warning"
+                    variant="outlined"
+                    size="small"
+                    onClick={handleDispatchOverride}
+                  >
+                    Dispatch Anyway
+                  </Button>
+                ) : undefined
+              }
+            >
+              {onboardingBlock.carrierName} has incomplete onboarding.
+              {!isAdmin && ' Contact an admin to override.'}
+            </Alert>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

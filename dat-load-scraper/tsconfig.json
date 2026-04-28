@@ -8,5 +8,5 @@
         "esModuleInterop": true,
     },
     "include": ["src/**/*.ts", "src/**/*.tsx", "src"],
-    "exclude": ["node_modules"],
+    "exclude": ["node_modules", "src/utils/s3.ts", "src/test-script.js", "src/test.js"],
 }

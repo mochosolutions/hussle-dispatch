@@ -1,9 +1,13 @@
+import type { EquipmentType } from '@prisma/client';
+
 export interface LoadSchedulerStop {
   sequence: number;
   appointmentStart: Date | null;
   appointmentEnd: Date | null;
   departureTime: Date | null;
   type: string;
+  city: string | null;
+  state: string | null;
 }
 
 export interface LoadForScheduling {
@@ -12,6 +16,7 @@ export interface LoadForScheduling {
   organizationId: string;
   driverId: string | null;
   status: string;
+  equipmentType: EquipmentType | null;
   stops: LoadSchedulerStop[];
 }
 

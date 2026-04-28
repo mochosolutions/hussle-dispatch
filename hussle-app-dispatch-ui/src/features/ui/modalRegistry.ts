@@ -10,6 +10,8 @@ import { CarrierNoteDrawer } from '../carrier/components/CarrierNoteDrawer';
 import { ConfirmDeleteInvoiceModal } from '../invoices/components/ConfirmDeleteInvoiceModal';
 import { SendInvoiceModal } from '../invoices/components/SendInvoiceModal';
 import { PaymentDrawer } from '../invoices/components/PaymentDrawer';
+import { DispatchOverrideModal } from '../carrier/components/DispatchOverrideModal';
+import { ConfirmDeleteDocumentModal } from '../documents/components/ConfirmDeleteDocumentModal';
 
 const modalRegistry: PopupComponentMap = {
   createLoadModal: CreateLoadModal,
@@ -23,6 +25,8 @@ const modalRegistry: PopupComponentMap = {
   sendInvoice: SendInvoiceModal,
   markInvoicePaid: PaymentDrawer,
   loadSendSmsPrompt: SendSmsPromptModal,
+  dispatchOverride: DispatchOverrideModal,
+  confirmDeleteDocument: ConfirmDeleteDocumentModal,
 };
 
 export default modalRegistry;

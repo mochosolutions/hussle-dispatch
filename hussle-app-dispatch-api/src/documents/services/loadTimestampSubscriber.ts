@@ -1,11 +1,9 @@
 import type { EventBus } from '../../shared/messaging/eventBus';
 import type { Logger } from '../../shared/utils/logger';
-import type { DocumentRepoPort } from '../types/documentTypes';
 import type { LoadTimestampPort } from '../types/loadTimestampPort';
 
 interface LoadTimestampSubscriberDeps {
   eventBus: EventBus;
-  documentRepository: DocumentRepoPort;
   loadTimestampPort: LoadTimestampPort;
   logger: Logger;
 }
@@ -25,12 +23,6 @@ export const createLoadTimestampSubscriber = async (
     try {
       switch (data.documentType) {
         case 'BROKER_RATE_CON': {
-          await deps.documentRepository.archiveByEntityAndType(
-            'load',
-            data.entityId,
-            'BROKER_RATE_CON',
-            data.documentId,
-          );
           await deps.loadTimestampPort.updateTimestamp(
             data.entityId,
             'rateConReceivedAt',

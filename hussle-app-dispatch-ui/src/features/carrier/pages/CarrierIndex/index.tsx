@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { ColDef } from 'ag-grid-community';
 import {
   Box,
   Button,
@@ -303,7 +304,7 @@ const Fleet = () => {
     [],
   );
 
-  const columnDefs = useMemo(
+  const columnDefs = useMemo<ColDef<Carrier>[]>(
     () => [
       {
         headerName: 'Carrier',
@@ -439,7 +440,7 @@ const Fleet = () => {
       },
       {
         headerName: '',
-        field: 'actions',
+        colId: 'actions',
         minWidth: 120,
         maxWidth: 140,
         sortable: false,

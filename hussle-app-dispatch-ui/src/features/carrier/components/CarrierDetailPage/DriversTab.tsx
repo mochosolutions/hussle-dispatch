@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import type { ColDef, ValueGetterParams } from 'ag-grid-community';
 import { Box, Card, Chip, Typography } from '@mui/material';
 import AgGridTable from '../../../../mocho/components/NewDataGrid';
 import { useDispatch, useSelector } from 'store';
@@ -19,33 +20,34 @@ export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
     dispatch(fetchCarrierDriversRequest({ carrierId }));
   }, [dispatch, carrierId]);
 
-  const columnDefs = useMemo(
+  const columnDefs = useMemo<ColDef<Driver>[]>(
     () => [
       {
-        field: 'name',
+        colId: 'name',
         headerName: 'Name',
         flex: 1,
         minWidth: 180,
-        valueGetter: (params: { data: Driver }) =>
-          `${params.data.firstName} ${params.data.lastName}`,
+        valueGetter: (params: ValueGetterParams<Driver>) =>
+          params.data ? `${params.data.firstName} ${params.data.lastName}` : '',
       },
       {
         field: 'phone',
         headerName: 'Phone',
         width: 150,
-        valueGetter: (params: { data: Driver }) => params.data.phone ?? '—',
+        valueGetter: (params: ValueGetterParams<Driver>) => params.data?.phone ?? '—',
       },
       {
         field: 'status',
         headerName: 'Status',
         width: 120,
-        valueGetter: (params: { data: Driver }) => params.data.status ?? '—',
+        valueGetter: (params: ValueGetterParams<Driver>) => params.data?.status ?? '—',
       },
       {
         field: 'licenseNumber',
         headerName: 'License',
         width: 180,
-        valueGetter: (params: { data: Driver }) => {
+        valueGetter: (params: ValueGetterParams<Driver>) => {
+          if (!params.data) return '—';
           const typeOpt = params.data.licenseType;
           const num = params.data.licenseNumber;
           if (!num) return '—';
@@ -53,13 +55,14 @@ export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
         },
       },
       {
-        field: 'homeBase',
+        colId: 'homeBase',
         headerName: 'Home Base',
         width: 160,
-        valueGetter: (params: { data: Driver }) =>
-          [params.data.homeBaseCity, params.data.homeBaseState]
-            .filter(Boolean)
-            .join(', ') || '—',
+        valueGetter: (params: ValueGetterParams<Driver>) =>
+          params.data
+            ? [params.data.homeBaseCity, params.data.homeBaseState].filter(Boolean).join(', ') ||
+              '—'
+            : '—',
       },
     ],
     [],

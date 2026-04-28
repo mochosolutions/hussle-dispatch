@@ -11,6 +11,7 @@ import type {
   UpdateStopInput,
 } from '../types/stopTypes';
 import { checkDetentionForStop } from './detentionDetector';
+import { assertDeliveryAfterPickup } from '../utils/deliveryAfterPickup';
 
 interface DetentionSettingsQuery {
   findByOrganizationId(
@@ -107,14 +108,21 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
       await findLoadOrThrow(input.loadId, input.organizationId, deps);
       validateSchedulingFields(input.appointmentStart, input.notificationHours);
 
+      const existingStops = await deps.stopRepository.findByLoadId(
+        input.loadId,
+        input.organizationId,
+      );
+
+      // Cross-stop check: project the new stop into the sibling list
+      // and verify the rule before persisting.
+      assertDeliveryAfterPickup([
+        ...existingStops,
+        { type: input.type, appointmentStart: input.appointmentStart },
+      ]);
+
       let result: Stop;
 
       if (input.sequence === undefined) {
-        const existingStops = await deps.stopRepository.findByLoadId(
-          input.loadId,
-          input.organizationId,
-        );
-
         const maxSequence = existingStops.reduce(
           (max, stop) => Math.max(max, stop.sequence),
           0,
@@ -131,6 +139,32 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
 
     updateStop: async (input: UpdateStopInput): Promise<Stop> => {
       validateSchedulingFields(input.appointmentStart, input.notificationHours);
+
+      // Cross-stop check: only run when the change could affect the rule
+      // (date or stop-type change). Fetch siblings and project the merged values.
+      const targetStop = await deps.stopRepository.findById(input.id, input.organizationId);
+      if (
+        targetStop &&
+        (input.appointmentStart !== undefined || input.type !== undefined)
+      ) {
+        const siblings = await deps.stopRepository.findByLoadId(
+          targetStop.loadId,
+          input.organizationId,
+        );
+        const projected = siblings.map((s) =>
+          s.id === targetStop.id
+            ? {
+                type: input.type ?? s.type,
+                appointmentStart:
+                  input.appointmentStart !== undefined
+                    ? input.appointmentStart
+                    : s.appointmentStart,
+              }
+            : { type: s.type, appointmentStart: s.appointmentStart },
+        );
+        assertDeliveryAfterPickup(projected);
+      }
+
       const result = await deps.stopRepository.update(input);
 
       // Detention auto-detection when departureTime is set

@@ -83,6 +83,9 @@ export const selectLastRefreshed = (state: RootState): string | null =>
 export const selectCommandCenterLayers = (state: RootState) =>
   state.pages.loads.commandCenterLayers;
 
+export const selectOnboardingBlock = (state: RootState) =>
+  state.pages.loads.onboardingBlock;
+
 // ---------------------------------------------------------------------------
 // Filtered loads selector — applies search + status filters from Redux state
 // ---------------------------------------------------------------------------
@@ -145,12 +148,14 @@ export const selectLoadsByKanbanGroup = createSelector(
   },
 );
 
-const getOriginStop = (stops: Stop[]): Stop | undefined => {
+const getOriginStop = (stops: Stop[] | undefined): Stop | undefined => {
+  if (!stops || stops.length === 0) return undefined;
   const sorted = [...stops].sort((a, b) => a.sequence - b.sequence);
   return sorted.find((s) => s.type === 'PICKUP');
 };
 
-const getDestinationStop = (stops: Stop[]): Stop | undefined => {
+const getDestinationStop = (stops: Stop[] | undefined): Stop | undefined => {
+  if (!stops || stops.length === 0) return undefined;
   const deliveries = stops.filter((s) => s.type === 'DELIVERY');
   return deliveries.sort((a, b) => b.sequence - a.sequence)[0];
 };
@@ -177,7 +182,6 @@ export const selectFormattedLoadById = (id: string | undefined) =>
     (load) => {
       if (!load || !isLoadDetail(load)) return undefined;
 
-      console.log('Load', load);
       const origin = getOriginStop(load.route.stops);
       const destination = getDestinationStop(load.route.stops);
 

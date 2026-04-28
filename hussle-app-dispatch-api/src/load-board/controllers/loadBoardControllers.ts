@@ -1,4 +1,6 @@
 import type { RequestHandler } from 'express';
+import type { PrismaClient } from '@prisma/client';
+import { NotFoundError, UnauthorizedError } from '../../shared/errors/commonErrors';
 import { sendSingle } from '../../shared/responseEnvelope';
 import type { LoadBoardService } from '../services/loadBoardService';
 import { ingestMapper } from './mappers/ingestMapper';
@@ -11,10 +13,12 @@ export interface LoadBoardControllers {
   getFeed: RequestHandler;
   getLoadDetail: RequestHandler;
   clearSource: RequestHandler;
+  ping: RequestHandler;
 }
 
 interface LoadBoardControllerDeps {
   service: LoadBoardService;
+  prisma: PrismaClient;
 }
 
 export const createLoadBoardControllers = (deps: LoadBoardControllerDeps): LoadBoardControllers => ({
@@ -41,5 +45,19 @@ export const createLoadBoardControllers = (deps: LoadBoardControllerDeps): LoadB
     const input = clearSourceMapper(req);
     await deps.service.clearSource(input);
     res.status(204).send();
+  },
+
+  ping: async (req, res) => {
+    if (!req.organizationId) {
+      throw new UnauthorizedError('Organization context is required');
+    }
+    const org = await deps.prisma.organization.findUnique({
+      where: { id: req.organizationId },
+      select: { id: true, name: true },
+    });
+    if (!org) {
+      throw new NotFoundError(`Organization with id ${req.organizationId} not found`);
+    }
+    sendSingle(res, { organizationId: org.id, organizationName: org.name });
   },
 });

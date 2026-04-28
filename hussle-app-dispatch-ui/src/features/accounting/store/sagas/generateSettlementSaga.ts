@@ -1,13 +1,48 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import { enqueueSnackbar } from 'notistack';
+import axios from 'axios';
 import { getNavigate } from 'utils/getNavigate';
 import { generateSettlement } from 'utils/api/accounting/settlementApi';
 import {
   generateSettlementRequest,
   generateSettlementSuccess,
   generateSettlementFailure,
+  generateSettlementErrorsReceived,
 } from '../reducers/settlementPageSlice';
 import { settlementActions } from '../reducers/settlementEntitySlice';
+
+interface MissingLoad {
+  id: string;
+  loadNumber: string;
+}
+
+interface ApiError {
+  code: string;
+  message: string;
+  loadIds?: string[];
+  loads?: MissingLoad[];
+}
+
+const extractMissingEstimatedHours = (
+  error: unknown,
+): { loadIds: string[]; loads: MissingLoad[]; message: string } | null => {
+  if (!axios.isAxiosError(error)) {
+    return null;
+  }
+  const data = error.response?.data as { errors?: ApiError[] } | undefined;
+  const missing = data?.errors?.find((e) => e.code === 'MISSING_ESTIMATED_HOURS');
+  if (!missing) {
+    return null;
+  }
+  const loadIds = missing.loadIds ?? missing.loads?.map((l) => l.id) ?? [];
+  const loads =
+    missing.loads ?? (missing.loadIds ?? []).map((id) => ({ id, loadNumber: id }));
+  return {
+    loadIds,
+    loads,
+    message: missing.message,
+  };
+};
 
 export function* generateSettlementSaga(
   action: ReturnType<typeof generateSettlementRequest>,
@@ -25,6 +60,12 @@ export function* generateSettlementSaga(
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, `/accounting/settlements/${settlement.id}`);
   } catch (error: unknown) {
+    const missing = extractMissingEstimatedHours(error);
+    if (missing) {
+      yield put(generateSettlementErrorsReceived(missing));
+      yield put(generateSettlementFailure({ error: missing.message }));
+      return;
+    }
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to generate settlement';
     yield put(generateSettlementFailure({ error: errorMessage }));

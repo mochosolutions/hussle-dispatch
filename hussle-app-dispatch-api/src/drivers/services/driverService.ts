@@ -1,8 +1,11 @@
 import type { Driver } from '@prisma/client';
+import type Redis from 'ioredis';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/shared/errors';
+import type { CityCoords } from '@/shared/geoLookup';
 import type { LoadQueryPort } from '@/shared/loadQueries';
+import type { Logger } from '@/shared/utils/logger';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
   CarrierRepositoryPort,
@@ -40,6 +43,9 @@ interface DriverServiceDeps {
   carrierRepository: CarrierRepositoryPort;
   loadRepository: LoadRepositoryPort;
   loadQueryPort: LoadQueryPort;
+  redis: Redis;
+  getCityCoords: (redis: Redis, state: string, city: string) => Promise<CityCoords | null>;
+  logger: Logger;
 }
 
 const assertCarrierExists = async (
@@ -107,10 +113,35 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
   updateDriver: async ({ id, organizationId, role, input }: UpdateDriverServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
 
-    await findDriverOrThrow(id, organizationId, deps);
+    const existingDriver = await findDriverOrThrow(id, organizationId, deps);
 
     if (input.carrierId !== undefined) {
       await assertCarrierExists(input.carrierId, organizationId, deps);
+    }
+
+    if (input.currentCity !== undefined || input.currentState !== undefined) {
+      const newCity = input.currentCity !== undefined ? input.currentCity : existingDriver.currentCity;
+      const newState = input.currentState !== undefined
+        ? input.currentState
+        : existingDriver.currentState;
+      const changed =
+        newCity !== existingDriver.currentCity || newState !== existingDriver.currentState;
+
+      if (changed) {
+        if (newCity !== null && newState !== null) {
+          const coords = await deps.getCityCoords(deps.redis, newState, newCity);
+
+          if (coords !== null) {
+            input.currentLatitude = coords.lat;
+            input.currentLongitude = coords.lng;
+          } else {
+            deps.logger.warn('Could not geocode city/state', { city: newCity, state: newState });
+          }
+        } else {
+          input.currentLatitude = null;
+          input.currentLongitude = null;
+        }
+      }
     }
 
     return deps.driverRepository.update(id, organizationId, input);

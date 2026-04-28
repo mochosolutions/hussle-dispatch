@@ -18,8 +18,14 @@ interface LoadBoardServiceDeps {
   logger: Logger;
 }
 
+export interface IngestResult {
+  ingested: number;
+  skipped: number;
+  total: number;
+}
+
 export interface LoadBoardService {
-  ingest(input: IngestServiceInput): Promise<{ count: number }>;
+  ingest(input: IngestServiceInput): Promise<IngestResult>;
   getFeed(input: FeedServiceInput): Promise<FeedResponse>;
   getLoadDetail(input: FeedDetailInput): Promise<StagedLoad>;
   clearSource(input: ClearSourceInput): Promise<void>;
@@ -36,16 +42,29 @@ export const createLoadBoardService = (deps: LoadBoardServiceDeps): LoadBoardSer
     const mapper = input.source === 'relay' ? createRelayMapper() : createDatMapper();
     const loads = mapper.mapLoads(input.loads);
 
-    await deps.redisPort.snapshotReplace(input.organizationId, input.source, loads);
-    await deps.redisPort.updateMeta(input.organizationId, input.source, loads.length);
+    let ingested = 0;
+    let skipped = 0;
+
+    for (const load of loads) {
+      const added = await deps.redisPort.addIfAbsent(input.organizationId, input.source, load);
+      if (added) {
+        ingested += 1;
+      } else {
+        skipped += 1;
+      }
+    }
+
+    await deps.redisPort.updateMeta(input.organizationId, input.source, ingested);
 
     deps.logger.info('Loads ingested', {
       organizationId: input.organizationId,
       source: input.source,
-      count: loads.length,
+      ingested,
+      skipped,
+      total: loads.length,
     });
 
-    return { count: loads.length };
+    return { ingested, skipped, total: loads.length };
   },
 
   getFeed: async (input) => {

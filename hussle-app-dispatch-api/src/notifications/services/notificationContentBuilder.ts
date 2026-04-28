@@ -2,10 +2,17 @@ import type {
   NotificationContent,
   StatusChangeContext,
   CheckCallContext,
+  DocumentUploadedContext,
 } from '../types/notificationTypes';
-import { renderStatusChangeEmail, renderCheckCallEmail, renderInvitationEmail } from '@hussle/emails';
+import {
+  renderStatusChangeEmail,
+  renderCheckCallEmail,
+  renderInvitationEmail,
+  renderDocumentUploadedEmail,
+} from '@hussle/emails';
 import { statusChangeSmsBody } from '../templates/statusChangeSms';
 import { checkCallSmsBody } from '../templates/checkCallSms';
+import { documentUploadedSmsBody } from '../templates/documentUploadedSms';
 
 export const buildStatusChangeContent = async (
   ctx: StatusChangeContext,
@@ -62,3 +69,19 @@ export const buildInvitationContent = async (
     expiresAt: ctx.expiresAt,
     inviteeName: ctx.inviteeName,
   });
+
+export const buildDocumentUploadedContent = async (
+  ctx: DocumentUploadedContext,
+): Promise<NotificationContent> => {
+  const { subject, html } = await renderDocumentUploadedEmail({
+    loadNumber: ctx.loadNumber,
+    documentType: ctx.documentType,
+    trackingUrl: ctx.trackingUrl,
+  });
+
+  return {
+    subject,
+    html,
+    smsBody: documentUploadedSmsBody(ctx),
+  };
+};

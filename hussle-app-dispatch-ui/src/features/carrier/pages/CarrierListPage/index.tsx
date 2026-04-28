@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ColDef, RowClickedEvent } from 'ag-grid-community';
 import { Stack, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -67,9 +68,9 @@ const CarrierListPage = () => {
   }, [navigate]);
 
   const handleRowClicked = useCallback(
-    (params: { data: CarrierListItem }) => {
-      if (params.data) {
-        navigate(`/carriers/${params.data.id}`);
+    (event: RowClickedEvent<CarrierListItem>) => {
+      if (event.data) {
+        navigate(`/carriers/${event.data.id}`);
       }
     },
     [navigate],
@@ -85,7 +86,7 @@ const CarrierListPage = () => {
     [],
   );
 
-  const columnDefs = useMemo(
+  const columnDefs = useMemo<ColDef<CarrierListItem>[]>(
     () => [
       {
         headerName: 'Carrier',
@@ -128,7 +129,7 @@ const CarrierListPage = () => {
       },
       {
         headerName: '',
-        field: 'actions',
+        colId: 'actions',
         minWidth: 130,
         maxWidth: 150,
         sortable: false,

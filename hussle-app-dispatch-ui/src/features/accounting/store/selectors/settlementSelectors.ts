@@ -38,3 +38,6 @@ export const selectSettlementDetailLoading = (id: string) => (state: RootState) 
 
 export const selectSettlementFilters = (state: RootState): SettlementFilters =>
   state.pages.settlements.filters;
+
+export const selectGenerateSettlementMissingHours = (state: RootState) =>
+  state.pages.settlements.generateMissingHours;

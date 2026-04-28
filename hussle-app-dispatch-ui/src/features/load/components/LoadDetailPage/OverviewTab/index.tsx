@@ -1,6 +1,6 @@
 import { Box, Grid, Stack, Typography } from '@mui/material';
 import SectionCard from 'components/SectionCard';
-import { DetailRow, SectionLabel, Body } from 'components/Typography';
+import { DetailRow, SectionLabel, Body, BodyMuted } from 'components/Typography';
 import SectionCardActions from 'components/SectionCardActions';
 import { StopCard as StopCardItem } from '../StopCard';
 import { AssignmentCard } from '../AssignmentCard';
@@ -75,42 +75,55 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             onViewTimeline={() => onTabChange('financials')}
           />
 
-          {/* {load.activity.checkCalls.length > 0 && ( */}
           <SectionCard title="Recent Check Calls" sx={{ mt: 2 }}>
-            <Stack spacing={1}>
-              {load.activity.checkCalls.slice(0, 4).map((call) => (
-                <Box
-                  key={call.id}
-                  sx={{
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    pb: 1,
-                    '&:last-child': { borderBottom: 0 },
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" fontWeight={500}>
-                      {call.location ?? 'Location unknown'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatTimestamp(call.createdAt)}
-                    </Typography>
-                  </Stack>
-                  {call.notes && (
-                    <Typography variant="caption" color="text.secondary">
-                      {call.notes}
-                    </Typography>
-                  )}
-                  {call.eta && (
-                    <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
-                      ETA: {formatTimestamp(call.eta)}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </Stack>
+            {load.activity.checkCalls.length === 0 ? (
+              <BodyMuted>No check-ins yet.</BodyMuted>
+            ) : (
+              <Stack spacing={1}>
+                {load.activity.checkCalls.slice(0, 8).map((call) => {
+                  const coordsLabel =
+                    call.latitude !== null && call.longitude !== null
+                      ? `${call.latitude.toFixed(4)}, ${call.longitude.toFixed(4)}`
+                      : null;
+                  const headline = call.location ?? coordsLabel ?? 'Driver check-in';
+                  const sourceLabel = call.calledByName ?? 'Driver portal';
+                  return (
+                    <Box
+                      key={call.id}
+                      sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        pb: 1,
+                        '&:last-child': { borderBottom: 0 },
+                      }}
+                    >
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" fontWeight={500}>
+                          {headline}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatTimestamp(call.createdAt)}
+                        </Typography>
+                      </Stack>
+                      {call.notes && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {call.notes}
+                        </Typography>
+                      )}
+                      {call.eta && (
+                        <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+                          ETA: {formatTimestamp(call.eta)}
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+                        Logged by: {sourceLabel}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
           </SectionCard>
-          {/* )} */}
         </Grid>
 
         <Grid item xs={12} md={4}>

@@ -18,6 +18,10 @@ export interface SettlementTemplateData {
     description: string;
     amount: string;
   }[];
+  driverPayItems: {
+    description: string;
+    amount: string;
+  }[];
   expenseItems: {
     description: string;
     date: string;
@@ -34,6 +38,7 @@ export interface SettlementTemplateData {
   }[];
   grossRevenue: string;
   dispatchFeeTotal: string;
+  driverPayTotal: string;
   expensesTotal: string;
   accessorialsTotal: string;
   adjustmentsTotal: string;
@@ -45,7 +50,9 @@ export interface SettlementTemplateData {
 }
 
 const hasDeductions = (data: SettlementTemplateData): boolean =>
-  data.dispatchFeeItems.length > 0 || data.expenseItems.length > 0;
+  data.dispatchFeeItems.length > 0 ||
+  data.driverPayItems.length > 0 ||
+  data.expenseItems.length > 0;
 
 const hasMetrics = (data: SettlementTemplateData): boolean =>
   data.revenuePerMile !== null || data.costPerMile !== null || data.netPerMile !== null;
@@ -149,6 +156,25 @@ export const SettlementPdfTemplate: React.FC<{ data: SettlementTemplateData }> =
           </table>
         )}
 
+        {data.driverPayItems.length > 0 && (
+          <table>
+            <thead>
+              <tr>
+                <th>Driver Pay</th>
+                <th className="amount">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.driverPayItems.map((item, idx) => (
+                <tr key={idx}>
+                  <td>{item.description}</td>
+                  <td className="amount">${item.amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
         {data.expenseItems.length > 0 && (
           <table>
             <thead>
@@ -231,6 +257,12 @@ export const SettlementPdfTemplate: React.FC<{ data: SettlementTemplateData }> =
           <div className="totals-row">
             <span>Dispatch Fees</span>
             <span>(${data.dispatchFeeTotal})</span>
+          </div>
+        )}
+        {data.driverPayItems.length > 0 && (
+          <div className="totals-row">
+            <span>Driver Pay</span>
+            <span>${data.driverPayTotal}</span>
           </div>
         )}
         {data.expenseItems.length > 0 && (

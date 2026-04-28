@@ -1,3 +1,5 @@
+import type { SchedulingType } from '@prisma/client';
+
 export interface DriverPortalContext {
   loadId: string;
   tokenId: string;
@@ -38,6 +40,7 @@ export interface DriverPortalStop {
   zip: string | null;
   appointmentStart: Date | null;
   appointmentEnd: Date | null;
+  schedulingType: SchedulingType;
   contactName: string | null;
   contactPhone: string | null;
   commodity: string | null;

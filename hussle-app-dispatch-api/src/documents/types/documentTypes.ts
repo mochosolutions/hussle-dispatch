@@ -1,7 +1,17 @@
-import type { Document, DocumentType } from '@prisma/client';
+import type { DocumentType, Prisma } from '@prisma/client';
 
 // Re-export DocumentType from Prisma — it is the single source of truth
 export type { DocumentType } from '@prisma/client';
+
+/**
+ * Document with the uploader's name eagerly loaded.
+ * This is the canonical shape returned by the repository to callers.
+ */
+export type DocumentWithUploader = Prisma.DocumentGetPayload<{
+  include: {
+    uploadedByUser: { select: { firstName: true; lastName: true } };
+  };
+}>;
 
 /**
  * Allowed MIME types for document uploads.
@@ -44,6 +54,40 @@ export const DOCUMENT_ENTITY_TYPES = ['load', 'carrier', 'driver', 'vehicle'] as
 export type DocumentEntityType = (typeof DOCUMENT_ENTITY_TYPES)[number];
 
 /**
+ * Document types that are "one-per" — only one active (non-archived)
+ * document of this type may exist for a given entity at a time.
+ *
+ * When a new document of one of these types is confirmed, any prior active
+ * documents of the same type for the same entity are auto-archived by the
+ * documentArchiveSubscriber and a `document.replaced` event is published
+ * for each superseded row.
+ */
+export const ONE_PER_DOCUMENT_TYPES: ReadonlySet<DocumentType> = new Set<DocumentType>([
+  'BROKER_RATE_CON',
+  'BOL_UNSIGNED',
+  'BOL_SIGNED',
+  'POD',
+  'DISPATCH_AGREEMENT',
+  'W9',
+  'CARRIER_PACKET',
+  'LICENSE',
+  'REGISTRATION',
+  'INSPECTION_CERT',
+  'LOA',
+  'MEDICAL_CARD',
+  'HAZMAT_ENDORSEMENT',
+  'TWIC_CARD',
+  'IFTA_LICENSE',
+  'IFTA_DECAL',
+  'IRP_CAB_CARD',
+  'BIT_INSPECTION',
+  'MC_AUTHORITY',
+  'BOC3',
+  'TITLE',
+  'LEASE_AGREEMENT',
+]);
+
+/**
  * Flexible metadata for compliance and domain-specific document fields.
  */
 export interface DocumentMetadata {
@@ -82,6 +126,7 @@ export interface ConfirmInput {
   organizationId: string;
   expiresAt?: string;
   metadata?: DocumentMetadata;
+  requestingUserId?: string;
 }
 
 export interface ListDocumentsInput {
@@ -106,10 +151,11 @@ export interface DownloadDocumentInput {
 export interface ArchiveDocumentInput {
   id: string;
   organizationId: string;
+  requestingUserId?: string;
 }
 
 export type DocumentListItem = Pick<
-  Document,
+  DocumentWithUploader,
   | 'id'
   | 'entityType'
   | 'entityId'
@@ -117,19 +163,20 @@ export type DocumentListItem = Pick<
   | 'fileName'
   | 'fileSize'
   | 'mimeType'
+  | 'url'
   | 'uploadStatus'
   | 'isArchived'
   | 'uploadedByUserId'
+  | 'uploadedByUser'
   | 'expiresAt'
   | 'metadata'
+  | 'notes'
   | 'createdAt'
 >;
 
 // ---------------------------------------------------------------------------
 // Repository port
 // ---------------------------------------------------------------------------
-
-import type { Prisma } from '@prisma/client';
 
 export interface CreateDocumentData {
   organizationId: string;
@@ -139,7 +186,7 @@ export interface CreateDocumentData {
   fileName: string;
   mimeType: string;
   s3Key: string;
-  s3Url: string;
+  url: string;
   uploadStatus: string;
   uploadedByUserId?: string;
   expiresAt?: Date;
@@ -147,18 +194,33 @@ export interface CreateDocumentData {
 }
 
 export interface DocumentRepoPort {
-  create(data: CreateDocumentData): Promise<Document>;
-  findById(id: string, organizationId: string): Promise<Document | null>;
-  findManyByIds(ids: string[], organizationId: string): Promise<Document[]>;
-  updateUploadStatus(id: string, status: string): Promise<Document>;
+  create(data: CreateDocumentData): Promise<DocumentWithUploader>;
+  findById(id: string, organizationId: string): Promise<DocumentWithUploader | null>;
+  findManyByIds(ids: string[], organizationId: string): Promise<DocumentWithUploader[]>;
+  updateUploadStatus(id: string, status: string): Promise<DocumentWithUploader>;
   archiveByEntityAndType(
     entityType: string,
     entityId: string,
     type: DocumentType,
     excludeId: string,
-  ): Promise<number>;
-  archive(id: string): Promise<Document>;
-  findMany(filters: ListDocumentsInput): Promise<Document[]>;
+  ): Promise<DocumentWithUploader[]>;
+  archive(id: string): Promise<DocumentWithUploader>;
+  findMany(filters: ListDocumentsInput): Promise<DocumentWithUploader[]>;
+}
+
+// ---------------------------------------------------------------------------
+// Cross-module query port for load contact enrichment
+// ---------------------------------------------------------------------------
+
+export interface LoadContactQueryPort {
+  findById(loadId: string): Promise<{
+    id: string;
+    loadNumber: string;
+    customerId: string | null;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    contactCcEmails: string[];
+  } | null>;
 }
 
 // ---------------------------------------------------------------------------

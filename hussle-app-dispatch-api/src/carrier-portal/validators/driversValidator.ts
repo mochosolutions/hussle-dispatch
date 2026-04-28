@@ -1,13 +1,13 @@
 import * as Yup from 'yup';
 
-const PAY_TYPES = ['PERCENTAGE', 'PER_MILE', 'FLAT_RATE'] as const;
+const PAY_TYPES = ['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE'] as const;
 
 const driverEntrySchema = Yup.object({
   firstName: Yup.string().trim().required('firstName is required').max(100),
   lastName: Yup.string().trim().required('lastName is required').max(100),
   phone: Yup.string().trim().max(20).notRequired(),
   email: Yup.string().trim().email('email must be valid').notRequired(),
-  payType: Yup.string().oneOf([...PAY_TYPES], 'payType must be PERCENTAGE, PER_MILE, or FLAT_RATE').notRequired(),
+  payType: Yup.string().oneOf([...PAY_TYPES], 'payType must be PERCENTAGE, PER_MILE, PER_HOUR, or FLAT_RATE').notRequired(),
   payRate: Yup.number().min(0, 'payRate must be >= 0').max(100, 'payRate must be <= 100').notRequired(),
 });
 

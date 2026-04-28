@@ -60,7 +60,6 @@ const makeInput = (overrides: Partial<SendInvoiceEmailInput> = {}): SendInvoiceE
   recipientEmail: 'billing@customer.com',
   fromEmail: 'dispatch@hussle.com',
   replyToEmail: 'support@hussle.com',
-  subject: 'Invoice INV-001',
   ...overrides,
 });
 

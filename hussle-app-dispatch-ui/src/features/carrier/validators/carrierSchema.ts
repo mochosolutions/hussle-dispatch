@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 import type { InferType } from 'yup';
-import type { CarrierType } from '../types';
+import type { CarrierType, DispatchFeeType } from '../types';
 
 /**
  * Schema for the full onboarding create-carrier form (CreateCarrierPage).
@@ -36,7 +36,44 @@ export const carrierEditSchema = Yup.object({
   city: Yup.string(),
   state: Yup.string(),
   zip: Yup.string(),
-  companyMarginPercent: Yup.number().min(0, 'Min 0%').max(100, 'Max 100%').notRequired(),
+  companyMarginPercent: Yup.number()
+    .min(0, 'Min 0%')
+    .max(100, 'Max 100%')
+    .notRequired()
+    .test(
+      'external-carrier-percent-required',
+      'External carriers require a dispatch fee greater than zero',
+      function (value) {
+        const { type, dispatchFeeType } = this.parent as {
+          type?: CarrierType;
+          dispatchFeeType?: DispatchFeeType;
+        };
+        if (type !== 'EXTERNAL_CARRIER' || dispatchFeeType === 'FLAT') {
+          return true;
+        }
+        return (value ?? 0) > 0;
+      },
+    ),
+  dispatchFeeType: Yup.mixed<DispatchFeeType>()
+    .oneOf(['PERCENTAGE', 'FLAT'])
+    .default('PERCENTAGE'),
+  dispatchFeeAmount: Yup.number()
+    .min(0, 'Min 0')
+    .notRequired()
+    .test(
+      'external-carrier-flat-required',
+      'External carriers require a dispatch fee greater than zero',
+      function (value) {
+        const { type, dispatchFeeType } = this.parent as {
+          type?: CarrierType;
+          dispatchFeeType?: DispatchFeeType;
+        };
+        if (type !== 'EXTERNAL_CARRIER' || dispatchFeeType !== 'FLAT') {
+          return true;
+        }
+        return (value ?? 0) > 0;
+      },
+    ),
   feeIncludesAccessorials: Yup.boolean(),
   dispatchAgreementOnFile: Yup.boolean(),
   insuranceCertOnFile: Yup.boolean(),

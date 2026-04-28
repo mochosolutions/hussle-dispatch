@@ -24,6 +24,35 @@ export enum DocumentType {
   REGISTRATION = 'REGISTRATION',
   INSPECTION_CERT = 'INSPECTION_CERT',
   OTHER = 'OTHER',
+  // Driver pack
+  MEDICAL_CARD = 'MEDICAL_CARD',
+  MVR = 'MVR',
+  DRUG_TEST = 'DRUG_TEST',
+  ROAD_TEST_CERT = 'ROAD_TEST_CERT',
+  DRIVER_APPLICATION = 'DRIVER_APPLICATION',
+  PSP_REPORT = 'PSP_REPORT',
+  BACKGROUND_CHECK = 'BACKGROUND_CHECK',
+  ANNUAL_REVIEW = 'ANNUAL_REVIEW',
+  HAZMAT_ENDORSEMENT = 'HAZMAT_ENDORSEMENT',
+  TWIC_CARD = 'TWIC_CARD',
+  // Carrier pack
+  MC_AUTHORITY = 'MC_AUTHORITY',
+  VOIDED_CHECK = 'VOIDED_CHECK',
+  NOTICE_OF_ASSIGNMENT = 'NOTICE_OF_ASSIGNMENT',
+  BOC3 = 'BOC3',
+  IFTA_LICENSE = 'IFTA_LICENSE',
+  // Vehicle pack
+  TITLE = 'TITLE',
+  IFTA_DECAL = 'IFTA_DECAL',
+  IRP_CAB_CARD = 'IRP_CAB_CARD',
+  MAINTENANCE_RECORD = 'MAINTENANCE_RECORD',
+  LEASE_AGREEMENT = 'LEASE_AGREEMENT',
+  BIT_INSPECTION = 'BIT_INSPECTION',
+  // Load pack
+  TEMPERATURE_LOG = 'TEMPERATURE_LOG',
+  TONU_DOC = 'TONU_DOC',
+  FUEL_RECEIPT = 'FUEL_RECEIPT',
+  LOAD_PHOTO = 'LOAD_PHOTO',
 }
 
 export type DocumentEntityType = 'load' | 'carrier' | 'driver' | 'vehicle';
@@ -36,6 +65,11 @@ export type UploadStatus =
   | 'complete'
   | 'error';
 
+export interface DocumentUploader {
+  firstName: string;
+  lastName: string;
+}
+
 export interface Document {
   id: string;
   organizationId: string;
@@ -45,16 +79,19 @@ export interface Document {
   fileName: string;
   fileSize: number | null;
   mimeType: string | null;
-  s3Url: string;
+  url: string;
   uploadStatus: string;
   isArchived: boolean;
   notes: string | null;
   expiresAt: string | null;
   metadata: Record<string, unknown> | null;
+  uploadedByUserId?: string | null;
+  uploadedBy?: DocumentUploader | null;
   createdAt: string;
 }
 
 export interface DocumentMetadata {
+  customLabel?: string;
   licenseNumber?: string;
   issuingState?: string;
   cdlClass?: string;

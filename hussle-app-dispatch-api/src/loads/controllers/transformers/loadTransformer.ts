@@ -188,6 +188,9 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
       driverPay: load.driverPay !== null ? String(load.driverPay) : null,
       dispatcherComm: load.dispatcherComm !== null ? String(load.dispatcherComm) : null,
       estimatedCost: load.estimatedCost !== null ? String(load.estimatedCost) : null,
+      dispatchFeeOverrideType: load.dispatchFeeOverrideType,
+      dispatchFeeOverrideAmount:
+        load.dispatchFeeOverrideAmount !== null ? String(load.dispatchFeeOverrideAmount) : null,
       ...derived,
     },
 

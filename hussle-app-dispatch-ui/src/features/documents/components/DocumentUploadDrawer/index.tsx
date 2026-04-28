@@ -19,7 +19,10 @@ import { DOC_TYPE_CONFIG, DOC_CARD_CONFIGS, METADATA_FIELD_LABELS } from '../../
 import type { DocumentContext } from '../../constants';
 import { uploadDocumentRequest, clearUploadStatus } from '../../store/reducers/documentPageSlice';
 import { selectUploadStatus, selectUploadError } from '../../store/selectors/documentSelectors';
-import type { DocumentEntityType, DocumentType } from '../../types';
+import { DocumentType } from '../../types';
+import type { DocumentEntityType } from '../../types';
+
+const OTHER_LABEL_MAX_LENGTH = 80;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -152,6 +155,80 @@ const ComplianceForm: React.FC<ComplianceFormProps> = ({
 };
 
 // ---------------------------------------------------------------------------
+// OTHER document — custom label form
+// ---------------------------------------------------------------------------
+
+interface OtherLabelFormProps {
+  fileName: string;
+  onSubmit: (customLabel: string) => void;
+  onCancel: () => void;
+}
+
+export const OtherLabelForm: React.FC<OtherLabelFormProps> = ({
+  fileName,
+  onSubmit,
+  onCancel,
+}) => {
+  const [value, setValue] = useState('');
+  const trimmed = value.trim();
+  const isValid = trimmed.length > 0;
+
+  const handleSubmit = useCallback(() => {
+    if (!isValid) {
+      return;
+    }
+    onSubmit(trimmed);
+  }, [isValid, trimmed, onSubmit]);
+
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        p: 2.5,
+      }}
+    >
+      <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+        Name this document
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+        {fileName}
+      </Typography>
+
+      <Stack spacing={2}>
+        <TextField
+          id="other-document-name"
+          label="Document Name"
+          value={value}
+          onChange={(e) => setValue(e.target.value.slice(0, OTHER_LABEL_MAX_LENGTH))}
+          size="small"
+          fullWidth
+          required
+          inputProps={{
+            maxLength: OTHER_LABEL_MAX_LENGTH,
+            'aria-required': 'true',
+          }}
+          helperText={`Required. Max ${String(OTHER_LABEL_MAX_LENGTH)} characters. (${String(value.length)}/${String(OTHER_LABEL_MAX_LENGTH)})`}
+        />
+
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleSubmit}
+            disabled={!isValid}
+          >
+            Upload
+          </Button>
+          <CancelButton onClick={onCancel} size="small" />
+        </Stack>
+      </Stack>
+    </Box>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Main drawer component
 // ---------------------------------------------------------------------------
 
@@ -166,6 +243,12 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
   const dispatch = useDispatch();
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [pendingCompliance, setPendingCompliance] = useState<QueuedDocument | null>(null);
+  const [pendingOther, setPendingOther] = useState<QueuedDocument | null>(null);
+
+  const drawerTitle =
+    lockDocType && preselectedDocType
+      ? `Replace: ${DOC_TYPE_CONFIG[preselectedDocType].label}`
+      : 'Upload Documents';
 
   // Build doc type cards — filter to preselected if locked
   const docTypes = useMemo(() => {
@@ -210,6 +293,12 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
         return;
       }
 
+      // OTHER doc — gate upload on a custom label
+      if (doc.documentType === DocumentType.OTHER) {
+        setPendingOther(doc);
+        return;
+      }
+
       // Non-compliance: upload immediately
       dispatchUpload(doc.file, doc.documentType, doc.clientId);
     },
@@ -237,6 +326,27 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
     setPendingCompliance(null);
   }, []);
 
+  const handleOtherSubmit = useCallback(
+    (customLabel: string) => {
+      if (!pendingOther) {
+        return;
+      }
+      dispatchUpload(
+        pendingOther.file,
+        pendingOther.documentType,
+        pendingOther.clientId,
+        undefined,
+        { customLabel },
+      );
+      setPendingOther(null);
+    },
+    [pendingOther, dispatchUpload],
+  );
+
+  const handleOtherCancel = useCallback(() => {
+    setPendingOther(null);
+  }, []);
+
   const handleRemove = useCallback(
     (clientId: string) => {
       setUploadItems((prev) => prev.filter((item) => item.clientId !== clientId));
@@ -246,7 +356,7 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
   );
 
   return (
-    <EditDrawer open onClose={onClose} title="Upload Documents">
+    <EditDrawer open onClose={onClose} title={drawerTitle}>
       <Box sx={{ p: 3 }}>
         <Stack spacing={3}>
           {/* Compliance metadata form (shown when a compliance doc is selected) */}
@@ -258,8 +368,17 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
             />
           )}
 
-          {/* DocumentPicker (hidden while filling compliance form) */}
-          {!pendingCompliance && (
+          {/* OTHER custom-label form (shown after picking an OTHER document) */}
+          {pendingOther && (
+            <OtherLabelForm
+              fileName={pendingOther.file.name}
+              onSubmit={handleOtherSubmit}
+              onCancel={handleOtherCancel}
+            />
+          )}
+
+          {/* DocumentPicker (hidden while filling compliance or OTHER form) */}
+          {!pendingCompliance && !pendingOther && (
             <DocumentPicker
               documents={[]}
               onAdd={handleAdd}

@@ -13,9 +13,14 @@ const APPLIES_TO_BILL_TO: Record<string, string> = {
 export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
   const stops = (values.stops ?? []).map((stop, idx) => {
     const schedType = stop.schedulingType ?? 'APPOINTMENT';
-    const appointmentStart = stop.appointmentDate && stop.appointmentTime
-      ? `${stop.appointmentDate}T${stop.appointmentTime}`
-      : (stop.appointmentDate || '');
+    let appointmentStart: string | undefined;
+    if (stop.appointmentDate && stop.appointmentTime) {
+      appointmentStart = `${stop.appointmentDate}T${stop.appointmentTime}`;
+    } else if (stop.appointmentDate) {
+      appointmentStart = stop.appointmentDate;
+    } else {
+      appointmentStart = undefined;
+    }
     return {
       type: stop.type as StopType,
       sequence: idx,

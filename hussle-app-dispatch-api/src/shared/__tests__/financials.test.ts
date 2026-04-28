@@ -1,11 +1,12 @@
 import { calculateLoadFinancials } from '../financials';
+import type { CarrierInput } from '../financials';
 import { CARRIER_TYPES } from '../constants/carrierTypes';
 
 describe('calculateLoadFinancials', () => {
-  const baseCarrier = {
+  const baseCarrier: Omit<CarrierInput, 'type'> = {
     dispatchFeePercent: '10',
     partnerSplitPercent: '50',
-    feeIncludesAccessorials: false as boolean,
+    feeIncludesAccessorials: false,
     feeType: 'PER_LOAD_PERCENT',
     payFromNet: false,
   };

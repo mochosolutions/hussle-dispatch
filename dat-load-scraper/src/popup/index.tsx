@@ -1,35 +1,84 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './popup.css';
+import {
+  clearApiKey,
+  getApiKey,
+  maskKey,
+  setApiKey,
+} from './apiKeyStorage';
+import { isFailure, verifyApiKey } from './verifyApiKey';
+
+interface LastErrorRecord {
+  message: string;
+  timestamp: number;
+}
+
+const isLastErrorRecord = (value: unknown): value is LastErrorRecord =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { message?: unknown }).message === 'string' &&
+  typeof (value as { timestamp?: unknown }).timestamp === 'number';
 
 const Popup = () => {
   const [relayCount, setRelayCount] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [storedKey, setStoredKey] = useState<string | null>(null);
+  const [keyInput, setKeyInput] = useState('');
+  const [orgName, setOrgName] = useState<string | null>(null);
+  const [pingError, setPingError] = useState<string | null>(null);
+  const [pingLoading, setPingLoading] = useState(false);
   const [pushInterval, setPushInterval] = useState(60);
+  const [failedCount, setFailedCount] = useState(0);
+  const [lastError, setLastError] = useState<LastErrorRecord | null>(null);
+  const [retryLoading, setRetryLoading] = useState(false);
+
+  const runVerification = async (key: string): Promise<void> => {
+    setPingLoading(true);
+    setPingError(null);
+    const result = await verifyApiKey(key);
+    if (isFailure(result)) {
+      setOrgName(null);
+      setPingError(result.error);
+    } else {
+      setOrgName(result.organizationName);
+    }
+    setPingLoading(false);
+  };
 
   useEffect(() => {
-    chrome.storage.local.get(
-      ['relayLoadCount', 'relayLastUpdated', 'authToken', 'pushIntervalSeconds'],
-      (result) => {
-        if (result.relayLoadCount !== undefined) {
-          setRelayCount(result.relayLoadCount);
-        }
-        if (result.relayLastUpdated) {
-          setLastUpdated(new Date(result.relayLastUpdated).toLocaleTimeString());
-        }
-        if (result.authToken) {
-          setAuthToken(result.authToken);
-        }
-        if (result.pushIntervalSeconds !== undefined) {
-          setPushInterval(result.pushIntervalSeconds);
-        }
-      },
-    );
+    const initialise = async (): Promise<void> => {
+      const result = await chrome.storage.local.get([
+        'relayLoadCount',
+        'relayLastUpdated',
+        'pushIntervalSeconds',
+        'failedCount',
+        'lastError',
+      ]);
+      if (result.relayLoadCount !== undefined) {
+        setRelayCount(result.relayLoadCount);
+      }
+      if (result.relayLastUpdated) {
+        setLastUpdated(new Date(result.relayLastUpdated).toLocaleTimeString());
+      }
+      if (result.pushIntervalSeconds !== undefined) {
+        setPushInterval(result.pushIntervalSeconds);
+      }
+      if (typeof result.failedCount === 'number') {
+        setFailedCount(result.failedCount);
+      }
+      if (isLastErrorRecord(result.lastError)) {
+        setLastError(result.lastError);
+      }
+
+      const existingKey = await getApiKey();
+      if (existingKey !== null) {
+        setStoredKey(existingKey);
+        await runVerification(existingKey);
+      }
+    };
+
+    initialise();
 
     const handleChanges = (
       changes: Record<string, chrome.storage.StorageChange>,
@@ -42,11 +91,23 @@ const Popup = () => {
       if (changes.relayLastUpdated) {
         setLastUpdated(new Date(changes.relayLastUpdated.newValue).toLocaleTimeString());
       }
-      if (changes.authToken) {
-        setAuthToken(changes.authToken.newValue ?? null);
-      }
       if (changes.pushIntervalSeconds) {
         setPushInterval(changes.pushIntervalSeconds.newValue);
+      }
+      if (changes.apiKey) {
+        const next = changes.apiKey.newValue;
+        setStoredKey(typeof next === 'string' ? next : null);
+        if (typeof next !== 'string') {
+          setOrgName(null);
+        }
+      }
+      if (changes.failedCount) {
+        const next = changes.failedCount.newValue;
+        setFailedCount(typeof next === 'number' ? next : 0);
+      }
+      if (changes.lastError) {
+        const next = changes.lastError.newValue;
+        setLastError(isLastErrorRecord(next) ? next : null);
       }
     };
 
@@ -54,70 +115,30 @@ const Popup = () => {
     return () => chrome.storage.onChanged.removeListener(handleChanges);
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSaveKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginError(null);
-    setLoginLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-      });
-
-      if (!response.ok) {
-        const body = (await response.json()) as Record<string, unknown>;
-        const errors = body.errors;
-        const message =
-          Array.isArray(errors) && errors.length > 0
-            ? String((errors[0] as Record<string, unknown>).message ?? 'Login failed')
-            : 'Login failed';
-        setLoginError(message);
-        return;
-      }
-
-      const body = (await response.json()) as Record<string, unknown>;
-
-      // The API sets httpOnly cookies and returns user data in the body.
-      // Extract the access token from the response if the API includes it,
-      // otherwise fall back to reading it via chrome.cookies.
-      const token =
-        typeof body.accessToken === 'string'
-          ? body.accessToken
-          : null;
-
-      if (token) {
-        chrome.storage.local.set({ authToken: token });
-        setAuthToken(token);
-      } else {
-        // Try reading the cookie the API set (requires "cookies" permission + host_permissions)
-        chrome.cookies?.get(
-          { url: 'http://localhost:3001', name: 'accessToken' },
-          (cookie) => {
-            if (cookie?.value) {
-              chrome.storage.local.set({ authToken: cookie.value });
-              setAuthToken(cookie.value);
-            } else {
-              setLoginError(
-                'Login succeeded but token could not be retrieved. The API may need to return the token in the response body.',
-              );
-            }
-          },
-        );
-      }
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Network error — is the API running?';
-      setLoginError(message);
-    } finally {
-      setLoginLoading(false);
-    }
+    const trimmed = keyInput.trim();
+    if (trimmed.length === 0) return;
+    await setApiKey(trimmed);
+    setStoredKey(trimmed);
+    setKeyInput('');
+    await runVerification(trimmed);
   };
 
-  const handleLogout = () => {
-    chrome.storage.local.remove('authToken');
-    setAuthToken(null);
+  const handleDisconnect = async () => {
+    await clearApiKey();
+    setStoredKey(null);
+    setOrgName(null);
+    setPingError(null);
+  };
+
+  const handleRetry = async () => {
+    setRetryLoading(true);
+    try {
+      await chrome.runtime.sendMessage({ type: 'RETRY_LAST_PAYLOAD' });
+    } finally {
+      setRetryLoading(false);
+    }
   };
 
   return (
@@ -127,46 +148,65 @@ const Popup = () => {
       </div>
 
       <div className="auth-section">
-        {authToken ? (
+        {storedKey !== null ? (
           <div className="auth-status connected">
             <span className="status-dot" />
-            <span>Connected</span>
-            <button className="logout-btn" onClick={handleLogout} type="button">
-              Logout
+            {pingLoading && <span>Verifying…</span>}
+            {!pingLoading && orgName !== null && (
+              <span>Connected to: {orgName}</span>
+            )}
+            {!pingLoading && pingError !== null && (
+              <span className="ping-error">{pingError}</span>
+            )}
+            <div className="key-meta">{maskKey(storedKey)}</div>
+            <button className="logout-btn" onClick={handleDisconnect} type="button">
+              Disconnect
             </button>
           </div>
         ) : (
-          <form className="login-form" onSubmit={handleLogin}>
-            <h3>Sign In</h3>
-            {loginError && <div className="login-error">{loginError}</div>}
+          <form className="login-form" onSubmit={handleSaveKey}>
+            <h3>FleetCommand API Key</h3>
+            {pingError !== null && <div className="login-error">{pingError}</div>}
             <div className="form-row">
-              <label htmlFor="login-email">Email</label>
+              <label htmlFor="api-key">API Key</label>
               <input
-                id="login-email"
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div className="form-row">
-              <label htmlFor="login-password">Password</label>
-              <input
-                id="login-password"
+                id="api-key"
                 type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                placeholder="fc_live_..."
+                autoComplete="off"
                 required
               />
             </div>
-            <button className="login-btn" type="submit" disabled={loginLoading}>
-              {loginLoading ? 'Signing in…' : 'Login'}
+            <button className="login-btn" type="submit" disabled={pingLoading}>
+              {pingLoading ? 'Verifying…' : 'Save'}
             </button>
           </form>
         )}
       </div>
+
+      {failedCount > 0 && lastError !== null && (
+        <div className="error-section">
+          <div className="error-row">
+            <span className="error-badge">{failedCount}</span>
+            <div className="error-detail">
+              <div className="error-time">
+                Last error: {new Date(lastError.timestamp).toLocaleTimeString()}
+              </div>
+              <div className="error-message">{lastError.message}</div>
+            </div>
+            <button
+              className="retry-btn"
+              onClick={handleRetry}
+              type="button"
+              disabled={retryLoading}
+            >
+              {retryLoading ? 'Retrying…' : 'Retry now'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="stats-section">
         <div className="stat-card">

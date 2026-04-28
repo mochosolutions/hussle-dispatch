@@ -1,6 +1,8 @@
 import type {
   Carrier,
+  DispatchFeeType,
   Driver,
+  DriverPayType,
   Settlement,
   SettlementItemType,
   SettlementLineItem,
@@ -204,17 +206,34 @@ export interface SettlementLoadQueryPort {
       id: string;
       loadNumber: string;
       carrierRate: unknown; // Decimal
+      customerRate: unknown | null; // Decimal
+      carrierPayout: unknown | null; // Decimal
       dispatchFee: unknown; // Decimal
+      dispatchFeeOverrideType: DispatchFeeType | null;
+      dispatchFeeOverrideAmount: unknown | null; // Decimal
       totalMiles: number | null;
+      loadedMiles: number | null;
+      estimatedHours: unknown | null; // Decimal
       deliveredAt: Date | null;
       accessorialCharges: {
         id: string;
         type: string;
         description: string | null;
         amount: unknown; // Decimal
+        billTo: string;
       }[];
     }[]
   >;
+}
+
+export interface SettlementDriverQueryPort {
+  findById(
+    driverId: string,
+  ): Promise<{
+    id: string;
+    payType: DriverPayType | null;
+    payRate: unknown | null; // Decimal
+  } | null>;
 }
 
 export interface CarrierQueryPort {

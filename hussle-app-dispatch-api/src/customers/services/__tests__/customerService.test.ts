@@ -1,4 +1,4 @@
-import { CustomerStatus, CustomerType } from '@prisma/client';
+import { CustomerStatus, CustomerType, NotificationChannel, NotificationTrigger } from '@prisma/client';
 import { ConflictError, NotFoundError } from '@/shared/errors';
 import { createCustomerService } from '../customerService';
 import type { CustomerRepositoryPort, CustomerWithCounts } from '../../types/customerTypes';
@@ -49,6 +49,7 @@ const buildMockRepository = (): {
   update: jest.fn(),
   softDelete: jest.fn(),
   countByOrganization: jest.fn(),
+  createNotificationSettings: jest.fn(),
 });
 
 describe('customerService', () => {
@@ -98,6 +99,40 @@ describe('customerService', () => {
           },
         }),
       ).rejects.toBeInstanceOf(ConflictError);
+    });
+
+    it('inserts default EMAIL notification settings for STATUS_CHANGE, CHECK_CALL, DOCUMENT_UPLOADED', async () => {
+      const customer = buildCustomer();
+      mockRepository.list.mockResolvedValue([]);
+      mockRepository.create.mockResolvedValue(customer);
+      mockRepository.createNotificationSettings.mockResolvedValue(undefined);
+
+      await customerService.createCustomer({
+        organizationId: ORG_ID,
+        role: 'admin',
+        input: {
+          type: CustomerType.BROKER,
+          companyName: 'Acme Logistics',
+        },
+      });
+
+      expect(mockRepository.createNotificationSettings).toHaveBeenCalledWith(CUSTOMER_ID, [
+        {
+          trigger: NotificationTrigger.STATUS_CHANGE,
+          channel: NotificationChannel.EMAIL,
+          enabled: true,
+        },
+        {
+          trigger: NotificationTrigger.CHECK_CALL,
+          channel: NotificationChannel.EMAIL,
+          enabled: true,
+        },
+        {
+          trigger: NotificationTrigger.DOCUMENT_UPLOADED,
+          channel: NotificationChannel.EMAIL,
+          enabled: true,
+        },
+      ]);
     });
 
     it('throws ConflictError for case-insensitive duplicate companyName', async () => {

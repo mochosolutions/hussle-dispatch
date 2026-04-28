@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 import type { InferType } from 'yup';
-import type { CustomerType, CustomerStatus } from '../types';
+import type { BillingMethod, CustomerType, CustomerStatus } from '../types';
 
 export const customerSchema = Yup.object({
   companyName: Yup.string().required('Company name is required').min(2, 'Min 2 characters'),
@@ -20,6 +20,9 @@ export const customerSchema = Yup.object({
   paymentTermsDays: Yup.number().min(0, 'Must be 0 or greater').default(30),
   quickPayDiscount: Yup.string().default(''),
   notes: Yup.string().default(''),
+  billingMethod: Yup.mixed<BillingMethod>()
+    .oneOf(['DIRECT', 'FACTORED'], 'Invalid billing method')
+    .default('DIRECT'),
   status: Yup.mixed<CustomerStatus>()
     .oneOf(['ACTIVE', 'INACTIVE'], 'Invalid status')
     .default('ACTIVE'),

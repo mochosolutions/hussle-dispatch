@@ -10,6 +10,8 @@
     "lint:deps": "dependency-cruiser --config .dependency-cruiser.cjs src",
     "check-ts": "tsc --noEmit -p tsconfig.app.json",
     "test": "jest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "validate": "npm run lint && npm run lint:deps && npm run check-ts && npm test",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "preview": "vite preview"
@@ -80,6 +82,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

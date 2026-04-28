@@ -2,6 +2,34 @@ import * as yup from 'yup';
 
 const LOAD_SOURCES = ['relay', 'dat'] as const;
 
+const locationSchema = yup
+  .object({
+    city: yup.string().nullable(),
+    state: yup.string().required('Location state is required'),
+  })
+  .required();
+
+const datLoadSchema = yup
+  .object({
+    matchId: yup.string().required('matchId is required for DAT loads'),
+    origin: locationSchema,
+    destination: locationSchema,
+    equipmentTypeCode: yup.string().nullable(),
+  })
+  .unknown(true);
+
+const relayLoadSchema = yup
+  .object({
+    id: yup.string().required('id is required for Relay loads'),
+    startLocation: locationSchema,
+    endLocation: locationSchema,
+    loads: yup
+      .array()
+      .of(yup.object().unknown(true))
+      .min(1, 'Relay record must contain at least one load'),
+  })
+  .unknown(true);
+
 export const ingestValidator = yup.object({
   body: yup.object({
     source: yup
@@ -10,9 +38,12 @@ export const ingestValidator = yup.object({
       .required('Source is required'),
     loads: yup
       .array()
-      .of(yup.mixed())
       .max(100, 'Maximum 100 loads per ingest')
-      .required('Loads array is required'),
+      .when('source', {
+        is: 'dat',
+        then: (schema) => schema.of(datLoadSchema).required('Loads array is required'),
+        otherwise: (schema) => schema.of(relayLoadSchema).required('Loads array is required'),
+      }),
   }),
 });
 

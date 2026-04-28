@@ -54,6 +54,9 @@ const makeDeps = () => ({
   carrierQuery: {
     findById: jest.fn(),
   },
+  driverQuery: {
+    findById: jest.fn(),
+  },
   logger: {
     info: jest.fn(),
     warn: jest.fn(),

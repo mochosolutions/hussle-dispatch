@@ -196,14 +196,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                       <IconButton
                         size="small"
-                        onClick={() => handleViewDocument(doc.s3Url)}
+                        onClick={() => handleViewDocument(doc.url)}
                         aria-label={`View ${doc.fileName}`}
                       >
                         <EyeOutlined />
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => handleDownloadDocument(doc.s3Url, doc.fileName)}
+                        onClick={() => handleDownloadDocument(doc.url, doc.fileName)}
                         aria-label={`Download ${doc.fileName}`}
                       >
                         <DownloadOutlined />

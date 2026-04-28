@@ -62,3 +62,21 @@ export const bulkDownload = async (
   );
   return response.data;
 };
+
+export const archiveDocument = async (
+  documentId: string,
+): Promise<{ document: Document }> => {
+  const response = await axiosInstance.patch<{ data: Document }>(
+    `/documents/${documentId}/archive`,
+  );
+  return { document: response.data.data };
+};
+
+export const getDocumentDownloadUrl = async (
+  documentId: string,
+): Promise<{ url: string }> => {
+  const response = await axiosInstance.get<{ data: { url: string } }>(
+    `/documents/${documentId}/download`,
+  );
+  return { url: response.data.data.url };
+};

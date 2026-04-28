@@ -12,14 +12,20 @@ const InvoiceEmail = ({
   dueDate,
   paymentTerms,
   replyToEmail,
-}: InvoiceEmailData) => (
+  invoiceType,
+  senderName,
+}: InvoiceEmailData) => {
+  const heading = invoiceType === 'DISPATCH_FEE' ? 'Dispatch Fee Invoice' : 'Invoice';
+  const fromName = senderName ?? carrierName;
+
+  return (
   <EmailLayout
-    preview={`Invoice ${invoiceNumber} for Load ${loadNumber} — ${totalAmount}`}
-    headerTitle={`Invoice ${invoiceNumber}`}
+    preview={`${heading} ${invoiceNumber} for Load ${loadNumber} — ${totalAmount}`}
+    headerTitle={`${heading} ${invoiceNumber}`}
     headerSubtitle={`Load ${loadNumber}`}
   >
     <Text style={textBody}>
-      From <strong>{carrierName}</strong> — please find your invoice details below. The invoice
+      From <strong>{fromName}</strong> — please find your invoice details below. The invoice
       document is attached to this email.
     </Text>
 
@@ -38,6 +44,7 @@ const InvoiceEmail = ({
       </Link>
     </Text>
   </EmailLayout>
-);
+  );
+};
 
 export default InvoiceEmail;

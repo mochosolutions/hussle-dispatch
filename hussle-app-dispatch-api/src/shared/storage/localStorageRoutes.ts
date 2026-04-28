@@ -40,6 +40,14 @@ export const mountLocalStorageRoutes = (
     const result = await storageProvider.get(key);
 
     res.setHeader('Content-Type', result.contentType);
+    // The dispatch-ui previews uploaded documents (PDFs, images) inside an
+    // iframe / <img> tag. The global helmet CSP sets `frame-ancestors 'self'`
+    // and we add `X-Frame-Options: DENY` for the API itself, but those headers
+    // would block the dispatch-ui from rendering files served by the dev-only
+    // local storage backend. Override them here so previewing works in dev.
+    res.removeHeader('X-Frame-Options');
+    res.setHeader('Content-Security-Policy', "frame-ancestors *");
+    res.setHeader('Content-Disposition', 'inline');
     result.body.pipe(res);
   });
 

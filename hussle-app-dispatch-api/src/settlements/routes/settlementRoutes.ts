@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { requireAuth } from '@/middleware/auth';
+import { requireAuth, requireRole } from '@/middleware/auth';
+import { ROLES } from '@/config/roles';
 import { validateRequest } from '@/shared/middleware/validateRequest';
 import type { SettlementControllers } from '../controllers/settlementController';
 import type { AdjustmentControllers } from '../controllers/adjustmentController';
@@ -32,6 +33,7 @@ export const createSettlementRouter = (
   router.post(
     '/generate',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(generateSettlementValidator),
     controllers.settlement.generate,
   );
@@ -52,18 +54,20 @@ export const createSettlementRouter = (
     controllers.settlement.getById,
   );
 
-  // PATCH /:id/approve — approve a draft settlement
+  // PATCH /:id/approve — approve a draft settlement (ADMIN only)
   router.patch(
     '/:id/approve',
     requireAuth,
+    requireRole([ROLES.ADMIN]),
     validateRequest(approveSettlementValidator),
     controllers.settlement.approve,
   );
 
-  // PATCH /:id/pay — mark settlement as paid
+  // PATCH /:id/pay — mark settlement as paid (ADMIN only)
   router.patch(
     '/:id/pay',
     requireAuth,
+    requireRole([ROLES.ADMIN]),
     validateRequest(paySettlementValidator),
     controllers.settlement.pay,
   );
@@ -72,6 +76,7 @@ export const createSettlementRouter = (
   router.patch(
     '/:id/dispute',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(disputeSettlementValidator),
     controllers.settlement.dispute,
   );
@@ -88,6 +93,7 @@ export const createSettlementRouter = (
   router.post(
     '/:id/send',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(sendSettlementValidator),
     controllers.settlement.sendEmail,
   );
@@ -98,6 +104,7 @@ export const createSettlementRouter = (
   router.post(
     '/:id/adjustments',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(createAdjustmentValidator),
     controllers.adjustment.addAdjustment,
   );
@@ -106,6 +113,7 @@ export const createSettlementRouter = (
   router.patch(
     '/:id/adjustments/:lineItemId',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(updateAdjustmentValidator),
     controllers.adjustment.updateAdjustment,
   );
@@ -114,6 +122,7 @@ export const createSettlementRouter = (
   router.delete(
     '/:id/adjustments/:lineItemId',
     requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(deleteAdjustmentValidator),
     controllers.adjustment.deleteAdjustment,
   );

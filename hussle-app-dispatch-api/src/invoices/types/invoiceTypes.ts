@@ -7,6 +7,7 @@ import type {
   Customer,
   AccessorialCharge,
   StopType,
+  DispatchFeeType,
 } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ export interface InvoiceWithRelations extends Invoice {
   load: Load & {
     accessorialCharges: AccessorialCharge[];
     stops: InvoiceDetailStop[];
+    organization: { id: string; name: string };
   };
   carrier: Carrier | null;
   customer: Customer | null;
@@ -151,17 +153,33 @@ export interface InvoiceLoadQueryPort {
     customerRate: unknown | null; // Decimal
     carrierRate: unknown | null; // Decimal
     dispatchFee: unknown | null; // Decimal
+    dispatchFeeOverrideType: DispatchFeeType | null;
+    dispatchFeeOverrideAmount: unknown | null; // Decimal
     bolSignedAt: Date | null;
     status: string;
+    contact: {
+      id: string;
+      email: string | null;
+    } | null;
     carrier: {
       id: string;
       name: string;
       type: string;
+      dispatchFeeType: DispatchFeeType;
+      dispatchFeePercent: unknown; // Decimal
+      dispatchFeeAmount: unknown; // Decimal
+      feeIncludesAccessorials: boolean;
+      primaryContact: {
+        id: string;
+        email: string | null;
+      } | null;
     } | null;
     customer: {
       id: string;
+      email: string | null;
       paymentTerms: string | null;
       paymentTermsDays: number;
+      billingMethod: string;
     } | null;
     accessorialCharges: AccessorialCharge[];
   } | null>;

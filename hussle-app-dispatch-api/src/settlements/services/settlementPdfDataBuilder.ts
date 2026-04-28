@@ -34,6 +34,17 @@ export const buildSettlementPdfData = (
       amount: formatDecimal(li.amount),
     }));
 
+  const driverPayItems = settlement.lineItems
+    .filter((li) => li.type === 'DRIVER_PAY')
+    .map((li) => ({
+      description: li.description,
+      amount: formatDecimal(li.amount),
+    }));
+
+  const driverPayTotal = settlement.lineItems
+    .filter((li) => li.type === 'DRIVER_PAY')
+    .reduce((sum, li) => sum.plus(new Decimal(String(li.amount))), new Decimal(0));
+
   const expenseItems = settlement.lineItems
     .filter((li) => li.type === 'EXPENSE')
     .map((li) => ({
@@ -96,11 +107,13 @@ export const buildSettlementPdfData = (
     vehicleUnit: settlement.vehicle?.unitNumber ?? null,
     revenueItems,
     dispatchFeeItems,
+    driverPayItems,
     expenseItems,
     accessorialItems,
     adjustmentItems,
     grossRevenue: formatDecimal(settlement.grossRevenue),
     dispatchFeeTotal: formatDecimal(settlement.dispatchFeeTotal),
+    driverPayTotal: formatDecimal(driverPayTotal),
     expensesTotal: formatDecimal(settlement.expensesTotal),
     accessorialsTotal: formatDecimal(accessorialsTotal),
     adjustmentsTotal: formatDecimal(adjustmentsTotal),

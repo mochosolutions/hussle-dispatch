@@ -4,16 +4,14 @@ import type { Logger } from '@/shared/utils/logger';
 import type { SettingsRepoPort } from '@/settings/types/settingsTypes';
 import type { SmsService } from '@/shared/notifications/smsService';
 import type { TrackingTokenService } from '@/notifications/services/trackingTokenService';
+import type { ShortLinkServicePort } from './types/shortLinkServicePort';
 import { smsPromptScheduleRepositoryPrisma } from './repositories/smsPromptScheduleRepositoryPrisma';
 import { loadSchedulerQueryPrisma } from './repositories/loadSchedulerQueryPrisma';
 import { driverQueryPrisma } from './repositories/driverQueryPrisma';
 import { initializeSmsPromptSchedulerSubscriber } from './services/smsPromptSchedulerSubscriber';
 import { initializeSmsPromptWorker } from './services/smsPromptWorker';
 import { createSmsPromptService } from './services/smsPromptService';
-import {
-  createSmsPromptController,
-  type SmsPromptControllers,
-} from './controllers/smsPromptController';
+import { createSmsPromptController, SmsPromptControllers } from './controllers/smsPromptController';
 import type { SmsPromptScheduleRepoPort } from './types/smsPromptScheduleRepoPort';
 
 interface SmsPromptsModuleDeps {
@@ -21,9 +19,11 @@ interface SmsPromptsModuleDeps {
   eventBus: EventBus;
   smsService: SmsService;
   trackingTokenService: TrackingTokenService;
+  shortLinkService: ShortLinkServicePort;
   settingsRepo: SettingsRepoPort;
   logger: Logger;
   trackingBaseUrl: string;
+  publicShortBaseUrl: string;
 }
 
 export interface SmsPromptsModuleExports {
@@ -32,9 +32,7 @@ export interface SmsPromptsModuleExports {
   initializeSubscribers: () => Promise<void>;
 }
 
-export const createSmsPromptsModule = (
-  deps: SmsPromptsModuleDeps,
-): SmsPromptsModuleExports => {
+export const createSmsPromptsModule = (deps: SmsPromptsModuleDeps): SmsPromptsModuleExports => {
   const scheduleRepo = smsPromptScheduleRepositoryPrisma(deps.prismaClient);
   const loadRepo = loadSchedulerQueryPrisma(deps.prismaClient);
   const driverRepo = driverQueryPrisma(deps.prismaClient);
@@ -69,9 +67,11 @@ export const createSmsPromptsModule = (
       driverRepo,
       settingsRepo: deps.settingsRepo,
       trackingTokenService: deps.trackingTokenService,
+      shortLinkService: deps.shortLinkService,
       smsService: deps.smsService,
       logger: deps.logger,
       trackingBaseUrl: deps.trackingBaseUrl,
+      publicShortBaseUrl: deps.publicShortBaseUrl,
     });
   };
 

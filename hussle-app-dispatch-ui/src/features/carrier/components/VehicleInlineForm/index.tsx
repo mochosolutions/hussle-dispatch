@@ -1,5 +1,5 @@
 import { Box, Button } from '@mui/material';
-import { CancelButton } from '@mocho/ui/components/form-fields';
+import { CancelButton } from '@mocho/ui/components';
 import { Formik } from 'formik';
 import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';

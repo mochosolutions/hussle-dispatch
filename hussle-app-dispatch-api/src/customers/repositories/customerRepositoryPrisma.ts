@@ -3,6 +3,7 @@ import type { PrismaTransaction } from '@/config/database';
 import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   CreateCustomerInput,
+  CustomerNotificationSettingInput,
   CustomerQueryInput,
   CustomerRepositoryPort,
   CustomerWithCounts,
@@ -176,4 +177,23 @@ export const customerRepositoryPrisma = (
         deleted: false,
       },
     }),
+
+  createNotificationSettings: async (
+    customerId: string,
+    settings: CustomerNotificationSettingInput[],
+  ): Promise<void> => {
+    if (settings.length === 0) {
+      return;
+    }
+
+    await prisma.customerNotificationSettings.createMany({
+      data: settings.map((setting) => ({
+        customerId,
+        trigger: setting.trigger,
+        channel: setting.channel,
+        enabled: setting.enabled,
+      })),
+      skipDuplicates: true,
+    });
+  },
 });

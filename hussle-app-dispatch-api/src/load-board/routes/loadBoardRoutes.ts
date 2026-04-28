@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { appAuth } from '../../shared/middleware/authenticateUser';
+import { sessionOrApiKeyAuth } from '../../shared/middleware/sessionOrApiKeyAuth';
 import { validateRequest } from '../../shared/middleware/validateRequest';
 import {
   ingestValidator,
@@ -12,14 +13,18 @@ import type { LoadBoardControllers } from '../controllers/loadBoardControllers';
 export const loadBoardRoutes = (controllers: LoadBoardControllers): Router => {
   const router = Router();
 
-  // POST /ingest — ingest loads from extension or UI
+  // POST /ingest — ingest loads from extension or UI (supports session or API key)
   router.post(
     '/ingest',
-    appAuth,
+    sessionOrApiKeyAuth,
     express.json({ limit: '1mb' }),
     validateRequest(ingestValidator),
     controllers.ingest,
   );
+
+  // GET /ping — auth check for extension (supports session or API key)
+  // Must be defined BEFORE /feed/:id to avoid route shadowing.
+  router.get('/ping', sessionOrApiKeyAuth, controllers.ping);
 
   // GET /feed — all staged loads for org
   router.get(

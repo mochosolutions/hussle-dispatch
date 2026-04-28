@@ -51,9 +51,26 @@ model Organization {
   settlements         Settlement[]
   loans               Loan[]
   smsPromptSchedules  SmsPromptSchedule[]
+  apiKeys             OrgApiKey[]
 
   @@index([slug])
   @@index([deleted, status])
+}
+
+model OrgApiKey {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  keyHash        String
+  keyPrefix      String
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([keyPrefix])
+  @@index([organizationId])
 }
 
 model User {
@@ -69,6 +86,7 @@ model User {
   invitations        Invitation[]
   statusChanges      LoadStatusHistory[]
   checkCalls         CheckCall[]
+  documentsUploaded  Document[]          @relation("DocumentUploader")
 
   @@index([externalId])
   @@index([email])
@@ -433,6 +451,35 @@ enum DocumentType {
   REGISTRATION
   INSPECTION_CERT
   OTHER
+  // Driver pack
+  MEDICAL_CARD
+  MVR
+  DRUG_TEST
+  ROAD_TEST_CERT
+  DRIVER_APPLICATION
+  PSP_REPORT
+  BACKGROUND_CHECK
+  ANNUAL_REVIEW
+  HAZMAT_ENDORSEMENT
+  TWIC_CARD
+  // Carrier pack
+  MC_AUTHORITY
+  VOIDED_CHECK
+  NOTICE_OF_ASSIGNMENT
+  BOC3
+  IFTA_LICENSE
+  // Vehicle pack
+  TITLE
+  IFTA_DECAL
+  IRP_CAB_CARD
+  MAINTENANCE_RECORD
+  LEASE_AGREEMENT
+  BIT_INSPECTION
+  // Load pack
+  TEMPERATURE_LOG
+  TONU_DOC
+  FUEL_RECEIPT
+  LOAD_PHOTO
 }
 
 enum DriverPayType {
@@ -484,6 +531,12 @@ enum SettlementItemType {
   EXPENSE
   ACCESSORIAL
   ADJUSTMENT
+  DRIVER_PAY
+}
+
+enum DispatchFeeType {
+  PERCENTAGE
+  FLAT
 }
 
 enum MileageSource {
@@ -526,9 +579,11 @@ model Carrier {
   state                             String?
   zip                               String?
   primaryContactId                  String?
+  dispatchFeeType                   DispatchFeeType      @default(PERCENTAGE)
   dispatchFeePercent                Decimal              @default(10.0000) @db.Decimal(7, 4)
+  dispatchFeeAmount                 Decimal              @default(0) @db.Decimal(10, 2)
   partnerSplitPercent               Decimal              @default(50.0000) @db.Decimal(7, 4)
-  feeIncludesAccessorials           Boolean              @default(false)
+  feeIncludesAccessorials           Boolean              @default(true)
   feeType                           FeeType              @default(PER_LOAD_PERCENT)
   payFromNet                        Boolean              @default(false)
   includeExpensesOnSettlement       Boolean              @default(false)
@@ -630,8 +685,8 @@ model Driver {
   status            DriverStatus             @default(ACTIVE)
   timezone          String?
   notes             String?
-  payType           DriverPayType?
-  payRate           Decimal?                 @db.Decimal(7, 4)
+  payType           DriverPayType
+  payRate           Decimal                  @db.Decimal(7, 4)
   createdAt         DateTime                 @default(now())
   updatedAt         DateTime                 @updatedAt
   deletedAt         DateTime?
@@ -763,6 +818,10 @@ model Load {
   notificationLogs      NotificationLog[]
   stateMiles            LoadStateMiles[]
   smsPromptSchedules    SmsPromptSchedule[]
+  onboardingOverride        Boolean                    @default(false)
+  onboardingOverrideReason  String?
+  dispatchFeeOverrideType   DispatchFeeType?
+  dispatchFeeOverrideAmount Decimal?                   @db.Decimal(10, 2)
 
   @@unique([organizationId, loadNumber])
   @@index([organizationId])
@@ -971,7 +1030,7 @@ model Document {
   fileSize           Int?
   mimeType           String?
   s3Key              String
-  s3Url              String
+  url                String
   uploadStatus       String              @default("pending")
   isArchived         Boolean             @default(false)
   uploadedByUserId   String?
@@ -986,12 +1045,14 @@ model Document {
   signedAt           DateTime?
   createdAt          DateTime            @default(now())
   organization       Organization        @relation(fields: [organizationId], references: [id])
+  uploadedByUser     User?               @relation("DocumentUploader", fields: [uploadedByUserId], references: [id])
   accessorialCharges AccessorialCharge[]
 
   @@index([entityType, entityId])
   @@index([organizationId, type])
   @@index([organizationId, expiresAt])
   @@index([organizationId])
+  @@index([uploadedByUserId])
 }
 
 model OrgSettings {
@@ -1049,6 +1110,7 @@ model Customer {
   quickPayDiscount    Decimal?       @db.Decimal(7, 4)
   carrierPacketSentAt DateTime?
   notes               String?
+  billingMethod       BillingMethod  @default(DIRECT)
   status              CustomerStatus @default(ACTIVE)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -1430,4 +1492,20 @@ model SmsPromptSchedule {
 
   @@index([loadId, status])
   @@index([organizationId, scheduledAt])
+}
+
+model ShortLink {
+  id            String    @id @default(uuid())
+  slug          String    @unique
+  targetUrl     String    @db.Text
+  loadId        String?
+  purpose       String
+  expiresAt     DateTime
+  clickCount    Int       @default(0)
+  lastClickedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([loadId])
+  @@index([expiresAt])
 }

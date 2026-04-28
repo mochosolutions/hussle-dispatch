@@ -143,6 +143,7 @@ export const createInvoiceModule = ({
       documentQuery,
       orgSettingsQuery,
       invoiceBuilderService,
+      invoiceEmailService,
       logger,
     });
   };

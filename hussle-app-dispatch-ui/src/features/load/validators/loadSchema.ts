@@ -22,7 +22,7 @@ const stopSchema = Yup.object().shape({
   schedulingType: Yup.string()
     .oneOf(['APPOINTMENT', 'FCFS', 'NOTIFICATION', 'OPEN', 'DROP_HOOK'])
     .default('APPOINTMENT'),
-  appointmentDate: Yup.string(),
+  appointmentDate: Yup.string().required('Appointment date is required'),
   appointmentTime: Yup.string(),
   appointmentNumber: Yup.string(),
   contactName: Yup.string(),
@@ -96,7 +96,36 @@ export const loadSchema = Yup.object().shape({
         return false;
       }
       return stops.some((stop) => stop.type === 'DELIVERY');
-    }),
+    })
+    .test(
+      'delivery-after-pickup',
+      'Delivery date cannot be earlier than pickup date',
+      (stops) => {
+        if (!stops || stops.length === 0) {
+          return true;
+        }
+        const buildDate = (date?: string, time?: string): number | null => {
+          if (!date) return null;
+          const iso = time ? `${date}T${time}` : date;
+          const t = new Date(iso).getTime();
+          return Number.isFinite(t) ? t : null;
+        };
+        const pickupTimes = stops
+          .filter((s) => s.type === 'PICKUP')
+          .map((s) => buildDate(s.appointmentDate, s.appointmentTime))
+          .filter((t): t is number => t !== null);
+        const deliveryTimes = stops
+          .filter((s) => s.type === 'DELIVERY')
+          .map((s) => buildDate(s.appointmentDate, s.appointmentTime))
+          .filter((t): t is number => t !== null);
+        if (pickupTimes.length === 0 || deliveryTimes.length === 0) {
+          return true;
+        }
+        const latestPickup = Math.max(...pickupTimes);
+        const earliestDelivery = Math.min(...deliveryTimes);
+        return earliestDelivery >= latestPickup;
+      },
+    ),
   // UI-only load fields
   loadType: Yup.string().oneOf(['std', 'mp1d', '1pmd', 'mpmd', 'dh', 'po']),
   reeferTempMin: Yup.number(),

@@ -1,8 +1,9 @@
-import { CustomerStatus, CustomerType } from '@prisma/client';
+import { BillingMethod, CustomerStatus, CustomerType } from '@prisma/client';
 import * as Yup from 'yup';
 
 const customerTypeValues = Object.values(CustomerType);
 const customerStatusValues = Object.values(CustomerStatus);
+const billingMethodValues = Object.values(BillingMethod);
 
 const optionalTrimmed = Yup.string().trim().notRequired();
 
@@ -34,6 +35,10 @@ const createBodySchema = Yup.object({
     .max(100, 'quickPayDiscount must be at most 100')
     .notRequired(),
   notes: optionalTrimmed,
+  billingMethod: Yup.mixed<BillingMethod>()
+    .oneOf(billingMethodValues, 'billingMethod must be a valid BillingMethod')
+    .default(BillingMethod.DIRECT)
+    .notRequired(),
   status: Yup.mixed<CustomerStatus>()
     .oneOf(customerStatusValues, 'status must be a valid CustomerStatus')
     .default(CustomerStatus.ACTIVE)

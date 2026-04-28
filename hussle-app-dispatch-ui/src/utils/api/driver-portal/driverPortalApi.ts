@@ -25,8 +25,9 @@ export interface DriverPortalStop {
   city: string | null;
   state: string | null;
   zip: string | null;
-  appointmentDate: string | null;
-  appointmentTime: string | null;
+  appointmentStart: string | null;
+  appointmentEnd: string | null;
+  schedulingType: string;
   contactName: string | null;
   contactPhone: string | null;
   notes: string | null;
@@ -78,9 +79,13 @@ export const advanceStatus = async (
   return response.data.data;
 };
 
-export const checkIn = async (token: string, input: CheckInInput): Promise<void> => {
+export const checkIn = async (
+  token: string,
+  input: CheckInInput,
+  signal?: AbortSignal,
+): Promise<void> => {
   const api = createDriverPortalAxios(token);
-  await api.post('/load/check-in', input);
+  await api.post('/load/check-in', input, { signal });
 };
 
 export const presignDocument = async (

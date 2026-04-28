@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import type { InferType } from 'yup';
 import { TextField, SelectField, DateField, CurrencyField } from '@mocho/ui/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
@@ -15,16 +16,11 @@ const paymentSchema = Yup.object({
   method: Yup.string()
     .oneOf(['ACH', 'CHECK', 'WIRE', 'CREDIT_CARD', 'OTHER'])
     .required('Payment method is required'),
-  reference: Yup.string().optional(),
+  reference: Yup.string().optional().default(''),
   paidAt: Yup.string().required('Payment date is required'),
 }).required();
 
-interface PaymentFormValues {
-  amount: number;
-  method: string;
-  reference: string;
-  paidAt: string;
-}
+type PaymentFormValues = InferType<typeof paymentSchema>;
 
 // ---------------------------------------------------------------------------
 // Helpers

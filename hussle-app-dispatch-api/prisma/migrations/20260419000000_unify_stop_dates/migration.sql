@@ -14,6 +14,9 @@ WHERE "appointmentStart" IS NULL;
 ALTER TABLE "Stop" ALTER COLUMN "appointmentStart" SET NOT NULL;
 
 -- Step 4: Drop removed columns
+-- Note: facilityOpenTime/facilityCloseTime exist on the live DB (added out-of-band)
+-- but were never created by an earlier migration. IF EXISTS makes the drop a no-op
+-- on the shadow DB while still cleaning up the live DB.
 ALTER TABLE "Stop" DROP COLUMN "targetDate";
-ALTER TABLE "Stop" DROP COLUMN "facilityOpenTime";
-ALTER TABLE "Stop" DROP COLUMN "facilityCloseTime";
+ALTER TABLE "Stop" DROP COLUMN IF EXISTS "facilityOpenTime";
+ALTER TABLE "Stop" DROP COLUMN IF EXISTS "facilityCloseTime";
