@@ -43,7 +43,7 @@ import { ExpiryBadge } from '../ExpiryBadge';
 const ENTITY_TO_CONTEXT: Record<DocumentEntityType, DocumentContext> = {
   load: 'load-detail',
   carrier: 'carrier-detail',
-  driver: 'driver-profile',
+  driver: 'driver-detail',
   vehicle: 'vehicle-detail',
 };
 

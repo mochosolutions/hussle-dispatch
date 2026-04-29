@@ -5,7 +5,7 @@ export type DocumentContext =
   | 'create-load'
   | 'load-detail'
   | 'carrier-detail'
-  | 'driver-profile'
+  | 'driver-detail'
   | 'vehicle-detail';
 
 export const DOC_TYPE_CONFIG: Record<
@@ -118,7 +118,7 @@ export const DOCUMENT_CONTEXTS: Record<DocumentContext, readonly DocumentType[]>
     DocumentType.IFTA_LICENSE,
     DocumentType.OTHER,
   ],
-  'driver-profile': [
+  'driver-detail': [
     DocumentType.LICENSE,
     DocumentType.INSURANCE_CERT,
     DocumentType.MEDICAL_CARD,
