@@ -15,19 +15,13 @@ import { FormDrawer } from 'mocho/components/FormDrawer';
 import { useDispatch, useSelector } from 'store';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import { driverPreferencesSchema } from '../../validators/driverPreferencesSchema';
-import type { DriverPreferredLane, DriverNoGoZone } from 'features/carrier/types';
+import type { DriverPreferencesFormValues } from '../../validators/driverPreferencesSchema';
 import { selectDriverWithCarrier } from '../../store/selectors/driverSelectors';
 import { updateDriverRequest } from '../../store/reducers';
 
 interface DriverPreferencesDrawerProps {
   driverId: string;
   onClose: () => void;
-}
-
-interface PreferencesFormValues {
-  preferredLanes: DriverPreferredLane[];
-  noGoZones: DriverNoGoZone[];
-  maxDaysOut: number | '';
 }
 
 const sectionLabelSx = {
@@ -50,7 +44,7 @@ export const DriverPreferencesDrawer: React.FC<DriverPreferencesDrawerProps> = (
     return null;
   }
 
-  const initialValues: PreferencesFormValues = {
+  const initialValues: DriverPreferencesFormValues = {
     preferredLanes: driver.preferredLanes.map((lane) => ({
       originState: lane.originState,
       destState: lane.destState,
@@ -61,24 +55,32 @@ export const DriverPreferencesDrawer: React.FC<DriverPreferencesDrawerProps> = (
       state: zone.state,
       city: zone.city ?? '',
     })),
-    maxDaysOut: driver.maxDaysOut ?? '',
+    maxDaysOut: driver.maxDaysOut ?? null,
   };
 
-  const handleSubmit = (values: PreferencesFormValues) => {
+  const handleSubmit = (values: DriverPreferencesFormValues) => {
     dispatch(
       updateDriverRequest({
         id: driverId,
         data: {
-          preferredLanes: values.preferredLanes,
-          noGoZones: values.noGoZones,
-          maxDaysOut: values.maxDaysOut === '' ? null : values.maxDaysOut,
+          preferredLanes: values.preferredLanes.map((lane) => ({
+            originState: lane.originState,
+            destState: lane.destState,
+            originCity: lane.originCity || null,
+            destCity: lane.destCity || null,
+          })),
+          noGoZones: values.noGoZones.map((zone) => ({
+            state: zone.state,
+            city: zone.city || null,
+          })),
+          maxDaysOut: values.maxDaysOut,
         },
       }),
     );
   };
 
   return (
-    <FormDrawer<PreferencesFormValues>
+    <FormDrawer<DriverPreferencesFormValues>
       open
       onClose={onClose}
       title="Edit Driver Preferences"

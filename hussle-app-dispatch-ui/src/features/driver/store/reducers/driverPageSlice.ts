@@ -10,6 +10,8 @@ import type {
 interface DriverPageState {
   loading: Record<string, string>;
   errors: Record<string, string>;
+  hasLoadedOnce: boolean;
+  lastFetchedAt: number | null;
   page: number;
   limit: number;
   total: number;
@@ -19,8 +21,10 @@ interface DriverPageState {
 }
 
 const initialState: DriverPageState = {
-  loading: {},
+  loading: { getAll: LoadingState.Pending },
   errors: {},
+  hasLoadedOnce: false,
+  lastFetchedAt: null,
   page: 1,
   limit: 25,
   total: 0,
@@ -82,6 +86,8 @@ const driverPageSlice = createSlice({
     },
     fetchDriversSuccess(state, action: PayloadAction<FetchDriversSuccessPayload>) {
       setFulfilled(state, { loadingKey: 'getAll', errorKey: 'getAll' });
+      state.hasLoadedOnce = true;
+      state.lastFetchedAt = Date.now();
       state.total = action.payload.total;
       state.page = action.payload.page;
       state.limit = action.payload.limit;

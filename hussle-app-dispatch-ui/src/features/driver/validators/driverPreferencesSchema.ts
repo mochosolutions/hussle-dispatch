@@ -8,19 +8,21 @@ const stateCodeValidator = Yup.string()
 const laneSchema = Yup.object({
   originState: stateCodeValidator.required('Origin state is required'),
   destState: stateCodeValidator.required('Destination state is required'),
-  originCity: Yup.string().nullable().trim(),
-  destCity: Yup.string().nullable().trim(),
-});
+  originCity: Yup.string().trim().defined().default(''),
+  destCity: Yup.string().trim().defined().default(''),
+}).required();
 
 const noGoZoneSchema = Yup.object({
   state: stateCodeValidator.required('State is required'),
-  city: Yup.string().nullable().trim(),
-});
+  city: Yup.string().trim().defined().default(''),
+}).required();
 
 export const driverPreferencesSchema = Yup.object({
-  preferredLanes: Yup.array().of(laneSchema.required()).defined(),
-  noGoZones: Yup.array().of(noGoZoneSchema.required()).defined(),
-  maxDaysOut: Yup.number().nullable().min(0).max(30),
+  preferredLanes: Yup.array().of(laneSchema).defined().default([]),
+  noGoZones: Yup.array().of(noGoZoneSchema).defined().default([]),
+  maxDaysOut: Yup.number().nullable().defined().min(0).max(30),
 }).required();
 
 export type DriverPreferencesFormValues = Yup.InferType<typeof driverPreferencesSchema>;
+export type PreferredLaneFormValues = Yup.InferType<typeof laneSchema>;
+export type NoGoZoneFormValues = Yup.InferType<typeof noGoZoneSchema>;

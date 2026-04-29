@@ -9,13 +9,13 @@ import ListKpiBar from 'components/ListKpiBar';
 import type { KpiItem } from 'components/ListKpiBar';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import type { Contact } from '../../types';
 import { fetchContactsRequest } from '../../store/reducers/contactPageSlice';
-import {
-  selectContactListLoading,
-  selectFormattedContacts,
-} from '../../store/selectors/contactSelectors';
+import { selectFormattedContacts } from '../../store/selectors/contactSelectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import {
   ContactNameCellRenderer,
@@ -45,12 +45,16 @@ const ContactListPage = () => {
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
 
-  const isLoading = useSelector(selectContactListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.contacts.hasLoadedOnce);
   const contacts = useSelector(selectFormattedContacts);
+  const store = useStore<RootState>();
 
   useEffect(() => {
-    dispatch(fetchContactsRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.contacts;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchContactsRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
@@ -221,7 +225,11 @@ const ContactListPage = () => {
           </Stack>
         }
       >
-        <ListKpiBar items={kpiItems} sx={{ px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiItems}
+          loading={!hasLoadedOnce}
+          sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -258,7 +266,7 @@ const ContactListPage = () => {
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>

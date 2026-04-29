@@ -8,13 +8,15 @@ import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import ListKpiBar from 'components/ListKpiBar';
 import { ListLayout } from 'components/ListLayout';
+import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import type { Driver } from 'features/carrier/types';
 import { selectAllCarriers } from 'features/carrier/store/selectors/carrierSelectors';
 import { fetchDriversRequest, setCarrierIdFilter } from '../../store/reducers';
 import {
   selectDriverKpis,
-  selectDriverListLoading,
   selectFilteredDrivers,
 } from '../../store/selectors/driverSelectors';
 import type { DriverTab } from '../../store/selectors/driverSelectors';
@@ -34,13 +36,17 @@ const DriverListPage = () => {
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
 
-  const isLoading = useSelector(selectDriverListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.drivers.hasLoadedOnce);
   const carriers = useSelector(selectAllCarriers);
   const kpiData = useSelector(selectDriverKpis);
+  const store = useStore<RootState>();
 
   useEffect(() => {
-    dispatch(fetchDriversRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.drivers;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchDriversRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
@@ -242,7 +248,11 @@ const DriverListPage = () => {
           </Stack>
         }
       >
-        <ListKpiBar items={kpiData} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiData}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -281,7 +291,7 @@ const DriverListPage = () => {
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>

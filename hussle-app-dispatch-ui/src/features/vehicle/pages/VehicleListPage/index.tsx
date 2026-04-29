@@ -8,7 +8,10 @@ import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import ListKpiBar from 'components/ListKpiBar';
 import UpgradePlanDialog from 'components/UpgradePlanDialog';
+import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import { getSubscriptionUsage } from 'utils/api/team/teamApi';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import type { Vehicle } from 'features/carrier/types';
@@ -16,7 +19,6 @@ import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntityS
 import { fetchVehiclesRequest } from '../../store/reducers';
 import {
   selectVehicleKpis,
-  selectVehicleListLoading,
   selectFilteredVehicles,
 } from '../../store/selectors/vehicleSelectors';
 import type { VehicleTab } from '../../store/selectors/vehicleSelectors';
@@ -43,11 +45,15 @@ const VehicleListPage = () => {
   const { openDrawer } = useDrawerActions();
   const organizationId = useSelector(organizationIdSelector);
 
-  const isLoading = useSelector(selectVehicleListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.vehicles.hasLoadedOnce);
+  const store = useStore<RootState>();
 
   useEffect(() => {
-    dispatch(fetchVehiclesRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.vehicles;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchVehiclesRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
@@ -221,7 +227,11 @@ const VehicleListPage = () => {
           </Stack>
         }
       >
-        <ListKpiBar items={kpiData} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiData}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -259,7 +269,7 @@ const VehicleListPage = () => {
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>

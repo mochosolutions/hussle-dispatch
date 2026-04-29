@@ -14,12 +14,14 @@ import { FilterBar } from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import ListKpiBar from 'components/ListKpiBar';
 import { EmptyState } from 'mocho/components/EmptyState/EmptyState';
+import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import type { CarrierListItem } from '../../types';
 import { fetchCarriersRequest } from '../../store/reducers/carrierNewPageSlice';
 import {
   selectCarrierKpis,
-  selectCarrierListLoading,
   selectFilteredCarriers,
   selectCarrierTabCounts,
 } from '../../store/selectors/carrierSelectors';
@@ -36,15 +38,21 @@ const CarrierListPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const isLoading = useSelector(selectCarrierListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.carriers.hasLoadedOnce);
   const kpiData = useSelector(selectCarrierKpis);
   const tabCounts = useSelector(selectCarrierTabCounts);
   const filteredSelector = useMemo(() => selectFilteredCarriers(activeTab), [activeTab]);
   const filteredCarriers = useSelector(filteredSelector);
+  const store = useStore<RootState>();
 
   useEffect(() => {
-    dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    // Read lastFetchedAt at effect time so the effect deps stay stable
+    // (depending on lastFetchedAt would loop: success updates it, which retriggers the fetch).
+    const { lastFetchedAt } = store.getState().pages.carriers;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
@@ -198,7 +206,11 @@ const CarrierListPage = () => {
           </Stack>
         }
       >
-        <ListKpiBar items={kpiData} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiData}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -244,7 +256,7 @@ const CarrierListPage = () => {
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>

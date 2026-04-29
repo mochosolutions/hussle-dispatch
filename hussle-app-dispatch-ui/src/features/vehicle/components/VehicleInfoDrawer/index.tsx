@@ -11,6 +11,7 @@ import {
 } from '../../../../mocho/components';
 import { DrawerSection } from 'components/EditDrawer';
 import { vehicleInfoSchema } from '../../validators/vehicleInfoSchema';
+import type { VehicleInfoFormValues } from '../../validators/vehicleInfoSchema';
 import type { UpdateVehicleInput } from 'features/carrier/types';
 import { VEHICLE_TYPE_LABELS, OWNERSHIP_LABELS } from '../../constants';
 import { useDispatch, useSelector } from 'store';
@@ -30,7 +31,7 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId,
     return null;
   }
 
-  const initialValues = {
+  const initialValues: VehicleInfoFormValues = {
     unitNumber: vehicle.unitNumber,
     make: vehicle.make ?? '',
     model: vehicle.model ?? '',
@@ -47,6 +48,7 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId,
     emergencyContactPhone: vehicle.emergencyContactPhone ?? '',
     warrantyInfo: vehicle.warrantyInfo ?? '',
     notes: vehicle.notes ?? '',
+    carrierId: '',
   };
 
   const vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(([value, label]) => ({

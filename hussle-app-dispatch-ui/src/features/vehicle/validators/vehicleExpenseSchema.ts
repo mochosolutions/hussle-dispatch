@@ -1,7 +1,8 @@
 import * as Yup from 'yup';
+import type { VehicleExpenseCategory } from 'features/carrier/types';
 
 export const vehicleExpenseSchema = Yup.object({
-  category: Yup.string()
+  category: Yup.mixed<VehicleExpenseCategory>()
     .required('Category is required')
     .oneOf(['FIXED', 'VARIABLE', 'SERVICE', 'WAGE', 'DEDUCTION']),
   expenseKey: Yup.string().required('Expense key is required'),

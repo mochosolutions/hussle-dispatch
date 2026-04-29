@@ -2,9 +2,9 @@ import React from 'react';
 import { Box, Stack } from '@mui/material';
 import { TextField, SelectField } from '@mocho/ui/components';
 import { useDispatch } from 'store';
-import type { VehicleType, VehicleOwnership } from 'features/carrier/types';
 import { createVehicleRequest } from '../../store/reducers';
 import { vehicleInfoSchema } from '../../validators/vehicleInfoSchema';
+import type { VehicleInfoFormValues } from '../../validators/vehicleInfoSchema';
 import { VEHICLE_TYPE_LABELS, OWNERSHIP_LABELS } from '../../constants';
 import CarrierAutocomplete from 'features/carrier/components/CarrierAutocomplete';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
@@ -24,15 +24,24 @@ const ownershipOptions = Object.entries(OWNERSHIP_LABELS).map(([value, label]) =
   label,
 }));
 
-const INITIAL_VALUES = {
+const INITIAL_VALUES: VehicleInfoFormValues = {
   carrierId: '',
   unitNumber: '',
-  type: 'DRY_VAN' as VehicleType,
-  ownership: 'OWNED' as VehicleOwnership,
+  type: 'DRY_VAN',
+  ownership: 'OWNED',
   make: '',
   model: '',
   year: '',
   vin: '',
+  licensePlate: '',
+  licensePlateState: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  warrantyInfo: '',
+  notes: '',
+  monthlyGrossTarget: '',
+  monthlyMilesTarget: '',
+  workingDaysPerMonth: '',
 };
 
 export const VehicleCreateDrawer: React.FC<VehicleCreateDrawerProps> = ({

@@ -47,6 +47,42 @@ export interface LoadPageState extends CrudPageState {
   onboardingBlock: OnboardingBlockInfo | null;
 }
 
+// ---------------------------------------------------------------------------
+// Board view persistence in localStorage — initialised at slice creation so
+// the persisted view is part of `initialState` rather than restored via a
+// component-level useEffect. Self-documenting: the persisted value flows
+// through the same Redux pipeline as any other action-driven state change.
+// ---------------------------------------------------------------------------
+
+const BOARD_VIEW_STORAGE_KEY = 'dispatch-board-view';
+
+const isBoardView = (value: string): value is BoardView =>
+  value === 'kanban' ||
+  value === 'table' ||
+  value === 'driver' ||
+  value === 'intel' ||
+  value === 'map';
+
+const readPersistedBoardView = (): BoardView => {
+  try {
+    const stored = localStorage.getItem(BOARD_VIEW_STORAGE_KEY);
+    if (stored && isBoardView(stored)) {
+      return stored;
+    }
+  } catch {
+    // localStorage may be unavailable (SSR, private browsing, etc.)
+  }
+  return 'table';
+};
+
+const persistBoardView = (view: BoardView): void => {
+  try {
+    localStorage.setItem(BOARD_VIEW_STORAGE_KEY, view);
+  } catch {
+    // localStorage may be unavailable
+  }
+};
+
 const loadPageInitialExtras: Pick<
   LoadPageState,
   | 'boardView'
@@ -61,7 +97,7 @@ const loadPageInitialExtras: Pick<
   | 'datIngesting'
   | 'onboardingBlock'
 > = {
-  boardView: 'table',
+  boardView: readPersistedBoardView(),
   filters: {},
   lastRefreshed: null,
   commandCenterLayers: { showDrivers: true, showFeedLoads: true, showActiveLoads: true },
@@ -141,6 +177,7 @@ export const loadPageReducer = (
 ): LoadPageState => {
   // Handle custom actions first
   if (setBoardView.match(action)) {
+    persistBoardView(action.payload);
     return { ...state, boardView: action.payload };
   }
 

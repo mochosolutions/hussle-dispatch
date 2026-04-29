@@ -14,14 +14,16 @@ import ListKpiBar from 'components/ListKpiBar';
 import type { KpiItem } from 'components/ListKpiBar';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import type { Customer, CustomerFilters } from '../../types';
 import {
   fetchCustomersRequest,
   setCustomerFilters,
 } from '../../store/reducers/customerPageSlice';
 import {
-  selectCustomerListLoading,
   selectCustomerFilters,
   selectFilteredCustomers,
   selectAllCustomers,
@@ -60,15 +62,19 @@ const CustomerListPage = () => {
   const filters = useSelector(selectCustomerFilters);
   const filteredCustomers = useSelector(selectFilteredCustomers);
   const allCustomers = useSelector(selectAllCustomers);
-  const isLoading = useSelector(selectCustomerListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.customers.hasLoadedOnce);
+  const store = useStore<RootState>();
 
   const typeValue = filters.type ?? 'all';
   const statusValue = filters.status ?? 'all';
   const searchValue = filters.search ?? '';
 
   useEffect(() => {
-    dispatch(fetchCustomersRequest({ page: 1, limit: PAGE_LIMIT }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.customers;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchCustomersRequest({ page: 1, limit: PAGE_LIMIT }));
+    }
+  }, [dispatch, store]);
 
   const handleTypeChange = useCallback(
     (value: string) => {
@@ -288,7 +294,11 @@ const CustomerListPage = () => {
           </Stack>
         }
       >
-        <ListKpiBar items={kpiItems} sx={{ px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiItems}
+          loading={!hasLoadedOnce}
+          sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -329,7 +339,7 @@ const CustomerListPage = () => {
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>

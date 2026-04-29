@@ -12,14 +12,6 @@ interface DriverScheduleOverrideDrawerProps {
   onClose: () => void;
 }
 
-interface OverrideFormValues {
-  date: string;
-  type: ScheduleOverrideType;
-  startTime: string;
-  endTime: string;
-  reason: string;
-}
-
 const TIME_REGEX = /^\d{2}:\d{2}$/;
 
 const overrideSchema = Yup.object({
@@ -27,18 +19,26 @@ const overrideSchema = Yup.object({
   type: Yup.mixed<ScheduleOverrideType>()
     .oneOf(['OFF', 'MODIFIED', 'ADDED'])
     .required('Type is required'),
-  startTime: Yup.string().when('type', {
-    is: (type: string) => type === 'MODIFIED' || type === 'ADDED',
-    then: (schema) => schema.matches(TIME_REGEX, 'Required').required('Start time is required'),
-    otherwise: (schema) => schema.optional(),
-  }),
-  endTime: Yup.string().when('type', {
-    is: (type: string) => type === 'MODIFIED' || type === 'ADDED',
-    then: (schema) => schema.matches(TIME_REGEX, 'Required').required('End time is required'),
-    otherwise: (schema) => schema.optional(),
-  }),
-  reason: Yup.string().optional(),
-}) as Yup.ObjectSchema<OverrideFormValues>;
+  startTime: Yup.string()
+    .defined()
+    .default('')
+    .when('type', {
+      is: (type: string) => type === 'MODIFIED' || type === 'ADDED',
+      then: (schema) => schema.matches(TIME_REGEX, 'Required').required('Start time is required'),
+      otherwise: (schema) => schema,
+    }),
+  endTime: Yup.string()
+    .defined()
+    .default('')
+    .when('type', {
+      is: (type: string) => type === 'MODIFIED' || type === 'ADDED',
+      then: (schema) => schema.matches(TIME_REGEX, 'Required').required('End time is required'),
+      otherwise: (schema) => schema,
+    }),
+  reason: Yup.string().defined().default(''),
+}).required();
+
+type OverrideFormValues = Yup.InferType<typeof overrideSchema>;
 
 const OVERRIDE_TYPE_OPTIONS: { value: ScheduleOverrideType; label: string }[] = [
   { value: 'OFF', label: 'Day Off' },

@@ -326,7 +326,7 @@ export interface CreateVehicleInput {
   notes?: string | null;
 }
 
-export interface UpdateVehicleInput {
+export type UpdateVehicleInput = {
   carrierId?: string | null;
   unitNumber?: string;
   make?: string | null;
@@ -346,7 +346,7 @@ export interface UpdateVehicleInput {
   workingDaysPerMonth?: number | null;
   expenses?: UpsertVehicleExpense[];
   notes?: string | null;
-}
+};
 
 export interface Contact {
   id: string;

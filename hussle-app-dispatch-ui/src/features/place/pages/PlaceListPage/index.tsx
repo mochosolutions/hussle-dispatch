@@ -8,13 +8,13 @@ import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import ListKpiBar from 'components/ListKpiBar';
 import { ListLayout } from 'components/ListLayout';
+import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import type { PlaceListItem, FacilityType } from '../../types';
 import { fetchPlacesRequest } from '../../store/reducers/placePageSlice';
-import {
-  selectFormattedPlaces,
-  selectPlaceListLoading,
-} from '../../store/selectors/placeSelectors';
+import { selectFormattedPlaces } from '../../store/selectors/placeSelectors';
 import {
   PlaceNameCellRenderer,
   PlaceFacilityTypeCellRenderer,
@@ -41,11 +41,15 @@ const PlaceListPage = () => {
   const { openDrawer } = useDrawerActions();
 
   const places = useSelector(selectFormattedPlaces);
-  const isLoading = useSelector(selectPlaceListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.places.hasLoadedOnce);
+  const store = useStore<RootState>();
 
   useEffect(() => {
-    dispatch(fetchPlacesRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.places;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchPlacesRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
@@ -227,7 +231,11 @@ const PlaceListPage = () => {
           </Stack>
         }
       >
-        <ListKpiBar items={kpiItems} sx={{ px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiItems}
+          loading={!hasLoadedOnce}
+          sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -269,7 +277,7 @@ const PlaceListPage = () => {
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>

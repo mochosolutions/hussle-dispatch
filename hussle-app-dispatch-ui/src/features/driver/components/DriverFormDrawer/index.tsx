@@ -20,6 +20,7 @@ import { DrawerSection } from 'components/EditDrawer';
 import { useDispatch, useSelector } from 'store';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 import { driverInfoSchema } from '../../validators/driverInfoSchema';
+import type { DriverInfoFormValues } from '../../validators/driverInfoSchema';
 import { createDriverRequest, updateDriverRequest } from '../../store/reducers';
 import {
   DRIVER_LICENSE_TYPE_OPTIONS,
@@ -43,21 +44,21 @@ interface DriverFormDrawerProps {
   onClose: () => void;
 }
 
-const EMPTY_VALUES = {
-  carrierId: '',
+const EMPTY_VALUES: DriverInfoFormValues = {
+  carrierId: null,
   firstName: '',
   lastName: '',
   phone: '',
   email: '',
-  licenseType: 'CLASS_D' as const,
+  licenseType: 'CLASS_D',
   licenseNumber: '',
   licenseState: '',
   licenseExpiry: '',
-  endorsements: [] as EndorsementCode[],
+  endorsements: [],
   homeBaseCity: '',
   homeBaseState: '',
-  payType: 'PERCENTAGE' as DriverPayType,
-  payRate: 30 as number,
+  payType: 'PERCENTAGE',
+  payRate: 30,
   notes: '',
 };
 
@@ -78,7 +79,7 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
     return null;
   }
 
-  const initialValues =
+  const initialValues: DriverInfoFormValues =
     isEditing && driver
       ? {
           carrierId: driver.carrierId ?? null,
@@ -90,11 +91,11 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
           licenseNumber: driver.licenseNumber ?? '',
           licenseState: driver.licenseState ?? '',
           licenseExpiry: driver.licenseExpiry ?? '',
-          endorsements: driver.endorsements ?? ([] as EndorsementCode[]),
+          endorsements: driver.endorsements ?? [],
           homeBaseCity: driver.homeBaseCity ?? '',
           homeBaseState: driver.homeBaseState ?? '',
-          payType: (driver.payType ?? 'PERCENTAGE') as DriverPayType,
-          payRate: driver.payRate ?? 30,
+          payType: driver.payType ?? 'PERCENTAGE',
+          payRate: driver.payRate !== null ? parseFloat(driver.payRate) : 30,
           notes: driver.notes ?? '',
         }
       : {
@@ -102,9 +103,9 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
           ...(initialCarrierId ? { carrierId: initialCarrierId } : {}),
         };
 
-  const handleSubmit = (values: typeof initialValues) => {
-    const payType = toDriverPayType(String(values.payType));
-    const payRate = parseFloat(String(values.payRate));
+  const handleSubmit = (values: DriverInfoFormValues) => {
+    const payType = toDriverPayType(values.payType);
+    const { payRate } = values;
 
     if (isEditing && driverId) {
       dispatch(updateDriverRequest({ id: driverId, data: { ...values, payType, payRate } }));
@@ -180,13 +181,13 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
               </Box>
             </Box>
             <DateField name="licenseExpiry" label="License Expiry" formik={formik} />
-            {String(formik.values.licenseType).startsWith('CDL_') && (
+            {formik.values.licenseType.startsWith('CDL_') && (
               <Autocomplete
                 multiple
                 options={ENDORSEMENT_OPTIONS}
                 getOptionLabel={(opt) => `${opt.value} — ${opt.label}`}
                 value={ENDORSEMENT_OPTIONS.filter((o) =>
-                  ((formik.values.endorsements as EndorsementCode[]) ?? []).includes(o.value),
+                  (formik.values.endorsements ?? []).includes(o.value),
                 )}
                 onChange={(_, selected) => {
                   void formik.setFieldValue(

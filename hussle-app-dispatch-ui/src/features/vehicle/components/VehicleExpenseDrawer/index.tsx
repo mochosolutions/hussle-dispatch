@@ -5,10 +5,10 @@ import { Box, Typography, Button, Stack, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { SelectField, TypeaheadField, CurrencyField } from '@mocho/ui/components';
-import type { TypeaheadOption } from '@mocho/ui/components/form-fields';
+import type { TypeaheadOption } from '@mocho/ui/forms';
 import { FormDrawer } from 'mocho/components/FormDrawer';
 import { vehicleExpenseSchema } from '../../validators/vehicleExpenseSchema';
-import type { UpsertVehicleExpense } from 'features/carrier/types';
+import type { VehicleExpenseFormValues } from '../../validators/vehicleExpenseSchema';
 import { useDispatch, useSelector } from 'store';
 import { selectVehicleById } from '../../store/selectors/vehicleSelectors';
 import { updateVehicleRequest } from '../../store/reducers';
@@ -41,11 +41,9 @@ const expensesFormSchema = Yup.object({
   expenses: Yup.array().of(vehicleExpenseSchema).required().min(0),
 }).required();
 
-interface ExpenseFormValues {
-  expenses: UpsertVehicleExpense[];
-}
+type ExpenseFormValues = Yup.InferType<typeof expensesFormSchema>;
 
-const EMPTY_EXPENSE: UpsertVehicleExpense = {
+const EMPTY_EXPENSE: VehicleExpenseFormValues = {
   category: 'FIXED',
   expenseKey: '',
   label: '',
@@ -59,10 +57,10 @@ const toExpenseKey = (label: string): string =>
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '');
 
-interface ExpenseFieldsProps {
+type ExpenseFieldsProps = {
   formikProps: FormikProps<ExpenseFormValues>;
   initialExpenseCount: number;
-}
+};
 
 const ExpenseFields: React.FC<ExpenseFieldsProps> = ({ formikProps, initialExpenseCount }) => {
   return (
@@ -186,7 +184,7 @@ export const VehicleExpenseDrawer: React.FC<VehicleExpenseDrawerProps> = ({
     return null;
   }
 
-  const initialExpenses: UpsertVehicleExpense[] = vehicle.expenses.map((exp) => ({
+  const initialExpenses: VehicleExpenseFormValues[] = vehicle.expenses.map((exp) => ({
     category: exp.category,
     expenseKey: exp.expenseKey,
     label: exp.label,

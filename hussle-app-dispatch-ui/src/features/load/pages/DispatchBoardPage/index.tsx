@@ -1,9 +1,12 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useStore } from 'react-redux';
 import { PageWrapper } from '@mocho/ui/components';
 import { ListLayout } from 'components/ListLayout';
 import { useSelector, useDispatch } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import { fetchLoadsRequest, setBoardView, setLoadFilters } from '../../store/reducers';
 import { fetchDriversRequest } from 'features/driver/store/reducers';
 import {
@@ -30,41 +33,17 @@ import { DispatchBoardToolbar } from '../../components/DispatchBoardPage/Dispatc
 import { LoadTable } from '../../components/DispatchBoardPage/LoadTable';
 
 // ---------------------------------------------------------------------------
-// Board view persistence in localStorage
+// Board view persistence is owned by `loadPageSlice` — initial state reads
+// from localStorage at slice creation, and `setBoardView` writes to
+// localStorage in the reducer. No component-level persistence wiring needed.
 // ---------------------------------------------------------------------------
 
 const DISPATCH_BOARD_LOAD_LIMIT = 100;
-const BOARD_VIEW_STORAGE_KEY = 'dispatch-board-view';
-
-const getPersistedBoardView = (): BoardView | null => {
-  try {
-    const stored = localStorage.getItem(BOARD_VIEW_STORAGE_KEY);
-    if (
-      stored === 'kanban' ||
-      stored === 'table' ||
-      stored === 'driver' ||
-      stored === 'intel' ||
-      stored === 'map'
-    ) {
-      return stored;
-    }
-  } catch {
-    // localStorage may be unavailable
-  }
-  return null;
-};
-
-const persistBoardView = (view: BoardView) => {
-  try {
-    localStorage.setItem(BOARD_VIEW_STORAGE_KEY, view);
-  } catch {
-    // localStorage may be unavailable
-  }
-};
 
 const DispatchBoardPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const store = useStore<RootState>();
 
   const isLoading = useSelector(selectLoadListLoading);
   const loadsByGroup = useSelector(selectLoadsByKanbanGroup);
@@ -73,24 +52,15 @@ const DispatchBoardPage = () => {
   const weeklyGrossLoading = useSelector(selectWeeklyGrossLoading);
   const weeklyGrossFetched = useSelector(selectWeeklyGrossFetched);
 
-  // Initialise board view from localStorage on mount
-  const mountedRef = useRef(false);
-
+  // Fetch loads and drivers on mount, gated by the loads slice's stale-guard
+  // so a quick remount within the TTL window reuses the existing data.
   useEffect(() => {
-    if (mountedRef.current) return;
-    mountedRef.current = true;
-
-    const persisted = getPersistedBoardView();
-    if (persisted && persisted !== boardView) {
-      dispatch(setBoardView(persisted));
+    const { lastFetchedAt } = store.getState().pages.loads;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchLoadsRequest({ page: 1, limit: DISPATCH_BOARD_LOAD_LIMIT }));
     }
-  }, [boardView, dispatch]);
-
-  // Fetch loads and drivers on mount
-  useEffect(() => {
-    dispatch(fetchLoadsRequest({ page: 1, limit: DISPATCH_BOARD_LOAD_LIMIT }));
     dispatch(fetchDriversRequest({ page: 1, limit: 100 }));
-  }, [dispatch]);
+  }, [dispatch, store]);
 
   // Fetch weekly gross data if not already loaded or attempted
   useEffect(() => {
@@ -102,8 +72,8 @@ const DispatchBoardPage = () => {
   const handleViewChange = useCallback(
     (_event: React.MouseEvent<HTMLElement>, value: BoardView | null) => {
       if (value) {
+        // Persistence happens inside the reducer.
         dispatch(setBoardView(value));
-        persistBoardView(value);
       }
     },
     [dispatch],
