@@ -54,11 +54,13 @@ const buildMockDeps = () => {
 
   const storageProvider: jest.Mocked<Pick<
     StorageProvider,
-    'getPresignedPutUrl' | 'getPresignedGetUrl' | 'exists'
+    'getPresignedPutUrl' | 'getPresignedGetUrl' | 'exists' | 'getMetadata' | 'delete'
   >> = {
     getPresignedPutUrl: jest.fn(),
     getPresignedGetUrl: jest.fn(),
     exists: jest.fn(),
+    getMetadata: jest.fn().mockResolvedValue({ size: 0 }),
+    delete: jest.fn().mockResolvedValue(undefined),
   };
 
   const eventBus: jest.Mocked<EventBus> = {

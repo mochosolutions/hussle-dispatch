@@ -1,11 +1,11 @@
 import { createReadStream, createWriteStream } from 'fs';
-import { access, mkdir, readFile, readdir, rmdir, unlink, writeFile } from 'fs/promises';
+import { access, mkdir, readFile, readdir, rmdir, stat, unlink, writeFile } from 'fs/promises';
 import { dirname, join, relative, resolve } from 'path';
 import type { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import type { Logger } from '../utils/logger';
 import { StorageDeleteError, StorageFileNotFoundError, StorageWriteError } from './storageErrors';
-import type { DeleteByPrefixResult, StorageGetResult, StorageProvider } from './storageProvider';
+import type { DeleteByPrefixResult, StorageGetResult, StorageObjectMetadata, StorageProvider } from './storageProvider';
 
 interface LocalStorageProviderConfig {
   basePath: string;
@@ -222,6 +222,16 @@ export const createLocalStorageProvider = (
     return { deletedCount: keys.length };
   };
 
+  const getMetadata = async (key: string): Promise<StorageObjectMetadata> => {
+    const filePath = getFilePath(key);
+    try {
+      const stats = await stat(filePath);
+      return { size: stats.size };
+    } catch {
+      throw new StorageFileNotFoundError(key);
+    }
+  };
+
   const exists = async (key: string): Promise<boolean> => {
     const filePath = getFilePath(key);
     try {
@@ -243,5 +253,6 @@ export const createLocalStorageProvider = (
     deleteByPrefix,
     list,
     exists,
+    getMetadata,
   };
 };

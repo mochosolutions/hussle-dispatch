@@ -16,7 +16,7 @@ import {
   StorageReadError,
   StorageWriteError,
 } from './storageErrors';
-import type { DeleteByPrefixResult, StorageGetResult, StorageProvider } from './storageProvider';
+import type { DeleteByPrefixResult, StorageGetResult, StorageObjectMetadata, StorageProvider } from './storageProvider';
 
 interface S3StorageProviderConfig {
   s3Client: S3Client;
@@ -238,6 +238,20 @@ export const createS3StorageProvider = (
     }
   };
 
+  const getMetadata = async (key: string): Promise<StorageObjectMetadata> => {
+    const normalizedKey = normalizeKey(key);
+    try {
+      const response = await s3Client.send(
+        new HeadObjectCommand({ Bucket: bucket, Key: normalizedKey }),
+      );
+      return { size: response.ContentLength ?? 0 };
+    } catch (error: unknown) {
+      const reason = getErrorMessage(error);
+      logger.error(`${PROVIDER_NAME}: getMetadata failed`, { key: normalizedKey, reason });
+      throw new StorageReadError(normalizedKey, reason);
+    }
+  };
+
   const exists = async (key: string): Promise<boolean> => {
     const normalizedKey = normalizeKey(key);
     logger.info(`${PROVIDER_NAME}: checking existence`, { key: normalizedKey });
@@ -376,6 +390,7 @@ export const createS3StorageProvider = (
     getPresignedGetUrl,
     delete: deleteFile,
     exists,
+    getMetadata,
     deleteMany,
     deleteByPrefix,
     list,

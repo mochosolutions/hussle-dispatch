@@ -4,7 +4,7 @@ import { createLocalStorageProvider } from './localStorageProvider';
 import { createS3StorageProvider } from './s3StorageProvider';
 import type { StorageProvider } from './storageProvider';
 
-export type { StorageProvider, StorageGetResult, DeleteByPrefixResult } from './storageProvider';
+export type { StorageProvider, StorageGetResult, DeleteByPrefixResult, StorageObjectMetadata } from './storageProvider';
 export { StorageFileNotFoundError, StorageWriteError, StorageReadError, StorageDeleteError, StorageNotImplementedError } from './storageErrors';
 export { createLocalStorageProvider } from './localStorageProvider';
 export { createS3StorageProvider } from './s3StorageProvider';

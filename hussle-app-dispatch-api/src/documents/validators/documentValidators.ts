@@ -22,6 +22,7 @@ export const presignValidator = Yup.object({
     entityId: Yup.string().uuid('entityId must be a valid uuid').required('entityId is required'),
     expiresAt: Yup.string().optional(),
     metadata: Yup.object().optional(),
+    fileSize: Yup.number().integer().positive().optional(),
   }),
 });
 

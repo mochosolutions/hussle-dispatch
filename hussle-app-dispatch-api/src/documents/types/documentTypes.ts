@@ -113,6 +113,7 @@ export interface PresignInput {
   uploadedByUserId?: string;
   expiresAt?: string;
   metadata?: DocumentMetadata;
+  fileSize?: number;
 }
 
 export interface PresignResult {

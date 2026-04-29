@@ -15,6 +15,7 @@ export const presignMapper = (req: Request): PresignInput => {
     entityId: string;
     expiresAt?: string;
     metadata?: DocumentMetadata;
+    fileSize?: number;
   };
 
   return {
@@ -27,5 +28,6 @@ export const presignMapper = (req: Request): PresignInput => {
     uploadedByUserId: req.user?.userId,
     expiresAt: body.expiresAt,
     metadata: body.metadata,
+    fileSize: body.fileSize,
   };
 };

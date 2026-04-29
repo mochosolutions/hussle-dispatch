@@ -1,3 +1,4 @@
+import { basename } from 'path';
 import type { Prisma } from '@prisma/client';
 import type { StorageProvider } from '@/shared/storage';
 import type { EventBus } from '@/shared/messaging';
@@ -21,7 +22,8 @@ import {
   DocumentUploadNotConfirmedError,
   DocumentAlreadyConfirmedError,
 } from '../types/documentErrors';
-import { PRESIGN_EXPIRATION_SECONDS, UPLOAD_STATUS } from '../types/documentTypes';
+import { MAX_FILE_SIZES, PRESIGN_EXPIRATION_SECONDS, UPLOAD_STATUS } from '../types/documentTypes';
+import { ValidationError } from '@/shared/errors/commonErrors';
 
 interface DocumentServiceDeps {
   documentRepository: DocumentRepoPort;
@@ -37,12 +39,22 @@ interface DocumentServiceDeps {
  */
 const buildStorageKey = (input: PresignInput): string => {
   const typeLower = input.type.toLowerCase();
-  return `${input.organizationId}/${input.entityType}s/${input.entityId}/${typeLower}/${input.fileName}`;
+  const safeFileName = basename(input.fileName);
+  return `${input.organizationId}/${input.entityType}s/${input.entityId}/${typeLower}/${safeFileName}`;
 };
 
 export const createDocumentService = (deps: DocumentServiceDeps): DocumentService => ({
   presign: async (input: PresignInput): Promise<PresignResult> => {
     const s3Key = buildStorageKey(input);
+
+    if (input.fileSize !== undefined) {
+      const maxSize = MAX_FILE_SIZES[input.mimeType];
+      if (maxSize !== undefined && input.fileSize > maxSize) {
+        const limitMb = maxSize / (1024 * 1024);
+        throw new ValidationError(`File size exceeds the ${limitMb}MB limit for ${input.mimeType}`);
+      }
+    }
+
     const presignedUrl = await deps.storageProvider.getPresignedPutUrl(
       s3Key,
       input.mimeType,
@@ -88,6 +100,21 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
     const fileExists = await deps.storageProvider.exists(document.s3Key);
     if (!fileExists) {
       throw new DocumentUploadNotConfirmedError(input.documentId);
+    }
+
+    // Validate uploaded file size against per-mime-type limits
+    if (document.mimeType !== null) {
+      const maxSize = MAX_FILE_SIZES[document.mimeType];
+      if (maxSize !== undefined) {
+        const metadata = await deps.storageProvider.getMetadata(document.s3Key);
+        if (metadata.size > maxSize) {
+          await deps.storageProvider.delete(document.s3Key);
+          const limitMb = maxSize / (1024 * 1024);
+          throw new ValidationError(
+            `Uploaded file exceeds the ${limitMb}MB limit for ${document.mimeType}`,
+          );
+        }
+      }
     }
 
     // Update status to confirmed

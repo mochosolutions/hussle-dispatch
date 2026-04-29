@@ -9,6 +9,10 @@ export interface DeleteByPrefixResult {
   deletedCount: number;
 }
 
+export interface StorageObjectMetadata {
+  size: number;
+}
+
 export interface StorageProvider {
   put(key: string, body: Buffer | Readable, contentType: string): Promise<string>;
   get(key: string): Promise<StorageGetResult>;
@@ -20,4 +24,5 @@ export interface StorageProvider {
   deleteByPrefix(prefix: string): Promise<DeleteByPrefixResult>;
   list(prefix: string): Promise<string[]>;
   exists(key: string): Promise<boolean>;
+  getMetadata(key: string): Promise<StorageObjectMetadata>;
 }
