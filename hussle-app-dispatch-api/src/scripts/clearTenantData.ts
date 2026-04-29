@@ -1,13 +1,22 @@
 #!/usr/bin/env ts-node
 import 'dotenv/config';
 
+import {
+  AdminDeleteUserCommand,
+  DescribeUserPoolCommand,
+  ListUsersCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 import { DeleteObjectsCommand } from '@aws-sdk/client-s3';
-import { unlink } from 'node:fs/promises';
+import type { ChannelModel } from 'amqplib';
+import amqplib from 'amqplib';
+import { mkdir, readdir, rm, unlink } from 'node:fs/promises';
 import path from 'node:path';
+import * as readline from 'node:readline';
 import { prisma } from '../config/database';
 import { env } from '../config/env';
 import { s3Client } from '../config/s3';
 import { redisClient } from '../shared/redisClient';
+import { cognitoIdentityClient } from '../shared/utils/cognitoClient';
 import {
   buildTenantCleanupPlan,
   getDefaultTenantScopeFieldNames,
@@ -22,6 +31,8 @@ interface ScriptOptions {
   isForce: boolean;
   skipS3: boolean;
   skipCache: boolean;
+  skipCognito: boolean;
+  skipRabbitmq: boolean;
   keepUsers: boolean;
   clearAll: boolean;
   deleteTenantRecord: boolean;
@@ -49,6 +60,7 @@ interface TenantSummary {
   orphanedUsers: number;
   storageKeys: number;
   cacheKeys: number;
+  cognitoSubs: string[];
   tenantRecordAction: 'none' | 'soft-delete' | 'hard-delete';
 }
 
@@ -58,6 +70,9 @@ interface CleanupSummary {
   orphanedUsers: number;
   storageKeys: number;
   cacheKeys: number;
+  cognitoUsersDeleted: number;
+  cognitoUsersFailed: number;
+  rabbitmqExchangesReset: number;
 }
 
 interface PrismaModelDelegate {
@@ -183,8 +198,10 @@ const parseOptions = (args: string[]): ScriptOptions => {
   return {
     isDryRun: args.includes('--dry-run'),
     isForce: args.includes('--force'),
-    skipS3: args.includes('--skip-s3'),
+    skipS3: args.includes('--skip-s3') || args.includes('--skip-storage'),
     skipCache: args.includes('--skip-cache'),
+    skipCognito: args.includes('--skip-cognito'),
+    skipRabbitmq: args.includes('--skip-rabbitmq'),
     keepUsers: args.includes('--keep-users'),
     clearAll,
     deleteTenantRecord,
@@ -690,8 +707,10 @@ const printUsage = (): void => {
   writeLine('Options:');
   writeLine('  --dry-run                   Preview without deleting data');
   writeLine('  --force                     Skip the 5 second confirmation delay');
-  writeLine('  --skip-s3                   Skip storage cleanup');
+  writeLine('  --skip-s3                   Skip storage cleanup (alias: --skip-storage)');
   writeLine('  --skip-cache                Skip Redis cleanup');
+  writeLine('  --skip-cognito              Skip Cognito user deletion');
+  writeLine('  --skip-rabbitmq             Skip RabbitMQ exchange reset (--all only)');
   writeLine('  --keep-users                Keep users that become membership-orphaned');
   writeLine('  --delete-tenant-record      Soft delete the tenant record when supported');
   writeLine('  --hard-delete-tenant-record Hard delete the tenant record after cleanup');
@@ -740,6 +759,9 @@ const printTenantSummary = (summary: TenantSummary, options: ScriptOptions): voi
 
   writeLine(`  Storage keys: ${options.skipS3 ? 'skipped' : summary.storageKeys}`);
   writeLine(`  Cache keys:   ${options.skipCache ? 'skipped' : summary.cacheKeys}`);
+  writeLine(
+    `  Cognito subs: ${options.skipCognito || options.keepUsers ? 'skipped' : summary.cognitoSubs.length}`,
+  );
   if (summary.tenantRecordAction !== 'none') {
     writeLine(`  Tenant record: ${summary.tenantRecordAction}`);
   }
@@ -763,6 +785,12 @@ const printFinalSummary = (summary: CleanupSummary, options: ScriptOptions): voi
 
   writeLine(`  Storage keys: ${options.skipS3 ? 'skipped' : summary.storageKeys}`);
   writeLine(`  Cache keys:   ${options.skipCache ? 'skipped' : summary.cacheKeys}`);
+  writeLine(
+    `  Cognito users deleted: ${options.skipCognito ? 'skipped' : summary.cognitoUsersDeleted}`,
+  );
+  if (summary.cognitoUsersFailed > 0) {
+    writeLine(`  Cognito users failed:  ${summary.cognitoUsersFailed}`);
+  }
 };
 
 const buildCleanupSummary = (): CleanupSummary => ({
@@ -771,15 +799,400 @@ const buildCleanupSummary = (): CleanupSummary => ({
   orphanedUsers: 0,
   storageKeys: 0,
   cacheKeys: 0,
+  cognitoUsersDeleted: 0,
+  cognitoUsersFailed: 0,
+  rabbitmqExchangesReset: 0,
 });
 
 const incrementModelTotal = (summary: CleanupSummary, modelName: string, count: number): void => {
   summary.modelTotals[modelName] = (summary.modelTotals[modelName] ?? 0) + count;
 };
 
-const main = async (): Promise<void> => {
-  const args = process.argv.slice(2);
-  const options = parseOptions(args);
+const promptForLine = async (prompt: string): Promise<string> => {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+};
+
+const enforceEnvironmentGuard = async (options: ScriptOptions): Promise<void> => {
+  const envName = env.ENVIRONMENT_NAME;
+  const normalized = envName.toLowerCase();
+
+  writeLine('');
+  writeLine('================================================================');
+  writeLine(`  TARGET ENVIRONMENT: ${envName.toUpperCase()}`);
+  writeLine('================================================================');
+  writeLine('');
+
+  if (normalized.startsWith('prod')) {
+    writeErrorLine('ERROR: This script is not allowed against a production environment.');
+    writeErrorLine('Refusing to run regardless of --force.');
+    process.exit(2);
+  }
+
+  if (normalized === 'unknown') {
+    writeErrorLine('ERROR: ENVIRONMENT_NAME is not set in your .env file.');
+    writeErrorLine('Set ENVIRONMENT_NAME=local (or dev/staging) before running this script.');
+    process.exit(2);
+  }
+
+  if (options.isDryRun) {
+    writeLine('Dry run mode: skipping interactive environment confirmation.');
+    return;
+  }
+
+  if (normalized === 'local' && options.isForce) {
+    writeLine('Local environment with --force: skipping interactive confirmation.');
+    return;
+  }
+
+  const answer = await promptForLine(`Type "${envName}" to confirm cleanup of this environment: `);
+  if (answer.trim().toLowerCase() !== normalized) {
+    writeLine('');
+    writeLine('Confirmation did not match. Cancelling.');
+    process.exit(0);
+  }
+
+  writeLine('');
+  writeLine('Environment confirmed. Proceeding...');
+};
+
+const getCognitoSubsForUsers = async (userIds: string[]): Promise<string[]> => {
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const userDelegate = getModelDelegate('User');
+  const rows = await userDelegate.findMany({
+    where: { id: { in: userIds } },
+    select: { externalId: true },
+  });
+
+  if (!Array.isArray(rows)) {
+    throw new ScriptExecutionError('Expected user rows when resolving Cognito subs.');
+  }
+
+  return rows
+    .filter((row): row is { externalId: string } => hasStringField(row, 'externalId'))
+    .map((row) => row.externalId)
+    .filter((value, index, values) => values.indexOf(value) === index);
+};
+
+const deleteCognitoUsersBySubs = async (
+  subs: string[],
+): Promise<{ deleted: number; failed: number }> => {
+  if (subs.length === 0 || env.COGNITO_USER_POOL_ID.length === 0) {
+    return { deleted: 0, failed: 0 };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (const sub of subs) {
+    try {
+      const listResponse = await cognitoIdentityClient.send(
+        new ListUsersCommand({
+          UserPoolId: env.COGNITO_USER_POOL_ID,
+          Filter: `sub = "${sub}"`,
+          Limit: 1,
+        }),
+      );
+      const cognitoUser = listResponse.Users?.[0];
+      if (cognitoUser?.Username === undefined) {
+        continue;
+      }
+
+      await cognitoIdentityClient.send(
+        new AdminDeleteUserCommand({
+          UserPoolId: env.COGNITO_USER_POOL_ID,
+          Username: cognitoUser.Username,
+        }),
+      );
+      deleted += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+
+  return { deleted, failed };
+};
+
+const countCognitoUsers = async (): Promise<number | undefined> => {
+  if (env.COGNITO_USER_POOL_ID.length === 0) {
+    return undefined;
+  }
+
+  try {
+    const response = await cognitoIdentityClient.send(
+      new DescribeUserPoolCommand({ UserPoolId: env.COGNITO_USER_POOL_ID }),
+    );
+    return response.UserPool?.EstimatedNumberOfUsers ?? 0;
+  } catch {
+    return undefined;
+  }
+};
+
+const deleteAllCognitoUsers = async (): Promise<{ deleted: number; failed: number }> => {
+  if (env.COGNITO_USER_POOL_ID.length === 0) {
+    return { deleted: 0, failed: 0 };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+  let paginationToken: string | undefined;
+
+  do {
+    const listResponse = await cognitoIdentityClient.send(
+      new ListUsersCommand({
+        UserPoolId: env.COGNITO_USER_POOL_ID,
+        Limit: 60,
+        PaginationToken: paginationToken,
+      }),
+    );
+
+    const users = listResponse.Users ?? [];
+    for (const cognitoUser of users) {
+      if (cognitoUser.Username === undefined) {
+        continue;
+      }
+      try {
+        await cognitoIdentityClient.send(
+          new AdminDeleteUserCommand({
+            UserPoolId: env.COGNITO_USER_POOL_ID,
+            Username: cognitoUser.Username,
+          }),
+        );
+        deleted += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    paginationToken = listResponse.PaginationToken;
+  } while (paginationToken !== undefined);
+
+  return { deleted, failed };
+};
+
+const RABBITMQ_EXCHANGES: { name: string; type: string; args?: Record<string, unknown> }[] = [
+  { name: 'fleet-command.events', type: 'topic' },
+  {
+    name: 'fleet-command.delayed',
+    type: 'x-delayed-message',
+    args: { 'x-delayed-type': 'topic' },
+  },
+];
+
+const purgeRabbitMqExchanges = async (): Promise<number> => {
+  let connection: ChannelModel | undefined;
+  let resetCount = 0;
+
+  try {
+    connection = await amqplib.connect(env.RABBITMQ_URL);
+    const channel = await connection.createChannel();
+
+    for (const exchange of RABBITMQ_EXCHANGES) {
+      try {
+        await channel.deleteExchange(exchange.name);
+      } catch {
+        // Exchange may not exist yet; deletion failure is non-fatal.
+      }
+
+      try {
+        await channel.assertExchange(exchange.name, exchange.type, {
+          durable: true,
+          arguments: exchange.args,
+        });
+        resetCount += 1;
+      } catch {
+        // x-delayed-message plugin may not be installed; skip silently.
+      }
+    }
+
+    await channel.close();
+  } finally {
+    if (connection !== undefined) {
+      await connection.close();
+    }
+  }
+
+  return resetCount;
+};
+
+const clearLocalStorageAll = async (): Promise<number> => {
+  if (env.STORAGE_BACKEND !== 'local') {
+    return 0;
+  }
+
+  const basePath = path.resolve(process.cwd(), env.STORAGE_LOCAL_PATH);
+  let removedCount = 0;
+
+  try {
+    const entries = await readdir(basePath, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = path.join(basePath, entry.name);
+      await rm(entryPath, { recursive: true, force: true });
+      removedCount += 1;
+    }
+  } catch (error: unknown) {
+    if (isRecord(error) && error.code === 'ENOENT') {
+      await mkdir(basePath, { recursive: true });
+      return 0;
+    }
+    throw error;
+  }
+
+  return removedCount;
+};
+
+const getTruncatableTableNames = (skippedModelNames: string[]): string[] => {
+  const skippedSet = new Set(skippedModelNames);
+  return Prisma.dmmf.datamodel.models
+    .filter((model) => !skippedSet.has(model.name))
+    .map((model) => model.dbName ?? model.name);
+};
+
+const truncateAllTables = async (skippedModelNames: string[]): Promise<number> => {
+  const tableNames = getTruncatableTableNames(skippedModelNames);
+  if (tableNames.length === 0) {
+    return 0;
+  }
+
+  // SEC-22 (accepted risk): TRUNCATE cannot accept identifiers as bound parameters.
+  // Table names come from the Prisma DMMF whitelist, not user input.
+  const quotedTables = tableNames.map((name) => `"${name}"`).join(', ');
+  await prisma.$executeRawUnsafe('SET session_replication_role = replica;');
+  try {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE;`);
+  } finally {
+    await prisma.$executeRawUnsafe('SET session_replication_role = DEFAULT;');
+  }
+
+  return tableNames.length;
+};
+
+const countAllUsers = async (): Promise<number> => {
+  const userDelegate = getModelDelegate('User');
+  const result = await userDelegate.count();
+  return typeof result === 'number' ? result : 0;
+};
+
+const runClearAll = async (options: ScriptOptions): Promise<void> => {
+  const summary = buildCleanupSummary();
+  const truncatableTables = getTruncatableTableNames(options.skippedModelNames);
+
+  writeLine('');
+  writeLine('Configuration:');
+  writeLine(`  Mode:          ${options.isDryRun ? 'DRY RUN' : 'LIVE'}`);
+  writeLine(`  Scope:         ALL TENANTS (full wipe)`);
+  writeLine(`  Skip storage:  ${options.skipS3 ? 'Yes' : 'No'}`);
+  writeLine(`  Skip cache:    ${options.skipCache ? 'Yes' : 'No'}`);
+  writeLine(`  Skip cognito:  ${options.skipCognito ? 'Yes' : 'No'}`);
+  writeLine(`  Skip rabbitmq: ${options.skipRabbitmq ? 'Yes' : 'No'}`);
+
+  const totalUsers = await countAllUsers();
+  const cognitoUserCount = options.skipCognito ? undefined : await countCognitoUsers();
+  const formatCognitoCount = (): string => {
+    if (env.COGNITO_USER_POOL_ID.length === 0) {
+      return 'not configured (skip)';
+    }
+    if (options.skipCognito) {
+      return `${env.COGNITO_USER_POOL_ID} (skipped via --skip-cognito)`;
+    }
+    if (cognitoUserCount === undefined) {
+      return `${env.COGNITO_USER_POOL_ID} (count unavailable)`;
+    }
+    return `${env.COGNITO_USER_POOL_ID} (~${cognitoUserCount} user(s))`;
+  };
+
+  writeLine('');
+  writeLine('Preview:');
+  writeLine(`  Tables to truncate:  ${truncatableTables.length}`);
+  writeLine(`  Users in database:   ${totalUsers}`);
+  writeLine(`  Cognito user pool:   ${formatCognitoCount()}`);
+  writeLine(`  RabbitMQ exchanges:  ${RABBITMQ_EXCHANGES.length}`);
+  writeLine(`  Local storage path:  ${env.STORAGE_BACKEND === 'local' ? env.STORAGE_LOCAL_PATH : 'using S3 (skip)'}`);
+
+  if (options.isDryRun) {
+    writeLine('');
+    writeLine('Dry run complete. No data was deleted.');
+    return;
+  }
+
+  if (!options.isForce) {
+    writeLine('');
+    writeLine('This operation will WIPE ALL DATA across every external store.');
+    writeLine('Waiting 5 seconds. Press Ctrl+C to cancel.');
+    await delay(5000);
+  }
+
+  if (!options.skipCognito && env.COGNITO_USER_POOL_ID.length > 0) {
+    writeLine('');
+    writeLine('Deleting all Cognito users...');
+    const cognitoResult = await deleteAllCognitoUsers();
+    summary.cognitoUsersDeleted = cognitoResult.deleted;
+    summary.cognitoUsersFailed = cognitoResult.failed;
+    writeLine(
+      `  Deleted ${cognitoResult.deleted} Cognito user(s) (${cognitoResult.failed} failed)`,
+    );
+  }
+
+  writeLine('');
+  writeLine(`Truncating ${truncatableTables.length} table(s)...`);
+  const truncatedCount = await truncateAllTables(options.skippedModelNames);
+  truncatableTables.forEach((tableName) => {
+    summary.modelTotals[tableName] = 0;
+  });
+  writeLine(`  Truncated ${truncatedCount} table(s)`);
+
+  if (!options.skipCache) {
+    try {
+      await redisClient.connect();
+      writeLine('');
+      writeLine('Flushing Redis database...');
+      await redisClient.flushdb();
+      writeLine('  Redis FLUSHDB complete');
+    } catch {
+      writeErrorLine('  Redis flush skipped: failed to connect.');
+    }
+  }
+
+  if (!options.skipRabbitmq) {
+    writeLine('');
+    writeLine('Resetting RabbitMQ exchanges...');
+    try {
+      summary.rabbitmqExchangesReset = await purgeRabbitMqExchanges();
+      writeLine(`  Reset ${summary.rabbitmqExchangesReset} exchange(s)`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      writeErrorLine(`  RabbitMQ reset failed: ${message}`);
+    }
+  }
+
+  if (!options.skipS3 && env.STORAGE_BACKEND === 'local') {
+    writeLine('');
+    writeLine('Clearing local storage directory...');
+    const removed = await clearLocalStorageAll();
+    summary.storageKeys = removed;
+    writeLine(`  Removed ${removed} top-level entries from ${env.STORAGE_LOCAL_PATH}`);
+  }
+
+  writeLine('');
+  writeLine('Full wipe completed.');
+  writeLine('');
+  writeLine('Summary:');
+  writeLine(`  Tables truncated:        ${truncatedCount}`);
+  writeLine(`  Cognito users deleted:   ${summary.cognitoUsersDeleted}`);
+  writeLine(`  Cognito users failed:    ${summary.cognitoUsersFailed}`);
+  writeLine(`  RabbitMQ exchanges:      ${summary.rabbitmqExchangesReset}`);
+  writeLine(`  Local storage entries:   ${summary.storageKeys}`);
+};
+
+const runClearByTenant = async (options: ScriptOptions): Promise<void> => {
   const rootModelName = getRootModelName(options);
   const plan = buildTenantCleanupPlan({
     rootModelCandidates: [rootModelName],
@@ -788,7 +1201,6 @@ const main = async (): Promise<void> => {
   });
   const summary = buildCleanupSummary();
 
-  writeLine('CLEAR TENANT DATA');
   printConfiguration(options, rootModelName, plan.includedModelNames);
 
   const tenants = await resolveTenants(rootModelName, options);
@@ -822,6 +1234,10 @@ const main = async (): Promise<void> => {
       idsByModel.get('Membership') ?? [],
       options.keepUsers,
     );
+    const cognitoSubs =
+      !options.skipCognito && !options.keepUsers
+        ? await getCognitoSubsForUsers(orphanedUserIds)
+        : [];
     const storageKeys = options.skipS3 ? [] : await getStorageKeys(idsByModel, options);
     const cacheKeys =
       !options.skipCache && cacheReady ? await getCacheKeys(tenant.id, options.cachePatterns) : [];
@@ -840,6 +1256,7 @@ const main = async (): Promise<void> => {
       orphanedUsers: orphanedUserIds.length,
       storageKeys: storageKeys.length,
       cacheKeys: cacheKeys.length,
+      cognitoSubs,
       tenantRecordAction: options.deleteTenantRecord
         ? options.hardDeleteTenantRecord
           ? 'hard-delete'
@@ -919,6 +1336,15 @@ const main = async (): Promise<void> => {
       writeLine(`  Deleted ${deletedUserCount} orphaned User record(s)`);
     }
 
+    if (tenantSummary.cognitoSubs.length > 0) {
+      const cognitoResult = await deleteCognitoUsersBySubs(tenantSummary.cognitoSubs);
+      summary.cognitoUsersDeleted += cognitoResult.deleted;
+      summary.cognitoUsersFailed += cognitoResult.failed;
+      writeLine(
+        `  Deleted ${cognitoResult.deleted} Cognito user(s) (${cognitoResult.failed} failed)`,
+      );
+    }
+
     if (!options.skipS3 && storageKeys.length > 0) {
       const deletedStorageCount = await deleteS3Objects(storageKeys);
       writeLine(`  Deleted ${deletedStorageCount} storage object(s)`);
@@ -948,6 +1374,20 @@ const main = async (): Promise<void> => {
   writeLine('');
   writeLine('Tenant cleanup completed.');
   printFinalSummary(summary, options);
+};
+
+const main = async (): Promise<void> => {
+  const args = process.argv.slice(2);
+  const options = parseOptions(args);
+
+  writeLine('CLEAR TENANT DATA');
+  await enforceEnvironmentGuard(options);
+
+  if (options.clearAll) {
+    await runClearAll(options);
+  } else {
+    await runClearByTenant(options);
+  }
 };
 
 main()

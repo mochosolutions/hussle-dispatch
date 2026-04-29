@@ -21,6 +21,13 @@ const requireInProd = (key: string): string =>
 export const env = {
   PORT: parseInt(getEnv('PORT', '3001'), 10),
   NODE_ENV: getEnv('NODE_ENV', 'development') as 'development' | 'production' | 'test',
+  ENVIRONMENT_NAME: getEnv('ENVIRONMENT_NAME', 'unknown') as
+    | 'local'
+    | 'dev'
+    | 'staging'
+    | 'prod'
+    | 'production'
+    | 'unknown',
   DATABASE_URL: requireEnv('DATABASE_URL'),
   REDIS_URL: getEnv('REDIS_URL', 'redis://localhost:6379'),
   RABBITMQ_URL: getEnv('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672'),

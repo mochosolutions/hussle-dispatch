@@ -21,6 +21,10 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "db:clear-tenant": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts",
+    "db:clear-tenant:dry": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts --dry-run",
+    "db:clear-all": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts --all",
+    "db:clear-all:dry": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts --all --dry-run",
     "validate": "npm run lint && npm run lint:deps && npm run check-ts && npm run test"
   },
   "dependencies": {

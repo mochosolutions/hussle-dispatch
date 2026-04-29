@@ -302,14 +302,9 @@ validate:
 # Docker — Local Build & Run
 # ============================================================================
 
-# Per-environment VITE_API_URL (baked into UI image at build time)
-VITE_API_URL_local = http://localhost:3001
-VITE_API_URL_dev   = https://api.dev.hussledispatch.online
-VITE_API_URL      ?= $(or $(VITE_API_URL_$(ENV)),http://localhost:3001)
-
 build-local:
 	@echo "$(BLUE)🏗️  Building prod images locally...$(NC)"
-	ECR_REGISTRY=fleet-local IMAGE_TAG=local VITE_API_URL=http://localhost:3001 \
+	ECR_REGISTRY=fleet-local IMAGE_TAG=local \
 	docker compose -f docker-compose-build.yml \
 		--profile api --profile ui \
 		build
@@ -338,13 +333,14 @@ build-push: ensure-workspace ecr-login validate-env
 	@echo "$(BLUE)🚀 Building and pushing images to ECR ($(ENV))...$(NC)"
 	@ECR_REGISTRY=$$($(CHDIR) output -raw ecr_registry_url 2>/dev/null); \
 	IMAGE_TAG=$(ENV)-$$(git rev-parse --short HEAD); \
+	VITE_API_URL=https://$$(grep '^API_HOST=' "$(ENV_FILE)" | cut -d= -f2); \
 	echo "$(BLUE)  Registry : $$ECR_REGISTRY$(NC)"; \
 	echo "$(BLUE)  Tag      : $$IMAGE_TAG$(NC)"; \
-	echo "$(BLUE)  VITE_URL : $(VITE_API_URL)$(NC)"; \
+	echo "$(BLUE)  VITE_URL : $$VITE_API_URL$(NC)"; \
 	DOCKER_DEFAULT_PLATFORM=linux/amd64 \
 	ECR_REGISTRY="$$ECR_REGISTRY" \
 	IMAGE_TAG="$$IMAGE_TAG" \
-	VITE_API_URL="$(VITE_API_URL)" \
+	VITE_API_URL="$$VITE_API_URL" \
 	docker compose -f docker-compose-build.yml \
 		--profile api --profile ui --profile rabbitmq \
 		build && \
