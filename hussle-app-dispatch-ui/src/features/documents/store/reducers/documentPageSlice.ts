@@ -27,13 +27,11 @@ interface FetchDocumentsPayload {
 interface DocumentPageState {
   loading: Record<string, string>;
   errors: Record<string, string>;
-  downloadUrls: Record<string, string>;
 }
 
 const initialState: DocumentPageState = {
   loading: {},
   errors: {},
-  downloadUrls: {},
 };
 
 const documentPageSlice = createSlice({
@@ -114,27 +112,6 @@ const documentPageSlice = createSlice({
       state.errors[key] = action.payload.error;
     },
 
-    getDownloadUrlRequest(state, action: PayloadAction<{ documentId: string }>) {
-      const key = `download:${action.payload.documentId}`;
-      state.loading[key] = 'Pending';
-      state.errors[key] = '';
-    },
-    getDownloadUrlSuccess(
-      state,
-      action: PayloadAction<{ documentId: string; url: string }>,
-    ) {
-      const key = `download:${action.payload.documentId}`;
-      state.loading[key] = 'Fulfilled';
-      state.downloadUrls[action.payload.documentId] = action.payload.url;
-    },
-    getDownloadUrlFailure(
-      state,
-      action: PayloadAction<{ documentId: string; error: string }>,
-    ) {
-      const key = `download:${action.payload.documentId}`;
-      state.loading[key] = 'Rejected';
-      state.errors[key] = action.payload.error;
-    },
   },
 });
 
@@ -152,9 +129,6 @@ export const {
   archiveDocumentRequest,
   archiveDocumentSuccess,
   archiveDocumentFailure,
-  getDownloadUrlRequest,
-  getDownloadUrlSuccess,
-  getDownloadUrlFailure,
 } = documentPageSlice.actions;
 
 export default documentPageSlice.reducer;

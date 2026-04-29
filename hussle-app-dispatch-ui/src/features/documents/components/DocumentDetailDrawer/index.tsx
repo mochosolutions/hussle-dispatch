@@ -4,7 +4,6 @@ import {
   Button,
   Drawer,
   IconButton,
-  Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
@@ -13,20 +12,15 @@ import { FileTextOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { enqueueSnackbar } from 'notistack';
 
-import { useDispatch, useSelector } from 'store';
+import { useSelector } from 'store';
+import config from '../../../../config';
 import SectionCard from 'components/SectionCard';
-import { BodyMuted, DetailRow, WarningText } from 'components/Typography';
+import { BodyMuted, DetailRow } from 'components/Typography';
 import { formattedCurrentUserSelector } from 'features/auth/store/selectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
 
-import {
-  selectDocumentById,
-  selectDownloadUrlByDocId,
-  selectDownloadUrlError,
-  selectDownloadUrlLoading,
-} from '../../store/selectors/documentSelectors';
-import { getDownloadUrlRequest } from '../../store/reducers/documentPageSlice';
+import { selectDocumentById } from '../../store/selectors/documentSelectors';
 import { DOC_TYPE_CONFIG, type DocumentContext } from '../../constants';
 import {
   DocumentType,
@@ -89,10 +83,7 @@ const openInNewTab = (url: string): void => {
 interface DocumentPreviewAreaProps {
   fileName: string;
   mimeType: string | null;
-  url: string | undefined;
-  isLoading: boolean;
-  hasError: boolean;
-  onRetry: () => void;
+  url: string;
   onDownload: () => void;
 }
 
@@ -100,31 +91,8 @@ const DocumentPreviewArea: React.FC<DocumentPreviewAreaProps> = ({
   fileName,
   mimeType,
   url,
-  isLoading,
-  hasError,
-  onRetry,
   onDownload,
 }) => {
-  if (isLoading) {
-    return <Skeleton variant="rectangular" height={420} sx={{ borderRadius: 1 }} />;
-  }
-
-  if (hasError || !url) {
-    return (
-      <Stack
-        spacing={1.5}
-        alignItems="center"
-        justifyContent="center"
-        sx={{ py: 6, px: 2, textAlign: 'center' }}
-      >
-        <WarningText>Couldn't load preview.</WarningText>
-        <Button size="small" variant="outlined" onClick={onRetry}>
-          Retry
-        </Button>
-      </Stack>
-    );
-  }
-
   if (mimeType === 'application/pdf') {
     return (
       <iframe
@@ -214,20 +182,13 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   documentId,
   onClose,
 }) => {
-  const dispatch = useDispatch();
   const doc = useSelector(selectDocumentById(documentId));
-  const url = useSelector(selectDownloadUrlByDocId(documentId));
-  const isUrlLoading = useSelector(selectDownloadUrlLoading(documentId));
-  const urlError = useSelector(selectDownloadUrlError(documentId));
   const currentUser = useSelector(formattedCurrentUserSelector);
   const isAdmin = currentUser.role === 'ADMIN';
   const { openDrawer, closeDrawer } = useDrawerActions();
   const { openModal } = useModalActions();
 
-  // Trigger initial URL fetch
-  useEffect(() => {
-    dispatch(getDownloadUrlRequest({ documentId }));
-  }, [dispatch, documentId]);
+  const downloadUrl = `${config.apiUrl}/api/v1/documents/${documentId}/download`;
 
   // Handle case where the document was deleted while drawer is open
   useEffect(() => {
@@ -241,16 +202,8 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     return null;
   }
 
-  const handleRetry = () => {
-    dispatch(getDownloadUrlRequest({ documentId }));
-  };
-
   const handleDownload = () => {
-    if (url) {
-      openInNewTab(url);
-      return;
-    }
-    dispatch(getDownloadUrlRequest({ documentId }));
+    openInNewTab(downloadUrl);
   };
 
   const handleReplace = () => {
@@ -272,12 +225,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     });
   };
 
-  // When the URL fetch is finished but we never opened a tab via the
-  // download button, also surface URL via Download button click. We treat
-  // download button as "opens new tab when URL ready".
-  const downloadDisabled = isUrlLoading;
   const showFooterDelete = isAdmin;
-  const previewHasError = urlError !== '' && !isUrlLoading && !url;
 
   const uploaderName = doc.uploadedBy
     ? `${doc.uploadedBy.firstName} ${doc.uploadedBy.lastName}`.trim()
@@ -382,10 +330,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             <DocumentPreviewArea
               fileName={doc.fileName}
               mimeType={doc.mimeType}
-              url={url}
-              isLoading={isUrlLoading}
-              hasError={previewHasError}
-              onRetry={handleRetry}
+              url={downloadUrl}
               onDownload={handleDownload}
             />
           </SectionCard>
@@ -409,7 +354,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
         }}
       >
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" onClick={handleDownload} disabled={downloadDisabled}>
+          <Button variant="outlined" onClick={handleDownload}>
             Download
           </Button>
           <Button variant="outlined" onClick={handleReplace}>

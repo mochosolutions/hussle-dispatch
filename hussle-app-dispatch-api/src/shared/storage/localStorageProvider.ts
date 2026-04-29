@@ -114,8 +114,12 @@ export const createLocalStorageProvider = (
   const getPresignedGetUrl = async (
     key: string,
     _expiresIn?: number,
+    displayName?: string,
   ): Promise<string> => {
-    return `${baseUrl}/${key}`;
+    const base = `${baseUrl}/${key}`;
+    return displayName !== undefined
+      ? `${base}?filename=${encodeURIComponent(displayName)}`
+      : base;
   };
 
   const deleteFile = async (key: string): Promise<void> => {

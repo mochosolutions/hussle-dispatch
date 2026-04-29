@@ -4,7 +4,11 @@ import {
   DocumentAlreadyConfirmedError,
   DocumentUploadNotConfirmedError,
 } from '../../types/documentErrors';
-import { PRESIGN_EXPIRATION_SECONDS, UPLOAD_STATUS } from '../../types/documentTypes';
+import {
+  PRESIGN_EXPIRATION_SECONDS,
+  STANDARD_DOWNLOAD_TTL_SECONDS,
+  UPLOAD_STATUS,
+} from '../../types/documentTypes';
 import type { DocumentRepoPort, DocumentWithUploader } from '../../types/documentTypes';
 import type { StorageProvider } from '../../../shared/storage/storageProvider';
 import type { EventBus } from '../../../shared/messaging/eventBus';
@@ -265,7 +269,8 @@ describe('createDocumentService', () => {
       // Assert
       expect(deps.storageProvider.getPresignedGetUrl).toHaveBeenCalledWith(
         doc.s3Key,
-        PRESIGN_EXPIRATION_SECONDS,
+        STANDARD_DOWNLOAD_TTL_SECONDS,
+        'bol-signed-load-load-1-2026-01-01.pdf',
       );
       expect(result).toBe('https://s3.example.com/presigned-get');
     });

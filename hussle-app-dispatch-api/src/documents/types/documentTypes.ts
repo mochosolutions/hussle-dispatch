@@ -40,6 +40,28 @@ export const MAX_FILE_SIZES: Record<string, number> = {
  */
 export const PRESIGN_EXPIRATION_SECONDS = 900;
 
+const SENSITIVE_DOCUMENT_TYPES: ReadonlySet<DocumentType> = new Set<DocumentType>([
+  'W9',
+  'LICENSE',
+  'MEDICAL_CARD',
+  'INSURANCE_CERT',
+  'HAZMAT_ENDORSEMENT',
+  'TWIC_CARD',
+  'DISPATCH_AGREEMENT',
+  'CARRIER_PACKET',
+  'PSP_REPORT',
+  'BACKGROUND_CHECK',
+  'DRUG_TEST',
+]);
+
+export const SENSITIVE_DOWNLOAD_TTL_SECONDS = 60;
+export const STANDARD_DOWNLOAD_TTL_SECONDS = 300;
+
+export const getDownloadTtl = (type: DocumentType): number =>
+  SENSITIVE_DOCUMENT_TYPES.has(type)
+    ? SENSITIVE_DOWNLOAD_TTL_SECONDS
+    : STANDARD_DOWNLOAD_TTL_SECONDS;
+
 export const UPLOAD_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
@@ -234,6 +256,6 @@ export interface BulkDownloadInput {
 }
 
 export interface BulkDownloadResult {
-  downloads: Array<{ documentId: string; fileName: string; presignedUrl: string }>;
-  errors: Array<{ documentId: string; reason: string }>;
+  downloads: { documentId: string; fileName: string; presignedUrl: string }[];
+  errors: { documentId: string; reason: string }[];
 }

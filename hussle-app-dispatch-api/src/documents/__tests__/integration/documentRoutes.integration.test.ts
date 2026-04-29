@@ -44,6 +44,7 @@ jest.mock('@/middleware/auth', () => {
 interface FetchResult {
   status: number;
   body: unknown;
+  headers: Record<string, string | string[] | undefined>;
 }
 
 interface SendRequestOptions {
@@ -161,7 +162,7 @@ const sendRequest = async (options: SendRequestOptions): Promise<FetchResult> =>
           } catch {
             parsed = raw;
           }
-          resolve({ status: res.statusCode ?? 0, body: parsed });
+          resolve({ status: res.statusCode ?? 0, body: parsed, headers: res.headers });
         });
       },
     );
@@ -444,7 +445,7 @@ describe('POST /documents/:id/confirm', () => {
 describe('GET /documents/:id/download', () => {
   const docId = '550e8400-e29b-41d4-a716-446655440001';
 
-  it('returns 200 with download url when document is confirmed', async () => {
+  it('returns 302 redirect to presigned download URL when document is confirmed', async () => {
     // Arrange
     const downloadUrl = 'https://example.com/download';
     const service = buildService({ getDownloadUrl: jest.fn().mockResolvedValue(downloadUrl) });
@@ -453,6 +454,7 @@ describe('GET /documents/:id/download', () => {
 
     try {
       // Act
+      // Node http.request does not follow redirects by default — status 302 is received directly
       const res = await sendRequest({
         baseUrl: url,
         method: 'GET',
@@ -460,8 +462,9 @@ describe('GET /documents/:id/download', () => {
       });
 
       // Assert
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ data: { url: downloadUrl } });
+      expect(res.status).toBe(302);
+      expect(typeof res.headers['location']).toBe('string');
+      expect((res.headers['location'] as string).length).toBeGreaterThan(0);
     } finally {
       await close();
     }

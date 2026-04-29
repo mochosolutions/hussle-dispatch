@@ -187,6 +187,7 @@ export const createS3StorageProvider = (
   const getPresignedGetUrl = async (
     key: string,
     expiresIn?: number,
+    displayName?: string,
   ): Promise<string> => {
     const normalizedKey = normalizeKey(key);
     const ttl = expiresIn ?? DEFAULT_PRESIGN_EXPIRATION_SECONDS;
@@ -201,6 +202,9 @@ export const createS3StorageProvider = (
         new GetObjectCommand({
           Bucket: bucket,
           Key: normalizedKey,
+          ...(displayName !== undefined && {
+            ResponseContentDisposition: `attachment; filename="${displayName}"`,
+          }),
         }),
         { expiresIn: ttl },
       );

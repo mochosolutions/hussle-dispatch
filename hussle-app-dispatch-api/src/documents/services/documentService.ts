@@ -1,4 +1,4 @@
-import { basename } from 'path';
+import { basename, extname } from 'path';
 import type { Prisma } from '@prisma/client';
 import type { StorageProvider } from '@/shared/storage';
 import type { EventBus } from '@/shared/messaging';
@@ -22,7 +22,12 @@ import {
   DocumentUploadNotConfirmedError,
   DocumentAlreadyConfirmedError,
 } from '../types/documentErrors';
-import { MAX_FILE_SIZES, PRESIGN_EXPIRATION_SECONDS, UPLOAD_STATUS } from '../types/documentTypes';
+import {
+  MAX_FILE_SIZES,
+  PRESIGN_EXPIRATION_SECONDS,
+  UPLOAD_STATUS,
+  getDownloadTtl,
+} from '../types/documentTypes';
 import { ValidationError } from '@/shared/errors/commonErrors';
 
 interface DocumentServiceDeps {
@@ -41,6 +46,19 @@ const buildStorageKey = (input: PresignInput): string => {
   const typeLower = input.type.toLowerCase();
   const safeFileName = basename(input.fileName);
   return `${input.organizationId}/${input.entityType}s/${input.entityId}/${typeLower}/${safeFileName}`;
+};
+
+/**
+ * Builds a human-readable filename for download Content-Disposition headers.
+ *
+ * Example output: `bol-signed-load-cec8aba4-2024-01-15.pdf`
+ */
+const buildDisplayName = (document: DocumentWithUploader): string => {
+  const ext = extname(document.fileName);
+  const dateStr = new Date(document.createdAt).toISOString().slice(0, 10);
+  const entityShort = document.entityId.slice(0, 8);
+  const typeLabel = document.type.toLowerCase().replace(/_/g, '-');
+  return `${typeLabel}-${document.entityType}-${entityShort}-${dateStr}${ext}`;
 };
 
 export const createDocumentService = (deps: DocumentServiceDeps): DocumentService => ({
@@ -185,9 +203,11 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       throw new DocumentUploadNotConfirmedError(input.id);
     }
 
+    const displayName = buildDisplayName(document);
     const presignedUrl = await deps.storageProvider.getPresignedGetUrl(
       document.s3Key,
-      PRESIGN_EXPIRATION_SECONDS,
+      getDownloadTtl(document.type),
+      displayName,
     );
 
     return presignedUrl;
@@ -244,9 +264,11 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
         return;
       }
 
+      const displayName = buildDisplayName(doc);
       const presignedUrl = await deps.storageProvider.getPresignedGetUrl(
         doc.s3Key,
-        PRESIGN_EXPIRATION_SECONDS,
+        getDownloadTtl(doc.type),
+        displayName,
       );
 
       downloads.push({

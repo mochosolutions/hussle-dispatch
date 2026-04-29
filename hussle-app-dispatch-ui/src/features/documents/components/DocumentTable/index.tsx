@@ -15,6 +15,7 @@ import type { ColDef, RowClickedEvent, SelectionChangedEvent } from 'ag-grid-com
 import { NewDataGrid } from '@mocho/ui/components';
 
 import { useSelector, useDispatch } from 'store';
+import config from '../../../../config';
 import { Body, BodyMuted } from 'components/Typography';
 import { formattedCurrentUserSelector } from 'features/auth/store/selectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
@@ -24,13 +25,11 @@ import { DOC_TYPE_CONFIG, type DocumentContext } from '../../constants';
 import {
   bulkDownloadRequest,
   fetchDocumentsRequest,
-  getDownloadUrlRequest,
 } from '../../store/reducers/documentPageSlice';
 import {
   selectBulkDownloadLoading,
   selectDocumentsByEntity,
   selectDocumentsFetchLoading,
-  selectDownloadUrlByDocId,
 } from '../../store/selectors/documentSelectors';
 import {
   DocumentType,
@@ -123,21 +122,11 @@ export const ActionsCellRenderer: React.FC<ActionsCellRendererProps> = ({
   entityId,
   isAdmin,
 }) => {
-  const dispatch = useDispatch();
   const { openDrawer } = useDrawerActions();
   const { openModal } = useModalActions();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [pendingDownload, setPendingDownload] = useState<boolean>(false);
 
-  const downloadUrl = useSelector(selectDownloadUrlByDocId(data.id));
   const open = Boolean(anchorEl);
-
-  useEffect(() => {
-    if (pendingDownload && isStringValue(downloadUrl)) {
-      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
-      setPendingDownload(false);
-    }
-  }, [pendingDownload, downloadUrl]);
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -160,12 +149,8 @@ export const ActionsCellRenderer: React.FC<ActionsCellRendererProps> = ({
   const handleDownload = (event: React.MouseEvent) => {
     event.stopPropagation();
     setAnchorEl(null);
-    if (isStringValue(downloadUrl)) {
-      window.open(downloadUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    setPendingDownload(true);
-    dispatch(getDownloadUrlRequest({ documentId: data.id }));
+    const downloadUrl = `${config.apiUrl}/api/v1/documents/${data.id}/download`;
+    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleReplace = (event: React.MouseEvent) => {
