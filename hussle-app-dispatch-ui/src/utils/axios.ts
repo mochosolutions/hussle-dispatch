@@ -70,9 +70,14 @@ const axiosInstance = axios.create({
 });
 
 const extractErrorMessage = (error: AxiosError): string => {
-  const data = error.response?.data as { errors?: Array<{ message: string }> } | undefined;
+  const data = error.response?.data as { errors?: Array<{ message: string; code?: string }> } | undefined;
   const firstError = data?.errors?.[0];
   return firstError?.message ?? 'Access denied';
+};
+
+const extractErrorCode = (error: AxiosError): string | undefined => {
+  const data = error.response?.data as { errors?: Array<{ message: string; code?: string }> } | undefined;
+  return data?.errors?.[0]?.code;
 };
 
 axiosInstance.interceptors.response.use(
@@ -86,11 +91,12 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 403) {
       const message = extractErrorMessage(error);
-      if (!isAuthRequest) {
-        // 403 on any non-auth request means the user has lost access (org suspended,
-        // permissions revoked, permissionsVersion mismatch). Force a clean logout.
+      const code = extractErrorCode(error);
+      if (!isAuthRequest && code === 'ORG_SUSPENDED') {
+        // Org is suspended — user genuinely lost access, force logout
         handleAuthFailure();
-      } else {
+      } else if (!isAuthRequest) {
+        // RBAC violation — user is authenticated but lacks the required role
         enqueueSnackbar(message, { variant: 'error' });
       }
       return Promise.reject(error);

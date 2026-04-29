@@ -1,4 +1,5 @@
 import { call, put, spawn } from 'redux-saga/effects';
+import { closeSnackbar } from 'notistack';
 import { logoutSuccess } from '../authSlice';
 import axiosPrivate, { setLoggingOut } from 'utils/axios';
 import { getNavigate } from 'utils/getNavigate';
@@ -21,9 +22,10 @@ export function* handleLogout() {
   // Set flag BEFORE any async work so the axios interceptor skips refresh/redirect
   setLoggingOut(true);
 
-  // Clear local state immediately — this prevents auto re-auth on next load
+  // Clear local state immediately — root reducer resets entire store on logoutSuccess
   localStorage.removeItem('rememberMe');
   yield put(logoutSuccess());
+  yield call(closeSnackbar); // dismiss active toasts (notistack is not Redux)
 
   // Navigate to login
   try {

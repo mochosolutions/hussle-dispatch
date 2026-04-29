@@ -122,6 +122,20 @@ export class ForbiddenError extends CustomError {
   }
 }
 
+export class OrgSuspendedError extends CustomError {
+  statusCode = 403;
+  readonly code = 'ORG_SUSPENDED';
+
+  constructor() {
+    super('Organization is suspended or inactive');
+    Object.setPrototypeOf(this, OrgSuspendedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
 export class InvalidTransitionError extends CustomError {
   statusCode = 422;
   readonly code = 'INVALID_STATUS_TRANSITION';

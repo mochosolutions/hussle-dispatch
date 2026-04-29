@@ -11,6 +11,7 @@ export {
   AssignmentValidationError,
   UnauthorizedError,
   ForbiddenError,
+  OrgSuspendedError,
   InvalidTransitionError,
   OnboardingBlockError,
   ProhibitedCommodityError,

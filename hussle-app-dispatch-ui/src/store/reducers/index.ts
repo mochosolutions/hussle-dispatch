@@ -1,4 +1,6 @@
 import { combineReducers } from '@reduxjs/toolkit';
+import type { AnyAction } from '@reduxjs/toolkit';
+import { logoutSuccess } from 'features/auth/store/authSlice';
 import uiReducer from 'features/ui/store/reducers/uiSlice';
 import { carrierReducer } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { carrierPageSlice } from 'features/carrier/store/reducers/carrierNewPageSlice';
@@ -70,10 +72,23 @@ const entities = combineReducers({
   teamMembers: teamEntityReducer,
 });
 
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   pages,
   entities,
   auth: authReducer,
 });
+
+type AppState = ReturnType<typeof appReducer>;
+
+const rootReducer = (state: AppState | undefined, action: AnyAction): AppState => {
+  if (action.type === logoutSuccess.type) {
+    // Reset the entire store on logout. Each slice returns its initialState when
+    // called with undefined. Auth handles the logoutSuccess action normally via
+    // logoutReducer (sets isLoggedIn: false, clears user). Entity + page state is
+    // wiped atomically before the next render — no stale data between sessions.
+    return appReducer(undefined, action);
+  }
+  return appReducer(state, action);
+};
 
 export default rootReducer;

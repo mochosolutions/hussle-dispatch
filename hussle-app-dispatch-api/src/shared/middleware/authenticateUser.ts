@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import type Redis from 'ioredis';
 import { logger } from '@/shared/utils/logger';
 import { OrganizationStatus } from '@/auth/constants/enums';
+import { OrgSuspendedError } from '@/shared/errors';
 
 export interface AuthPayload {
   userId: string;
@@ -92,8 +93,7 @@ export const createAppAuthMiddleware = (options: { redis: Redis; jwtSecret?: str
       }
 
       if (decoded.orgStatus !== OrganizationStatus.ACTIVE) {
-        res.status(403).json({ errors: [{ message: 'Organization is suspended or inactive' }] });
-        return;
+        throw new OrgSuspendedError();
       }
 
       req.user = decoded;
