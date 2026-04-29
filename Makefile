@@ -320,7 +320,7 @@ run-local:
 	docker compose \
 		-f docker-compose-prod.yml \
 		-f docker-compose.local.yml \
-		--env-file .env.local \
+		--env-file .env \
 		up --build
 
 ecr-login: ensure-workspace

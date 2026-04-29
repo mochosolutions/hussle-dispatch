@@ -5,7 +5,7 @@ hussle-app-dispatch-api/node_modules/
 
 
 **/*/.env
-.env.local
+/.env
 *.env.bak
 .env.bak
 

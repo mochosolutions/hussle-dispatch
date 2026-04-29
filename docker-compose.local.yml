@@ -1,5 +1,5 @@
 # Local Production Testing Override
-# Usage: docker compose -f docker-compose-prod.yml -f docker-compose.local.yml --env-file .env.local up
+# Usage: docker compose -f docker-compose-prod.yml -f docker-compose.local.yml --env-file .env up
 #
 # Extends docker-compose-prod.yml to:
 # - Use a local bridge network instead of external dokploy-network
