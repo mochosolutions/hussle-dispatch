@@ -33,10 +33,10 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fleet-postgres:5432/${POSTGRES_DB}
       - REDIS_URL=redis://fleet-redis:6379
       - RABBITMQ_URL=amqp://guest:${RABBITMQ_DEFAULT_PASS}@fleet-rabbitmq:5672
-      - ALLOW_ORIGINS=https://app.fleet.${DOMAIN}
-      - FRONTEND_URL=https://app.fleet.${DOMAIN}
-      - TRACKING_BASE_URL=https://app.fleet.${DOMAIN}
-      - PUBLIC_SHORT_BASE_URL=https://api.fleet.${DOMAIN}
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - TRACKING_BASE_URL=${TRACKING_BASE_URL}
+      - PUBLIC_SHORT_BASE_URL=${PUBLIC_SHORT_BASE_URL}
       - AWS_REGION=us-east-1
       - SMS_BACKEND=twilio
       - STORAGE_BACKEND=s3
@@ -54,7 +54,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.fleet-api.rule=Host(`api.fleet.${DOMAIN}`)"
+      - "traefik.http.routers.fleet-api.rule=Host(`${API_HOST}`)"
       - "traefik.http.routers.fleet-api.entrypoints=websecure"
       - "traefik.http.routers.fleet-api.tls=true"
       - "traefik.http.routers.fleet-api.tls.certresolver=letsencrypt"
@@ -72,7 +72,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.fleet-ui.rule=Host(`app.fleet.${DOMAIN}`)"
+      - "traefik.http.routers.fleet-ui.rule=Host(`${UI_HOST}`)"
       - "traefik.http.routers.fleet-ui.entrypoints=websecure"
       - "traefik.http.routers.fleet-ui.tls=true"
       - "traefik.http.routers.fleet-ui.tls.certresolver=letsencrypt"
