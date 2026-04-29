@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -51,6 +51,7 @@
     "lodash": "^4.17.23",
     "morgan": "^1.10.0",
     "node-cron": "^4.2.1",
+    "@react-email/components": "^0.0.36",
     "nodemailer": "^8.0.3",
     "puppeteer": "^24.40.0",
     "react": "^19.2.4",
@@ -86,6 +87,7 @@
     "ts-jest": "^29.2.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.56.1"
@@ -101,7 +103,6 @@
       "**/*.test.ts"
     ],
     "moduleNameMapper": {
-      "^@hussle/emails$": "<rootDir>/../hussle-emails/src/index.ts",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
     "collectCoverageFrom": [

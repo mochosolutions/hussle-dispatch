@@ -3,7 +3,7 @@ import type { NotificationService, EmailAttachment } from '../../shared/notifica
 import type { SettlementRepoPort, SettlementWithRelations, SendSettlementInput } from '../types/settlementTypes';
 import type { SettlementPdfGenerationPort } from './settlementPdfGenerationService';
 import Decimal from 'decimal.js';
-import { renderSettlementEmail } from '@hussle/emails';
+import { renderSettlementEmail } from '@/shared/emails';
 import { buildSettlementPdfData } from './settlementPdfDataBuilder';
 import { ValidationError, NotFoundError } from '../../shared/errors/commonErrors';
 
@@ -67,7 +67,7 @@ export const createSettlementEmailService = (
     const pdfData = buildSettlementPdfData(settlement);
     const pdfBuffer = await deps.pdfService.generateSettlementPdf(pdfData);
 
-    // 5. Render email via @hussle/emails
+    // 5. Render email
     const netDecimal = new Decimal(String(settlement.netEarnings));
     const { subject, html } = await renderSettlementEmail({
       settlementNumber: settlement.settlementNumber,

@@ -3,12 +3,14 @@
 .PHONY: help \
         bootstrap configure-server deploy health-check \
         cloudflare-lockdown dokploy-list-github-providers \
-        logs rollback \
+        logs rollback fill-env \
         tf-init-backend tf-plan-backend tf-apply-backend \
         tf-init tf-plan tf-apply tf-destroy \
         ensure-workspace workspaces current-workspace \
         drift outputs show-resources fmt validate \
-        status destroy
+        status destroy \
+        build-local run-local ecr-login build-push \
+        secrets-init secrets-check secrets-validate secrets-rotate-hcloud secrets-rotate-cloudflare secrets-show
 
 # ============================================================================
 # Configuration & Variables
@@ -56,12 +58,27 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Environments:$(NC)  dev | qa | staging | prod"
 	@echo ""
+	@echo "$(YELLOW)Secrets (one-time per environment):$(NC)"
+	@echo "  make secrets-init ENV=dev      Store Hetzner + Cloudflare tokens in Secrets Manager"
+	@echo "  make secrets-check ENV=dev     Check if tokens are populated"
+	@echo "  make secrets-show ENV=dev      Show masked token values"
+	@echo "  make secrets-validate ENV=dev  Validate tokens against live APIs"
+	@echo "  make secrets-rotate-hcloud ENV=dev    Rotate Hetzner token"
+	@echo "  make secrets-rotate-cloudflare ENV=dev  Rotate Cloudflare token"
+	@echo ""
 	@echo "$(YELLOW)Bootstrap & Provisioning:$(NC)"
 	@echo "  make bootstrap ENV=dev         Provision infrastructure (VPS, DNS, ECR, Cognito, S3)"
 	@echo "  make configure-server ENV=dev  Install Docker + Dokploy via Ansible"
 	@echo "  make cloudflare-lockdown ENV=dev  Restrict 80/443 to Cloudflare IPs only"
 	@echo ""
+	@echo "$(YELLOW)Docker — Local Build & Run:$(NC)"
+	@echo "  make build-local               Build prod images locally (no push)"
+	@echo "  make run-local                 Run prod stack locally on localhost"
+	@echo "  make ecr-login ENV=dev         Authenticate Docker to ECR"
+	@echo "  make build-push ENV=dev        Build and push images to ECR"
+	@echo ""
 	@echo "$(YELLOW)Deployment:$(NC)"
+	@echo "  make fill-env ENV=dev          Populate .env from Terraform outputs + prompts"
 	@echo "  make deploy ENV=dev            Deploy application via Dokploy"
 	@echo "  make health-check ENV=dev      Check health endpoints"
 	@echo "  make logs ENV=dev              View application logs via SSH"
@@ -92,6 +109,29 @@ validate-env:
 		echo "$(RED)❌ $(TFVARS_FILE) not found. Available: dev, qa, staging, prod$(NC)"; \
 		exit 1; \
 	fi
+
+# ============================================================================
+# Secrets Management
+# ============================================================================
+
+secrets-init: validate-env
+	@echo "$(BLUE)🔐 Initializing provider tokens for $(ENV)...$(NC)"
+	@bash $(SCRIPTS_DIR)/secrets-init.sh $(ENV) --check-or-prompt
+
+secrets-check: validate-env
+	@bash $(SCRIPTS_DIR)/secrets-init.sh $(ENV) --check
+
+secrets-show: validate-env
+	@bash $(SCRIPTS_DIR)/secrets-manage.sh $(ENV) --show
+
+secrets-validate: validate-env
+	@bash $(SCRIPTS_DIR)/secrets-manage.sh $(ENV) --validate
+
+secrets-rotate-hcloud: validate-env
+	@bash $(SCRIPTS_DIR)/secrets-manage.sh $(ENV) --rotate-hcloud
+
+secrets-rotate-cloudflare: validate-env
+	@bash $(SCRIPTS_DIR)/secrets-manage.sh $(ENV) --rotate-cloudflare
 
 # ============================================================================
 # Bootstrap & Provisioning
@@ -135,6 +175,10 @@ cloudflare-lockdown: validate-env
 # ============================================================================
 # Deployment
 # ============================================================================
+
+fill-env: ensure-workspace
+	@echo "$(BLUE)📝 Filling $(ENV_FILE) from Terraform + prompts...$(NC)"
+	@bash $(SCRIPTS_DIR)/fill-env.sh $(ENV)
 
 deploy: validate-env
 	@echo "$(BLUE)🚢 Deploying to $(ENV)...$(NC)"
@@ -253,3 +297,72 @@ validate:
 	@$(CHDIR) init -backend=false > /dev/null 2>&1 || true
 	@$(CHDIR) validate
 	@echo "$(GREEN)✅ Valid$(NC)"
+
+# ============================================================================
+# Docker — Local Build & Run
+# ============================================================================
+
+# Per-environment VITE_API_URL (baked into UI image at build time)
+VITE_API_URL_local = http://localhost:3001
+VITE_API_URL_dev   = https://api.dev.hussledispatch.online
+VITE_API_URL      ?= $(or $(VITE_API_URL_$(ENV)),http://localhost:3001)
+
+build-local:
+	@echo "$(BLUE)🏗️  Building prod images locally...$(NC)"
+	ECR_REGISTRY=fleet-local IMAGE_TAG=local VITE_API_URL=http://localhost:3001 \
+	docker compose -f docker-compose-build.yml \
+		--profile api --profile ui \
+		build
+	@echo "$(GREEN)✅ Images built: fleet-local/fleet-{api,ui}:local$(NC)"
+
+run-local:
+	@echo "$(BLUE)▶️  Starting prod stack locally...$(NC)"
+	docker compose \
+		-f docker-compose-prod.yml \
+		-f docker-compose.local.yml \
+		--env-file .env.local \
+		up --build
+
+ecr-login: ensure-workspace
+	@echo "$(BLUE)🔐 Authenticating Docker to ECR ($(ENV))...$(NC)"
+	@ECR_URL=$$($(CHDIR) output -raw ecr_registry_url 2>/dev/null); \
+	if [ -z "$$ECR_URL" ]; then \
+		echo "$(RED)❌ Could not get ECR URL. Run: make outputs ENV=$(ENV)$(NC)"; \
+		exit 1; \
+	fi; \
+	aws ecr get-login-password --region us-east-1 | \
+		docker login --username AWS --password-stdin $$ECR_URL && \
+	echo "$(GREEN)✅ Authenticated to $$ECR_URL$(NC)"
+
+build-push: ensure-workspace ecr-login validate-env
+	@echo "$(BLUE)🚀 Building and pushing images to ECR ($(ENV))...$(NC)"
+	@ECR_REGISTRY=$$($(CHDIR) output -raw ecr_registry_url 2>/dev/null); \
+	IMAGE_TAG=$(ENV)-$$(git rev-parse --short HEAD); \
+	echo "$(BLUE)  Registry : $$ECR_REGISTRY$(NC)"; \
+	echo "$(BLUE)  Tag      : $$IMAGE_TAG$(NC)"; \
+	echo "$(BLUE)  VITE_URL : $(VITE_API_URL)$(NC)"; \
+	DOCKER_DEFAULT_PLATFORM=linux/amd64 \
+	ECR_REGISTRY="$$ECR_REGISTRY" \
+	IMAGE_TAG="$$IMAGE_TAG" \
+	VITE_API_URL="$(VITE_API_URL)" \
+	docker compose -f docker-compose-build.yml \
+		--profile api --profile ui --profile rabbitmq \
+		build && \
+	DOCKER_DEFAULT_PLATFORM=linux/amd64 \
+	ECR_REGISTRY="$$ECR_REGISTRY" \
+	IMAGE_TAG="$$IMAGE_TAG" \
+	docker compose -f docker-compose-build.yml \
+		--profile api --profile ui --profile rabbitmq \
+		push && \
+	echo "$(GREEN)✅ Pushed: $$ECR_REGISTRY/fleet-{api,ui,rabbitmq}:$$IMAGE_TAG$(NC)"; \
+	ENV_FILE="$(ENV_DIR)/.env"; \
+	if [ -f "$$ENV_FILE" ]; then \
+		if grep -q "^IMAGE_TAG=" "$$ENV_FILE"; then \
+			sed -i.bak "s|^IMAGE_TAG=.*|IMAGE_TAG=$$IMAGE_TAG|" "$$ENV_FILE" && rm -f "$$ENV_FILE.bak"; \
+		else \
+			echo "IMAGE_TAG=$$IMAGE_TAG" >> "$$ENV_FILE"; \
+		fi; \
+		echo "$(GREEN)  → IMAGE_TAG=$$IMAGE_TAG written to $$ENV_FILE$(NC)"; \
+	else \
+		echo "$(YELLOW)  ⚠ $$ENV_FILE not found — run make fill-env ENV=$(ENV) first$(NC)"; \
+	fi

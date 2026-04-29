@@ -9,7 +9,7 @@ import {
   renderCheckCallEmail,
   renderInvitationEmail,
   renderDocumentUploadedEmail,
-} from '@hussle/emails';
+} from '@/shared/emails';
 import { statusChangeSmsBody } from '../templates/statusChangeSms';
 import { checkCallSmsBody } from '../templates/checkCallSms';
 import { documentUploadedSmsBody } from '../templates/documentUploadedSms';

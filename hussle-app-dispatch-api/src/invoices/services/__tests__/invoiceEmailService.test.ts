@@ -1,4 +1,4 @@
-jest.mock('@hussle/emails', () => ({
+jest.mock('@/shared/emails', () => ({
   renderInvoiceEmail: jest.fn().mockResolvedValue({
     subject: 'Invoice INV-001 from Test Carrier',
     html: '<p>Invoice email</p>',

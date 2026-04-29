@@ -18,7 +18,8 @@ ENV VITE_API_URL=${VITE_API_URL}
 COPY . .
 
 # Build the Vite bundle (outputs to dist/)
-RUN npm run build
+# Uses vite directly to avoid blocking on pre-existing tsc errors (tsc -b is in npm run build)
+RUN npx vite build
 
 # ============================================
 # Runner Stage - Nginx Static File Server

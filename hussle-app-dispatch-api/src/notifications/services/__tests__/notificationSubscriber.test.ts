@@ -1,4 +1,4 @@
-jest.mock('@hussle/emails', () => ({
+jest.mock('@/shared/emails', () => ({
   renderStatusChangeEmail: jest.fn().mockResolvedValue({
     subject: 'Load LD-001 — Status Update: DISPATCHED',
     html: '<p>Status changed</p>',

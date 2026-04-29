@@ -7,7 +7,7 @@ import {
   renderCarrierOnboardingCompleteEmail,
   renderCarrierApprovedEmail,
   renderCarrierRejectedEmail,
-} from '@hussle/emails';
+} from '@/shared/emails';
 
 const DEFAULT_FROM_EMAIL = 'notifications@hussle.app';
 const QUEUE_GROUP = 'carrier-onboarding-notifications';

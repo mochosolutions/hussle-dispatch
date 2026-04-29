@@ -78,21 +78,6 @@ services:
       - "traefik.http.routers.fleet-ui.tls.certresolver=letsencrypt"
       - "traefik.http.services.fleet-ui.loadbalancer.server.port=8080"
 
-  emails:
-    image: ${ECR_REGISTRY}/fleet-emails:${IMAGE_TAG:-prod-latest}
-    restart: unless-stopped
-    depends_on:
-      fleet-postgres:
-        condition: service_healthy
-      fleet-rabbitmq:
-        condition: service_healthy
-    networks:
-      - dokploy-network
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fleet-postgres:5432/${POSTGRES_DB}
-      - RABBITMQ_URL=amqp://guest:${RABBITMQ_DEFAULT_PASS}@fleet-rabbitmq:5672
-
   fleet-rabbitmq:
     image: ${ECR_REGISTRY}/fleet-rabbitmq:${IMAGE_TAG:-prod-latest}
     restart: unless-stopped

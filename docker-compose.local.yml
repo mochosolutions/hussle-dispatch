@@ -1,0 +1,58 @@
+# Local Production Testing Override
+# Usage: docker compose -f docker-compose-prod.yml -f docker-compose.local.yml --env-file .env.local up
+#
+# Extends docker-compose-prod.yml to:
+# - Use a local bridge network instead of external dokploy-network
+# - Expose ports to host for browser and tool access
+# - Override Traefik labels (not used locally)
+# - Set localhost-appropriate env vars
+
+services:
+  api:
+    ports:
+      - "3001:3001"
+    environment:
+      - ALLOW_ORIGINS=http://localhost:8080
+      - FRONTEND_URL=http://localhost:8080
+      - TRACKING_BASE_URL=http://localhost:8080
+      - PUBLIC_SHORT_BASE_URL=http://localhost:3001
+      - SMS_BACKEND=console
+      - STORAGE_BACKEND=local
+    networks:
+      - dokploy-network
+    labels: []
+
+  ui:
+    ports:
+      - "8080:8080"
+    networks:
+      - dokploy-network
+    labels: []
+
+  fleet-rabbitmq:
+    build:
+      context: ./docker/rabbitmq
+      dockerfile: Dockerfile
+    image: fleet-local/fleet-rabbitmq:local
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - dokploy-network
+
+  fleet-postgres:
+    ports:
+      - "5432:5432"
+    networks:
+      - dokploy-network
+
+  fleet-redis:
+    ports:
+      - "6379:6379"
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: false
+    driver: bridge

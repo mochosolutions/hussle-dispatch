@@ -1,4 +1,4 @@
-jest.mock('@hussle/emails', () => ({
+jest.mock('@/shared/emails', () => ({
   renderCarrierInviteEmail: jest.fn().mockResolvedValue({
     subject: 'Carrier invite',
     html: '<p>Invite</p>',
@@ -18,7 +18,7 @@ jest.mock('@hussle/emails', () => ({
 }));
 
 import { initializeCarrierOnboardingSubscriber } from '../carrierOnboardingSubscriber';
-import { renderCarrierOnboardingCompleteEmail } from '@hussle/emails';
+import { renderCarrierOnboardingCompleteEmail } from '@/shared/emails';
 import type { EventBus } from '@/shared/messaging/eventBus';
 
 type Handler = (data: never) => Promise<void>;

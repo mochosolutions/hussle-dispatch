@@ -7,7 +7,7 @@ import type { DocumentQueryPort } from '../types/documentPacketTypes';
 import type { OrgSettingsQueryPort } from '../types/readinessTypes';
 import type { StorageProvider } from '../../shared/storage/storageProvider';
 import Decimal from 'decimal.js';
-import { renderInvoiceEmail } from '@hussle/emails';
+import { renderInvoiceEmail } from '@/shared/emails';
 import { buildInvoicePdfData } from './invoicePdfDataBuilder';
 
 interface InvoiceEmailServiceDeps {

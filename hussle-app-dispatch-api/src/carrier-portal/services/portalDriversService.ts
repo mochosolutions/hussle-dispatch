@@ -1,5 +1,5 @@
 import type { PortalDriverRepoPort } from '../repositories/portalDriverRepoPrisma';
-import { DriverStatus } from '@prisma/client';
+import { DriverStatus, DriverPayType } from '@prisma/client';
 
 interface DriverEntry {
   firstName: string;
@@ -30,22 +30,11 @@ export interface PortalDriversService {
   saveDrivers: (input: SaveDriversInput) => Promise<SavedDriver[]>;
 }
 
-const buildPayNotes = (payType?: string, payRate?: number): string | null => {
-  if (!payType && payRate === undefined) {
-    return null;
-  }
-
-  const payInfo: Record<string, unknown> = {};
-
-  if (payType) {
-    payInfo.payType = payType;
-  }
-
-  if (payRate !== undefined) {
-    payInfo.payRate = payRate;
-  }
-
-  return JSON.stringify(payInfo);
+const toDriverPayType = (value?: string): DriverPayType => {
+  if (value === 'PER_MILE') return DriverPayType.PER_MILE;
+  if (value === 'PER_HOUR') return DriverPayType.PER_HOUR;
+  if (value === 'FLAT_RATE') return DriverPayType.FLAT_RATE;
+  return DriverPayType.PERCENTAGE;
 };
 
 export const createPortalDriversService = (
@@ -75,7 +64,9 @@ export const createPortalDriversService = (
         phone: entry.phone ?? null,
         email: entry.email ?? null,
         status: DriverStatus.ACTIVE,
-        notes: buildPayNotes(entry.payType, entry.payRate),
+        notes: null,
+        payType: toDriverPayType(entry.payType),
+        payRate: entry.payRate ?? 0,
       });
 
       created.push(driver);

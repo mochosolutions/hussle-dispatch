@@ -1,4 +1,4 @@
-jest.mock('@hussle/emails', () => ({
+jest.mock('@/shared/emails', () => ({
   renderStatusChangeEmail: jest.fn().mockResolvedValue({
     subject: 'Load LD-001 — Status Update: DISPATCHED',
     html: '<p>Status changed for LD-001</p>',
@@ -9,7 +9,7 @@ jest.mock('@hussle/emails', () => ({
   }),
 }));
 
-import { renderStatusChangeEmail, renderCheckCallEmail } from '@hussle/emails';
+import { renderStatusChangeEmail, renderCheckCallEmail } from '@/shared/emails';
 import { buildStatusChangeContent, buildCheckCallContent } from '../notificationContentBuilder';
 import type { StatusChangeContext, CheckCallContext } from '../../types/notificationTypes';
 

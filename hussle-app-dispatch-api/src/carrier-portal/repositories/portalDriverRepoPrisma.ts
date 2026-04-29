@@ -1,4 +1,4 @@
-import type { PrismaClient, DriverStatus } from '@prisma/client';
+import type { PrismaClient, DriverStatus, DriverPayType } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 
 interface DriverCreateData {
@@ -9,6 +9,8 @@ interface DriverCreateData {
   email: string | null;
   status: DriverStatus;
   notes: string | null;
+  payType: DriverPayType;
+  payRate: number;
 }
 
 interface SavedDriver {

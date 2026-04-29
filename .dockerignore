@@ -2,8 +2,6 @@ node_modules
 **/node_modules
 dist
 **/dist
-src
-**/src
 .git
 .claude
 docs
@@ -11,3 +9,4 @@ docs
 .storybook
 **/storybook-static
 **/.env
+**/.env.*.local

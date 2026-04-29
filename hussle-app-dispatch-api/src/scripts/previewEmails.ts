@@ -15,7 +15,7 @@ import {
   renderInvoiceEmail,
   renderStatusChangeEmail,
   renderCheckCallEmail,
-} from '@hussle/emails';
+} from '@/shared/emails';
 
 // ---------------------------------------------------------------------------
 // Sample data

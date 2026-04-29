@@ -23,7 +23,7 @@ RUN npm ci
 RUN npx prisma generate
 
 # Copy source code and build configuration
-COPY . .
+COPY . ./
 
 # Compile TypeScript to JavaScript
 RUN npm run build
@@ -58,9 +58,17 @@ COPY --from=builder /usr/app/dist ./dist
 # --ignore-scripts skips postinstall prisma generate, so we copy the binary directly
 COPY --from=builder /usr/app/node_modules/.prisma ./node_modules/.prisma
 
+# Copy prisma CLI from builder (it's a devDependency so omitted by npm ci --omit=dev,
+# but needed at runtime for prisma migrate deploy in migrate-and-start.sh)
+COPY --from=builder /usr/app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /usr/app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+
 # Copy migration startup script
 COPY scripts/migrate-and-start.sh ./scripts/migrate-and-start.sh
 RUN chmod +x ./scripts/migrate-and-start.sh
+
+# Ensure node user owns all files (npm ci and COPYs run as root by default)
+RUN chown -R node:node /usr/app
 
 USER node
 

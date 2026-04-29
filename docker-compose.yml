@@ -21,7 +21,6 @@ services:
     volumes:
       - ./hussle-app-dispatch-api:/usr/app
       - /usr/app/node_modules
-      - ./hussle-emails:/usr/hussle-emails
     env_file:
       - ./hussle-app-dispatch-api/.env
     depends_on:
@@ -101,19 +100,6 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=admin
     depends_on:
       - hussle-app-postgres
-
-  hussle-emails:
-    build:
-      context: ./hussle-emails
-      dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./hussle-emails:/usr/app
-      - /usr/app/node_modules
-    environment:
-      - HOST=0.0.0.0
-    command: npx email dev --port 3000
 
   mailpit:
     image: axllent/mailpit:latest
