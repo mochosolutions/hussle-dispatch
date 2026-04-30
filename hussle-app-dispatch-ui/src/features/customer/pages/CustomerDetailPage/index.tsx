@@ -1,28 +1,59 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
+import Loadable from 'mocho/components/Loadable';
 import { DetailLayout } from 'components/DetailLayout';
 import { BodyMuted } from 'components/Typography';
-import { getCustomerStats } from 'utils/api/fleet/customerApi';
-import type { CustomerStats } from 'utils/api/fleet/customerApi';
 import { CUSTOMER_DETAIL_TAB_ITEMS } from '../../constants';
-import { selectFormattedCustomerById } from '../../store/selectors/customerSelectors';
+import {
+  selectFormattedCustomerById,
+  selectCustomerStats,
+  selectCustomerStatsLoading,
+} from '../../store/selectors/customerSelectors';
 import {
   fetchCustomerDetailsRequest,
+  fetchCustomerStatsRequest,
   customerPageSelectors,
 } from '../../store/reducers/customerPageSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
-import {
-  OverviewTab,
-  ContactsTab,
-  LoadHistoryTab,
-  NotesTab,
-  NotificationsTab,
-} from '../../components/CustomerDetailPage';
 import { CustomerSummaryBar } from '../../components/CustomerDetailPage/CustomerSummaryBar';
+
+const OverviewTab = Loadable(
+  lazy(() =>
+    import('../../components/CustomerDetailPage/OverviewTab').then((m) => ({
+      default: m.OverviewTab,
+    })),
+  ),
+);
+const ContactsTab = Loadable(
+  lazy(() =>
+    import('../../components/CustomerDetailPage/ContactsTab').then((m) => ({
+      default: m.ContactsTab,
+    })),
+  ),
+);
+const LoadHistoryTab = Loadable(
+  lazy(() =>
+    import('../../components/CustomerDetailPage/LoadHistoryTab').then((m) => ({
+      default: m.LoadHistoryTab,
+    })),
+  ),
+);
+const NotesTab = Loadable(
+  lazy(() =>
+    import('../../components/CustomerDetailPage/NotesTab').then((m) => ({ default: m.NotesTab })),
+  ),
+);
+const NotificationsTab = Loadable(
+  lazy(() =>
+    import('../../components/CustomerDetailPage/NotificationsTab').then((m) => ({
+      default: m.NotificationsTab,
+    })),
+  ),
+);
 
 const CustomerDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -32,52 +63,26 @@ const CustomerDetailPage = () => {
   const { id } = useParams();
   const customerSelector = useMemo(() => selectFormattedCustomerById(id), [id]);
   const customer = useSelector(customerSelector);
-  const isLoading = useSelector(customerPageSelectors.selectIsEntityLoading('getById', id ?? ''));
   const isError = useSelector(
     (state) => !!customerPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
-  const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const customerStats = useSelector(selectCustomerStats);
+  const statsLoading = useSelector(selectCustomerStatsLoading);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchCustomerDetailsRequest({ id }));
+      dispatch(fetchCustomerStatsRequest({ id }));
     }
   }, [dispatch, id]);
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    let cancelled = false;
-
-    getCustomerStats(id)
-      .then((data) => {
-        if (!cancelled) {
-          setCustomerStats(data);
-          setStatsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCustomerStats(null);
-          setStatsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
 
   const handleBack = () => {
     navigate('/customers');
   };
 
   return (
-    <PageWrapper isLoading={isLoading} isError={isError} errorContext="CustomerDetailPage">
+    <PageWrapper isError={isError} errorContext="CustomerDetailPage">
       <DataGuard data={customer} emptyComponent={<BodyMuted sx={{ p: 4 }}>Customer not found.</BodyMuted>}>
         {(c) => (
           <DetailLayout

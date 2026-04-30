@@ -1,7 +1,7 @@
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip } from '@mui/material';
 import type { ICellRendererParams } from 'ag-grid-community';
 import type { ChipColor } from 'types/chipColor';
-import { TwoLineCell } from 'components/Typography';
+import { Meta, MetaStrong, Timestamp, TwoLineCell } from 'components/Typography';
 import type { PlaceListItem, FacilityType, DockType } from '../../types';
 import { FACILITY_TYPE_LABELS, DOCK_TYPE_LABELS } from '../../constants';
 
@@ -23,19 +23,15 @@ export const PlaceNameCellRenderer = (params: ICellRendererParams<PlaceListItem>
   }
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-        {params.data.name}
-      </Typography>
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        {[params.data.city, params.data.state].filter(Boolean).join(', ')}
-      </Typography>
+      <MetaStrong sx={{ color: 'text.primary' }}>{params.data.name}</MetaStrong>
+      <Meta>{[params.data.city, params.data.state].filter(Boolean).join(', ')}</Meta>
     </Box>
   );
 };
 
 export const PlaceFacilityTypeCellRenderer = (params: ICellRendererParams<PlaceListItem>) => {
   if (!params.data?.facilityType) {
-    return <Typography variant="body2" sx={{ color: 'text.disabled' }}>--</Typography>;
+    return <Timestamp>{'—'}</Timestamp>;
   }
   const { facilityType } = params.data;
   return (
@@ -57,12 +53,14 @@ export const PlaceVisitsCellRenderer = (params: ICellRendererParams<PlaceListIte
   const visitCount = (params.data as PlaceListItem & { visitCount?: number }).visitCount;
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-      <Typography
-        variant="body2"
-        sx={{ fontVariantNumeric: 'tabular-nums', color: visitCount ? 'text.primary' : 'text.disabled' }}
+      <Meta
+        sx={{
+          fontVariantNumeric: 'tabular-nums',
+          color: visitCount ? 'text.primary' : 'text.disabled',
+        }}
       >
         {visitCount ?? '\u2014'}
-      </Typography>
+      </Meta>
     </Box>
   );
 };
@@ -86,7 +84,7 @@ export const PlaceContactCellRenderer = (params: ICellRendererParams<PlaceListIt
   if (!contactName && !contactPhone) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Typography variant="body2" sx={{ color: 'text.disabled' }}>{'\u2014'}</Typography>
+        <Timestamp>{'\u2014'}</Timestamp>
       </Box>
     );
   }
@@ -120,13 +118,13 @@ export const PlaceDockTypeCellRenderer = (params: ICellRendererParams<PlaceListI
   if (!params.data?.dockType) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Typography variant="body2" sx={{ color: 'text.disabled' }}>{'\u2014'}</Typography>
+        <Timestamp>{'\u2014'}</Timestamp>
       </Box>
     );
   }
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-      <Typography variant="body2">{DOCK_TYPE_LABELS[params.data.dockType as DockType]}</Typography>
+      <Meta sx={{ color: 'text.primary' }}>{DOCK_TYPE_LABELS[params.data.dockType as DockType]}</Meta>
     </Box>
   );
 };

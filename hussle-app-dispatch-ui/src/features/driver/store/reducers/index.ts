@@ -16,6 +16,7 @@ export {
   deleteDriverSuccess,
   deleteDriverFailure,
   setCarrierIdFilter,
+  setQuery,
   fetchScheduleRequest,
   fetchScheduleSuccess,
   fetchScheduleFailure,

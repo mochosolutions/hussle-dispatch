@@ -1,6 +1,8 @@
-import { Box, Button, Chip, Grid, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Grid, Stack } from '@mui/material';
+import { BodyMedium, BodyStrong, KpiLabel, Meta } from 'components/Typography';
 import { EmptyState } from '@mocho/ui/components';
 import EditIcon from '@mui/icons-material/Edit';
+import { format, parseISO } from 'date-fns';
 import { FieldRow } from 'components/FieldRow';
 import SectionCard from 'components/SectionCard';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
@@ -30,6 +32,15 @@ const formatPayRate = (
   if (payType === 'PER_MILE') return `$${rate}/mi`;
   if (payType === 'PER_HOUR') return `$${rate}/hr`;
   return `$${rate}`;
+};
+
+const formatExpiryDate = (iso: string | null): string => {
+  if (!iso) return '—';
+  try {
+    return format(parseISO(iso), 'MMM d, yyyy');
+  } catch {
+    return iso;
+  }
 };
 
 const formatLocation = (city: string | null, state: string | null): string => {
@@ -62,7 +73,7 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
           <FieldRow label="License Type" value={d.licenseType} />
           <FieldRow label="License Number" value={d.licenseNumber} />
           <FieldRow label="License State" value={d.licenseState} />
-          <FieldRow label="License Expiry" value={d.licenseExpiry} />
+          <FieldRow label="License Expiry" value={formatExpiryDate(d.licenseExpiry)} />
           <FieldRow
             label="Endorsements"
             value={d.endorsements && d.endorsements.length > 0 ? d.endorsements.join(', ') : null}
@@ -110,10 +121,10 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
                 borderRadius: 1,
               }}
             >
-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              <BodyStrong sx={{ fontSize: '1.5rem', fontWeight: 700, color: 'text.primary' }}>
                 {stat.value}
-              </Typography>
-              <Typography variant="caption">{stat.label}</Typography>
+              </BodyStrong>
+              <KpiLabel>{stat.label}</KpiLabel>
             </Box>
           ))}
         </Box>
@@ -169,13 +180,9 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
                 key={row.label}
                 sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}
               >
-                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                  {row.label}
-                </Typography>
+                <Meta sx={{ color: 'text.disabled' }}>{row.label}</Meta>
                 {typeof row.value === 'string' ? (
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {row.value}
-                  </Typography>
+                  <Meta sx={{ color: 'text.primary', fontWeight: 500 }}>{row.value}</Meta>
                 ) : (
                   row.value
                 )}
@@ -198,9 +205,7 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
           }
         >
           <Box sx={{ px: 1, py: 0.5 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-              Preferred Lanes
-            </Typography>
+            <BodyMedium sx={{ mb: 0.5 }}>Preferred Lanes</BodyMedium>
             {d.preferredLanes.length > 0 ? (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
                 {d.preferredLanes.map((lane, i) => (
@@ -214,17 +219,10 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
                 ))}
               </Box>
             ) : (
-              <Typography
-                variant="caption"
-                sx={{ color: 'text.disabled', mb: 1.5, display: 'block' }}
-              >
-                None set
-              </Typography>
+              <Meta sx={{ color: 'text.disabled', mb: 1.5, display: 'block' }}>None set</Meta>
             )}
 
-            <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-              No-Go Zones
-            </Typography>
+            <BodyMedium sx={{ mb: 0.5 }}>No-Go Zones</BodyMedium>
             {d.noGoZones.length > 0 ? (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
                 {d.noGoZones.map((zone, i) => (
@@ -239,30 +237,21 @@ export const DriverOverviewTab: React.FC<DriverOverviewTabProps> = ({
                 ))}
               </Box>
             ) : (
-              <Typography
-                variant="caption"
-                sx={{ color: 'text.disabled', mb: 1.5, display: 'block' }}
-              >
-                None set
-              </Typography>
+              <Meta sx={{ color: 'text.disabled', mb: 1.5, display: 'block' }}>None set</Meta>
             )}
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                Max Days Out
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              <Meta sx={{ color: 'text.disabled' }}>Max Days Out</Meta>
+              <Meta sx={{ color: 'text.primary', fontWeight: 500 }}>
                 {d.maxDaysOut ?? '\u2014'}
-              </Typography>
+              </Meta>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                Home Base
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              <Meta sx={{ color: 'text.disabled' }}>Home Base</Meta>
+              <Meta sx={{ color: 'text.primary', fontWeight: 500 }}>
                 {formatLocation(d.homeBaseCity, d.homeBaseState)}
-              </Typography>
+              </Meta>
             </Box>
           </Box>
         </SectionCard>

@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { Box, Button, Grid, Typography } from '@mui/material';
+import { Box, Button, Grid } from '@mui/material';
+
+import { FieldLabel, Meta } from 'components/Typography';
 import BookmarkBorderOutlined from '@mui/icons-material/BookmarkBorderOutlined';
 import type { FormikProps } from 'formik';
 import { enqueueSnackbar } from 'notistack';
@@ -131,24 +133,16 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
       {hasSelection && stop ? (
         <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
           <Grid item xs={12} md={5}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.25 }}
-            >
+            <FieldLabel sx={{ display: 'block', mb: 0.25 }}>
               Address
-            </Typography>
-            <Typography variant="body2">{stop.address || '\u2014'}</Typography>
+            </FieldLabel>
+            <Meta sx={{ color: 'text.primary' }}>{stop.address || '\u2014'}</Meta>
           </Grid>
           <Grid item xs={12} md={5}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 0.25 }}
-            >
+            <FieldLabel sx={{ display: 'block', mb: 0.25 }}>
               City / State / Zip
-            </Typography>
-            <Typography variant="body2">{cityStateZip || '\u2014'}</Typography>
+            </FieldLabel>
+            <Meta sx={{ color: 'text.primary' }}>{cityStateZip || '\u2014'}</Meta>
           </Grid>
           {isExternalSelection ? (
             <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center' }}>

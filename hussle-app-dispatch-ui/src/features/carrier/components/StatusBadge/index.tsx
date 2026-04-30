@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Typography,
   Chip,
   Popover,
   List,
@@ -11,6 +10,7 @@ import {
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import { Meta } from 'components/Typography';
 import { STATUS_OPTIONS } from '../../constants';
 import type { CarrierStatus } from '../../types';
 
@@ -47,12 +47,9 @@ export const StatusBadge: React.FC<{
         PaperProps={{ sx: { mt: 0.5, minWidth: 180 } }}
       >
         <Box sx={{ py: 0.5 }}>
-          <Typography
-            variant="caption"
-            sx={{ px: 2, py: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}
-          >
+          <Meta sx={{ px: 2, py: 1, display: 'block', fontWeight: 600 }}>
             Change Status
-          </Typography>
+          </Meta>
           <List dense disablePadding>
             {STATUS_OPTIONS.map((opt) => (
               <ListItemButton

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useFormik } from 'formik';
-import { Grid, Typography, Divider } from '@mui/material';
+import { Grid, Divider } from '@mui/material';
+import { SectionLabel } from 'components/Typography';
 import {
   CheckboxField,
   DateField,
@@ -73,9 +74,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
       <Grid container spacing={2}>
         {/* Basic Info */}
         <Grid item xs={12}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Basic Info
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -97,9 +98,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Contact */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Contact
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -129,9 +130,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Financial */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Financial
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -149,9 +150,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Onboarding */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Onboarding
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -189,9 +190,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Notes */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Notes
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 

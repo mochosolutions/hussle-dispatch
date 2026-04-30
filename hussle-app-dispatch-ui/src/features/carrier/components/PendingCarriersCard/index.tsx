@@ -8,8 +8,8 @@ import {
   Chip,
   Skeleton,
   Stack,
-  Typography,
 } from '@mui/material';
+import { ErrorText, Meta, MetaStrong, SectionTitle, Timestamp } from 'components/Typography';
 import { useNavigate } from 'react-router-dom';
 import { getPendingCarriers } from 'utils/api/dashboard/dashboardApi';
 import type { PendingCarrier } from 'utils/api/dashboard/dashboardApi';
@@ -56,19 +56,13 @@ export const PendingCarriersCard: React.FC = () => {
     }
 
     if (error) {
-      return (
-        <Typography variant="body2" color="error">
-          {error}
-        </Typography>
-      );
+      return <ErrorText>{error}</ErrorText>;
     }
 
     if (carriers.length === 0) {
       return (
         <Box sx={{ py: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            No carriers pending review
-          </Typography>
+          <Meta>No carriers pending review</Meta>
         </Box>
       );
     }
@@ -94,17 +88,15 @@ export const PendingCarriersCard: React.FC = () => {
             }}
           >
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+              <MetaStrong sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {carrier.name}
-              </Typography>
+              </MetaStrong>
               <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="caption" color="text.secondary">
-                  {carrier.type.replace(/_/g, ' ')}
-                </Typography>
+                <Meta>{carrier.type.replace(/_/g, ' ')}</Meta>
                 {carrier.completedAt && (
-                  <Typography variant="caption" color="text.disabled">
+                  <Timestamp>
                     Completed {new Date(carrier.completedAt).toLocaleDateString()}
-                  </Typography>
+                  </Timestamp>
                 )}
               </Stack>
             </Box>
@@ -137,9 +129,7 @@ export const PendingCarriersCard: React.FC = () => {
       <CardHeader
         title={
           <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Pending Carriers
-            </Typography>
+            <SectionTitle>Pending Carriers</SectionTitle>
             {!loading && carriers.length > 0 && (
               <Badge badgeContent={carriers.length} color="warning" />
             )}

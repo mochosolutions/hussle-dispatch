@@ -10,6 +10,7 @@ import {
   Typography,
   Alert,
 } from '@mui/material';
+import { BodyMuted, SectionTitle } from 'components/Typography';
 import { AccessTime, ErrorOutline } from '@mui/icons-material';
 import { enqueueSnackbar } from 'notistack';
 import { Link } from 'react-router-dom';
@@ -159,12 +160,10 @@ const AcceptInvitePage = () => {
           }}
         >
           <AccessTime sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
-          <Typography variant="h5" sx={{ mb: 1 }}>
-            Invitation Expired
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <SectionTitle sx={{ fontSize: '1.5rem', mb: 1 }}>Invitation Expired</SectionTitle>
+          <BodyMuted sx={{ mb: 3 }}>
             This invitation has expired. Please ask your admin to send a new one.
-          </Typography>
+          </BodyMuted>
           <Typography
             component={Link}
             to="/login"
@@ -193,12 +192,10 @@ const AcceptInvitePage = () => {
           }}
         >
           <ErrorOutline sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
-          <Typography variant="h5" sx={{ mb: 1 }}>
-            Invalid Invitation
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <SectionTitle sx={{ fontSize: '1.5rem', mb: 1 }}>Invalid Invitation</SectionTitle>
+          <BodyMuted sx={{ mb: 3 }}>
             This invitation link is not valid. It may have been revoked or already used.
-          </Typography>
+          </BodyMuted>
           <Typography
             component={Link}
             to="/login"

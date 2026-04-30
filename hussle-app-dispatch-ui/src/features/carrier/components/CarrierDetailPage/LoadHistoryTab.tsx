@@ -1,26 +1,13 @@
-import { Box, Card, Typography } from '@mui/material';
+import { Box } from '@mui/material';
+import SectionCard from 'components/SectionCard';
+import { Meta } from 'components/Typography';
 
 interface LoadHistoryTabProps {
   carrierId: string;
 }
 
 export const LoadHistoryTab: React.FC<LoadHistoryTabProps> = ({ carrierId: _carrierId }) => (
-  <Card>
-    <Box
-      sx={{
-        px: 3,
-        py: 2,
-        borderBottom: 1,
-        borderColor: 'divider',
-      }}
-    >
-      <Typography
-        variant="subtitle1"
-        sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-      >
-        Load History
-      </Typography>
-    </Box>
+  <SectionCard title="Load History">
     <Box
       sx={{
         px: 3,
@@ -28,9 +15,7 @@ export const LoadHistoryTab: React.FC<LoadHistoryTabProps> = ({ carrierId: _carr
         textAlign: 'center',
       }}
     >
-      <Typography variant="body2" color="text.secondary">
-        Load history will be available once loads are dispatched for this carrier.
-      </Typography>
+      <Meta>Load history will be available once loads are dispatched for this carrier.</Meta>
     </Box>
-  </Card>
+  </SectionCard>
 );

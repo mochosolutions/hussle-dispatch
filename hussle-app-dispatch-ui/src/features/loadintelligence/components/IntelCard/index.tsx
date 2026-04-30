@@ -13,8 +13,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material';
+
+import { BodyStrong, Meta, MetaStrong, SectionTitle, Timestamp } from 'components/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -80,9 +81,9 @@ const ScoreIndicator: React.FC<ScoreIndicatorProps> = ({ score, size = 56 }) => 
         flexShrink: 0,
       }}
     >
-      <Typography variant="h6" sx={{ fontWeight: 700, color, fontSize: size * 0.35 }}>
+      <SectionTitle sx={{ fontWeight: 700, color, fontSize: size * 0.35 }}>
         {score}
-      </Typography>
+      </SectionTitle>
     </Box>
   );
 };
@@ -141,9 +142,9 @@ const SingleScorePanel: React.FC<SingleScorePanelProps> = ({ item }) => {
 
   return (
     <Box sx={{ flex: 1, p: 1.5 }}>
-      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 1 }}>
+      <MetaStrong sx={{ color: 'text.secondary', mb: 1 }}>
         Single Load Score
-      </Typography>
+      </MetaStrong>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
         <ScoreIndicator score={score} />
         <Box sx={{ flex: 1 }}>
@@ -155,10 +156,10 @@ const SingleScorePanel: React.FC<SingleScorePanelProps> = ({ item }) => {
         </Box>
       </Stack>
       {bestTruck && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+        <Meta sx={{ mt: 1, display: 'block' }}>
           Best: {bestTruck.unitNumber}
           {minBookRate !== null ? ` | Min: ${currencyFormatter.format(minBookRate)}` : ''}
-        </Typography>
+        </Meta>
       )}
     </Box>
   );
@@ -180,12 +181,9 @@ const ScoreBar: React.FC<ScoreBarProps> = ({ label, value, max }) => {
 
   return (
     <Stack direction="row" alignItems="center" spacing={0.5}>
-      <Typography
-        variant="caption"
-        sx={{ width: 40, fontSize: '0.65rem', color: 'text.secondary' }}
-      >
+      <Meta sx={{ width: 40, fontSize: '0.65rem' }}>
         {label}
-      </Typography>
+      </Meta>
       <Box sx={{ flex: 1, height: 6, bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
         <Box
           sx={{
@@ -196,9 +194,9 @@ const ScoreBar: React.FC<ScoreBarProps> = ({ label, value, max }) => {
           }}
         />
       </Box>
-      <Typography variant="caption" sx={{ width: 24, fontSize: '0.65rem', textAlign: 'right' }}>
+      <Meta sx={{ width: 24, fontSize: '0.65rem', textAlign: 'right', color: 'text.primary' }}>
         {value}
-      </Typography>
+      </Meta>
     </Stack>
   );
 };
@@ -227,18 +225,18 @@ const ChainScorePanel: React.FC<ChainScorePanelProps> = ({ item }) => {
           justifyContent: 'center',
         }}
       >
-        <Typography variant="caption" color="text.disabled">
+        <Meta sx={{ color: 'text.disabled' }}>
           No backhaul data
-        </Typography>
+        </Meta>
       </Box>
     );
   }
 
   return (
     <Box sx={{ flex: 1, p: 1.5 }}>
-      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+      <MetaStrong sx={{ color: 'text.secondary' }}>
         Chain Score
-      </Typography>
+      </MetaStrong>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
         {chainScore !== null && <ScoreIndicator score={chainScore} size={48} />}
         <Box>
@@ -249,15 +247,15 @@ const ChainScorePanel: React.FC<ChainScorePanelProps> = ({ item }) => {
                 size="small"
                 sx={{ fontSize: '0.65rem', height: 18, mb: 0.5 }}
               />
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              <Meta sx={{ display: 'block' }}>
                 {chain.legs.length} legs
-              </Typography>
+              </Meta>
             </>
           )}
           {!chain && chainCount > 0 && (
-            <Typography variant="caption" color="text.secondary">
+            <Meta>
               {chainCount} chains available
-            </Typography>
+            </Meta>
           )}
         </Box>
       </Stack>
@@ -266,32 +264,32 @@ const ChainScorePanel: React.FC<ChainScorePanelProps> = ({ item }) => {
         <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
           {chain.roundTripProfitability !== null && (
             <Box>
-              <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled' }}>
+              <Timestamp sx={{ fontSize: '0.6rem' }}>
                 RT Profit
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block' }}>
+              </Timestamp>
+              <MetaStrong sx={{ display: 'block' }}>
                 {currencyFormatter.format(chain.roundTripProfitability)}
-              </Typography>
+              </MetaStrong>
             </Box>
           )}
           {chain.dailyRevenue !== null && (
             <Box>
-              <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled' }}>
+              <Timestamp sx={{ fontSize: '0.6rem' }}>
                 Daily Rev
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block' }}>
+              </Timestamp>
+              <MetaStrong sx={{ display: 'block' }}>
                 {currencyFormatter.format(chain.dailyRevenue)}
-              </Typography>
+              </MetaStrong>
             </Box>
           )}
           {chain.weeklyGross !== null && (
             <Box>
-              <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled' }}>
+              <Timestamp sx={{ fontSize: '0.6rem' }}>
                 Weekly
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 600, display: 'block' }}>
+              </Timestamp>
+              <MetaStrong sx={{ display: 'block' }}>
                 {currencyFormatter.format(chain.weeklyGross)}
-              </Typography>
+              </MetaStrong>
             </Box>
           )}
         </Stack>
@@ -414,13 +412,13 @@ export const IntelCard: React.FC<IntelCardProps> = ({ item }) => {
       >
         {/* Route */}
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          <BodyStrong sx={{ fontWeight: 700 }}>
             {item.origin.city}, {item.origin.state}
-          </Typography>
+          </BodyStrong>
           <ArrowForwardIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          <BodyStrong sx={{ fontWeight: 700 }}>
             {item.destination.city}, {item.destination.state}
-          </Typography>
+          </BodyStrong>
         </Stack>
 
         {/* Badges & Rate */}
@@ -451,20 +449,20 @@ export const IntelCard: React.FC<IntelCardProps> = ({ item }) => {
             variant="outlined"
             sx={{ fontSize: '0.7rem' }}
           />
-          <Typography variant="body2" color="text.secondary">
+          <Meta>
             {item.pickupDate}
-          </Typography>
+          </Meta>
         </Stack>
       </Stack>
 
       {/* Rate + Miles Row */}
       <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 1.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <SectionTitle sx={{ fontWeight: 700 }}>
           {item.rate !== null ? currencyFormatter.format(item.rate) : 'No rate'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        </SectionTitle>
+        <Meta>
           {milesFormatter.format(item.miles)} mi
-        </Typography>
+        </Meta>
         <MinBookIndicator rate={item.rate} minBookRate={item.minBookRate} />
       </Stack>
 

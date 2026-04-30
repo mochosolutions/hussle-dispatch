@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { Box, LinearProgress, Link, Typography } from '@mui/material';
+import { Box, LinearProgress, Link } from '@mui/material';
+
+import { BrandName, MetaStrong } from 'components/Typography';
 
 const PHASES = [
   'Company',
@@ -41,21 +43,18 @@ const PortalLayout: React.FC<PortalLayoutProps> = ({ children, currentPhase, com
           zIndex: 1100,
         }}
       >
-        <Typography variant="subtitle1" fontWeight={700} color="common.white">
-          Hussle Dispatch
-        </Typography>
+        <BrandName>Hussle Dispatch</BrandName>
 
-        <Typography
-          variant="body2"
-          fontWeight={500}
+        <MetaStrong
           sx={{
             color: 'common.white',
+            fontWeight: 500,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
           }}
         >
           {phaseLabel}
-        </Typography>
+        </MetaStrong>
 
         <Link
           href="#"

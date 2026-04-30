@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
-import { Box, Button, Container, Typography } from '@mui/material';
+import { Box, Button, Container } from '@mui/material';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import { BodyMuted, PageTitle } from 'components/Typography';
 
 const Privacy = () => {
   const navigate = useNavigate();
@@ -15,12 +16,8 @@ const Privacy = () => {
         >
           Back to Login
         </Button>
-        <Typography variant="h3" gutterBottom>
-          Privacy Policy
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Privacy policy coming soon.
-        </Typography>
+        <PageTitle sx={{ mb: 2 }}>Privacy Policy</PageTitle>
+        <BodyMuted>Privacy policy coming soon.</BodyMuted>
       </Box>
     </Container>
   );

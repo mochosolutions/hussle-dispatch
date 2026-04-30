@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { Box, Typography, Chip, Avatar, Card, CardContent, useMediaQuery } from '@mui/material';
+import { Box, Chip, Avatar, Card, CardContent, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+import { Meta, MetaStrong, SectionTitle, SuccessText, Timestamp } from 'components/Typography';
 import { StatusBadge } from 'components/Statusbadge';
 import { KANBAN_GROUPS, STATUS_LABELS } from '../../../constants';
 import { InvoiceReadinessBadge } from '../InvoiceReadinessBadge';
@@ -70,15 +71,15 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
         <Box
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}
         >
-          <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>
+          <Meta sx={{ fontWeight: 700, color: 'primary.main' }}>
             {load.loadNumber}
-          </Typography>
+          </Meta>
           <StatusBadge status={load.status} />
         </Box>
 
-        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+        <MetaStrong sx={{ color: 'text.primary', mb: 0.5 }}>
           {route || 'TBD'} &rarr; {destination || 'TBD'}
-        </Typography>
+        </MetaStrong>
 
         {load.assignment.carrierName && (
           <Chip
@@ -102,17 +103,17 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
                 <Avatar sx={{ width: 22, height: 22, fontSize: '0.625rem', fontWeight: 700 }}>
                   {driverInitials}
                 </Avatar>
-                <Typography variant="caption" color="text.secondary">
+                <Meta>
                   {load.assignment.driverName.split(' ')[0]}
-                </Typography>
+                </Meta>
               </>
             )}
           </Box>
           <Box sx={{ textAlign: 'right' }}>
             {load.financials.carrierPayout && (
-              <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>
+              <SuccessText sx={{ fontWeight: 700 }}>
                 ${Number(load.financials.carrierPayout).toLocaleString()}
-              </Typography>
+              </SuccessText>
             )}
           </Box>
         </Box>
@@ -175,8 +176,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             flexShrink: 0,
           }}
         />
-        <Typography
-          variant="subtitle2"
+        <SectionTitle
           sx={{
             fontWeight: 700,
             color: 'text.primary',
@@ -186,7 +186,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           }}
         >
           {label}
-        </Typography>
+        </SectionTitle>
         <Chip
           label={loads.length}
           size="small"
@@ -216,9 +216,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           }}
           onClick={handleToggle}
         >
-          <Typography variant="caption" color="text.disabled">
+          <Timestamp>
             {loads.length === 0 ? 'No' : loads.length} loads (click to expand)
-          </Typography>
+          </Timestamp>
         </Box>
       )}
     </Box>
@@ -241,9 +241,9 @@ const MobileCardList: React.FC<{ loadsByGroup: Record<KanbanGroup, LoadListItem[
 
   if (totalLoads === 0) {
     return (
-      <Typography variant="body2" color="text.disabled" sx={{ textAlign: 'center', py: 4 }}>
+      <Timestamp sx={{ textAlign: 'center', py: 4 }}>
         No loads match your filters
-      </Typography>
+      </Timestamp>
     );
   }
 
@@ -279,8 +279,7 @@ const MobileCardList: React.FC<{ loadsByGroup: Record<KanbanGroup, LoadListItem[
                   flexShrink: 0,
                 }}
               />
-              <Typography
-                variant="subtitle2"
+              <SectionTitle
                 sx={{
                   fontWeight: 700,
                   textTransform: 'uppercase',
@@ -289,7 +288,7 @@ const MobileCardList: React.FC<{ loadsByGroup: Record<KanbanGroup, LoadListItem[
                 }}
               >
                 {group.label}
-              </Typography>
+              </SectionTitle>
               <Chip
                 label={loads.length}
                 size="small"

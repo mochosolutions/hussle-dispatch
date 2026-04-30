@@ -10,8 +10,8 @@ import {
   Tab,
   Tabs,
   TextField,
-  Typography,
 } from '@mui/material';
+import { Body, BodyStrong, KpiLabel, Meta } from 'components/Typography';
 import { EmptyState, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
 
 type CarrierType = 'COMPANY_ASSET' | 'EXTERNAL';
@@ -338,12 +338,8 @@ const Fleet = () => {
                 {initials}
               </Box>
               <Box>
-                <Typography variant="subtitle2" color="text.primary">
-                  {data.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {`${data.mc} · ${data.dot}`}
-                </Typography>
+                <BodyStrong sx={{ color: 'text.primary' }}>{data.name}</BodyStrong>
+                <Meta>{`${data.mc} · ${data.dot}`}</Meta>
               </Box>
             </Stack>
           );
@@ -375,12 +371,8 @@ const Fleet = () => {
         minWidth: 180,
         cellRenderer: ({ data }: CarrierCellParams) => (
           <Box sx={{ py: 0.5 }}>
-            <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-              {data.contact}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {data.phone}
-            </Typography>
+            <Body sx={{ color: 'text.primary', fontWeight: 500 }}>{data.contact}</Body>
+            <Meta>{data.phone}</Meta>
           </Box>
         ),
       },
@@ -471,15 +463,11 @@ const Fleet = () => {
         {kpiData.map((kpiItem) => (
           <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
             <MainCard sx={{ height: '100%' }}>
-              <Typography variant="caption" color="text.secondary">
-                {kpiItem.label}
-              </Typography>
-              <Typography variant="h4" color="text.primary" sx={{ mt: 0.5 }}>
+              <KpiLabel>{kpiItem.label}</KpiLabel>
+              <BodyStrong sx={{ fontSize: '1.5rem', mt: 0.5, color: 'text.primary' }}>
                 {kpiItem.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {kpiItem.subtitle}
-              </Typography>
+              </BodyStrong>
+              <Meta sx={{ mt: 0.5 }}>{kpiItem.subtitle}</Meta>
             </MainCard>
           </Grid>
         ))}
@@ -509,7 +497,7 @@ const Fleet = () => {
                 value={tabOption.key}
                 label={
                   <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
+                    <Body>{tabOption.label}</Body>
                     <Chip label={tabOption.count} size="small" />
                   </Stack>
                 }
@@ -527,9 +515,7 @@ const Fleet = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Typography variant="body2" color="text.secondary">
-                    ⌕
-                  </Typography>
+                  <Meta>⌕</Meta>
                 </InputAdornment>
               ),
             }}

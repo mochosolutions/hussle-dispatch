@@ -14,7 +14,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
   alpha,
 } from '@mui/material';
 import {
@@ -23,6 +22,15 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import type { SelectChangeEvent } from '@mui/material';
+
+import {
+  BodyMedium,
+  ErrorText,
+  Meta,
+  MetaStrong,
+  SectionTitle,
+  Timestamp,
+} from 'components/Typography';
 
 import {
   presignDocument,
@@ -380,9 +388,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     <Stack spacing={3}>
       {/* Document type selector */}
       <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        <SectionTitle sx={{ mb: 1 }}>
           Document Type
-        </Typography>
+        </SectionTitle>
         <Select<DocumentType>
           value={selectedDocType}
           onChange={handleDocTypeChange}
@@ -440,12 +448,12 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             aria-hidden="true"
           />
           <CloudUploadOutlined style={{ fontSize: 40, color: '#8c8c8c' }} />
-          <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>
+          <BodyMedium sx={{ mt: 1.5 }}>
             Drag & drop a file here, or click to browse
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
+          </BodyMedium>
+          <Meta sx={{ mt: 0.5 }}>
             PDF, JPG, PNG, WEBP — Max {formatFileSize(DEFAULT_MAX_SIZE)}
-          </Typography>
+          </Meta>
         </Box>
       )}
 
@@ -459,9 +467,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             p: 3,
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 500, mb: 2 }}>
+          <MetaStrong sx={{ mb: 2 }}>
             {filename} — Complete details before uploading
-          </Typography>
+          </MetaStrong>
 
           <Stack spacing={2}>
             <TextField
@@ -517,19 +525,19 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             p: 3,
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }} noWrap>
+          <MetaStrong sx={{ mb: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {filename}
-          </Typography>
+          </MetaStrong>
           <LinearProgress
             variant={status === 'uploading' ? 'determinate' : 'indeterminate'}
             value={status === 'uploading' ? progress : undefined}
             sx={{ borderRadius: 1, height: 6 }}
           />
-          <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
+          <Meta sx={{ mt: 0.5, display: 'block' }}>
             {status === 'presigning' && 'Preparing upload...'}
             {status === 'uploading' && `Uploading... ${String(progress)}%`}
             {status === 'confirming' && 'Confirming...'}
-          </Typography>
+          </Meta>
         </Box>
       )}
 
@@ -544,16 +552,12 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
           }}
         >
-          <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+          <MetaStrong sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {filename}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: 'error.main', display: 'block', mt: 0.5 }}
-            role="alert"
-          >
-            {error}
-          </Typography>
+          </MetaStrong>
+          <Box role="alert" sx={{ mt: 0.5 }}>
+            <ErrorText sx={{ display: 'block' }}>{error}</ErrorText>
+          </Box>
           <Button variant="outlined" size="small" onClick={handleRetry} sx={{ mt: 2 }}>
             Try Again
           </Button>
@@ -563,7 +567,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
       {/* Document list */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="subtitle2">Documents</Typography>
+          <SectionTitle>Documents</SectionTitle>
           {selectedDocIds.length > 0 && (
             <Button
               size="small"
@@ -577,15 +581,15 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         </Stack>
 
         {isLoadingDocs && (
-          <Typography variant="caption" color="text.disabled">
+          <Timestamp>
             Loading documents...
-          </Typography>
+          </Timestamp>
         )}
 
         {!isLoadingDocs && documents.length === 0 && (
-          <Typography variant="caption" color="text.disabled">
+          <Timestamp>
             No documents uploaded yet
-          </Typography>
+          </Timestamp>
         )}
 
         {documents.length > 0 && (
@@ -622,26 +626,26 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                      <MetaStrong sx={{ fontWeight: 500 }}>
                         {DOC_TYPE_CONFIG[doc.type].label}
-                      </Typography>
+                      </MetaStrong>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                      <Meta sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'text.primary' }}>
                         {doc.fileName}
-                      </Typography>
+                      </Meta>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="caption" color="text.secondary">
+                      <Meta>
                         {format(new Date(doc.createdAt), 'MMM d, yyyy')}
-                      </Typography>
+                      </Meta>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="caption" color="text.secondary">
+                      <Meta>
                         {doc.expiresAt
                           ? format(new Date(doc.expiresAt), 'MMM d, yyyy')
                           : ''}
-                      </Typography>
+                      </Meta>
                     </TableCell>
                   </TableRow>
                 ))}

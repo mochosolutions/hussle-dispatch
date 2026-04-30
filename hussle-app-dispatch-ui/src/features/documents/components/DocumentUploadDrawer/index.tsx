@@ -6,8 +6,9 @@ import {
   LinearProgress,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
+
+import { ErrorText, Meta, MetaStrong, SectionTitle } from 'components/Typography';
 import { CancelButton } from '@mocho/ui/components/form-fields';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -69,16 +70,15 @@ const UploadStatusRow: React.FC<{ item: UploadItem }> = ({ item }) => {
         <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
       )}
       <Chip label={label} size="small" variant="outlined" color="primary" />
-      <Typography
-        variant="body2"
-        sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+      <Meta
+        sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'text.primary' }}
       >
         {item.fileName}
-      </Typography>
+      </Meta>
       {status === 'Rejected' && error && (
-        <Typography variant="caption" color="error.main">
+        <ErrorText>
           {error}
-        </Typography>
+        </ErrorText>
       )}
     </Stack>
   );
@@ -117,9 +117,9 @@ const ComplianceForm: React.FC<ComplianceFormProps> = ({
         p: 2.5,
       }}
     >
-      <Typography variant="body2" sx={{ fontWeight: 500, mb: 2 }}>
+      <MetaStrong sx={{ mb: 2 }}>
         Complete details before uploading
-      </Typography>
+      </MetaStrong>
 
       <Stack spacing={2}>
         <TextField
@@ -189,12 +189,12 @@ export const OtherLabelForm: React.FC<OtherLabelFormProps> = ({
         p: 2.5,
       }}
     >
-      <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+      <MetaStrong sx={{ mb: 0.5 }}>
         Name this document
-      </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+      </MetaStrong>
+      <Meta sx={{ display: 'block', mb: 2 }}>
         {fileName}
-      </Typography>
+      </Meta>
 
       <Stack spacing={2}>
         <TextField
@@ -392,7 +392,7 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
           {/* Upload status list */}
           {uploadItems.length > 0 && (
             <Stack spacing={1}>
-              <Typography variant="subtitle2">Uploads</Typography>
+              <SectionTitle>Uploads</SectionTitle>
               {uploadItems.map((item) => (
                 <UploadStatusRow key={item.clientId} item={item} />
               ))}

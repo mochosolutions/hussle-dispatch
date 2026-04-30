@@ -9,12 +9,11 @@ import {
   MenuItem,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import SearchOutlined from '@ant-design/icons/SearchOutlined';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import SectionCard from 'components/SectionCard';
-import { DetailRow } from 'components/Typography';
+import { AmountDisplay, BodyStrong, DetailRow, Meta, MetaStrong, SectionLabel } from 'components/Typography';
 import { useDispatch } from 'store';
 import type { VehicleExpense } from 'features/carrier/types';
 import EditIcon from '@mui/icons-material/Edit';
@@ -174,23 +173,21 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
           {/* Emergency / Roadside */}
           {(v.emergencyContactName ?? v.emergencyContactPhone) && (
             <Alert severity="success" sx={{ alignItems: 'flex-start' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              <SectionLabel sx={{ display: 'block', mb: 0.5 }}>
                 Emergency / Roadside Contact
-              </Typography>
-              <Typography variant="body2">
+              </SectionLabel>
+              <Meta sx={{ color: 'text.primary' }}>
                 {v.emergencyContactName}
                 {v.emergencyContactName && v.emergencyContactPhone ? ' \u2014 ' : ''}
                 {v.emergencyContactPhone}
-              </Typography>
+              </Meta>
             </Alert>
           )}
 
           {/* Warranty / Notes */}
           {v.warrantyInfo && (
             <SectionCard title="Warranty / Notes">
-              <Typography variant="body2" color="text.secondary">
-                {v.warrantyInfo}
-              </Typography>
+              <Meta>{v.warrantyInfo}</Meta>
             </SectionCard>
           )}
 
@@ -223,11 +220,7 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
           {/* Revenue Performance */}
           <SectionCard
             title="Revenue Performance"
-            actions={
-              <Typography variant="caption" color="text.secondary">
-                Last 6 weeks
-              </Typography>
-            }
+            actions={<Meta>Last 6 weeks</Meta>}
           >
 
             {hasRevenueData ? (
@@ -249,8 +242,7 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
 
                     return (
                       <Box key={item.week} sx={{ flex: 1 }}>
-                        <Typography
-                          variant="caption"
+                        <Meta
                           sx={{
                             display: 'block',
                             textAlign: 'center',
@@ -259,7 +251,7 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
                           }}
                         >
                           ${(item.amount / 1000).toFixed(1)}K
-                        </Typography>
+                        </Meta>
                         <Box
                           sx={{
                             borderRadius: 1,
@@ -268,13 +260,7 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
                             bgcolor: isAboveTarget ? 'success.main' : 'warning.main',
                           }}
                         />
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block', mt: 0.5 }}
-                        >
-                          {item.week}
-                        </Typography>
+                        <Meta sx={{ display: 'block', mt: 0.5 }}>{item.week}</Meta>
                       </Box>
                     );
                   })}
@@ -289,12 +275,10 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
                   }}
                 >
                   <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      6-week avg:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    <Meta>6-week avg:</Meta>
+                    <MetaStrong sx={{ color: 'text.primary', fontWeight: 700 }}>
                       {currencyCompact.format(revenueAverage)}
-                    </Typography>
+                    </MetaStrong>
                   </Stack>
                 </Box>
               </>
@@ -309,9 +293,7 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
                   borderColor: 'divider',
                 }}
               >
-                <Typography variant="body2" color="text.secondary">
-                  No revenue data yet
-                </Typography>
+                <Meta>No revenue data yet</Meta>
               </Box>
             )}
           </SectionCard>
@@ -321,22 +303,24 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
             <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
               <Avatar
                 sx={{
-                  bgcolor: v.driverName ? 'primary.main' : 'primary.lighter',
-                  color: v.driverName ? 'white' : 'primary.main',
+                  bgcolor: v.driverId ? 'primary.main' : 'primary.lighter',
+                  color: v.driverId ? 'white' : 'primary.main',
                 }}
               >
-                {v.driverName
+                {v.driverId && v.driverName
                   ? v.driverName
                       .split(' ')
                       .map((n) => n[0])
                       .join('')
-                  : '--'}
+                  : '—'}
               </Avatar>
               <Box>
-                <Typography variant="subtitle1">{v.driverName ?? 'Unassigned'}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {v.driverName ? 'Currently assigned' : 'No driver assigned'}
-                </Typography>
+                <BodyStrong>
+                  {v.driverId ? (v.driverName ?? 'Assigned driver') : 'Unassigned'}
+                </BodyStrong>
+                <Meta>
+                  {v.driverId ? 'Currently assigned' : 'No driver assigned'}
+                </Meta>
               </Box>
               {v.driverId && (
                 <IconButton
@@ -408,18 +392,14 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
                     borderColor: 'divider',
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary">
-                    {row.label}
-                  </Typography>
-                  <Typography
-                    variant="body2"
+                  <Meta>{row.label}</Meta>
+                  <MetaStrong
                     sx={{
                       color: 'color' in row ? row.color : 'text.primary',
-                      fontWeight: 600,
                     }}
                   >
                     {row.value}
-                  </Typography>
+                  </MetaStrong>
                 </Stack>
               ))}
             </Stack>
@@ -442,12 +422,12 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
               borderColor: 'primary.light',
             }}
           >
-            <Typography variant="h2" sx={{ mt: 1 }}>
+            <AmountDisplay sx={{ mt: 1 }}>
               {currencyCompact.format(costSummary.minBookRate)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            </AmountDisplay>
+            <Meta sx={{ mt: 0.5 }}>
               ${costSummary.cpm.toFixed(2)} CPM + 15% margin
-            </Typography>
+            </Meta>
             <Alert severity="info" sx={{ mt: 1.5 }}>
               Used in Load Intelligence scoring to filter out unprofitable loads.
             </Alert>

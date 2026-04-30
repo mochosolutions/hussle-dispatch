@@ -1,3 +1,4 @@
+import { Grid } from '@mui/material';
 import { KpiCell } from 'components/Typography';
 import type { Customer } from '../../types';
 import type { CustomerStats } from 'utils/api/fleet/customerApi';
@@ -46,38 +47,50 @@ export const CustomerSummaryBar: React.FC<CustomerSummaryBarProps> = ({
   const loadCountSub = statsLoading ? '' : `${stats?.loadCount ?? customer._count.loads} loads`;
 
   return (
-    <>
-      <KpiCell
-        label="MC / DOT"
-        value={customer.mcNumber ?? EM_DASH}
-        sub={customer.dotNumber ?? EM_DASH}
-      />
-      <KpiCell
-        label="PRIMARY CONTACT"
-        value={customer.phone ?? EM_DASH}
-        sub={customer.email ?? EM_DASH}
-      />
-      <KpiCell
-        label="PAYMENT TERMS"
-        value={customer.paymentTerms}
-        sub={customer.quickPayDiscount ? `Quick Pay ${customer.quickPayDiscount}%` : EM_DASH}
-      />
-      <KpiCell label="AVG DAYS TO PAY" value={avgDaysToPayValue} />
-      <KpiCell
-        label="OUTSTANDING AR"
-        value={outstandingARValue}
-        valueProps={
-          stats && Number(stats.outstandingAR) > 0 ? { color: 'warning.main' } : undefined
-        }
-      />
-      <KpiCell
-        label="TOTAL REVENUE"
-        value={totalRevenueValue}
-        sub={loadCountSub}
-        valueProps={
-          stats && Number(stats.totalRevenue) > 0 ? { color: 'success.main' } : undefined
-        }
-      />
-    </>
+    <Grid container spacing={2}>
+      <Grid item xs={12} sm={6} md={3}>
+        <KpiCell
+          label="MC / DOT"
+          value={customer.mcNumber ?? EM_DASH}
+          sub={customer.dotNumber ?? EM_DASH}
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <KpiCell
+          label="PRIMARY CONTACT"
+          value={customer.phone ?? EM_DASH}
+          sub={customer.email ?? EM_DASH}
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <KpiCell
+          label="PAYMENT TERMS"
+          value={customer.paymentTerms}
+          sub={customer.quickPayDiscount ? `Quick Pay ${customer.quickPayDiscount}%` : EM_DASH}
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <KpiCell label="AVG DAYS TO PAY" value={avgDaysToPayValue} />
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <KpiCell
+          label="OUTSTANDING AR"
+          value={outstandingARValue}
+          valueProps={
+            stats && Number(stats.outstandingAR) > 0 ? { color: 'warning.main' } : undefined
+          }
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <KpiCell
+          label="TOTAL REVENUE"
+          value={totalRevenueValue}
+          sub={loadCountSub}
+          valueProps={
+            stats && Number(stats.totalRevenue) > 0 ? { color: 'success.main' } : undefined
+          }
+        />
+      </Grid>
+    </Grid>
   );
 };

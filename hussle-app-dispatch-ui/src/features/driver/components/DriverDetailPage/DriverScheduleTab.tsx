@@ -1,4 +1,5 @@
-import { Box, Button, Chip, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, IconButton, Stack } from '@mui/material';
+import { Body, Meta, MetaStrong, Timestamp } from 'components/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -82,9 +83,7 @@ export const DriverScheduleTab: React.FC<DriverScheduleTabProps> = ({
                           borderColor: 'divider',
                         }}
                       >
-                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                          {header}
-                        </Typography>
+                        <MetaStrong sx={{ fontSize: '0.6875rem' }}>{header}</MetaStrong>
                       </Box>
                     ))}
                   </Box>
@@ -95,21 +94,19 @@ export const DriverScheduleTab: React.FC<DriverScheduleTabProps> = ({
                     return (
                       <Box component="tr" key={day}>
                         <Box component="td" sx={{ py: 1, px: 1.5, width: 160 }}>
-                          <Typography variant="body2" fontWeight={600}>
+                          <MetaStrong sx={{ color: 'text.primary' }}>
                             {DAY_OF_WEEK_LABELS[day]}
-                          </Typography>
+                          </MetaStrong>
                         </Box>
                         <Box component="td" sx={{ py: 1, px: 1.5 }}>
                           {entry ? (
-                            <Typography variant="body2">
+                            <Body>
                               {entry.is24Hours
                                 ? '24 Hours'
                                 : `${formatTime(entry.startTime)} \u2013 ${formatTime(entry.endTime)}`}
-                            </Typography>
+                            </Body>
                           ) : (
-                            <Typography variant="body2" color="text.disabled">
-                              Off
-                            </Typography>
+                            <Timestamp>Off</Timestamp>
                           )}
                         </Box>
                       </Box>
@@ -149,9 +146,7 @@ export const DriverScheduleTab: React.FC<DriverScheduleTabProps> = ({
                           borderColor: 'divider',
                         }}
                       >
-                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                          {header}
-                        </Typography>
+                        <MetaStrong sx={{ fontSize: '0.6875rem' }}>{header}</MetaStrong>
                       </Box>
                     ))}
                   </Box>
@@ -160,9 +155,9 @@ export const DriverScheduleTab: React.FC<DriverScheduleTabProps> = ({
                   {overrides.map((override) => (
                     <Box component="tr" key={override.id}>
                       <Box component="td" sx={{ py: 1, px: 1.5, width: 140 }}>
-                        <Typography variant="body2">
+                        <Body>
                           {format(parseISO(override.date), 'MMM d, yyyy')}
-                        </Typography>
+                        </Body>
                       </Box>
                       <Box component="td" sx={{ py: 1, px: 1.5, width: 140 }}>
                         <Chip
@@ -173,16 +168,16 @@ export const DriverScheduleTab: React.FC<DriverScheduleTabProps> = ({
                         />
                       </Box>
                       <Box component="td" sx={{ py: 1, px: 1.5 }}>
-                        <Typography variant="body2">
+                        <Body>
                           {override.type !== 'OFF' && override.startTime && override.endTime
                             ? `${formatTime(override.startTime)} \u2013 ${formatTime(override.endTime)}`
                             : '\u2014'}
-                        </Typography>
+                        </Body>
                       </Box>
                       <Box component="td" sx={{ py: 1, px: 1.5 }}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Meta>
                           {override.reason ?? '\u2014'}
-                        </Typography>
+                        </Meta>
                       </Box>
                       <Box component="td" sx={{ py: 1, px: 1.5, width: 48 }}>
                         <IconButton

@@ -5,7 +5,6 @@ import {
   Box,
   Card,
   CardContent,
-  Typography,
   Button,
   TextField,
   CircularProgress,
@@ -15,6 +14,7 @@ import {
   Divider,
   Skeleton,
 } from '@mui/material';
+import { Body, BodyMuted, Meta, MetaStrong, SectionTitle, Timestamp } from 'components/Typography';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
@@ -150,12 +150,8 @@ const ErrorLayout: React.FC<ErrorLayoutProps> = ({ title, message, onRetry }) =>
   <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
     <Box sx={{ maxWidth: { xs: 480, md: 720 }, mx: 'auto', px: 3, py: 8, textAlign: 'center' }}>
       <LocalShippingIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-        {title}
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        {message}
-      </Typography>
+      <SectionTitle sx={{ fontSize: '1.5rem', mb: 1 }}>{title}</SectionTitle>
+      <BodyMuted sx={{ mb: 3 }}>{message}</BodyMuted>
       {onRetry && (
         <Button variant="contained" onClick={onRetry} sx={{ py: 1.5, px: 4 }}>
           Try Again
@@ -386,9 +382,7 @@ const DriverPortalPage = () => {
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
         <LocalShippingIcon color="primary" />
-        <Typography variant="h6" fontWeight={700}>
-          Load {load.loadNumber}
-        </Typography>
+        <SectionTitle>Load {load.loadNumber}</SectionTitle>
         <Chip
           label={STATUS_LABELS[load.status] ?? load.status}
           color={STATUS_COLORS[load.status] ?? 'default'}
@@ -398,9 +392,9 @@ const DriverPortalPage = () => {
 
       {/* Driver greeting */}
       {load.driver && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Meta sx={{ mb: 2 }}>
           Hi {load.driver.firstName}, here are your load details.
-        </Typography>
+        </Meta>
       )}
 
       {error && (
@@ -436,9 +430,7 @@ const DriverPortalPage = () => {
       {/* Stops timeline */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
-            Stops
-          </Typography>
+          <MetaStrong sx={{ mb: 1.5, display: 'block' }}>Stops</MetaStrong>
           <Stack spacing={2}>
             {load.stops.map((stop) => (
               <Box key={stop.id}>
@@ -451,37 +443,29 @@ const DriverPortalPage = () => {
                     fontSize="small"
                   />
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>
+                    <MetaStrong sx={{ color: 'text.primary' }}>
                       {stop.type === 'PICKUP' ? 'Pickup' : 'Delivery'}
                       {stop.facilityName ? ` \u2014 ${stop.facilityName}` : ''}
-                    </Typography>
-                    {stop.address && (
-                      <Typography variant="body2" color="text.secondary">
-                        {stop.address}
-                      </Typography>
-                    )}
-                    <Typography variant="body2" color="text.secondary">
+                    </MetaStrong>
+                    {stop.address && <Meta>{stop.address}</Meta>}
+                    <Meta>
                       {[stop.city, stop.state, stop.zip].filter(Boolean).join(', ')}
-                    </Typography>
+                    </Meta>
                     {(() => {
                       const range = formatAppointmentRange(
                         stop.appointmentStart,
                         stop.appointmentEnd,
                       );
-                      return range ? (
-                        <Typography variant="caption" color="text.secondary">
-                          Appt: {range}
-                        </Typography>
-                      ) : null;
+                      return range ? <Meta>Appt: {range}</Meta> : null;
                     })()}
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Meta sx={{ display: 'block' }}>
                       {SCHEDULING_TYPE_LABELS[stop.schedulingType] ?? stop.schedulingType}
-                    </Typography>
+                    </Meta>
                     {stop.contactName && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Meta sx={{ display: 'block' }}>
                         Contact: {stop.contactName}
                         {stop.contactPhone ? ` \u2014 ${formatPhone(stop.contactPhone)}` : ''}
-                      </Typography>
+                      </Meta>
                     )}
                   </Box>
                 </Stack>
@@ -495,22 +479,18 @@ const DriverPortalPage = () => {
       {(load.equipmentType || load.commodity || load.weight) && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-              Load Info
-            </Typography>
+            <MetaStrong sx={{ mb: 1, display: 'block' }}>Load Info</MetaStrong>
             <Stack spacing={0.5}>
               {load.equipmentType && (
-                <Typography variant="body2">
+                <Body>
                   Equipment: {load.equipmentType.replace(/_/g, ' ')}
-                </Typography>
+                </Body>
               )}
-              {load.commodity && (
-                <Typography variant="body2">Commodity: {load.commodity}</Typography>
-              )}
+              {load.commodity && <Body>Commodity: {load.commodity}</Body>}
               {load.weight && (
-                <Typography variant="body2">
+                <Body>
                   Weight: {load.weight.toLocaleString()} lbs
-                </Typography>
+                </Body>
               )}
             </Stack>
           </CardContent>
@@ -521,12 +501,10 @@ const DriverPortalPage = () => {
       {load.driverInstructions && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-              Instructions
-            </Typography>
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+            <MetaStrong sx={{ mb: 1, display: 'block' }}>Instructions</MetaStrong>
+            <Body sx={{ whiteSpace: 'pre-wrap' }}>
               {load.driverInstructions}
-            </Typography>
+            </Body>
           </CardContent>
         </Card>
       )}
@@ -540,9 +518,7 @@ const DriverPortalPage = () => {
           <CardContent>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
               <NoteAddIcon fontSize="small" color="action" />
-              <Typography variant="subtitle2" fontWeight={600}>
-                Add Note / ETA Update
-              </Typography>
+              <MetaStrong>Add Note / ETA Update</MetaStrong>
             </Stack>
             <TextField
               multiline
@@ -588,9 +564,7 @@ const DriverPortalPage = () => {
       {showDocUpload && token && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
-              Document Upload
-            </Typography>
+            <MetaStrong sx={{ mb: 1.5, display: 'block' }}>Document Upload</MetaStrong>
             {showBolUpload && (
               <PortalDocumentUpload
                 token={token}
@@ -614,13 +588,9 @@ const DriverPortalPage = () => {
       )}
 
       {/* Footer */}
-      <Typography
-        variant="caption"
-        color="text.disabled"
-        sx={{ display: 'block', textAlign: 'center', mt: 3 }}
-      >
+      <Timestamp sx={{ display: 'block', textAlign: 'center', mt: 3 }}>
         Powered by Hussle Dispatch
-      </Typography>
+      </Timestamp>
       </Box>
     </Box>
   );

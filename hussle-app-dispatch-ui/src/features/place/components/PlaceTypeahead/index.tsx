@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip } from '@mui/material';
+import { Meta, MetaStrong, Timestamp } from 'components/Typography';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import {
   EntityAutocomplete,
@@ -102,9 +103,7 @@ export const PlaceTypeahead: React.FC<PlaceTypeaheadProps> = ({
       return (
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {option.label}
-            </Typography>
+            <MetaStrong>{option.label}</MetaStrong>
             {facilityType && (
               <Chip
                 label={FACILITY_TYPE_LABELS[facilityType] ?? facilityType}
@@ -114,14 +113,8 @@ export const PlaceTypeahead: React.FC<PlaceTypeaheadProps> = ({
               />
             )}
           </Box>
-          <Typography variant="caption" color="text.secondary">
-            {option.description}
-          </Typography>
-          {contactName && (
-            <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
-              {contactName}
-            </Typography>
-          )}
+          <Meta>{option.description}</Meta>
+          {contactName && <Timestamp sx={{ display: 'block' }}>{contactName}</Timestamp>}
         </Box>
       );
     },

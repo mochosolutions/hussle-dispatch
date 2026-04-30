@@ -9,8 +9,8 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
-  Typography,
 } from '@mui/material';
+import { Meta, MetaStrong, SectionTitle } from 'components/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PersonIcon from '@mui/icons-material/Person';
@@ -399,15 +399,10 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
               }}
             >
               <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}
-                >
+                <SectionTitle sx={{ color: 'text.primary' }}>
                   Carrier status after creation
-                </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mt: 0.25 }}>
-                  Choose based on readiness
-                </Typography>
+                </SectionTitle>
+                <Meta sx={{ display: 'block', mt: 0.25 }}>Choose based on readiness</Meta>
               </Box>
               <ToggleButtonGroup
                 value={submitStatus}
@@ -430,26 +425,22 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                 }}
               >
                 <ToggleButton value="ACTIVE">
-                  <Typography
-                    variant="caption"
+                  <MetaStrong
                     sx={{
-                      fontWeight: 600,
                       color: submitStatus === 'ACTIVE' ? 'success.main' : 'text.disabled',
                     }}
                   >
                     ● Active
-                  </Typography>
+                  </MetaStrong>
                 </ToggleButton>
                 <ToggleButton value="PENDING">
-                  <Typography
-                    variant="caption"
+                  <MetaStrong
                     sx={{
-                      fontWeight: 600,
                       color: submitStatus === 'PENDING' ? 'warning.main' : 'text.disabled',
                     }}
                   >
                     ● Pending Review
-                  </Typography>
+                  </MetaStrong>
                 </ToggleButton>
               </ToggleButtonGroup>
             </Box>

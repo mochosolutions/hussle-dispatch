@@ -1,6 +1,6 @@
-import { Box, Grid, Stack, Typography } from '@mui/material';
+import { Box, Grid, Stack } from '@mui/material';
 import SectionCard from 'components/SectionCard';
-import { DetailRow, SectionLabel, Body, BodyMuted } from 'components/Typography';
+import { DetailRow, SectionLabel, Body, BodyMuted, Meta, MetaStrong, Timestamp } from 'components/Typography';
 import SectionCardActions from 'components/SectionCardActions';
 import { StopCard as StopCardItem } from '../StopCard';
 import { AssignmentCard } from '../AssignmentCard';
@@ -98,26 +98,26 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                       }}
                     >
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" fontWeight={500}>
+                        <MetaStrong sx={{ fontWeight: 500, color: 'text.primary' }}>
                           {headline}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </MetaStrong>
+                        <Meta>
                           {formatTimestamp(call.createdAt)}
-                        </Typography>
+                        </Meta>
                       </Stack>
                       {call.notes && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        <Meta sx={{ display: 'block' }}>
                           {call.notes}
-                        </Typography>
+                        </Meta>
                       )}
                       {call.eta && (
-                        <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+                        <Timestamp sx={{ display: 'block' }}>
                           ETA: {formatTimestamp(call.eta)}
-                        </Typography>
+                        </Timestamp>
                       )}
-                      <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+                      <Timestamp sx={{ display: 'block' }}>
                         Logged by: {sourceLabel}
-                      </Typography>
+                      </Timestamp>
                     </Box>
                   );
                 })}

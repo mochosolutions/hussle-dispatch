@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, lazy } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
+import Loadable from 'mocho/components/Loadable';
 import { useDispatch, useSelector } from 'store';
 import { Body } from 'components/Typography';
 import { DetailLayout } from 'components/DetailLayout';
@@ -13,7 +14,6 @@ import {
 } from '../../store/reducers';
 import {
   selectVehicleWithCarrier,
-  selectVehicleDetailLoading,
   selectVehicleLoadHistory,
   selectVehicleLoadHistoryLoading,
   selectDriversByCarrierId,
@@ -21,9 +21,28 @@ import {
 import { VEHICLE_TABS } from '../../constants';
 import { VehicleKPI } from '../../components/VehicleKPI';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
-import { VehicleOverviewTab } from '../../components/VehicleDetailPage/VehicleOverviewTab';
-import { VehicleExpenseTab } from '../../components/VehicleDetailPage/VehicleExpenseTab';
-import { VehicleLoadHistoryTab } from '../../components/VehicleDetailPage/VehicleLoadHistoryTab';
+
+const VehicleOverviewTab = Loadable(
+  lazy(() =>
+    import('../../components/VehicleDetailPage/VehicleOverviewTab').then((m) => ({
+      default: m.VehicleOverviewTab,
+    })),
+  ),
+);
+const VehicleExpenseTab = Loadable(
+  lazy(() =>
+    import('../../components/VehicleDetailPage/VehicleExpenseTab').then((m) => ({
+      default: m.VehicleExpenseTab,
+    })),
+  ),
+);
+const VehicleLoadHistoryTab = Loadable(
+  lazy(() =>
+    import('../../components/VehicleDetailPage/VehicleLoadHistoryTab').then((m) => ({
+      default: m.VehicleLoadHistoryTab,
+    })),
+  ),
+);
 
 const VehicleDetailPage = () => {
   const dispatch = useDispatch();
@@ -31,7 +50,6 @@ const VehicleDetailPage = () => {
   const { id } = useParams();
   const vehicleSelector = useMemo(() => selectVehicleWithCarrier(id ?? ''), [id]);
   const vehicle = useSelector(vehicleSelector);
-  const isLoading = useSelector(selectVehicleDetailLoading(id ?? ''));
   const carrierId = vehicle?.carrierId ?? null;
   const carrierDriversSelector = useMemo(() => selectDriversByCarrierId(carrierId), [carrierId]);
   const carrierDrivers = useSelector(carrierDriversSelector);
@@ -65,7 +83,7 @@ const VehicleDetailPage = () => {
   };
 
   return (
-    <PageWrapper isLoading={isLoading} errorContext="VehicleDetailPage">
+    <PageWrapper errorContext="VehicleDetailPage">
       <DataGuard
         data={vehicle}
         emptyComponent={<Body sx={{ p: 4 }}>Vehicle not found.</Body>}
@@ -79,9 +97,9 @@ const VehicleDetailPage = () => {
             actions={
               <Button
                 variant="outlined"
-                color="secondary"
                 startIcon={<EditIcon />}
                 onClick={handleOpenInfoDrawer}
+                sx={{ color: 'common.white', borderColor: 'grey.500' }}
               >
                 Edit
               </Button>

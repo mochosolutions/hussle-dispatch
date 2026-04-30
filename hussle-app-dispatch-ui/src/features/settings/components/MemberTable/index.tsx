@@ -9,10 +9,10 @@ import {
   Select,
   MenuItem,
   Button,
-  Typography,
   Skeleton,
   Box,
 } from '@mui/material';
+import { Meta } from 'components/Typography';
 import type { SelectChangeEvent } from '@mui/material';
 import { format } from 'date-fns';
 import { useDispatch, useSelector } from 'store';
@@ -132,10 +132,8 @@ const MemberTable: React.FC<MemberTableProps> = ({ members, loading }) => {
                 <TableRow key={member.id}>
                   <TableCell>
                     <Box>
-                      <Typography variant="body2">{fullName}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {member.user.email}
-                      </Typography>
+                      <Meta sx={{ color: 'text.primary' }}>{fullName}</Meta>
+                      <Meta>{member.user.email}</Meta>
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -152,9 +150,9 @@ const MemberTable: React.FC<MemberTableProps> = ({ members, loading }) => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
+                    <Meta sx={{ color: 'text.primary' }}>
                       {format(new Date(member.createdAt), 'MMM d, yyyy')}
-                    </Typography>
+                    </Meta>
                   </TableCell>
                   <TableCell>
                     {!isCurrentUser && (

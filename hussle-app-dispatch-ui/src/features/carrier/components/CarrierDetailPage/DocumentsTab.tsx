@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
-import { Box, Button, Card } from '@mui/material';
+import { Button } from '@mui/material';
 import { CloudUploadOutlined } from '@ant-design/icons';
+import SectionCard from 'components/SectionCard';
 import { DocumentTable } from '../../../documents/components/DocumentTable';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
@@ -20,20 +21,20 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ carrierId }) => {
   }, [openDrawer, carrierId]);
 
   return (
-    <Card>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button
-            size="small"
-            startIcon={<CloudUploadOutlined />}
-            variant="outlined"
-            onClick={handleUploadClick}
-          >
-            Upload
-          </Button>
-        </Box>
-        <DocumentTable entityType="carrier" entityId={carrierId} />
-      </Box>
-    </Card>
+    <SectionCard
+      title="Documents"
+      actions={
+        <Button
+          size="small"
+          startIcon={<CloudUploadOutlined />}
+          variant="outlined"
+          onClick={handleUploadClick}
+        >
+          Upload
+        </Button>
+      }
+    >
+      <DocumentTable entityType="carrier" entityId={carrierId} />
+    </SectionCard>
   );
 };

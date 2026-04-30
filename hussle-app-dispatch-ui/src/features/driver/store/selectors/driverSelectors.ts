@@ -15,6 +15,8 @@ const formatNullableDate = (value: string | null) =>
 
 export const selectAllDrivers = (state: RootState) => driverSelectors.selectAll(state);
 
+export const selectDriverSearchQuery = (state: RootState) => state.pages.drivers.query;
+
 export const selectDriverById = (id: string) => (state: RootState) =>
   driverSelectors.selectById(state, id);
 
@@ -62,7 +64,7 @@ interface DriverKpiItem {
   subtitle: string;
 }
 
-export const selectDriverKpis = createSelector([selectAllDrivers], (drivers): DriverKpiItem[] => {
+const computeDriverKpis = (drivers: ReturnType<typeof driverSelectors.selectAll>): DriverKpiItem[] => {
   const availableCount = drivers.filter((driver) => driver.isAvailable).length;
 
   return [
@@ -87,7 +89,7 @@ export const selectDriverKpis = createSelector([selectAllDrivers], (drivers): Dr
       subtitle: 'Average per trip',
     },
   ];
-});
+};
 
 // ---------------------------------------------------------------------------
 // List page filtering selectors
@@ -111,6 +113,12 @@ export const selectFilteredDrivers = (activeTab: DriverTab, carrierId: string) =
     }
     return filtered;
   });
+
+export const selectDriverKpis = (activeTab: DriverTab, carrierId: string) =>
+  createSelector(
+    [selectFilteredDrivers(activeTab, carrierId)],
+    computeDriverKpis,
+  );
 
 export const selectDriverTabCounts = createSelector(
   [selectAllDrivers],

@@ -1,4 +1,5 @@
-import { Box, Chip, Grid, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Chip, Grid, IconButton, Stack, Tooltip } from '@mui/material';
+import { BodyStrong, KpiLabel, MetaStrong, SectionLabel } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
@@ -101,10 +102,10 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ carrier, onEditCompanyIn
                 borderRadius: 1,
               }}
             >
-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              <BodyStrong sx={{ fontSize: '1.5rem', fontWeight: 700, color: 'text.primary' }}>
                 {stat.value}
-              </Typography>
-              <Typography variant="caption">{stat.label}</Typography>
+              </BodyStrong>
+              <KpiLabel>{stat.label}</KpiLabel>
             </Box>
           ))}
         </Box>
@@ -129,9 +130,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ carrier, onEditCompanyIn
         <FieldRow
           label="Company Margin"
           value={
-            <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+            <MetaStrong sx={{ fontWeight: 700, color: 'primary.main' }}>
               {carrier.companyMarginPercent}%
-            </Typography>
+            </MetaStrong>
           }
         />
 
@@ -216,19 +217,17 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ carrier, onEditCompanyIn
                       ) : (
                         <CancelIcon sx={{ fontSize: 20, color: 'warning.main' }} />
                       )}
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      <MetaStrong sx={{ color: 'text.primary', fontWeight: 500 }}>
                         {item.label}
-                      </Typography>
+                      </MetaStrong>
                     </Box>
-                    <Typography
-                      variant="caption"
+                    <MetaStrong
                       sx={{
                         color: isComplete ? 'success.main' : 'warning.main',
-                        fontWeight: 600,
                       }}
                     >
                       {isComplete ? 'On File' : 'Missing'}
-                    </Typography>
+                    </MetaStrong>
                   </Box>
                 );
               })}
@@ -237,12 +236,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ carrier, onEditCompanyIn
             {/* Insurance Expiry Warning */}
             {carrier.insuranceCertOnFile && (
               <Box sx={{ mt: 2.5 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}
-                >
-                  Insurance Status
-                </Typography>
+                <SectionLabel sx={{ display: 'block', mb: 1 }}>Insurance Status</SectionLabel>
                 <Box
                   sx={{
                     display: 'flex',
@@ -267,11 +261,11 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ carrier, onEditCompanyIn
                     <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
                   )}
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    <MetaStrong sx={{ color: 'text.primary', fontWeight: 500 }}>
                       {carrier.insuranceExpiry
                         ? `Expires: ${carrier.insuranceExpiry}`
                         : 'No expiry date set'}
-                    </Typography>
+                    </MetaStrong>
                     {insuranceWarningConfig && (
                       <Chip
                         label={insuranceWarningConfig.label}

@@ -7,8 +7,8 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  Typography,
 } from '@mui/material';
+import { Meta } from 'components/Typography';
 import { LoadingButton } from '@mui/lab';
 import { inviteCarrier, resendCarrierInvite } from 'utils/api/fleet/carrierApi';
 
@@ -89,9 +89,9 @@ export const InviteCarrierDialog: React.FC<InviteCarrierDialogProps> = ({
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         {carrierEmail ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Meta sx={{ mb: 2 }}>
             An onboarding invite will be sent to <strong>{carrierEmail}</strong>.
-          </Typography>
+          </Meta>
         ) : (
           <Alert severity="warning" sx={{ mb: 2 }}>
             This carrier does not have an email address on file. Please add one before sending an

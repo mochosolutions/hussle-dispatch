@@ -1,16 +1,14 @@
 import { useEffect, useCallback, useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  CardHeader,
   FormControlLabel,
   Grid,
   Switch,
   TextField,
-  Typography,
   Skeleton,
 } from '@mui/material';
+import SectionCard from 'components/SectionCard';
+import { Meta } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
 import {
   fetchNotificationSettingsRequest,
@@ -163,20 +161,12 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ customerId }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Typography variant="body2" color="text.secondary">
-        Configure automatic notifications sent to this customer when load events occur.
-      </Typography>
+      <Meta>Configure automatic notifications sent to this customer when load events occur.</Meta>
 
       {TRIGGERS.map((trigger) => (
-        <Card key={trigger.key} variant="outlined">
-          <CardHeader
-            title={trigger.label}
-            subheader={trigger.description}
-            titleTypographyProps={{ variant: 'subtitle1' }}
-            subheaderTypographyProps={{ variant: 'body2' }}
-          />
-          <CardContent>
-            <Grid container spacing={2}>
+        <SectionCard key={trigger.key} title={trigger.label}>
+          <Meta sx={{ mb: 2 }}>{trigger.description}</Meta>
+          <Grid container spacing={2}>
               {CHANNELS.map((channel) => {
                 const setting = findSetting(settings, trigger.key, channel.key);
                 const isEnabled = setting?.enabled ?? false;
@@ -232,9 +222,8 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ customerId }
                   </Grid>
                 );
               })}
-            </Grid>
-          </CardContent>
-        </Card>
+          </Grid>
+        </SectionCard>
       ))}
     </Box>
   );

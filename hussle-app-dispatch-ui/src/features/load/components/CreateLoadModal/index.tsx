@@ -9,8 +9,9 @@ import {
   DialogTitle,
   Grid,
   Stack,
-  Typography,
 } from '@mui/material';
+
+import { FieldLabel, Meta, MetaStrong } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HistoryIcon from '@mui/icons-material/History';
 import type { LoadTemplate } from '../../types';
@@ -124,16 +125,13 @@ export const CreateLoadModal: React.FC<CreateLoadModalProps> = ({
           <Box sx={{ mb: 3 }}>
             <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
               <HistoryIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              <FieldLabel>
                 Start from Recent
-              </Typography>
+              </FieldLabel>
             </Stack>
-            <Typography
-              variant="caption"
-              sx={{ display: 'block', color: 'text.secondary', mb: 1.5 }}
-            >
+            <Meta sx={{ display: 'block', mb: 1.5 }}>
               Pre-fill from a previous load to save time
-            </Typography>
+            </Meta>
             <Grid container spacing={1.5}>
               {DEMO_TEMPLATES.map((tpl) => {
                 const isSelected = selectedTemplate?.key === tpl.key;
@@ -147,17 +145,17 @@ export const CreateLoadModal: React.FC<CreateLoadModalProps> = ({
                     >
                       <Box sx={{ px: 2, py: 1.5 }}>
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          <MetaStrong sx={{ color: 'text.primary' }}>
                             {tpl.label}
-                          </Typography>
+                          </MetaStrong>
                           {isSelected && (
                             <CheckCircleIcon sx={{ fontSize: 16, color: 'primary.main' }} />
                           )}
                         </Stack>
-                        <Typography variant="caption" color="text.secondary">
+                        <Meta>
                           {tpl.description}
                           {tpl.rate ? ` \u2014 $${tpl.rate.toLocaleString()}` : ''}
-                        </Typography>
+                        </Meta>
                       </Box>
                     </Card>
                   </Grid>
@@ -168,12 +166,9 @@ export const CreateLoadModal: React.FC<CreateLoadModalProps> = ({
         )}
 
         {/* Load type grid */}
-        <Typography
-          variant="caption"
-          sx={{ fontWeight: 600, color: 'text.secondary', mb: 1.5, display: 'block' }}
-        >
+        <FieldLabel sx={{ mb: 1.5, display: 'block' }}>
           {hasTemplates ? 'Or select a load type' : 'Select a load type'}
-        </Typography>
+        </FieldLabel>
         <Grid container spacing={1.5}>
           {LOAD_TYPE_OPTIONS.map((opt) => {
             const isSelected = selectedType === opt.key;
@@ -188,23 +183,22 @@ export const CreateLoadModal: React.FC<CreateLoadModalProps> = ({
                 >
                   <Box sx={{ px: 2, py: 1.5 }}>
                     <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <MetaStrong sx={{ color: 'text.primary' }}>
                         {opt.label}
-                      </Typography>
+                      </MetaStrong>
                       {isSelected && (
                         <CheckCircleIcon sx={{ fontSize: 16, color: 'primary.main' }} />
                       )}
                     </Stack>
-                    <Typography variant="caption" color="text.secondary">
+                    <Meta>
                       {opt.description}
-                    </Typography>
+                    </Meta>
                     {isLastUsed && !isSelected && (
-                      <Typography
-                        variant="caption"
+                      <Meta
                         sx={{ display: 'block', mt: 0.5, color: 'info.main', fontWeight: 500 }}
                       >
                         Last used
-                      </Typography>
+                      </Meta>
                     )}
                   </Box>
                 </Card>

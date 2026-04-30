@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
-import type { ColDef, ValueGetterParams } from 'ag-grid-community';
-import { Box, Card, Chip, Typography } from '@mui/material';
+import type { ColDef, ICellRendererParams, ValueGetterParams } from 'ag-grid-community';
+import { Box, Chip } from '@mui/material';
 import AgGridTable from '../../../../mocho/components/NewDataGrid';
+import SectionCard from 'components/SectionCard';
+import { StatusCell } from 'components/Statusbadge';
 import { useDispatch, useSelector } from 'store';
 import { selectDriversByCarrierId } from '../../store/selectors/carrierSelectors';
 import { fetchCarrierDriversRequest } from '../../store/reducers';
@@ -40,7 +42,11 @@ export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
         field: 'status',
         headerName: 'Status',
         width: 120,
-        valueGetter: (params: ValueGetterParams<Driver>) => params.data?.status ?? '—',
+        cellRenderer: (params: ICellRendererParams<Driver>) => {
+          const status = params.data?.status;
+          if (!status) return '—';
+          return <StatusCell status={`DRIVER_${String(status).toUpperCase()}`} size="small" />;
+        },
       },
       {
         field: 'licenseNumber',
@@ -77,31 +83,17 @@ export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
   );
 
   return (
-    <Card>
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          borderBottom: 1,
-          borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-        >
-          Drivers
-        </Typography>
+    <SectionCard
+      title="Drivers"
+      actions={
         <Chip
           label={drivers.length}
           size="small"
           variant="outlined"
           sx={{ height: 22, fontSize: '0.75rem' }}
         />
-      </Box>
+      }
+    >
       <Box sx={{ height: 400 }}>
         <AgGridTable
           columnDefs={columnDefs}
@@ -111,6 +103,6 @@ export const DriversTab: React.FC<DriversTabProps> = ({ carrierId }) => {
           gridOptions={{ domLayout: 'normal' }}
         />
       </Box>
-    </Card>
+    </SectionCard>
   );
 };

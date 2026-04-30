@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
-import { Box, Card, Divider, Typography, type SxProps, type Theme } from '@mui/material';
+import { Box, Card, Divider, type SxProps, type Theme } from '@mui/material';
+import { Meta, SectionTitle } from 'components/Typography';
 
 interface SectionCardProps {
   title: string;
@@ -21,17 +22,8 @@ export const SectionCard = ({ title, subtitle, actions, children, sx }: SectionC
       }}
     >
       <Box>
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-        >
-          {title}
-        </Typography>
-        {subtitle && (
-          <Typography variant="caption" sx={{ display: 'block', mt: 0.25 }}>
-            {subtitle}
-          </Typography>
-        )}
+        <SectionTitle sx={{ color: 'text.primary' }}>{title}</SectionTitle>
+        {subtitle && <Meta sx={{ display: 'block', mt: 0.25 }}>{subtitle}</Meta>}
       </Box>
       {actions}
     </Box>

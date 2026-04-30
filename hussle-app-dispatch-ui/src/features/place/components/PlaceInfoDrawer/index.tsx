@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Chip, Divider, Grid, Stack, Typography } from '@mui/material';
+import { Box, Chip, Divider, Grid, Stack } from '@mui/material';
+import { Meta } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
 import {
   TextField,
@@ -133,9 +134,9 @@ export const PlaceInfoDrawer: React.FC<PlaceInfoDrawerProps> = ({ placeId, onClo
                     borderColor: 'divider',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    {place?.latitude?.toFixed(6) ?? '--'}, {place?.longitude?.toFixed(6) ?? '--'}
-                  </Typography>
+                  <Meta>
+                    {place?.latitude?.toFixed(6) ?? '—'}, {place?.longitude?.toFixed(6) ?? '—'}
+                  </Meta>
                   {place?.geoSource && (
                     <Chip
                       label={GEO_SOURCE_LABELS[place.geoSource] ?? place.geoSource}

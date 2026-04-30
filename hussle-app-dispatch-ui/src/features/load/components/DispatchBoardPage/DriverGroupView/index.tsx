@@ -7,8 +7,9 @@ import {
   Chip,
   Divider,
   Stack,
-  Typography,
 } from '@mui/material';
+
+import { Meta, MetaStrong, SectionTitle, Timestamp } from 'components/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PersonIcon from '@mui/icons-material/Person';
 import { useNavigate } from 'react-router-dom';
@@ -104,12 +105,12 @@ const groupLoadsByDriver = (
 
 const MetricChip: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <Box sx={{ textAlign: 'center', px: 1.5 }}>
-    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2 }}>
+    <Meta sx={{ display: 'block', lineHeight: 1.2 }}>
       {label}
-    </Typography>
-    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+    </Meta>
+    <MetaStrong sx={{ fontWeight: 700, color: 'text.primary' }}>
       {value}
-    </Typography>
+    </MetaStrong>
   </Box>
 );
 
@@ -132,19 +133,19 @@ const LoadRow: React.FC<{ load: LoadListItem }> = ({ load }) => {
         '&:hover': { bgcolor: 'action.hover', borderRadius: 1 },
       }}
     >
-    <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', minWidth: 90 }}>
+    <MetaStrong sx={{ fontWeight: 600, color: 'primary.main', minWidth: 90 }}>
       {load.loadNumber}
-    </Typography>
+    </MetaStrong>
     <StatusBadge status={load.status} />
-    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+    <Meta sx={{ flex: 1 }}>
       {formatLocation(load.route.originCity, load.route.originState)}
-    </Typography>
-    <Typography variant="body2" color="text.disabled" sx={{ mx: 0.5 }}>
+    </Meta>
+    <Timestamp sx={{ mx: 0.5 }}>
       &rarr;
-    </Typography>
-    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+    </Timestamp>
+    <Meta sx={{ flex: 1 }}>
       {formatLocation(load.route.destinationCity, load.route.destinationState)}
-    </Typography>
+    </Meta>
   </Box>
   );
 };
@@ -197,9 +198,9 @@ const DriverAccordionRow: React.FC<{
       >
         <PersonIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
         <Box sx={{ minWidth: 160 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {group.driverName}
-          </Typography>
+          </MetaStrong>
         </Box>
 
         <Chip
@@ -253,9 +254,9 @@ const AvailableDriverRow: React.FC<{ group: DriverGroup }> = ({ group }) => (
   >
     <PersonIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
     <Box sx={{ minWidth: 160 }}>
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+      <MetaStrong sx={{ color: 'text.primary' }}>
         {group.driverName}
-      </Typography>
+      </MetaStrong>
     </Box>
 
     <Chip
@@ -292,9 +293,9 @@ export const DriverGroupView: React.FC<DriverGroupViewProps> = ({ loads }) => {
   return (
     <Box>
       {assigned.length === 0 && available.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+        <Meta sx={{ py: 4, textAlign: 'center' }}>
           No driver-assigned loads to display.
-        </Typography>
+        </Meta>
       )}
 
       {assigned.map((group) => (
@@ -308,9 +309,9 @@ export const DriverGroupView: React.FC<DriverGroupViewProps> = ({ loads }) => {
 
       {available.length > 0 && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, px: 1 }}>
+          <SectionTitle sx={{ color: 'text.secondary', mb: 1, px: 1 }}>
             Available Drivers ({available.length})
-          </Typography>
+          </SectionTitle>
           {available.map((group) => (
             <AvailableDriverRow key={group.driverId} group={group} />
           ))}

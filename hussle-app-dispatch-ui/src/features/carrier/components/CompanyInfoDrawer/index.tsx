@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, Divider, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { TextField, EmailField, PhoneField, StateField, ZipCodeField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
+import { SectionLabel } from 'components/Typography';
 import { companyInfoSchema } from '../../validators/fleetSchema';
 import { selectCarrierById } from '../../store/selectors/carrierSelectors';
 import { updateCarrierRequest } from '../../store/reducers';
@@ -47,18 +48,7 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              fontSize: '0.6875rem',
-              letterSpacing: 0.5,
-            }}
-          >
-            Company Details
-          </Typography>
+          <SectionLabel>Company Details</SectionLabel>
           <TextField name="name" label="Legal Name" formik={formik} />
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
@@ -84,18 +74,7 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
 
           <Divider sx={{ my: 0.5 }} />
 
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              fontSize: '0.6875rem',
-              letterSpacing: 0.5,
-            }}
-          >
-            Primary Contact
-          </Typography>
+          <SectionLabel>Primary Contact</SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <PhoneField name="phone" label="Phone" formik={formik} />

@@ -6,6 +6,7 @@ interface TeamState {
   members: Member[];
   invitations: Invitation[];
   usage: SubscriptionUsage | null;
+  usageLastFetchedAt: number | null;
   loading: Record<string, string>;
   errors: Record<string, string>;
 }
@@ -14,6 +15,7 @@ const initialState: TeamState = {
   members: [],
   invitations: [],
   usage: null,
+  usageLastFetchedAt: null,
   loading: {},
   errors: {},
 };
@@ -45,12 +47,28 @@ export const teamSlice = createSlice({
       state.members = action.payload.members;
       state.invitations = action.payload.invitations;
       state.usage = action.payload.usage;
+      state.usageLastFetchedAt = Date.now();
       delete state.loading.fetchTeam;
       delete state.errors.fetchTeam;
     },
     fetchTeamFailure(state, action: PayloadAction<string>) {
       delete state.loading.fetchTeam;
       state.errors.fetchTeam = action.payload;
+    },
+
+    fetchSubscriptionUsageRequest(state) {
+      state.loading.fetchSubscriptionUsage = 'Pending';
+      delete state.errors.fetchSubscriptionUsage;
+    },
+    fetchSubscriptionUsageSuccess(state, action: PayloadAction<SubscriptionUsage>) {
+      state.usage = action.payload;
+      state.usageLastFetchedAt = Date.now();
+      delete state.loading.fetchSubscriptionUsage;
+      delete state.errors.fetchSubscriptionUsage;
+    },
+    fetchSubscriptionUsageFailure(state, action: PayloadAction<string>) {
+      delete state.loading.fetchSubscriptionUsage;
+      state.errors.fetchSubscriptionUsage = action.payload;
     },
 
     changeMemberRoleRequest(state, action: PayloadAction<ChangeMemberRolePayload>) {
@@ -107,6 +125,9 @@ export const {
   fetchTeamRequest,
   fetchTeamSuccess,
   fetchTeamFailure,
+  fetchSubscriptionUsageRequest,
+  fetchSubscriptionUsageSuccess,
+  fetchSubscriptionUsageFailure,
   changeMemberRoleRequest,
   changeMemberRoleSuccess,
   changeMemberRoleFailure,

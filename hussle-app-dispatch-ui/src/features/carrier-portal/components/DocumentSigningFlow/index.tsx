@@ -7,9 +7,9 @@ import {
   CircularProgress,
   FormControlLabel,
   TextField,
-  Typography,
 } from '@mui/material';
 
+import { BodyStrong, Meta, SectionTitle } from 'components/Typography';
 import { signDocument } from 'utils/api/fleet/carrierPortalApi';
 
 import { SignatureCanvas } from '../SignatureCanvas';
@@ -68,7 +68,7 @@ export const DocumentSigningFlow: React.FC<DocumentSigningFlowProps> = ({ onComp
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Typography variant="h6">Dispatch Agreement</Typography>
+      <SectionTitle>Dispatch Agreement</SectionTitle>
 
       {/* Scrollable agreement text */}
       <Box
@@ -82,9 +82,7 @@ export const DocumentSigningFlow: React.FC<DocumentSigningFlowProps> = ({ onComp
           bgcolor: 'grey.50',
         }}
       >
-        <Typography variant="body2" color="text.secondary">
-          Dispatch Agreement terms will be displayed here...
-        </Typography>
+        <Meta>Dispatch Agreement terms will be displayed here...</Meta>
       </Box>
 
       {/* Signer info */}
@@ -105,9 +103,7 @@ export const DocumentSigningFlow: React.FC<DocumentSigningFlowProps> = ({ onComp
 
       {/* Signature */}
       <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          Signature
-        </Typography>
+        <BodyStrong sx={{ mb: 1 }}>Signature</BodyStrong>
         <SignatureCanvas onSignatureChange={handleSignatureChange} />
       </Box>
 

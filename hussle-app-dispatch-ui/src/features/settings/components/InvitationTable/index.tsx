@@ -6,10 +6,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
 
+import { ErrorText, Meta } from 'components/Typography';
 import type { Invitation } from 'utils/api/team/teamApi';
 
 // ---------------------------------------------------------------------------
@@ -66,12 +66,11 @@ export const InvitationTable: React.FC<InvitationTableProps> = ({ invitations })
               </TableCell>
               <TableCell>{formattedSent}</TableCell>
               <TableCell>
-                <Typography
-                  variant="body2"
-                  sx={isExpired ? { color: 'error.main' } : undefined}
-                >
-                  {text}
-                </Typography>
+                {isExpired ? (
+                  <ErrorText>{text}</ErrorText>
+                ) : (
+                  <Meta sx={{ color: 'text.primary' }}>{text}</Meta>
+                )}
               </TableCell>
             </TableRow>
           );

@@ -1,9 +1,10 @@
 import { useCallback, useRef } from 'react';
-import { Box, InputAdornment, Typography } from '@mui/material';
+import { Box, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import type { Contact } from 'features/carrier/types';
 import { EntityAutocomplete } from 'components/EntityAutocomplete';
+import { Meta, MetaStrong } from 'components/Typography';
 import type { EntityAutocompleteOption } from 'components/EntityAutocomplete';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { getContacts } from 'utils/api/fleet/contactApi';
@@ -29,14 +30,8 @@ interface BrokerAutocompleteProps {
 
 const renderContactOption = (option: EntityAutocompleteOption) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-      {option.label}
-    </Typography>
-    {option.description ? (
-      <Typography variant="caption" color="text.secondary">
-        {option.description}
-      </Typography>
-    ) : null}
+    <MetaStrong>{option.label}</MetaStrong>
+    {option.description ? <Meta>{option.description}</Meta> : null}
   </Box>
 );
 

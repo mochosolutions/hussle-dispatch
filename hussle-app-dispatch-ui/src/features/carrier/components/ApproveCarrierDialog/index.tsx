@@ -6,8 +6,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Typography,
 } from '@mui/material';
+import { Meta } from 'components/Typography';
 import { LoadingButton } from '@mui/lab';
 import { approveCarrier } from 'utils/api/fleet/carrierApi';
 
@@ -60,9 +60,9 @@ export const ApproveCarrierDialog: React.FC<ApproveCarrierDialogProps> = ({
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>Approve {carrierName}?</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <Meta sx={{ mb: 1 }}>
           This will mark the carrier as approved and set their status to active.
-        </Typography>
+        </Meta>
 
         {minimumRatePerMile !== undefined && minimumRatePerMile !== null && (
           <Alert severity="info" sx={{ mt: 1 }}>

@@ -1,19 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { format, parseISO } from 'date-fns';
-import { Button, Stack, Typography } from '@mui/material';
+import { Box, Button } from '@mui/material';
+import { Body } from 'components/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 import DirectionsIcon from '@mui/icons-material/Directions';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
-import { KpiCell } from 'components/Typography';
-import { ContextualAlert } from 'components/ContextualAlert';
-import { getPlaceStats } from 'utils/api/places/placeApi';
-import type { PlaceStats } from 'utils/api/places/placeApi';
-import { selectFormattedPlaceById } from '../../store/selectors/placeSelectors';
+import {
+  selectFormattedPlaceById,
+  selectPlaceStats,
+  selectPlaceStatsLoading,
+} from '../../store/selectors/placeSelectors';
 import {
   fetchPlaceDetailsRequest,
+  fetchPlaceStatsRequest,
   placePageSelectors,
 } from '../../store/reducers/placePageSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
@@ -22,6 +24,7 @@ import type { FacilityType, DockType, Place } from '../../types';
 import { OverviewTab } from '../../components/PlaceDetailPage/OverviewTab';
 import { LoadHistoryTab } from '../../components/PlaceDetailPage/LoadHistoryTab';
 import { NotesTab } from '../../components/PlaceDetailPage/NotesTab';
+import { PlaceKPI } from '../../components/PlaceKPI';
 
 const PLACE_DETAIL_TABS = [
   { label: 'Overview', value: 'overview' },
@@ -80,30 +83,19 @@ const PlaceDetailPage = () => {
   const { id } = useParams();
   const placeSelector = useMemo(() => selectFormattedPlaceById(id), [id]);
   const place = useSelector(placeSelector);
-  const isLoading = useSelector(placePageSelectors.selectIsEntityLoading('getById', id ?? ''));
-  const isError = useSelector(
-    (state) => Boolean(placePageSelectors.selectEntityError('getById', id ?? '')(state)),
+  const isError = useSelector((state) =>
+    Boolean(placePageSelectors.selectEntityError('getById', id ?? '')(state)),
   );
 
-  const [placeStats, setPlaceStats] = useState<PlaceStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const placeStats = useSelector(selectPlaceStats);
+  const statsLoading = useSelector(selectPlaceStatsLoading);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchPlaceDetailsRequest({ id }));
+      dispatch(fetchPlaceStatsRequest({ id }));
     }
   }, [dispatch, id]);
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-    setStatsLoading(true);
-    getPlaceStats(id)
-      .then(setPlaceStats)
-      .catch(() => setPlaceStats(null))
-      .finally(() => setStatsLoading(false));
-  }, [id]);
 
   const handleBack = () => {
     navigate('/places');
@@ -116,8 +108,8 @@ const PlaceDetailPage = () => {
   };
 
   return (
-    <PageWrapper isLoading={isLoading} isError={isError} errorContext="PlaceDetailPage">
-      <DataGuard data={place} emptyComponent={<Typography p={4}>Place not found.</Typography>}>
+    <PageWrapper isError={isError} errorContext="PlaceDetailPage">
+      <DataGuard data={place} emptyComponent={<Box sx={{ p: 4 }}><Body>Place not found.</Body></Box>}>
         {(p) => {
           const facilityLabel = p.facilityType
             ? FACILITY_TYPE_LABELS[p.facilityType as FacilityType]
@@ -164,23 +156,7 @@ const PlaceDetailPage = () => {
                   </Button>
                 </>
               }
-              summary={
-                <>
-                  <KpiCell label="Address" value={fullAddress || '—'} />
-                  <KpiCell label="Facility Type" value={facilityLabel ?? '—'} />
-                  <KpiCell
-                    label="Appointment"
-                    value={p.appointmentRequired ? 'Required' : 'Walk-in'}
-                    valueProps={p.appointmentRequired ? { color: 'error.main' } : {}}
-                  />
-                  <KpiCell label="Dock Type" value={dockLabel ?? '—'} />
-                  <KpiCell
-                    label="Total Visits"
-                    value={statsLoading ? '...' : String(placeStats?.visitCount ?? '—')}
-                    sub={`Last: ${statsLoading ? '...' : formatLastVisit(placeStats?.lastVisitDate ?? null)}`}
-                  />
-                </>
-              }
+              summary={<PlaceKPI place={p} stats={placeStats} statsLoading={statsLoading} />}
               tabs={PLACE_DETAIL_TABS}
               activeTab={activeTab}
               onTabChange={setActiveTab}

@@ -1,6 +1,8 @@
 import React from 'react';
-import { Box, Typography, Drawer, IconButton } from '@mui/material';
+import { Box, Drawer, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+
+import { DrawerTitle, Meta } from 'components/Typography';
 
 interface DetailDrawerProps {
   open: boolean;
@@ -49,8 +51,8 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({
       }}
     >
       <Box>
-        <Typography variant="h5">{title}</Typography>
-        {subtitle && <Typography variant="caption">{subtitle}</Typography>}
+        <DrawerTitle>{title}</DrawerTitle>
+        {subtitle && <Meta sx={{ color: 'text.primary' }}>{subtitle}</Meta>}
       </Box>
       <IconButton onClick={onClose} size="small" aria-label="Close drawer">
         <CloseIcon fontSize="small" />

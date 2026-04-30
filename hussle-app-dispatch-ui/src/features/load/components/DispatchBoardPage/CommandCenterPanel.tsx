@@ -1,9 +1,17 @@
 import { useMemo } from 'react';
-import { Box, Button, Chip, Divider, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, IconButton, Stack } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'store';
+
+import {
+  BodyStrong,
+  Meta,
+  MetaStrong,
+  SectionLabel,
+  Timestamp,
+} from 'components/Typography';
 
 import type { Driver } from 'features/carrier/types';
 import type { StagedLoad } from '../../types';
@@ -64,9 +72,9 @@ const DriverRoster: React.FC<{
 
   return (
     <Box>
-      <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 1.5 }}>
+      <SectionLabel sx={{ px: 2, pt: 1.5 }}>
         Drivers ({available.length} available, {busy.length} busy)
-      </Typography>
+      </SectionLabel>
 
       {available.length > 0 && (
         <Box sx={{ mt: 1 }}>
@@ -82,20 +90,16 @@ const DriverRoster: React.FC<{
                 transition: 'background-color 0.15s',
               }}
             >
-              <Typography variant="body2" fontWeight={600}>
+              <MetaStrong sx={{ color: 'text.primary' }}>
                 {driver.firstName} {driver.lastName}
-              </Typography>
+              </MetaStrong>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
                 {(driver.currentCity || driver.currentState) && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Meta>
                     {[driver.currentCity, driver.currentState].filter(Boolean).join(', ')}
-                  </Typography>
+                  </Meta>
                 )}
-                {driver.availableHours && (
-                  <Typography variant="caption" color="text.secondary">
-                    {driver.availableHours}h
-                  </Typography>
-                )}
+                {driver.availableHours && <Meta>{driver.availableHours}h</Meta>}
                 <Chip label="Available" size="small" color="success" sx={{ height: 20, fontSize: '0.6875rem' }} />
               </Stack>
             </Box>
@@ -106,9 +110,7 @@ const DriverRoster: React.FC<{
       {busy.length > 0 && (
         <Box sx={{ mt: 1 }}>
           <Divider sx={{ mx: 2 }} />
-          <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 1 }}>
-            Busy
-          </Typography>
+          <SectionLabel sx={{ px: 2, pt: 1 }}>Busy</SectionLabel>
           {busy.map((driver) => (
             <Box
               key={driver.id}
@@ -121,14 +123,14 @@ const DriverRoster: React.FC<{
                 transition: 'background-color 0.15s',
               }}
             >
-              <Typography variant="body2" fontWeight={600} color="text.secondary">
+              <MetaStrong sx={{ color: 'text.secondary' }}>
                 {driver.firstName} {driver.lastName}
-              </Typography>
+              </MetaStrong>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
                 {(driver.currentCity || driver.currentState) && (
-                  <Typography variant="caption" color="text.disabled">
+                  <Timestamp>
                     {[driver.currentCity, driver.currentState].filter(Boolean).join(', ')}
-                  </Typography>
+                  </Timestamp>
                 )}
                 <Chip label="Unavailable" size="small" color="default" sx={{ height: 20, fontSize: '0.6875rem' }} />
               </Stack>
@@ -139,9 +141,7 @@ const DriverRoster: React.FC<{
 
       {drivers.length === 0 && (
         <Box sx={{ px: 2, py: 4, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.disabled">
-            No drivers loaded
-          </Typography>
+          <Timestamp>No drivers loaded</Timestamp>
         </Box>
       )}
     </Box>
@@ -189,29 +189,19 @@ const DriverDetailPanel: React.FC<{
         <IconButton size="small" onClick={onBack} aria-label="Back to roster">
           <ArrowBackIcon fontSize="small" />
         </IconButton>
-        <Typography variant="subtitle2" fontWeight={700}>
+        <BodyStrong sx={{ fontWeight: 700 }}>
           {driver.firstName} {driver.lastName}
-        </Typography>
+        </BodyStrong>
       </Stack>
       <Divider />
 
       <Box sx={{ px: 2, py: 1.5 }}>
         {(driver.currentCity || driver.currentState) && (
-          <Typography variant="body2" color="text.secondary">
-            {[driver.currentCity, driver.currentState].filter(Boolean).join(', ')}
-          </Typography>
+          <Meta>{[driver.currentCity, driver.currentState].filter(Boolean).join(', ')}</Meta>
         )}
         <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
-          {driver.licenseType && (
-            <Typography variant="caption" color="text.secondary">
-              {driver.licenseType}
-            </Typography>
-          )}
-          {driver.availableHours && (
-            <Typography variant="caption" color="text.secondary">
-              {driver.availableHours}h available
-            </Typography>
-          )}
+          {driver.licenseType && <Meta>{driver.licenseType}</Meta>}
+          {driver.availableHours && <Meta>{driver.availableHours}h available</Meta>}
         </Stack>
         <Chip
           label={driver.isAvailable ? 'Available' : 'Unavailable'}
@@ -222,15 +212,13 @@ const DriverDetailPanel: React.FC<{
       </Box>
 
       <Divider />
-      <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 1.5 }}>
+      <SectionLabel sx={{ px: 2, pt: 1.5 }}>
         Nearby Loads ({nearbyLoads.length})
-      </Typography>
+      </SectionLabel>
 
       {nearbyLoads.length === 0 && (
         <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.disabled">
-            No loads within {NEARBY_RADIUS_MI} miles
-          </Typography>
+          <Timestamp>No loads within {NEARBY_RADIUS_MI} miles</Timestamp>
         </Box>
       )}
 
@@ -246,23 +234,15 @@ const DriverDetailPanel: React.FC<{
             transition: 'background-color 0.15s',
           }}
         >
-          <Typography variant="body2" fontWeight={600}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {load.originCity}, {load.originState} &rarr; {load.destCity}, {load.destState}
-          </Typography>
+          </MetaStrong>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
-            {load.payout !== null && (
-              <Typography variant="caption" color="text.secondary">
-                ${load.payout.toLocaleString()}
-              </Typography>
-            )}
+            {load.payout !== null && <Meta>${load.payout.toLocaleString()}</Meta>}
             {load.ratePerMile !== null && (
-              <Typography variant="caption" color="text.secondary">
-                ${load.ratePerMile.toFixed(2)}/mi
-              </Typography>
+              <Meta>${load.ratePerMile.toFixed(2)}/mi</Meta>
             )}
-            <Typography variant="caption" color="text.disabled">
-              {Math.round(distance)} mi away
-            </Typography>
+            <Timestamp>{Math.round(distance)} mi away</Timestamp>
             <Chip
               label={load.source.toUpperCase()}
               size="small"
@@ -316,9 +296,7 @@ const LoadDetailPanel: React.FC<{
         <IconButton size="small" onClick={onBack} aria-label="Back">
           <ArrowBackIcon fontSize="small" />
         </IconButton>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ flex: 1 }}>
-          Load Details
-        </Typography>
+        <BodyStrong sx={{ fontWeight: 700, flex: 1 }}>Load Details</BodyStrong>
         <Chip
           label={load.source.toUpperCase()}
           size="small"
@@ -328,44 +306,42 @@ const LoadDetailPanel: React.FC<{
       <Divider />
 
       <Box sx={{ px: 2, py: 1.5 }}>
-        <Typography variant="body2" fontWeight={600}>
+        <MetaStrong sx={{ color: 'text.primary' }}>
           {load.originCity}, {load.originState} &rarr; {load.destCity}, {load.destState}
-        </Typography>
+        </MetaStrong>
         <Stack spacing={0.5} sx={{ mt: 1 }}>
           {load.payout !== null && (
-            <Typography variant="body2">
+            <Meta sx={{ color: 'text.primary' }}>
               Payout: ${load.payout.toLocaleString()}
-            </Typography>
+            </Meta>
           )}
           {load.ratePerMile !== null && (
-            <Typography variant="body2">
+            <Meta sx={{ color: 'text.primary' }}>
               Rate/mile: ${load.ratePerMile.toFixed(2)}
-            </Typography>
+            </Meta>
           )}
           {load.equipmentType && (
-            <Typography variant="body2">Equipment: {load.equipmentType}</Typography>
+            <Meta sx={{ color: 'text.primary' }}>Equipment: {load.equipmentType}</Meta>
           )}
           {load.totalMiles !== null && (
-            <Typography variant="body2">Miles: {load.totalMiles}</Typography>
+            <Meta sx={{ color: 'text.primary' }}>Miles: {load.totalMiles}</Meta>
           )}
           {load.firstPickupTime && (
-            <Typography variant="body2">
+            <Meta sx={{ color: 'text.primary' }}>
               Pickup: {new Date(load.firstPickupTime).toLocaleString()}
-            </Typography>
+            </Meta>
           )}
         </Stack>
       </Box>
 
       <Divider />
-      <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 1.5 }}>
+      <SectionLabel sx={{ px: 2, pt: 1.5 }}>
         Nearby Drivers ({nearbyDrivers.length})
-      </Typography>
+      </SectionLabel>
 
       {nearbyDrivers.length === 0 && (
         <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.disabled">
-            No drivers within {NEARBY_RADIUS_MI} miles
-          </Typography>
+          <Timestamp>No drivers within {NEARBY_RADIUS_MI} miles</Timestamp>
         </Box>
       )}
 
@@ -381,18 +357,16 @@ const LoadDetailPanel: React.FC<{
             transition: 'background-color 0.15s',
           }}
         >
-          <Typography variant="body2" fontWeight={600}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {driver.firstName} {driver.lastName}
-          </Typography>
+          </MetaStrong>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
             {(driver.currentCity || driver.currentState) && (
-              <Typography variant="caption" color="text.secondary">
+              <Meta>
                 {[driver.currentCity, driver.currentState].filter(Boolean).join(', ')}
-              </Typography>
+              </Meta>
             )}
-            <Typography variant="caption" color="text.disabled">
-              {Math.round(distance)} mi away
-            </Typography>
+            <Timestamp>{Math.round(distance)} mi away</Timestamp>
             <Chip
               label={driver.isAvailable ? 'Available' : 'Busy'}
               size="small"
@@ -461,9 +435,9 @@ export const CommandCenterPanel: React.FC<CommandCenterPanelProps> = ({
         spacing={0.75}
         sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}
       >
-        <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mr: 0.5, alignSelf: 'center' }}>
+        <MetaStrong sx={{ color: 'text.secondary', mr: 0.5, alignSelf: 'center' }}>
           Layers
-        </Typography>
+        </MetaStrong>
         <Chip
           label="Drivers"
           variant={layers.showDrivers ? 'filled' : 'outlined'}

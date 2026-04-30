@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Button, Chip, Divider, Fade, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, Fade, Stack } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { PageWrapper } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
@@ -18,7 +18,7 @@ import type {
   LoadTemplate,
   QueuedDocument,
 } from '../../types';
-import { KpiCell } from 'components/Typography';
+import { KpiCell, Meta } from 'components/Typography';
 import type { LoadFormValues } from '../../validators/loadSchema';
 import {
   LOAD_TYPE_OPTIONS,
@@ -131,9 +131,7 @@ const CreateLoadPage = () => {
   const draftSavedIndicator = draftSaved ? (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <FiberManualRecordIcon sx={{ fontSize: 8, color: 'success.main' }} />
-      <Typography variant="caption" color="grey.300">
-        Draft saved
-      </Typography>
+      <Meta sx={{ color: 'grey.300' }}>Draft saved</Meta>
     </Box>
   ) : null;
 

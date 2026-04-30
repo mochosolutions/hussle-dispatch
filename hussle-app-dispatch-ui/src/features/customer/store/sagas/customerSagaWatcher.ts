@@ -6,10 +6,12 @@ import { updateCustomerSaga } from './updateCustomerSaga';
 import { deleteCustomerSaga } from './deleteCustomerSaga';
 import { fetchNotificationSettingsSaga } from './fetchNotificationSettingsSaga';
 import { updateNotificationSettingsSaga } from './updateNotificationSettingsSaga';
+import { fetchCustomerStatsSaga } from './fetchCustomerStatsSaga';
 import { customerPageSlice } from '../reducers/customerPageSlice';
 import {
   fetchNotificationSettingsRequest,
   updateNotificationSettingsRequest,
+  fetchCustomerStatsRequest,
 } from '../reducers/customerPageSlice';
 
 export const { actions: customerPageActions } = customerPageSlice;
@@ -22,4 +24,5 @@ export function* customerSagaWatcher(): Generator {
   yield takeLatest(customerPageActions.deleteRequest.type, deleteCustomerSaga);
   yield takeLatest(fetchNotificationSettingsRequest.type, fetchNotificationSettingsSaga);
   yield takeLatest(updateNotificationSettingsRequest.type, updateNotificationSettingsSaga);
+  yield takeLatest(fetchCustomerStatsRequest.type, fetchCustomerStatsSaga);
 }

@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
+
+import { Meta } from 'components/Typography';
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -59,7 +61,7 @@ const LegendItem: React.FC<LegendItemConfig> = ({ label, bgcolor, borderColor })
         borderRadius: 0.5,
       }}
     />
-    <Typography variant="caption">{label}</Typography>
+    <Meta>{label}</Meta>
   </Stack>
 );
 
@@ -119,9 +121,7 @@ export const StateGrid: React.FC<StateGridProps> = ({ value, onChange }) => {
                 },
               }}
             >
-              <Typography variant="caption" fontWeight="bold">
-                {stateCode}
-              </Typography>
+              <Meta sx={{ fontWeight: 700, color: 'text.primary' }}>{stateCode}</Meta>
             </Box>
           );
         })}

@@ -1,10 +1,11 @@
 import { useCallback, forwardRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useFormik } from 'formik';
-import { Box, Button, Card, Divider, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, Divider, Stack } from '@mui/material';
 
 import { useDispatch } from 'store';
 import { PageWrapper } from '@mocho/ui/components';
+import { Meta, SectionTitle } from 'components/Typography';
 import { InnerPageHeader } from '../../../../components/InnerPageHeader';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';
 import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
@@ -38,17 +39,8 @@ interface SectionCardProps {
 const SectionCard = ({ title, subtitle, children }: SectionCardProps) => (
   <Card sx={{ mb: 2 }}>
     <Box sx={{ px: 3, py: 2 }}>
-      <Typography
-        variant="subtitle1"
-        sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-      >
-        {title}
-      </Typography>
-      {subtitle && (
-        <Typography variant="caption" sx={{ display: 'block', mt: 0.25 }}>
-          {subtitle}
-        </Typography>
-      )}
+      <SectionTitle>{title}</SectionTitle>
+      {subtitle && <Meta sx={{ display: 'block', mt: 0.25 }}>{subtitle}</Meta>}
     </Box>
     <Divider />
     <Box sx={{ px: 3, py: 2.5 }}>{children}</Box>

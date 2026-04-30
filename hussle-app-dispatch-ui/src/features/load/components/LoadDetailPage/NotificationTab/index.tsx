@@ -2,9 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   Chip,
   Divider,
   List,
@@ -15,6 +12,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { Meta, MetaStrong } from 'components/Typography';
+import SectionCard from 'components/SectionCard';
 import EditIcon from '@mui/icons-material/Edit';
 import EmailIcon from '@mui/icons-material/Email';
 import SmsIcon from '@mui/icons-material/Sms';
@@ -187,59 +186,51 @@ export const NotificationTab: React.FC<NotificationPanelProps> = ({ loadId, cust
     <>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {/* Overrides — read-only */}
-        <Card variant="outlined">
-          <CardHeader
-            title="Notification Settings"
-            subheader="Customer defaults with per-load overrides"
-            titleTypographyProps={{ variant: 'subtitle1' }}
-            subheaderTypographyProps={{ variant: 'body2' }}
-            action={
-              <Button size="small" startIcon={<EditIcon />} onClick={handleOpenDrawer}>
-                Edit
-              </Button>
-            }
-          />
-          <CardContent>
-            <Stack spacing={1.5}>
-              {TRIGGERS.map((trigger) => {
-                const emailState = getChannelState(trigger, 'EMAIL');
-                const smsState = getChannelState(trigger, 'SMS');
+        <SectionCard
+          title="Notification Settings"
+          actions={
+            <Button size="small" startIcon={<EditIcon />} onClick={handleOpenDrawer}>
+              Edit
+            </Button>
+          }
+        >
+          <Meta sx={{ mb: 2 }}>
+            Customer defaults with per-load overrides
+          </Meta>
+          <Stack spacing={1.5}>
+            {TRIGGERS.map((trigger) => {
+              const emailState = getChannelState(trigger, 'EMAIL');
+              const smsState = getChannelState(trigger, 'SMS');
 
-                return (
-                  <Stack key={trigger} direction="row" alignItems="center" spacing={2}>
-                    <Typography variant="body2" sx={{ minWidth: 130, fontWeight: 500 }}>
-                      {TRIGGER_LABELS[trigger]}
-                    </Typography>
-                    <ChannelChip
-                      channel="EMAIL"
-                      enabled={emailState.enabled}
-                      isOverride={emailState.isOverride}
-                      recipient={emailState.recipient}
-                    />
-                    <ChannelChip
-                      channel="SMS"
-                      enabled={smsState.enabled}
-                      isOverride={smsState.isOverride}
-                      recipient={smsState.recipient}
-                    />
-                  </Stack>
-                );
-              })}
-            </Stack>
-          </CardContent>
-        </Card>
+              return (
+                <Stack key={trigger} direction="row" alignItems="center" spacing={2}>
+                  <MetaStrong sx={{ minWidth: 130, fontWeight: 500, color: 'text.primary' }}>
+                    {TRIGGER_LABELS[trigger]}
+                  </MetaStrong>
+                  <ChannelChip
+                    channel="EMAIL"
+                    enabled={emailState.enabled}
+                    isOverride={emailState.isOverride}
+                    recipient={emailState.recipient}
+                  />
+                  <ChannelChip
+                    channel="SMS"
+                    enabled={smsState.enabled}
+                    isOverride={smsState.isOverride}
+                    recipient={smsState.recipient}
+                  />
+                </Stack>
+              );
+            })}
+          </Stack>
+        </SectionCard>
 
         {/* Notification History */}
-        <Card variant="outlined">
-          <CardHeader
-            title="Notification History"
-            titleTypographyProps={{ variant: 'subtitle1' }}
-          />
-          <CardContent sx={{ p: 0 }}>
+        <SectionCard title="Notification History" contentSX={{ p: 0 }}>
             {history.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+              <Meta sx={{ p: 2 }}>
                 No notifications have been sent for this load yet.
-              </Typography>
+              </Meta>
             ) : (
               <List disablePadding>
                 {history.map((entry, idx) => (
@@ -250,9 +241,9 @@ export const NotificationTab: React.FC<NotificationPanelProps> = ({ loadId, cust
                         primary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {CHANNEL_ICON[entry.channel]}
-                            <Typography variant="body2" fontWeight={500}>
+                            <MetaStrong sx={{ fontWeight: 500, color: 'text.primary' }}>
                               {entry.subject ?? TRIGGER_LABELS[entry.trigger]}
-                            </Typography>
+                            </MetaStrong>
                             <Chip
                               label={entry.status}
                               size="small"
@@ -286,8 +277,7 @@ export const NotificationTab: React.FC<NotificationPanelProps> = ({ loadId, cust
                 ))}
               </List>
             )}
-          </CardContent>
-        </Card>
+        </SectionCard>
 
         <SmsPromptHistorySection loadId={loadId} />
       </Box>

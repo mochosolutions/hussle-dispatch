@@ -37,6 +37,12 @@ export const selectCustomerDetailLoading = (id: string) => (state: RootState) =>
 export const selectCustomerError = (state: RootState) =>
   state.pages.customers.errors['getAll'] ?? null;
 
+export const selectCustomerStats = (state: RootState) =>
+  (state.pages.customers as CustomerPageState).stats;
+
+export const selectCustomerStatsLoading = (state: RootState) =>
+  (state.pages.customers as CustomerPageState).statsLoading;
+
 export const selectCustomerFilters = (state: RootState): CustomerFilters =>
   (state.pages.customers as CustomerPageState).filters;
 
@@ -68,3 +74,24 @@ export const selectFormattedCustomerById = (id: string | undefined) =>
       };
     },
   );
+
+export interface CustomerKpiItem {
+  label: string;
+  value: string;
+  subtitle?: string;
+}
+
+export const selectCustomerKpis = createSelector(
+  [selectFilteredCustomers],
+  (customers): CustomerKpiItem[] => {
+    const total = customers.length;
+    const active = customers.filter((c) => c.status === 'ACTIVE').length;
+    const totalLoads = customers.reduce((sum, c) => sum + (c._count?.loads ?? 0), 0);
+    return [
+      { label: 'Total Customers', value: String(total) },
+      { label: 'Active', value: String(active), subtitle: `${total - active} inactive` },
+      { label: 'Total Loads', value: String(totalLoads) },
+      { label: 'Total Revenue', value: '—' },
+    ];
+  },
+);

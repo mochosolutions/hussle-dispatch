@@ -5,6 +5,7 @@ import { createCrudSlice, createCrudSelectors } from '@mocho/ui/redux';
 import type { CrudPageState } from '@mocho/ui/redux';
 import type { CustomerFilters, NotificationSetting } from '../../types';
 import type { UpsertSettingInput } from 'utils/api/notifications/notificationApi';
+import type { CustomerStats } from 'utils/api/fleet/customerApi';
 
 // ---------------------------------------------------------------------------
 // Extended state — adds filters to the standard CRUD page state
@@ -15,16 +16,25 @@ export interface CustomerPageState extends CrudPageState {
   notificationSettings: NotificationSetting[];
   notificationSettingsLoading: boolean;
   notificationSettingsError: string | null;
+  stats: CustomerStats | null;
+  statsLoading: boolean;
 }
 
 const customerPageInitialExtras: Pick<
   CustomerPageState,
-  'filters' | 'notificationSettings' | 'notificationSettingsLoading' | 'notificationSettingsError'
+  | 'filters'
+  | 'notificationSettings'
+  | 'notificationSettingsLoading'
+  | 'notificationSettingsError'
+  | 'stats'
+  | 'statsLoading'
 > = {
   filters: {},
   notificationSettings: [],
   notificationSettingsLoading: false,
   notificationSettingsError: null,
+  stats: null,
+  statsLoading: false,
 };
 
 export const customerPageSlice = createCrudSlice({
@@ -80,6 +90,18 @@ export const customerPageReducer = (
     return { ...state, notificationSettings: action.payload };
   }
 
+  if (fetchCustomerStatsRequest.match(action)) {
+    return { ...state, statsLoading: true };
+  }
+
+  if (fetchCustomerStatsSuccess.match(action)) {
+    return { ...state, stats: action.payload, statsLoading: false };
+  }
+
+  if (fetchCustomerStatsFailure.match(action)) {
+    return { ...state, stats: null, statsLoading: false };
+  }
+
   const nextCrudState = crudReducer(state, action);
 
   if (nextCrudState === state) {
@@ -92,6 +114,8 @@ export const customerPageReducer = (
     notificationSettings: state.notificationSettings,
     notificationSettingsLoading: state.notificationSettingsLoading,
     notificationSettingsError: state.notificationSettingsError,
+    stats: state.stats,
+    statsLoading: state.statsLoading,
   };
 };
 
@@ -139,4 +163,15 @@ export const updateNotificationSettingsSuccess = createAction<NotificationSettin
 );
 export const updateNotificationSettingsFailure = createAction<string>(
   'customer/updateNotificationSettingsFailure',
+);
+
+// Stats actions
+export const fetchCustomerStatsRequest = createAction<{ id: string }>(
+  'customer/fetchCustomerStatsRequest',
+);
+export const fetchCustomerStatsSuccess = createAction<CustomerStats>(
+  'customer/fetchCustomerStatsSuccess',
+);
+export const fetchCustomerStatsFailure = createAction<string>(
+  'customer/fetchCustomerStatsFailure',
 );

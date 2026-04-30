@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Box, Button, Card, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Stack, TextField, Typography } from '@mui/material';
+import SectionCard from 'components/SectionCard';
+import { Meta } from 'components/Typography';
 
 interface NotesTabProps {
   customerId: string;
@@ -28,69 +30,45 @@ export const NotesTab: React.FC<NotesTabProps> = ({ customerId: _customerId, not
   return (
     <Stack spacing={2.5}>
       {/* Add Note Form */}
-      <Card>
-        <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
+      <SectionCard title="Add Note">
+        <TextField
+          fullWidth
+          multiline
+          minRows={3}
+          maxRows={6}
+          placeholder="Write a note about this customer..."
+          value={newNote}
+          onChange={(e) => setNewNote(e.target.value)}
+          onKeyDown={handleKeyDown}
+          sx={{ mb: 1.5 }}
+        />
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleSubmit}
+            disabled={!newNote.trim()}
           >
             Add Note
-          </Typography>
+          </Button>
         </Box>
-        <Box sx={{ px: 3, py: 2 }}>
-          <TextField
-            fullWidth
-            multiline
-            minRows={3}
-            maxRows={6}
-            placeholder="Write a note about this customer..."
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            onKeyDown={handleKeyDown}
-            sx={{ mb: 1.5 }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleSubmit}
-              disabled={!newNote.trim()}
-            >
-              Add Note
-            </Button>
-          </Box>
-        </Box>
-      </Card>
+      </SectionCard>
 
       {/* Existing Notes */}
-      <Card>
-        <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <SectionCard title="Notes">
+        {notes ? (
           <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
+            variant="body2"
+            sx={{ color: 'text.primary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
           >
-            Notes
+            {notes}
           </Typography>
-        </Box>
-        <Box sx={{ px: 3, py: 2 }}>
-          {notes ? (
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.primary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
-            >
-              {notes}
-            </Typography>
-          ) : (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ py: 3, textAlign: 'center', fontStyle: 'italic' }}
-            >
-              No notes yet. Add the first note above.
-            </Typography>
-          )}
-        </Box>
-      </Card>
+        ) : (
+          <Meta sx={{ py: 3, textAlign: 'center', fontStyle: 'italic' }}>
+            No notes yet. Add the first note above.
+          </Meta>
+        )}
+      </SectionCard>
     </Stack>
   );
 };

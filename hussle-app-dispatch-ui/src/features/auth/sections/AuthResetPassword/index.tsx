@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useFormik } from 'formik';
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Grid } from '@mui/material';
+import { Meta } from 'components/Typography';
 import { useLocation, Navigate } from 'react-router-dom';
 
 import { useDispatch, useSelector } from 'store';
@@ -79,9 +80,7 @@ const AuthResetPassword = () => {
       <Grid container spacing={3}>
         {/* Email Display */}
         <Grid item xs={12}>
-          <Typography variant="body2" color="text.secondary">
-            Enter the code sent to <strong>{email}</strong>
-          </Typography>
+          <Meta>Enter the code sent to <strong>{email}</strong></Meta>
         </Grid>
 
         {/* Confirmation Code */}

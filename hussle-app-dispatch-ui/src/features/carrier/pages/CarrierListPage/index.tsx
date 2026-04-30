@@ -39,7 +39,8 @@ const CarrierListPage = () => {
   const navigate = useNavigate();
 
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.carriers.hasLoadedOnce);
-  const kpiData = useSelector(selectCarrierKpis);
+  const kpiSelector = useMemo(() => selectCarrierKpis(activeTab), [activeTab]);
+  const kpiData = useSelector(kpiSelector);
   const tabCounts = useSelector(selectCarrierTabCounts);
   const filteredSelector = useMemo(() => selectFilteredCarriers(activeTab), [activeTab]);
   const filteredCarriers = useSelector(filteredSelector);

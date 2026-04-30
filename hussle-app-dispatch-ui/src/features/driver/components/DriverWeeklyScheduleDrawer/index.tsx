@@ -4,8 +4,8 @@ import {
   Checkbox,
   FormControlLabel,
   Stack,
-  Typography,
 } from '@mui/material';
+import { Meta, MetaStrong, Timestamp } from 'components/Typography';
 import * as Yup from 'yup';
 import { TimeField } from '@mocho/ui/components/form-fields';
 import { FormDrawer } from 'mocho/components/FormDrawer';
@@ -153,11 +153,7 @@ export const DriverWeeklyScheduleDrawer: React.FC<DriverWeeklyScheduleDrawerProp
                           size="small"
                         />
                       }
-                      label={
-                        <Typography variant="body2" fontWeight={600}>
-                          {DAY_OF_WEEK_LABELS[day]}
-                        </Typography>
-                      }
+                      label={<MetaStrong>{DAY_OF_WEEK_LABELS[day]}</MetaStrong>}
                     />
                   </Box>
 
@@ -173,7 +169,7 @@ export const DriverWeeklyScheduleDrawer: React.FC<DriverWeeklyScheduleDrawerProp
                               size="small"
                             />
                           }
-                          label={<Typography variant="caption">24 hrs</Typography>}
+                          label={<Meta>24 hrs</Meta>}
                         />
                       </Box>
 
@@ -200,9 +196,7 @@ export const DriverWeeklyScheduleDrawer: React.FC<DriverWeeklyScheduleDrawerProp
 
                   {!dayValues.enabled && (
                     <Box sx={{ flex: 8.5 }}>
-                      <Typography variant="body2" color="text.disabled">
-                        Off
-                      </Typography>
+                      <Timestamp>Off</Timestamp>
                     </Box>
                   )}
                 </Box>

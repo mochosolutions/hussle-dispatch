@@ -2,12 +2,12 @@ import React from 'react';
 import { FieldArray } from 'formik';
 import {
   Box,
-  Typography,
   Button,
   Stack,
   IconButton,
   Divider,
 } from '@mui/material';
+import { SectionLabel } from 'components/Typography';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { NumericField, TextField as MochoTextField, StateField } from '@mocho/ui/components';
@@ -23,14 +23,6 @@ interface DriverPreferencesDrawerProps {
   driverId: string;
   onClose: () => void;
 }
-
-const sectionLabelSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
 
 export const DriverPreferencesDrawer: React.FC<DriverPreferencesDrawerProps> = ({
   driverId,
@@ -92,9 +84,9 @@ export const DriverPreferencesDrawer: React.FC<DriverPreferencesDrawerProps> = (
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           {/* Preferred Lanes */}
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Preferred Lanes
-          </Typography>
+          </SectionLabel>
           <FieldArray name="preferredLanes">
             {({ push, remove }) => (
               <Stack spacing={2}>
@@ -158,9 +150,9 @@ export const DriverPreferencesDrawer: React.FC<DriverPreferencesDrawerProps> = (
           <Divider sx={{ my: 0.5 }} />
 
           {/* No-Go Zones */}
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             No-Go Zones
-          </Typography>
+          </SectionLabel>
           <FieldArray name="noGoZones">
             {({ push, remove }) => (
               <Stack spacing={2}>
@@ -208,9 +200,9 @@ export const DriverPreferencesDrawer: React.FC<DriverPreferencesDrawerProps> = (
           <Divider sx={{ my: 0.5 }} />
 
           {/* Availability */}
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Availability
-          </Typography>
+          </SectionLabel>
           <NumericField name="maxDaysOut" label="Max Days Out" formik={formik} />
         </Stack>
       )}

@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { Box, Button, Chip, CircularProgress, Stack, Typography, Grid } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Stack, Grid } from '@mui/material';
+
+import { Meta, MetaStrong } from 'components/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -160,9 +162,9 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                 {isRouteLoading && <CircularProgress size={14} />}
                 {displayTotalMiles > 0 && !isRouteLoading && (
                   <>
-                    <Typography color="text.secondary" variant="caption">
+                    <Meta>
                       {`${displayTotalMiles.toLocaleString()} total miles`}
-                    </Typography>
+                    </Meta>
                     {isEstimated && formik.values.loadedMiles === null && (
                       <Chip
                         label="EST"
@@ -247,9 +249,9 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                 sx={{ fontWeight: 600 }}
               />
             </Stack>
-            <Typography variant="caption" color="text.secondary">
+            <Meta>
               Hazmat Documentation
-            </Typography>
+            </Meta>
             <Box
               onClick={() => hazmatFileRef.current?.click()}
               sx={{
@@ -278,11 +280,11 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
               {formik.values.hazmatDocFile ? (
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                   <CheckCircleIcon sx={{ color: 'success.main' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <MetaStrong sx={{ color: 'text.primary' }}>
                     {formik.values.hazmatDocFile instanceof File
                       ? formik.values.hazmatDocFile.name
                       : 'Document'}
-                  </Typography>
+                  </MetaStrong>
                   <Button
                     size="small"
                     color="error"
@@ -297,12 +299,12 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
               ) : (
                 <Stack alignItems="center" spacing={0.5}>
                   <UploadFileIcon sx={{ color: 'text.secondary' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  <Meta sx={{ fontWeight: 500, color: 'text.primary' }}>
                     Attach hazmat documents
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </Meta>
+                  <Meta>
                     SDS, placard info, or shipping papers
-                  </Typography>
+                  </Meta>
                 </Stack>
               )}
             </Box>

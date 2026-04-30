@@ -16,6 +16,7 @@ interface DriverPageState {
   limit: number;
   total: number;
   carrierIdFilter: string;
+  query: string;
   weeklySchedule: WeeklyScheduleEntry[];
   scheduleOverrides: ScheduleOverride[];
 }
@@ -29,6 +30,7 @@ const initialState: DriverPageState = {
   limit: 25,
   total: 0,
   carrierIdFilter: 'all',
+  query: '',
   weeklySchedule: [],
   scheduleOverrides: [],
 };
@@ -169,6 +171,10 @@ const driverPageSlice = createSlice({
       state.carrierIdFilter = action.payload;
     },
 
+    setQuery(state, action: PayloadAction<string>) {
+      state.query = action.payload;
+    },
+
     // ----- Schedule: fetch weekly + overrides -----
     fetchScheduleRequest(state, _action: PayloadAction<{ driverId: string }>) {
       setPending(state, { key: 'schedule' });
@@ -270,6 +276,7 @@ export const {
   deleteDriverSuccess,
   deleteDriverFailure,
   setCarrierIdFilter,
+  setQuery,
   fetchScheduleRequest,
   fetchScheduleSuccess,
   fetchScheduleFailure,

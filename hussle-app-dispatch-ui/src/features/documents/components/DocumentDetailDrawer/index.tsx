@@ -5,7 +5,6 @@ import {
   Drawer,
   IconButton,
   Stack,
-  Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { FileTextOutlined } from '@ant-design/icons';
@@ -15,7 +14,7 @@ import { enqueueSnackbar } from 'notistack';
 import { useSelector } from 'store';
 import config from '../../../../config';
 import SectionCard from 'components/SectionCard';
-import { BodyMuted, DetailRow } from 'components/Typography';
+import { BodyMuted, DetailRow, DrawerTitle } from 'components/Typography';
 import { formattedCurrentUserSelector } from 'features/auth/store/selectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
@@ -270,8 +269,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
         }}
       >
         <Box sx={{ minWidth: 0, pr: 2 }}>
-          <Typography
-            variant="h5"
+          <DrawerTitle
             sx={{
               color: 'drawer.headerText',
               overflow: 'hidden',
@@ -280,7 +278,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             }}
           >
             {titleLabel}
-          </Typography>
+          </DrawerTitle>
         </Box>
         <IconButton
           onClick={onClose}

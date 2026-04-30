@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
+
+import { BodyMuted, SectionTitle } from 'components/Typography';
 import MapIcon from '@mui/icons-material/Map';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { Map, Marker, useMap } from 'react-map-gl/maplibre';
@@ -210,12 +212,12 @@ export const CommandCenterMap: React.FC<CommandCenterMapProps> = (props) => {
       >
         <Box sx={{ textAlign: 'center' }}>
           <MapIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 1.5 }} />
-          <Typography variant="h6" color="text.secondary" fontWeight={600}>
+          <SectionTitle sx={{ color: 'text.secondary' }}>
             Map unavailable
-          </Typography>
-          <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+          </SectionTitle>
+          <BodyMuted sx={{ mt: 0.5, color: 'text.disabled' }}>
             Map service is not configured.
-          </Typography>
+          </BodyMuted>
         </Box>
       </Box>
     );

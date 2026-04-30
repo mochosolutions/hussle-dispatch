@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 
-import { Box, Stack, Typography, Divider, Fade, styled } from '@mui/material';
-import { KpiCell } from 'components/Typography';
+import { Box, Stack, Divider, Fade, styled } from '@mui/material';
+import { KpiCell, KpiLabel, Meta } from 'components/Typography';
 import {
   // LOAD_TYPE_OPTIONS,
   formatCurrency,
@@ -32,12 +32,9 @@ export const KpiGroup: React.FC<KpiGroupProps> = ({ label, children }) => (
       flex: 1,
     }}
   >
-    <Typography
-      variant="overline"
-      sx={{ fontSize: '0.625rem', color: 'grey.500', letterSpacing: 1, mb: 10 }}
-    >
+    <KpiLabel sx={{ fontSize: '0.625rem', color: 'grey.500', letterSpacing: 1, mb: 10 }}>
       {label}
-    </Typography>
+    </KpiLabel>
     <Stack
       direction="row"
       spacing={2}
@@ -119,13 +116,13 @@ export const CreateLoadSummaryBar = ({ financials }) => {
             flex: 1,
           }}
         >
-          <Typography variant="caption" sx={{ color: 'grey.400' }}>
+          <Meta sx={{ color: 'grey.400' }}>
             +{financials.deadheadMiles.toLocaleString()} DH (
             {financials.totalMiles.toLocaleString()} tot)
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'grey.400' }}>
+          </Meta>
+          <Meta sx={{ color: 'grey.400' }}>
             Tot RPM ${financials.ratePerTotalMile.toFixed(2)}/mi
-          </Typography>
+          </Meta>
         </Stack>
 
         <Stack spacing={0.5}>

@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, CircularProgress, Typography, Button } from '@mui/material';
+import { Box, CircularProgress, Button } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'store';
+import { Body, BodyMuted, SectionTitle } from 'components/Typography';
 import { carrierPortalActions } from '../../store/slices/carrierPortalSlice';
 import { selectSession, selectIsLoading, selectError } from '../../store/selectors/portalSelectors';
 
@@ -49,12 +50,8 @@ const PortalAuthGuard: React.FC<PortalAuthGuardProps> = ({ children }) => {
           }}
         >
           <ErrorOutline sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
-          <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-            Invalid Link
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            No token was provided. Please check the link you received.
-          </Typography>
+          <SectionTitle sx={{ mb: 1 }}>Invalid Link</SectionTitle>
+          <BodyMuted>No token was provided. Please check the link you received.</BodyMuted>
         </Box>
       </Box>
     );
@@ -74,9 +71,7 @@ const PortalAuthGuard: React.FC<PortalAuthGuardProps> = ({ children }) => {
         }}
       >
         <CircularProgress sx={{ color: 'common.white' }} />
-        <Typography variant="body1" sx={{ color: 'common.white' }}>
-          Loading your onboarding...
-        </Typography>
+        <Body sx={{ color: 'common.white' }}>Loading your onboarding...</Body>
       </Box>
     );
   }
@@ -111,12 +106,8 @@ const PortalAuthGuard: React.FC<PortalAuthGuardProps> = ({ children }) => {
           }}
         >
           <ErrorOutline sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
-          <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-            {title}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {message}
-          </Typography>
+          <SectionTitle sx={{ mb: 1 }}>{title}</SectionTitle>
+          <BodyMuted sx={{ mb: 3 }}>{message}</BodyMuted>
           {!isExpired && (
             <Button
               variant="contained"

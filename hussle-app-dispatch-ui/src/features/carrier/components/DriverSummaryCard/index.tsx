@@ -1,4 +1,5 @@
-import { Avatar, Box, IconButton, Stack, Typography } from '@mui/material';
+import { Avatar, Box, IconButton, Stack } from '@mui/material';
+import { MetaStrong, Timestamp } from 'components/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
@@ -53,12 +54,8 @@ export const DriverSummaryCard = ({ driver, onEdit, onRemove }: DriverSummaryCar
           {initials}
         </Avatar>
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            {displayName}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-            {details.join(' · ')}
-          </Typography>
+          <MetaStrong sx={{ color: 'text.primary' }}>{displayName}</MetaStrong>
+          <Timestamp>{details.join(' · ')}</Timestamp>
         </Box>
       </Box>
       <Stack

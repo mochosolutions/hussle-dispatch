@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
-import { Box, Button, Container, Typography } from '@mui/material';
+import { Box, Button, Container } from '@mui/material';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import { BodyMuted, PageTitle } from 'components/Typography';
 
 const Terms = () => {
   const navigate = useNavigate();
@@ -15,12 +16,8 @@ const Terms = () => {
         >
           Back to Login
         </Button>
-        <Typography variant="h3" gutterBottom>
-          Terms of Service
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Terms of service coming soon.
-        </Typography>
+        <PageTitle sx={{ mb: 2 }}>Terms of Service</PageTitle>
+        <BodyMuted>Terms of service coming soon.</BodyMuted>
       </Box>
     </Container>
   );

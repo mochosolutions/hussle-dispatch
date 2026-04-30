@@ -10,8 +10,8 @@ import {
   Switch,
   ToggleButton,
   ToggleButtonGroup,
-  Typography,
 } from '@mui/material';
+import { HintText, Meta, WarningText } from 'components/Typography';
 import ContactPhoneIcon from '@mui/icons-material/ContactPhone';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -218,8 +218,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
           />
 
           {/* Facility / location — truncated */}
-          <Typography
-            variant="body2"
+          <Meta
             sx={{
               fontWeight: 500,
               color: stop.facilityName ? 'text.primary' : 'text.disabled',
@@ -231,21 +230,19 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
             }}
           >
             {facilitySummary}
-          </Typography>
+          </Meta>
 
           {/* Date indicator — compact */}
           {!stop.appointmentDate && (
-            <Typography
-              variant="caption"
+            <WarningText
               sx={{
-                color: 'warning.main',
                 fontWeight: 600,
                 fontSize: 10,
                 flexShrink: 0,
               }}
             >
               No date
-            </Typography>
+            </WarningText>
           )}
 
           {/* Expand chevron — rotates */}
@@ -314,12 +311,9 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
-              <Typography
-                variant="caption"
-                sx={{ display: 'block', mt: 0.5, fontStyle: 'italic', color: 'text.disabled' }}
-              >
+              <HintText sx={{ display: 'block', mt: 0.5 }}>
                 {activeHint}
-              </Typography>
+              </HintText>
             </Box>
 
             {/* Conditional fields based on scheduling type */}
@@ -497,7 +491,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                           }}
                         />
                       }
-                      label={<Typography variant="caption">Hazmat</Typography>}
+                      label={<Meta sx={{ color: 'text.primary' }}>Hazmat</Meta>}
                     />
                     <FormControlLabel
                       control={
@@ -509,7 +503,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                           }}
                         />
                       }
-                      label={<Typography variant="caption">Tarp</Typography>}
+                      label={<Meta sx={{ color: 'text.primary' }}>Tarp</Meta>}
                     />
                     <FormControlLabel
                       control={
@@ -521,7 +515,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                           }}
                         />
                       }
-                      label={<Typography variant="caption">Temp Controlled</Typography>}
+                      label={<Meta sx={{ color: 'text.primary' }}>Temp Controlled</Meta>}
                     />
                   </Stack>
                 </Stack>

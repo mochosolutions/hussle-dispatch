@@ -1,4 +1,6 @@
-import { Chip, Grid, Stack, Typography } from '@mui/material';
+import { Chip, Grid, Stack } from '@mui/material';
+
+import { Meta, MetaStrong } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { FormikProps } from 'formik';
 import SectionCard from 'components/SectionCard';
@@ -54,12 +56,12 @@ export const DriverSection: React.FC<DriverSectionProps> = ({
         {selectedDriver && (
           <Grid item xs={12}>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="caption" color="text.secondary">
+              <Meta>
                 Driver:
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              </Meta>
+              <MetaStrong sx={{ color: 'text.primary' }}>
                 {selectedDriver.name}
-              </Typography>
+              </MetaStrong>
             </Stack>
           </Grid>
         )}

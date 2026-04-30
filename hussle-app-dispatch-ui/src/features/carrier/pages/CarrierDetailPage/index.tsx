@@ -1,28 +1,69 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Alert } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
+import Loadable from 'mocho/components/Loadable';
 import { DetailLayout } from 'components/DetailLayout';
 import { BodyMuted } from 'components/Typography';
 import { CarrierKPI } from '../../components/CarrierKPI';
 import { InviteCarrierButton } from '../../components/InviteCarrierButton';
-import { getCarrierStats } from 'utils/api/fleet/carrierApi';
-import type { CarrierStats } from 'utils/api/fleet/carrierApi';
 import { CARRIER_DETAIL_TAB_ITEMS } from '../../constants';
-import { selectFormattedCarrierById } from '../../store/selectors/carrierSelectors';
+import {
+  selectFormattedCarrierById,
+  selectCarrierStats,
+  selectCarrierStatsLoading,
+} from '../../store/selectors/carrierSelectors';
 import {
   fetchCarrierDetailsRequest,
+  fetchCarrierStatsRequest,
   carrierPageSelectors,
 } from '../../store/reducers/carrierNewPageSlice';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
-import { GeneralTab } from '../../components/CarrierDetailPage/GeneralTab';
-import { DriversTab } from '../../components/CarrierDetailPage/DriversTab';
-import { VehiclesTab } from '../../components/CarrierDetailPage/VehiclesTab';
-import { LoadHistoryTab } from '../../components/CarrierDetailPage/LoadHistoryTab';
-import { NotesTab } from '../../components/CarrierDetailPage/NotesTab';
-import { DocumentsTab } from '../../components/CarrierDetailPage/DocumentsTab';
-import { OnboardingTab } from '../../components/CarrierDetailPage/OnboardingTab';
+
+const GeneralTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/GeneralTab').then((m) => ({ default: m.GeneralTab })),
+  ),
+);
+const DriversTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/DriversTab').then((m) => ({ default: m.DriversTab })),
+  ),
+);
+const VehiclesTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/VehiclesTab').then((m) => ({
+      default: m.VehiclesTab,
+    })),
+  ),
+);
+const LoadHistoryTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/LoadHistoryTab').then((m) => ({
+      default: m.LoadHistoryTab,
+    })),
+  ),
+);
+const DocumentsTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/DocumentsTab').then((m) => ({
+      default: m.DocumentsTab,
+    })),
+  ),
+);
+const NotesTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/NotesTab').then((m) => ({ default: m.NotesTab })),
+  ),
+);
+const OnboardingTab = Loadable(
+  lazy(() =>
+    import('../../components/CarrierDetailPage/OnboardingTab').then((m) => ({
+      default: m.OnboardingTab,
+    })),
+  ),
+);
 
 const CarrierDetailEditable: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -32,37 +73,26 @@ const CarrierDetailEditable: React.FC = () => {
   const { id } = useParams();
   const carrierSelector = useMemo(() => selectFormattedCarrierById(id), [id]);
   const carrier = useSelector(carrierSelector);
-  const isLoading = useSelector(carrierPageSelectors.selectIsEntityLoading('getById', id ?? ''));
   const isError = useSelector(
     (state) => !!carrierPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
-  const [carrierStats, setCarrierStats] = useState<CarrierStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const carrierStats = useSelector(selectCarrierStats);
+  const statsLoading = useSelector(selectCarrierStatsLoading);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchCarrierDetailsRequest({ id }));
+      dispatch(fetchCarrierStatsRequest({ id }));
     }
   }, [dispatch, id]);
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-    setStatsLoading(true);
-    getCarrierStats(id)
-      .then(setCarrierStats)
-      .catch(() => setCarrierStats(null))
-      .finally(() => setStatsLoading(false));
-  }, [id]);
 
   const handleBack = () => {
     navigate('/carriers');
   };
 
   return (
-    <PageWrapper isLoading={isLoading} isError={isError} errorContext="CarrierDetailPage">
+    <PageWrapper isError={isError} errorContext="CarrierDetailPage">
       <DataGuard data={carrier} emptyComponent={<BodyMuted sx={{ p: 4 }}>Carrier not found.</BodyMuted>}>
         {(c) => (
           <DetailLayout

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Divider, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack } from '@mui/material';
+import { SectionLabel } from 'components/Typography';
 import { TextField as MochoTextField, StateField, NumericField } from '@mocho/ui/components';
 import { FormDrawer } from 'mocho/components/FormDrawer';
 import { useDispatch, useSelector } from 'store';
@@ -13,14 +14,6 @@ interface DriverLocationDrawerProps {
   driverId: string;
   onClose: () => void;
 }
-
-const sectionLabelSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
 
 export const DriverLocationDrawer: React.FC<DriverLocationDrawerProps> = ({
   driverId,
@@ -72,9 +65,9 @@ export const DriverLocationDrawer: React.FC<DriverLocationDrawerProps> = ({
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
           {/* Current Location */}
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Current Location
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <MochoTextField name="currentCity" label="City" formik={formik} />
@@ -87,9 +80,9 @@ export const DriverLocationDrawer: React.FC<DriverLocationDrawerProps> = ({
           <Divider sx={{ my: 0.5 }} />
 
           {/* Home Base */}
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Home Base
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <MochoTextField name="homeBaseCity" label="City" formik={formik} />
@@ -102,9 +95,9 @@ export const DriverLocationDrawer: React.FC<DriverLocationDrawerProps> = ({
           <Divider sx={{ my: 0.5 }} />
 
           {/* Availability */}
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Availability
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <MochoTextField name="availableHours" label="Available Hours" formik={formik} />

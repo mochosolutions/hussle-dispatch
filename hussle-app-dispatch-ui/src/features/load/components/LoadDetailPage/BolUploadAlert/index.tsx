@@ -7,8 +7,9 @@ import {
   IconButton,
   LinearProgress,
   Stack,
-  Typography,
 } from '@mui/material';
+
+import { ErrorText, Meta, MetaStrong } from 'components/Typography';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -74,12 +75,12 @@ export const BolUploadAlert: React.FC<BolUploadAlertProps> = ({ loadId }) => {
   return (
     <Alert severity="info" icon={<CloudUploadOutlinedIcon />} sx={{ mb: 2 }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        <MetaStrong sx={{ color: 'text.primary' }}>
           Awaiting signed BOL
-        </Typography>
-        <Typography variant="caption">
+        </MetaStrong>
+        <Meta sx={{ color: 'text.primary' }}>
           Once uploaded, the invoice will be created automatically.
-        </Typography>
+        </Meta>
         {!upload ? (
           <>
             <Box>
@@ -117,26 +118,26 @@ export const BolUploadAlert: React.FC<BolUploadAlertProps> = ({ loadId }) => {
               <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
             )}
             <Chip label="BOL" size="small" variant="outlined" color="primary" />
-            <Typography
-              variant="body2"
+            <Meta
               sx={{
                 flex: 1,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                color: 'text.primary',
               }}
             >
               {upload.fileName}
-            </Typography>
+            </Meta>
             {upload.clientId === '' && (
-              <Typography variant="caption" color="error.main">
+              <ErrorText>
                 File exceeds 10 MB
-              </Typography>
+              </ErrorText>
             )}
             {uploadStatus === 'Rejected' && uploadError && (
-              <Typography variant="caption" color="error.main">
+              <ErrorText>
                 {uploadError}
-              </Typography>
+              </ErrorText>
             )}
             {(uploadStatus === 'Rejected' || upload.clientId === '') && (
               <IconButton

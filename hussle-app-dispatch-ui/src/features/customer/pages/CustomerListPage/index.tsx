@@ -11,7 +11,6 @@ import type { ActionsCellConfig } from '@mocho/ui/components';
 import { EmptyState } from 'mocho/components/EmptyState';
 import { ListLayout } from 'components/ListLayout';
 import ListKpiBar from 'components/ListKpiBar';
-import type { KpiItem } from 'components/ListKpiBar';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import { useStore } from 'react-redux';
@@ -25,8 +24,8 @@ import {
 } from '../../store/reducers/customerPageSlice';
 import {
   selectCustomerFilters,
+  selectCustomerKpis,
   selectFilteredCustomers,
-  selectAllCustomers,
 } from '../../store/selectors/customerSelectors';
 import {
   CustomerNameCellRenderer,
@@ -61,7 +60,7 @@ const CustomerListPage = () => {
 
   const filters = useSelector(selectCustomerFilters);
   const filteredCustomers = useSelector(selectFilteredCustomers);
-  const allCustomers = useSelector(selectAllCustomers);
+  const kpiItems = useSelector(selectCustomerKpis);
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.customers.hasLoadedOnce);
   const store = useStore<RootState>();
 
@@ -142,18 +141,6 @@ const CustomerListPage = () => {
   const handleOpenCreate = useCallback(() => {
     navigate('/customers/create');
   }, [navigate]);
-
-  const kpiItems = useMemo<KpiItem[]>(() => {
-    const total = allCustomers.length;
-    const active = allCustomers.filter((c) => c.status === 'ACTIVE').length;
-    const totalLoads = allCustomers.reduce((sum, c) => sum + (c._count?.loads ?? 0), 0);
-    return [
-      { label: 'Total Customers', value: String(total) },
-      { label: 'Active', value: String(active), subtitle: `${total - active} inactive` },
-      { label: 'Total Loads', value: String(totalLoads) },
-      { label: 'Total Revenue', value: '\u2014' },
-    ];
-  }, [allCustomers]);
 
   const filterConfigs = useMemo<FilterConfig[]>(
     () => [
@@ -282,7 +269,7 @@ const CustomerListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="CustomerListPage" sx={{ gap: 2 }}>
+    <PageWrapper errorContext="CustomerListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Customers"
         primaryAction={
@@ -317,7 +304,7 @@ const CustomerListPage = () => {
             <FilterBar
               filters={filterConfigs}
               search={searchConfig}
-              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+              sx={{ px: 2, py: 1.5 }}
             />
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
@@ -329,7 +316,7 @@ const CustomerListPage = () => {
                   showRowCountFooter
                   totalRowCount={filteredCustomers.length}
                   rowCountLabel="customers"
-                  noDataComponent={<EmptyState variant="no-data" entityName="Customers" />}
+                  noDataComponent={<EmptyState variant="no-results" entityName="Customers" compact />}
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,

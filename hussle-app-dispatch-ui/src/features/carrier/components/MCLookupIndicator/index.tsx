@@ -1,4 +1,4 @@
-import { Typography } from '@mui/material';
+import { Meta } from 'components/Typography';
 import type { LookupStatus } from '../../types';
 
 interface MCLookupIndicatorProps {
@@ -19,9 +19,9 @@ export const MCLookupIndicator = ({ status }: MCLookupIndicatorProps) => {
   const config = STATUS_CONFIG[status];
 
   return (
-    <Typography variant="caption" sx={{ color: config.color, fontWeight: 500, mt: 0.5, display: 'block' }}>
+    <Meta sx={{ color: config.color, fontWeight: 500, mt: 0.5, display: 'block' }}>
       {status === 'searching' ? '⟳ ' : ''}
       {config.text}
-    </Typography>
+    </Meta>
   );
 };

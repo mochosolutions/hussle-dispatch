@@ -11,9 +11,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
   Collapse,
 } from '@mui/material';
+
+import { Meta, Timestamp } from 'components/Typography';
 import { CloudUploadOutlined, EyeOutlined, DownloadOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 
@@ -148,15 +149,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       </Collapse>
 
       {isLoading && (
-        <Typography variant="caption" color="text.disabled">
+        <Timestamp>
           Loading documents...
-        </Typography>
+        </Timestamp>
       )}
 
       {!isLoading && documents.length === 0 && (
-        <Typography variant="caption" color="text.disabled">
+        <Timestamp>
           No documents uploaded yet
-        </Typography>
+        </Timestamp>
       )}
 
       {documents.length > 0 && (
@@ -183,14 +184,22 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                    <Meta
+                      sx={{
+                        maxWidth: 200,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        color: 'text.primary',
+                      }}
+                    >
                       {doc.fileName}
-                    </Typography>
+                    </Meta>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" color="text.secondary">
+                    <Meta>
                       {format(new Date(doc.createdAt), 'MMM d, yyyy h:mm a')}
-                    </Typography>
+                    </Meta>
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">

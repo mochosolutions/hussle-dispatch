@@ -1,8 +1,8 @@
-import { Typography } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import MainCard from 'components/MainCard';
 import { PageWrapper } from 'components/PageWrapper';
 import { PageHeader } from 'components/PageHeader';
+import { BodyMuted } from 'components/Typography';
 
 const InvoiceBuilderPage = () => {
   const { loadId } = useParams<{ loadId: string }>();
@@ -11,9 +11,9 @@ const InvoiceBuilderPage = () => {
     <PageWrapper errorContext="InvoiceBuilderPage">
       <PageHeader title="Invoice Builder" />
       <MainCard>
-        <Typography variant="body1" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+        <BodyMuted sx={{ py: 4, textAlign: 'center' }}>
           Invoice Builder — Coming Soon (Load: {loadId})
-        </Typography>
+        </BodyMuted>
       </MainCard>
     </PageWrapper>
   );

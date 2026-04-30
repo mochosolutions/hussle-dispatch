@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import { Alert, Box, Button, IconButton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, IconButton, Stack } from '@mui/material';
+
+import { MetaStrong } from 'components/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { FormikProps } from 'formik';
@@ -71,9 +73,9 @@ export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({ formik
       title="Accessorials"
       subheader="Add extra charges like fuel surcharge, detention, or lumper fees"
       actions={
-        <Typography variant="caption" sx={{ fontWeight: 700 }}>
+        <MetaStrong sx={{ fontWeight: 700, color: 'text.primary' }}>
           {formatCurrencyCompact(accessorialTotal)}
-        </Typography>
+        </MetaStrong>
       }
     >
       <Stack spacing={1.5}>
@@ -86,9 +88,9 @@ export const AccessorialsSection: React.FC<AccessorialsSectionProps> = ({ formik
         {accessorials.map((acc, idx) => (
           <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Box sx={{ flex: 3 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              <MetaStrong sx={{ color: 'text.primary' }}>
                 {acc.label || acc.type}
-              </Typography>
+              </MetaStrong>
             </Box>
             <Box sx={{ flex: 3 }}>
               <CurrencyField

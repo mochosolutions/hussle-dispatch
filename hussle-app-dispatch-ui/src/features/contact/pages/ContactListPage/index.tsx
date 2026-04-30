@@ -6,7 +6,6 @@ import { EmptyState } from 'mocho/components/EmptyState';
 import { ActionsCell } from 'mocho/components/DataGrid/ActionsCell';
 import { ListLayout } from 'components/ListLayout';
 import ListKpiBar from 'components/ListKpiBar';
-import type { KpiItem } from 'components/ListKpiBar';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import { useStore } from 'react-redux';
@@ -15,7 +14,10 @@ import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
 import type { Contact } from '../../types';
 import { fetchContactsRequest } from '../../store/reducers/contactPageSlice';
-import { selectFormattedContacts } from '../../store/selectors/contactSelectors';
+import {
+  selectContactKpis,
+  selectFilteredContacts,
+} from '../../store/selectors/contactSelectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import {
   ContactNameCellRenderer,
@@ -24,11 +26,6 @@ import {
   EmailCellRenderer,
   CustomerCellRenderer,
 } from '../../components/ContactListPage/ContactCellRenderers';
-
-const capitalize = (s: string | null): string => {
-  if (!s) return '';
-  return s.charAt(0).toUpperCase() + s.slice(1);
-};
 
 const ROLE_OPTIONS = [
   { value: 'all', label: 'All Roles' },
@@ -46,7 +43,10 @@ const ContactListPage = () => {
   const { openDrawer } = useDrawerActions();
 
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.contacts.hasLoadedOnce);
-  const contacts = useSelector(selectFormattedContacts);
+  const filteredSelector = useMemo(() => selectFilteredContacts(roleFilter), [roleFilter]);
+  const filteredContacts = useSelector(filteredSelector);
+  const kpiSelector = useMemo(() => selectContactKpis(roleFilter), [roleFilter]);
+  const kpiItems = useSelector(kpiSelector);
   const store = useStore<RootState>();
 
   useEffect(() => {
@@ -84,38 +84,6 @@ const ContactListPage = () => {
       }
     },
     [navigate],
-  );
-
-  const filteredContacts = useMemo(() => {
-    if (roleFilter === 'all') return contacts;
-    return contacts.filter((c) => c.role === roleFilter);
-  }, [contacts, roleFilter]);
-
-  const roleCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    contacts.forEach((c) => {
-      const role = c.role ?? 'unassigned';
-      counts[role] = (counts[role] ?? 0) + 1;
-    });
-    return counts;
-  }, [contacts]);
-
-  const kpiItems = useMemo<KpiItem[]>(
-    () => [
-      {
-        label: 'Total Contacts',
-        value: String(contacts.length),
-        subtitle: `${Object.keys(roleCounts).length} roles`,
-      },
-      ...Object.entries(roleCounts)
-        .slice(0, 3)
-        .map(([role, count]) => ({
-          label: capitalize(role),
-          value: String(count),
-          subtitle: `${role} contacts`,
-        })),
-    ],
-    [contacts.length, roleCounts],
   );
 
   const filters = useMemo<FilterConfig[]>(
@@ -213,7 +181,7 @@ const ContactListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="ContactListPage" sx={{ gap: 2 }}>
+    <PageWrapper errorContext="ContactListPage" sx={{ gap: 2 }}>
       <ListLayout
         title="Contacts"
         primaryAction={
@@ -245,7 +213,9 @@ const ContactListPage = () => {
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <FilterBar filters={filters} search={searchConfig} />
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filters} search={searchConfig} />
+            </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
@@ -256,7 +226,7 @@ const ContactListPage = () => {
                   showRowCountFooter
                   totalRowCount={filteredContacts.length}
                   rowCountLabel="contacts"
-                  noDataComponent={<EmptyState variant="no-data" entityName="Contacts" />}
+                  noDataComponent={<EmptyState variant="no-results" entityName="Contacts" compact />}
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,

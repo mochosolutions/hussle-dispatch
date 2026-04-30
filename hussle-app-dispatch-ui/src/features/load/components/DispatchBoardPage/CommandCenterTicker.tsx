@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Stack } from '@mui/material';
+
+import { FieldLabel, Meta, MetaStrong } from 'components/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useNavigate } from 'react-router-dom';
@@ -45,9 +47,9 @@ export const CommandCenterTicker: React.FC<CommandCenterTickerProps> = ({ active
         spacing={1}
         sx={{ px: 2, py: 0.5 }}
       >
-        <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+        <FieldLabel sx={{ fontWeight: 700 }}>
           Active ({active.length})
-        </Typography>
+        </FieldLabel>
         {issueCount > 0 && (
           <Chip
             label={`${issueCount} Issue${issueCount > 1 ? 's' : ''}`}
@@ -92,12 +94,12 @@ export const CommandCenterTicker: React.FC<CommandCenterTickerProps> = ({ active
                 key={load.id}
                 label={
                   <Stack direction="row" spacing={0.5} alignItems="center">
-                    <Typography variant="caption" fontWeight={700}>
+                    <MetaStrong sx={{ fontWeight: 700, color: 'text.primary' }}>
                       {load.loadNumber}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 160 }}>
+                    </MetaStrong>
+                    <Meta sx={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {route}
-                    </Typography>
+                    </Meta>
                     <Chip
                       label={STATUS_LABELS[load.status]}
                       size="small"

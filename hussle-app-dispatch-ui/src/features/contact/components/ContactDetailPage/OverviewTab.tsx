@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Box, CircularProgress, Grid, Stack } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import SectionCard from 'components/SectionCard';
 import { DetailRow, LinkText, BodyMuted } from 'components/Typography';
 import { StatusBadge } from 'components/Statusbadge';
-import { useSelector } from 'store';
+import { useDispatch, useSelector } from 'store';
+import { fetchCustomerDetailsRequest } from 'features/customer/store/reducers';
 import { selectFormattedCustomerById } from 'features/customer/store/selectors/customerSelectors';
 import type { ContactStats } from 'utils/api/fleet/contactApi';
 import type { Contact } from '../../types';
@@ -16,15 +18,29 @@ interface OverviewTabProps {
 }
 
 const OverviewTab = ({ contact, contactStats, statsLoading }: OverviewTabProps) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const customerSelector = useMemo(
     () => selectFormattedCustomerById(contact.customerId ?? undefined),
     [contact.customerId],
   );
   const customer = useSelector(customerSelector);
 
-  const customerDisplay = contact.customerId ? (
-    <LinkText>{customer?.companyName ?? contact.customerId}</LinkText>
-  ) : (
+  useEffect(() => {
+    if (contact.customerId && !customer) {
+      dispatch(fetchCustomerDetailsRequest({ id: contact.customerId }));
+    }
+  }, [dispatch, contact.customerId, customer]);
+
+  const customerDisplay =
+    contact.customerId && customer ? (
+      <LinkText
+        onClick={() => navigate(`/customers/${contact.customerId}`)}
+        sx={{ cursor: 'pointer' }}
+      >
+        {customer.companyName}
+      </LinkText>
+    ) : (
     '\u2014'
   );
 

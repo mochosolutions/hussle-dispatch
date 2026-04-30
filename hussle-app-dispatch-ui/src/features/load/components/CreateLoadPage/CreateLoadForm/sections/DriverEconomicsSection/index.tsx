@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { Box, Chip, Divider, Grid, Stack, Typography } from '@mui/material';
+import { Box, Chip, Divider, Grid, Stack } from '@mui/material';
+
+import { FieldLabel, Meta, MetaStrong } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -34,23 +36,18 @@ interface MetricItemProps {
 
 const MetricItem: React.FC<MetricItemProps> = ({ label, value, subtitle, color, bold }) => (
   <Box>
-    <Typography
-      variant="caption"
-      color="text.secondary"
-      sx={{ textTransform: 'uppercase', fontWeight: 600, fontSize: 10, display: 'block', mb: 0.25 }}
-    >
+    <FieldLabel sx={{ fontSize: 10, display: 'block', mb: 0.25 }}>
       {label}
-    </Typography>
-    <Typography
-      variant="body2"
+    </FieldLabel>
+    <MetaStrong
       sx={{ fontWeight: bold ? 700 : 600, color: color ?? 'text.primary' }}
     >
       {value}
-    </Typography>
+    </MetaStrong>
     {subtitle && (
-      <Typography variant="caption" sx={{ color: 'grey.500', display: 'block' }}>
+      <Meta sx={{ color: 'grey.500', display: 'block' }}>
         {subtitle}
-      </Typography>
+      </Meta>
     )}
   </Box>
 );

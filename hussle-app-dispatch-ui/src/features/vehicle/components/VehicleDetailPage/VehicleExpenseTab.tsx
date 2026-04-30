@@ -8,12 +8,12 @@ import {
   MenuItem,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
+import { Body, KpiLabel, Meta, TableHeaderLabel } from 'components/Typography';
 import SaveOutlined from '@ant-design/icons/SaveOutlined';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { MainCard } from '@mocho/ui/components';
+import SectionCard from 'components/SectionCard';
 import { useDispatch } from 'store';
 import type { Vehicle, UpsertVehicleExpense } from 'features/carrier/types';
 import { updateVehicleRequest } from '../../store/reducers';
@@ -120,14 +120,9 @@ export const VehicleExpenseTab: React.FC<VehicleExpenseTabProps> = ({
         </Alert>
       )}
 
-      <MainCard>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', md: 'center' }}
-          sx={{ mb: 2 }}
-        >
-          <Typography variant="h5">Expense Rows</Typography>
+      <SectionCard
+        title="Expense Rows"
+        actions={
           <Stack direction="row" spacing={1}>
             <Button
               variant="outlined"
@@ -147,8 +142,8 @@ export const VehicleExpenseTab: React.FC<VehicleExpenseTabProps> = ({
               {expensesSaved ? 'Saved' : 'Save All'}
             </Button>
           </Stack>
-        </Stack>
-
+        }
+      >
         {/* Table Header */}
         <Box
           sx={{
@@ -161,22 +156,10 @@ export const VehicleExpenseTab: React.FC<VehicleExpenseTabProps> = ({
             borderColor: 'divider',
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            Category
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            Key
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            Label
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 600, textAlign: 'right' }}
-          >
-            Monthly ($)
-          </Typography>
+          <TableHeaderLabel>Category</TableHeaderLabel>
+          <TableHeaderLabel>Key</TableHeaderLabel>
+          <TableHeaderLabel>Label</TableHeaderLabel>
+          <TableHeaderLabel sx={{ textAlign: 'right' }}>Monthly ($)</TableHeaderLabel>
           <Box />
         </Box>
 
@@ -233,7 +216,7 @@ export const VehicleExpenseTab: React.FC<VehicleExpenseTabProps> = ({
                 )
               }
               InputProps={{
-                startAdornment: <Typography sx={{ mr: 0.5 }}>$</Typography>,
+                startAdornment: <Body sx={{ mr: 0.5 }}>$</Body>,
                 inputProps: {
                   style: { textAlign: 'right' },
                 },
@@ -252,57 +235,42 @@ export const VehicleExpenseTab: React.FC<VehicleExpenseTabProps> = ({
 
         {expenseRows.length === 0 && (
           <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              No expense rows. Click &quot;Add Row&quot; to add one.
-            </Typography>
+            <Meta>No expense rows. Click &quot;Add Row&quot; to add one.</Meta>
           </Box>
         )}
-      </MainCard>
+      </SectionCard>
 
       {/* Computed summary */}
-      <MainCard
+      <SectionCard
+        title="Auto-Computed Summary"
         sx={{
           bgcolor: 'primary.lighter',
           borderColor: 'primary.light',
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{ textTransform: 'uppercase', color: 'primary.main' }}
-        >
-          Auto-Computed Summary
-        </Typography>
-        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <Grid container spacing={2}>
           <Grid item xs={12} sm={3}>
-            <Typography variant="caption" color="text.secondary">
-              Total Monthly Cost
-            </Typography>
-            <Typography variant="h4">
+            <KpiLabel>Total Monthly Cost</KpiLabel>
+            <Body sx={{ fontSize: '1.5rem', fontWeight: 700, mt: 0.5 }}>
               {currencyCompact.format(expenseTabTotals.monthlyTotal)}
-            </Typography>
+            </Body>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Typography variant="caption" color="text.secondary">
-              CPM (total / miles target)
-            </Typography>
-            <Typography variant="h4">${expenseTabTotals.cpm.toFixed(2)}</Typography>
+            <KpiLabel>CPM (total / miles target)</KpiLabel>
+            <Body sx={{ fontSize: '1.5rem', fontWeight: 700, mt: 0.5 }}>${expenseTabTotals.cpm.toFixed(2)}</Body>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Typography variant="caption" color="text.secondary">
-              Daily Minimum Revenue
-            </Typography>
-            <Typography variant="h4">${expenseTabTotals.dailyMin.toFixed(2)}</Typography>
+            <KpiLabel>Daily Minimum Revenue</KpiLabel>
+            <Body sx={{ fontSize: '1.5rem', fontWeight: 700, mt: 0.5 }}>${expenseTabTotals.dailyMin.toFixed(2)}</Body>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Typography variant="caption" color="text.secondary">
-              Miles Target / Month
-            </Typography>
-            <Typography variant="h4">
+            <KpiLabel>Miles Target / Month</KpiLabel>
+            <Body sx={{ fontSize: '1.5rem', fontWeight: 700, mt: 0.5 }}>
               {(vehicle.monthlyMilesTarget ?? 0).toLocaleString()}
-            </Typography>
+            </Body>
           </Grid>
         </Grid>
-      </MainCard>
+      </SectionCard>
     </Stack>
   );
 };

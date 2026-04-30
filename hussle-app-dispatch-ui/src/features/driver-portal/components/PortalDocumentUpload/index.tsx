@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { Box, Button, Typography, LinearProgress, Alert } from '@mui/material';
+import { Box, Button, LinearProgress, Alert } from '@mui/material';
+import { Meta, MetaStrong } from 'components/Typography';
 import type { SxProps, Theme } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
@@ -157,9 +158,7 @@ export const PortalDocumentUpload: React.FC<PortalDocumentUploadProps> = ({
 
   return (
     <Box sx={sx}>
-      <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
-        {label}
-      </Typography>
+      <MetaStrong sx={{ mb: 1, display: 'block' }}>{label}</MetaStrong>
 
       {uploadState === 'idle' && (
         <Box>
@@ -185,9 +184,7 @@ export const PortalDocumentUpload: React.FC<PortalDocumentUploadProps> = ({
 
       {uploadState === 'uploading' && (
         <Box>
-          <Typography variant="caption" color="text.secondary">
-            Uploading {fileName}...
-          </Typography>
+          <Meta>Uploading {fileName}...</Meta>
           <LinearProgress variant="determinate" value={progress} sx={{ mt: 1, borderRadius: 1 }} />
         </Box>
       )}

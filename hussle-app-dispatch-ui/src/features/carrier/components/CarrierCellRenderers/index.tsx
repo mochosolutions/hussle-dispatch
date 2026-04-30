@@ -1,6 +1,6 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Chip, Stack } from '@mui/material';
 import { StatusBadge } from 'components/Statusbadge';
-import { TwoLineCell } from 'components/Typography';
+import { BodyStrong, Meta, TwoLineCell } from 'components/Typography';
 import type { CarrierListItem, CarrierType } from '../../types';
 
 export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
@@ -42,14 +42,8 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
           height: '100%',
         }}
       >
-        <Typography
-          variant="subtitle2"
-        >
-          {data.name}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {data.mcNumber ?? '—'}
-        </Typography>
+        <BodyStrong>{data.name}</BodyStrong>
+        <Meta>{data.mcNumber ?? '—'}</Meta>
       </Box>
     </Stack>
   );
@@ -83,11 +77,7 @@ export const CarrierContactCellRenderer = ({ data }: { data: CarrierListItem }) 
   const email = data.primaryContactEmail;
 
   if (!name && !email) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        —
-      </Typography>
-    );
+    return <Meta>—</Meta>;
   }
 
   return (

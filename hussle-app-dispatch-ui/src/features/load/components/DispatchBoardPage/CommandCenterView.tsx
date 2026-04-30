@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Stack } from '@mui/material';
+
+import { Meta } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
 import { useNavigate } from 'react-router-dom';
 import type { RootState } from 'store';
@@ -106,9 +108,9 @@ export const CommandCenterView: React.FC = () => {
           {datIngesting ? 'Syncing...' : 'Sync DAT'}
         </Button>
         {meta && (
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+          <Meta sx={{ ml: 1 }}>
             {meta.total} loads
-          </Typography>
+          </Meta>
         )}
       </Stack>
 

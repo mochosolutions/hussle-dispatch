@@ -1,26 +1,13 @@
-import { Box, Card, Typography } from '@mui/material';
+import { Box } from '@mui/material';
+import SectionCard from 'components/SectionCard';
+import { Meta } from 'components/Typography';
 
 interface ContactsTabProps {
   customerId: string;
 }
 
 export const ContactsTab: React.FC<ContactsTabProps> = ({ customerId: _customerId }) => (
-  <Card>
-    <Box
-      sx={{
-        px: 3,
-        py: 2,
-        borderBottom: 1,
-        borderColor: 'divider',
-      }}
-    >
-      <Typography
-        variant="subtitle1"
-        sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-      >
-        Contacts
-      </Typography>
-    </Box>
+  <SectionCard title="Contacts">
     <Box
       sx={{
         px: 3,
@@ -28,9 +15,7 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({ customerId: _customerI
         textAlign: 'center',
       }}
     >
-      <Typography variant="body2" color="text.secondary">
-        Contacts associated with this customer will appear here.
-      </Typography>
+      <Meta>Contacts associated with this customer will appear here.</Meta>
     </Box>
-  </Card>
+  </SectionCard>
 );

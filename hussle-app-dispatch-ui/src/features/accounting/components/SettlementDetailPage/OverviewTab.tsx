@@ -1,5 +1,5 @@
 import { Grid, Stack } from '@mui/material';
-import MainCard from 'components/MainCard';
+import SectionCard from 'components/SectionCard';
 import { StatusBadge } from 'components/Statusbadge';
 import { Body, BodyMuted, ErrorText, BodyStrong } from 'components/Typography';
 import { SettlementTotalsCard } from '../../components/SettlementTotalsCard';
@@ -40,7 +40,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ settlement }) => (
       <SettlementTotalsCard settlement={settlement} />
     </Grid>
     <Grid item xs={12} md={6}>
-      <MainCard title="Settlement Info">
+      <SectionCard title="Settlement Info">
         <Stack spacing={1.5}>
           <InfoRow label="Settlement #">{settlement.settlementNumber}</InfoRow>
           <InfoRow label="Status">
@@ -70,7 +70,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ settlement }) => (
             </>
           )}
         </Stack>
-      </MainCard>
+      </SectionCard>
     </Grid>
   </Grid>
 );

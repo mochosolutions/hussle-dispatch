@@ -1,4 +1,5 @@
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack } from '@mui/material';
+import { Body, MetaStrong } from 'components/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 
 import { EmptyState } from '@mocho/ui/components';
@@ -52,9 +53,7 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
                         borderColor: 'divider',
                       }}
                     >
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {header}
-                      </Typography>
+                      <MetaStrong sx={{ fontSize: '0.6875rem' }}>{header}</MetaStrong>
                     </Box>
                   ))}
                 </Box>
@@ -63,14 +62,14 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
                 {d.preferredLanes.map((lane, i) => (
                   <Box component="tr" key={`lane-row-${String(i)}`}>
                     <Box component="td" sx={{ py: 1, px: 1.5 }}>
-                      <Typography variant="body2">
+                      <Body>
                         {lane.originCity ? `${lane.originCity}, ${lane.originState}` : lane.originState}
-                      </Typography>
+                      </Body>
                     </Box>
                     <Box component="td" sx={{ py: 1, px: 1.5 }}>
-                      <Typography variant="body2">
+                      <Body>
                         {lane.destCity ? `${lane.destCity}, ${lane.destState}` : lane.destState}
-                      </Typography>
+                      </Body>
                     </Box>
                   </Box>
                 ))}
@@ -101,9 +100,7 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
                         borderColor: 'divider',
                       }}
                     >
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {header}
-                      </Typography>
+                      <MetaStrong sx={{ fontSize: '0.6875rem' }}>{header}</MetaStrong>
                     </Box>
                   ))}
                 </Box>
@@ -112,10 +109,10 @@ export const DriverPreferencesTab: React.FC<DriverPreferencesTabProps> = ({
                 {d.noGoZones.map((zone, i) => (
                   <Box component="tr" key={`zone-row-${String(i)}`}>
                     <Box component="td" sx={{ py: 1, px: 1.5 }}>
-                      <Typography variant="body2">{zone.state}</Typography>
+                      <Body>{zone.state}</Body>
                     </Box>
                     <Box component="td" sx={{ py: 1, px: 1.5 }}>
-                      <Typography variant="body2">{zone.city ?? '\u2014'}</Typography>
+                      <Body>{zone.city ?? '\u2014'}</Body>
                     </Box>
                   </Box>
                 ))}

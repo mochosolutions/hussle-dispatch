@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import {
   EntityAutocomplete,
 } from 'components/EntityAutocomplete';
 import type { EntityAutocompleteOption } from 'components/EntityAutocomplete';
+import { Meta, MetaStrong } from 'components/Typography';
 import { StatusBadge } from '../../../../components/Statusbadge';
 import { getCustomers } from 'utils/api/fleet/customerApi';
 import { CUSTOMER_TYPE_LABELS } from '../../constants';
@@ -48,16 +49,10 @@ const renderCustomerOption = (option: EntityAutocompleteOption): React.ReactNode
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {option.label}
-        </Typography>
+        <MetaStrong>{option.label}</MetaStrong>
         {typeLabel ? <StatusBadge status={typeLabel} /> : null}
       </Box>
-      {option.description ? (
-        <Typography variant="caption" color="text.secondary">
-          {option.description}
-        </Typography>
-      ) : null}
+      {option.description ? <Meta>{option.description}</Meta> : null}
     </Box>
   );
 };

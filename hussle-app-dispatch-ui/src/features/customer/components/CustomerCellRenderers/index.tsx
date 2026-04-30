@@ -1,4 +1,5 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Chip, Stack } from '@mui/material';
+import { LinkText, Meta } from 'components/Typography';
 import type { ChipColor } from 'types/chipColor';
 import type { Customer, CustomerType, CustomerStatus } from '../../types';
 
@@ -52,16 +53,8 @@ export const CustomerNameCellRenderer = ({ data }: { data: Customer }) => {
           height: '100%',
         }}
       >
-        <Typography
-          variant="subtitle2"
-          color="primary.main"
-          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-        >
-          {data.companyName}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {data.mcNumber ?? '—'}
-        </Typography>
+        <LinkText sx={{ fontWeight: 600 }}>{data.companyName}</LinkText>
+        <Meta>{data.mcNumber ?? '—'}</Meta>
       </Box>
     </Stack>
   );
@@ -78,10 +71,8 @@ export const CustomerTypeCellRenderer = ({ value }: { value: CustomerType }) => 
 
 export const CustomerContactCellRenderer = ({ data }: { data: Customer }) => (
   <Stack direction="column" justifyContent="center" sx={{ height: '100%' }}>
-    <Typography variant="body2">{data.phone ?? '—'}</Typography>
-    <Typography variant="caption" color="text.secondary">
-      {data.email ?? ''}
-    </Typography>
+    <Meta sx={{ color: 'text.primary' }}>{data.phone ?? '—'}</Meta>
+    <Meta>{data.email ?? ''}</Meta>
   </Stack>
 );
 

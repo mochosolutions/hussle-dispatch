@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, Chip, Grid, InputAdornment, Typography } from '@mui/material';
+import { Alert, Box, Chip, Grid, InputAdornment } from '@mui/material';
+
+import { Meta, MetaStrong } from 'components/Typography';
 import SearchIcon from '@mui/icons-material/Search';
 import type { CarrierListItem, Driver, Vehicle } from 'features/carrier/types';
 import type { FormikFieldProps, TypeaheadOption } from '@mocho/ui/forms';
@@ -402,9 +404,9 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
     (option: TypeaheadOption) => (
       <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {option.label}
-          </Typography>
+          </MetaStrong>
           {option.metadata?.type ? (
             <Chip
               label={option.metadata.type}
@@ -414,9 +416,9 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
             />
           ) : null}
         </Box>
-        <Typography variant="caption" color="text.secondary">
+        <Meta>
           {option.description}
-        </Typography>
+        </Meta>
       </Box>
     ),
     [],
@@ -426,9 +428,9 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
     (option: TypeaheadOption) => (
       <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {option.label}
-          </Typography>
+          </MetaStrong>
           <Chip
             label={option.metadata?.isAvailable ?? 'Unavailable'}
             color={option.metadata?.isAvailable === 'Available' ? 'success' : 'default'}
@@ -436,9 +438,9 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
             sx={{ height: 20, fontSize: '0.625rem' }}
           />
         </Box>
-        <Typography variant="caption" color="text.secondary">
+        <Meta>
           {option.description}
-        </Typography>
+        </Meta>
       </Box>
     ),
     [],
@@ -448,9 +450,9 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
     (option: TypeaheadOption) => (
       <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {option.label}
-          </Typography>
+          </MetaStrong>
           {option.metadata?.type ? (
             <Chip
               label={option.metadata.type}
@@ -466,9 +468,9 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
             sx={{ height: 20, fontSize: '0.625rem' }}
           />
         </Box>
-        <Typography variant="caption" color="text.secondary">
+        <Meta>
           {option.description}
-        </Typography>
+        </Meta>
       </Box>
     ),
     [],

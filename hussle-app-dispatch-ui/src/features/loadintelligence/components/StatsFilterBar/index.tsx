@@ -6,9 +6,11 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
+
+import { Meta } from 'components/Typography';
+
 import type { EquipmentType, LoadFilters, MockLoad, ScoreTier, SourceType } from '../../types';
 
 const SCORE_OPTIONS: ScoreTier[] = ['All', 'Excellent', 'Good', 'Fair', 'Pass'];
@@ -93,9 +95,9 @@ const StatsFilterBar: React.FC<StatsFilterBarProps> = ({ loads, filters, onFilte
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Typography variant="body2">
+        <Meta sx={{ color: 'text.primary' }}>
           {loads.length} loads from {uniqueSourceCount} sources
-        </Typography>
+        </Meta>
         {SOURCE_TYPES.map((sourceType) => (
           <Chip
             key={sourceType}

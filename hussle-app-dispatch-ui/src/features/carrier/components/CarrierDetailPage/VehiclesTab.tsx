@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import type { ColDef, ValueGetterParams } from 'ag-grid-community';
-import { Box, Card, Chip, Typography } from '@mui/material';
+import { Box, Chip } from '@mui/material';
 import AgGridTable from '../../../../mocho/components/NewDataGrid';
+import SectionCard from 'components/SectionCard';
 import { useDispatch, useSelector } from 'store';
 import { selectVehiclesByCarrierId } from '../../store/selectors/carrierSelectors';
 import { fetchCarrierVehiclesRequest } from '../../store/reducers';
@@ -78,31 +79,17 @@ export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
   );
 
   return (
-    <Card>
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          borderBottom: 1,
-          borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-        >
-          Vehicles
-        </Typography>
+    <SectionCard
+      title="Vehicles"
+      actions={
         <Chip
           label={vehicles.length}
           size="small"
           variant="outlined"
           sx={{ height: 22, fontSize: '0.75rem' }}
         />
-      </Box>
+      }
+    >
       <Box sx={{ height: 400 }}>
         <AgGridTable
           columnDefs={columnDefs}
@@ -112,6 +99,6 @@ export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
           gridOptions={{ domLayout: 'normal' }}
         />
       </Box>
-    </Card>
+    </SectionCard>
   );
 };

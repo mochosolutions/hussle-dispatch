@@ -79,38 +79,37 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-export const selectVehicleKpis = createSelector(
-  [selectAllVehicles],
-  (vehicles): VehicleKpiItem[] => {
-    const activeCount = vehicles.filter((vehicle) => vehicle.isActive).length;
-    const carrierIds = new Set(vehicles.map((v) => v.carrierId).filter(Boolean));
-    const carrierCount = carrierIds.size;
-    const totalRevenue = 0;
+const computeVehicleKpis = (
+  vehicles: ReturnType<typeof vehicleSelectors.selectAll>,
+): VehicleKpiItem[] => {
+  const activeCount = vehicles.filter((vehicle) => vehicle.isActive).length;
+  const carrierIds = new Set(vehicles.map((v) => v.carrierId).filter(Boolean));
+  const carrierCount = carrierIds.size;
+  const totalRevenue = 0;
 
-    return [
-      {
-        label: 'Total Vehicles',
-        value: String(vehicles.length),
-        subtitle: `${activeCount} active`,
-      },
-      {
-        label: 'Active Vehicles',
-        value: String(activeCount),
-        subtitle: 'Currently in service',
-      },
-      {
-        label: 'Carrier Count',
-        value: String(carrierCount),
-        subtitle: 'Unique carriers',
-      },
-      {
-        label: 'Revenue',
-        value: currencyFormatter.format(totalRevenue),
-        subtitle: 'Total lifetime revenue',
-      },
-    ];
-  },
-);
+  return [
+    {
+      label: 'Total Vehicles',
+      value: String(vehicles.length),
+      subtitle: `${activeCount} active`,
+    },
+    {
+      label: 'Active Vehicles',
+      value: String(activeCount),
+      subtitle: 'Currently in service',
+    },
+    {
+      label: 'Carrier Count',
+      value: String(carrierCount),
+      subtitle: 'Unique carriers',
+    },
+    {
+      label: 'Revenue',
+      value: currencyFormatter.format(totalRevenue),
+      subtitle: 'Total lifetime revenue',
+    },
+  ];
+};
 
 export const selectVehicleLoadHistory = (vehicleId: string) => (state: RootState) =>
   state.pages.vehicleLoadHistory.loadsByVehicleId[vehicleId] ?? [];
@@ -140,6 +139,9 @@ export const selectFilteredVehicles = (activeTab: VehicleTab) =>
     }
     return vehicles.filter((vehicle) => vehicle.ownership === activeTab);
   });
+
+export const selectVehicleKpis = (activeTab: VehicleTab) =>
+  createSelector([selectFilteredVehicles(activeTab)], computeVehicleKpis);
 
 export const selectVehicleTabCounts = createSelector(
   [selectAllVehicles],

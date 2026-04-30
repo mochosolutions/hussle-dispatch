@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, Box, CircularProgress, LinearProgress, Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, LinearProgress } from '@mui/material';
 import { CheckCircleOutline, CloudUploadOutlined } from '@mui/icons-material';
 
+import { BodyStrong, Meta } from 'components/Typography';
 import type { DocumentType } from 'features/carrier-portal/types';
 import { confirmDocument, presignDocument } from 'utils/api/fleet/carrierPortalApi';
 
@@ -145,10 +146,8 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({
       >
         <CheckCircleOutline color="success" />
         <Box>
-          <Typography variant="subtitle2">{label}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {uploadResult.fileName}
-          </Typography>
+          <BodyStrong>{label}</BodyStrong>
+          <Meta>{uploadResult.fileName}</Meta>
         </Box>
       </Box>
     );
@@ -188,9 +187,7 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({
         {uploadState === 'uploading' ? (
           <>
             <CircularProgress size={32} />
-            <Typography variant="body2" color="text.secondary">
-              Uploading...
-            </Typography>
+            <Meta>Uploading...</Meta>
             <Box sx={{ width: '100%', maxWidth: 300 }}>
               <LinearProgress variant="determinate" value={progress} />
             </Box>
@@ -198,10 +195,8 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({
         ) : (
           <>
             <CloudUploadOutlined sx={{ fontSize: 40, color: 'text.secondary' }} />
-            <Typography variant="subtitle2">{label}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Click or drag file to upload
-            </Typography>
+            <BodyStrong>{label}</BodyStrong>
+            <Meta>Click or drag file to upload</Meta>
           </>
         )}
       </Box>

@@ -9,14 +9,14 @@ import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
 import SectionCard from 'components/SectionCard';
 import { Body } from 'components/Typography';
-import { getContactStats } from 'utils/api/fleet/contactApi';
-import type { ContactStats } from 'utils/api/fleet/contactApi';
 import {
   selectFormattedContactById,
-  selectContactDetailLoading,
+  selectContactStats,
+  selectContactStatsLoading,
 } from '../../store/selectors/contactSelectors';
 import {
   fetchContactDetailsRequest,
+  fetchContactStatsRequest,
   contactPageSelectors,
 } from '../../store/reducers/contactPageSlice';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
@@ -33,49 +33,19 @@ const ContactDetailPage = () => {
   const { id } = useParams();
   const contactSelector = useMemo(() => selectFormattedContactById(id), [id]);
   const contact = useSelector(contactSelector);
-  const isLoading = useSelector(selectContactDetailLoading(id ?? ''));
   const isError = useSelector(
     (state) => !!contactPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
-  const [contactStats, setContactStats] = useState<ContactStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const contactStats = useSelector(selectContactStats);
+  const statsLoading = useSelector(selectContactStatsLoading);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchContactDetailsRequest({ id }));
+      dispatch(fetchContactStatsRequest({ id }));
     }
   }, [dispatch, id]);
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-    const controller = new AbortController();
-    Promise.resolve()
-      .then(() => {
-        setStatsLoading(true);
-        return getContactStats(id);
-      })
-      .then((stats) => {
-        if (!controller.signal.aborted) {
-          setContactStats(stats);
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setContactStats(null);
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setStatsLoading(false);
-        }
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [id]);
 
   const handleBack = () => {
     navigate('/contacts');
@@ -88,12 +58,12 @@ const ContactDetailPage = () => {
   };
 
   return (
-    <PageWrapper isLoading={isLoading} isError={isError} errorContext="ContactDetailPage">
+    <PageWrapper isError={isError} errorContext="ContactDetailPage">
       <DataGuard data={contact} emptyComponent={<Body sx={{ p: 4 }}>Contact not found.</Body>}>
         {(c) => (
           <DetailLayout
             id={[c.firstName, c.lastName].filter(Boolean).join(' ')}
-            status="Active"
+            status={c.deletedAt ? 'Inactive' : 'Active'}
             breadcrumb={{ label: 'Contacts', href: '/contacts' }}
             onBack={handleBack}
             actions={

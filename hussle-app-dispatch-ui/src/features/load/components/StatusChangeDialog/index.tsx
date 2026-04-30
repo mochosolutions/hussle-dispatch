@@ -12,9 +12,9 @@ import {
   LinearProgress,
   Stack,
   TextField,
-  Typography,
   Alert,
 } from '@mui/material';
+import { ErrorText, FieldLabel, Meta, MetaStrong } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -332,9 +332,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <StatusBadge status={load.status} />
-            <Typography variant="body2" color="text.secondary">
+            <Meta>
               &rarr;
-            </Typography>
+            </Meta>
             <StatusBadge status={targetStatus} />
           </Stack>
 
@@ -347,9 +347,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
 
           {dynamicPrerequisites.length > 0 && (
             <Box>
-              <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
+              <FieldLabel sx={{ mb: 0.5, display: 'block' }}>
                 Prerequisites
-              </Typography>
+              </FieldLabel>
               <Stack spacing={0.5}>
                 {dynamicPrerequisites.map((prereq) => (
                   <Box key={prereq.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -358,12 +358,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
                     ) : (
                       <RadioButtonUncheckedIcon sx={{ fontSize: 16, color: 'error.main' }} />
                     )}
-                    <Typography
-                      variant="body2"
-                      color={prereq.met ? 'text.secondary' : 'error.main'}
-                    >
+                    <Meta sx={{ color: prereq.met ? 'text.secondary' : 'error.main' }}>
                       {prereq.label}
-                    </Typography>
+                    </Meta>
                   </Box>
                 ))}
               </Stack>
@@ -372,9 +369,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
 
           {needsInlineAssignment && (
             <Box>
-              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+              <FieldLabel sx={{ mb: 1, display: 'block' }}>
                 Assign Driver & Vehicle
-              </Typography>
+              </FieldLabel>
               <Grid container spacing={2}>
                 <AssignmentFieldGroup formik={assignmentFormik} />
               </Grid>
@@ -383,9 +380,9 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
 
           {needsRateConUpload && (
             <Box>
-              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+              <FieldLabel sx={{ mb: 1, display: 'block' }}>
                 Upload Rate Confirmation
-              </Typography>
+              </FieldLabel>
               {!rateConUpload ? (
                 <>
                   <Button
@@ -423,21 +420,21 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
                     <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
                   )}
                   <Chip label="Rate Con" size="small" variant="outlined" color="primary" />
-                  <Typography
-                    variant="body2"
+                  <Meta
                     sx={{
                       flex: 1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      color: 'text.primary',
                     }}
                   >
                     {rateConUpload.fileName}
-                  </Typography>
+                  </Meta>
                   {rateConUploadStatus === 'Rejected' && rateConUploadError && (
-                    <Typography variant="caption" color="error.main">
+                    <ErrorText>
                       {rateConUploadError}
-                    </Typography>
+                    </ErrorText>
                   )}
                   {rateConUploadStatus === 'Rejected' && (
                     <IconButton
@@ -459,13 +456,13 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
               icon={<CloudUploadOutlinedIcon />}
               sx={{ alignItems: 'flex-start' }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              <MetaStrong sx={{ mb: 0.5, color: 'text.primary' }}>
                 Signed BOL (optional)
-              </Typography>
-              <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>
+              </MetaStrong>
+              <Meta sx={{ display: 'block', mb: 1, color: 'text.primary' }}>
                 Upload now to start the invoice. You can mark delivered without it; the
                 invoice will be created automatically once the signed BOL is on file.
-              </Typography>
+              </Meta>
               {!bolUpload ? (
                 <>
                   <Button
@@ -503,26 +500,26 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
                     <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
                   )}
                   <Chip label="BOL" size="small" variant="outlined" color="primary" />
-                  <Typography
-                    variant="body2"
+                  <Meta
                     sx={{
                       flex: 1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      color: 'text.primary',
                     }}
                   >
                     {bolUpload.fileName}
-                  </Typography>
+                  </Meta>
                   {bolUpload.clientId === '' && (
-                    <Typography variant="caption" color="error.main">
+                    <ErrorText>
                       File exceeds 10 MB
-                    </Typography>
+                    </ErrorText>
                   )}
                   {bolUploadStatus === 'Rejected' && bolUploadError && (
-                    <Typography variant="caption" color="error.main">
+                    <ErrorText>
                       {bolUploadError}
-                    </Typography>
+                    </ErrorText>
                   )}
                   {(bolUploadStatus === 'Rejected' || bolUpload.clientId === '') && (
                     <IconButton

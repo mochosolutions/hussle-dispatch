@@ -16,13 +16,12 @@ import {
   TableHead,
   TableRow,
   Tooltip,
-  Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SectionCard from 'components/SectionCard';
-import { DetailRow, SectionLabel } from 'components/Typography';
+import { Body, DetailRow, Meta, SectionLabel } from 'components/Typography';
 import { useDispatch } from 'store';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { StatusTimeline } from '../StatusTimeline';
@@ -236,9 +235,9 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
               </Table>
             </TableContainer>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Meta>
               No accessorial charges
-            </Typography>
+            </Meta>
           )}
         </SectionCard>
       </Grid>
@@ -258,9 +257,9 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
       >
         <DialogTitle>Remove Accessorial Charge</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">
+          <Body>
             Are you sure you want to remove this accessorial charge?
-          </Typography>
+          </Body>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeleteConfirmId(null)}>Cancel</Button>

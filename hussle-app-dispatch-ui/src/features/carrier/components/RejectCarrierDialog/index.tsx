@@ -7,8 +7,8 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  Typography,
 } from '@mui/material';
+import { Meta } from 'components/Typography';
 import { LoadingButton } from '@mui/lab';
 import { rejectCarrier } from 'utils/api/fleet/carrierApi';
 
@@ -66,10 +66,10 @@ export const RejectCarrierDialog: React.FC<RejectCarrierDialogProps> = ({
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>Reject {carrierName}?</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Meta sx={{ mb: 2 }}>
           Please provide a reason for rejecting this carrier. This will be recorded and may be
           communicated to the carrier.
-        </Typography>
+        </Meta>
 
         <TextField
           label="Reason for rejection"

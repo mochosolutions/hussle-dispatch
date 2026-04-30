@@ -1,4 +1,6 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
+
+import { Meta, MetaStrong, Timestamp } from 'components/Typography';
 import { STATUS_LABELS, formatTimestamp } from '../../../constants';
 import type { LoadStatus, StatusHistoryEntry } from '../../../types';
 
@@ -24,27 +26,27 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ history }) => (
           }}
         />
         <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <MetaStrong sx={{ color: 'text.primary' }}>
             {entry.fromStatus
               ? `${STATUS_LABELS[entry.fromStatus as LoadStatus] ?? entry.fromStatus} → ${STATUS_LABELS[entry.toStatus as LoadStatus] ?? entry.toStatus}`
               : STATUS_LABELS[entry.toStatus as LoadStatus] ?? entry.toStatus}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
+          </MetaStrong>
+          <Meta>
             {formatTimestamp(entry.createdAt)}
             {entry.changedByName ? ` by ${entry.changedByName}` : ''}
-          </Typography>
+          </Meta>
           {entry.notes && (
-            <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+            <Timestamp sx={{ display: 'block' }}>
               {entry.notes}
-            </Typography>
+            </Timestamp>
           )}
         </Box>
       </Box>
     ))}
     {history.length === 0 && (
-      <Typography variant="caption" color="text.disabled">
+      <Timestamp>
         No status history yet
-      </Typography>
+      </Timestamp>
     )}
   </Stack>
 );

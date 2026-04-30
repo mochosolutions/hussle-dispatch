@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Stack,
-  Typography,
 } from '@mui/material';
 import {
   CheckCircleOutlined,
@@ -11,6 +10,8 @@ import {
   CloudUploadOutlined,
 } from '@ant-design/icons';
 import { format } from 'date-fns';
+
+import { SuccessText, WarningText } from 'components/Typography';
 
 import { DocumentType } from '../../types';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
@@ -58,9 +59,9 @@ export const RateConStatus: React.FC<RateConStatusProps> = ({
     return (
       <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 0.5 }}>
         <CheckCircleOutlined style={{ fontSize: 16, color: '#52c41a' }} />
-        <Typography variant="body2" sx={{ fontWeight: 500, color: 'success.main' }}>
+        <SuccessText sx={{ fontWeight: 500 }}>
           Rate con received {format(new Date(rateConReceivedAt), 'MMM d, yyyy')}
-        </Typography>
+        </SuccessText>
       </Stack>
     );
   }
@@ -70,9 +71,9 @@ export const RateConStatus: React.FC<RateConStatusProps> = ({
     <Box>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 0.5 }}>
         <WarningOutlined style={{ fontSize: 16, color: '#faad14' }} />
-        <Typography variant="body2" sx={{ fontWeight: 500, color: 'warning.main' }}>
+        <WarningText sx={{ fontWeight: 500 }}>
           No rate con on file
-        </Typography>
+        </WarningText>
         {canUpload && (
           <Button
             size="small"

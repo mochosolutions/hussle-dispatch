@@ -9,8 +9,9 @@ import {
   OutlinedInput,
   Stack,
   TextField as MuiTextField,
-  Typography,
 } from '@mui/material';
+
+import { FieldLabel, MetaStrong } from 'components/Typography';
 import EmailIcon from '@mui/icons-material/Email';
 import SmsIcon from '@mui/icons-material/Sms';
 import * as Yup from 'yup';
@@ -188,9 +189,9 @@ const ChannelBlock: React.FC<ChannelBlockProps> = ({
     >
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
         {icon}
-        <Typography variant="body2" fontWeight={500}>
+        <MetaStrong sx={{ fontWeight: 500, color: 'text.primary' }}>
           {channelLabel}
-        </Typography>
+        </MetaStrong>
       </Stack>
       <FormControlLabel
         control={
@@ -207,9 +208,9 @@ const ChannelBlock: React.FC<ChannelBlockProps> = ({
       />
       <Collapse in={isEnabled}>
         <Box sx={{ mt: 1.5 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+          <FieldLabel sx={{ mb: 0.5, display: 'block' }}>
             {recipientLabel}
-          </Typography>
+          </FieldLabel>
           <OutlinedInput
             name={recipientPath}
             value={recipientValue}
@@ -222,13 +223,9 @@ const ChannelBlock: React.FC<ChannelBlockProps> = ({
         </Box>
         {showCcEmails && (
           <Box sx={{ mt: 1.5 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mb: 0.5, display: 'block' }}
-            >
+            <FieldLabel sx={{ mb: 0.5, display: 'block' }}>
               CC Emails
-            </Typography>
+            </FieldLabel>
             <Autocomplete
               multiple
               freeSolo

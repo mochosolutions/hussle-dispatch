@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Stack,
-  Typography,
 } from '@mui/material';
 import {
   CheckCircleOutlined,
@@ -11,21 +10,10 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 
+import { Meta, MetaStrong, SectionLabel, WarningText } from 'components/Typography';
+
 import { DocumentType } from '../../types';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const SECTION_LABEL_SX = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-  mb: 1,
-} as const;
 
 // ---------------------------------------------------------------------------
 // Props
@@ -50,12 +38,8 @@ interface BolStatusIndicatorProps {
 const BolStatusIndicator: React.FC<BolStatusIndicatorProps> = ({ label, date }) => (
   <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 0.75 }}>
     <CheckCircleOutlined style={{ fontSize: 18, color: '#52c41a' }} />
-    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-      {label}
-    </Typography>
-    <Typography variant="caption" color="text.secondary">
-      {format(new Date(date), 'MMM d, yyyy h:mm a')}
-    </Typography>
+    <MetaStrong>{label}</MetaStrong>
+    <Meta>{format(new Date(date), 'MMM d, yyyy h:mm a')}</Meta>
   </Stack>
 );
 
@@ -92,9 +76,9 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
   if (bolUnsignedAt && bolSignedAt) {
     return (
       <Box>
-        <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
+        <SectionLabel sx={{ mb: 1 }}>
           BOL Status
-        </Typography>
+        </SectionLabel>
         <BolStatusIndicator label="Unsigned BOL uploaded" date={bolUnsignedAt} />
         <BolStatusIndicator label="Signed BOL uploaded" date={bolSignedAt} />
       </Box>
@@ -109,9 +93,9 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
 
     return (
       <Box>
-        <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
+        <SectionLabel sx={{ mb: 1 }}>
           BOL Status
-        </Typography>
+        </SectionLabel>
 
         {bolUnsignedAt && (
           <BolStatusIndicator label="Unsigned BOL uploaded" date={bolUnsignedAt} />
@@ -119,9 +103,9 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
 
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
           <FileAddOutlined style={{ fontSize: 18, color: '#faad14' }} />
-          <Typography variant="body2" sx={{ fontWeight: 500, color: 'warning.main' }}>
+          <WarningText sx={{ fontWeight: 500 }}>
             {promptLabel}
-          </Typography>
+          </WarningText>
           <Button size="small" variant="outlined" onClick={handleUploadClick}>
             Upload
           </Button>
@@ -134,9 +118,9 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
   if (bolUnsignedAt || bolSignedAt) {
     return (
       <Box>
-        <Typography variant="subtitle2" sx={SECTION_LABEL_SX}>
+        <SectionLabel sx={{ mb: 1 }}>
           BOL Status
-        </Typography>
+        </SectionLabel>
         {bolUnsignedAt && (
           <BolStatusIndicator label="Unsigned BOL uploaded" date={bolUnsignedAt} />
         )}

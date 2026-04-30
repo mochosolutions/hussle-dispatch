@@ -2,6 +2,11 @@ import type { RootState } from 'store';
 import { settingsEntitySelectors } from '../reducers/settingsEntitySlice';
 import { teamEntitySelectors } from '../reducers/teamEntitySlice';
 
+export const selectSubscriptionUsage = (state: RootState) => state.pages.team.usage;
+
+export const selectSubscriptionUsageLastFetchedAt = (state: RootState) =>
+  state.pages.team.usageLastFetchedAt;
+
 export const selectSettings = (state: RootState) => state.pages.settings.settings;
 
 export const selectSettingsLoading = (state: RootState) => state.pages.settings.loading;

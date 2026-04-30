@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Grid, Stack, Typography, Alert, AlertTitle } from '@mui/material';
+import { Body, SectionTitle } from 'components/Typography';
 import { Link } from 'react-router-dom';
 
 interface ActionLinkProps {
@@ -35,7 +36,7 @@ const AuthFormWrapper: React.FC<AuthFormWrapperProps> = ({
 
       <Stack direction="column" spacing={1} marginTop={2}>
         <Stack direction="row" justifyContent="space-between" alignItems="baseline">
-          <Typography variant="h3">{title}</Typography>
+          <SectionTitle sx={{ fontSize: '1.25rem' }}>{title}</SectionTitle>
           {actionLink && (
             <Typography
               component={Link}
@@ -48,7 +49,7 @@ const AuthFormWrapper: React.FC<AuthFormWrapperProps> = ({
             </Typography>
           )}
         </Stack>
-        {subTitle && <Typography variant="body1">{subTitle}</Typography>}
+        {subTitle && <Body>{subTitle}</Body>}
       </Stack>
     </Grid>
     <Grid item xs={12}>

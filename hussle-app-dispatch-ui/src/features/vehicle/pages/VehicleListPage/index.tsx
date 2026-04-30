@@ -12,10 +12,10 @@ import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
 import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
-import { getSubscriptionUsage } from 'utils/api/team/teamApi';
-import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import type { Vehicle } from 'features/carrier/types';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
+import { fetchSubscriptionUsageRequest } from 'features/settings/store/reducers/teamSlice';
+import { selectSubscriptionUsage } from 'features/settings/store/selectors/settingsSelectors';
 import { fetchVehiclesRequest } from '../../store/reducers';
 import {
   selectVehicleKpis,
@@ -43,15 +43,22 @@ const VehicleListPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
-  const organizationId = useSelector(organizationIdSelector);
 
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.vehicles.hasLoadedOnce);
+  const subscriptionUsage = useSelector(selectSubscriptionUsage);
   const store = useStore<RootState>();
 
   useEffect(() => {
     const { lastFetchedAt } = store.getState().pages.vehicles;
     if (isStale(lastFetchedAt)) {
       dispatch(fetchVehiclesRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
+
+  useEffect(() => {
+    const { usageLastFetchedAt } = store.getState().pages.team;
+    if (isStale(usageLastFetchedAt)) {
+      dispatch(fetchSubscriptionUsageRequest());
     }
   }, [dispatch, store]);
 
@@ -62,25 +69,18 @@ const VehicleListPage = () => {
     [dispatch],
   );
 
-  const handleOpenCreate = useCallback(async () => {
-    if (!organizationId) {
+  const handleOpenCreate = useCallback(() => {
+    if (
+      subscriptionUsage &&
+      subscriptionUsage.vehicles.current >= subscriptionUsage.vehicles.limit
+    ) {
+      setVehicleLimit(subscriptionUsage.vehicles.limit);
+      setUpgradeOpen(true);
       return;
     }
 
-    try {
-      const usage = await getSubscriptionUsage(organizationId);
-
-      if (usage.vehicles.current >= usage.vehicles.limit) {
-        setVehicleLimit(usage.vehicles.limit);
-        setUpgradeOpen(true);
-        return;
-      }
-    } catch {
-      // If usage check fails, allow creation to proceed
-    }
-
     openDrawer('vehicleCreate', { onClose: () => undefined });
-  }, [organizationId, openDrawer]);
+  }, [subscriptionUsage, openDrawer]);
 
   const handleRowClicked = useCallback(
     (params: { data: Vehicle }) => {
@@ -177,7 +177,8 @@ const VehicleListPage = () => {
   const filteredSelector = useMemo(() => selectFilteredVehicles(activeTab), [activeTab]);
   const filteredVehicles = useSelector(filteredSelector);
 
-  const kpiData = useSelector(selectVehicleKpis);
+  const kpiSelector = useMemo(() => selectVehicleKpis(activeTab), [activeTab]);
+  const kpiData = useSelector(kpiSelector);
 
   const filters = useMemo<FilterConfig[]>(
     () => [

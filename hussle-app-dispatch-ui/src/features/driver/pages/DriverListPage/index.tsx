@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
@@ -14,7 +14,7 @@ import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
 import type { Driver } from 'features/carrier/types';
 import { selectAllCarriers } from 'features/carrier/store/selectors/carrierSelectors';
-import { fetchDriversRequest, setCarrierIdFilter } from '../../store/reducers';
+import { fetchDriversRequest, setCarrierIdFilter, setQuery } from '../../store/reducers';
 import {
   selectDriverKpis,
   selectFilteredDrivers,
@@ -30,7 +30,6 @@ import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 
 const DriverListPage = () => {
   const [activeTab, setActiveTab] = useState<DriverTab>('all');
-  const searchQueryRef = useRef('');
   const [selectedCarrierId, setSelectedCarrierId] = useState('all');
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -38,7 +37,8 @@ const DriverListPage = () => {
 
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.drivers.hasLoadedOnce);
   const carriers = useSelector(selectAllCarriers);
-  const kpiData = useSelector(selectDriverKpis);
+  const kpiSelector = useMemo(() => selectDriverKpis(activeTab, selectedCarrierId), [activeTab, selectedCarrierId]);
+  const kpiData = useSelector(kpiSelector);
   const store = useStore<RootState>();
 
   useEffect(() => {
@@ -50,12 +50,13 @@ const DriverListPage = () => {
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
-      searchQueryRef.current = String(value);
+      const next = String(value);
+      dispatch(setQuery(next));
       dispatch(
         fetchDriversRequest({
           page: 1,
           limit: 25,
-          search: String(value),
+          search: next,
           carrierId: selectedCarrierId !== 'all' ? selectedCarrierId : undefined,
         }),
       );
@@ -67,16 +68,17 @@ const DriverListPage = () => {
     (carrierId: string) => {
       setSelectedCarrierId(carrierId);
       dispatch(setCarrierIdFilter(carrierId));
+      const currentQuery = store.getState().pages.drivers.query;
       dispatch(
         fetchDriversRequest({
           page: 1,
           limit: 25,
-          search: searchQueryRef.current,
+          search: currentQuery,
           carrierId: carrierId !== 'all' ? carrierId : undefined,
         }),
       );
     },
-    [dispatch],
+    [dispatch, store],
   );
 
   const handleStatusFilterChange = useCallback((value: string) => {

@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import type { FormikProps } from 'formik';
-import { Typography } from '@mui/material';
 import SectionCard from 'components/SectionCard';
+import { Meta } from 'components/Typography';
 import { DocumentPicker } from 'components/DocumentPicker';
 import type { QueuedDocument } from 'components/DocumentPicker';
 import { DOC_TYPE_CONFIG } from 'features/documents/constants';
@@ -47,15 +47,15 @@ export const DocumentsSection: React.FC<{ formik: FormikProps<LoadFormValues> }>
       title="Load Documents"
       subheader="Attach rate confirmation, BOL, or other documents"
       actions={
-        <Typography variant="body2" color="text.secondary">
+        <Meta>
           {docCount} document{docCount !== 1 ? 's' : ''}
-        </Typography>
+        </Meta>
       }
     >
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Meta sx={{ mb: 2 }}>
         Attach documents at load creation. BOL, weight tickets and POD can be added once the load
         is in progress.
-      </Typography>
+      </Meta>
 
       <DocumentPicker
         documents={queuedDocuments}

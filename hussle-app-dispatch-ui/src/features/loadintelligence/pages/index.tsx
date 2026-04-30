@@ -9,11 +9,11 @@ import {
   Select,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import type { SelectChangeEvent } from '@mui/material';
 import { ListLayout } from 'components/ListLayout';
+import { MetaStrong, SectionTitle, Timestamp } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
 import { useDrawerActions } from '../../ui/hooks/useDrawerActions';
 import {
@@ -208,11 +208,11 @@ const LoadIntelligencePage = () => {
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <MetaStrong>
             {stats && `${stats.totalLoads ?? 0} loads from ${stats.sourceCount ?? 0} sources`}
             {!stats && isLoading && 'Loading...'}
             {!stats && !isLoading && '0 loads from 0 sources'}
-          </Typography>
+          </MetaStrong>
           {stats &&
             SOURCE_TYPES.map((sourceType) => (
               <Chip
@@ -362,12 +362,12 @@ const LoadIntelligencePage = () => {
               borderColor: 'divider',
             }}
           >
-            <Typography variant="h6" color="text.secondary">
+            <SectionTitle sx={{ color: 'text.secondary' }}>
               No loads found
-            </Typography>
-            <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+            </SectionTitle>
+            <Timestamp sx={{ mt: 1 }}>
               Try adjusting your filters or add a manual entry
-            </Typography>
+            </Timestamp>
           </Box>
         )}
 

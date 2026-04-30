@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Divider, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack } from '@mui/material';
 import { useDispatch } from 'store';
+import { SectionLabel } from 'components/Typography';
 import { TextField, EmailField, PhoneField, StateField, ZipCodeField, PercentField, NumericField, SelectField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { customerSchema } from '../../validators/customerSchema';
@@ -28,14 +29,6 @@ interface CustomerInfoDrawerProps {
   onClose: () => void;
   onCreated?: (id: string) => void;
 }
-
-const sectionHeaderSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
 
 export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
   customer,
@@ -126,7 +119,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>Company Details</Typography>
+          <SectionLabel>Company Details</SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <TextField name="companyName" label="Company Name" formik={formik} required />
@@ -147,7 +140,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
 
           <Divider sx={{ my: 0.5 }} />
 
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>Contact Information</Typography>
+          <SectionLabel>Contact Information</SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <PhoneField name="phone" label="Phone" formik={formik} />
@@ -160,7 +153,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
 
           <Divider sx={{ my: 0.5 }} />
 
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>Address</Typography>
+          <SectionLabel>Address</SectionLabel>
           <TextField name="address" label="Address" formik={formik} />
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 5 }}>
@@ -176,7 +169,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
 
           <Divider sx={{ my: 0.5 }} />
 
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>Payment</Typography>
+          <SectionLabel>Payment</SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <SelectField name="paymentTerms" label="Payment Terms" data={PAYMENT_TERMS_OPTIONS} formik={formik} />
@@ -201,7 +194,7 @@ export const CustomerInfoDrawer: React.FC<CustomerInfoDrawerProps> = ({
 
           <Divider sx={{ my: 0.5 }} />
 
-          <Typography variant="subtitle2" sx={sectionHeaderSx}>Notes</Typography>
+          <SectionLabel>Notes</SectionLabel>
           <TextField name="notes" label="Notes" formik={formik} multiline minRows={3} />
         </Stack>
       )}

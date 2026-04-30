@@ -1,4 +1,6 @@
-import { Box, Card, Grid, Typography } from '@mui/material';
+import { Box, Card, Grid } from '@mui/material';
+
+import { AmountDisplay, BodyStrong, Meta } from 'components/Typography';
 
 interface CostResultCardProps {
   breakEvenRpm: number;
@@ -18,12 +20,8 @@ interface MetricItemProps {
 
 const MetricItem: React.FC<MetricItemProps> = ({ label, value }) => (
   <Box sx={{ transition: 'all 0.3s ease' }}>
-    <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
-      {label}
-    </Typography>
-    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-      {value}
-    </Typography>
+    <Meta sx={{ opacity: 0.8, mb: 0.5, color: 'common.white' }}>{label}</Meta>
+    <BodyStrong sx={{ color: 'common.white' }}>{value}</BodyStrong>
   </Box>
 );
 
@@ -45,20 +43,20 @@ export const CostResultCard: React.FC<CostResultCardProps> = ({
       }}
     >
       <Box sx={{ textAlign: 'center' }}>
-        <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
+        <Meta sx={{ opacity: 0.8, mb: 0.5, color: 'common.white' }}>
           Minimum Rate Per Mile
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+        </Meta>
+        <AmountDisplay sx={{ color: 'common.white' }}>
           {formatCurrency(minimumRatePerMile)}
-        </Typography>
+        </AmountDisplay>
       </Box>
       <Box sx={{ textAlign: 'center' }}>
-        <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
+        <Meta sx={{ opacity: 0.8, mb: 0.5, color: 'common.white' }}>
           Break-Even RPM
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+        </Meta>
+        <AmountDisplay sx={{ color: 'common.white' }}>
           {formatCurrency(breakEvenRpm)}
-        </Typography>
+        </AmountDisplay>
       </Box>
     </Box>
     <Grid container spacing={2}>

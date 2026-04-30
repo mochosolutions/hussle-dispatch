@@ -2,6 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { format } from 'date-fns';
 import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
+import type { CarrierPageState } from '../reducers/carrierNewPageSlice';
 import { carrierSelectors } from '../reducers/carrierEntitySlice';
 import { driverSelectors } from '../../../driver/store/reducers/driverEntitySlice';
 import { vehicleSelectors } from '../../../vehicle/store/reducers/vehicleEntitySlice';
@@ -40,6 +41,12 @@ export const selectCarrierUpdateFulfilled = (id: string) => (state: RootState) =
 
 export const selectCarrierDetailLoading = (id: string) => (state: RootState) =>
   state.pages.carriers.loading[`getById:${id}`] === LoadingState.Pending;
+
+export const selectCarrierStats = (state: RootState) =>
+  (state.pages.carriers as CarrierPageState).stats;
+
+export const selectCarrierStatsLoading = (state: RootState) =>
+  (state.pages.carriers as CarrierPageState).statsLoading;
 
 
 export const selectFormattedCarrierById = (id: string | undefined) =>
@@ -124,35 +131,36 @@ export const selectCarrierTabCounts = createSelector(
   }),
 );
 
-export const selectCarrierKpis = createSelector(
-  [selectAllCarriers],
-  (carriers): CarrierKpiItem[] => {
-    const activeCount = carriers.filter((carrier) => carrier.onboardingComplete).length;
-    const totalDrivers = carriers.reduce((sum, carrier) => sum + carrier.driverCount, 0);
-    const totalVehicles = carriers.reduce((sum, carrier) => sum + carrier.vehicleCount, 0);
-    const totalRevenue = carriers.reduce((sum) => sum + 0, 0);
+export const selectCarrierKpis = (activeTab: CarrierTab) =>
+  createSelector(
+    [selectFilteredCarriers(activeTab)],
+    (carriers): CarrierKpiItem[] => {
+      const activeCount = carriers.filter((carrier) => carrier.onboardingComplete).length;
+      const totalDrivers = carriers.reduce((sum, carrier) => sum + carrier.driverCount, 0);
+      const totalVehicles = carriers.reduce((sum, carrier) => sum + carrier.vehicleCount, 0);
+      const totalRevenue = carriers.reduce((sum) => sum + 0, 0);
 
-    return [
-      {
-        label: 'Total Carriers',
-        value: String(carriers.length),
-        subtitle: `${activeCount} active`,
-      },
-      {
-        label: 'Total Drivers',
-        value: String(totalDrivers),
-        subtitle: 'Across all carriers',
-      },
-      {
-        label: 'Total Vehicles',
-        value: String(totalVehicles),
-        subtitle: 'Across all carriers',
-      },
-      {
-        label: 'Lifetime Revenue',
-        value: CURRENCY_FORMATTER.format(totalRevenue),
-        subtitle: 'All carriers combined',
-      },
-    ];
-  },
-);
+      return [
+        {
+          label: 'Total Carriers',
+          value: String(carriers.length),
+          subtitle: `${activeCount} active`,
+        },
+        {
+          label: 'Total Drivers',
+          value: String(totalDrivers),
+          subtitle: 'Across all carriers',
+        },
+        {
+          label: 'Total Vehicles',
+          value: String(totalVehicles),
+          subtitle: 'Across all carriers',
+        },
+        {
+          label: 'Lifetime Revenue',
+          value: CURRENCY_FORMATTER.format(totalRevenue),
+          subtitle: 'All carriers combined',
+        },
+      ];
+    },
+  );

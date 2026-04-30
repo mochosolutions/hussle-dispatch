@@ -1,5 +1,6 @@
 import type React from 'react';
-import { Box, Typography, Divider, Stack } from '@mui/material';
+import { Box, Divider, Stack } from '@mui/material';
+import { SectionLabel } from 'components/Typography';
 import {
   CheckboxField,
   CurrencyField,
@@ -34,14 +35,6 @@ const FEE_TYPE_OPTIONS = [
   { value: 'PERCENTAGE', label: 'Percentage' },
   { value: 'FLAT', label: 'Flat' },
 ];
-
-const sectionLabelSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
 
 export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
   open,
@@ -90,9 +83,9 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Basic Info
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 2 }}>
               <TextField name="name" label="Name" formik={formik} required />
@@ -112,9 +105,9 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
 
           <Divider />
 
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Contact
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <PhoneField name="phone" label="Phone" formik={formik} />
@@ -138,9 +131,9 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
 
           <Divider />
 
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Financial
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <SelectField
@@ -174,9 +167,9 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
 
           <Divider />
 
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Onboarding
-          </Typography>
+          </SectionLabel>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <CheckboxField
@@ -209,9 +202,9 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
 
           <Divider />
 
-          <Typography variant="subtitle2" sx={sectionLabelSx}>
+          <SectionLabel sx={{ display: 'block' }}>
             Notes
-          </Typography>
+          </SectionLabel>
           <TextField name="notes" label="Notes" formik={formik} />
         </Stack>
       )}

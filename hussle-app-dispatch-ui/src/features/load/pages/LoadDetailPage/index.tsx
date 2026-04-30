@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Typography } from '@mui/material';
+import { Body } from 'components/Typography';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import { DetailLayout } from 'components/DetailLayout';
@@ -74,7 +74,7 @@ const LoadDetailPage = () => {
     <PageWrapper isLoading={isLoading} errorContext="LoadDetailPage">
       <DataGuard
         data={load}
-        emptyComponent={<Typography p={4}>Load details not found.</Typography>}
+        emptyComponent={<Body sx={{ p: 4 }}>Load details not found.</Body>}
       >
         {(load) => (
           <DetailLayout

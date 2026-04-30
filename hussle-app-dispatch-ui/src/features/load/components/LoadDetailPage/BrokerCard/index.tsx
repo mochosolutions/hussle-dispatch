@@ -1,8 +1,8 @@
-import { Button, Link, Typography } from '@mui/material';
+import { Button, Link } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import SectionCard from 'components/SectionCard';
-import { DetailRow } from 'components/Typography';
+import { DetailRow, Meta } from 'components/Typography';
 import type { LoadDetail } from '../../../types';
 
 interface BrokerCardProps {
@@ -30,14 +30,10 @@ export const BrokerCard: React.FC<BrokerCardProps> = ({
           </Button>
         }
       >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-        >
+        <Meta sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonAddOutlinedIcon sx={{ fontSize: 18 }} />
           No contact added
-        </Typography>
+        </Meta>
       </SectionCard>
     );
   }

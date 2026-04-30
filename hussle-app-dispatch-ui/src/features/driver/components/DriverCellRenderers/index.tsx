@@ -1,7 +1,8 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 
 import type { Driver } from 'features/carrier/types';
 import { StatusCell } from 'components/Statusbadge';
+import { Body, BodyStrong, Meta } from 'components/Typography';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 
 export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
@@ -38,16 +39,12 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
           height: '100%',
         }}
       >
-        <Typography
-          variant="subtitle2"
-          color="primary.main"
-          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-        >
+        <BodyStrong sx={{ color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
           {displayName}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
+        </BodyStrong>
+        <Meta>
           {data.licenseNumber ? `${data.licenseType} · ${data.licenseNumber}` : '\u2014'}
-        </Typography>
+        </Meta>
       </Box>
     </Stack>
   );
@@ -65,20 +62,14 @@ export const DriverStatusCellRenderer = ({ data }: { data: Driver }) => {
 
 export const DriverLocationCellRenderer = ({ data }: { data: Driver }) => {
   if (!data.currentCity && !data.currentState) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        {'\u2014'}
-      </Typography>
-    );
+    return <Meta>{'\u2014'}</Meta>;
   }
 
   const parts = [data.currentCity, data.currentState].filter(Boolean).join(', ');
 
-  return <Typography variant="body2">{parts}</Typography>;
+  return <Body>{parts}</Body>;
 };
 
 export const DriverCarrierCellRenderer = ({ value }: { value: string | null }) => (
-  <Typography variant="body2" color={value ? 'text.primary' : 'text.secondary'}>
-    {value ?? '\u2014'}
-  </Typography>
+  value ? <Body sx={{ color: 'text.primary' }}>{value}</Body> : <Meta>{'\u2014'}</Meta>
 );

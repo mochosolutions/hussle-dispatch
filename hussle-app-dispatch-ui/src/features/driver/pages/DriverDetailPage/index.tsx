@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, lazy } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Button, Typography } from '@mui/material';
+import { Button } from '@mui/material';
+import { Body } from 'components/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
+import Loadable from 'mocho/components/Loadable';
 import { DetailLayout } from 'components/DetailLayout';
 import DocumentsTab from 'components/DocumentsTab';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
@@ -16,17 +18,37 @@ import {
 } from '../../store/reducers';
 import {
   selectDriverWithCarrier,
-  selectDriverDetailLoading,
   selectScheduleOverrides,
   selectScheduleLoading,
   selectWeeklySchedule,
 } from '../../store/selectors/driverSelectors';
 import { DriverKPI } from '../../components/DriverKPI';
 import { DRIVER_TABS } from '../../constants';
-import DriverLoadHistoryTab from '../../components/DriverDetailPage/DriverLoadHistoryTab';
-import { DriverPreferencesTab } from '../../components/DriverDetailPage/DriverPreferencesTab';
-import { DriverOverviewTab } from '../../components/DriverDetailPage/DriverOverviewTab';
-import { DriverScheduleTab } from '../../components/DriverDetailPage/DriverScheduleTab';
+
+const DriverOverviewTab = Loadable(
+  lazy(() =>
+    import('../../components/DriverDetailPage/DriverOverviewTab').then((m) => ({
+      default: m.DriverOverviewTab,
+    })),
+  ),
+);
+const DriverLoadHistoryTab = Loadable(
+  lazy(() => import('../../components/DriverDetailPage/DriverLoadHistoryTab')),
+);
+const DriverPreferencesTab = Loadable(
+  lazy(() =>
+    import('../../components/DriverDetailPage/DriverPreferencesTab').then((m) => ({
+      default: m.DriverPreferencesTab,
+    })),
+  ),
+);
+const DriverScheduleTab = Loadable(
+  lazy(() =>
+    import('../../components/DriverDetailPage/DriverScheduleTab').then((m) => ({
+      default: m.DriverScheduleTab,
+    })),
+  ),
+);
 
 const DriverDetailPage = () => {
   const navigate = useNavigate();
@@ -35,7 +57,6 @@ const DriverDetailPage = () => {
   const { openDrawer } = useDrawerActions();
   const driverSelector = useMemo(() => selectDriverWithCarrier(id ?? ''), [id]);
   const driver = useSelector(driverSelector);
-  const isLoading = useSelector(selectDriverDetailLoading(id ?? ''));
   const [activeTab, setActiveTab] = useState('overview');
 
   const weeklySchedule = useSelector(selectWeeklySchedule);
@@ -74,10 +95,10 @@ const DriverDetailPage = () => {
   };
 
   return (
-    <PageWrapper isLoading={isLoading}>
+    <PageWrapper>
       <DataGuard
         data={driver}
-        emptyComponent={<Typography sx={{ p: 4 }}>Driver not found.</Typography>}
+        emptyComponent={<Body sx={{ p: 4 }}>Driver not found.</Body>}
       >
         {(d) => (
           <DetailLayout

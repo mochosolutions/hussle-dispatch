@@ -8,10 +8,9 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
-  Typography,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
-import { DetailRow } from 'components/Typography';
+import { DetailRow, Meta } from 'components/Typography';
 import {
   fetchSmsPromptHistoryRequest,
   sendSmsPromptRequest,
@@ -69,13 +68,7 @@ export const SendSmsPromptModal: React.FC<SendSmsPromptModalProps> = ({ loadId, 
           <DetailRow label="Driver" value={driverName} />
           <DetailRow label="Phone" value={driverPhone ?? 'Not on file'} />
           <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mb: 0.5 }}
-            >
-              Message preview
-            </Typography>
+            <Meta sx={{ display: 'block', mb: 0.5 }}>Message preview</Meta>
             <Box
               sx={{
                 p: 1.5,

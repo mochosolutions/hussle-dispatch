@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
+
+import { BodyMuted, SectionTitle } from 'components/Typography';
 import MapIcon from '@mui/icons-material/Map';
 import { Map, Marker, Source, Layer, useMap } from 'react-map-gl/maplibre';
 import { LngLatBounds } from 'maplibre-gl';
@@ -154,12 +156,12 @@ export const MapView: React.FC<MapViewProps> = ({ stops = [], height = 280 }) =>
     >
       <Box sx={{ textAlign: 'center' }}>
         <MapIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 1.5 }} />
-        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>
+        <SectionTitle sx={{ color: 'text.secondary' }}>
           Map unavailable
-        </Typography>
-        <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+        </SectionTitle>
+        <BodyMuted sx={{ mt: 0.5, color: 'text.disabled' }}>
           Map service is not configured. Stops can still be added below.
-        </Typography>
+        </BodyMuted>
       </Box>
     </Box>
   );

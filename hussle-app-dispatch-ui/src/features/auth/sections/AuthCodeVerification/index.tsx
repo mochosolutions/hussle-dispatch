@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Box, Grid, Stack, Typography } from '@mui/material';
+import { Box, Grid, Stack } from '@mui/material';
+import { Body } from 'components/Typography';
 
 import { useDispatch, useSelector } from 'store';
 import { codeConfirmationRequest, resendCodeRequest } from 'features/auth/store/authSlice';
@@ -81,7 +82,7 @@ const AuthCodeVerification = () => {
 
         <Grid item xs={12}>
           <Stack direction="row" justifyContent="space-between" alignItems="baseline">
-            <Typography>Did not receive the email? Check your spam filter, or</Typography>
+            <Body>Did not receive the email? Check your spam filter, or</Body>
             <SecondaryButton label="Resend code" onClick={handleResendCode} />
           </Stack>
         </Grid>

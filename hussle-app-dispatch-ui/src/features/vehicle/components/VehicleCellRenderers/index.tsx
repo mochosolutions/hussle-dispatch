@@ -1,6 +1,7 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Chip, Stack } from '@mui/material';
 
 import type { Vehicle } from 'features/carrier/types';
+import { Body, BodyStrong, Meta } from 'components/Typography';
 
 import { VEHICLE_TYPE_LABELS, OWNERSHIP_LABELS } from '../../constants';
 
@@ -35,16 +36,10 @@ export const VehicleUnitCellRenderer = ({ data }: { data: Vehicle }) => {
           height: '100%',
         }}
       >
-        <Typography
-          variant="subtitle2"
-          color="primary.main"
-          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-        >
+        <BodyStrong sx={{ color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
           {data.unitNumber}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {details || '—'}
-        </Typography>
+        </BodyStrong>
+        <Meta>{details || '—'}</Meta>
       </Box>
     </Stack>
   );
@@ -75,7 +70,5 @@ export const VehicleOwnershipCellRenderer = ({ value }: { value: Vehicle['owners
 };
 
 export const VehicleCarrierCellRenderer = ({ value }: { value: string | null }) => (
-  <Typography variant="body2" color="text.primary">
-    {value ?? '—'}
-  </Typography>
+  <Body sx={{ color: 'text.primary' }}>{value ?? '—'}</Body>
 );

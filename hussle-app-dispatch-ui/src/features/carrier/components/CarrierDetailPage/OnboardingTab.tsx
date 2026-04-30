@@ -13,8 +13,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material';
+import { Body, BodyStrong, KpiLabel, Meta, SectionLabel } from 'components/Typography';
 import { CheckCircleOutline, CancelOutlined } from '@mui/icons-material';
 import SectionCard from 'components/SectionCard';
 import { FieldRow } from 'components/FieldRow';
@@ -99,9 +99,7 @@ const CompanySection: React.FC<{ carrier: Record<string, unknown> }> = ({ carrie
 const EquipmentSection: React.FC<{ vehicles: Record<string, unknown>[] }> = ({ vehicles }) => (
   <SectionCard title="Phase 2 — Equipment">
     {vehicles.length === 0 ? (
-      <Typography variant="body2" sx={{ color: 'text.secondary', py: 1 }}>
-        No vehicles registered.
-      </Typography>
+      <Meta sx={{ py: 1 }}>No vehicles registered.</Meta>
     ) : (
       <TableContainer>
         <Table size="small">
@@ -148,9 +146,7 @@ const EquipmentSection: React.FC<{ vehicles: Record<string, unknown>[] }> = ({ v
 const DriversSection: React.FC<{ drivers: Record<string, unknown>[] }> = ({ drivers }) => (
   <SectionCard title="Phase 3 — Drivers">
     {drivers.length === 0 ? (
-      <Typography variant="body2" sx={{ color: 'text.secondary', py: 1 }}>
-        No additional drivers registered.
-      </Typography>
+      <Meta sx={{ py: 1 }}>No additional drivers registered.</Meta>
     ) : (
       <TableContainer>
         <Table size="small">
@@ -195,9 +191,7 @@ const CostAnalysisSection: React.FC<{ costAnalysis?: CostAnalysisResult }> = ({
 }) => (
   <SectionCard title="Phase 4 — Cost Analysis">
     {!costAnalysis ? (
-      <Typography variant="body2" sx={{ color: 'text.secondary', py: 1 }}>
-        Cost analysis not yet completed.
-      </Typography>
+      <Meta sx={{ py: 1 }}>Cost analysis not yet completed.</Meta>
     ) : (
       <Box
         sx={{
@@ -230,12 +224,10 @@ const CostAnalysisSection: React.FC<{ costAnalysis?: CostAnalysisResult }> = ({
               borderRadius: 1,
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+            <BodyStrong sx={{ fontSize: '1.5rem', fontWeight: 700, color: 'text.primary' }}>
               {item.value}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {item.label}
-            </Typography>
+            </BodyStrong>
+            <KpiLabel>{item.label}</KpiLabel>
           </Box>
         ))}
       </Box>
@@ -249,9 +241,7 @@ const LanePreferencesSection: React.FC<{
   if (!lanePreferences) {
     return (
       <SectionCard title="Phase 5 — Lane Preferences">
-        <Typography variant="body2" sx={{ color: 'text.secondary', py: 1 }}>
-          Lane preferences not yet completed.
-        </Typography>
+        <Meta sx={{ py: 1 }}>Lane preferences not yet completed.</Meta>
       </SectionCard>
     );
   }
@@ -305,14 +295,12 @@ const LanePreferencesSection: React.FC<{
       {/* Preferred Lanes */}
       {lanes.length > 0 && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-            Preferred Lanes
-          </Typography>
+          <SectionLabel sx={{ display: 'block', mb: 1 }}>Preferred Lanes</SectionLabel>
           <Stack spacing={0.5}>
             {lanes.map((lane, idx) => (
-              <Typography key={idx} variant="body2">
+              <Body key={idx} sx={{ fontSize: '0.8125rem' }}>
                 {lane.origin ?? '—'} &rarr; {lane.destination ?? '—'}
-              </Typography>
+              </Body>
             ))}
           </Stack>
         </Box>
@@ -321,9 +309,7 @@ const LanePreferencesSection: React.FC<{
       {/* State Grid (non-neutral only) */}
       {nonNeutralStates.length > 0 && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-            State Preferences
-          </Typography>
+          <SectionLabel sx={{ display: 'block', mb: 1 }}>State Preferences</SectionLabel>
           <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
             {nonNeutralStates.map((sp) => (
               <Chip
@@ -345,9 +331,7 @@ const LanePreferencesSection: React.FC<{
 const DocumentsSection: React.FC<{ documents: PortalDocument[] }> = ({ documents }) => (
   <SectionCard title="Phase 6 — Documents">
     {documents.length === 0 ? (
-      <Typography variant="body2" sx={{ color: 'text.secondary', py: 1 }}>
-        No documents uploaded.
-      </Typography>
+      <Meta sx={{ py: 1 }}>No documents uploaded.</Meta>
     ) : (
       <TableContainer>
         <Table size="small">

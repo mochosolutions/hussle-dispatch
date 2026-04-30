@@ -1,4 +1,5 @@
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip } from '@mui/material';
+import { Meta, MetaStrong } from 'components/Typography';
 import { EntityAutocomplete } from 'components/EntityAutocomplete';
 import type { EntityAutocompleteOption } from 'components/EntityAutocomplete';
 import type { FormikFieldProps } from '@mocho/ui/forms';
@@ -33,9 +34,7 @@ const fetchCarrierOptions = async (search: string): Promise<EntityAutocompleteOp
 const renderCarrierOption = (option: EntityAutocompleteOption) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-        {option.label}
-      </Typography>
+      <MetaStrong>{option.label}</MetaStrong>
       {typeof option.metadata?.type === 'string' && (
         <Chip
           label={option.metadata.type}
@@ -45,11 +44,7 @@ const renderCarrierOption = (option: EntityAutocompleteOption) => (
         />
       )}
     </Box>
-    {option.description && (
-      <Typography variant="caption" color="text.secondary">
-        {option.description}
-      </Typography>
-    )}
+    {option.description && <Meta>{option.description}</Meta>}
   </Box>
 );
 

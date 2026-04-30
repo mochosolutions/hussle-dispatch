@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
@@ -12,9 +12,12 @@ import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
 import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
-import type { PlaceListItem, FacilityType } from '../../types';
+import type { PlaceListItem } from '../../types';
 import { fetchPlacesRequest } from '../../store/reducers/placePageSlice';
-import { selectFormattedPlaces } from '../../store/selectors/placeSelectors';
+import {
+  selectFilteredPlaces,
+  selectPlaceKpis,
+} from '../../store/selectors/placeSelectors';
 import {
   PlaceNameCellRenderer,
   PlaceFacilityTypeCellRenderer,
@@ -24,7 +27,7 @@ import {
   PlaceVisitsCellRenderer,
   PlaceLumperCellRenderer,
 } from '../../components/PlaceCellRenderers';
-import { FACILITY_TYPE_OPTIONS, FACILITY_TYPE_LABELS } from '../../constants';
+import { FACILITY_TYPE_OPTIONS } from '../../constants';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 const FILTER_ALL = 'all';
@@ -35,12 +38,18 @@ const facilityTypeFilterOptions = [
 ];
 
 const PlaceListPage = () => {
-  const facilityTypeRef = useRef(FILTER_ALL);
+  const [facilityTypeFilter, setFacilityTypeFilter] = useState(FILTER_ALL);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
 
-  const places = useSelector(selectFormattedPlaces);
+  const filteredSelector = useMemo(
+    () => selectFilteredPlaces(facilityTypeFilter),
+    [facilityTypeFilter],
+  );
+  const places = useSelector(filteredSelector);
+  const kpiSelector = useMemo(() => selectPlaceKpis(facilityTypeFilter), [facilityTypeFilter]);
+  const kpiItems = useSelector(kpiSelector);
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.places.hasLoadedOnce);
   const store = useStore<RootState>();
 
@@ -58,16 +67,16 @@ const PlaceListPage = () => {
           page: 1,
           limit: 25,
           search: String(value),
-          facilityType: facilityTypeRef.current === FILTER_ALL ? undefined : facilityTypeRef.current,
+          facilityType: facilityTypeFilter === FILTER_ALL ? undefined : facilityTypeFilter,
         }),
       );
     },
-    [dispatch],
+    [dispatch, facilityTypeFilter],
   );
 
   const handleFacilityTypeFilterChange = useCallback(
     (newFilter: string) => {
-      facilityTypeRef.current = newFilter;
+      setFacilityTypeFilter(newFilter);
       dispatch(
         fetchPlacesRequest({
           page: 1,
@@ -92,25 +101,6 @@ const PlaceListPage = () => {
     openDrawer('placeInfo', { placeId: undefined });
   }, [openDrawer]);
 
-  const kpiItems = useMemo(() => {
-    const counts = places.reduce<Partial<Record<FacilityType, number>>>((acc, place) => {
-      if (place.facilityType) {
-        acc[place.facilityType] = (acc[place.facilityType] ?? 0) + 1;
-      }
-      return acc;
-    }, {});
-
-    const topTypes = Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([type, count]) => ({
-        label: FACILITY_TYPE_LABELS[type as FacilityType],
-        value: count,
-      }));
-
-    return [{ label: 'Total Places', value: places.length }, ...topTypes];
-  }, [places]);
-
   const filters = useMemo<FilterConfig[]>(
     () => [
       {
@@ -118,11 +108,11 @@ const PlaceListPage = () => {
         name: 'facilityType',
         label: 'Facility Type',
         options: facilityTypeFilterOptions,
-        value: FILTER_ALL,
+        value: facilityTypeFilter,
         onChange: handleFacilityTypeFilterChange,
       },
     ],
-    [handleFacilityTypeFilterChange],
+    [facilityTypeFilter, handleFacilityTypeFilterChange],
   );
 
   const searchConfig = useMemo<SearchConfig>(
@@ -251,7 +241,9 @@ const PlaceListPage = () => {
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <FilterBar filters={filters} search={searchConfig} />
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filters} search={searchConfig} />
+            </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box
@@ -267,7 +259,7 @@ const PlaceListPage = () => {
                   showRowCountFooter
                   totalRowCount={places.length}
                   rowCountLabel="places"
-                  noDataComponent={<EmptyState variant="no-data" entityName="Places" />}
+                  noDataComponent={<EmptyState variant="no-results" entityName="Places" compact />}
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,

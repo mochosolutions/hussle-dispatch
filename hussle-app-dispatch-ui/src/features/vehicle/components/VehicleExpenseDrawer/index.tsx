@@ -1,12 +1,13 @@
 import React from 'react';
 import { FieldArray } from 'formik';
 import type { FieldArrayRenderProps, FormikProps } from 'formik';
-import { Box, Typography, Button, Stack, IconButton } from '@mui/material';
+import { Box, Button, Stack, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { SelectField, TypeaheadField, CurrencyField } from '@mocho/ui/components';
 import type { TypeaheadOption } from '@mocho/ui/forms';
 import { FormDrawer } from 'mocho/components/FormDrawer';
+import { SectionLabel } from 'components/Typography';
 import { vehicleExpenseSchema } from '../../validators/vehicleExpenseSchema';
 import type { VehicleExpenseFormValues } from '../../validators/vehicleExpenseSchema';
 import { useDispatch, useSelector } from 'store';
@@ -65,18 +66,7 @@ type ExpenseFieldsProps = {
 const ExpenseFields: React.FC<ExpenseFieldsProps> = ({ formikProps, initialExpenseCount }) => {
   return (
     <Stack spacing={2.5} sx={{ p: 3 }}>
-      <Typography
-        variant="subtitle2"
-        sx={{
-          color: 'text.secondary',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          fontSize: '0.6875rem',
-          letterSpacing: 0.5,
-        }}
-      >
-        Expenses
-      </Typography>
+      <SectionLabel>Expenses</SectionLabel>
 
       <FieldArray name="expenses">
         {(arrayHelpers: FieldArrayRenderProps) => (

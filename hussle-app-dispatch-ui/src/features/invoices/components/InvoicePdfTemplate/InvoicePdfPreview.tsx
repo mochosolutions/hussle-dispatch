@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 
+import { ErrorText } from 'components/Typography';
 import type { InvoiceData } from './types';
 import { generateInvoicePdf } from './generateInvoicePdf';
 
@@ -86,7 +87,7 @@ const InvoicePdfPreview: React.FC<InvoicePdfPreviewProps> = ({
           height,
         }}
       >
-        <Typography color="error">{errorMessage}</Typography>
+        <ErrorText>{errorMessage}</ErrorText>
       </Box>
     );
   }
