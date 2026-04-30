@@ -16,9 +16,12 @@ const buildWhereClause = (
 ): ExpenseWhereInput => {
   const where: ExpenseWhereInput = {
     organizationId: input.organizationId,
-    vehicleId: input.vehicleId,
     deletedAt: null,
   };
+
+  if (input.vehicleId !== undefined) {
+    where.vehicleId = input.vehicleId;
+  }
 
   if (input.driverId !== undefined) {
     where.driverId = input.driverId;

@@ -32,7 +32,7 @@ export type UpdateExpenseInput = Partial<Omit<CreateExpenseInput, 'organizationI
 
 export interface ListExpensesInput {
   organizationId: string;
-  vehicleId: string;
+  vehicleId?: string;
   driverId?: string;
   dateFrom?: string;
   dateTo?: string;

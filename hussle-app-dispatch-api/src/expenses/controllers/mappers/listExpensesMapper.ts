@@ -39,7 +39,7 @@ export const listExpensesMapper = (req: Request): ListExpensesInput => {
 
   return {
     organizationId: req.organizationId ?? '',
-    vehicleId: (query['vehicleId'] as string) ?? '',
+    vehicleId: typeof query['vehicleId'] === 'string' ? query['vehicleId'] : undefined,
     driverId: query['driverId'] as string | undefined,
     dateFrom: query['dateFrom'] as string | undefined,
     dateTo: query['dateTo'] as string | undefined,

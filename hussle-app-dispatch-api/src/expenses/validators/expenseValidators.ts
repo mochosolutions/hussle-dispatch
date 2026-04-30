@@ -57,9 +57,7 @@ export const updateExpenseValidator = Yup.object({
 
 export const listExpensesValidator = Yup.object({
   query: Yup.object({
-    vehicleId: Yup.string()
-      .uuid('vehicleId must be a valid uuid')
-      .required('vehicleId is required'),
+    vehicleId: Yup.string().uuid('vehicleId must be a valid uuid').notRequired(),
     driverId: Yup.string().uuid('driverId must be a valid uuid').notRequired(),
     dateFrom: Yup.date().notRequired(),
     dateTo: Yup.date().notRequired(),
