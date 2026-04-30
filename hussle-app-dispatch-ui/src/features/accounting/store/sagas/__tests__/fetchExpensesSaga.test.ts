@@ -46,7 +46,7 @@ describe('fetchExpensesSaga', () => {
 
     const spy = jest.spyOn(expenseApi, 'getExpenses').mockResolvedValue({
       data: items,
-      meta: { total: 1, page: 1, limit: 500 },
+      meta: { total: 1, page: 1, limit: 100 },
     });
 
     const dispatched: unknown[] = [];

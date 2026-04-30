@@ -152,3 +152,42 @@ export const selectFilteredInvoices = (filters: InvoiceListFilters) =>
 
     return result;
   });
+
+// ---------------------------------------------------------------------------
+// KPI selectors
+// ---------------------------------------------------------------------------
+
+export interface InvoiceKpiItem {
+  label: string;
+  value: string | number;
+  subtitle?: string;
+}
+
+const formatCurrency = (amount: number): string =>
+  `$${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+export const selectInvoiceKpis = (filters: InvoiceListFilters) =>
+  createSelector([selectFilteredInvoices(filters)], (invoices): InvoiceKpiItem[] => {
+    const total = invoices.length;
+    const draftCount = invoices.filter((inv) => inv.status === 'DRAFT').length;
+    const overdueCount = invoices.filter((inv) => inv.isOverdue).length;
+
+    const outstandingAmount = invoices.reduce((sum, inv) => {
+      if (inv.status === 'PAID' || inv.status === 'VOID') {
+        return sum;
+      }
+      const total = Number(inv.totalAmount ?? '0');
+      const paid = Number(inv.paidAmount ?? '0');
+      return sum + (total - paid);
+    }, 0);
+
+    return [
+      { label: 'Total Invoices', value: String(total) },
+      { label: 'Drafts', value: String(draftCount) },
+      { label: 'Overdue', value: String(overdueCount) },
+      { label: 'Outstanding', value: formatCurrency(outstandingAmount) },
+    ];
+  });

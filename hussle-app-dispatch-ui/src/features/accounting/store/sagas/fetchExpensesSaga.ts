@@ -18,7 +18,7 @@ export function* fetchExpensesSaga(
 
     const params: Parameters<typeof getExpenses>[0] = {
       page: action.payload?.page ?? 1,
-      limit: action.payload?.limit ?? 500,
+      limit: action.payload?.limit ?? 100,
     };
 
     if (filters.category && filters.category !== 'ALL') {

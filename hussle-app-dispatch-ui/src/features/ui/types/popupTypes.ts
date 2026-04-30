@@ -131,7 +131,7 @@ export interface ModalTypeMap {
   };
   carrierNote: { carrierId: string };
   confirmDeleteInvoice: { invoiceId: string };
-  sendInvoice: { invoiceId: string };
+  sendInvoice: { invoiceId: string; recipientContactId?: string };
   markInvoicePaid: { invoiceId: string; balanceDue: number };
   loadSendSmsPrompt: { loadId: string };
   dispatchOverride: {

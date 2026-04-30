@@ -14,6 +14,7 @@ import type { ActionsCellConfig } from '@mocho/ui/components';
 import { useStore } from 'react-redux';
 import { ListLayout } from 'components/ListLayout';
 import MainCard from 'components/MainCard';
+import ListKpiBar from 'components/ListKpiBar';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import { useDispatch, useSelector } from 'store';
@@ -21,8 +22,8 @@ import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
 import { fetchInvoicesRequest } from '../store/reducers';
 import {
-  selectInvoiceListLoading,
   selectFilteredInvoices,
+  selectInvoiceKpis,
 } from '../store/selectors/invoiceSelectors';
 import { INVOICE_STATUS_LABELS, INVOICE_STATUS_OPTIONS, INVOICE_TYPE_LABELS } from '../constants';
 import type { InvoiceListItem, InvoiceStatus, InvoiceType } from '../types';
@@ -51,7 +52,6 @@ const InvoiceListPage = () => {
   const navigate = useNavigate();
   const store = useStore<RootState>();
 
-  const isLoading = useSelector(selectInvoiceListLoading);
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.invoices.hasLoadedOnce);
 
   const [selectedStatuses, setSelectedStatuses] = useState<InvoiceStatus[]>([]);
@@ -88,12 +88,14 @@ const InvoiceListPage = () => {
     [dispatch],
   );
 
-  const filteredSelector = useMemo(
-    () =>
-      selectFilteredInvoices({ selectedStatuses, overdueOnly, missingBolOnly, searchQuery: '' }),
+  const filterArgs = useMemo(
+    () => ({ selectedStatuses, overdueOnly, missingBolOnly, searchQuery: '' }),
     [selectedStatuses, overdueOnly, missingBolOnly],
   );
+  const filteredSelector = useMemo(() => selectFilteredInvoices(filterArgs), [filterArgs]);
+  const kpiSelector = useMemo(() => selectInvoiceKpis(filterArgs), [filterArgs]);
   const filteredInvoicesRaw = useSelector(filteredSelector);
+  const kpiItems = useSelector(kpiSelector);
   const filteredInvoices = useMemo(
     () =>
       selectedType ? filteredInvoicesRaw.filter((inv) => inv.type === selectedType) : filteredInvoicesRaw,
@@ -293,39 +295,58 @@ const InvoiceListPage = () => {
           </Stack>
         }
       >
-        <MainCard
-          content={false}
-          sx={{ mx: { xs: 2, sm: 3 }, mb: 3, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-        >
-          <FilterBar
-            filters={filters}
-            search={search}
-            sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-          />
+        <ListKpiBar
+          items={kpiItems}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
-          <Box sx={{ flex: 1, minHeight: { xs: 300, md: 420 }, display: 'flex', flexDirection: 'column' }}>
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={filteredInvoices}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={filteredInvoices.length}
-              rowCountLabel="invoices"
-              noDataComponent={<EmptyState variant="no-results" entityName="Invoices" compact />}
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: true,
-                paginationPageSize: 25,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 56,
-                onRowClicked: handleRowClicked,
-                getRowStyle,
-              }}
-              loading={!hasLoadedOnce || isLoading}
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: 3,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}
+        >
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+          >
+            <FilterBar
+              filters={filters}
+              search={search}
+              sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
             />
-          </Box>
-        </MainCard>
+
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box sx={{ flex: 1, minHeight: { xs: 300, md: 420 } }}>
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={filteredInvoices}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={filteredInvoices.length}
+                  rowCountLabel="invoices"
+                  noDataComponent={<EmptyState variant="no-results" entityName="Invoices" compact />}
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: true,
+                    paginationPageSize: 25,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 56,
+                    onRowClicked: handleRowClicked,
+                    getRowStyle,
+                  }}
+                  loading={!hasLoadedOnce}
+                />
+              </Box>
+            </Box>
+          </MainCard>
+        </Box>
       </ListLayout>
     </PageWrapper>
   );

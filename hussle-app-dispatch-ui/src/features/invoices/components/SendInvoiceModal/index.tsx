@@ -12,11 +12,13 @@ import {
 } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { EmailChipsField } from 'features/contact/components/EmailChipsField';
+import { selectContactById } from 'features/contact/store/selectors/contactSelectors';
 import { sendInvoiceRequest } from '../../store/reducers';
 import { selectInvoiceById } from '../../store/selectors/invoiceSelectors';
 
 interface SendInvoiceModalProps {
   invoiceId: string;
+  recipientContactId?: string;
   onClose: () => void;
 }
 
@@ -37,14 +39,19 @@ interface SendInvoiceFormValues {
   ccEmails: string[];
 }
 
-export const SendInvoiceModal: React.FC<SendInvoiceModalProps> = ({ invoiceId, onClose }) => {
+export const SendInvoiceModal: React.FC<SendInvoiceModalProps> = ({
+  invoiceId,
+  recipientContactId,
+  onClose,
+}) => {
   const dispatch = useDispatch();
   const invoice = useSelector(selectInvoiceById(invoiceId));
+  const contact = useSelector(selectContactById(recipientContactId ?? ''));
 
   const formik = useFormik<SendInvoiceFormValues>({
     initialValues: {
       recipientEmail: invoice?.sentTo ?? '',
-      ccEmails: [],
+      ccEmails: contact?.ccEmails ?? [],
     },
     enableReinitialize: true,
     validationSchema: sendInvoiceFormSchema,
