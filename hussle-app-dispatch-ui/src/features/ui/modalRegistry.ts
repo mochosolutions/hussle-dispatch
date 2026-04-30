@@ -6,12 +6,14 @@ import { SendSmsPromptModal } from 'features/load/components/SendSmsPromptModal'
 import { StatusChangeDialog } from 'features/load/components/StatusChangeDialog';
 import { InviteMemberDialog } from '../settings/components/InviteMemberDialog';
 import { GenerateSettlementDialog } from '../accounting/components/GenerateSettlementDialog';
+import { MissingEstimatedHoursDialog } from '../accounting/components/MissingEstimatedHoursDialog';
 import { CarrierNoteDrawer } from '../carrier/components/CarrierNoteDrawer';
 import { ConfirmDeleteInvoiceModal } from '../invoices/components/ConfirmDeleteInvoiceModal';
 import { SendInvoiceModal } from '../invoices/components/SendInvoiceModal';
 import { PaymentDrawer } from '../invoices/components/PaymentDrawer';
 import { DispatchOverrideModal } from '../carrier/components/DispatchOverrideModal';
 import { ConfirmDeleteDocumentModal } from '../documents/components/ConfirmDeleteDocumentModal';
+import UpgradePlanDialog from 'components/UpgradePlanDialog';
 
 const modalRegistry: PopupComponentMap = {
   createLoadModal: CreateLoadModal,
@@ -20,6 +22,7 @@ const modalRegistry: PopupComponentMap = {
   dirtyFormConfirm: DirtyFormConfirmModal,
   inviteMember: InviteMemberDialog,
   generateSettlement: GenerateSettlementDialog,
+  missingEstimatedHours: MissingEstimatedHoursDialog,
   carrierNote: CarrierNoteDrawer,
   confirmDeleteInvoice: ConfirmDeleteInvoiceModal,
   sendInvoice: SendInvoiceModal,
@@ -27,6 +30,7 @@ const modalRegistry: PopupComponentMap = {
   loadSendSmsPrompt: SendSmsPromptModal,
   dispatchOverride: DispatchOverrideModal,
   confirmDeleteDocument: ConfirmDeleteDocumentModal,
+  upgradePlan: UpgradePlanDialog,
 };
 
 export default modalRegistry;

@@ -10,6 +10,7 @@
 import type { DocumentContext } from '../../documents/constants';
 import type { DocumentEntityType, DocumentType } from '../../documents/types';
 import type { LoadDetail, LoadStatus, LoadTemplate } from '../../load/types';
+import type { MissingEstimatedHoursLoad } from '../../accounting/store/reducers/settlementPageSlice';
 
 // ---------------------------------------------------------------------------
 // Drawers
@@ -96,13 +97,15 @@ export type ModalType =
   | 'confirmDeleteLoadDialog'
   | 'inviteMember'
   | 'generateSettlement'
+  | 'missingEstimatedHours'
   | 'carrierNote'
   | 'confirmDeleteInvoice'
   | 'sendInvoice'
   | 'markInvoicePaid'
   | 'loadSendSmsPrompt'
   | 'dispatchOverride'
-  | 'confirmDeleteDocument';
+  | 'confirmDeleteDocument'
+  | 'upgradePlan';
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
@@ -121,6 +124,11 @@ export interface ModalTypeMap {
   };
   inviteMember: { organizationId: string };
   generateSettlement: Record<string, never>;
+  missingEstimatedHours: {
+    loadIds: string[];
+    loads: MissingEstimatedHoursLoad[];
+    message: string;
+  };
   carrierNote: { carrierId: string };
   confirmDeleteInvoice: { invoiceId: string };
   sendInvoice: { invoiceId: string };
@@ -133,4 +141,8 @@ export interface ModalTypeMap {
     missingDocuments: string[];
   };
   confirmDeleteDocument: { documentId: string; fileName: string; type: DocumentType };
+  upgradePlan: {
+    resourceType: 'team members' | 'vehicles';
+    limit: number;
+  };
 }

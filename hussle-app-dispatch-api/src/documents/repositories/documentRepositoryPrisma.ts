@@ -30,10 +30,13 @@ export const documentRepositoryPrisma = (
       include: DOCUMENT_INCLUDES,
     }),
 
-  updateUploadStatus: (id: string, status: string) =>
+  updateUploadStatus: (id: string, status: string, fileSize?: number) =>
     prisma.document.update({
       where: { id },
-      data: { uploadStatus: status },
+      data: {
+        uploadStatus: status,
+        ...(fileSize !== undefined && { fileSize }),
+      },
       include: DOCUMENT_INCLUDES,
     }),
 

@@ -90,6 +90,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       url: presignedUrl,
       uploadStatus: UPLOAD_STATUS.PENDING,
       uploadedByUserId: input.uploadedByUserId,
+      ...(input.fileSize !== undefined && { fileSize: input.fileSize }),
       ...(input.expiresAt !== undefined && { expiresAt: new Date(input.expiresAt) }),
       ...(input.metadata !== undefined && {
         metadata: input.metadata as unknown as Prisma.InputJsonValue,
@@ -114,31 +115,32 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       throw new DocumentAlreadyConfirmedError(input.documentId);
     }
 
-    // Verify the file actually exists in storage
+    // Verify the file actually exists in storage and read its canonical size.
+    // S3 is the authoritative source — never trust the client-claimed fileSize.
     const fileExists = await deps.storageProvider.exists(document.s3Key);
     if (!fileExists) {
       throw new DocumentUploadNotConfirmedError(input.documentId);
     }
 
-    // Validate uploaded file size against per-mime-type limits
+    const metadata = await deps.storageProvider.getMetadata(document.s3Key);
+
+    // Validate canonical size against per-mime-type limits
     if (document.mimeType !== null) {
       const maxSize = MAX_FILE_SIZES[document.mimeType];
-      if (maxSize !== undefined) {
-        const metadata = await deps.storageProvider.getMetadata(document.s3Key);
-        if (metadata.size > maxSize) {
-          await deps.storageProvider.delete(document.s3Key);
-          const limitMb = maxSize / (1024 * 1024);
-          throw new ValidationError(
-            `Uploaded file exceeds the ${limitMb}MB limit for ${document.mimeType}`,
-          );
-        }
+      if (maxSize !== undefined && metadata.size > maxSize) {
+        await deps.storageProvider.delete(document.s3Key);
+        const limitMb = maxSize / (1024 * 1024);
+        throw new ValidationError(
+          `Uploaded file exceeds the ${limitMb}MB limit for ${document.mimeType}`,
+        );
       }
     }
 
-    // Update status to confirmed
+    // Persist the canonical size from S3 alongside the confirmed status.
     const confirmed = await deps.documentRepository.updateUploadStatus(
       input.documentId,
       UPLOAD_STATUS.CONFIRMED,
+      metadata.size,
     );
 
     // Look up load context for notification enrichment

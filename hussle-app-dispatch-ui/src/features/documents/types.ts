@@ -106,6 +106,7 @@ export interface BulkDownloadResult {
 
 export interface PresignInput {
   fileName: string;
+  fileSize: number;
   mimeType: string;
   type: DocumentType;
   entityType: DocumentEntityType;

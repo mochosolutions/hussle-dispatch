@@ -17,7 +17,6 @@ import {
 } from '../../store/selectors/settlementSelectors';
 import { OverviewTab } from '../../components/SettlementDetailPage/OverviewTab';
 import { LineItemsTab } from '../../components/SettlementDetailPage/LineItemsTab';
-import { MissingEstimatedHoursDialog } from '../../components/MissingEstimatedHoursDialog';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -178,7 +177,6 @@ const SettlementDetailPage = () => {
           </DetailLayout>
         )}
       </DataGuard>
-      <MissingEstimatedHoursDialog />
     </PageWrapper>
   );
 };

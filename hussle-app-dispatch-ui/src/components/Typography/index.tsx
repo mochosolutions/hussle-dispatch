@@ -230,14 +230,14 @@ interface KpiCellProps {
 
 export const KpiCell: React.FC<KpiCellProps> = ({ label, value, sub, valueProps, sx }) => (
   <Stack spacing={0.5} sx={sx}>
-    <Typography variant="overline" color="text.secondary">
+    <Typography variant="overline" component="span" color="text.secondary">
       {label}
     </Typography>
-    <Typography variant="body1" sx={{ fontWeight: 600, ...valueProps }}>
+    <Typography variant="body1" component="div" sx={{ fontWeight: 600, ...valueProps }}>
       {value}
     </Typography>
     {sub && (
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" component="span" color="text.secondary">
         {sub}
       </Typography>
     )}

@@ -44,6 +44,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
 
       <SectionCard
         title="Documents"
+        contentSX={{ p: 0 }}
         actions={
           <Button
             size="small"
@@ -55,7 +56,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
           </Button>
         }
       >
-        <DocumentTable entityType="load" entityId={load.id} />
+        <DocumentTable entityType="load" entityId={load.id} onUpload={handleUploadClick} />
       </SectionCard>
     </Stack>
   );

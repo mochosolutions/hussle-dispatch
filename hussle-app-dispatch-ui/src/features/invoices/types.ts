@@ -116,6 +116,7 @@ export interface PaymentInput {
 
 export interface SendInvoiceInput {
   recipientEmail: string;
+  ccEmails?: string[];
 }
 
 export interface UpdateInvoiceInput {

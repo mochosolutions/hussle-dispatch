@@ -68,6 +68,7 @@ export const sendInvoice = async (
 ): Promise<InvoiceDetail> => {
   const response = await axiosInstance.post<GetInvoiceResponse>(`/invoices/${id}/send`, {
     email: input.recipientEmail,
+    ...(input.ccEmails && input.ccEmails.length > 0 ? { ccEmails: input.ccEmails } : {}),
   });
   return response.data.data;
 };

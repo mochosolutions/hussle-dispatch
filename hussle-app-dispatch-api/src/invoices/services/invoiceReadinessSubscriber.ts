@@ -26,6 +26,7 @@ const createDispatchFeeInvoice = async (
     organizationId: string;
     loadNumber: string;
     carrierId: string;
+    carrierBillingMethod: string;
     carrierPrimaryContactEmail: string | null;
     dispatchFeeAmount: Decimal;
   },
@@ -72,6 +73,16 @@ const createDispatchFeeInvoice = async (
     loadId: params.loadId,
     amount: params.dispatchFeeAmount.toFixed(2),
   });
+
+  // FACTORED carriers settle the dispatch fee through factoring submission,
+  // not direct email — leave the invoice in DRAFT and skip the auto-send.
+  if (params.carrierBillingMethod === 'FACTORED') {
+    deps.logger.info('dispatch_fee_invoice_auto_send_skipped_factoring', {
+      invoiceId: invoice.id,
+      carrierId: params.carrierId,
+    });
+    return;
+  }
 
   // Route to carrier primary contact email. If missing, flag and skip send.
   if (
@@ -222,6 +233,7 @@ const evaluateReadiness = async (
               organizationId: load.organizationId,
               loadNumber: load.loadNumber,
               carrierId: load.carrierId,
+              carrierBillingMethod: load.carrier.billingMethod ?? 'DIRECT',
               carrierPrimaryContactEmail: load.carrier.primaryContact?.email ?? null,
               dispatchFeeAmount,
             },

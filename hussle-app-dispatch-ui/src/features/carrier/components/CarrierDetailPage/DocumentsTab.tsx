@@ -23,6 +23,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ carrierId }) => {
   return (
     <SectionCard
       title="Documents"
+      contentSX={{ p: 0 }}
       actions={
         <Button
           size="small"
@@ -34,7 +35,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ carrierId }) => {
         </Button>
       }
     >
-      <DocumentTable entityType="carrier" entityId={carrierId} />
+      <DocumentTable entityType="carrier" entityId={carrierId} onUpload={handleUploadClick} />
     </SectionCard>
   );
 };

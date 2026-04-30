@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Box, Button, CircularProgress, Stack } from '@mui/material';
+import { Box, Button, Stack } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { TextField, EmailField, PhoneField } from '@mocho/ui/components';
@@ -121,17 +122,15 @@ const InlineContactForm: React.FC<InlineContactFormProps> = ({
                 >
                   Cancel
                 </Button>
-                <Button
+                <LoadingButton
                   size="small"
                   type="submit"
                   variant="contained"
-                  disabled={!formik.isValid || formik.isSubmitting}
-                  startIcon={
-                    formik.isSubmitting ? <CircularProgress size={14} color="inherit" /> : undefined
-                  }
+                  loading={formik.isSubmitting}
+                  disabled={!formik.isValid}
                 >
                   {formik.isSubmitting ? 'Saving…' : 'Save Contact'}
-                </Button>
+                </LoadingButton>
               </Stack>
             </Stack>
           </Form>

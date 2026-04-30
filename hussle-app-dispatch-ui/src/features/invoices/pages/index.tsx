@@ -6,16 +6,19 @@ import type {
   ValueFormatterParams,
   ValueGetterParams,
 } from 'ag-grid-community';
-import { Button, Stack } from '@mui/material';
+import { Box, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ActionsCell, EmptyState, NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
+import { useStore } from 'react-redux';
 import { ListLayout } from 'components/ListLayout';
 import MainCard from 'components/MainCard';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import { fetchInvoicesRequest } from '../store/reducers';
 import {
   selectInvoiceListLoading,
@@ -46,8 +49,10 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 const InvoiceListPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const store = useStore<RootState>();
 
   const isLoading = useSelector(selectInvoiceListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.invoices.hasLoadedOnce);
 
   const [selectedStatuses, setSelectedStatuses] = useState<InvoiceStatus[]>([]);
   const [selectedType, setSelectedType] = useState<'' | InvoiceType>('');
@@ -55,14 +60,17 @@ const InvoiceListPage = () => {
   const [missingBolOnly, setMissingBolOnly] = useState(false);
 
   useEffect(() => {
-    dispatch(
-      fetchInvoicesRequest({
-        page: 1,
-        limit: 25,
-        ...(selectedType ? { type: selectedType } : {}),
-      }),
-    );
-  }, [dispatch, selectedType]);
+    const { lastFetchedAt } = store.getState().pages.invoices;
+    if (isStale(lastFetchedAt)) {
+      dispatch(
+        fetchInvoicesRequest({
+          page: 1,
+          limit: 25,
+          ...(selectedType ? { type: selectedType } : {}),
+        }),
+      );
+    }
+  }, [dispatch, store, selectedType]);
 
   const handleRowClicked = useCallback(
     (params: RowClickedEvent<InvoiceListItem>) => {
@@ -295,26 +303,28 @@ const InvoiceListPage = () => {
             sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
           />
 
-          <NewDataGrid
-            columnDefs={columnDefs}
-            rowData={filteredInvoices}
-            defaultColDef={defaultColDef}
-            showRowCountFooter
-            totalRowCount={filteredInvoices.length}
-            rowCountLabel="invoices"
-            noDataComponent={<EmptyState variant="no-results" entityName="Invoices" />}
-            gridOptions={{
-              domLayout: 'normal',
-              pagination: true,
-              paginationPageSize: 25,
-              suppressCellFocus: true,
-              headerHeight: 44,
-              rowHeight: 56,
-              onRowClicked: handleRowClicked,
-              getRowStyle,
-            }}
-            loading={isLoading}
-          />
+          <Box sx={{ flex: 1, minHeight: { xs: 300, md: 420 }, display: 'flex', flexDirection: 'column' }}>
+            <NewDataGrid
+              columnDefs={columnDefs}
+              rowData={filteredInvoices}
+              defaultColDef={defaultColDef}
+              showRowCountFooter
+              totalRowCount={filteredInvoices.length}
+              rowCountLabel="invoices"
+              noDataComponent={<EmptyState variant="no-results" entityName="Invoices" compact />}
+              gridOptions={{
+                domLayout: 'normal',
+                pagination: true,
+                paginationPageSize: 25,
+                suppressCellFocus: true,
+                headerHeight: 44,
+                rowHeight: 56,
+                onRowClicked: handleRowClicked,
+                getRowStyle,
+              }}
+              loading={!hasLoadedOnce || isLoading}
+            />
+          </Box>
         </MainCard>
       </ListLayout>
     </PageWrapper>

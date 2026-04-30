@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Button,
+  Chip,
   Divider,
   IconButton,
   Menu,
@@ -10,6 +11,9 @@ import {
 } from '@mui/material';
 import { DownloadOutlined } from '@ant-design/icons';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import { format } from 'date-fns';
 import type { ColDef, RowClickedEvent, SelectionChangedEvent } from 'ag-grid-community';
 import { NewDataGrid } from '@mocho/ui/components';
@@ -17,9 +21,11 @@ import { NewDataGrid } from '@mocho/ui/components';
 import { useSelector, useDispatch } from 'store';
 import config from '../../../../config';
 import { Body, BodyMuted } from 'components/Typography';
+import { formatBytes } from 'utils/documents/formatBytes';
 import { formattedCurrentUserSelector } from 'features/auth/store/selectors';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
+import { EmptyState } from 'mocho/components/EmptyState/EmptyState';
 
 import { DOC_TYPE_CONFIG, type DocumentContext } from '../../constants';
 import {
@@ -81,14 +87,56 @@ const formatDate = (value: string | null | undefined): string => {
 // Cell renderers (named exports for testability)
 // ---------------------------------------------------------------------------
 
+const getFileTypeIcon = (mimeType: string | null) => {
+  if (mimeType === 'application/pdf') {
+    return <PictureAsPdfOutlinedIcon fontSize="small" sx={{ color: 'error.main' }} />;
+  }
+  if (mimeType !== null && mimeType.startsWith('image/')) {
+    return <ImageOutlinedIcon fontSize="small" sx={{ color: 'info.main' }} />;
+  }
+  return <InsertDriveFileOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />;
+};
+
+const isPendingUpload = (doc: Document): boolean => {
+  // Backend writes "confirmed" after confirmDocument runs successfully.
+  // Anything else (pending, presigned, failed) is an unconfirmed record.
+  return doc.uploadStatus !== 'confirmed';
+};
+
 export const DocTypeCellRenderer = ({ data }: { data: Document }) => (
-  <Body sx={{ fontWeight: 500 }}>{getTypeLabelForDoc(data)}</Body>
+  <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+    {getFileTypeIcon(data.mimeType)}
+    <Body sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {getTypeLabelForDoc(data)}
+    </Body>
+    {isPendingUpload(data) && (
+      <Chip
+        label="pending upload"
+        size="small"
+        color="warning"
+        variant="outlined"
+        sx={{ height: 20, fontSize: 11 }}
+      />
+    )}
+  </Stack>
 );
 
 export const FileNameCellRenderer = ({ data }: { data: Document }) => (
   <Body sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
     {data.fileName}
   </Body>
+);
+
+export const UploadedByCellRenderer = ({ data }: { data: Document }) => {
+  const uploader = data.uploadedBy;
+  const name = uploader
+    ? `${uploader.firstName} ${uploader.lastName}`.trim()
+    : '';
+  return <Body>{name === '' ? '—' : name}</Body>;
+};
+
+export const SizeCellRenderer = ({ data }: { data: Document }) => (
+  <BodyMuted>{formatBytes(data.fileSize)}</BodyMuted>
 );
 
 export const DateCellRenderer = ({ value }: { value: string | null }) => (
@@ -212,9 +260,10 @@ export const ActionsCellRenderer: React.FC<ActionsCellRendererProps> = ({
 export interface DocumentTableProps {
   entityType: DocumentEntityType;
   entityId: string;
+  onUpload?: () => void;
 }
 
-export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entityId }) => {
+export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entityId, onUpload }) => {
   const dispatch = useDispatch();
   const documents = useSelector(selectDocumentsByEntity(entityType, entityId));
   const isLoading = useSelector(selectDocumentsFetchLoading(entityType, entityId));
@@ -267,8 +316,8 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entity
       {
         headerName: 'Type',
         field: 'type',
-        minWidth: 140,
-        flex: 1,
+        minWidth: 200,
+        flex: 1.4,
         cellRenderer: DocTypeCellRenderer,
         valueGetter: ({ data }) => (data ? getTypeLabelForDoc(data) : ''),
       },
@@ -278,6 +327,24 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entity
         minWidth: 180,
         flex: 2,
         cellRenderer: FileNameCellRenderer,
+      },
+      {
+        headerName: 'Uploaded By',
+        field: 'uploadedByUserId',
+        minWidth: 140,
+        flex: 1,
+        cellRenderer: UploadedByCellRenderer,
+        valueGetter: ({ data }) =>
+          data?.uploadedBy
+            ? `${data.uploadedBy.firstName} ${data.uploadedBy.lastName}`.trim()
+            : '',
+      },
+      {
+        headerName: 'Size',
+        field: 'fileSize',
+        minWidth: 100,
+        width: 100,
+        cellRenderer: SizeCellRenderer,
       },
       {
         headerName: 'Uploaded',
@@ -295,11 +362,11 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entity
         cellRenderer: ExpiresCellRenderer,
       },
       {
-        headerName: '',
+        headerName: 'Actions',
         field: 'id',
-        width: 56,
-        minWidth: 56,
-        maxWidth: 56,
+        width: 96,
+        minWidth: 96,
+        maxWidth: 96,
         pinned: 'right',
         sortable: false,
         filter: false,
@@ -321,11 +388,11 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entity
 
   const gridOptions = useMemo(
     () => ({
-      domLayout: 'autoHeight' as const,
-      pagination: false,
+      pagination: true,
+      paginationPageSize: 25,
       suppressCellFocus: true,
-      headerHeight: 40,
-      rowHeight: 48,
+      headerHeight: 44,
+      rowHeight: 56,
       rowSelection: 'multiple' as const,
       suppressRowClickSelection: true,
       onSelectionChanged: handleSelectionChanged,
@@ -351,14 +418,25 @@ export const DocumentTable: React.FC<DocumentTableProps> = ({ entityType, entity
         </Box>
       )}
 
+      <Box sx={{ height: 480, display: 'flex', flexDirection: 'column' }}>
       <NewDataGrid
         columnDefs={columnDefs}
         rowData={documents}
         defaultColDef={defaultColDef}
         gridOptions={gridOptions}
         loading={isLoading}
-        noDataMessage="No documents uploaded yet"
+        noDataComponent={
+          <EmptyState
+            variant="no-data"
+            entityName="Documents"
+            message="No documents have been uploaded yet."
+            actionText={onUpload ? 'Upload Document' : undefined}
+            onAction={onUpload}
+            compact
+          />
+        }
       />
+      </Box>
     </Box>
   );
 };

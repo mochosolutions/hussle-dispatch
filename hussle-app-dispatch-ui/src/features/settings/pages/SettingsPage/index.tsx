@@ -139,21 +139,24 @@ const SettingsPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={isLoading} errorContext="SettingsPage" sx={{ gap: 2 }}>
-      <PageHeader title="Settings" subtitle="Manage your organization settings" />
+    <PageWrapper isLoading={isLoading} errorContext="SettingsPage">
+      <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2 }}>
+        <PageHeader title="Settings" subtitle="Manage your organization settings" />
+      </Box>
 
       <DetailTabBar tabs={SETTINGS_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
+      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'grey.100', p: { xs: 2, sm: 3 } }}>
       {activeTab === 'general' && (
       <>
       {error && (
-        <MainCard sx={{ bgcolor: 'error.lighter', borderColor: 'error.light' }}>
+        <MainCard sx={{ bgcolor: 'error.lighter', borderColor: 'error.light', mb: 2 }}>
           <ErrorText role="alert">{error}</ErrorText>
         </MainCard>
       )}
 
       <Box component="form" noValidate onSubmit={formik.handleSubmit}>
-        <Stack spacing={3} sx={{ maxWidth: 800 }}>
+        <Stack spacing={3}>
           {/* Financial Settings */}
           <SectionCard title={<SectionTitle>Financial Settings</SectionTitle>}>
             <Stack spacing={2.5}>
@@ -336,6 +339,7 @@ const SettingsPage = () => {
       )}
 
       {activeTab === 'team' && <TeamTab />}
+      </Box>
     </PageWrapper>
   );
 };

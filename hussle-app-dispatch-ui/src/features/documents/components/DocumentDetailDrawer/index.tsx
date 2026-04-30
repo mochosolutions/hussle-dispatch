@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
   Drawer,
   IconButton,
+  Skeleton,
   Stack,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -86,57 +87,102 @@ interface DocumentPreviewAreaProps {
   onDownload: () => void;
 }
 
+const PreviewUnavailableFallback: React.FC<{ onDownload: () => void }> = ({ onDownload }) => (
+  <Stack
+    spacing={1.5}
+    alignItems="center"
+    justifyContent="center"
+    sx={{ py: 6, px: 2, textAlign: 'center' }}
+  >
+    <Box sx={{ fontSize: 36, color: 'text.disabled' }}>
+      <FileTextOutlined aria-hidden="true" />
+    </Box>
+    <BodyMuted>Preview unavailable — Download instead</BodyMuted>
+    <Button variant="contained" size="small" onClick={onDownload}>
+      Download
+    </Button>
+  </Stack>
+);
+
 const DocumentPreviewArea: React.FC<DocumentPreviewAreaProps> = ({
   fileName,
   mimeType,
   url,
   onDownload,
 }) => {
-  if (mimeType === 'application/pdf') {
-    return (
-      <iframe
-        src={url}
-        title={`PDF preview of ${fileName}`}
-        aria-label={`PDF preview of ${fileName}`}
-        style={{
-          width: '100%',
-          height: 'min(60vh, 720px)',
-          border: 'none',
-          borderRadius: 4,
-        }}
-      />
-    );
-  }
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
-  if (mimeType !== null && mimeType.startsWith('image/')) {
+  if (mimeType === 'application/pdf') {
+    if (hasError) {
+      return <PreviewUnavailableFallback onDownload={onDownload} />;
+    }
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Box
-          component="img"
+      <Box sx={{ position: 'relative', width: '100%', height: 'min(60vh, 720px)' }}>
+        {isLoading && (
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height="100%"
+            sx={{ position: 'absolute', inset: 0, borderRadius: 1 }}
+          />
+        )}
+        <iframe
           src={url}
-          alt={fileName}
-          sx={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 1 }}
+          title={`PDF preview of ${fileName}`}
+          aria-label={`PDF preview of ${fileName}`}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            borderRadius: 4,
+            display: isLoading ? 'none' : 'block',
+          }}
         />
       </Box>
     );
   }
 
-  return (
-    <Stack
-      spacing={1.5}
-      alignItems="center"
-      justifyContent="center"
-      sx={{ py: 6, px: 2, textAlign: 'center' }}
-    >
-      <Box sx={{ fontSize: 36, color: 'text.disabled' }}>
-        <FileTextOutlined aria-hidden="true" />
+  if (mimeType !== null && mimeType.startsWith('image/')) {
+    if (hasError) {
+      return <PreviewUnavailableFallback onDownload={onDownload} />;
+    }
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
+        {isLoading && (
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height="60vh"
+            sx={{ borderRadius: 1 }}
+          />
+        )}
+        <Box
+          component="img"
+          src={url}
+          alt={fileName}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+          sx={{
+            maxWidth: '100%',
+            maxHeight: '60vh',
+            borderRadius: 1,
+            display: isLoading ? 'none' : 'block',
+          }}
+        />
       </Box>
-      <BodyMuted>Preview is not available for this file type.</BodyMuted>
-      <Button variant="contained" size="small" onClick={onDownload}>
-        Download
-      </Button>
-    </Stack>
-  );
+    );
+  }
+
+  return <PreviewUnavailableFallback onDownload={onDownload} />;
 };
 
 // ---------------------------------------------------------------------------
@@ -238,10 +284,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     <Drawer
       anchor="right"
       open
-      onClose={(_event, reason) => {
-        if (reason === 'backdropClick') return;
-        onClose();
-      }}
+      onClose={onClose}
       PaperProps={{
         sx: {
           width: { xs: '100vw', md: 640 },

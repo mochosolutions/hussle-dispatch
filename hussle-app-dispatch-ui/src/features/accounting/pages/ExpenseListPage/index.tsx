@@ -4,6 +4,7 @@ import type { ColDef } from 'ag-grid-community';
 import AddIcon from '@mui/icons-material/Add';
 import { NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import { ActionsCell } from 'mocho/components/DataGrid';
+import { EmptyState } from 'mocho/components/EmptyState';
 import { ListLayout } from 'components/ListLayout';
 import MainCard from 'components/MainCard';
 import { FilterBar } from 'components/FilterBar';
@@ -255,7 +256,9 @@ const ExpenseListPage = () => {
                   showRowCountFooter
                   totalRowCount={totalCount}
                   rowCountLabel="expenses"
-                  noDataMessage="No expenses found"
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="Expenses" compact />
+                  }
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,

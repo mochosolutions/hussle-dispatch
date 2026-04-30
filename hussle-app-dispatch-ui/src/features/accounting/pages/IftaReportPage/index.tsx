@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { MainCard, NewDataGrid } from '@mocho/ui/components';
+import { EmptyState } from 'mocho/components/EmptyState';
 import { ListLayout } from 'components/ListLayout';
 import { Body, BodyMuted, ErrorText, SectionTitle } from 'components/Typography';
 import { getIftaReport } from 'utils/api/accounting/iftaApi';
@@ -335,7 +336,9 @@ const IftaReportPage = () => {
                   showRowCountFooter
                   totalRowCount={rows.length}
                   rowCountLabel="states"
-                  noDataMessage="No state data"
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="States" compact />
+                  }
                   gridOptions={{
                     domLayout: 'normal',
                     suppressCellFocus: true,

@@ -7,7 +7,6 @@ import { ListLayout } from 'components/ListLayout';
 import FilterBar from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import ListKpiBar from 'components/ListKpiBar';
-import UpgradePlanDialog from 'components/UpgradePlanDialog';
 import { useStore } from 'react-redux';
 import { useDispatch, useSelector } from 'store';
 import type { RootState } from 'store';
@@ -29,6 +28,7 @@ import {
 } from '../../components/VehicleCellRenderers';
 import { VehicleStatusCellRenderer } from '../../components/VehicleListPage/VehicleStatusCellRenderer';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 
 const OWNERSHIP_FILTER_OPTIONS = [
   { value: 'all' as const, label: 'All Vehicles' },
@@ -38,11 +38,10 @@ const OWNERSHIP_FILTER_OPTIONS = [
 
 const VehicleListPage = () => {
   const [activeTab, setActiveTab] = useState<VehicleTab>('all');
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [vehicleLimit, setVehicleLimit] = useState(0);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openDrawer } = useDrawerActions();
+  const { openModal } = useModalActions();
 
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.vehicles.hasLoadedOnce);
   const subscriptionUsage = useSelector(selectSubscriptionUsage);
@@ -74,13 +73,15 @@ const VehicleListPage = () => {
       subscriptionUsage &&
       subscriptionUsage.vehicles.current >= subscriptionUsage.vehicles.limit
     ) {
-      setVehicleLimit(subscriptionUsage.vehicles.limit);
-      setUpgradeOpen(true);
+      openModal('upgradePlan', {
+        resourceType: 'vehicles',
+        limit: subscriptionUsage.vehicles.limit,
+      });
       return;
     }
 
     openDrawer('vehicleCreate', { onClose: () => undefined });
-  }, [subscriptionUsage, openDrawer]);
+  }, [subscriptionUsage, openDrawer, openModal]);
 
   const handleRowClicked = useCallback(
     (params: { data: Vehicle }) => {
@@ -277,13 +278,6 @@ const VehicleListPage = () => {
           </MainCard>
         </Box>
       </ListLayout>
-
-      <UpgradePlanDialog
-        open={upgradeOpen}
-        onClose={() => setUpgradeOpen(false)}
-        resourceType="vehicles"
-        limit={vehicleLimit}
-      />
     </PageWrapper>
   );
 };

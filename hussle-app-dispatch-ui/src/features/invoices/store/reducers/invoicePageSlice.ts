@@ -38,9 +38,11 @@ export const approveInvoiceFailure = createAction<{ id: string; error: string }>
   'invoice/approveInvoiceFailure',
 );
 
-export const sendInvoiceRequest = createAction<{ id: string; recipientEmail: string }>(
-  'invoice/sendInvoiceRequest',
-);
+export const sendInvoiceRequest = createAction<{
+  id: string;
+  recipientEmail: string;
+  ccEmails?: string[];
+}>('invoice/sendInvoiceRequest');
 export const sendInvoiceSuccess = createAction<{ id: string }>('invoice/sendInvoiceSuccess');
 export const sendInvoiceFailure = createAction<{ id: string; error: string }>(
   'invoice/sendInvoiceFailure',

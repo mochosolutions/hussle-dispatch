@@ -165,6 +165,7 @@ export interface InvoiceLoadQueryPort {
       id: string;
       name: string;
       type: string;
+      billingMethod: string;
       dispatchFeeType: DispatchFeeType;
       dispatchFeePercent: unknown; // Decimal
       dispatchFeeAmount: unknown; // Decimal

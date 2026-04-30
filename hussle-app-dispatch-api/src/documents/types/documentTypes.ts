@@ -207,6 +207,7 @@ export interface CreateDocumentData {
   entityId: string;
   type: DocumentType;
   fileName: string;
+  fileSize?: number;
   mimeType: string;
   s3Key: string;
   url: string;
@@ -220,7 +221,11 @@ export interface DocumentRepoPort {
   create(data: CreateDocumentData): Promise<DocumentWithUploader>;
   findById(id: string, organizationId: string): Promise<DocumentWithUploader | null>;
   findManyByIds(ids: string[], organizationId: string): Promise<DocumentWithUploader[]>;
-  updateUploadStatus(id: string, status: string): Promise<DocumentWithUploader>;
+  updateUploadStatus(
+    id: string,
+    status: string,
+    fileSize?: number,
+  ): Promise<DocumentWithUploader>;
   archiveByEntityAndType(
     entityType: string,
     entityId: string,

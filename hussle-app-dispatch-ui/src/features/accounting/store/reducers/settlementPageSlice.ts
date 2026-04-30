@@ -20,23 +20,12 @@ export interface MissingEstimatedHoursLoad {
   loadNumber: string;
 }
 
-export interface MissingEstimatedHoursState {
-  loadIds: string[];
-  loads: MissingEstimatedHoursLoad[];
-  message: string;
-}
-
 export interface SettlementPageState extends CrudPageState {
   filters: SettlementFilters;
-  generateMissingHours: MissingEstimatedHoursState | null;
 }
 
-const settlementPageInitialExtras: Pick<
-  SettlementPageState,
-  'filters' | 'generateMissingHours'
-> = {
+const settlementPageInitialExtras: Pick<SettlementPageState, 'filters'> = {
   filters: {},
-  generateMissingHours: null,
 };
 
 export const settlementPageSlice = createCrudSlice({
@@ -68,23 +57,6 @@ export const settlementPageReducer = (
     return { ...state, filters: action.payload };
   }
 
-  if (generateSettlementErrorsReceived.match(action)) {
-    return { ...state, generateMissingHours: action.payload };
-  }
-
-  if (clearGenerateSettlementErrors.match(action)) {
-    return { ...state, generateMissingHours: null };
-  }
-
-  if (fetchSettlementsSuccess.match(action)) {
-    const nextCrud = crudReducer(state, action);
-    return {
-      ...nextCrud,
-      filters: state.filters,
-      generateMissingHours: state.generateMissingHours,
-    };
-  }
-
   const nextCrudState = crudReducer(state, action);
 
   if (nextCrudState === state) {
@@ -94,7 +66,6 @@ export const settlementPageReducer = (
   return {
     ...nextCrudState,
     filters: state.filters,
-    generateMissingHours: state.generateMissingHours,
   };
 };
 
@@ -177,15 +148,6 @@ export const downloadSettlementPdfSuccess = createAction<{ id: string }>(
 );
 export const downloadSettlementPdfFailure = createAction<{ id: string; error: string }>(
   'settlement/downloadSettlementPdfFailure',
-);
-
-export const generateSettlementErrorsReceived = createAction<{
-  loadIds: string[];
-  loads: MissingEstimatedHoursLoad[];
-  message: string;
-}>('settlement/generateSettlementErrorsReceived');
-export const clearGenerateSettlementErrors = createAction(
-  'settlement/clearGenerateSettlementErrors',
 );
 
 export const addAdjustmentRequest = createAction<{

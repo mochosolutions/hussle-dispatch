@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Box, Button } from '@mui/material';
 
 import { useSelector, useDispatch } from 'store';
 import MainCard from 'components/MainCard';
-import UpgradePlanDialog from 'components/UpgradePlanDialog';
 import { SectionTitle, BodyMuted } from 'components/Typography';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
@@ -23,15 +22,16 @@ const TeamTab = () => {
   const loading = teamState?.loading ?? {};
   const isLoading = loading.fetchTeam === 'Pending';
 
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-
   useEffect(() => {
     dispatch(fetchTeamRequest());
   }, [dispatch]);
 
   const handleInviteClick = () => {
     if (usage && usage.users.current >= usage.users.limit) {
-      setUpgradeOpen(true);
+      openModal('upgradePlan', {
+        resourceType: 'team members',
+        limit: usage.users.limit,
+      });
     } else {
       openModal('inviteMember', { organizationId: organizationId ?? '' });
     }
@@ -62,13 +62,6 @@ const TeamTab = () => {
           <InvitationTable invitations={invitations} />
         </MainCard>
       )}
-
-      <UpgradePlanDialog
-        open={upgradeOpen}
-        onClose={() => setUpgradeOpen(false)}
-        resourceType="team members"
-        limit={usage?.users.limit ?? 3}
-      />
     </Box>
   );
 };

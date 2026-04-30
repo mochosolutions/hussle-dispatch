@@ -17,6 +17,7 @@ jest.mock('components/Typography', () => ({
       <span>{value}</span>
     </div>
   ),
+  Meta: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
 interface LoadFixture {

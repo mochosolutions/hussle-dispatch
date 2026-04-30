@@ -63,24 +63,24 @@ export const menuItems: NavItemType[] = [
         url: '/places',
         icon: <MapPinCheckIcon size={24} />,
       },
-      // {
-      //   id: 'invoices',
-      //   title: 'Invoices',
-      //   type: 'item',
-      //   url: '/invoices',
-      //   icon: <FileText size={24} />,
-      // },
-      // {
-      //   id: 'accounting',
-      //   title: 'Accounting',
-      //   type: 'collapse',
-      //   icon: <Calculator size={24} />,
-      //   children: [
-      //     { id: 'settlements', title: 'Settlements', type: 'item', url: '/accounting/settlements' },
-      //     { id: 'ifta', title: 'IFTA', type: 'item', url: '/accounting/ifta' },
-      //     { id: 'expenses', title: 'Expenses', type: 'item', url: '/accounting/expenses' },
-      //   ],
-      // },
+      {
+        id: 'invoices',
+        title: 'Invoices',
+        type: 'item',
+        url: '/invoices',
+        icon: <FileText size={24} />,
+      },
+      {
+        id: 'accounting',
+        title: 'Accounting',
+        type: 'collapse',
+        icon: <Calculator size={24} />,
+        children: [
+          { id: 'settlements', title: 'Settlements', type: 'item', url: '/accounting/settlements' },
+          { id: 'ifta', title: 'IFTA', type: 'item', url: '/accounting/ifta' },
+          { id: 'expenses', title: 'Expenses', type: 'item', url: '/accounting/expenses' },
+        ],
+      },
       {
         id: 'settings',
         title: 'Settings',

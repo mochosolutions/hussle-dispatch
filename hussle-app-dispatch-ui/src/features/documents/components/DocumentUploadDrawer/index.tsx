@@ -7,6 +7,7 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
+import { enqueueSnackbar } from 'notistack';
 
 import { ErrorText, Meta, MetaStrong, SectionTitle } from 'components/Typography';
 import { CancelButton } from '@mocho/ui/components/form-fields';
@@ -16,6 +17,7 @@ import { EditDrawer } from 'components/EditDrawer';
 import { DocumentPicker } from 'components/DocumentPicker';
 import type { QueuedDocument } from 'components/DocumentPicker';
 import { useDispatch, useSelector } from 'store';
+import { validateUpload } from 'utils/documents/validateUpload';
 import { DOC_TYPE_CONFIG, DOC_CARD_CONFIGS, METADATA_FIELD_LABELS } from '../../constants';
 import type { DocumentContext } from '../../constants';
 import { uploadDocumentRequest, clearUploadStatus } from '../../store/reducers/documentPageSlice';
@@ -285,6 +287,14 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
 
   const handleAdd = useCallback(
     (doc: QueuedDocument) => {
+      // Pre-flight validation: MIME (JPEG/PNG/PDF only) + size (<= 10 MB).
+      // Reject before queueing so the user can pick a different file.
+      const validation = validateUpload(doc.file);
+      if (!validation.ok) {
+        enqueueSnackbar(validation.error.message, { variant: 'error' });
+        return;
+      }
+
       const config = DOC_TYPE_CONFIG[doc.documentType];
 
       // If compliance doc, show metadata form first

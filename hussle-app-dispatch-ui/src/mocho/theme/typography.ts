@@ -22,7 +22,7 @@ const Typography = (
   // Usage: Load numbers, invoice numbers, action bar amounts
   h1: {
     fontWeight:    800,
-    fontSize:      '1.25rem',    // 20px
+    fontSize:      '1.4375rem',  // 23px (+3 per D.5)
     lineHeight:    1,
     letterSpacing: '-0.02em',
   },
@@ -31,7 +31,7 @@ const Typography = (
   // Usage: "Dispatch Board", EditDrawer title, modal title
   h2: {
     fontWeight:    700,
-    fontSize:      '1.125rem',   // 18px
+    fontSize:      '1.3125rem',  // 21px (+3 per D.5)
     lineHeight:    1.2,
     letterSpacing: '-0.02em',
   },
@@ -40,7 +40,7 @@ const Typography = (
   // Usage: SectionCard titles, weekly gross fleet total
   h3: {
     fontWeight:    700,
-    fontSize:      '0.9375rem',  // 15px
+    fontSize:      '1.125rem',   // 18px (+3 per D.5)
     lineHeight:    1.3,
     letterSpacing: '-0.01em',
   },
@@ -48,18 +48,18 @@ const Typography = (
   // Not used for primary UI — kept for compatibility
   h4: {
     fontWeight: 600,
-    fontSize:   '0.875rem',    // 14px
+    fontSize:   '1.0625rem',     // 17px (+3 per D.5)
     lineHeight: 1.4,
   },
-  h5: { fontWeight: 600, fontSize: '0.8125rem', lineHeight: 1.5 },
-  h6: { fontWeight: 400, fontSize: '0.75rem',   lineHeight: 1.57 },
+  h5: { fontWeight: 600, fontSize: '1rem',       lineHeight: 1.5 },   // 16px
+  h6: { fontWeight: 400, fontSize: '0.9375rem',  lineHeight: 1.57 },  // 15px
 
   // BODY — default reading text
   // Usage: Table cells, detail row labels/values, nav items, KPI values,
   //        banner text, form field values
   body1: {
     fontWeight: 400,
-    fontSize:   '0.8125rem',   // 13px
+    fontSize:   '1rem',          // 16px (+3 per D.5)
     lineHeight: 1.5,
   },
 
@@ -68,7 +68,7 @@ const Typography = (
   //        broker refs, activity log timestamps
   body2: {
     fontWeight: 400,
-    fontSize:   '0.6875rem',   // 11px
+    fontSize:   '0.875rem',      // 14px (+3 per D.5)
     lineHeight: 1.4,
   },
 
@@ -77,7 +77,7 @@ const Typography = (
   //        card labels "STOPS", form field labels "MONTHLY PAYMENT"
   overline: {
     fontWeight:    700,
-    fontSize:      '0.625rem',   // 10px
+    fontSize:      '0.8125rem',  // 13px (+3 per D.5)
     lineHeight:    1,
     textTransform: 'uppercase',
     letterSpacing: '0.07em',
@@ -85,16 +85,16 @@ const Typography = (
 
   caption: {
     fontWeight: 400,
-    fontSize:   '0.625rem',    // 10px
+    fontSize:   '0.8125rem',     // 13px (+3 per D.5)
     lineHeight: 1.4,
   },
 
-  subtitle1: { fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.5 },
-  subtitle2: { fontSize: '0.75rem',   fontWeight: 500, lineHeight: 1.57 },
+  subtitle1: { fontSize: '1rem',       fontWeight: 600, lineHeight: 1.5 },   // 16px
+  subtitle2: { fontSize: '0.9375rem',  fontWeight: 500, lineHeight: 1.57 },  // 15px
 
   // BUTTON — never auto-capitalize
   button: {
-    fontSize:      '0.8125rem',  // 13px
+    fontSize:      '1rem',       // 16px (+3 per D.5)
     fontWeight:    600,
     textTransform: 'none',       // was 'capitalize' — CHANGED
     lineHeight:    1.75,

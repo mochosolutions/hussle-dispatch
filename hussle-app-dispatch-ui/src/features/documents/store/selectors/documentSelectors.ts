@@ -13,8 +13,14 @@ export const selectDocumentsByEntity = (entityType: DocumentEntityType, entityId
 export const selectDocumentsFetchLoading = (
   entityType: DocumentEntityType,
   entityId: string,
-) => (state: RootState) =>
-  state.pages.documents.loading[`fetch:${entityType}:${entityId}`] === 'Pending';
+) => (state: RootState) => {
+  // Treat `undefined` (never-fetched) as loading — matches the project rule
+  // for list-page loading selectors (CLAUDE.md "Loading selectors treat
+  // undefined as loading"). Without this, the empty-state branch can render
+  // before the initial fetch even starts.
+  const status = state.pages.documents.loading[`fetch:${entityType}:${entityId}`];
+  return status === undefined || status === 'Pending';
+};
 
 export const selectUploadLoading = (clientId: string) => (state: RootState) =>
   state.pages.documents.loading[`upload:${clientId}`] === 'Pending';

@@ -173,6 +173,15 @@ const InvoiceDetailPage = () => {
           <Button key="void" variant="outlined" size="small" color="warning" onClick={handleVoid}>
             Void
           </Button>,
+          <Button
+            key="delete"
+            variant="outlined"
+            size="small"
+            color="error"
+            onClick={handleOpenDelete}
+          >
+            Delete
+          </Button>,
         );
       }
 
@@ -202,7 +211,15 @@ const InvoiceDetailPage = () => {
 
       return <>{buttons}</>;
     },
-    [handlePreviewPdf, handleDownloadPacket, handleApprove, handleVoid, handleOpenSend, handleOpenMarkPaid],
+    [
+      handlePreviewPdf,
+      handleDownloadPacket,
+      handleApprove,
+      handleVoid,
+      handleOpenSend,
+      handleOpenMarkPaid,
+      handleOpenDelete,
+    ],
   );
 
   // ---------------------------------------------------------------------------

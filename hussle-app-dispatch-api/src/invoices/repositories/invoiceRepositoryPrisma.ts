@@ -235,6 +235,7 @@ export const invoiceLoadQueryPrisma = (
             id: true,
             name: true,
             type: true,
+            billingMethod: true,
             dispatchFeeType: true,
             dispatchFeePercent: true,
             dispatchFeeAmount: true,

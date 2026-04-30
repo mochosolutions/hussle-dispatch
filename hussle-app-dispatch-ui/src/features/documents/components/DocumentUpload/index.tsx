@@ -172,6 +172,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     try {
       const presignInput = {
         fileName: file.name,
+        fileSize: file.size,
         mimeType: file.type,
         type: selectedDocType,
         entityType,

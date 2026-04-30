@@ -11,11 +11,12 @@ import { invoiceActions } from '../reducers/invoiceEntitySlice';
 export function* sendInvoiceSaga(
   action: ReturnType<typeof sendInvoiceRequest>,
 ): Generator {
-  const { id, recipientEmail } = action.payload;
+  const { id, recipientEmail, ccEmails } = action.payload;
 
   try {
     const response = (yield call(sendInvoice, id, {
       recipientEmail,
+      ccEmails,
     })) as SagaReturnType<typeof sendInvoice>;
 
     yield put(invoiceActions.upsertOne(response));

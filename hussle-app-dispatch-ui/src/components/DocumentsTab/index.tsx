@@ -37,7 +37,11 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ entityType, entityId, canUp
           </Button>
         </Box>
       )}
-      <DocumentTable entityType={entityType} entityId={entityId} />
+      <DocumentTable
+        entityType={entityType}
+        entityId={entityId}
+        onUpload={canUpload ? handleUploadClick : undefined}
+      />
     </Box>
   );
 };

@@ -83,8 +83,6 @@ export { default as Loadable } from './Loadable';
 export { default as ScrollX } from './ScrollX';
 
 // Third-party Wrappers
-export { default as Notistack } from './third-party/Notistack';
-export type { NotistackProps } from './third-party/Notistack';
 export { default as SimpleBar } from './third-party/SimpleBar';
 export { FormattedMessage } from './third-party/FormattedMessage';
 

@@ -186,6 +186,7 @@ describe('createDocumentService', () => {
       const confirmedDoc = makeDocument({ uploadStatus: UPLOAD_STATUS.CONFIRMED });
       deps.documentRepository.findById.mockResolvedValue(doc);
       deps.storageProvider.exists.mockResolvedValue(true);
+      deps.storageProvider.getMetadata.mockResolvedValue({ size: 4096 });
       deps.documentRepository.updateUploadStatus.mockResolvedValue(confirmedDoc);
 
       // Act
@@ -193,9 +194,11 @@ describe('createDocumentService', () => {
 
       // Assert
       expect(deps.storageProvider.exists).toHaveBeenCalledWith(doc.s3Key);
+      expect(deps.storageProvider.getMetadata).toHaveBeenCalledWith(doc.s3Key);
       expect(deps.documentRepository.updateUploadStatus).toHaveBeenCalledWith(
         'doc-1',
         UPLOAD_STATUS.CONFIRMED,
+        4096,
       );
       expect(deps.eventBus.publish).toHaveBeenCalledWith('document.confirmed', {
         documentId: 'doc-1',

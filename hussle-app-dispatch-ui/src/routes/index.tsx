@@ -35,8 +35,8 @@ export const routes: RouteObject[] = [
       ContactRoutes,
       CustomerRoutes,
       SettingsRoutes,
-      // InvoiceRoutes,
-      // AccountingRoutes,
+      InvoiceRoutes,
+      AccountingRoutes,
       {
         path: '*',
         element: <ErrorPage />,

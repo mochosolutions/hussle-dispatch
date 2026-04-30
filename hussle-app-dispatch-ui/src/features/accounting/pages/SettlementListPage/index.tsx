@@ -3,8 +3,10 @@ import type { ColDef, RowClickedEvent } from 'ag-grid-community';
 import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
+import { useStore } from 'react-redux';
 import { NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import { ActionsCell } from 'mocho/components/DataGrid';
+import { EmptyState } from 'mocho/components/EmptyState';
 import { ListLayout } from 'components/ListLayout';
 import MainCard from 'components/MainCard';
 import ListKpiBar from 'components/ListKpiBar';
@@ -12,22 +14,25 @@ import { FilterBar } from 'components/FilterBar';
 import { StatusCell } from 'components/Statusbadge';
 import { Amount, Body } from 'components/Typography';
 import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
 import {
   fetchSettlementsRequest,
   setSettlementFilters,
 } from '../../store/reducers/settlementPageSlice';
 import {
-  selectAllSettlements,
-  selectSettlementListLoading,
+  selectFilteredSettlements,
   selectSettlementFilters,
+  selectSettlementKpis,
 } from '../../store/selectors/settlementSelectors';
 import type { SettlementListItem } from '../../types';
-import { MissingEstimatedHoursDialog } from '../../components/MissingEstimatedHoursDialog';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+
+const PAGE_LIMIT = 25;
 
 const STATUS_OPTIONS = [
   { value: 'ALL', label: 'All Statuses' },
@@ -48,20 +53,27 @@ const SettlementListPage = () => {
   const navigate = useNavigate();
   const { openModal } = useModalActions();
 
-  const isLoading = useSelector(selectSettlementListLoading);
-  const settlements = useSelector(selectAllSettlements);
+  const settlements = useSelector(selectFilteredSettlements);
+  const kpiItems = useSelector(selectSettlementKpis);
   const filters = useSelector(selectSettlementFilters);
+  const hasLoadedOnce = useSelector(
+    (state: RootState) => state.pages.settlements.hasLoadedOnce,
+  );
+  const store = useStore<RootState>();
 
   useEffect(() => {
-    dispatch(fetchSettlementsRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.settlements;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchSettlementsRequest({ page: 1, limit: PAGE_LIMIT }));
+    }
+  }, [dispatch, store]);
 
   const handleStatusChange = useCallback(
     (value: string) => {
       const status = value === 'ALL' ? undefined : value;
       const nextFilters = { ...filters, status };
       dispatch(setSettlementFilters(nextFilters));
-      dispatch(fetchSettlementsRequest({ page: 1, limit: 25, ...nextFilters }));
+      dispatch(fetchSettlementsRequest({ page: 1, limit: PAGE_LIMIT, ...nextFilters }));
     },
     [dispatch, filters],
   );
@@ -190,35 +202,6 @@ const SettlementListPage = () => {
     [],
   );
 
-  const totalAmount = useMemo(
-    () =>
-      settlements.reduce((sum, s) => sum + parseFloat(s.netEarnings ?? '0'), 0),
-    [settlements],
-  );
-
-  const pendingCount = useMemo(
-    () => settlements.filter((s) => s.status === 'DRAFT').length,
-    [settlements],
-  );
-
-  const approvedCount = useMemo(
-    () => settlements.filter((s) => s.status === 'APPROVED').length,
-    [settlements],
-  );
-
-  const kpiItems = useMemo(
-    () => [
-      { label: 'Total Settlements', value: settlements.length },
-      { label: 'Pending', value: pendingCount },
-      { label: 'Approved', value: approvedCount },
-      {
-        label: 'Total Amount',
-        value: `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      },
-    ],
-    [settlements.length, pendingCount, approvedCount, totalAmount],
-  );
-
   return (
     <PageWrapper errorContext="SettlementListPage" sx={{ gap: 2 }}>
       <ListLayout
@@ -233,7 +216,11 @@ const SettlementListPage = () => {
           </Button>
         }
       >
-        <ListKpiBar items={kpiItems} sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }} />
+        <ListKpiBar
+          items={kpiItems}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
         <Box
           sx={{
@@ -254,7 +241,7 @@ const SettlementListPage = () => {
             </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-              <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
+              <Box sx={{ flex: 1, minHeight: { xs: 300, md: 420 } }}>
                 <NewDataGrid
                   columnDefs={columnDefs}
                   rowData={settlements}
@@ -262,24 +249,25 @@ const SettlementListPage = () => {
                   showRowCountFooter
                   totalRowCount={settlements.length}
                   rowCountLabel="settlements"
-                  noDataMessage="No settlements found"
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="Settlements" compact />
+                  }
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,
-                    paginationPageSize: 25,
+                    paginationPageSize: PAGE_LIMIT,
                     suppressCellFocus: true,
                     headerHeight: 44,
                     rowHeight: 56,
                     onRowClicked: handleRowClicked,
                   }}
-                  loading={isLoading}
+                  loading={!hasLoadedOnce}
                 />
               </Box>
             </Box>
           </MainCard>
         </Box>
       </ListLayout>
-      <MissingEstimatedHoursDialog />
     </PageWrapper>
   );
 };

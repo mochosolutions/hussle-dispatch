@@ -25,6 +25,7 @@ function* uploadQueuedDocuments(loadId: string, documents: QueuedDocument[]) {
     try {
       const { presign } = (yield call(presignDocument, {
         fileName: doc.file.name,
+        fileSize: doc.file.size,
         mimeType: doc.file.type,
         type: doc.documentType,
         entityType: 'load' as const,

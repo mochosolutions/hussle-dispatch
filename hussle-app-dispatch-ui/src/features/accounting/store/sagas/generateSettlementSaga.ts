@@ -3,11 +3,11 @@ import { enqueueSnackbar } from 'notistack';
 import axios from 'axios';
 import { getNavigate } from 'utils/getNavigate';
 import { generateSettlement } from 'utils/api/accounting/settlementApi';
+import { openModal } from 'features/ui/store/reducers/uiSlice';
 import {
   generateSettlementRequest,
   generateSettlementSuccess,
   generateSettlementFailure,
-  generateSettlementErrorsReceived,
 } from '../reducers/settlementPageSlice';
 import { settlementActions } from '../reducers/settlementEntitySlice';
 
@@ -62,7 +62,12 @@ export function* generateSettlementSaga(
   } catch (error: unknown) {
     const missing = extractMissingEstimatedHours(error);
     if (missing) {
-      yield put(generateSettlementErrorsReceived(missing));
+      yield put(
+        openModal({
+          modalType: 'missingEstimatedHours',
+          modalProps: missing,
+        }),
+      );
       yield put(generateSettlementFailure({ error: missing.message }));
       return;
     }

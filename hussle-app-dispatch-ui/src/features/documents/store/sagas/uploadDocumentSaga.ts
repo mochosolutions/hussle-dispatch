@@ -30,9 +30,11 @@ export function* uploadDocumentSaga(
     action.payload;
 
   try {
-    // 1. Get presigned URL
+    // 1. Get presigned URL. fileSize is sent as a UX hint — the backend
+    // re-validates against S3's authoritative size during confirm.
     const presignResult = (yield call(presignDocument, {
       fileName: file.name,
+      fileSize: file.size,
       mimeType: file.type,
       type: documentType,
       entityType,

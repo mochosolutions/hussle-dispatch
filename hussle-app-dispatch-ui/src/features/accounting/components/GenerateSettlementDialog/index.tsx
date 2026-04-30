@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import {
   Button,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Stack,
 } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import type { InferType } from 'yup';
@@ -89,16 +89,14 @@ export const GenerateSettlementDialog: React.FC<GenerateSettlementDialogProps> =
               <Button onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button
+              <LoadingButton
                 type="submit"
                 variant="contained"
-                disabled={!formik.isValid || !formik.dirty || isSubmitting}
-                startIcon={
-                  isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined
-                }
+                loading={isSubmitting}
+                disabled={!formik.isValid || !formik.dirty}
               >
                 {isSubmitting ? 'Generating...' : 'Generate'}
-              </Button>
+              </LoadingButton>
             </DialogActions>
           </Form>
         )}

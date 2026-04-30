@@ -609,6 +609,7 @@ describe('initializeReadinessSubscriber', () => {
             id: 'carrier-1',
             name: 'Acme Carrier',
             type: carrierOverrides.type ?? 'EXTERNAL_CARRIER',
+            billingMethod: carrierOverrides.billingMethod ?? 'DIRECT',
             dispatchFeeType: 'PERCENTAGE',
             dispatchFeePercent: '10',
             dispatchFeeAmount: '0',
@@ -938,6 +939,38 @@ describe('initializeReadinessSubscriber', () => {
       const invoiceIds = emailCalls.map((call) => call[0].invoiceId);
       expect(invoiceIds).toContain('inv-fee-1');
       expect(invoiceIds).not.toContain('inv-cust-1');
+    });
+
+    it('creates DISPATCH_FEE invoice but skips auto-send when carrier billingMethod is FACTORED', async () => {
+      // Arrange
+      const handlers = await initAndExtract();
+      setupReady({ type: 'EXTERNAL_CARRIER', billingMethod: 'FACTORED' });
+      deps.invoiceBuilderService.createFromLoadWithFee.mockResolvedValue({
+        invoice: { id: 'inv-1' } as never,
+        dispatchFeeAmount: new Decimal('480'),
+      });
+      deps.invoiceRepo.create.mockResolvedValue({ id: 'inv-fee-1' } as never);
+
+      // Act
+      await handlers.loadDelivered({
+        loadId: 'load-1',
+        organizationId: 'org-1',
+        status: 'DELIVERED',
+      });
+
+      // Assert — DISPATCH_FEE invoice is still created (DRAFT default)…
+      expect(deps.invoiceRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'DISPATCH_FEE',
+          carrierId: 'carrier-1',
+        }),
+      );
+      // …but the auto-send is skipped — no DISPATCH_FEE email goes out
+      const dispatchFeeEmailCalls =
+        deps.invoiceEmailService.sendInvoiceEmail.mock.calls.filter(
+          (call) => call[0].invoiceId === 'inv-fee-1',
+        );
+      expect(dispatchFeeEmailCalls).toHaveLength(0);
     });
 
     it('does not create DISPATCH_FEE invoice for TONU event', async () => {
