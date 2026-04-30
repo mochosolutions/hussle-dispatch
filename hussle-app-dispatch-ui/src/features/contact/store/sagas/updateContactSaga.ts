@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updateContact } from 'utils/api/fleet/contactApi';
 import type { UpdateContactInput } from '../../types';
 import {
@@ -25,10 +25,10 @@ export function* updateContactSaga(
     yield put(contactActions.upsertOne(response));
     yield put(updateContactSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Contact updated', { variant: 'success' });
+    yield put(notify({ message: 'Contact updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update contact';
     yield put(updateContactFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

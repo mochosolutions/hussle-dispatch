@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getSettlements } from 'utils/api/accounting/settlementApi';
 import {
   fetchSettlementsSuccess,
@@ -36,6 +36,6 @@ export function* fetchSettlementsSaga(action: PayloadAction<FetchSettlementsPayl
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load settlements';
     yield put(fetchSettlementsFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

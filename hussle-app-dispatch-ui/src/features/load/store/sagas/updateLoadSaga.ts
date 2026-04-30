@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { updateLoad } from 'utils/api/loads/loadApi';
 import type { UpdateLoadInput } from '../../types';
@@ -24,7 +24,7 @@ export function* updateLoadSaga(
     yield put(loadActions.upsertOne(load));
     yield put(updateLoadSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Load updated', { variant: 'success' });
+    yield put(notify({ message: 'Load updated', variant: 'success' }));
   } catch (error: unknown) {
     // Parse structured blocker errors from assignment validation (422)
     if (isAxiosError(error) && error.response?.status === 422) {
@@ -34,13 +34,13 @@ export function* updateLoadSaga(
           .map((b: { message: string }) => b.message)
           .join('\n');
         yield put(updateLoadFailure({ error: blockerMessages }));
-        yield call(enqueueSnackbar, blockerMessages, { variant: 'error' });
+        yield put(notify({ message: blockerMessages, variant: 'error' }));
         return;
       }
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to update load';
     yield put(updateLoadFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createConfirmationHook } from './createConfirmationHook';
 import type {
@@ -137,7 +137,7 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         successMessage = parts.join('. ');
       }
 
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterDelete hook with deleteResult for cascade state synchronization
       if (hooks?.afterDelete) {
@@ -174,7 +174,7 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         yield put(actions.deleteFailure({ error: errorMessage, id }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

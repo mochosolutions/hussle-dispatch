@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createCustomer } from 'utils/api/fleet/customerApi';
 import {
@@ -23,7 +23,7 @@ export function* createCustomerSaga(
     yield put(customerActions.addOne(response.customer));
     yield put(createCustomerSuccess({}));
 
-    yield call(enqueueSnackbar, 'Customer created', { variant: 'success' });
+    yield put(notify({ message: 'Customer created', variant: 'success' }));
 
     const { redirectTo, onCreated } = action.payload;
     if (onCreated) {
@@ -38,6 +38,6 @@ export function* createCustomerSaga(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create customer';
     yield put(createCustomerFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

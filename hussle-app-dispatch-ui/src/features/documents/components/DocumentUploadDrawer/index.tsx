@@ -7,9 +7,8 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
-import { enqueueSnackbar } from 'notistack';
-
 import { ErrorText, Meta, MetaStrong, SectionTitle } from 'components/Typography';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { CancelButton } from '@mocho/ui/components/form-fields';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -291,7 +290,7 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
       // Reject before queueing so the user can pick a different file.
       const validation = validateUpload(doc.file);
       if (!validation.ok) {
-        enqueueSnackbar(validation.error.message, { variant: 'error' });
+        dispatch(notify({ message: validation.error.message, variant: 'error' }));
         return;
       }
 
@@ -312,7 +311,7 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
       // Non-compliance: upload immediately
       dispatchUpload(doc.file, doc.documentType, doc.clientId);
     },
-    [dispatchUpload],
+    [dispatchUpload, dispatch],
   );
 
   const handleComplianceSubmit = useCallback(

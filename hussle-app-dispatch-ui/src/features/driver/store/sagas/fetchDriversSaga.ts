@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getDrivers } from 'utils/api/fleet/driverApi';
 import {
   fetchDriversRequest,
@@ -28,6 +28,6 @@ export function* fetchDriversSaga(action: FetchDriversAction): Generator {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load drivers';
     yield put(fetchDriversFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

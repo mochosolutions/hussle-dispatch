@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updateVehicle } from 'utils/api/fleet/vehicleApi';
 import type { UpdateVehicleInput } from 'features/carrier/types';
 import {
@@ -25,10 +25,10 @@ export function* updateVehicleSaga(
     yield put(vehicleActions.upsertOne(response));
     yield put(updateVehicleSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Vehicle updated', { variant: 'success' });
+    yield put(notify({ message: 'Vehicle updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update vehicle';
     yield put(updateVehicleFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

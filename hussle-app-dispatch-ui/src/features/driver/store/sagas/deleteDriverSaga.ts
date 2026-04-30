@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { deleteDriver } from 'utils/api/fleet/driverApi';
 import {
@@ -20,7 +20,7 @@ export function* deleteDriverSaga(action: DeleteDriverAction): Generator {
     yield put(driverActions.removeOne(id));
     yield put(deleteDriverSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Driver deleted', { variant: 'success' });
+    yield put(notify({ message: 'Driver deleted', variant: 'success' }));
   } catch (error: unknown) {
     let errorMessage: string;
 
@@ -30,7 +30,7 @@ export function* deleteDriverSaga(action: DeleteDriverAction): Generator {
       errorMessage = error instanceof Error ? error.message : 'Failed to delete driver';
     }
 
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
     yield put(deleteDriverFailure({ error: errorMessage, id }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from '../../utils/getNavigate';
 import { createConfirmationHook } from './createConfirmationHook';
 import type {
@@ -128,7 +128,7 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
       const successMessage =
         messages?.deleteManySuccess ||
         `Successfully deleted ${result.deleted} ${result.deleted === 1 ? entityName.toLowerCase() : entityNamePlural.toLowerCase()}`;
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterDeleteMany hook
       if (hooks?.afterDeleteMany) {
@@ -165,7 +165,7 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
         yield put(bulkActions.deleteManyFailure({ error: errorMessage }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

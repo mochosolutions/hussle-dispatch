@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { deleteAccessorial } from 'utils/api/loads/accessorialApi';
 import {
   deleteAccessorialRequest,
@@ -17,11 +17,11 @@ export function* deleteAccessorialSaga(
     yield call(deleteAccessorial, accessorialId);
     yield put(deleteAccessorialSuccess({ loadId }));
     yield put(fetchLoadDetailsRequest({ id: loadId }));
-    yield call(enqueueSnackbar, 'Accessorial charge removed', { variant: 'success' });
+    yield put(notify({ message: 'Accessorial charge removed', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to remove accessorial charge';
     yield put(deleteAccessorialFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

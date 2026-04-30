@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { disputeSettlement } from 'utils/api/accounting/settlementApi';
 import {
   disputeSettlementRequest,
@@ -22,11 +22,11 @@ export function* disputeSettlementSaga(
 
     yield put(settlementActions.upsertOne(response));
     yield put(disputeSettlementSuccess({ id }));
-    yield call(enqueueSnackbar, 'Settlement disputed', { variant: 'success' });
+    yield put(notify({ message: 'Settlement disputed', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to dispute settlement';
     yield put(disputeSettlementFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

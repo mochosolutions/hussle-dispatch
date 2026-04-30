@@ -19,7 +19,8 @@ import { getIn } from 'formik';
 import type { FormikProps } from 'formik';
 import { FormDrawer } from 'mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
-import { enqueueSnackbar } from 'notistack';
+import { useDispatch } from 'store';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { bulkUpsertLoadNotificationOverrides } from 'utils/api/notifications/notificationApi';
 import type {
   NotificationOverride,
@@ -286,6 +287,8 @@ export const NotificationOverrideDrawer: React.FC<NotificationOverrideDrawerProp
   onClose,
   onSave,
 }) => {
+  const dispatch = useDispatch();
+
   const initialValues = useMemo(
     () => buildInitialValues(overrides, customerSettings),
     [overrides, customerSettings],
@@ -295,10 +298,10 @@ export const NotificationOverrideDrawer: React.FC<NotificationOverrideDrawerProp
     async (values: NotificationOverrideFormValues) => {
       const inputs = formValuesToInputs(values);
       await bulkUpsertLoadNotificationOverrides(loadId, inputs);
-      enqueueSnackbar('Notification settings updated', { variant: 'success' });
+      dispatch(notify({ message: 'Notification settings updated', variant: 'success' }));
       onSave?.();
     },
-    [loadId, onSave],
+    [loadId, onSave, dispatch],
   );
 
   return (

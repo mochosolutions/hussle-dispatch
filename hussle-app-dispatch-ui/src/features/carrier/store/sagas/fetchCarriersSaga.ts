@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getCarriers } from 'utils/api/fleet/carrierApi';
 import { fetchCarriersSuccess, fetchCarriersFailure } from '../reducers/carrierNewPageSlice';
 import { carrierActions } from '../reducers/carrierEntitySlice';
@@ -29,6 +29,6 @@ export function* fetchCarriersSaga(action: PayloadAction<FetchCarriersPayload>):
   } catch (error: unknown) {
     const errorMessage = 'Unable to load carriers. Please try again.';
     yield put(fetchCarriersFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

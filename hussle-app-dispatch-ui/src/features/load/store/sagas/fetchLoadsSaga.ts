@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getLoads } from 'utils/api/loads/loadApi';
 import {
   fetchLoadsSuccess,
@@ -37,6 +37,6 @@ export function* fetchLoadsSaga(action: PayloadAction<FetchLoadsPayload>): Gener
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load loads';
     yield put(fetchLoadsFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

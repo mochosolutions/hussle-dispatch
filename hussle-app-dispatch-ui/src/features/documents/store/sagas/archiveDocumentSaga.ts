@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { archiveDocument } from 'utils/api/documents/documentApi';
 import { documentActions } from '../reducers/documentEntitySlice';
 import {
@@ -20,11 +20,11 @@ export function* archiveDocumentSaga(
     yield call(archiveDocument, documentId);
     yield put(documentActions.removeOne(documentId));
     yield put(archiveDocumentSuccess({ documentId }));
-    yield call(enqueueSnackbar, 'Document deleted', { variant: 'success' });
+    yield put(notify({ message: 'Document deleted', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to delete document';
     yield put(archiveDocumentFailure({ documentId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

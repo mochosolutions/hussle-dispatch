@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { bookChain } from 'utils/api/intel/loadIntelApi';
 import type { BookChainResult } from '../../types';
@@ -13,7 +13,7 @@ export function* bookChainSaga(action: PayloadAction<{ id: string }>): Generator
 
     yield put(bookChainSuccess(result));
 
-    yield call(enqueueSnackbar, 'Chain booked - creating outbound load', { variant: 'success' });
+    yield put(notify({ message: 'Chain booked - creating outbound load', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (
       path: string,
@@ -30,6 +30,6 @@ export function* bookChainSaga(action: PayloadAction<{ id: string }>): Generator
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to book chain';
     yield put(bookChainFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

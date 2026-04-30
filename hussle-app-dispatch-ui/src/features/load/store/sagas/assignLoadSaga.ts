@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { assignLoad } from 'utils/api/loads/loadApi';
 import {
@@ -16,10 +16,8 @@ export function* assignLoadSaga(action: ReturnType<typeof assignLoadRequest>): G
   try {
     const response = (yield call(assignLoad, loadId, data)) as SagaReturnType<typeof assignLoad>;
 
-    if (response.warnings.length > 0) {
-      response.warnings.forEach((warning) => {
-        enqueueSnackbar(warning.message, { variant: 'warning' });
-      });
+    for (const warning of response.warnings) {
+      yield put(notify({ message: warning.message, variant: 'warning' }));
     }
 
     const { load } = response;
@@ -27,7 +25,7 @@ export function* assignLoadSaga(action: ReturnType<typeof assignLoadRequest>): G
     yield put(loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(load) }));
     yield put(loadActions.upsertOne(load));
     yield put(assignLoadSuccess({ loadId }));
-    yield call(enqueueSnackbar, 'Assignment updated', { variant: 'success' });
+    yield put(notify({ message: 'Assignment updated', variant: 'success' }));
   } catch (error: unknown) {
     if (isAxiosError(error) && error.response?.status === 422) {
       const blockers = error.response.data?.blockers;
@@ -36,13 +34,13 @@ export function* assignLoadSaga(action: ReturnType<typeof assignLoadRequest>): G
           .map((b: { message: string }) => b.message)
           .join('\n');
         yield put(assignLoadFailure({ loadId, error: blockerMessages }));
-        yield call(enqueueSnackbar, blockerMessages, { variant: 'error' });
+        yield put(notify({ message: blockerMessages, variant: 'error' }));
         return;
       }
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to update assignment';
     yield put(assignLoadFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

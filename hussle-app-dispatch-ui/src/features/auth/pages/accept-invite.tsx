@@ -12,8 +12,9 @@ import {
 } from '@mui/material';
 import { BodyMuted, SectionTitle } from 'components/Typography';
 import { AccessTime, ErrorOutline } from '@mui/icons-material';
-import { enqueueSnackbar } from 'notistack';
 import { Link } from 'react-router-dom';
+import { useDispatch } from 'store';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 
 import AuthWrapper from 'features/auth/sections/AuthWrapper';
 import AuthFormWrapper from 'features/auth/sections/AuthFormWrapper';
@@ -47,6 +48,7 @@ const acceptInviteSchema = Yup.object({
 const AcceptInvitePage = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [status, setStatus] = useState<VerifyStatus>('loading');
   const [invitation, setInvitation] = useState<InvitationVerification | null>(null);
@@ -100,7 +102,7 @@ const AcceptInvitePage = () => {
           organizationId: invitation.organizationId,
         });
 
-        enqueueSnackbar('Invitation accepted! Please log in.', { variant: 'success' });
+        dispatch(notify({ message: 'Invitation accepted! Please log in.', variant: 'success' }));
         navigate('/login');
       } catch (error: unknown) {
         const message =

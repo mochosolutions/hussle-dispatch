@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { reorderStops } from 'utils/api/loads/stopApi';
 import {
   reorderStopsRequest,
@@ -18,6 +18,6 @@ export function* reorderStopsSaga(action: ReturnType<typeof reorderStopsRequest>
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to reorder stops';
     yield put(reorderStopsFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

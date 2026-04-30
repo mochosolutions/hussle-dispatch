@@ -1,12 +1,19 @@
 import React from 'react';
 import { Box, Stack } from '@mui/material';
 import * as Yup from 'yup';
-import { TextField, SelectField, DateField, CurrencyField, NumericField, StateField } from '@mocho/ui/components';
+import {
+  TextField,
+  SelectField,
+  DateField,
+  CurrencyField,
+  NumericField,
+  StateField,
+} from '@mocho/ui/components';
+import type { FormikProps } from 'formik';
+import { useDispatch } from 'store';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { DrawerSection } from 'components/EditDrawer';
-import { createExpense } from 'utils/api/accounting/expenseApi';
-import { enqueueSnackbar } from 'notistack';
-import type { FormikProps } from 'formik';
+import { createExpenseRequest } from '../../store/reducers/expensePageSlice';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -66,7 +73,6 @@ const todayString = (): string => new Date().toISOString().split('T')[0];
 interface ExpenseQuickAddDrawerProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
 }
 
 const FuelFields: React.FC<{ formik: FormikProps<ExpenseFormValues> }> = ({ formik }) => {
@@ -108,8 +114,9 @@ const FuelFields: React.FC<{ formik: FormikProps<ExpenseFormValues> }> = ({ form
 export const ExpenseQuickAddDrawer: React.FC<ExpenseQuickAddDrawerProps> = ({
   open,
   onClose,
-  onSuccess,
 }) => {
+  const dispatch = useDispatch();
+
   const initialValues: ExpenseFormValues = {
     category: '',
     amount: undefined as unknown as number,
@@ -122,9 +129,9 @@ export const ExpenseQuickAddDrawer: React.FC<ExpenseQuickAddDrawerProps> = ({
     fuelType: 'DIESEL',
   };
 
-  const handleSubmit = async (values: ExpenseFormValues) => {
-    try {
-      await createExpense({
+  const handleSubmit = (values: ExpenseFormValues): void => {
+    dispatch(
+      createExpenseRequest({
         category: values.category,
         amount: values.amount,
         date: values.date,
@@ -134,14 +141,8 @@ export const ExpenseQuickAddDrawer: React.FC<ExpenseQuickAddDrawerProps> = ({
         state: values.state ?? undefined,
         pricePerGallon: values.pricePerGallon ?? undefined,
         fuelType: values.fuelType ?? undefined,
-      });
-      enqueueSnackbar('Expense created', { variant: 'success' });
-      onSuccess();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to create expense';
-      enqueueSnackbar(message, { variant: 'error' });
-      throw error;
-    }
+      }),
+    );
   };
 
   return (

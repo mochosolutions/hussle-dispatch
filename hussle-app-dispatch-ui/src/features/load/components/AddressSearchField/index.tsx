@@ -4,7 +4,8 @@ import { Box, Button, Grid } from '@mui/material';
 import { FieldLabel, Meta } from 'components/Typography';
 import BookmarkBorderOutlined from '@mui/icons-material/BookmarkBorderOutlined';
 import type { FormikProps } from 'formik';
-import { enqueueSnackbar } from 'notistack';
+import { useDispatch } from 'store';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { createPlace } from 'utils/api/places/placeApi';
 import type { AddressSearchResult } from 'features/place/types';
 import { AddressTypeahead } from 'components/AddressTypeahead';
@@ -34,6 +35,7 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
   const hasSelection = Boolean(stop?.facilityName || stop?.placeId);
   const isExternalSelection = hasSelection && !stop?.placeId;
 
+  const dispatch = useDispatch();
   const [savingPlace, setSavingPlace] = useState(false);
 
   const handleSelect = useCallback(
@@ -106,13 +108,13 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
         longitude: stop.lng,
       });
       void formik.setFieldValue(`${prefix}.placeId`, place.id);
-      enqueueSnackbar('Place saved successfully', { variant: 'success' });
+      dispatch(notify({ message: 'Place saved successfully', variant: 'success' }));
     } catch {
-      enqueueSnackbar('Failed to save place', { variant: 'error' });
+      dispatch(notify({ message: 'Failed to save place', variant: 'error' }));
     } finally {
       setSavingPlace(false);
     }
-  }, [stop, formik, prefix]);
+  }, [stop, formik, prefix, dispatch]);
 
   const displayValue = stop ? formatDisplayValue(stop) : '';
 

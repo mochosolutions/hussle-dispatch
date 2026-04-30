@@ -15,8 +15,9 @@ jest.mock('features/ui/hooks/useDrawerActions', () => ({
   }),
 }));
 
-jest.mock('notistack', () => ({
-  enqueueSnackbar: jest.fn(),
+jest.mock('store', () => ({
+  useDispatch: () => jest.fn(),
+  useSelector: jest.fn(),
 }));
 
 const { searchAddresses } = jest.requireMock('utils/api/places/placeApi') as {

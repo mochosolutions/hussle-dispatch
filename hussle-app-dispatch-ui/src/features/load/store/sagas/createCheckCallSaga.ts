@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { createCheckCall } from 'utils/api/loads/loadApi';
 import {
   createCheckCallRequest,
@@ -18,10 +18,10 @@ export function* createCheckCallSaga(
 
     yield put(createCheckCallSuccess({ loadId }));
     yield put(fetchLoadDetailsRequest({ id: loadId }));
-    yield call(enqueueSnackbar, 'Check call created', { variant: 'success' });
+    yield put(notify({ message: 'Check call created', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create check call';
     yield put(createCheckCallFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

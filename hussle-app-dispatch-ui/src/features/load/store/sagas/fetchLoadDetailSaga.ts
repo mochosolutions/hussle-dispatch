@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getLoad } from 'utils/api/loads/loadApi';
 import {
   fetchLoadDetailsRequest,
@@ -25,6 +25,6 @@ export function* fetchLoadDetailSaga(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load load details';
     yield put(fetchLoadDetailsFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

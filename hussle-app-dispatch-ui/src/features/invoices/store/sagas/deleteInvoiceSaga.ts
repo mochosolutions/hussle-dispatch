@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { deleteInvoice } from 'utils/api/invoices/invoiceApi';
 import {
@@ -19,13 +19,13 @@ export function* deleteInvoiceSaga(
 
     yield put(invoiceActions.removeOne(id));
     yield put(deleteInvoiceSuccess({ id }));
-    yield call(enqueueSnackbar, 'Invoice deleted', { variant: 'success' });
+    yield put(notify({ message: 'Invoice deleted', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, '/invoices');
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to delete invoice';
     yield put(deleteInvoiceFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

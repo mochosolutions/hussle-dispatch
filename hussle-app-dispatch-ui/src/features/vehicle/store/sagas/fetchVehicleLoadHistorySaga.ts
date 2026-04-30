@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getVehicleLoads } from 'utils/api/fleet/vehicleApi';
 import {
   fetchVehicleLoadHistorySuccess,
@@ -23,6 +23,6 @@ export function* fetchVehicleLoadHistorySaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load vehicle load history';
     yield put(fetchVehicleLoadHistoryFailure({ vehicleId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

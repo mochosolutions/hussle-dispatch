@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getSettlement } from 'utils/api/accounting/settlementApi';
 import {
   fetchSettlementDetailRequest,
@@ -22,6 +22,6 @@ export function* fetchSettlementDetailSaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load settlement details';
     yield put(fetchSettlementDetailFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

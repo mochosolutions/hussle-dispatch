@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Grid,
@@ -9,16 +9,25 @@ import {
   TextField,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
+import { useStore } from 'react-redux';
 import { MainCard, NewDataGrid } from '@mocho/ui/components';
 import { EmptyState } from 'mocho/components/EmptyState';
 import { ListLayout } from 'components/ListLayout';
 import { Body, BodyMuted, ErrorText, SectionTitle } from 'components/Typography';
-import { getIftaReport } from 'utils/api/accounting/iftaApi';
-import type {
-  IftaReportResponse,
-  IftaStateEntry,
-  IftaVehicleEntry,
-} from '../../types';
+import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
+import {
+  fetchIftaReportRequest,
+  setIftaFilters,
+} from '../../store/reducers/iftaPageSlice';
+import {
+  selectIftaError,
+  selectIftaFilters,
+  selectIftaLoading,
+  selectIftaReport,
+} from '../../store/selectors/iftaSelectors';
+import type { IftaStateEntry, IftaVehicleEntry } from '../../types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -132,46 +141,50 @@ const CurrencyCellRenderer = ({ value }: { value: number }) => (
 // Component
 // ---------------------------------------------------------------------------
 
-const getCurrentQuarter = (): number => Math.ceil((new Date().getMonth() + 1) / 3);
-
 const IftaReportPage = () => {
-  const [year, setYear] = useState(currentYear);
-  const [quarter, setQuarter] = useState(getCurrentQuarter);
-  const [vehicleId, setVehicleId] = useState<string | undefined>(undefined);
-  const [report, setReport] = useState<IftaReportResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch();
+  const store = useStore<RootState>();
+
+  const filters = useSelector(selectIftaFilters);
+  const report = useSelector(selectIftaReport);
+  const loading = useSelector(selectIftaLoading);
+  const error = useSelector(selectIftaError);
+
+  const { year, quarter, vehicleId } = filters;
 
   useEffect(() => {
-    const fetchReport = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getIftaReport({ year, quarter, vehicleId });
-        setReport(data);
-      } catch {
-        setError('Failed to load IFTA report');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReport();
-  }, [year, quarter, vehicleId]);
+    const { lastFetchedAt } = store.getState().pages.ifta;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchIftaReportRequest({ year, quarter, vehicleId }));
+    }
+  }, [dispatch, store, year, quarter, vehicleId]);
 
-  const handleYearChange = useCallback((event: SelectChangeEvent<number>) => {
-    setYear(Number(event.target.value));
-  }, []);
+  const handleYearChange = useCallback(
+    (event: SelectChangeEvent<number>) => {
+      const nextYear = Number(event.target.value);
+      dispatch(setIftaFilters({ year: nextYear }));
+      dispatch(fetchIftaReportRequest({ year: nextYear, quarter, vehicleId }));
+    },
+    [dispatch, quarter, vehicleId],
+  );
 
-  const handleQuarterChange = useCallback((event: SelectChangeEvent<number>) => {
-    setQuarter(Number(event.target.value));
-  }, []);
+  const handleQuarterChange = useCallback(
+    (event: SelectChangeEvent<number>) => {
+      const nextQuarter = Number(event.target.value);
+      dispatch(setIftaFilters({ quarter: nextQuarter }));
+      dispatch(fetchIftaReportRequest({ year, quarter: nextQuarter, vehicleId }));
+    },
+    [dispatch, year, vehicleId],
+  );
 
   const handleVehicleFilterChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value.trim();
-      setVehicleId(value === '' ? undefined : value);
+      const nextVehicleId = value === '' ? undefined : value;
+      dispatch(setIftaFilters({ vehicleId: nextVehicleId }));
+      dispatch(fetchIftaReportRequest({ year, quarter, vehicleId: nextVehicleId }));
     },
-    [],
+    [dispatch, year, quarter],
   );
 
   const { rows, totalsRow } = useMemo(() => {

@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { createAccessorial } from 'utils/api/loads/accessorialApi';
 import {
   createAccessorialRequest,
@@ -17,11 +17,11 @@ export function* createAccessorialSaga(
     yield call(createAccessorial, loadId, data);
     yield put(createAccessorialSuccess({ loadId }));
     yield put(fetchLoadDetailsRequest({ id: loadId }));
-    yield call(enqueueSnackbar, 'Accessorial charge added', { variant: 'success' });
+    yield put(notify({ message: 'Accessorial charge added', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to add accessorial charge';
     yield put(createAccessorialFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

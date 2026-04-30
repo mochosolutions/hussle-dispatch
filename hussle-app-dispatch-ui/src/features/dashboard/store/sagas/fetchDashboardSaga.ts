@@ -1,6 +1,6 @@
 import { call, put, all } from 'redux-saga/effects';
 import type { SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getKpis, getWeeklyGross, getAttentionItems } from 'utils/api/dashboard/dashboardApi';
 import {
   fetchKpisRequest,
@@ -61,6 +61,6 @@ export function* fetchDashboardSaga(): Generator {
     yield all([fetchKpisSaga(), fetchWeeklyGrossSaga(), fetchAttentionItemsSaga()]);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard';
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

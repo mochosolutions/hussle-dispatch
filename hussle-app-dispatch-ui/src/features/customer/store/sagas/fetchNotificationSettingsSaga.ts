@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getCustomerNotificationSettings } from 'utils/api/notifications/notificationApi';
 import type { NotificationSetting } from 'utils/api/notifications/notificationApi';
 import {
@@ -22,6 +22,6 @@ export function* fetchNotificationSettingsSaga(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch notification settings';
     yield put(fetchNotificationSettingsFailure(errorMessage));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

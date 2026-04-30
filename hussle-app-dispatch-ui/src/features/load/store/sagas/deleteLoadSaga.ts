@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { deleteLoad } from 'utils/api/loads/loadApi';
 import { getNavigate } from 'utils/getNavigate';
@@ -19,7 +19,7 @@ export function* deleteLoadSaga(action: ReturnType<typeof deleteLoadRequest>): G
     yield put(loadActions.removeOne(id));
     yield put(deleteLoadSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Load deleted', { variant: 'success' });
+    yield put(notify({ message: 'Load deleted', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, '/loads');
@@ -32,7 +32,7 @@ export function* deleteLoadSaga(action: ReturnType<typeof deleteLoadRequest>): G
       errorMessage = error instanceof Error ? error.message : 'Failed to delete load';
     }
 
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
     yield put(deleteLoadFailure({ error: errorMessage, id }));
   }
 }

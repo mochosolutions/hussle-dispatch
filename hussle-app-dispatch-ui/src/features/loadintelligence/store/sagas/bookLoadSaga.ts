@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { bookLoad } from 'utils/api/intel/loadIntelApi';
 import type { BookLoadResult } from '../../types';
@@ -13,7 +13,7 @@ export function* bookLoadSaga(action: PayloadAction<{ id: string }>): Generator 
 
     yield put(bookLoadSuccess(result));
 
-    yield call(enqueueSnackbar, 'Load booked - creating load', { variant: 'success' });
+    yield put(notify({ message: 'Load booked - creating load', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (
       path: string,
@@ -29,6 +29,6 @@ export function* bookLoadSaga(action: PayloadAction<{ id: string }>): Generator 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to book load';
     yield put(bookLoadFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

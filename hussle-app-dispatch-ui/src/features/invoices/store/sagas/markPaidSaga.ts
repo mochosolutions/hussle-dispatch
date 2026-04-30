@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { markPaid } from 'utils/api/invoices/invoiceApi';
 import type { PaymentInput } from '../../types';
 import {
@@ -24,10 +24,10 @@ export function* markPaidSaga(action: ReturnType<typeof markPaidRequest>): Gener
 
     yield put(invoiceActions.upsertOne(response));
     yield put(markPaidSuccess({ id }));
-    yield call(enqueueSnackbar, 'Payment recorded', { variant: 'success' });
+    yield put(notify({ message: 'Payment recorded', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to record payment';
     yield put(markPaidFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

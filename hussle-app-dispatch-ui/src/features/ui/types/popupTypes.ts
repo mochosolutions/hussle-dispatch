@@ -80,7 +80,7 @@ export interface DrawerTypeMap {
   documentDetail: { documentId: string };
   disputeSettlement: { settlementId: string };
   addAdjustment: { settlementId: string };
-  expenseQuickAdd: { onSuccess: () => void };
+  expenseQuickAdd: Record<string, never>;
   paySettlement: { settlementId: string };
   loadAccessorial: { loadId: string; accessorialId?: string };
   loadCheckCall: { loadId: string };

@@ -1,5 +1,5 @@
 import { call, put, select, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { changeMemberRole } from 'utils/api/team/teamApi';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
@@ -27,7 +27,7 @@ export function* changeMemberRoleSaga(
 
     yield put(teamEntityActions.upsertOne(updatedMember));
     yield put(changeMemberRoleSuccess(updatedMember));
-    yield call(enqueueSnackbar, 'Role updated', { variant: 'success' });
+    yield put(notify({ message: 'Role updated', variant: 'success' }));
   } catch (error: unknown) {
     let errorMessage: string;
 
@@ -38,6 +38,6 @@ export function* changeMemberRoleSaga(
     }
 
     yield put(changeMemberRoleFailure({ membershipId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

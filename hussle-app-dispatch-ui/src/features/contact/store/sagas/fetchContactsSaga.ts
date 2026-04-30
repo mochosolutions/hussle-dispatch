@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getContacts } from 'utils/api/fleet/contactApi';
 import {
   fetchContactsSuccess,
@@ -33,6 +33,6 @@ export function* fetchContactsSaga(action: PayloadAction<FetchContactsPayload>):
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load contacts';
     yield put(fetchContactsFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

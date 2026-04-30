@@ -1,5 +1,5 @@
 import { call, put, select } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { removeMember } from 'utils/api/team/teamApi';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
@@ -20,7 +20,7 @@ export function* removeMemberSaga(action: ReturnType<typeof removeMemberRequest>
 
     yield put(teamEntityActions.removeOne(membershipId));
     yield put(removeMemberSuccess({ membershipId }));
-    yield call(enqueueSnackbar, 'Member removed', { variant: 'success' });
+    yield put(notify({ message: 'Member removed', variant: 'success' }));
   } catch (error: unknown) {
     let errorMessage: string;
 
@@ -31,6 +31,6 @@ export function* removeMemberSaga(action: ReturnType<typeof removeMemberRequest>
     }
 
     yield put(removeMemberFailure({ membershipId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

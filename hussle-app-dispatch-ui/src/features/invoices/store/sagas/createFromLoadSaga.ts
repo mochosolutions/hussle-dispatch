@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { createFromLoad } from 'utils/api/invoices/invoiceApi';
 import { getNavigate } from 'utils/getNavigate';
 import {
@@ -19,7 +19,7 @@ export function* createFromLoadSaga(
 
     yield put(invoiceActions.upsertOne(response));
     yield put(createFromLoadSuccess({ id: response.id }));
-    yield call(enqueueSnackbar, 'Invoice created from load', { variant: 'success' });
+    yield put(notify({ message: 'Invoice created from load', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, `/invoices/${response.id}`);
@@ -27,6 +27,6 @@ export function* createFromLoadSaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to create invoice from load';
     yield put(createFromLoadFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

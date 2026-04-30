@@ -1,7 +1,7 @@
 import { call } from 'redux-saga/effects';
 import { expectSaga } from 'redux-saga-test-plan';
 import { throwError } from 'redux-saga-test-plan/providers';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { closeModal } from 'features/ui/store/reducers/uiSlice';
 import { sendSmsPrompt } from 'utils/api/loads/smsPromptApi';
 import type { SmsPromptScheduleResponse } from 'utils/api/loads/smsPromptApi';
@@ -13,10 +13,6 @@ import {
 } from '../../reducers/loadPageSlice';
 import { smsPromptEntityActions } from '../../reducers/smsPromptEntitySlice';
 import { sendSmsPromptSaga } from '../sendSmsPromptSaga';
-
-jest.mock('notistack', () => ({
-  enqueueSnackbar: jest.fn(),
-}));
 
 const buildPrompt = (): SmsPromptScheduleResponse => ({
   id: 'p-1',
@@ -41,14 +37,22 @@ describe('sendSmsPromptSaga', () => {
   it('upserts entity, dispatches success, shows toast, and refetches history on success', async () => {
     const prompt = buildPrompt();
 
-    await expectSaga(sendSmsPromptSaga, sendSmsPromptRequest({ loadId: 'load-1' }))
+    const result = await expectSaga(sendSmsPromptSaga, sendSmsPromptRequest({ loadId: 'load-1' }))
       .provide([[call(sendSmsPrompt, 'load-1'), prompt]])
       .put(smsPromptEntityActions.upsertMany([prompt]))
       .put(sendSmsPromptSuccess({ loadId: 'load-1', prompt }))
-      .call(enqueueSnackbar, 'SMS prompt queued', { variant: 'success' })
       .put(fetchSmsPromptHistoryRequest({ loadId: 'load-1' }))
       .put(closeModal())
       .run();
+
+    const putEffects = result.effects.put ?? [];
+    const didNotifySuccess = putEffects.some(
+      (effect) =>
+        effect.payload.action.type === notify.type &&
+        effect.payload.action.payload.message === 'SMS prompt queued' &&
+        effect.payload.action.payload.variant === 'success',
+    );
+    expect(didNotifySuccess).toBe(true);
   });
 
   it('dispatches failure and error toast when the API rejects', async () => {
@@ -60,10 +64,16 @@ describe('sendSmsPromptSaga', () => {
     )
       .provide([[call(sendSmsPrompt, 'load-1'), throwError(error)]])
       .put(sendSmsPromptFailure({ loadId: 'load-1', error: 'Cooldown not elapsed' }))
-      .call(enqueueSnackbar, 'Cooldown not elapsed', { variant: 'error' })
       .run();
 
     const putEffects = result.effects.put ?? [];
+    const didNotifyError = putEffects.some(
+      (effect) =>
+        effect.payload.action.type === notify.type &&
+        effect.payload.action.payload.message === 'Cooldown not elapsed' &&
+        effect.payload.action.payload.variant === 'error',
+    );
+    expect(didNotifyError).toBe(true);
     const didCloseModal = putEffects.some(
       (effect) => effect.payload.action.type === closeModal.type,
     );
@@ -75,10 +85,18 @@ describe('sendSmsPromptSaga', () => {
       response: { data: { errors: [{ message: 'Driver phone missing' }] } },
     });
 
-    await expectSaga(sendSmsPromptSaga, sendSmsPromptRequest({ loadId: 'load-1' }))
+    const result = await expectSaga(sendSmsPromptSaga, sendSmsPromptRequest({ loadId: 'load-1' }))
       .provide([[call(sendSmsPrompt, 'load-1'), throwError(error)]])
       .put(sendSmsPromptFailure({ loadId: 'load-1', error: 'Driver phone missing' }))
-      .call(enqueueSnackbar, 'Driver phone missing', { variant: 'error' })
       .run();
+
+    const putEffects = result.effects.put ?? [];
+    const didNotifyError = putEffects.some(
+      (effect) =>
+        effect.payload.action.type === notify.type &&
+        effect.payload.action.payload.message === 'Driver phone missing' &&
+        effect.payload.action.payload.variant === 'error',
+    );
+    expect(didNotifyError).toBe(true);
   });
 });

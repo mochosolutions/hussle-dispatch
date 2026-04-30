@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import axios from 'axios';
 import { getNavigate } from 'utils/getNavigate';
 import { generateSettlement } from 'utils/api/accounting/settlementApi';
@@ -55,7 +55,7 @@ export function* generateSettlementSaga(
 
     yield put(settlementActions.addOne(settlement));
     yield put(generateSettlementSuccess({ id: settlement.id }));
-    yield call(enqueueSnackbar, 'Settlement generated', { variant: 'success' });
+    yield put(notify({ message: 'Settlement generated', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, `/accounting/settlements/${settlement.id}`);
@@ -74,6 +74,6 @@ export function* generateSettlementSaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to generate settlement';
     yield put(generateSettlementFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

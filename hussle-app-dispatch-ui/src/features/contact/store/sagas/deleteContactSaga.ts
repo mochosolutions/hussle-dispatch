@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { deleteContact } from 'utils/api/fleet/contactApi';
 import {
   deleteContactRequest,
@@ -17,10 +17,10 @@ export function* deleteContactSaga(action: ReturnType<typeof deleteContactReques
     yield put(contactActions.removeOne(id));
     yield put(deleteContactSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Contact deleted', { variant: 'success' });
+    yield put(notify({ message: 'Contact deleted', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to delete contact';
     yield put(deleteContactFailure({ error: errorMessage, id }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

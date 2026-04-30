@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createConfirmationHook } from './createConfirmationHook';
 import type {
@@ -120,7 +120,7 @@ export function createUpdateManySaga<TUpdateInput = unknown>(
       const successMessage =
         messages?.updateManySuccess ||
         `Successfully updated ${result.updated} ${result.updated === 1 ? entityName.toLowerCase() : entityNamePlural.toLowerCase()}`;
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterUpdateMany hook
       if (hooks?.afterUpdateMany) {
@@ -157,7 +157,7 @@ export function createUpdateManySaga<TUpdateInput = unknown>(
         yield put(bulkActions.updateManyFailure({ error: errorMessage }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

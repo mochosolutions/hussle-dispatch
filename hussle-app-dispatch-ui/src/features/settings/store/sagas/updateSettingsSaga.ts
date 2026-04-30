@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updateSettings } from 'utils/api/fleet/settingsApi';
 import { updateSettingsSuccess, updateSettingsFailure } from '../reducers/settingsSlice';
 import { settingsEntityActions } from '../reducers/settingsEntitySlice';
@@ -16,10 +16,10 @@ export function* updateSettingsSaga(
 
     yield put(settingsEntityActions.upsertOne(response.settings));
     yield put(updateSettingsSuccess(response.settings));
-    yield call(enqueueSnackbar, 'Settings updated', { variant: 'success' });
+    yield put(notify({ message: 'Settings updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update settings';
     yield put(updateSettingsFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updateCustomer } from 'utils/api/fleet/customerApi';
 import {
   updateCustomerSuccess,
@@ -24,10 +24,10 @@ export function* updateCustomerSaga(
     yield put(customerActions.upsertOne(response.customer));
     yield put(updateCustomerSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Customer updated', { variant: 'success' });
+    yield put(notify({ message: 'Customer updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update customer';
     yield put(updateCustomerFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

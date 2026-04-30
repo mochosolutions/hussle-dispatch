@@ -7,8 +7,6 @@ import {
   downloadSettlementPdfFailure,
 } from '../../reducers/settlementPageSlice';
 
-jest.mock('notistack', () => ({ enqueueSnackbar: jest.fn() }));
-
 describe('downloadSettlementPdfSaga', () => {
   const originalCreate = URL.createObjectURL;
   const originalRevoke = URL.revokeObjectURL;

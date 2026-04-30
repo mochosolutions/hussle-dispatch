@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { submitManualEntry } from 'utils/api/intel/loadIntelApi';
 import type { ManualEntryInput } from '../../types';
 import {
@@ -19,10 +19,10 @@ export function* submitManualEntrySaga(
     >;
 
     yield put(submitManualEntrySuccess({ item: response }));
-    yield call(enqueueSnackbar, 'Manual entry added', { variant: 'success' });
+    yield put(notify({ message: 'Manual entry added', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to submit manual entry';
     yield put(submitManualEntryFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createLoad } from 'utils/api/loads/loadApi';
 import {
@@ -90,22 +90,16 @@ export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Gener
         }
       }
       if (saved > 0) {
-        yield call(enqueueSnackbar, `${String(saved)} new contact${saved > 1 ? 's' : ''} saved`, {
-          variant: 'info',
-        });
+        yield put(notify({ message: `${String(saved)} new contact${saved > 1 ? 's' : ''} saved`, variant: 'info' }));
       }
     }
 
     const isDraft = data.status === 'QUOTED';
 
     if (docsFailed > 0) {
-      yield call(
-        enqueueSnackbar,
-        `Load created. ${String(docsFailed)} document(s) failed to upload — retry from load detail page.`,
-        { variant: 'warning' },
-      );
+      yield put(notify({ message: `Load created. ${String(docsFailed)} document(s) failed to upload — retry from load detail page.`, variant: 'warning' }));
     } else {
-      yield call(enqueueSnackbar, isDraft ? 'Draft saved' : 'Load created', { variant: 'success' });
+      yield put(notify({ message: isDraft ? 'Draft saved' : 'Load created', variant: 'success' }));
     }
 
     if (!isDraft) {
@@ -131,6 +125,6 @@ export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Gener
     }
 
     yield put(createLoadFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

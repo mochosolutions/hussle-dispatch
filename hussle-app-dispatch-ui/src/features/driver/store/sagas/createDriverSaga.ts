@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createDriver } from 'utils/api/fleet/driverApi';
 import {
@@ -23,13 +23,13 @@ export function* createDriverSaga(action: CreateDriverAction): Generator {
     yield put(driverActions.addOne(response));
     yield put(createDriverSuccess());
 
-    yield call(enqueueSnackbar, 'Driver created', { variant: 'success' });
+    yield put(notify({ message: 'Driver created', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, '/drivers');
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create driver';
     yield put(createDriverFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

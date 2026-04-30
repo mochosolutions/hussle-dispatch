@@ -17,11 +17,11 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { useSelector } from 'store';
+import { useDispatch, useSelector } from 'store';
 import { SubmitButton } from '@mocho/ui/components';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
 import axiosInstance from 'utils/axios';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 
 interface DispatchOverrideModalProps {
   carrierId: string;
@@ -47,6 +47,7 @@ export const DispatchOverrideModal: React.FC<DispatchOverrideModalProps> = ({
     (state) => state.pages.ui?.modal?.modalType === 'dispatchOverride',
   );
   const { closeModal } = useModalActions();
+  const dispatch = useDispatch();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const formik = useFormik({
@@ -60,7 +61,7 @@ export const DispatchOverrideModal: React.FC<DispatchOverrideModalProps> = ({
           reason: values.reason,
         });
         closeModal();
-        enqueueSnackbar('Dispatch override applied successfully', { variant: 'success' });
+        dispatch(notify({ message: 'Dispatch override applied successfully', variant: 'success' }));
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Failed to apply dispatch override';

@@ -10,9 +10,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { FileTextOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
-import { enqueueSnackbar } from 'notistack';
-
-import { useSelector } from 'store';
+import { useDispatch, useSelector } from 'store';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import config from '../../../../config';
 import SectionCard from 'components/SectionCard';
 import { BodyMuted, DetailRow, DrawerTitle } from 'components/Typography';
@@ -229,6 +228,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
 }) => {
   const doc = useSelector(selectDocumentById(documentId));
   const currentUser = useSelector(formattedCurrentUserSelector);
+  const dispatch = useDispatch();
   const isAdmin = currentUser.role === 'ADMIN';
   const { openDrawer, closeDrawer } = useDrawerActions();
   const { openModal } = useModalActions();
@@ -238,10 +238,10 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   // Handle case where the document was deleted while drawer is open
   useEffect(() => {
     if (!doc) {
-      enqueueSnackbar('Document is no longer available', { variant: 'info' });
+      dispatch(notify({ message: 'Document is no longer available', variant: 'info' }));
       onClose();
     }
-  }, [doc, onClose]);
+  }, [doc, onClose, dispatch]);
 
   if (!doc) {
     return null;

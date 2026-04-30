@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updateStop } from 'utils/api/loads/stopApi';
 import {
   updateStopRequest,
@@ -15,10 +15,10 @@ export function* updateStopSaga(action: ReturnType<typeof updateStopRequest>): G
     yield call(updateStop, loadId, stopId, data);
     yield put(updateStopSuccess({ loadId }));
     yield put(fetchLoadDetailsRequest({ id: loadId }));
-    yield call(enqueueSnackbar, 'Stop updated', { variant: 'success' });
+    yield put(notify({ message: 'Stop updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update stop';
     yield put(updateStopFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { transitionStatus } from 'utils/api/loads/loadApi';
 import {
   transitionLoadStatusRequest,
@@ -31,7 +31,7 @@ export function* transitionLoadStatusSaga(
     if (!response.success && response.error) {
       const errorMessage = response.error.message;
       yield put(transitionLoadStatusFailure({ loadId, error: errorMessage }));
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
       return;
     }
 
@@ -49,10 +49,10 @@ export function* transitionLoadStatusSaga(
     const successMessage = isBolMissingAfterDelivery
       ? 'Delivered. Invoice will be created once the signed BOL is uploaded.'
       : 'Status updated';
-    yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+    yield put(notify({ message: successMessage, variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to transition status';
     yield put(transitionLoadStatusFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

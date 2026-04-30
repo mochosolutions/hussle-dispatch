@@ -7,6 +7,9 @@ import { paySettlementSaga } from './paySettlementSaga';
 import { disputeSettlementSaga } from './disputeSettlementSaga';
 import { addAdjustmentSaga } from './addAdjustmentSaga';
 import { downloadSettlementPdfSaga } from './downloadSettlementPdfSaga';
+import { fetchIftaReportSaga } from './fetchIftaReportSaga';
+import { fetchExpensesSaga } from './fetchExpensesSaga';
+import { createExpenseSaga } from './createExpenseSaga';
 import {
   settlementPageSlice,
   generateSettlementRequest,
@@ -16,6 +19,11 @@ import {
   addAdjustmentRequest,
   downloadSettlementPdfRequest,
 } from '../reducers/settlementPageSlice';
+import { fetchIftaReportRequest } from '../reducers/iftaPageSlice';
+import {
+  fetchExpensesRequest,
+  createExpenseRequest,
+} from '../reducers/expensePageSlice';
 
 const { actions: settlementPageActions } = settlementPageSlice;
 
@@ -28,4 +36,7 @@ export function* settlementSagaWatcher(): Generator {
   yield takeLatest(disputeSettlementRequest.type, disputeSettlementSaga);
   yield takeLatest(addAdjustmentRequest.type, addAdjustmentSaga);
   yield takeLatest(downloadSettlementPdfRequest.type, downloadSettlementPdfSaga);
+  yield takeLatest(fetchIftaReportRequest.type, fetchIftaReportSaga);
+  yield takeLatest(fetchExpensesRequest.type, fetchExpensesSaga);
+  yield takeLatest(createExpenseRequest.type, createExpenseSaga);
 }

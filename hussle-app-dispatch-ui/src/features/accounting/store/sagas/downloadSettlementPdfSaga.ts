@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { downloadSettlementPdf } from 'utils/api/accounting/settlementApi';
 import {
   downloadSettlementPdfRequest,
@@ -28,11 +28,11 @@ export function* downloadSettlementPdfSaga(
     URL.revokeObjectURL(url);
 
     yield put(downloadSettlementPdfSuccess({ id }));
-    yield call(enqueueSnackbar, 'Settlement PDF downloaded', { variant: 'success' });
+    yield put(notify({ message: 'Settlement PDF downloaded', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to download settlement PDF';
     yield put(downloadSettlementPdfFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

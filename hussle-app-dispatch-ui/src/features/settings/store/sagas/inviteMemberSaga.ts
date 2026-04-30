@@ -1,5 +1,5 @@
 import { call, put, select, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { inviteMember } from 'utils/api/team/teamApi';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
@@ -21,7 +21,7 @@ export function* inviteMemberSaga(action: ReturnType<typeof inviteMemberRequest>
     >;
 
     yield put(inviteMemberSuccess({ invitations: result.invites }));
-    yield call(enqueueSnackbar, `Invitation sent to ${inviteData.email}`, { variant: 'success' });
+    yield put(notify({ message: `Invitation sent to ${inviteData.email}`, variant: 'success' }));
 
     yield put(fetchTeamRequest());
   } catch (error: unknown) {
@@ -35,6 +35,6 @@ export function* inviteMemberSaga(action: ReturnType<typeof inviteMemberRequest>
     }
 
     yield put(inviteMemberFailure(errorMessage));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { deleteVehicle } from 'utils/api/fleet/vehicleApi';
 import {
@@ -18,7 +18,7 @@ export function* deleteVehicleSaga(action: ReturnType<typeof deleteVehicleReques
     yield put(vehicleActions.removeOne(id));
     yield put(deleteVehicleSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Vehicle deleted', { variant: 'success' });
+    yield put(notify({ message: 'Vehicle deleted', variant: 'success' }));
   } catch (error: unknown) {
     let errorMessage: string;
 
@@ -28,7 +28,7 @@ export function* deleteVehicleSaga(action: ReturnType<typeof deleteVehicleReques
       errorMessage = error instanceof Error ? error.message : 'Failed to delete vehicle';
     }
 
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
     yield put(deleteVehicleFailure({ error: errorMessage, id }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import {
   bulkUpsertCustomerNotificationSettings,
 } from 'utils/api/notifications/notificationApi';
@@ -25,10 +25,10 @@ export function* updateNotificationSettingsSaga(
     )) as NotificationSetting[];
 
     yield put(updateNotificationSettingsSuccess(results));
-    yield call(enqueueSnackbar, 'Notification settings updated', { variant: 'success' });
+    yield put(notify({ message: 'Notification settings updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update notification settings';
     yield put(updateNotificationSettingsFailure(errorMessage));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { setWeeklySchedule } from 'utils/api/fleet/driverAvailabilityApi';
 import {
   setWeeklyScheduleRequest,
@@ -21,10 +21,10 @@ export function* setWeeklyScheduleSaga(action: SetWeeklyScheduleAction): Generat
     )) as SagaReturnType<typeof setWeeklySchedule>;
 
     yield put(setWeeklyScheduleSuccess(response));
-    yield call(enqueueSnackbar, 'Weekly schedule updated', { variant: 'success' });
+    yield put(notify({ message: 'Weekly schedule updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update schedule';
     yield put(setWeeklyScheduleFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

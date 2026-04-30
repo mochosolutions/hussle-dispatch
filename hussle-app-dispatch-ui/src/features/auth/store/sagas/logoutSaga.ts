@@ -1,4 +1,7 @@
 import { call, put, spawn } from 'redux-saga/effects';
+// notistack import allowed here only for closeSnackbar — sanctioned exception.
+// Notification dispatch flows through the Redux notification slice; closeSnackbar
+// dismisses already-rendered toasts on logout, which is a notistack-side concern.
 import { closeSnackbar } from 'notistack';
 import { logoutSuccess } from '../authSlice';
 import axiosPrivate, { setLoggingOut } from 'utils/axios';

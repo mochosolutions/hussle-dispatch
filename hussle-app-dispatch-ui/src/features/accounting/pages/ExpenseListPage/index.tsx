@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Box, Button } from '@mui/material';
 import type { ColDef } from 'ag-grid-community';
 import AddIcon from '@mui/icons-material/Add';
+import { useStore } from 'react-redux';
 import { NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import { ActionsCell } from 'mocho/components/DataGrid';
 import { EmptyState } from 'mocho/components/EmptyState';
@@ -9,8 +10,20 @@ import { ListLayout } from 'components/ListLayout';
 import MainCard from 'components/MainCard';
 import { FilterBar } from 'components/FilterBar';
 import { Body } from 'components/Typography';
-import { getExpenses } from 'utils/api/accounting/expenseApi';
+import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
+import {
+  fetchExpensesRequest,
+  setExpenseFilters,
+} from '../../store/reducers/expensePageSlice';
+import {
+  selectExpenseFilters,
+  selectExpenseListLoading,
+  selectExpenseTotalCount,
+  selectFilteredExpenses,
+} from '../../store/selectors/expenseSelectors';
 import type { ExpenseListItem } from '../../types';
 import {
   DateCellRenderer,
@@ -28,83 +41,75 @@ const CATEGORY_OPTIONS = [
   ...Object.entries(CATEGORY_LABEL_MAP).map(([value, label]) => ({ value, label })),
 ];
 
+const toIsoDate = (date: Date | null): string | null => {
+  if (!date) {
+    return null;
+  }
+  return date.toISOString().split('T')[0];
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 const ExpenseListPage = () => {
-  const [expenses, setExpenses] = useState<ExpenseListItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [category, setCategory] = useState('ALL');
-  const [dateFrom, setDateFrom] = useState<Date | null>(null);
-  const [dateTo, setDateTo] = useState<Date | null>(null);
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
+  const dispatch = useDispatch();
+  const store = useStore<RootState>();
+
+  const filters = useSelector(selectExpenseFilters);
+  const filteredExpensesSelector = useMemo(
+    () => selectFilteredExpenses(filters),
+    [filters],
+  );
+  const expenses = useSelector(filteredExpensesSelector);
+  const totalCount = useSelector(selectExpenseTotalCount);
+  const loading = useSelector(selectExpenseListLoading);
 
   const { openDrawer } = useDrawerActions();
 
   useEffect(() => {
-    let cancelled = false;
+    const { lastFetchedAt } = store.getState().pages.expenses;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchExpensesRequest());
+    }
+  }, [dispatch, store]);
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const params: Parameters<typeof getExpenses>[0] = { page: 1, limit: 500 };
-        if (category !== 'ALL') {
-          params.category = category;
-        }
-        if (debouncedSearch) {
-          params.search = debouncedSearch;
-        }
-        if (dateFrom) {
-          params.dateFrom = dateFrom.toISOString().split('T')[0];
-        }
-        if (dateTo) {
-          params.dateTo = dateTo.toISOString().split('T')[0];
-        }
+  const handleCategoryChange = useCallback(
+    (value: string) => {
+      dispatch(setExpenseFilters({ category: value }));
+      dispatch(fetchExpensesRequest());
+    },
+    [dispatch],
+  );
 
-        const result = await getExpenses(params);
+  const handleDateRangeChange = useCallback(
+    (from: Date | null, to: Date | null) => {
+      dispatch(setExpenseFilters({ dateFrom: toIsoDate(from), dateTo: toIsoDate(to) }));
+      dispatch(fetchExpensesRequest());
+    },
+    [dispatch],
+  );
 
-        if (!cancelled) {
-          setExpenses(result.data);
-          setTotalCount(result.meta.total);
-        }
-      } catch {
-        if (!cancelled) {
-          setExpenses([]);
-          setTotalCount(0);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
+  const handleSearchChange = useCallback(
+    (value: string | number) => {
+      dispatch(setExpenseFilters({ query: String(value) }));
+      dispatch(fetchExpensesRequest());
+    },
+    [dispatch],
+  );
 
-    fetchData();
+  const handleAddExpenseClick = useCallback(() => {
+    openDrawer('expenseQuickAdd', {});
+  }, [openDrawer]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [category, debouncedSearch, dateFrom, dateTo, refreshKey]);
-
-  const handleDrawerSuccess = useCallback(() => {
-    setRefreshKey((prev) => prev + 1);
-  }, []);
-
-  const handleCategoryChange = useCallback((value: string) => {
-    setCategory(value);
-  }, []);
-
-  const handleDateRangeChange = useCallback((from: Date | null, to: Date | null) => {
-    setDateFrom(from);
-    setDateTo(to);
-  }, []);
-
-  const handleSearchChange = useCallback((value: string | number) => {
-    setDebouncedSearch(String(value));
-  }, []);
+  const dateFromValue = useMemo(
+    () => (filters.dateFrom ? new Date(filters.dateFrom) : null),
+    [filters.dateFrom],
+  );
+  const dateToValue = useMemo(
+    () => (filters.dateTo ? new Date(filters.dateTo) : null),
+    [filters.dateTo],
+  );
 
   const filterConfig = useMemo(
     () => [
@@ -113,19 +118,25 @@ const ExpenseListPage = () => {
         name: 'category',
         label: 'Category',
         options: CATEGORY_OPTIONS,
-        value: category,
+        value: filters.category,
         onChange: handleCategoryChange,
       },
       {
         type: 'dateRange' as const,
         name: 'dateRange',
         label: 'Date Range',
-        from: dateFrom,
-        to: dateTo,
+        from: dateFromValue,
+        to: dateToValue,
         onChange: handleDateRangeChange,
       },
     ],
-    [category, dateFrom, dateTo, handleCategoryChange, handleDateRangeChange],
+    [
+      filters.category,
+      dateFromValue,
+      dateToValue,
+      handleCategoryChange,
+      handleDateRangeChange,
+    ],
   );
 
   const searchConfig = useMemo(
@@ -223,7 +234,7 @@ const ExpenseListPage = () => {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => openDrawer('expenseQuickAdd', { onSuccess: handleDrawerSuccess })}
+            onClick={handleAddExpenseClick}
           >
             Add Expense
           </Button>

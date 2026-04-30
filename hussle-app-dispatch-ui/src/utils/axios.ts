@@ -1,10 +1,14 @@
 import type { AxiosRequestConfig, AxiosError } from 'axios';
 import axios from 'axios';
-import { closeSnackbar, enqueueSnackbar } from 'notistack';
+// notistack import allowed here only for closeSnackbar — sanctioned exception.
+// All notification dispatch goes through the Redux notification slice; closeSnackbar
+// is used solely to dismiss any active toasts during auth-failure cleanup.
+import { closeSnackbar } from 'notistack';
 import config from '../config';
 import { store } from 'store';
 import { logoutSuccess } from '../features/auth/store/authSlice';
 import { resetPopups } from '../features/ui/store/reducers/uiSlice';
+import { notify } from '../features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 
 interface QueuedRequest {
@@ -97,7 +101,7 @@ axiosInstance.interceptors.response.use(
         handleAuthFailure();
       } else if (!isAuthRequest) {
         // RBAC violation — user is authenticated but lacks the required role
-        enqueueSnackbar(message, { variant: 'error' });
+        store.dispatch(notify({ message, variant: 'error' }));
       }
       return Promise.reject(error);
     }

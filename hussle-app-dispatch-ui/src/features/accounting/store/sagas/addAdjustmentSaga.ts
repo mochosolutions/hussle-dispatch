@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { addAdjustment } from 'utils/api/accounting/settlementApi';
 import {
   addAdjustmentRequest,
@@ -22,11 +22,11 @@ export function* addAdjustmentSaga(
 
     yield put(settlementActions.upsertOne(response));
     yield put(addAdjustmentSuccess({ id: settlementId }));
-    yield call(enqueueSnackbar, 'Adjustment added', { variant: 'success' });
+    yield put(notify({ message: 'Adjustment added', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to add adjustment';
     yield put(addAdjustmentFailure({ id: settlementId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

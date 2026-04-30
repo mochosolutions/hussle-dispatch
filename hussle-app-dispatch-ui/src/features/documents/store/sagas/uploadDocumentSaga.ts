@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import {
   presignDocument,
   uploadDocumentToS3,
@@ -64,11 +64,11 @@ export function* uploadDocumentSaga(
     // 5. Update page state
     yield put(uploadDocumentSuccess({ clientId }));
 
-    yield call(enqueueSnackbar, 'Document uploaded', { variant: 'success' });
+    yield put(notify({ message: 'Document uploaded', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to upload document';
     yield put(uploadDocumentFailure({ clientId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

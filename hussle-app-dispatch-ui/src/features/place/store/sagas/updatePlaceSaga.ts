@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updatePlace } from 'utils/api/places/placeApi';
 import type { UpdatePlaceInput } from '../../types';
 import {
@@ -25,10 +25,10 @@ export function* updatePlaceSaga(
     yield put(placeActions.upsertOne(response));
     yield put(updatePlaceSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Place updated', { variant: 'success' });
+    yield put(notify({ message: 'Place updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update place';
     yield put(updatePlaceFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

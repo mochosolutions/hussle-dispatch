@@ -2,6 +2,7 @@ import { combineReducers } from '@reduxjs/toolkit';
 import type { AnyAction } from '@reduxjs/toolkit';
 import { logoutSuccess } from 'features/auth/store/authSlice';
 import uiReducer from 'features/ui/store/reducers/uiSlice';
+import notificationReducer from 'features/ui/store/reducers/notificationSlice';
 import { carrierReducer } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { carrierPageReducer } from 'features/carrier/store/reducers/carrierNewPageSlice';
 import { vehicleReducer } from 'features/vehicle/store/reducers/vehicleEntitySlice';
@@ -33,8 +34,12 @@ import documentPageReducer from 'features/documents/store/reducers/documentPageS
 import { carrierPortalReducer } from 'features/carrier-portal/store/slices/carrierPortalSlice';
 import { settlementReducer } from 'features/accounting/store/reducers/settlementEntitySlice';
 import { settlementPageReducer } from 'features/accounting/store/reducers/settlementPageSlice';
+import { iftaPageReducer } from 'features/accounting/store/reducers/iftaPageSlice';
+import { expensePageReducer } from 'features/accounting/store/reducers/expensePageSlice';
+import { expenseReducer } from 'features/accounting/store/reducers/expenseEntitySlice';
 const pages = combineReducers({
   ui: uiReducer,
+  notifications: notificationReducer,
   carriers: carrierPageReducer,
   carrierNotes: carrierNotesReducer,
   vehicles: vehiclePageSlice.reducer,
@@ -53,6 +58,8 @@ const pages = combineReducers({
   documents: documentPageReducer,
   carrierPortal: carrierPortalReducer,
   settlements: settlementPageReducer,
+  ifta: iftaPageReducer,
+  expenses: expensePageReducer,
 });
 
 const entities = combineReducers({
@@ -68,6 +75,7 @@ const entities = combineReducers({
   customers: customerReducer,
   documents: documentReducer,
   settlements: settlementReducer,
+  expenses: expenseReducer,
   orgSettings: settingsEntityReducer,
   teamMembers: teamEntityReducer,
 });

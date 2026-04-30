@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { deleteCarrier } from 'utils/api/fleet/carrierApi';
 import {
@@ -18,7 +18,7 @@ export function* deleteCarrierSaga(action: ReturnType<typeof deleteCarrierReques
     yield put(carrierActions.removeOne(id));
     yield put(deleteCarrierSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Carrier deleted', { variant: 'success' });
+    yield put(notify({ message: 'Carrier deleted', variant: 'success' }));
   } catch (error: unknown) {
     let errorMessage: string;
 
@@ -28,7 +28,7 @@ export function* deleteCarrierSaga(action: ReturnType<typeof deleteCarrierReques
       errorMessage = error instanceof Error ? error.message : 'Failed to delete carrier';
     }
 
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
     yield put(deleteCarrierFailure({ error: errorMessage, id }));
   }
 }

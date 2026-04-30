@@ -14,6 +14,7 @@ import modalRegistry from 'features/ui/modalRegistry';
 import { currentDrawerSelector } from 'features/ui/store/selectors/drawerSelectors';
 import { currentModalSelector } from 'features/ui/store/selectors/modalSelectors';
 import { closeDrawer, closeModal } from 'features/ui/store/reducers/uiSlice';
+import NotificationBridge from 'features/ui/NotificationBridge';
 
 // Default close button rendered on every toast. notistack v3's
 // `closeSnackbar` is a top-level helper that goes through the same provider
@@ -60,6 +61,7 @@ const App = () => {
         action={renderCloseAction}
       >
         <Outlet />
+        <NotificationBridge />
         <DrawerManager
           activeDrawer={activeDrawer}
           componentLookup={drawerRegistry}

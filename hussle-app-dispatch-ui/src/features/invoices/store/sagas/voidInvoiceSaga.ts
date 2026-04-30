@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { voidInvoice } from 'utils/api/invoices/invoiceApi';
 import {
   voidInvoiceRequest,
@@ -18,10 +18,10 @@ export function* voidInvoiceSaga(
 
     yield put(invoiceActions.upsertOne(response));
     yield put(voidInvoiceSuccess({ id }));
-    yield call(enqueueSnackbar, 'Invoice voided', { variant: 'success' });
+    yield put(notify({ message: 'Invoice voided', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to void invoice';
     yield put(voidInvoiceFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

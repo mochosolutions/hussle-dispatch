@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { bulkDownload } from 'utils/api/documents/documentApi';
 import {
   bulkDownloadSuccess,
@@ -27,16 +27,12 @@ export function* bulkDownloadSaga(
     yield put(bulkDownloadSuccess());
 
     if (result.errors.length > 0) {
-      yield call(
-        enqueueSnackbar,
-        `${String(result.errors.length)} document(s) could not be downloaded`,
-        { variant: 'warning' },
-      );
+      yield put(notify({ message: `${String(result.errors.length)} document(s) could not be downloaded`, variant: 'warning' }));
     }
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to download documents';
     yield put(bulkDownloadFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,5 +1,5 @@
 import { call, put, select, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getCarrier } from 'utils/api/fleet/carrierApi';
 import type { RootState } from 'store';
 import type { CarrierListItem } from '../../types';
@@ -34,6 +34,6 @@ export function* fetchCarrierDetailsSaga(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load carrier details';
     yield put(fetchCarrierDetailsFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

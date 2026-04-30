@@ -6,9 +6,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
-import { enqueueSnackbar } from 'notistack';
 import { useDispatch } from 'store';
 import { openModal } from 'features/ui/store/reducers/uiSlice';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
 import { getDriverPortalLink } from 'utils/api/driver-portal/driverPortalDispatcherApi';
 import {
@@ -92,13 +92,13 @@ export const LoadDetailActions = ({
     try {
       const url = await getDriverPortalLink(load.id);
       await navigator.clipboard.writeText(url);
-      enqueueSnackbar('Portal link copied', { variant: 'success' });
+      dispatch(notify({ message: 'Portal link copied', variant: 'success' }));
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to copy driver portal link';
-      enqueueSnackbar(message, { variant: 'error' });
+      dispatch(notify({ message, variant: 'error' }));
     }
-  }, [load.id]);
+  }, [load.id, dispatch]);
 
   const handleDeleteClick = useCallback(() => {
     dispatch(

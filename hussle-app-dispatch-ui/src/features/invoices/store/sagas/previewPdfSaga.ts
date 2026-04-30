@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { previewInvoicePdf } from 'utils/api/invoices/invoiceApi';
 import {
   previewPdfRequest,
@@ -26,6 +26,6 @@ export function* previewPdfSaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to preview invoice PDF';
     yield put(previewPdfFailure({ id, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

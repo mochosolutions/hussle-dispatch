@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getCarrierNotes } from 'utils/api/fleet/carrierApi';
 import {
   fetchCarrierNotesSuccess,
@@ -23,6 +23,6 @@ export function* fetchCarrierNotesSaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to load carrier notes';
     yield put(fetchCarrierNotesFailure({ carrierId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

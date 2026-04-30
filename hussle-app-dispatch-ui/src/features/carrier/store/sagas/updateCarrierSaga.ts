@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { updateCarrier } from 'utils/api/fleet/carrierApi';
 import {
   updateCarrierSuccess,
@@ -22,10 +22,10 @@ export function* updateCarrierSaga(
     yield put(carrierActions.upsertOne(response));
     yield put(updateCarrierSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Carrier updated', { variant: 'success' });
+    yield put(notify({ message: 'Carrier updated', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to update carrier';
     yield put(updateCarrierFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

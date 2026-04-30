@@ -1,5 +1,5 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { isAxiosError } from 'axios';
 import { assignLoad, transitionStatus } from 'utils/api/loads/loadApi';
 import {
@@ -23,10 +23,8 @@ export function* assignAndDispatchSaga(
       assignment,
     )) as SagaReturnType<typeof assignLoad>;
 
-    if (assignResponse.warnings.length > 0) {
-      assignResponse.warnings.forEach((warning) => {
-        enqueueSnackbar(warning.message, { variant: 'warning' });
-      });
+    for (const warning of assignResponse.warnings) {
+      yield put(notify({ message: warning.message, variant: 'warning' }));
     }
 
     // Update entity store after assignment — upsert the full detail so route.stops
@@ -42,7 +40,7 @@ export function* assignAndDispatchSaga(
 
     if (!transitionResponse.success && transitionResponse.error) {
       yield put(assignAndDispatchFailure({ loadId, error: transitionResponse.error.message }));
-      yield call(enqueueSnackbar, transitionResponse.error.message, { variant: 'error' });
+      yield put(notify({ message: transitionResponse.error.message, variant: 'error' }));
       return;
     }
 
@@ -52,7 +50,7 @@ export function* assignAndDispatchSaga(
     }
 
     yield put(assignAndDispatchSuccess({ loadId }));
-    yield call(enqueueSnackbar, 'Load assigned and dispatched', { variant: 'success' });
+    yield put(notify({ message: 'Load assigned and dispatched', variant: 'success' }));
   } catch (error: unknown) {
     if (isAxiosError(error) && error.response?.data) {
       const { data } = error.response;
@@ -76,7 +74,7 @@ export function* assignAndDispatchSaga(
           .map((b: { message: string }) => b.message)
           .join('\n');
         yield put(assignAndDispatchFailure({ loadId, error: blockerMessages }));
-        yield call(enqueueSnackbar, blockerMessages, { variant: 'error' });
+        yield put(notify({ message: blockerMessages, variant: 'error' }));
         return;
       }
 
@@ -86,7 +84,7 @@ export function* assignAndDispatchSaga(
           .map((e: { message: string }) => e.message)
           .join('\n');
         yield put(assignAndDispatchFailure({ loadId, error: apiMessage }));
-        yield call(enqueueSnackbar, apiMessage, { variant: 'error' });
+        yield put(notify({ message: apiMessage, variant: 'error' }));
         return;
       }
     }
@@ -94,6 +92,6 @@ export function* assignAndDispatchSaga(
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to assign and dispatch load';
     yield put(assignAndDispatchFailure({ loadId, error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getCustomers } from 'utils/api/fleet/customerApi';
 import { fetchCustomersSuccess, fetchCustomersFailure } from '../reducers/customerPageSlice';
 import { customerActions } from '../reducers/customerEntitySlice';
@@ -23,6 +23,6 @@ export function* fetchCustomersSaga(action: PayloadAction<CustomerListParams>): 
   } catch (_error: unknown) {
     const errorMessage = 'Unable to load customers. Please try again.';
     yield put(fetchCustomersFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

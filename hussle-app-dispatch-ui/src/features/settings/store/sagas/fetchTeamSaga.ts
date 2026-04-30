@@ -1,5 +1,5 @@
 import { all, call, put, select, type SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getMembers, getInvitations, getSubscriptionUsage } from 'utils/api/team/teamApi';
 import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import { fetchTeamSuccess, fetchTeamFailure } from '../reducers/teamSlice';
@@ -24,6 +24,6 @@ export function* fetchTeamSaga(): Generator {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unable to load team data';
     yield put(fetchTeamFailure(errorMessage));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

@@ -1,5 +1,5 @@
 import { call, put } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { deletePlace } from 'utils/api/places/placeApi';
 import {
   deletePlaceRequest,
@@ -17,10 +17,10 @@ export function* deletePlaceSaga(action: ReturnType<typeof deletePlaceRequest>):
     yield put(placeActions.removeOne(id));
     yield put(deletePlaceSuccess({ id }));
 
-    yield call(enqueueSnackbar, 'Place deleted', { variant: 'success' });
+    yield put(notify({ message: 'Place deleted', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to delete place';
     yield put(deletePlaceFailure({ error: errorMessage, id }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

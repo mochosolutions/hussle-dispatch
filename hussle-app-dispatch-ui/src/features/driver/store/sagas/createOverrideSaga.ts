@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import type { SagaReturnType } from 'redux-saga/effects';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { createOverride } from 'utils/api/fleet/driverAvailabilityApi';
 import {
   createOverrideRequest,
@@ -21,10 +21,10 @@ export function* createOverrideSaga(action: CreateOverrideAction): Generator {
     )) as SagaReturnType<typeof createOverride>;
 
     yield put(createOverrideSuccess(response));
-    yield call(enqueueSnackbar, 'Schedule override created', { variant: 'success' });
+    yield put(notify({ message: 'Schedule override created', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create override';
     yield put(createOverrideFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }
