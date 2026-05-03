@@ -10,6 +10,16 @@ import {
   BodyMuted,
 } from 'components/Typography';
 import { InvoiceReadinessBadge } from './InvoiceReadinessBadge';
+import {
+  selectLoadCarrierName,
+  selectLoadDeliveryDate,
+  selectLoadDestinationCity,
+  selectLoadDestinationState,
+  selectLoadDriverName,
+  selectLoadOriginCity,
+  selectLoadOriginState,
+  selectLoadPickupDate,
+} from 'features/load/store/selectors/loadSelectors';
 import type { LoadListItem, LoadStatus } from 'features/load/types';
 
 // ---------------------------------------------------------------------------
@@ -31,9 +41,12 @@ export const LoadNumberCellRenderer = ({ value }: { value: string }) => (
 );
 
 export const StopsCellRenderer = ({ data }: { data: LoadListItem }) => {
-  const { route } = data;
-  const { originCity, originState, destinationCity, destinationState, pickupDate, deliveryDate } =
-    route;
+  const originCity = selectLoadOriginCity(data);
+  const originState = selectLoadOriginState(data);
+  const destinationCity = selectLoadDestinationCity(data);
+  const destinationState = selectLoadDestinationState(data);
+  const pickupDate = selectLoadPickupDate(data);
+  const deliveryDate = selectLoadDeliveryDate(data);
 
   const origin = [originCity, originState].filter(Boolean).join(', ');
   const destination = [destinationCity, destinationState].filter(Boolean).join(', ');
@@ -142,7 +155,8 @@ export const PickupDateCellRenderer = ({ value }: { value: string | null }) => {
 };
 
 export const AssignmentCellRenderer = ({ data }: { data: LoadListItem }) => {
-  const { assignment } = data;
+  const driverName = selectLoadDriverName(data);
+  const carrierName = selectLoadCarrierName(data);
   return (
     <Box
       sx={{
@@ -152,8 +166,8 @@ export const AssignmentCellRenderer = ({ data }: { data: LoadListItem }) => {
         height: '100%',
       }}
     >
-      <Body>{assignment.driverName ?? 'Not Assigned'}</Body>
-      <Timestamp>{assignment.carrierName ?? ''}</Timestamp>
+      <Body>{driverName ?? 'Not Assigned'}</Body>
+      <Timestamp>{carrierName ?? ''}</Timestamp>
     </Box>
   );
 };

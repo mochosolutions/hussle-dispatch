@@ -7,16 +7,16 @@ import { Map, Marker, Source, Layer, useMap } from 'react-map-gl/maplibre';
 import { LngLatBounds } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import config from '../../../../../config';
+import config from '../../config';
 
 interface StopMarker {
   type: string;
   sequence: number;
   lat?: number | null;
   lng?: number | null;
-  city?: string;
-  state?: string;
-  facilityName?: string;
+  city?: string | null;
+  state?: string | null;
+  facilityName?: string | null;
 }
 
 interface ValidStop {
@@ -29,8 +29,14 @@ interface ValidStop {
   facilityName?: string;
 }
 
+export interface DriverMarker {
+  lat: number;
+  lng: number;
+}
+
 export interface MapViewProps {
   stops?: StopMarker[];
+  driver?: DriverMarker | null;
   height?: number | string;
 }
 
@@ -43,16 +49,25 @@ const getMarkerStyle = (type: string): { bgcolor: string; label: string } => {
   if (type === 'PICKUP') {
     return { bgcolor: 'primary.main', label: 'P' };
   }
-  if (type === 'DRIVER') {
-    return { bgcolor: 'error.main', label: '\uD83D\uDE9B' };
-  }
   return { bgcolor: 'success.main', label: 'D' };
 };
 
-const MapContent: React.FC<{ stops: StopMarker[] }> = ({ stops }) => {
-  const { 'load-map': mapRef } = useMap();
+const isValidDriver = (driver: DriverMarker | null | undefined): driver is DriverMarker =>
+  driver !== null &&
+  driver !== undefined &&
+  typeof driver.lat === 'number' &&
+  typeof driver.lng === 'number';
+
+const MapContent: React.FC<{
+  stops: StopMarker[];
+  driver: DriverMarker | null | undefined;
+  mapLoaded: boolean;
+}> = ({ stops, driver, mapLoaded }) => {
+  const maps = useMap();
+  const mapRef = maps['load-map'] ?? maps.current;
 
   const validStops = useMemo(() => stops.filter(isValidStop), [stops]);
+  const validDriver = isValidDriver(driver) ? driver : null;
 
   const geojsonData = useMemo(() => {
     if (validStops.length < 2) {
@@ -70,22 +85,28 @@ const MapContent: React.FC<{ stops: StopMarker[] }> = ({ stops }) => {
 
   useEffect(() => {
     const map = mapRef?.getMap();
-    if (!map || validStops.length === 0) {
+    if (!map || !mapLoaded) {
       return;
     }
 
-    if (validStops.length === 1) {
-      const stop = validStops[0];
-      map.flyTo({ center: [stop.lng, stop.lat], zoom: 8 });
+    const points: [number, number][] = validStops.map((s) => [s.lng, s.lat]);
+    if (validDriver) {
+      points.push([validDriver.lng, validDriver.lat]);
+    }
+
+    if (points.length === 0) {
+      return;
+    }
+
+    if (points.length === 1) {
+      map.flyTo({ center: points[0], zoom: 8 });
       return;
     }
 
     const bounds = new LngLatBounds();
-    validStops.forEach((stop) => {
-      bounds.extend([stop.lng, stop.lat]);
-    });
-    map.fitBounds(bounds, { padding: 60 });
-  }, [mapRef, validStops]);
+    points.forEach((p) => bounds.extend(p));
+    map.fitBounds(bounds, { padding: 60, maxZoom: 11 });
+  }, [mapRef, mapLoaded, validStops, validDriver]);
 
   return (
     <>
@@ -126,13 +147,34 @@ const MapContent: React.FC<{ stops: StopMarker[] }> = ({ stops }) => {
           />
         </Source>
       )}
+      {validDriver && (
+        <Marker longitude={validDriver.lng} latitude={validDriver.lat} anchor="center">
+          <Box
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1,
+              bgcolor: 'error.main',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}
+          >
+            🚛
+          </Box>
+        </Marker>
+      )}
     </>
   );
 };
 
-export const MapView: React.FC<MapViewProps> = ({ stops = [], height = 280 }) => {
+export const MapView: React.FC<MapViewProps> = ({ stops = [], driver = null, height = 280 }) => {
   const [maplibreLoaded, setMaplibreLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     import('maplibre-gl').then(() => {
@@ -156,11 +198,9 @@ export const MapView: React.FC<MapViewProps> = ({ stops = [], height = 280 }) =>
     >
       <Box sx={{ textAlign: 'center' }}>
         <MapIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 1.5 }} />
-        <SectionTitle sx={{ color: 'text.secondary' }}>
-          Map unavailable
-        </SectionTitle>
+        <SectionTitle sx={{ color: 'text.secondary' }}>Map unavailable</SectionTitle>
         <BodyMuted sx={{ mt: 0.5, color: 'text.disabled' }}>
-          Map service is not configured. Stops can still be added below.
+          Map service is not configured.
         </BodyMuted>
       </Box>
     </Box>
@@ -194,6 +234,7 @@ export const MapView: React.FC<MapViewProps> = ({ stops = [], height = 280 }) =>
         id="load-map"
         initialViewState={{ longitude: -98, latitude: 39, zoom: 3.5 }}
         mapStyle={STYLE_URL}
+        onLoad={() => setMapLoaded(true)}
         onError={(e) => {
           const msg = String(e?.error?.message ?? '');
           if (msg.includes('style') || msg.includes('Style')) {
@@ -201,7 +242,7 @@ export const MapView: React.FC<MapViewProps> = ({ stops = [], height = 280 }) =>
           }
         }}
       >
-        <MapContent stops={stops} />
+        <MapContent stops={stops} driver={driver} mapLoaded={mapLoaded} />
       </Map>
     </Box>
   );

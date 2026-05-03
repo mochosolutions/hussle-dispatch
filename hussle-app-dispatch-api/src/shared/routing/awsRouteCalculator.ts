@@ -1,17 +1,23 @@
-import { LocationClient, CalculateRouteCommand } from '@aws-sdk/client-location';
+import { GeoRoutesClient, CalculateRoutesCommand } from '@aws-sdk/client-geo-routes';
 import type { Logger } from '@/shared/utils/logger';
 import type { RouteCalculatorPort } from './routeCalculatorPort';
 import type { Coordinates, RouteLeg, RouteResult } from './types';
 
+const METERS_PER_KILOMETER = 1000;
+
 interface AwsRouteCalculatorDeps {
-  locationClient: LocationClient;
-  calculatorName: string;
+  routesClient: GeoRoutesClient;
   logger: Logger;
 }
 
+const toLngLatTuple = (coord: Coordinates): [number, number] => [coord.lng, coord.lat];
+
+const toLineString = (linestring: number[][] | undefined): [number, number][] =>
+  (linestring ?? []).map((point) => [point[0] ?? 0, point[1] ?? 0]);
+
 export const createAwsRouteCalculator = (deps: AwsRouteCalculatorDeps): RouteCalculatorPort => ({
   calculateRoute: async (waypoints: Coordinates[]): Promise<RouteResult> => {
-    const { locationClient, calculatorName, logger } = deps;
+    const { routesClient, logger } = deps;
 
     const departure = waypoints[0];
     const destination = waypoints[waypoints.length - 1];
@@ -21,41 +27,42 @@ export const createAwsRouteCalculator = (deps: AwsRouteCalculatorDeps): RouteCal
       throw new Error('At least two waypoints are required to calculate a route');
     }
 
-    const command = new CalculateRouteCommand({
-      CalculatorName: calculatorName,
-      DeparturePosition: [departure.lng, departure.lat],
-      DestinationPosition: [destination.lng, destination.lat],
-      WaypointPositions: middleWaypoints.map((wp) => [wp.lng, wp.lat]),
+    const command = new CalculateRoutesCommand({
+      Origin: toLngLatTuple(departure),
+      Destination: toLngLatTuple(destination),
+      Waypoints: middleWaypoints.map((wp) => ({ Position: toLngLatTuple(wp) })),
       TravelMode: 'Truck',
-      DistanceUnit: 'Kilometers',
-      IncludeLegGeometry: true,
+      LegGeometryFormat: 'Simple',
     });
 
     try {
-      const response = await locationClient.send(command);
+      const response = await routesClient.send(command);
+      const route = response.Routes?.[0];
 
-      const legs: RouteLeg[] = (response.Legs ?? []).map((leg) => ({
-        distanceKm: leg.Distance ?? 0,
-        durationSeconds: leg.DurationSeconds ?? 0,
-        geometry: (leg.Geometry?.LineString ?? []).map(
-          (point) => [point[0] ?? 0, point[1] ?? 0] as [number, number],
-        ),
-      }));
+      if (!route) {
+        throw new Error('Route calculation returned no routes');
+      }
 
-      const totalDistanceKm = response.Summary?.Distance ?? legs.reduce(
-        (sum, leg) => sum + leg.distanceKm,
-        0,
-      );
+      const legs: RouteLeg[] = (route.Legs ?? []).map((leg) => {
+        const overview = leg.VehicleLegDetails?.Summary?.Overview;
+        return {
+          distanceKm: (overview?.Distance ?? 0) / METERS_PER_KILOMETER,
+          durationSeconds: overview?.Duration ?? 0,
+          geometry: toLineString(leg.Geometry?.LineString),
+        };
+      });
+
+      const totalDistanceMeters =
+        route.Summary?.Distance ?? legs.reduce((sum, leg) => sum + leg.distanceKm * METERS_PER_KILOMETER, 0);
 
       return {
-        totalDistanceKm,
+        totalDistanceKm: totalDistanceMeters / METERS_PER_KILOMETER,
         legs,
         stateMiles: [],
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown AWS Location error';
       logger.warn('AWS Location route calculation failed', {
-        calculatorName,
         waypointCount: waypoints.length,
         error: message,
       });

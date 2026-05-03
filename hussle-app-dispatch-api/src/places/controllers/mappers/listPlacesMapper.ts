@@ -1,6 +1,6 @@
 import { FacilityType } from '@prisma/client';
 import type { Request } from 'express';
-import type { PlaceListFilters } from '../../types/placeTypes';
+import type { PlaceListFilters, PlaceSource } from '../../types/placeTypes';
 import type { ListPlacesServiceInput } from '../../types/placeServiceTypes';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
@@ -14,6 +14,13 @@ const parseFacilityType = (value: unknown): FacilityType | undefined => {
   return matched;
 };
 
+const parseSource = (value: unknown): PlaceSource | undefined => {
+  if (value === 'USER' || value === 'AUTO') {
+    return value;
+  }
+  return undefined;
+};
+
 export const listPlacesMapper = (req: Request): ListPlacesServiceInput => {
   const context = getRequestContextMapper(req);
 
@@ -23,6 +30,7 @@ export const listPlacesMapper = (req: Request): ListPlacesServiceInput => {
     state: typeof req.query['state'] === 'string' ? req.query['state'] : undefined,
     contactId: typeof req.query['contactId'] === 'string' ? req.query['contactId'] : undefined,
     customerId: typeof req.query['customerId'] === 'string' ? req.query['customerId'] : undefined,
+    source: parseSource(req.query['source']),
   };
 
   return {

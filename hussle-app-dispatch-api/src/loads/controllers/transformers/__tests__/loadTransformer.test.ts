@@ -392,6 +392,8 @@ describe('toLoadDetailResponse', () => {
         firstName: 'John',
         lastName: 'Doe',
         phone: null,
+        currentLatitude: null,
+        currentLongitude: null,
       });
       expect(result.assignment.carrier).toBeNull();
       expect(result.assignment.vehicle).toBeNull();
@@ -477,8 +479,7 @@ describe('toLoadListItemResponse', () => {
     const result = toLoadListItemResponse(buildListItem({ totalMiles: 500 }));
 
     expect(result.route.totalMiles).toBe(500);
-    expect(result.route.originCity).toBeNull();
-    expect(result.route.destinationCity).toBeNull();
+    expect(result.route.stops).toEqual([]);
   });
 
   it('groups assignment fields correctly', () => {
@@ -491,9 +492,11 @@ describe('toLoadListItemResponse', () => {
 
     const result = toLoadListItemResponse(load);
 
-    expect(result.assignment.carrierId).toBe('c-1');
-    expect(result.assignment.carrierName).toBe('FastTruck');
-    expect(result.assignment.driverId).toBe('d-1');
-    expect(result.assignment.driverName).toBe('John Doe');
+    expect(result.assignment.carrier).toEqual({ id: 'c-1', name: 'FastTruck' });
+    expect(result.assignment.driver).toEqual({
+      id: 'd-1',
+      firstName: 'John',
+      lastName: 'Doe',
+    });
   });
 });

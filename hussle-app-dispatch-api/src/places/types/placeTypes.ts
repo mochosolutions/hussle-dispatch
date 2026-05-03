@@ -10,6 +10,14 @@ export interface CreatePlaceInput {
   city: string;
   state: string;
   zip?: string;
+  unit?: string | null;
+  source?: string;
+  awsAddressNumber?: string | null;
+  awsStreetBaseName?: string | null;
+  awsStreetType?: string | null;
+  awsStreetPrefix?: string | null;
+  awsRegion?: string | null;
+  awsPostalCode5?: string | null;
   latitude?: number;
   longitude?: number;
   geoSource?: GeoSource;
@@ -29,9 +37,29 @@ export interface CreatePlaceInput {
   status?: string;
 }
 
+export interface DedupeKeyParams {
+  organizationId: string;
+  name: string;
+  awsAddressNumber: string | null;
+  awsStreetBaseName: string | null;
+  awsStreetType: string | null;
+  awsStreetPrefix: string | null;
+  unit: string | null;
+  awsRegion: string | null;
+  awsPostalCode5: string | null;
+}
+
 export interface UpdatePlaceInput {
   contactId?: string | null;
   customerId?: string | null;
+  unit?: string | null;
+  source?: string;
+  awsAddressNumber?: string | null;
+  awsStreetBaseName?: string | null;
+  awsStreetType?: string | null;
+  awsStreetPrefix?: string | null;
+  awsRegion?: string | null;
+  awsPostalCode5?: string | null;
   name?: string;
   address?: string;
   address2?: string;
@@ -57,12 +85,15 @@ export interface UpdatePlaceInput {
   status?: string;
 }
 
+export type PlaceSource = 'USER' | 'AUTO';
+
 export interface PlaceListFilters {
   search?: string;
   facilityType?: FacilityType;
   state?: string;
   contactId?: string;
   customerId?: string;
+  source?: PlaceSource;
 }
 
 export interface PlaceQueryInput {
@@ -116,6 +147,12 @@ export interface FindLoadsAtFacilityResult {
 export interface PlaceRepositoryPort {
   create(organizationId: string, input: CreatePlaceInput): Promise<Place>;
   findById(id: string, organizationId: string): Promise<Place | null>;
+  findByDedupeKey(params: DedupeKeyParams): Promise<Place | null>;
+  createOnConflictDoNothing(
+    organizationId: string,
+    input: CreatePlaceInput,
+    key: DedupeKeyParams,
+  ): Promise<Place>;
   list(input: ListPlacesRepositoryInput): Promise<Place[]>;
   count(input: PlaceQueryInput): Promise<number>;
   update(id: string, input: UpdatePlaceInput): Promise<Place>;
@@ -135,6 +172,8 @@ export interface PlaceResponse {
   city: string;
   state: string;
   zip: string | null;
+  unit: string | null;
+  source: PlaceSource;
   latitude: number | null;
   longitude: number | null;
   geoSource: GeoSource;

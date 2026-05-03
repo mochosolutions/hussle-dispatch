@@ -2,6 +2,7 @@ import { createAddressSearchService } from '../addressSearchService';
 import type { PlaceRepositoryPort, TypeaheadPlaceResult } from '../../types/placeTypes';
 import type { GeocodingProviderPort, GeocodeSuggestion } from '@/shared/providers/awsLocationProviderTypes';
 import type { AddressSearchResult } from '../../types/addressSearchTypes';
+import type { OrganizationQueryPort } from '../../types/organizationQueryPort';
 
 const createMockPlaceRepo = (): Pick<PlaceRepositoryPort, 'typeahead'> => ({
   typeahead: jest.fn(),
@@ -9,6 +10,11 @@ const createMockPlaceRepo = (): Pick<PlaceRepositoryPort, 'typeahead'> => ({
 
 const createMockGeocodingProvider = (): GeocodingProviderPort => ({
   searchAddresses: jest.fn(),
+  geocode: jest.fn(),
+});
+
+const createMockOrgQueries = (): OrganizationQueryPort => ({
+  findHeadquartersLocation: jest.fn(),
 });
 
 const buildPlaceResult = (overrides: Partial<TypeaheadPlaceResult> = {}): TypeaheadPlaceResult => ({
@@ -32,7 +38,7 @@ const buildPlaceResult = (overrides: Partial<TypeaheadPlaceResult> = {}): Typeah
 });
 
 const buildGeocodeSuggestion = (overrides: Partial<GeocodeSuggestion> = {}): GeocodeSuggestion => ({
-  label: '456 Oak Ave, Houston, TX 77001',
+  name: null,
   address: '456 Oak Ave',
   city: 'Houston',
   state: 'TX',
@@ -53,12 +59,17 @@ const resultAt = (results: AddressSearchResult[], index: number): AddressSearchR
 describe('addressSearchService', () => {
   const mockPlaceRepo = createMockPlaceRepo();
   const mockGeoProvider = createMockGeocodingProvider();
+  const mockOrgQueries = createMockOrgQueries();
   const service = createAddressSearchService({
     placeRepository: mockPlaceRepo as unknown as PlaceRepositoryPort,
     geocodingProvider: mockGeoProvider,
+    organizationQueries: mockOrgQueries,
   });
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (mockOrgQueries.findHeadquartersLocation as jest.Mock).mockResolvedValue(null);
+  });
 
   it('searches Places only when query is shorter than 3 characters', async () => {
     const places = [buildPlaceResult()];
@@ -111,7 +122,11 @@ describe('addressSearchService', () => {
       limit: 10,
     });
 
-    expect(mockGeoProvider.searchAddresses).toHaveBeenCalledWith('Houston', 9);
+    expect(mockGeoProvider.searchAddresses).toHaveBeenCalledWith(
+      'Houston',
+      9,
+      [-98.5, 39.5],
+    );
     expect(results).toHaveLength(2);
     expect(resultAt(results, 0).source).toBe('SAVED');
     expect(resultAt(results, 1).source).toBe('EXTERNAL');
@@ -136,8 +151,8 @@ describe('addressSearchService', () => {
   it('ranks Places first when merging with external results', async () => {
     const places = [buildPlaceResult({ id: 'p1', name: 'Saved Place' })];
     const geocodeResults = [
-      buildGeocodeSuggestion({ label: 'External 1', address: '100 Oak St', city: 'Austin', state: 'TX' }),
-      buildGeocodeSuggestion({ label: 'External 2', address: '200 Elm St', city: 'San Antonio', state: 'TX' }),
+      buildGeocodeSuggestion({ address: '100 Oak St', city: 'Austin', state: 'TX' }),
+      buildGeocodeSuggestion({ address: '200 Elm St', city: 'San Antonio', state: 'TX' }),
     ];
     (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue(places);
     (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue(geocodeResults);
@@ -157,9 +172,9 @@ describe('addressSearchService', () => {
   it('deduplicates external results with identical city, state, and address', async () => {
     (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
     (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([
-      buildGeocodeSuggestion({ label: 'Dallas, TX', address: '', city: 'Dallas', state: 'TX' }),
-      buildGeocodeSuggestion({ label: 'Dallas, TX (2)', address: '', city: 'Dallas', state: 'TX' }),
-      buildGeocodeSuggestion({ label: '100 Main St, Dallas, TX', address: '100 Main St', city: 'Dallas', state: 'TX' }),
+      buildGeocodeSuggestion({ address: '', city: 'Dallas', state: 'TX' }),
+      buildGeocodeSuggestion({ address: '', city: 'Dallas', state: 'TX' }),
+      buildGeocodeSuggestion({ address: '100 Main St', city: 'Dallas', state: 'TX' }),
     ]);
 
     const results = await service.search({
@@ -169,8 +184,8 @@ describe('addressSearchService', () => {
     });
 
     expect(results).toHaveLength(2);
-    expect(resultAt(results, 0).name).toBe('Dallas, TX');
-    expect(resultAt(results, 1).name).toBe('100 Main St, Dallas, TX');
+    expect(resultAt(results, 0).address).toBe('');
+    expect(resultAt(results, 1).address).toBe('100 Main St');
   });
 
   it('removes external results that match a saved place by city, state, and address', async () => {
@@ -191,5 +206,128 @@ describe('addressSearchService', () => {
     expect(resultAt(results, 0).source).toBe('SAVED');
     expect(resultAt(results, 1).source).toBe('EXTERNAL');
     expect(resultAt(results, 1).city).toBe('Houston');
+  });
+
+  it('uses suggestion.name as the external result name when AWS returns a POI', async () => {
+    (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+    (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([
+      buildGeocodeSuggestion({
+        name: 'Walmart Supercenter',
+        address: '455 E Wetmore Rd',
+        city: 'Tucson',
+        state: 'AZ',
+      }),
+    ]);
+
+    const results = await service.search({
+      organizationId: 'org-1',
+      query: 'walmart tucson',
+      limit: 10,
+    });
+
+    expect(resultAt(results, 0).name).toBe('Walmart Supercenter');
+  });
+
+  describe('biasPosition plumbing', () => {
+    it('forwards [biasLng, biasLat] to provider when both are supplied', async () => {
+      (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+      (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([]);
+
+      await service.search({
+        organizationId: 'org-1',
+        query: 'walmart',
+        limit: 10,
+        biasLat: 40.73,
+        biasLng: -73.94,
+      });
+
+      expect(mockGeoProvider.searchAddresses).toHaveBeenCalledWith(
+        'walmart',
+        10,
+        [-73.94, 40.73],
+      );
+      expect(mockOrgQueries.findHeadquartersLocation).not.toHaveBeenCalled();
+    });
+
+    it('falls back to organization HQ when bias not supplied', async () => {
+      (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+      (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([]);
+      (mockOrgQueries.findHeadquartersLocation as jest.Mock).mockResolvedValue({
+        latitude: 32.7767,
+        longitude: -96.797,
+      });
+
+      await service.search({
+        organizationId: 'org-1',
+        query: 'walmart',
+        limit: 10,
+      });
+
+      expect(mockOrgQueries.findHeadquartersLocation).toHaveBeenCalledWith('org-1');
+      expect(mockGeoProvider.searchAddresses).toHaveBeenCalledWith(
+        'walmart',
+        10,
+        [-96.797, 32.7767],
+      );
+    });
+
+    it('uses [-98.5, 39.5] default when neither bias nor org HQ are set', async () => {
+      (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+      (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([]);
+      (mockOrgQueries.findHeadquartersLocation as jest.Mock).mockResolvedValue({
+        latitude: null,
+        longitude: null,
+      });
+
+      await service.search({
+        organizationId: 'org-1',
+        query: 'walmart',
+        limit: 10,
+      });
+
+      expect(mockGeoProvider.searchAddresses).toHaveBeenCalledWith(
+        'walmart',
+        10,
+        [-98.5, 39.5],
+      );
+    });
+
+    it('uses default fallback when org lookup returns null', async () => {
+      (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+      (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([]);
+      (mockOrgQueries.findHeadquartersLocation as jest.Mock).mockResolvedValue(null);
+
+      await service.search({
+        organizationId: 'org-1',
+        query: 'walmart',
+        limit: 10,
+      });
+
+      expect(mockGeoProvider.searchAddresses).toHaveBeenCalledWith(
+        'walmart',
+        10,
+        [-98.5, 39.5],
+      );
+    });
+  });
+
+  it('falls back to suggestion.address as the external result name when name is null', async () => {
+    (mockPlaceRepo.typeahead as jest.Mock).mockResolvedValue([]);
+    (mockGeoProvider.searchAddresses as jest.Mock).mockResolvedValue([
+      buildGeocodeSuggestion({
+        name: null,
+        address: '789 Pine St',
+        city: 'Phoenix',
+        state: 'AZ',
+      }),
+    ]);
+
+    const results = await service.search({
+      organizationId: 'org-1',
+      query: '789 pine',
+      limit: 10,
+    });
+
+    expect(resultAt(results, 0).name).toBe('789 Pine St');
   });
 });

@@ -39,6 +39,7 @@ export const stopRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
         loadId,
         sequence: resolvedSequence,
         ...stopData,
+        resolutionStatus: stopData.resolutionStatus ?? 'UNRESOLVED',
       },
     });
   },

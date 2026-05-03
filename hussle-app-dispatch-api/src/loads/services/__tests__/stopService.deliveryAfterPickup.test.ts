@@ -25,6 +25,7 @@ const makeStop = (overrides: Partial<Stop>): Stop =>
     contactPhone: null,
     contactId: null,
     placeId: null,
+    resolutionStatus: 'UNRESOLVED',
     commodity: null,
     weight: null,
     pieceCount: null,

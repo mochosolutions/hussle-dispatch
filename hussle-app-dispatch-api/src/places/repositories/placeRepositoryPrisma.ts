@@ -1,7 +1,8 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Place, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type {
   CreatePlaceInput,
+  DedupeKeyParams,
   FindLoadsAtFacilityInput,
   ListPlacesRepositoryInput,
   PlaceQueryInput,
@@ -9,6 +10,7 @@ import type {
   TypeaheadPlaceInput,
   UpdatePlaceInput,
 } from '../types/placeTypes';
+import { ConflictError } from '@/shared/errors';
 
 const buildListWhere = (
   organizationId: string,
@@ -21,6 +23,7 @@ const buildListWhere = (
     state?: string;
     contactId?: string;
     customerId?: string;
+    source?: string;
     OR?: {
       name?: { contains: string; mode: 'insensitive' };
       city?: { contains: string; mode: 'insensitive' };
@@ -45,6 +48,10 @@ const buildListWhere = (
 
   if (filters.customerId !== undefined && filters.customerId.length > 0) {
     where.customerId = filters.customerId;
+  }
+
+  if (filters.source !== undefined) {
+    where.source = filters.source;
   }
 
   if (filters.search !== undefined && filters.search.length > 0) {
@@ -75,7 +82,28 @@ const buildListWhere = (
 
 export const placeRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
-): PlaceRepositoryPort => ({
+): PlaceRepositoryPort => {
+  const findByDedupeKey = async (params: DedupeKeyParams): Promise<Place | null> => {
+    // Lookup expression must mirror the unique index `Place_dedupeKey_uniq`
+    // defined in migration 20260502000000_auto_place_resolution_v1.
+    const result = await prisma.$queryRaw<Place[]>`
+      SELECT * FROM "Place"
+      WHERE "organizationId" = ${params.organizationId}
+        AND normalize_dedupe("name") = normalize_dedupe(${params.name})
+        AND "awsAddressNumber" IS NOT DISTINCT FROM ${params.awsAddressNumber}
+        AND normalize_dedupe("awsStreetBaseName") IS NOT DISTINCT FROM normalize_dedupe(${params.awsStreetBaseName})
+        AND "awsStreetType" IS NOT DISTINCT FROM ${params.awsStreetType}
+        AND "awsStreetPrefix" IS NOT DISTINCT FROM ${params.awsStreetPrefix}
+        AND COALESCE(normalize_dedupe("unit"), '') = COALESCE(normalize_dedupe(${params.unit}), '')
+        AND "awsRegion" IS NOT DISTINCT FROM ${params.awsRegion}
+        AND "awsPostalCode5" IS NOT DISTINCT FROM ${params.awsPostalCode5}
+        AND "deletedAt" IS NULL
+      LIMIT 1
+    `;
+    return result[0] ?? null;
+  };
+
+  return {
   create: (organizationId: string, input: CreatePlaceInput) =>
     prisma.place.create({
       data: {
@@ -92,6 +120,37 @@ export const placeRepositoryPrisma = (
         deletedAt: null,
       },
     }),
+
+  findByDedupeKey,
+
+  createOnConflictDoNothing: async (
+    organizationId: string,
+    input: CreatePlaceInput,
+    key: DedupeKeyParams,
+  ): Promise<Place> => {
+    try {
+      return await prisma.place.create({
+        data: {
+          organizationId,
+          ...input,
+        },
+      });
+    } catch (error: unknown) {
+      // P2002 is Prisma's unique-constraint violation. Fall through to
+      // re-read by dedupe key — another writer won the race.
+      const isUnique = isPrismaUniqueViolation(error);
+      if (!isUnique) {
+        throw error;
+      }
+      const existing = await findByDedupeKey(key);
+      if (existing === null) {
+        throw new ConflictError(
+          'Place dedupe key conflict but row not found by key',
+        );
+      }
+      return existing;
+    }
+  },
 
   list: ({ organizationId, filters, skip, take, orderBy }: ListPlacesRepositoryInput) =>
     prisma.place.findMany({
@@ -192,4 +251,13 @@ export const placeRepositoryPrisma = (
 
     return { data, total };
   },
-});
+  };
+};
+
+const isPrismaUniqueViolation = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+  const code = (error as { code?: unknown }).code;
+  return code === 'P2002';
+};

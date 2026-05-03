@@ -10,7 +10,8 @@ export interface CreateStopInput {
   type: StopType;
   sequence?: number;
   contactId?: string;
-  placeId?: string;
+  placeId?: string | null;
+  resolutionStatus?: string;
   facilityName?: string;
   address?: string;
   city?: string;
@@ -45,7 +46,8 @@ export interface UpdateStopInput {
   type?: StopType;
   sequence?: number;
   contactId?: string;
-  placeId?: string;
+  placeId?: string | null;
+  resolutionStatus?: string;
   facilityName?: string;
   address?: string;
   city?: string;

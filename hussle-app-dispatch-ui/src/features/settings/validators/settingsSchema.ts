@@ -71,6 +71,42 @@ export const settingsSchema = Yup.object({
     .integer('Must be a whole number')
     .min(1, 'Must be at least 1 minute')
     .max(1440, 'Must be 1,440 minutes (24 hours) or less'),
+  headquartersLatitude: Yup.number()
+    .transform((value, original) => (original === '' || original === null ? null : value))
+    .nullable()
+    .typeError('Latitude must be a number')
+    .min(-90, 'Latitude must be between -90 and 90')
+    .max(90, 'Latitude must be between -90 and 90')
+    .test(
+      'hq-pair',
+      'Set both latitude and longitude, or leave both empty.',
+      function validateHqPair(value) {
+        const lng = (this.parent as { headquartersLongitude: number | null | undefined })
+          .headquartersLongitude;
+        const latSet = value !== null && value !== undefined;
+        const lngSet = lng !== null && lng !== undefined && !Number.isNaN(lng);
+        const latValid = latSet && !Number.isNaN(value);
+        return latValid === lngSet;
+      },
+    ),
+  headquartersLongitude: Yup.number()
+    .transform((value, original) => (original === '' || original === null ? null : value))
+    .nullable()
+    .typeError('Longitude must be a number')
+    .min(-180, 'Longitude must be between -180 and 180')
+    .max(180, 'Longitude must be between -180 and 180')
+    .test(
+      'hq-pair',
+      'Set both latitude and longitude, or leave both empty.',
+      function validateHqPair(value) {
+        const lat = (this.parent as { headquartersLatitude: number | null | undefined })
+          .headquartersLatitude;
+        const latSet = lat !== null && lat !== undefined && !Number.isNaN(lat);
+        const lngSet = value !== null && value !== undefined;
+        const lngValid = lngSet && !Number.isNaN(value);
+        return latSet === lngValid;
+      },
+    ),
 }).required();
 
 export type SettingsSchemaValues = InferType<typeof settingsSchema>;

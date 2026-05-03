@@ -43,15 +43,24 @@ const isValidLoad = (load: StagedLoad): load is ValidLoad =>
 const isValidDriver = (driver: Driver): driver is ValidDriver =>
   typeof driver.currentLatitude === 'number' && typeof driver.currentLongitude === 'number';
 
-interface ValidActiveLoad extends LoadListItem {
-  route: LoadListItem['route'] & {
-    destLat: number;
-    destLng: number;
-  };
+interface ValidActiveLoad {
+  load: LoadListItem;
+  destLat: number;
+  destLng: number;
 }
 
-const isValidActiveLoad = (load: LoadListItem): load is ValidActiveLoad =>
-  typeof load.route.destLat === 'number' && typeof load.route.destLng === 'number';
+const toValidActiveLoad = (load: LoadListItem): ValidActiveLoad | null => {
+  const deliveries = load.route.stops.filter((s) => s.type === 'DELIVERY');
+  const lastDelivery = deliveries[deliveries.length - 1];
+  if (
+    !lastDelivery ||
+    typeof lastDelivery.lat !== 'number' ||
+    typeof lastDelivery.lng !== 'number'
+  ) {
+    return null;
+  }
+  return { load, destLat: lastDelivery.lat, destLng: lastDelivery.lng };
+};
 
 const MapContent: React.FC<CommandCenterMapProps> = ({
   feedLoads,
@@ -79,7 +88,12 @@ const MapContent: React.FC<CommandCenterMapProps> = ({
   );
 
   const visibleActiveLoads = useMemo(
-    () => (layers.showActiveLoads ? activeLoads.filter(isValidActiveLoad) : []),
+    () =>
+      layers.showActiveLoads
+        ? activeLoads
+            .map(toValidActiveLoad)
+            .filter((entry): entry is ValidActiveLoad => entry !== null)
+        : [],
     [activeLoads, layers.showActiveLoads],
   );
 
@@ -93,7 +107,7 @@ const MapContent: React.FC<CommandCenterMapProps> = ({
     const allPoints = [
       ...visibleLoads.map((l) => ({ lng: l.originLng, lat: l.originLat })),
       ...visibleDrivers.map((d) => ({ lng: d.currentLongitude, lat: d.currentLatitude })),
-      ...visibleActiveLoads.map((l) => ({ lng: l.route.destLng, lat: l.route.destLat })),
+      ...visibleActiveLoads.map((l) => ({ lng: l.destLng, lat: l.destLat })),
     ];
     if (!map || allPoints.length === 0) {
       return;
@@ -170,11 +184,11 @@ const MapContent: React.FC<CommandCenterMapProps> = ({
           </Box>
         </Marker>
       ))}
-      {visibleActiveLoads.map((load) => (
+      {visibleActiveLoads.map(({ load, destLat, destLng }) => (
         <Marker
           key={`active-${load.id}`}
-          longitude={load.route.destLng}
-          latitude={load.route.destLat}
+          longitude={destLng}
+          latitude={destLat}
           anchor="center"
           onClick={() => onActiveLoadClick(load.id)}
         >

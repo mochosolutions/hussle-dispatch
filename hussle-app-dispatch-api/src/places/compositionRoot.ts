@@ -7,11 +7,14 @@ import type { PlaceControllers } from './controllers/placeController';
 import { createRouteDistanceController } from './controllers/routeDistanceController';
 import { placeRepositoryPrisma } from './repositories/placeRepositoryPrisma';
 import { placeStatsQueryPrisma } from './repositories/placeStatsQueryPrisma';
+import { organizationQueryPrisma } from './repositories/organizationQueryPrisma';
 import { createPlaceService } from './services/placeService';
 import { createAddressSearchService } from './services/addressSearchService';
 import { createRouteDistanceService } from './services/routeDistanceService';
 import { checkFacilityOpenAt } from './services/facilityHoursService';
 import type { CheckFacilityOpenAtInput } from './services/facilityHoursService';
+import { createResolveStopToPlace } from './services/resolveStopToPlace';
+import type { ResolveStopInput, ResolveStopResult } from './services/resolveStopToPlace';
 import { logger } from '@/shared/utils/logger';
 import { createAwsLocationProvider } from '@/shared/providers/awsLocationProvider';
 import { calculateRoadDistance } from '@/shared/utils/distanceCalculator';
@@ -30,12 +33,20 @@ export interface PlaceModuleQueries {
   checkFacilityOpenAt: (input: CheckFacilityOpenAtInput) => ReturnType<typeof checkFacilityOpenAt>;
 }
 
+export interface PlaceModuleServices {
+  resolveStopToPlace: (
+    stop: ResolveStopInput,
+    organizationId: string,
+  ) => Promise<ResolveStopResult>;
+}
+
 export const createPlacesModule = ({
   prismaClient,
   redis,
 }: PlaceModuleDeps): {
   controllers: PlaceModuleControllers;
   queries: PlaceModuleQueries;
+  services: PlaceModuleServices;
 } => {
   const repositories = placeRepositoryPrisma(prismaClient);
 
@@ -46,9 +57,12 @@ export const createPlacesModule = ({
 
   const locationProvider = createAwsLocationProvider();
 
+  const organizationQueries = organizationQueryPrisma(prismaClient);
+
   const addressSearchService = createAddressSearchService({
     placeRepository: repositories,
     geocodingProvider: locationProvider,
+    organizationQueries,
   });
 
   const routeDistanceService = createRouteDistanceService({
@@ -76,5 +90,15 @@ export const createPlacesModule = ({
     checkFacilityOpenAt: (input) => checkFacilityOpenAt(input, facilityHoursDeps),
   };
 
-  return { controllers, queries };
+  const resolveStopToPlace = createResolveStopToPlace({
+    placeRepo: repositories,
+    geocodingProvider: locationProvider,
+    logger,
+  });
+
+  const services: PlaceModuleServices = {
+    resolveStopToPlace,
+  };
+
+  return { controllers, queries, services };
 };

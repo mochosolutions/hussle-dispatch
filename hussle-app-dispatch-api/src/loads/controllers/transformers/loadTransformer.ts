@@ -26,11 +26,14 @@ const toStopResponse = (stop: LoadWithRelations['stops'][number]): StopResponse 
   sequence: stop.sequence,
   contactId: stop.contactId,
   placeId: stop.placeId,
+  resolutionStatus: stop.resolutionStatus,
   facilityName: stop.facilityName,
   address: stop.address,
   city: stop.city,
   state: stop.state,
   zip: stop.zip,
+  lat: toCoord(stop.place?.latitude),
+  lng: toCoord(stop.place?.longitude),
   schedulingType: stop.schedulingType,
   appointmentStart: stop.appointmentStart.toISOString(),
   appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,
@@ -215,6 +218,8 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
               firstName: load.driver.firstName,
               lastName: load.driver.lastName,
               phone: load.driver.phone ?? null,
+              currentLatitude: toCoord(load.driver.currentLatitude),
+              currentLongitude: toCoord(load.driver.currentLongitude),
             }
           : null,
       vehicle:
@@ -257,67 +262,19 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
 };
 
 // ---------------------------------------------------------------------------
-// List item response
+// List item response — structural subset of detail
 // ---------------------------------------------------------------------------
 
-interface StopSummary {
-  city: string | null;
-  state: string | null;
-  appointmentStart: Date | null;
-  schedulingType: string | null;
-  latitude: number | null;
-  longitude: number | null;
-}
-
-const getOriginStop = (stops: LoadListItem['stops']): StopSummary => {
-  const pickup = stops.find((stop) => stop.type === 'PICKUP');
-  if (pickup !== undefined) {
-    return {
-      city: pickup.city,
-      state: pickup.state,
-      appointmentStart: pickup.appointmentStart,
-      schedulingType: pickup.schedulingType,
-      latitude: toCoord(pickup.place?.latitude),
-      longitude: toCoord(pickup.place?.longitude),
-    };
-  }
-  return {
-    city: null,
-    state: null,
-    appointmentStart: null,
-    schedulingType: null,
-    latitude: null,
-    longitude: null,
-  };
-};
-
-const getDestinationStop = (stops: LoadListItem['stops']): StopSummary => {
-  const deliveries = stops.filter((stop) => stop.type === 'DELIVERY');
-  const lastDelivery = deliveries[deliveries.length - 1];
-  if (lastDelivery !== undefined) {
-    return {
-      city: lastDelivery.city,
-      state: lastDelivery.state,
-      appointmentStart: lastDelivery.appointmentStart,
-      schedulingType: lastDelivery.schedulingType,
-      latitude: toCoord(lastDelivery.place?.latitude),
-      longitude: toCoord(lastDelivery.place?.longitude),
-    };
-  }
-  return {
-    city: null,
-    state: null,
-    appointmentStart: null,
-    schedulingType: null,
-    latitude: null,
-    longitude: null,
-  };
-};
-
 export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse => {
-  const origin = getOriginStop(load.stops);
-  const destination = getDestinationStop(load.stops);
   const cargo = computeCommoditySummary(load.stops);
+
+  const companyNet =
+    load.companyMargin !== null && load.dispatcherComm !== null
+      ? new Decimal(String(load.companyMargin))
+          .minus(new Decimal(String(load.dispatcherComm)))
+          .toDecimalPlaces(2, ROUNDING)
+          .toFixed(2)
+      : null;
 
   return {
     id: load.id,
@@ -330,19 +287,8 @@ export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse
     updatedAt: load.updatedAt.toISOString(),
 
     route: {
-      originCity: origin.city,
-      originState: origin.state,
-      destinationCity: destination.city,
-      destinationState: destination.state,
       totalMiles: load.totalMiles,
-      pickupDate: origin.appointmentStart?.toISOString() ?? null,
-      pickupSchedulingType: origin.schedulingType,
-      deliveryDate: destination.appointmentStart?.toISOString() ?? null,
-      deliverySchedulingType: destination.schedulingType,
-      originLat: origin.latitude,
-      originLng: origin.longitude,
-      destLat: destination.latitude,
-      destLng: destination.longitude,
+      stops: load.stops.map(toStopResponse),
     },
 
     cargo: {
@@ -360,30 +306,37 @@ export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse
       ratePerTotalMile: load.ratePerTotalMile !== null ? String(load.ratePerTotalMile) : null,
       companyMargin: load.companyMargin !== null ? String(load.companyMargin) : null,
       carrierPayout: load.carrierPayout !== null ? String(load.carrierPayout) : null,
-      companyNet:
-        load.companyMargin !== null && load.dispatcherComm !== null
-          ? new Decimal(String(load.companyMargin))
-              .minus(new Decimal(String(load.dispatcherComm)))
-              .toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN)
-              .toFixed(2)
-          : null,
+      companyNet,
     },
 
     assignment: {
-      carrierId: load.carrierId,
-      carrierName: load.carrier?.name ?? null,
-      driverId: load.driverId,
-      driverName: load.driver !== null ? `${load.driver.firstName} ${load.driver.lastName}` : null,
+      carrier:
+        load.carrier !== null ? { id: load.carrier.id, name: load.carrier.name } : null,
+      driver:
+        load.driver !== null
+          ? {
+              id: load.driver.id,
+              firstName: load.driver.firstName,
+              lastName: load.driver.lastName,
+            }
+          : null,
     },
 
-    customer: {
-      customerName: load.customer?.companyName ?? null,
-      contactName: load.contact
-        ? `${load.contact.firstName} ${load.contact.lastName}`.trim()
+    customer:
+      load.customer !== null
+        ? { id: load.customer.id, companyName: load.customer.companyName }
         : null,
-      contactEmail: load.contact?.email ?? null,
-      contactPhone: load.contact?.phone ?? null,
-    },
+
+    contact:
+      load.contact !== null
+        ? {
+            id: load.contact.id,
+            firstName: load.contact.firstName,
+            lastName: load.contact.lastName,
+            email: load.contact.email ?? null,
+            phone: load.contact.phone ?? null,
+          }
+        : null,
   };
 };
 

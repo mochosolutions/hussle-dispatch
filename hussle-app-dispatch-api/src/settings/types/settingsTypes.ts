@@ -1,4 +1,5 @@
 import type { OrgSettings } from '@prisma/client';
+import type { Decimal } from '@prisma/client/runtime/library';
 
 // ---------------------------------------------------------------------------
 // Response type
@@ -24,6 +25,18 @@ export interface OrgSettingsResponse {
   smsTransitIntervalMinutes: number;
   smsPostPickupEscalationMinutes: number;
   smsCooldownMinutes: number;
+  headquartersLatitude: number | null;
+  headquartersLongitude: number | null;
+}
+
+export interface OrganizationHq {
+  headquartersLatitude: Decimal | null;
+  headquartersLongitude: Decimal | null;
+}
+
+export interface UpdateOrganizationHqInput {
+  headquartersLatitude: number | null;
+  headquartersLongitude: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +62,8 @@ export interface UpdateSettingsInput {
   smsTransitIntervalMinutes?: number;
   smsPostPickupEscalationMinutes?: number;
   smsCooldownMinutes?: number;
+  headquartersLatitude?: number | null;
+  headquartersLongitude?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,4 +76,9 @@ export interface SettingsRepoPort {
     organizationId: string,
     data: Partial<UpdateSettingsInput>,
   ): Promise<OrgSettings>;
+  getOrganizationHq(organizationId: string): Promise<OrganizationHq | null>;
+  updateOrganizationHq(
+    organizationId: string,
+    input: UpdateOrganizationHqInput,
+  ): Promise<void>;
 }

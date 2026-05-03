@@ -1,5 +1,6 @@
 import type { CarrierType } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
+import type { ResolveStopInput, ResolveStopResult, Warning } from '@/places';
 import {
   AssignmentValidationError,
   ConflictError,
@@ -44,6 +45,11 @@ import type {
   LoadService,
   UpdateLoadServiceInput,
 } from '../types/loadServiceTypes';
+
+export type ResolveStopToPlace = (
+  stop: ResolveStopInput,
+  organizationId: string,
+) => Promise<ResolveStopResult>;
 
 const listSortableFields = [
   'createdAt',
@@ -214,9 +220,71 @@ interface LoadServiceDeps {
   vehicleCpmQuery?: VehicleCpmQueryPort;
   dispatcherProfileQuery?: DispatcherProfileQueryPort;
   settlementFreezeQuery?: SettlementFreezeQueryPort;
+  resolveStopToPlace?: ResolveStopToPlace;
   eventBus?: EventBus;
   logger?: Logger;
 }
+
+interface StopResolutionOutcome {
+  stops: StopInput[];
+  warnings: Warning[];
+}
+
+/**
+ * Run each inbound stop through resolveStopToPlace in sequence
+ * (NOT in parallel — geocoding latency must not be amplified).
+ * Mutates each stop with placeId, resolutionStatus, and the resolved
+ * facilityName when the resolver suggests one.
+ *
+ * Resolves BEFORE the persist call so we never hold a Postgres
+ * transaction open during slow AWS geocode requests.
+ */
+const resolveStopsForPersist = async (
+  stops: StopInput[],
+  organizationId: string,
+  resolveStopToPlace: ResolveStopToPlace | undefined,
+): Promise<StopResolutionOutcome> => {
+  if (resolveStopToPlace === undefined) {
+    return { stops, warnings: [] };
+  }
+
+  const warnings: Warning[] = [];
+  const resolved: StopInput[] = [];
+
+  // Sequential: do not parallelize per plan (synchronous geocoding latency).
+  for (const stop of stops) {
+    const result = await resolveStopToPlace(
+      {
+        sequence: stop.sequence,
+        placeId: stop.placeId ?? null,
+        facilityName: stop.facilityName ?? null,
+        address: stop.address ?? null,
+        city: stop.city ?? null,
+        state: stop.state ?? null,
+        zip: stop.zip ?? null,
+        contactName: stop.contactName ?? null,
+        contactPhone: stop.contactPhone ?? null,
+        notes: stop.notes ?? null,
+      },
+      organizationId,
+    );
+
+    resolved.push({
+      ...stop,
+      placeId: result.placeId,
+      resolutionStatus: result.resolutionStatus,
+      ...(result.facilityNameToWrite !== undefined
+        ? { facilityName: result.facilityNameToWrite }
+        : {}),
+    });
+
+    if (result.warning !== null) {
+      warnings.push(result.warning);
+    }
+  }
+
+  return { stops: resolved, warnings };
+};
 
 interface ResolvedAssignmentState {
   carrierId: string | null;
@@ -557,6 +625,17 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       await validateAssignmentState(resolvedAssignment, organizationId, undefined, deps);
     }
 
+    // Resolve each stop to a Place BEFORE we persist the load.
+    // Geocoding can be slow (AWS round-trip) — running it inside a
+    // Postgres transaction would hold connections open. Resolve first,
+    // collect placeId / resolutionStatus / facilityNameToWrite, then
+    // persist the load + stops in a single Prisma nested-create call.
+    const { stops: resolvedStops, warnings } = await resolveStopsForPersist(
+      input.stops,
+      organizationId,
+      deps.resolveStopToPlace,
+    );
+
     const loadedMiles = input.loadedMiles ?? input.totalMiles;
 
     const computedTotalMiles =
@@ -568,6 +647,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     const load = await deps.loadRepository.create(organizationId, loadNumber, {
       ...input,
+      stops: resolvedStops,
       ...resolvedAssignment,
       ...(loadedMiles !== undefined ? { loadedMiles } : {}),
       ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
@@ -589,10 +669,11 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         organizationId: load.organizationId,
       });
 
-      return findLoadOrThrow(load.id, organizationId, deps);
+      const reloaded = await findLoadOrThrow(load.id, organizationId, deps);
+      return { load: reloaded, warnings };
     }
 
-    return load;
+    return { load, warnings };
   },
 
   listLoads: async ({ query, organizationId, filters }: ListLoadsServiceInput) => {
@@ -661,6 +742,22 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
 
+    // If stops are part of the update, the repo bulk-replaces them — so each
+    // inbound stop must be re-resolved (existing stops not in the inbound
+    // array are deleted by the repo, which matches the contract: "leave
+    // stops not in the array alone" only applies when stops are absent).
+    let stopWarnings: Warning[] = [];
+    let stopsForUpdate: StopInput[] | undefined;
+    if (input.stops !== undefined) {
+      const resolution = await resolveStopsForPersist(
+        input.stops,
+        organizationId,
+        deps.resolveStopToPlace,
+      );
+      stopWarnings = resolution.warnings;
+      stopsForUpdate = resolution.stops;
+    }
+
     const loadedMiles = input.loadedMiles ?? input.totalMiles ?? existing.loadedMiles ?? undefined;
 
     const existingDeadhead = existing.deadheadMiles ?? 0;
@@ -672,6 +769,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     const mergedInput = {
       ...input,
+      ...(stopsForUpdate !== undefined ? { stops: stopsForUpdate } : {}),
       ...(loadedMiles !== undefined ? { loadedMiles } : {}),
       ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
     };
@@ -719,10 +817,11 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         organizationId: load.organizationId,
       });
 
-      return findLoadOrThrow(id, organizationId, deps);
+      const reloaded = await findLoadOrThrow(id, organizationId, deps);
+      return { load: reloaded, warnings: stopWarnings };
     }
 
-    return load;
+    return { load, warnings: stopWarnings };
   },
 
   assignLoad: async ({ id, organizationId, input }: AssignLoadServiceInput) => {

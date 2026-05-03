@@ -76,6 +76,7 @@ export const listPlacesValidator = Yup.object({
     contactId: Yup.string().uuid('contactId must be a valid uuid').notRequired(),
     customerId: Yup.string().uuid('customerId must be a valid uuid').notRequired(),
     search: Yup.string().trim().notRequired(),
+    source: Yup.string().oneOf(['USER', 'AUTO'], 'source must be USER or AUTO').notRequired(),
   }),
 });
 

@@ -12,7 +12,7 @@ export const settingsHandlers = [
 
   http.put(`${BASE}/settings`, async ({ request }) => {
     const body = (await request.json()) as Partial<Settings>;
-    settings = { ...settings, ...body, updatedAt: new Date().toISOString() };
+    settings = { ...settings, ...body };
     return HttpResponse.json({ data: settings });
   }),
 ];

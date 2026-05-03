@@ -29,7 +29,8 @@ export interface StopInput {
   type: StopType;
   sequence: number;
   contactId?: string;
-  placeId?: string;
+  placeId?: string | null;
+  resolutionStatus?: string;
   facilityName?: string;
   address?: string;
   city?: string;
@@ -163,7 +164,7 @@ export interface CheckCallWithRelations extends CheckCall {
 }
 
 export interface LoadWithRelations extends Load {
-  stops: Stop[];
+  stops: LoadListStop[];
   carrier: Carrier | null;
   driver: Driver | null;
   vehicle: Vehicle | null;
@@ -414,11 +415,14 @@ export interface StopResponse {
   sequence: number;
   contactId: string | null;
   placeId: string | null;
+  resolutionStatus: string;
   facilityName: string | null;
   address: string | null;
   city: string | null;
   state: string | null;
   zip: string | null;
+  lat: number | null;
+  lng: number | null;
   schedulingType: string;
   appointmentStart: string;
   appointmentEnd: string | null;
@@ -491,6 +495,8 @@ export interface DriverResponse {
   firstName: string;
   lastName: string;
   phone: string | null;
+  currentLatitude: number | null;
+  currentLongitude: number | null;
 }
 
 export interface CarrierResponse {
@@ -600,23 +606,12 @@ export interface LoadDetailResponse {
 }
 
 // ---------------------------------------------------------------------------
-// List item response (grouped)
+// List item response — structural subset of LoadDetailResponse
 // ---------------------------------------------------------------------------
 
 export interface ListRouteResponse {
-  originCity: string | null;
-  originState: string | null;
-  destinationCity: string | null;
-  destinationState: string | null;
   totalMiles: number | null;
-  pickupDate: string | null;
-  pickupSchedulingType: string | null;
-  deliveryDate: string | null;
-  deliverySchedulingType: string | null;
-  originLat: number | null;
-  originLng: number | null;
-  destLat: number | null;
-  destLng: number | null;
+  stops: StopResponse[];
 }
 
 export interface ListCargoResponse {
@@ -637,18 +632,28 @@ export interface ListFinancialResponse {
   companyNet: string | null;
 }
 
-export interface ListAssignmentResponse {
-  carrierId: string | null;
-  carrierName: string | null;
-  driverId: string | null;
-  driverName: string | null;
+export interface ListCarrierSummary {
+  id: string;
+  name: string;
 }
 
-export interface ListCustomerResponse {
-  customerName: string | null;
-  contactName: string | null;
-  contactEmail: string | null;
-  contactPhone: string | null;
+export interface ListDriverSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface ListAssignmentResponse {
+  carrier: ListCarrierSummary | null;
+  driver: ListDriverSummary | null;
+}
+
+export interface ListContactResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface LoadListItemResponse {
@@ -665,5 +670,6 @@ export interface LoadListItemResponse {
   cargo: ListCargoResponse;
   financials: ListFinancialResponse;
   assignment: ListAssignmentResponse;
-  customer: ListCustomerResponse;
+  customer: CustomerResponse | null;
+  contact: ListContactResponse | null;
 }

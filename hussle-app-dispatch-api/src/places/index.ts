@@ -10,3 +10,16 @@ const placesModule = createPlacesModule({
 
 export const placesRouter = createPlacesRouter(placesModule.controllers);
 export const placeQueries = placesModule.queries;
+export const placeServices = placesModule.services;
+export { createResolveStopToPlace } from './services/resolveStopToPlace';
+export type {
+  ResolveStopInput,
+  ResolveStopResult,
+  Warning,
+  WarningCodeValue,
+  StopResolutionStatusValue,
+} from './services/resolveStopToPlace';
+export {
+  StopResolutionStatus,
+  WarningCode,
+} from './services/resolveStopToPlace';

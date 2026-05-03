@@ -55,6 +55,12 @@ export const updateSettingsMapper = (req: Request): UpdateSettingsInput => {
   if (req.body.smsCooldownMinutes !== undefined) {
     input.smsCooldownMinutes = req.body.smsCooldownMinutes;
   }
+  if (req.body.headquartersLatitude !== undefined) {
+    input.headquartersLatitude = req.body.headquartersLatitude;
+  }
+  if (req.body.headquartersLongitude !== undefined) {
+    input.headquartersLongitude = req.body.headquartersLongitude;
+  }
 
   return input;
 };

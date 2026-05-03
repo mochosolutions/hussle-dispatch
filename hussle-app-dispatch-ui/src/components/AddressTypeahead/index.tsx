@@ -60,9 +60,9 @@ const GROUP_EXTERNAL = 'ADDRESS RESULTS';
 const mapResultsToOptions = (results: AddressSearchResult[]): AddressOption[] =>
   results.map((result) => {
     const isSaved = result.source === 'SAVED';
-    const description = isSaved
-      ? [result.address, result.city, result.state].filter(Boolean).join(', ')
-      : result.zip || '';
+    const description = [result.address, result.city, result.state, result.zip]
+      .filter(Boolean)
+      .join(', ');
 
     return {
       value: result.id,

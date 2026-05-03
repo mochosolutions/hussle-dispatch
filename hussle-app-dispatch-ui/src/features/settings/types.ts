@@ -20,6 +20,8 @@ export interface OrgSettings {
   smsTransitIntervalMinutes: number;
   smsPostPickupEscalationMinutes: number;
   smsCooldownMinutes: number;
+  headquartersLatitude: number | null;
+  headquartersLongitude: number | null;
 }
 
 export interface SettingsFormValues {
@@ -40,6 +42,8 @@ export interface SettingsFormValues {
   smsTransitIntervalMinutes: number;
   smsPostPickupEscalationMinutes: number;
   smsCooldownMinutes: number;
+  headquartersLatitude: number | null;
+  headquartersLongitude: number | null;
 }
 
 export interface SettingsPageState {

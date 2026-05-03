@@ -9,7 +9,6 @@ import {
   updateLoadFailure,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
-import { mapDetailToListItem } from './detailToListItemMapper';
 import type { UpdateRequestPayload } from '../../../../mocho/redux/createCrudSlice';
 
 export function* updateLoadSaga(
@@ -18,13 +17,18 @@ export function* updateLoadSaga(
   try {
     const { id, data } = action.payload;
 
-    const load = (yield call(updateLoad, id, data)) as SagaReturnType<typeof updateLoad>;
+    const response = (yield call(updateLoad, id, data)) as SagaReturnType<typeof updateLoad>;
+    const { data: load, warnings } = response;
 
-    yield put(loadActions.updateOne({ id, changes: mapDetailToListItem(load) }));
     yield put(loadActions.upsertOne(load));
     yield put(updateLoadSuccess({ id }));
 
     yield put(notify({ message: 'Load updated', variant: 'success' }));
+
+    // Surface non-blocking geocoding warnings
+    for (const warning of warnings) {
+      yield put(notify({ message: warning.message, variant: 'warning' }));
+    }
   } catch (error: unknown) {
     // Parse structured blocker errors from assignment validation (422)
     if (isAxiosError(error) && error.response?.status === 422) {

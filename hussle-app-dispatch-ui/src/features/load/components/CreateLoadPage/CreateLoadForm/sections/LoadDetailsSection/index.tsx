@@ -20,7 +20,7 @@ interface LoadDetailsSectionProps {
   complete?: boolean;
 }
 
-export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, complete }) => {
+export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, complete, sx }) => {
   const equipmentType = formik.values.equipmentType;
   const isReefer = equipmentType === 'REEFER';
   const isFlatbed = equipmentType === 'FLATBED' || equipmentType === 'STEP_DECK';
@@ -56,6 +56,7 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
 
   return (
     <SectionCard
+      sx={sx}
       title="Load Details"
       subheader="Set the rate, equipment, and basic load information"
       actions={
@@ -64,6 +65,9 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
     >
       <Stack spacing={1.5}>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ flex: 1 }}>
+            <TextField name="externalRefNumber" label="External Ref #" formik={formikProps} />
+          </Box>
           <Box sx={{ flex: 1 }}>
             <CustomerAutocomplete
               name="customerId"
@@ -80,23 +84,20 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
               formik={formikProps}
             />
           </Box>
-          <Box sx={{ flex: 1 }}>
-            <TextField name="externalRefNumber" label="External Ref #" formik={formikProps} />
-          </Box>
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Box sx={{ flex: 1 }}>
             <CurrencyField name="customerRate" label="Rate" required formik={formikProps} />
           </Box>
-          <Box sx={{ flex: 1 }}>
+          {/* <Box sx={{ flex: 1 }}>
             <SelectField
               name="paymentTerms"
               label="Payment Terms"
               data={paymentTermsData}
               formik={formikProps}
             />
-          </Box>
+          </Box> */}
           <Box sx={{ flex: 1 }}>
             <SelectField
               name="equipmentType"

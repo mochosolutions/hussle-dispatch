@@ -5,7 +5,6 @@ import { loadSelectors } from '../reducers/loadEntitySlice';
 import { STATUS_TO_KANBAN_GROUP, formatEquipmentType } from '../../constants';
 import { formatTimestamp, formatCurrencyCompact } from '../../constants';
 import formatPhone from 'utils/formatPhone';
-import { isLoadDetail } from '../../types';
 import type {
   BoardView,
   KanbanGroup,
@@ -14,6 +13,11 @@ import type {
   LoadListItem,
   Stop,
 } from '../../types';
+
+// Detail-only key — used to discriminate the wider LoadDetail shape
+// from the LoadListItem subset stored in the same entity adapter.
+const isLoadDetail = (entity: LoadListItem | LoadDetail): entity is LoadDetail =>
+  'activity' in entity;
 
 // ---------------------------------------------------------------------------
 // Entity selectors
@@ -87,6 +91,64 @@ export const selectOnboardingBlock = (state: RootState) =>
   state.pages.loads.onboardingBlock;
 
 // ---------------------------------------------------------------------------
+// Load derivation helpers — pure functions over the canonical nested shape
+// ---------------------------------------------------------------------------
+
+type LoadShape = LoadListItem | LoadDetail;
+
+const findFirstPickup = (load: LoadShape): Stop | undefined =>
+  load.route.stops.find((s) => s.type === 'PICKUP');
+
+const findLastDelivery = (load: LoadShape): Stop | undefined => {
+  const deliveries = load.route.stops.filter((s) => s.type === 'DELIVERY');
+  return deliveries[deliveries.length - 1];
+};
+
+export const selectLoadOriginCity = (load: LoadShape): string | null =>
+  findFirstPickup(load)?.city ?? null;
+
+export const selectLoadOriginState = (load: LoadShape): string | null =>
+  findFirstPickup(load)?.state ?? null;
+
+export const selectLoadPickupDate = (load: LoadShape): string | null =>
+  findFirstPickup(load)?.appointmentStart ?? null;
+
+export const selectLoadDestinationCity = (load: LoadShape): string | null =>
+  findLastDelivery(load)?.city ?? null;
+
+export const selectLoadDestinationState = (load: LoadShape): string | null =>
+  findLastDelivery(load)?.state ?? null;
+
+export const selectLoadDeliveryDate = (load: LoadShape): string | null =>
+  findLastDelivery(load)?.appointmentStart ?? null;
+
+export const selectLoadDriverName = (load: LoadShape): string | null =>
+  load.assignment.driver
+    ? `${load.assignment.driver.firstName} ${load.assignment.driver.lastName}`
+    : null;
+
+export const selectLoadDriverId = (load: LoadShape): string | null =>
+  load.assignment.driver?.id ?? null;
+
+export const selectLoadCarrierName = (load: LoadShape): string | null =>
+  load.assignment.carrier?.name ?? null;
+
+export const selectLoadCarrierId = (load: LoadShape): string | null =>
+  load.assignment.carrier?.id ?? null;
+
+export const selectLoadCustomerName = (load: LoadShape): string | null =>
+  load.customer?.companyName ?? null;
+
+export const selectLoadContactName = (load: LoadShape): string | null =>
+  load.contact ? `${load.contact.firstName} ${load.contact.lastName}`.trim() : null;
+
+export const selectLoadContactEmail = (load: LoadShape): string | null =>
+  load.contact?.email ?? null;
+
+export const selectLoadContactPhone = (load: LoadShape): string | null =>
+  load.contact?.phone ?? null;
+
+// ---------------------------------------------------------------------------
 // Filtered loads selector — applies search + status filters from Redux state
 // ---------------------------------------------------------------------------
 
@@ -100,17 +162,17 @@ export const selectFilteredLoads = createSelector(
       result = result.filter((load) => {
         const searchableFields = [
           load.loadNumber.toLowerCase(),
-          (load.assignment.carrierName ?? '').toLowerCase(),
-          (load.assignment.driverName ?? '').toLowerCase(),
-          (load.route.originCity ?? '').toLowerCase(),
-          (load.route.destinationCity ?? '').toLowerCase(),
+          (selectLoadCarrierName(load) ?? '').toLowerCase(),
+          (selectLoadDriverName(load) ?? '').toLowerCase(),
+          (selectLoadOriginCity(load) ?? '').toLowerCase(),
+          (selectLoadDestinationCity(load) ?? '').toLowerCase(),
         ];
         return terms.every((term) => searchableFields.some((field) => field.includes(term)));
       });
     }
 
     if (filters.carrierName) {
-      result = result.filter((load) => load.assignment.carrierName === filters.carrierName);
+      result = result.filter((load) => selectLoadCarrierName(load) === filters.carrierName);
     }
 
     if (filters.status && filters.status.length > 0) {
@@ -124,7 +186,7 @@ export const selectFilteredLoads = createSelector(
 export const selectUniqueCarrierNames = createSelector(
   [selectAllLoads],
   (loads): string[] =>
-    [...new Set(loads.map((load) => load.assignment.carrierName).filter(Boolean))] as string[],
+    [...new Set(loads.map((load) => selectLoadCarrierName(load)).filter(Boolean))] as string[],
 );
 
 export const selectLoadsByKanbanGroup = createSelector(

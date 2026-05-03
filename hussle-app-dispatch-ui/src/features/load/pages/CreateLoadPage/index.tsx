@@ -135,7 +135,7 @@ const CreateLoadPage = () => {
     </Box>
   ) : null;
 
-  const headerActions = loadType ? (
+  const headerActions = (
     <Stack direction="row" alignItems="center" spacing={1.5}>
       {loadType && (
         <Chip
@@ -153,12 +153,12 @@ const CreateLoadPage = () => {
         onCreateBooked={submitForm}
       />
     </Stack>
-  ) : null;
+  );
 
   return (
     <PageWrapper errorContext="CreateLoadPage">
       <DetailLayout
-        id="New Load"
+        id="Create New Load"
         breadcrumb={{ label: 'Loads', href: '/loads' }}
         onBack={handleBack}
         actions={headerActions}

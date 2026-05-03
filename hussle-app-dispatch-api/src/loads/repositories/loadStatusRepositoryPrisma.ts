@@ -7,6 +7,11 @@ import type { LoadStatusRepoPort } from '../types/loadStatusTypes';
 const LOAD_DETAIL_INCLUDE = {
   stops: {
     orderBy: { sequence: 'asc' as const },
+    include: {
+      place: {
+        select: { latitude: true, longitude: true },
+      },
+    },
   },
   carrier: true,
   driver: true,

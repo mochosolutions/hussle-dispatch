@@ -76,12 +76,47 @@ const updateSettingsBodySchema = Yup.object({
     .min(1, 'smsCooldownMinutes must be at least 1')
     .max(1440, 'smsCooldownMinutes must be at most 1440')
     .notRequired(),
-}).test('has-any-field', 'At least one field must be provided', (value) => {
-  if (value === undefined) {
-    return false;
-  }
-  return Object.keys(value).length > 0;
-});
+  headquartersLatitude: Yup.number()
+    .min(-90, 'headquartersLatitude must be at least -90')
+    .max(90, 'headquartersLatitude must be at most 90')
+    .nullable()
+    .notRequired(),
+  headquartersLongitude: Yup.number()
+    .min(-180, 'headquartersLongitude must be at least -180')
+    .max(180, 'headquartersLongitude must be at most 180')
+    .nullable()
+    .notRequired(),
+})
+  .test(
+    'hq-pair',
+    'headquartersLatitude and headquartersLongitude must be set together or both null',
+    (value) => {
+      if (value === undefined) {
+        return true;
+      }
+      const { headquartersLatitude: lat, headquartersLongitude: lng } = value;
+      const latProvided = lat !== undefined;
+      const lngProvided = lng !== undefined;
+
+      if (latProvided !== lngProvided) {
+        return false;
+      }
+      if (latProvided && lngProvided) {
+        const latIsNull = lat === null;
+        const lngIsNull = lng === null;
+        if (latIsNull !== lngIsNull) {
+          return false;
+        }
+      }
+      return true;
+    },
+  )
+  .test('has-any-field', 'At least one field must be provided', (value) => {
+    if (value === undefined) {
+      return false;
+    }
+    return Object.keys(value).length > 0;
+  });
 
 export const updateSettingsSchema = Yup.object({
   body: updateSettingsBodySchema,

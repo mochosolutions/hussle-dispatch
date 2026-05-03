@@ -2,6 +2,8 @@ export interface AddressSearchInput {
   organizationId: string;
   query: string;
   limit: number;
+  biasLat?: number | null;
+  biasLng?: number | null;
 }
 
 export interface AddressSearchResult {

@@ -1,28 +1,9 @@
 import axiosInstance from 'utils/axios';
+import type { OrgSettings, SettingsFormValues } from 'features/settings/types';
 
-export interface Settings {
-  id: string;
-  organizationId: string;
-  timezone: string;
-  currency: string;
-  distanceUnit: string;
-  dateFormat: string;
-  invoicePrefix: string;
-  invoiceNextNumber: number;
-  defaultPaymentTerms: number;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Settings = OrgSettings;
 
-export interface UpdateSettingsPayload {
-  timezone?: string;
-  currency?: string;
-  distanceUnit?: string;
-  dateFormat?: string;
-  invoicePrefix?: string;
-  invoiceNextNumber?: number;
-  defaultPaymentTerms?: number;
-}
+export type UpdateSettingsPayload = Partial<SettingsFormValues>;
 
 interface GetSettingsResponse {
   data: Settings;

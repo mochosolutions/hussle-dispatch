@@ -68,7 +68,6 @@ export const CreateLoadSummaryBar = ({ financials }) => {
       }
       sx={{
         width: '100%',
-        // border: '1px solid black'
       }}
     >
       <KpiGroup label="Revenue">
@@ -77,9 +76,6 @@ export const CreateLoadSummaryBar = ({ financials }) => {
           value={
             financials.customerRate > 0 ? formatCurrencyCompact(financials.customerRate) : '\u2014'
           }
-          // sx={{
-          //   flex: 1,
-          // }}
         />
         <StyledKpiCell
           label="Margin"
@@ -87,16 +83,10 @@ export const CreateLoadSummaryBar = ({ financials }) => {
             financials.customerRate > 0 ? formatCurrencyCompact(financials.grossMargin) : '\u2014'
           }
           valueProps={{ color: financials.customerRate > 0 ? marginColor : undefined }}
-          // sx={{
-          //   flex: 1,
-          // }}
         />
         <StyledKpiCell
           label="Min Book"
           value={financials.minBookRate ? formatCurrency(financials.minBookRate) : '\u2014'}
-          // sx={{
-          //   flex: 1,
-          // }}
         />
       </KpiGroup>
 
@@ -109,44 +99,6 @@ export const CreateLoadSummaryBar = ({ financials }) => {
           label="RPM"
           value={financials.ratePerMile > 0 ? `$${financials.ratePerMile.toFixed(2)}/mi` : '\u2014'}
         />
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{
-            flex: 1,
-          }}
-        >
-          <Meta sx={{ color: 'grey.400' }}>
-            +{financials.deadheadMiles.toLocaleString()} DH (
-            {financials.totalMiles.toLocaleString()} tot)
-          </Meta>
-          <Meta sx={{ color: 'grey.400' }}>
-            Tot RPM ${financials.ratePerTotalMile.toFixed(2)}/mi
-          </Meta>
-        </Stack>
-
-        <Stack spacing={0.5}>
-          <Stack direction="row" spacing={2}></Stack>
-          {/* {financials.deadheadMiles > 0 && (
-            <Fade in timeout={200}>
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                  flex: 1,
-                }}
-              >
-                <Typography variant="caption" sx={{ color: 'grey.400' }}>
-                  +{financials.deadheadMiles.toLocaleString()} DH (
-                  {financials.totalMiles.toLocaleString()} tot)
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'grey.400' }}>
-                  Tot RPM ${financials.ratePerTotalMile.toFixed(2)}/mi
-                </Typography>
-              </Stack>
-            </Fade>
-          )} */}
-        </Stack>
       </KpiGroup>
       <KpiGroup label="Carrier">
         <StyledKpiCell

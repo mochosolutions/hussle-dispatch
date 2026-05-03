@@ -6,11 +6,14 @@ import type {
   UpdateLoadInput,
   AssignLoadInput,
   AssignLoadResponse,
+  LoadCreateResponse,
+  LoadUpdateResponse,
   LoadFilters,
   CheckCall,
   StatusHistoryEntry,
   TransitionStatusInput,
   CreateCheckCallInput,
+  Warning,
 } from 'features/load/types';
 import type { PaginationMeta } from 'features/carrier/types';
 
@@ -38,6 +41,11 @@ interface GetLoadsResponse {
 
 interface GetLoadResponse {
   data: LoadDetail;
+}
+
+interface MutateLoadResponse {
+  data: LoadDetail;
+  warnings?: Warning[];
 }
 
 interface StatusTransitionApiResponse {
@@ -77,17 +85,23 @@ export const getLoad = async (id: string): Promise<LoadDetail> => {
 
 export const createLoad = async (
   data: CreateLoadInput,
-): Promise<LoadDetail> => {
-  const response = await axiosInstance.post<GetLoadResponse>('/loads', data);
-  return response.data.data;
+): Promise<LoadCreateResponse> => {
+  const response = await axiosInstance.post<MutateLoadResponse>('/loads', data);
+  return {
+    data: response.data.data,
+    warnings: response.data.warnings ?? [],
+  };
 };
 
 export const updateLoad = async (
   id: string,
   data: UpdateLoadInput,
-): Promise<LoadDetail> => {
-  const response = await axiosInstance.patch<GetLoadResponse>(`/loads/${id}`, data);
-  return response.data.data;
+): Promise<LoadUpdateResponse> => {
+  const response = await axiosInstance.patch<MutateLoadResponse>(`/loads/${id}`, data);
+  return {
+    data: response.data.data,
+    warnings: response.data.warnings ?? [],
+  };
 };
 
 export const assignLoad = async (

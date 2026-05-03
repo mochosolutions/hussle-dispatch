@@ -6,7 +6,6 @@ import type { LoadFormValues } from '../../validators/loadSchema';
 
 jest.mock('utils/api/places/placeApi', () => ({
   searchAddresses: jest.fn(),
-  createPlace: jest.fn(),
 }));
 
 jest.mock('features/ui/hooks/useDrawerActions', () => ({
@@ -122,8 +121,32 @@ describe('AddressSearchField', () => {
       state: 'TX',
     });
     render(<AddressSearchField prefix="stops[0]" formik={formik} />);
-    expect(screen.getByText('Change place')).toBeInTheDocument();
+    expect(screen.getByText('My Warehouse')).toBeInTheDocument();
     expect(screen.getByText('123 Main St')).toBeInTheDocument();
+  });
+
+  it('does not render facility row when facilityName is empty', () => {
+    const formik = buildMockFormik({
+      placeId: 'place-1',
+      facilityName: '',
+      address: '123 Main St',
+      city: 'Dallas',
+      state: 'TX',
+    });
+    render(<AddressSearchField prefix="stops[0]" formik={formik} />);
+    expect(screen.queryByText('Facility')).not.toBeInTheDocument();
+    expect(screen.getByText('Address')).toBeInTheDocument();
+  });
+
+  it('does not render Save Place button (auto-place-resolution removed it)', () => {
+    const formik = buildMockFormik({
+      facilityName: 'Some Place',
+      address: '456 Oak Ave',
+      city: 'Houston',
+      state: 'TX',
+    });
+    render(<AddressSearchField prefix="stops[0]" formik={formik} />);
+    expect(screen.queryByText(/Save Place/i)).not.toBeInTheDocument();
   });
 
   it('calls searchAddresses API on input', async () => {
@@ -141,7 +164,7 @@ describe('AddressSearchField', () => {
     });
   });
 
-  it('renders grouped results with SAVED and RESULT chips', async () => {
+  it('renders grouped results with SAVED PLACES and ADDRESS RESULTS group headers', async () => {
     const user = userEvent.setup();
     searchAddresses.mockResolvedValue([savedResult, externalResult]);
     const formik = buildMockFormik();
@@ -152,8 +175,8 @@ describe('AddressSearchField', () => {
     await user.type(input, 'test');
 
     await waitFor(() => {
-      expect(screen.getByText('SAVED')).toBeInTheDocument();
-      expect(screen.getByText('RESULT')).toBeInTheDocument();
+      expect(screen.getByText('SAVED PLACES')).toBeInTheDocument();
+      expect(screen.getByText('ADDRESS RESULTS')).toBeInTheDocument();
     });
   });
 

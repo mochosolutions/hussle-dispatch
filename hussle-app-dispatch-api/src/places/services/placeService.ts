@@ -63,11 +63,15 @@ export const createPlaceService = (deps: PlaceServiceDeps): PlaceService => ({
 
     const geoResult = await getCityCoords(deps.redis, input.state, input.city);
 
+    // User-initiated POST /places always creates with source=USER. Any client-supplied
+    // `source` is ignored — only the internal AUTO-creation path (resolveStopToPlace)
+    // sets source=AUTO via the repository directly.
     const createData = {
       ...input,
       latitude: geoResult?.lat ?? input.latitude,
       longitude: geoResult?.lng ?? input.longitude,
       geoSource: geoResult !== null ? 'AUTO' as const : (input.geoSource ?? 'AUTO' as const),
+      source: 'USER',
     };
 
     return deps.placeRepository.create(organizationId, createData);
@@ -129,6 +133,17 @@ export const createPlaceService = (deps: PlaceServiceDeps): PlaceService => ({
           geoSource: 'AUTO' as const,
         };
       }
+    }
+
+    // Source flip: any user-initiated PATCH on an AUTO-created place promotes it
+    // to USER. Observed (a human touched the row), not field-compared. The internal
+    // AUTO-fill path in resolveStopToPlace writes through the repository directly
+    // and bypasses this service, so it does not trigger a flip.
+    if (existingPlace.source === 'AUTO') {
+      updateData = {
+        ...updateData,
+        source: 'USER',
+      };
     }
 
     return deps.placeRepository.update(id, updateData);

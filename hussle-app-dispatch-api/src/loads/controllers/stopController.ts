@@ -22,14 +22,20 @@ export interface StopControllers {
 export const createStopControllers = (deps: StopControllerDeps): StopControllers => ({
   create: async (req: Request, res: Response): Promise<void> => {
     const input = createStopMapper(req);
-    const stop = await deps.stopService.createStop(input);
-    sendSingle(res, toStopResponse(stop), 201);
+    const result = await deps.stopService.createStop(input);
+    res.status(201).json({
+      data: toStopResponse(result.stop),
+      warnings: result.warnings,
+    });
   },
 
   update: async (req: Request, res: Response): Promise<void> => {
     const input = updateStopMapper(req);
-    const stop = await deps.stopService.updateStop(input);
-    sendSingle(res, toStopResponse(stop));
+    const result = await deps.stopService.updateStop(input);
+    res.status(200).json({
+      data: toStopResponse(result.stop),
+      warnings: result.warnings,
+    });
   },
 
   remove: async (req: Request, res: Response): Promise<void> => {

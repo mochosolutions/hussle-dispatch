@@ -12,7 +12,6 @@ import { createContact } from 'utils/api/fleet/contactApi';
 import type { CreateLoadInput, QueuedDocument } from '../../types';
 import { createLoadSuccess, createLoadFailure, fetchLoadsRequest } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
-import { mapDetailToListItem } from './detailToListItemMapper';
 
 interface CreateLoadPayload {
   data: CreateLoadInput;
@@ -45,7 +44,8 @@ export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Gener
   try {
     const { data, queuedDocuments } = action.payload;
 
-    const load = (yield call(createLoad, data)) as SagaReturnType<typeof createLoad>;
+    const response = (yield call(createLoad, data)) as SagaReturnType<typeof createLoad>;
+    const { data: load, warnings } = response;
 
     // Upload queued documents after load creation
     let docsFailed = 0;
@@ -53,8 +53,13 @@ export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Gener
       docsFailed = (yield* uploadQueuedDocuments(load.id, queuedDocuments)) as number;
     }
 
-    yield put(loadActions.addOne(mapDetailToListItem(load)));
+    yield put(loadActions.addOne(load));
     yield put(createLoadSuccess({}));
+
+    // Surface non-blocking geocoding warnings
+    for (const warning of warnings) {
+      yield put(notify({ message: warning.message, variant: 'warning' }));
+    }
 
     // Auto-save new contacts (have contactName but no contactId)
     const newContacts = data.stops

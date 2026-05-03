@@ -1072,7 +1072,7 @@ x-auth-matrix:
     roles: [ADMIN, DISPATCHER]
     scoping: 'organizationId from JWT claims; load is created under that org'
   - endpoint: 'GET /api/v1/loads/{id}'
-    roles: [ADMIN, DISPATCHER, DRIVER, ACCOUNTANT, VIEWER]
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
     scoping: 'organizationId from JWT claims; row must match'
   - endpoint: 'PATCH /api/v1/loads/{id}'
     roles: [ADMIN, DISPATCHER]
@@ -1084,10 +1084,10 @@ x-auth-matrix:
     roles: [ADMIN, DISPATCHER]
     scoping: 'organizationId from JWT claims; loadId + stopId must belong to that org'
   - endpoint: 'GET /api/v1/places'
-    roles: [ADMIN, DISPATCHER, DRIVER, ACCOUNTANT, VIEWER]
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
     scoping: 'organizationId from JWT claims'
   - endpoint: 'GET /api/v1/places/{id}'
-    roles: [ADMIN, DISPATCHER, DRIVER, ACCOUNTANT, VIEWER]
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
     scoping: 'organizationId from JWT claims; row must match'
   - endpoint: 'POST /api/v1/places'
     roles: [ADMIN, DISPATCHER]
@@ -1096,10 +1096,10 @@ x-auth-matrix:
     roles: [ADMIN, DISPATCHER]
     scoping: 'organizationId from JWT claims; row must match. Triggers AUTO→USER source flip.'
   - endpoint: 'GET /api/v1/places/address-search'
-    roles: [ADMIN, DISPATCHER, DRIVER, ACCOUNTANT, VIEWER]
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
     scoping: 'organizationId from JWT claims; saved-result group filtered by org'
   - endpoint: 'GET /api/v1/settings'
-    roles: [ADMIN, DISPATCHER, ACCOUNTANT, VIEWER]
+    roles: [ADMIN, DISPATCHER, VIEWER]
     scoping: 'organizationId from JWT claims'
   - endpoint: 'PUT /api/v1/settings'
     roles: [ADMIN]

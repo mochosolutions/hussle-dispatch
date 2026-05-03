@@ -1,10 +1,12 @@
 import type { PlaceRepositoryPort, TypeaheadPlaceResult } from '../types/placeTypes';
 import type { GeocodingProviderPort } from '@/shared/providers/awsLocationProviderTypes';
 import type { AddressSearchInput, AddressSearchResult, FacilityDayHoursEntry } from '../types/addressSearchTypes';
+import type { OrganizationQueryPort } from '../types/organizationQueryPort';
 import { validateFacilityHoursJson } from '@/shared/utils/facilityHours';
 
 const MIN_QUERY_LENGTH_FOR_GEOCODING = 3;
 const PLACES_THRESHOLD = 3;
+const DEFAULT_BIAS_POSITION: [number, number] = [-98.5, 39.5];
 
 const buildDedupeKey = (city: string, state: string, address: string): string =>
   `${city.toLowerCase().trim()}|${state.toLowerCase().trim()}|${address.toLowerCase().trim()}`;
@@ -35,6 +37,7 @@ const deduplicateResults = (
 interface AddressSearchServiceDeps {
   placeRepository: PlaceRepositoryPort;
   geocodingProvider: GeocodingProviderPort;
+  organizationQueries: OrganizationQueryPort;
 }
 
 const parseFacilityHours = (raw: unknown): FacilityDayHoursEntry[] | null => {
@@ -66,6 +69,31 @@ const mapPlaceToResult = (place: TypeaheadPlaceResult): AddressSearchResult => (
   is24Hours: place.is24Hours ?? false,
 });
 
+const resolveBiasPosition = async (
+  input: AddressSearchInput,
+  organizationQueries: OrganizationQueryPort,
+): Promise<[number, number]> => {
+  if (
+    typeof input.biasLat === 'number'
+    && Number.isFinite(input.biasLat)
+    && typeof input.biasLng === 'number'
+    && Number.isFinite(input.biasLng)
+  ) {
+    return [input.biasLng, input.biasLat];
+  }
+
+  const hq = await organizationQueries.findHeadquartersLocation(input.organizationId);
+  if (
+    hq !== null
+    && hq.latitude !== null
+    && hq.longitude !== null
+  ) {
+    return [hq.longitude, hq.latitude];
+  }
+
+  return DEFAULT_BIAS_POSITION;
+};
+
 export const createAddressSearchService = (deps: AddressSearchServiceDeps) => ({
   search: async (input: AddressSearchInput): Promise<AddressSearchResult[]> => {
     const placeResults = await deps.placeRepository.typeahead({
@@ -87,15 +115,18 @@ export const createAddressSearchService = (deps: AddressSearchServiceDeps) => ({
     const remainingSlots = input.limit - savedResults.length;
 
     try {
+      const biasPosition = await resolveBiasPosition(input, deps.organizationQueries);
+
       const geocodeResults = await deps.geocodingProvider.searchAddresses(
         input.query,
         remainingSlots,
+        biasPosition,
       );
 
       const externalResults: AddressSearchResult[] = geocodeResults.map((suggestion, index) => ({
         source: 'EXTERNAL',
         id: `ext-${index}`,
-        name: suggestion.label,
+        name: suggestion.name ?? suggestion.address,
         address: suggestion.address,
         city: suggestion.city,
         state: suggestion.state,

@@ -35,8 +35,11 @@ export interface LoadControllers {
 export const createLoadControllers = (deps: LoadControllerDeps): LoadControllers => ({
   createLoad: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = createLoadMapper(req);
-    const load = await deps.loadService.createLoad(serviceInput);
-    sendSingle(res, toLoadDetailResponse(load), 201);
+    const result = await deps.loadService.createLoad(serviceInput);
+    res.status(201).json({
+      data: toLoadDetailResponse(result.load),
+      warnings: result.warnings,
+    });
   },
 
   listLoads: async (req: Request, res: Response): Promise<void> => {
@@ -58,8 +61,11 @@ export const createLoadControllers = (deps: LoadControllerDeps): LoadControllers
 
   updateLoad: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = updateLoadMapper(req);
-    const load = await deps.loadService.updateLoad(serviceInput);
-    sendSingle(res, toLoadDetailResponse(load));
+    const result = await deps.loadService.updateLoad(serviceInput);
+    res.status(200).json({
+      data: toLoadDetailResponse(result.load),
+      warnings: result.warnings,
+    });
   },
 
   assignLoad: async (req: Request, res: Response): Promise<void> => {

@@ -6,6 +6,14 @@ import { Meta, MetaStrong, SectionTitle, SuccessText, Timestamp } from 'componen
 import { StatusBadge } from 'components/Statusbadge';
 import { KANBAN_GROUPS, STATUS_LABELS } from '../../../constants';
 import { InvoiceReadinessBadge } from '../InvoiceReadinessBadge';
+import {
+  selectLoadCarrierName,
+  selectLoadDestinationCity,
+  selectLoadDestinationState,
+  selectLoadDriverName,
+  selectLoadOriginCity,
+  selectLoadOriginState,
+} from '../../../store/selectors/loadSelectors';
 import type { LoadListItem, KanbanGroup } from '../../../types';
 
 // ---------------------------------------------------------------------------
@@ -39,16 +47,19 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
     navigate(`/loads/${load.id}`);
   }, [navigate, load.id]);
 
-  const route = [load.route.originCity, load.route.originState]
+  const driverName = selectLoadDriverName(load);
+  const carrierName = selectLoadCarrierName(load);
+
+  const route = [selectLoadOriginCity(load), selectLoadOriginState(load)]
     .filter(Boolean)
     .join(', ');
 
-  const destination = [load.route.destinationCity, load.route.destinationState]
+  const destination = [selectLoadDestinationCity(load), selectLoadDestinationState(load)]
     .filter(Boolean)
     .join(', ');
 
-  const driverInitials = load.assignment.driverName
-    ? load.assignment.driverName
+  const driverInitials = driverName
+    ? driverName
         .split(' ')
         .map((n) => n[0])
         .join('')
@@ -81,9 +92,9 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
           {route || 'TBD'} &rarr; {destination || 'TBD'}
         </MetaStrong>
 
-        {load.assignment.carrierName && (
+        {carrierName && (
           <Chip
-            label={load.assignment.carrierName}
+            label={carrierName}
             size="small"
             variant="outlined"
             sx={{ fontSize: '0.6875rem', height: 20, mb: 1 }}
@@ -98,13 +109,13 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ load }) => {
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            {load.assignment.driverName && (
+            {driverName && (
               <>
                 <Avatar sx={{ width: 22, height: 22, fontSize: '0.625rem', fontWeight: 700 }}>
                   {driverInitials}
                 </Avatar>
                 <Meta>
-                  {load.assignment.driverName.split(' ')[0]}
+                  {driverName.split(' ')[0]}
                 </Meta>
               </>
             )}

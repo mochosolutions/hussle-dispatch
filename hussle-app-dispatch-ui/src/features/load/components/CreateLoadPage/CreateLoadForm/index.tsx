@@ -383,17 +383,19 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
             }}
           >
             <LoadDetailsSection formik={formik} complete={sectionCompletion.loadDetailsComplete} />
-            <StopsSection formik={formik} complete={sectionCompletion.stopsComplete} />
-            <AccessorialsSection
-              formik={formik}
-              carrierId={formik.values.carrierId as string | undefined}
-            />
             <DriverSection
               formik={formik}
               onDriverSelected={handleDriverSelected}
               selectedDriver={selectedDriver}
               complete={sectionCompletion.driverComplete}
             />
+
+            <StopsSection formik={formik} complete={sectionCompletion.stopsComplete} />
+            <AccessorialsSection
+              formik={formik}
+              carrierId={formik.values.carrierId as string | undefined}
+            />
+
             <DriverEconomicsSection formik={formik} selectedDriver={selectedDriver} />
             <DocumentsSection formik={formik} />
             <NotesSection formik={formik} />

@@ -52,15 +52,15 @@ export const createStyleController = (deps: MapTileControllerDeps) =>
     }
 
     if (styleJson.sprite) {
-      styleJson.sprite = `${baseUrl}/sprites/sprite`;
+      styleJson.sprite = `${baseUrl}/sprites/sprites`;
     }
 
     if (styleJson.glyphs) {
-      styleJson.glyphs = `${baseUrl}/glyphs/{fontstack}/{range}`;
+      styleJson.glyphs = `${baseUrl}/glyphs/{fontstack}/{range}.pbf`;
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=300');
     res.json(styleJson);
   };
 

@@ -1,6 +1,7 @@
 import type { AccessorialCharge, SchedulingType, Stop } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
+import type { Warning } from '@/places';
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import type { LoadRepoPort } from '../types/loadTypes';
 import type { CreateAccessorialInput } from '../types/accessorialTypes';
@@ -10,6 +11,7 @@ import type {
   StopRepoPort,
   UpdateStopInput,
 } from '../types/stopTypes';
+import type { ResolveStopToPlace } from './loadService';
 import { checkDetentionForStop } from './detentionDetector';
 import { assertDeliveryAfterPickup } from '../utils/deliveryAfterPickup';
 
@@ -35,14 +37,20 @@ interface StopServiceDeps {
   loadRepository: LoadRepoPort;
   eventBus: EventBus;
   logger: Logger;
+  resolveStopToPlace?: ResolveStopToPlace;
   settingsQuery?: DetentionSettingsQuery;
   accessorialQuery?: DetentionAccessorialQuery;
   accessorialCreate?: DetentionAccessorialCreate;
 }
 
+export interface StopWriteResult {
+  stop: Stop;
+  warnings: Warning[];
+}
+
 export interface StopService {
-  createStop(input: CreateStopInput): Promise<Stop>;
-  updateStop(input: UpdateStopInput): Promise<Stop>;
+  createStop(input: CreateStopInput): Promise<StopWriteResult>;
+  updateStop(input: UpdateStopInput): Promise<StopWriteResult>;
   deleteStop(id: string, organizationId: string): Promise<void>;
   listStops(loadId: string, organizationId: string): Promise<Stop[]>;
   reorderStops(input: ReorderStopsInput): Promise<void>;
@@ -66,6 +74,60 @@ const validateSchedulingFields = (
   if (appointmentStart === undefined || appointmentStart === null) {
     throw new ValidationError('appointmentStart is required.');
   }
+};
+
+const resolveSingleStop = async (
+  stop: {
+    sequence: number;
+    placeId?: string | null;
+    facilityName?: string | null;
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    contactName?: string | null;
+    contactPhone?: string | null;
+    notes?: string | null;
+  },
+  organizationId: string,
+  resolveStopToPlace: ResolveStopToPlace | undefined,
+): Promise<{
+  placeId: string | null;
+  resolutionStatus: string;
+  facilityNameToWrite: string | undefined;
+  warning: Warning | null;
+}> => {
+  if (resolveStopToPlace === undefined) {
+    return {
+      placeId: stop.placeId ?? null,
+      resolutionStatus: 'UNRESOLVED',
+      facilityNameToWrite: undefined,
+      warning: null,
+    };
+  }
+
+  const result = await resolveStopToPlace(
+    {
+      sequence: stop.sequence,
+      placeId: stop.placeId ?? null,
+      facilityName: stop.facilityName ?? null,
+      address: stop.address ?? null,
+      city: stop.city ?? null,
+      state: stop.state ?? null,
+      zip: stop.zip ?? null,
+      contactName: stop.contactName ?? null,
+      contactPhone: stop.contactPhone ?? null,
+      notes: stop.notes ?? null,
+    },
+    organizationId,
+  );
+
+  return {
+    placeId: result.placeId,
+    resolutionStatus: result.resolutionStatus,
+    facilityNameToWrite: result.facilityNameToWrite,
+    warning: result.warning,
+  };
 };
 
 const validateReorderInput = (
@@ -104,7 +166,7 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
   };
 
   return {
-    createStop: async (input: CreateStopInput): Promise<Stop> => {
+    createStop: async (input: CreateStopInput): Promise<StopWriteResult> => {
       await findLoadOrThrow(input.loadId, input.organizationId, deps);
       validateSchedulingFields(input.appointmentStart, input.notificationHours);
 
@@ -120,24 +182,38 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
         { type: input.type, appointmentStart: input.appointmentStart },
       ]);
 
-      let result: Stop;
+      const resolvedSequence =
+        input.sequence ??
+        existingStops.reduce((max, stop) => Math.max(max, stop.sequence), 0) + 1;
 
-      if (input.sequence === undefined) {
-        const maxSequence = existingStops.reduce(
-          (max, stop) => Math.max(max, stop.sequence),
-          0,
-        );
+      // Resolve to Place BEFORE persist (no transaction = no
+      // long-held DB connection during AWS round-trip).
+      const resolution = await resolveSingleStop(
+        { ...input, sequence: resolvedSequence },
+        input.organizationId,
+        deps.resolveStopToPlace,
+      );
 
-        result = await deps.stopRepository.create({ ...input, sequence: maxSequence + 1 });
-      } else {
-        result = await deps.stopRepository.create(input);
-      }
+      const persistInput: CreateStopInput = {
+        ...input,
+        sequence: resolvedSequence,
+        placeId: resolution.placeId,
+        resolutionStatus: resolution.resolutionStatus,
+        ...(resolution.facilityNameToWrite !== undefined
+          ? { facilityName: resolution.facilityNameToWrite }
+          : {}),
+      };
+
+      const result = await deps.stopRepository.create(persistInput);
 
       publishStopsChanged(input.loadId, input.organizationId);
-      return result;
+      return {
+        stop: result,
+        warnings: resolution.warning !== null ? [resolution.warning] : [],
+      };
     },
 
-    updateStop: async (input: UpdateStopInput): Promise<Stop> => {
+    updateStop: async (input: UpdateStopInput): Promise<StopWriteResult> => {
       validateSchedulingFields(input.appointmentStart, input.notificationHours);
 
       // Cross-stop check: only run when the change could affect the rule
@@ -165,7 +241,44 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
         assertDeliveryAfterPickup(projected);
       }
 
-      const result = await deps.stopRepository.update(input);
+      // Re-resolve the stop to a Place. Use the merged value of each
+      // address field — if a field is omitted from input, fall back to
+      // the existing stored value so the resolver sees the full picture.
+      let warning: Warning | null = null;
+      let persistInput: UpdateStopInput = input;
+      if (targetStop !== null) {
+        const merged = {
+          sequence: input.sequence ?? targetStop.sequence,
+          placeId: input.placeId !== undefined ? input.placeId : targetStop.placeId,
+          facilityName:
+            input.facilityName !== undefined ? input.facilityName : targetStop.facilityName,
+          address: input.address !== undefined ? input.address : targetStop.address,
+          city: input.city !== undefined ? input.city : targetStop.city,
+          state: input.state !== undefined ? input.state : targetStop.state,
+          zip: input.zip !== undefined ? input.zip : targetStop.zip,
+          contactName:
+            input.contactName !== undefined ? input.contactName : targetStop.contactName,
+          contactPhone:
+            input.contactPhone !== undefined ? input.contactPhone : targetStop.contactPhone,
+          notes: input.notes !== undefined ? input.notes : targetStop.notes,
+        };
+        const resolution = await resolveSingleStop(
+          merged,
+          input.organizationId,
+          deps.resolveStopToPlace,
+        );
+        warning = resolution.warning;
+        persistInput = {
+          ...input,
+          placeId: resolution.placeId,
+          resolutionStatus: resolution.resolutionStatus,
+          ...(resolution.facilityNameToWrite !== undefined
+            ? { facilityName: resolution.facilityNameToWrite }
+            : {}),
+        };
+      }
+
+      const result = await deps.stopRepository.update(persistInput);
 
       // Detention auto-detection when departureTime is set
       if (
@@ -236,7 +349,10 @@ export const createStopService = (deps: StopServiceDeps): StopService => {
       }
 
       publishStopsChanged(result.loadId, input.organizationId);
-      return result;
+      return {
+        stop: result,
+        warnings: warning !== null ? [warning] : [],
+      };
     },
 
     deleteStop: async (id: string, organizationId: string): Promise<void> => {

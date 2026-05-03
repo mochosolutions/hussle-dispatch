@@ -5,6 +5,7 @@ export interface StopResponse {
   loadId: string;
   contactId: string | null;
   placeId: string | null;
+  resolutionStatus: string;
   type: string;
   sequence: number;
   facilityName: string | null;
@@ -12,6 +13,8 @@ export interface StopResponse {
   city: string | null;
   state: string | null;
   zip: string | null;
+  lat: number | null;
+  lng: number | null;
   schedulingType: string;
   appointmentStart: string;
   appointmentEnd: string | null;
@@ -41,6 +44,7 @@ export const toStopResponse = (stop: Stop): StopResponse => ({
   loadId: stop.loadId,
   contactId: stop.contactId,
   placeId: stop.placeId,
+  resolutionStatus: stop.resolutionStatus,
   type: stop.type,
   sequence: stop.sequence,
   facilityName: stop.facilityName,
@@ -48,6 +52,8 @@ export const toStopResponse = (stop: Stop): StopResponse => ({
   city: stop.city,
   state: stop.state,
   zip: stop.zip,
+  lat: null,
+  lng: null,
   schedulingType: stop.schedulingType,
   appointmentStart: stop.appointmentStart.toISOString(),
   appointmentEnd: stop.appointmentEnd?.toISOString() ?? null,

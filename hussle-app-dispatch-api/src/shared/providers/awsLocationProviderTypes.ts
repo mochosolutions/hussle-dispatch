@@ -1,5 +1,5 @@
 export interface GeocodeSuggestion {
-  label: string;
+  name: string | null;
   address: string;
   city: string;
   state: string;
@@ -8,8 +8,53 @@ export interface GeocodeSuggestion {
   lng: number;
 }
 
+export interface StructuredAddressInput {
+  addressNumber?: string;
+  street?: string;
+  unit?: string;
+  city: string;
+  region: string;
+  postalCode?: string;
+}
+
+export interface GeocodeResult {
+  matchScore: number;
+  type:
+    | 'PointAddress'
+    | 'PointOfInterest'
+    | 'InterpolatedAddress'
+    | 'InferredSecondaryAddress'
+    | 'Locality'
+    | 'Region'
+    | 'District'
+    | string;
+  title: string | null;
+  addressNumber: string | null;
+  streetBaseName: string | null;
+  streetType: string | null;
+  streetPrefix: string | null;
+  city: string;
+  region: string;
+  postalCode5: string;
+  unit: string | null;
+  lat: number;
+  lng: number;
+}
+
+export const ACCEPTED_GEOCODE_TYPES: ReadonlySet<string> = new Set([
+  'PointAddress',
+  'PointOfInterest',
+  'InterpolatedAddress',
+  'InferredSecondaryAddress',
+]);
+
 export interface GeocodingProviderPort {
-  searchAddresses(query: string, maxResults: number): Promise<GeocodeSuggestion[]>;
+  searchAddresses(
+    query: string,
+    maxResults: number,
+    biasPosition?: [number, number],
+  ): Promise<GeocodeSuggestion[]>;
+  geocode(structured: StructuredAddressInput): Promise<GeocodeResult | null>;
 }
 
 export interface RouteDistanceResult {

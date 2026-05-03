@@ -14,6 +14,14 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PersonIcon from '@mui/icons-material/Person';
 import { useNavigate } from 'react-router-dom';
 import type { LoadListItem, LoadStatus } from '../../../types';
+import {
+  selectLoadDestinationCity,
+  selectLoadDestinationState,
+  selectLoadDriverId,
+  selectLoadDriverName,
+  selectLoadOriginCity,
+  selectLoadOriginState,
+} from '../../../store/selectors/loadSelectors';
 import { StatusBadge } from 'components/Statusbadge';
 
 // ---------------------------------------------------------------------------
@@ -70,7 +78,7 @@ const groupLoadsByDriver = (
   loads: LoadListItem[],
 ): { assigned: DriverGroup[]; available: DriverGroup[] } => {
   const groupMap = loads.reduce<Record<string, DriverGroup>>((acc, load) => {
-    const driverId = load.assignment.driverId ?? 'unassigned';
+    const driverId = selectLoadDriverId(load) ?? 'unassigned';
     const existing = acc[driverId];
 
     if (existing) {
@@ -78,7 +86,7 @@ const groupLoadsByDriver = (
     } else {
       acc[driverId] = {
         driverId,
-        driverName: load.assignment.driverName ?? 'Unassigned',
+        driverName: selectLoadDriverName(load) ?? 'Unassigned',
         loads: [load],
       };
     }
@@ -138,13 +146,13 @@ const LoadRow: React.FC<{ load: LoadListItem }> = ({ load }) => {
     </MetaStrong>
     <StatusBadge status={load.status} />
     <Meta sx={{ flex: 1 }}>
-      {formatLocation(load.route.originCity, load.route.originState)}
+      {formatLocation(selectLoadOriginCity(load), selectLoadOriginState(load))}
     </Meta>
     <Timestamp sx={{ mx: 0.5 }}>
       &rarr;
     </Timestamp>
     <Meta sx={{ flex: 1 }}>
-      {formatLocation(load.route.destinationCity, load.route.destinationState)}
+      {formatLocation(selectLoadDestinationCity(load), selectLoadDestinationState(load))}
     </Meta>
   </Box>
   );

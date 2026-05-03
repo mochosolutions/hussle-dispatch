@@ -1,7 +1,7 @@
 import type { Place } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
-import type { PlaceResponse } from '../../types/placeTypes';
+import type { PlaceResponse, PlaceSource } from '../../types/placeTypes';
 
 const decimalToNumber = (value: Decimal | null): number | null => {
   if (value === null) {
@@ -9,6 +9,8 @@ const decimalToNumber = (value: Decimal | null): number | null => {
   }
   return value.toNumber();
 };
+
+const toPlaceSource = (value: string): PlaceSource => (value === 'AUTO' ? 'AUTO' : 'USER');
 
 export const toPlaceResponse = (place: Place): PlaceResponse => ({
   id: place.id,
@@ -21,6 +23,8 @@ export const toPlaceResponse = (place: Place): PlaceResponse => ({
   city: place.city,
   state: place.state,
   zip: place.zip,
+  unit: place.unit,
+  source: toPlaceSource(place.source),
   latitude: decimalToNumber(place.latitude),
   longitude: decimalToNumber(place.longitude),
   geoSource: place.geoSource,

@@ -34,6 +34,27 @@ export type EquipmentType =
 
 export type StopType = 'PICKUP' | 'DELIVERY' | 'STOP_OFF' | 'DROP_HOOK' | 'LIVE_UNLOAD';
 
+// Auto-place-resolution enums (mirror frozen API contract types)
+
+export enum StopResolutionStatus {
+  RESOLVED = 'RESOLVED',
+  UNRESOLVED = 'UNRESOLVED',
+  AMBIGUOUS = 'AMBIGUOUS',
+}
+
+export enum WarningCode {
+  STOP_NOT_GEOCODED = 'STOP_NOT_GEOCODED',
+  STOP_AMBIGUOUS_ADDRESS = 'STOP_AMBIGUOUS_ADDRESS',
+  STOP_PARTIAL_ADDRESS = 'STOP_PARTIAL_ADDRESS',
+  GEOCODER_UNAVAILABLE = 'GEOCODER_UNAVAILABLE',
+}
+
+export interface Warning {
+  code: WarningCode;
+  stopSequence: number;
+  message: string;
+}
+
 export type BoardView = 'kanban' | 'table' | 'map' | 'driver' | 'intel';
 
 export type KanbanGroup = 'NEW' | 'BOOKED' | 'ACTIVE' | 'DELIVERED' | 'COMPLETE' | 'ISSUES';
@@ -53,6 +74,9 @@ export interface Stop {
   city: string | null;
   state: string | null;
   zip: string | null;
+  lat: number | null;
+  lng: number | null;
+  resolutionStatus: StopResolutionStatus;
   schedulingType: string;
   appointmentStart: string;
   appointmentEnd: string | null;
@@ -188,6 +212,8 @@ export interface DriverDetail {
   firstName: string;
   lastName: string;
   phone: string | null;
+  currentLatitude: number | null;
+  currentLongitude: number | null;
 }
 
 export interface VehicleDetail {
@@ -231,23 +257,18 @@ export interface ActivityResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Load list item (grouped for table/kanban display)
+// Load list item (canonical subset of LoadDetail)
 // ---------------------------------------------------------------------------
+//
+// Both list and detail responses share the same nested shape. The list
+// response is a strict structural subset of the detail response — list
+// omits some top-level keys (tracking, activity, organizationId, ...) and
+// uses lighter carrier/driver shapes inside `assignment`. Detail extends
+// with the additional keys + richer assignment.
 
 export interface ListRouteResponse {
-  originCity: string | null;
-  originState: string | null;
-  destinationCity: string | null;
-  destinationState: string | null;
   totalMiles: number | null;
-  pickupDate: string | null;
-  pickupSchedulingType: string | null;
-  deliveryDate: string | null;
-  deliverySchedulingType: string | null;
-  originLat: number | null;
-  originLng: number | null;
-  destLat: number | null;
-  destLng: number | null;
+  stops: Stop[];
 }
 
 export interface ListCargoResponse {
@@ -268,18 +289,33 @@ export interface ListFinancialResponse {
   companyNet: string | null;
 }
 
+export interface ListCarrierAssignment {
+  id: string;
+  name: string;
+}
+
+export interface ListDriverAssignment {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface ListAssignmentResponse {
-  carrierId: string | null;
-  carrierName: string | null;
-  driverId: string | null;
-  driverName: string | null;
+  carrier: ListCarrierAssignment | null;
+  driver: ListDriverAssignment | null;
 }
 
 export interface ListCustomerResponse {
-  customerName: string | null;
-  contactName: string | null;
-  contactEmail: string | null;
-  contactPhone: string | null;
+  id: string;
+  companyName: string;
+}
+
+export interface ListContactResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface LoadListItem {
@@ -296,7 +332,8 @@ export interface LoadListItem {
   cargo: ListCargoResponse;
   financials: ListFinancialResponse;
   assignment: ListAssignmentResponse;
-  customer: ListCustomerResponse;
+  customer: ListCustomerResponse | null;
+  contact: ListContactResponse | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -307,9 +344,12 @@ export interface LoadDetail {
   id: string;
   loadNumber: string;
   status: LoadStatus;
+  version?: number;
   organizationId: string;
   externalRefNumber: string | null;
   equipmentType: string | null;
+  invoiceReadiness: string;
+  accessorialChargeCount: number;
   dispatcherNotes: string | null;
   driverInstructions: string | null;
   createdAt: string;
@@ -367,6 +407,20 @@ export interface UpdateLoadInput {
   driverInstructions?: string;
   stops?: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
+}
+
+// ---------------------------------------------------------------------------
+// Create / Update responses (envelope with warnings)
+// ---------------------------------------------------------------------------
+
+export interface LoadCreateResponse {
+  data: LoadDetail;
+  warnings: Warning[];
+}
+
+export interface LoadUpdateResponse {
+  data: LoadDetail;
+  warnings: Warning[];
 }
 
 // ---------------------------------------------------------------------------
@@ -453,13 +507,6 @@ export interface CreateCheckCallInput {
   brokerNotified: boolean;
   brokerNotes?: string;
 }
-
-// ---------------------------------------------------------------------------
-// Type guard — distinguishes LoadDetail from LoadListItem in the shared entity adapter
-// ---------------------------------------------------------------------------
-
-export const isLoadDetail = (entity: LoadListItem | LoadDetail): entity is LoadDetail =>
-  'activity' in entity;
 
 // ---------------------------------------------------------------------------
 // Formatted load summary (pre-computed display values for LoadSummaryBar)

@@ -2,6 +2,7 @@ import { Box, Grid, Stack } from '@mui/material';
 import SectionCard from 'components/SectionCard';
 import { DetailRow, SectionLabel, Body, BodyMuted, Meta, MetaStrong, Timestamp } from 'components/Typography';
 import SectionCardActions from 'components/SectionCardActions';
+import { MapView } from 'components/MapView';
 import { StopCard as StopCardItem } from '../StopCard';
 import { AssignmentCard } from '../AssignmentCard';
 import { BrokerCard } from '../BrokerCard';
@@ -19,21 +20,18 @@ interface OverviewTabProps {
   onTabChange: (tab: string) => void;
 }
 
-export const RouteCard = ({ onEditRoute, stops, status }: any) => {
-  console.log('Stops', { stops });
-  return (
-    <SectionCard
-      title="Stops"
-      actions={<SectionCardActions onEditRoute={onEditRoute}>Edit</SectionCardActions>}
-    >
-      <Stack spacing={1}>
-        {stops.map((stop) => (
-          <StopCardItem key={stop.id} stop={stop} allStops={stops} loadStatus={status} />
-        ))}
-      </Stack>
-    </SectionCard>
-  );
-};
+export const RouteCard = ({ onEditRoute, stops, status }: any) => (
+  <SectionCard
+    title="Stops"
+    actions={<SectionCardActions onEditRoute={onEditRoute}>Edit</SectionCardActions>}
+  >
+    <Stack spacing={1}>
+      {stops.map((stop) => (
+        <StopCardItem key={stop.id} stop={stop} allStops={stops} loadStatus={status} />
+      ))}
+    </Stack>
+  </SectionCard>
+);
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   load,
@@ -44,10 +42,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onTabChange,
 }) => {
   const sortedStops = [...(load.route.stops ?? [])].sort((a, b) => a.sequence - b.sequence);
+  const driver = load.assignment.driver;
+  const driverPin =
+    driver && driver.currentLatitude !== null && driver.currentLongitude !== null
+      ? { lat: driver.currentLatitude, lng: driver.currentLongitude }
+      : null;
   return (
     <Stack spacing={2}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={8}>
+          <SectionCard title="Route Map" sx={{ mb: 2 }}>
+            <MapView stops={sortedStops} driver={driverPin} height={320} />
+          </SectionCard>
           <RouteCard onEditRoute={onEditRoute} status={load.status} stops={sortedStops} />
           <AssignmentCard load={load} onEdit={onEditAssignment} />
 

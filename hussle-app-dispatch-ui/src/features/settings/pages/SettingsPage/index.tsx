@@ -23,6 +23,7 @@ import type { FormikFieldProps } from 'mocho/components/form-fields';
 import { DetailTabBar } from 'components/DetailTabBar';
 import SectionCard from 'components/SectionCard';
 import { SectionTitle, BodyMuted, ErrorText } from 'components/Typography';
+import { formattedCurrentUserSelector } from 'features/auth/store/selectors/authSelector';
 import { settingsSchema } from '../../validators/settingsSchema';
 import TeamTab from '../../components/TeamTab';
 import { DriverCommunicationsSettings } from '../../components/DriverCommunicationsSettings';
@@ -56,6 +57,8 @@ const buildInitialValues = (settings: ReturnType<typeof selectSettings>): Settin
   smsTransitIntervalMinutes: settings?.smsTransitIntervalMinutes ?? 180,
   smsPostPickupEscalationMinutes: settings?.smsPostPickupEscalationMinutes ?? 30,
   smsCooldownMinutes: settings?.smsCooldownMinutes ?? 15,
+  headquartersLatitude: settings?.headquartersLatitude ?? null,
+  headquartersLongitude: settings?.headquartersLongitude ?? null,
 });
 
 const SETTINGS_TABS = [
@@ -70,6 +73,8 @@ const SettingsPage = () => {
   const isLoading = useSelector(selectSettingsLoading);
   const isSaving = useSelector(selectSettingsSaving);
   const error = useSelector(selectSettingsError);
+  const currentUser = useSelector(formattedCurrentUserSelector);
+  const isAdmin = currentUser.role === 'ADMIN';
 
   useEffect(() => {
     dispatch(fetchSettingsRequest());
@@ -82,9 +87,19 @@ const SettingsPage = () => {
     enableReinitialize: true,
     validationSchema: settingsSchema,
     onSubmit: (values) => {
+      const normalizeCoord = (value: unknown): number | null => {
+        if (value === '' || value === null || value === undefined) {
+          return null;
+        }
+        const num = typeof value === 'number' ? value : Number(value);
+        return Number.isNaN(num) ? null : num;
+      };
+
       const payload = {
         ...values,
         minBookRateProfitMargin: values.minBookRateProfitMargin / 100,
+        headquartersLatitude: normalizeCoord(values.headquartersLatitude),
+        headquartersLongitude: normalizeCoord(values.headquartersLongitude),
       };
       dispatch(updateSettingsRequest({ values: payload }));
     },
@@ -324,6 +339,37 @@ const SettingsPage = () => {
           </SectionCard>
 
           <DriverCommunicationsSettings formikProps={formikProps} />
+
+          {isAdmin && (
+            <SectionCard title={<SectionTitle>Headquarters Location</SectionTitle>}>
+              <Stack spacing={2.5}>
+                <BodyMuted>
+                  Set both latitude and longitude to enable headquarters-based deadhead calculations.
+                  Leave both empty to disable.
+                </BodyMuted>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="headquartersLatitude"
+                      label="Headquarters Latitude"
+                      formik={formikProps}
+                      type="number"
+                      placeholder="-90 to 90"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="headquartersLongitude"
+                      label="Headquarters Longitude"
+                      formik={formikProps}
+                      type="number"
+                      placeholder="-180 to 180"
+                    />
+                  </Grid>
+                </Grid>
+              </Stack>
+            </SectionCard>
+          )}
 
           {/* Save Button */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

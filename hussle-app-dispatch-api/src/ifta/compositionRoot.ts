@@ -1,4 +1,4 @@
-import { LocationClient } from '@aws-sdk/client-location';
+import { GeoRoutesClient } from '@aws-sdk/client-geo-routes';
 import type { PrismaClient } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { env } from '@/config/env';
@@ -37,14 +37,10 @@ export const createIftaModule = (deps: IftaModuleDeps) => {
   // --- Route calculator (conditional) ---
   let stateMileageService: StateMileageService | null = null;
 
-  const calculatorName = env.AWS_LOCATION_ROUTE_CALCULATOR_NAME;
-  const calculatorEnabled = env.ROUTE_CALCULATOR_ENABLED;
-
-  if (calculatorName && calculatorEnabled) {
-    const locationClient = new LocationClient({ region: env.AWS_REGION });
+  if (env.ROUTE_CALCULATOR_ENABLED) {
+    const routesClient = new GeoRoutesClient({ region: env.AWS_REGION });
     const awsCalculator = createAwsRouteCalculator({
-      locationClient,
-      calculatorName,
+      routesClient,
       logger,
     });
     const routeCalculator = createCachedRouteCalculator({

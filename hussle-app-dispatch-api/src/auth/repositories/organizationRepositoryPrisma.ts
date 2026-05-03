@@ -40,6 +40,8 @@ export const formatOrganization = (organization: PrismaOrganization): Organizati
   status: organization.status,
   customFields: organization.customFields,
   resources: organization.resources,
+  headquartersLatitude: organization.headquartersLatitude,
+  headquartersLongitude: organization.headquartersLongitude,
   deleted: organization.deleted,
   deletedAt: organization.deletedAt ? organization.deletedAt.toISOString() : '',
   createdAt: organization.createdAt.toISOString(),

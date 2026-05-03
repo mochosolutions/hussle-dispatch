@@ -1,4 +1,5 @@
 import type { ParsedQs } from 'qs';
+import type { Warning } from '@/places';
 import type {
   AssignLoadResult,
   LoadAssignmentInput,
@@ -12,6 +13,11 @@ import type {
   StatusHistoryWithUser,
   LoadDocument,
 } from './loadTypes';
+
+export interface LoadWriteResult {
+  load: LoadWithRelations;
+  warnings: Warning[];
+}
 
 export interface CreateLoadServiceInput {
   organizationId: string;
@@ -75,10 +81,10 @@ export interface ListLoadDocumentsServiceInput {
 }
 
 export interface LoadService {
-  createLoad(input: CreateLoadServiceInput): Promise<LoadWithRelations>;
+  createLoad(input: CreateLoadServiceInput): Promise<LoadWriteResult>;
   listLoads(input: ListLoadsServiceInput): Promise<ListLoadsResult>;
   getLoadById(input: GetLoadByIdServiceInput): Promise<LoadWithRelations>;
-  updateLoad(input: UpdateLoadServiceInput): Promise<LoadWithRelations>;
+  updateLoad(input: UpdateLoadServiceInput): Promise<LoadWriteResult>;
   assignLoad(input: AssignLoadServiceInput): Promise<AssignLoadResult>;
   deleteLoad(input: DeleteLoadServiceInput): Promise<void>;
   createCheckCall(input: CreateCheckCallServiceInput): Promise<CheckCallWithUser>;

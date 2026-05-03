@@ -13,7 +13,7 @@ import { MainCard } from '@mocho/ui/components';
 import type { LoadFormValues } from '../../../../../validators/loadSchema';
 import type { StopType } from '../../../../../types';
 import { StopFormCard } from 'features/load/components/StopFormCard';
-import { MapView } from '../../../MapView';
+import { MapView } from 'components/MapView';
 import { useRouteDistance } from './useRouteDistance';
 
 interface StopsSectionProps {
@@ -162,9 +162,7 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                 {isRouteLoading && <CircularProgress size={14} />}
                 {displayTotalMiles > 0 && !isRouteLoading && (
                   <>
-                    <Meta>
-                      {`${displayTotalMiles.toLocaleString()} total miles`}
-                    </Meta>
+                    <Meta>{`${displayTotalMiles.toLocaleString()} total miles`}</Meta>
                     {isEstimated && formik.values.loadedMiles === null && (
                       <Chip
                         label="EST"
@@ -180,8 +178,6 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
             }
           >
             <Stack spacing={0}>
-              {/* Route map */}
-
               <Grid container spacing={2} sx={{ mb: 1 }}>
                 <Grid item xs={6} sx={{ display: 'flex', flexDirection: 'column' }}>
                   <Stack spacing={0}>
@@ -230,8 +226,6 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                   </Box>
                 </Grid>
               </Grid>
-
-              {/* Stop cards with leg connectors */}
             </Stack>
           </SectionCard>
         )}
@@ -249,9 +243,7 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                 sx={{ fontWeight: 600 }}
               />
             </Stack>
-            <Meta>
-              Hazmat Documentation
-            </Meta>
+            <Meta>Hazmat Documentation</Meta>
             <Box
               onClick={() => hazmatFileRef.current?.click()}
               sx={{
@@ -302,9 +294,7 @@ export const StopsSection: React.FC<StopsSectionProps> = ({ formik, complete }) 
                   <Meta sx={{ fontWeight: 500, color: 'text.primary' }}>
                     Attach hazmat documents
                   </Meta>
-                  <Meta>
-                    SDS, placard info, or shipping papers
-                  </Meta>
+                  <Meta>SDS, placard info, or shipping papers</Meta>
                 </Stack>
               )}
             </Box>

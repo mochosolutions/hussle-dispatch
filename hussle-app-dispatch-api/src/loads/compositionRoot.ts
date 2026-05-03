@@ -4,7 +4,7 @@ import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
 import type { CityCoords } from '@/shared/geoLookup';
 import type { DriverModuleQueries } from '@/drivers/compositionRoot';
-import type { PlaceModuleQueries } from '@/places/compositionRoot';
+import type { PlaceModuleQueries, PlaceModuleServices } from '@/places/compositionRoot';
 import { customerRepositoryPrisma } from '@/customers/repositories/customerRepositoryPrisma';
 import type { SettlementFreezeQueryPort } from './types/loadTypes';
 import { createAccessorialControllers } from './controllers/accessorialController';
@@ -45,6 +45,7 @@ interface LoadModuleDeps {
   logger: Logger;
   driverQueries: DriverModuleQueries;
   placeQueries: PlaceModuleQueries;
+  placeServices: PlaceModuleServices;
   getCityCoords: (city: string, state: string) => Promise<CityCoords | null>;
   settlementFreezeQuery?: SettlementFreezeQueryPort;
 }
@@ -55,6 +56,7 @@ export const createLoadsModule = ({
   logger,
   driverQueries,
   placeQueries,
+  placeServices,
   getCityCoords,
   settlementFreezeQuery,
 }: LoadModuleDeps): {
@@ -92,6 +94,7 @@ export const createLoadsModule = ({
     vehicleCpmQuery,
     dispatcherProfileQuery,
     settlementFreezeQuery,
+    resolveStopToPlace: placeServices.resolveStopToPlace,
     eventBus,
     logger,
   });
@@ -117,6 +120,7 @@ export const createLoadsModule = ({
     loadRepository,
     eventBus,
     logger,
+    resolveStopToPlace: placeServices.resolveStopToPlace,
     settingsQuery,
     accessorialQuery: accessorialRepository,
     accessorialCreate: accessorialRepository,

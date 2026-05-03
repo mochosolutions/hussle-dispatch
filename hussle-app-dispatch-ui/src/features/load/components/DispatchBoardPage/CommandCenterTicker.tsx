@@ -7,6 +7,12 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useNavigate } from 'react-router-dom';
 
 import type { LoadListItem } from '../../types';
+import {
+  selectLoadDestinationCity,
+  selectLoadDestinationState,
+  selectLoadOriginCity,
+  selectLoadOriginState,
+} from '../../store/selectors/loadSelectors';
 import { STATUS_COLORS, STATUS_LABELS } from '../../constants';
 
 interface CommandCenterTickerProps {
@@ -81,12 +87,12 @@ export const CommandCenterTicker: React.FC<CommandCenterTickerProps> = ({ active
           }}
         >
           {active.map((load) => {
-            const origin = load.route.originCity
-              ? `${load.route.originCity}, ${load.route.originState}`
-              : '';
-            const dest = load.route.destinationCity
-              ? `${load.route.destinationCity}, ${load.route.destinationState}`
-              : '';
+            const originCity = selectLoadOriginCity(load);
+            const originState = selectLoadOriginState(load);
+            const destCity = selectLoadDestinationCity(load);
+            const destState = selectLoadDestinationState(load);
+            const origin = originCity ? `${originCity}, ${originState ?? ''}` : '';
+            const dest = destCity ? `${destCity}, ${destState ?? ''}` : '';
             const route = [origin, dest].filter(Boolean).join(' \u2192 ');
 
             return (

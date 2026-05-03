@@ -582,6 +582,8 @@ describe('updateLoad financial recalculation', () => {
           sequence: 0,
           contactId: null,
           placeId: null,
+          resolutionStatus: 'UNRESOLVED',
+          place: null,
           facilityName: null,
           address: null,
           city: 'Dallas',
@@ -617,6 +619,8 @@ describe('updateLoad financial recalculation', () => {
           sequence: 1,
           contactId: null,
           placeId: null,
+          resolutionStatus: 'UNRESOLVED',
+          place: null,
           facilityName: null,
           address: null,
           city: 'Houston',
@@ -675,7 +679,8 @@ describe('updateLoad financial recalculation', () => {
 
     expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
     expect(mockLoadRepository.findById).toHaveBeenCalledWith('load-1', 'org-1');
-    expect(result.companyMargin).toEqual(new Decimal('500'));
+    expect(result.load.companyMargin).toEqual(new Decimal('500'));
+    expect(result.warnings).toEqual([]);
   });
 
   it('rejects financial field change on DISPATCHED load', async () => {

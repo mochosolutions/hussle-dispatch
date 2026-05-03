@@ -19,6 +19,7 @@ const loadsModule = createLoadsModule({
   logger,
   driverQueries: driversModule.queries,
   placeQueries: placesModule.queries,
+  placeServices: placesModule.services,
   getCityCoords: (city, state) => getCityCoords(redisClient, state, city),
   settlementFreezeQuery,
 });

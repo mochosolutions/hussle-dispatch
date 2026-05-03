@@ -1,12 +1,8 @@
-import { useCallback, useState } from 'react';
-import { Box, Button, Grid } from '@mui/material';
+import { useCallback } from 'react';
+import { Box, Grid } from '@mui/material';
 
 import { FieldLabel, Meta } from 'components/Typography';
-import BookmarkBorderOutlined from '@mui/icons-material/BookmarkBorderOutlined';
 import type { FormikProps } from 'formik';
-import { useDispatch } from 'store';
-import { notify } from 'features/ui/store/reducers/notificationSlice';
-import { createPlace } from 'utils/api/places/placeApi';
 import type { AddressSearchResult } from 'features/place/types';
 import { AddressTypeahead } from 'components/AddressTypeahead';
 import type { StopsFormShape } from '../../validators/loadSchema';
@@ -33,10 +29,6 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
   const stopIndex = Number(prefix.replace(/^stops\[(\d+)\]$/, '$1'));
   const stop = formik.values.stops[stopIndex];
   const hasSelection = Boolean(stop?.facilityName || stop?.placeId);
-  const isExternalSelection = hasSelection && !stop?.placeId;
-
-  const dispatch = useDispatch();
-  const [savingPlace, setSavingPlace] = useState(false);
 
   const handleSelect = useCallback(
     (selected: AddressSearchResult) => {
@@ -92,30 +84,6 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
     void formik.setFieldValue(`${prefix}.contactPhone`, '');
   }, [formik, prefix]);
 
-  const handleSaveAsPlace = useCallback(async () => {
-    if (!stop) {
-      return;
-    }
-    setSavingPlace(true);
-    try {
-      const place = await createPlace({
-        name: stop.facilityName || [stop.address, stop.city, stop.state].filter(Boolean).join(', '),
-        address: stop.address || undefined,
-        city: stop.city || '',
-        state: stop.state || '',
-        zip: stop.zip || undefined,
-        latitude: stop.lat,
-        longitude: stop.lng,
-      });
-      void formik.setFieldValue(`${prefix}.placeId`, place.id);
-      dispatch(notify({ message: 'Place saved successfully', variant: 'success' }));
-    } catch {
-      dispatch(notify({ message: 'Failed to save place', variant: 'error' }));
-    } finally {
-      setSavingPlace(false);
-    }
-  }, [stop, formik, prefix, dispatch]);
-
   const displayValue = stop ? formatDisplayValue(stop) : '';
 
   const cityStateZip = stop
@@ -134,33 +102,26 @@ export const AddressSearchField = <T extends StopsFormShape = StopsFormShape>({
 
       {hasSelection && stop ? (
         <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
-          <Grid item xs={12} md={5}>
+          {stop.facilityName ? (
+            <Grid item xs={12}>
+              <FieldLabel sx={{ display: 'block', mb: 0.25 }}>
+                Facility
+              </FieldLabel>
+              <Meta sx={{ color: 'text.primary' }}>{stop.facilityName}</Meta>
+            </Grid>
+          ) : null}
+          <Grid item xs={12} md={6}>
             <FieldLabel sx={{ display: 'block', mb: 0.25 }}>
               Address
             </FieldLabel>
             <Meta sx={{ color: 'text.primary' }}>{stop.address || '\u2014'}</Meta>
           </Grid>
-          <Grid item xs={12} md={5}>
+          <Grid item xs={12} md={6}>
             <FieldLabel sx={{ display: 'block', mb: 0.25 }}>
               City / State / Zip
             </FieldLabel>
             <Meta sx={{ color: 'text.primary' }}>{cityStateZip || '\u2014'}</Meta>
           </Grid>
-          {isExternalSelection ? (
-            <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center' }}>
-              <Button
-                size="small"
-                variant="text"
-                startIcon={<BookmarkBorderOutlined sx={{ fontSize: 16 }} />}
-                disabled={savingPlace}
-                onClick={() => void handleSaveAsPlace()}
-                onMouseDown={(e) => e.preventDefault()}
-                sx={{ textTransform: 'none', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
-              >
-                {savingPlace ? 'Saving...' : 'Save Place'}
-              </Button>
-            </Grid>
-          ) : null}
         </Grid>
       ) : null}
     </Box>

@@ -7,7 +7,6 @@ import {
   fetchLoadDetailsFailure,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
-import { mapDetailToListItem } from './detailToListItemMapper';
 
 export function* fetchLoadDetailSaga(
   action: ReturnType<typeof fetchLoadDetailsRequest>,
@@ -17,9 +16,6 @@ export function* fetchLoadDetailSaga(
   try {
     const load = (yield call(getLoad, id)) as SagaReturnType<typeof getLoad>;
 
-    // Refresh the list-row projection first so the dispatch board grid keeps
-    // its LoadListItem shape, then upsert the full detail for the detail page.
-    yield put(loadActions.updateOne({ id, changes: mapDetailToListItem(load) }));
     yield put(loadActions.upsertOne(load));
     yield put(fetchLoadDetailsSuccess({ id }));
   } catch (error: unknown) {

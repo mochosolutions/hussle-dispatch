@@ -12,6 +12,11 @@ import type {
 const LOAD_DETAIL_INCLUDE = {
   stops: {
     orderBy: { sequence: 'asc' as const },
+    include: {
+      place: {
+        select: { latitude: true, longitude: true },
+      },
+    },
   },
   carrier: true,
   driver: true,
@@ -131,6 +136,7 @@ export const loadRepositoryPrisma = (prisma: PrismaClient | PrismaTransaction): 
             sequence: stop.sequence,
             contactId: stop.contactId,
             placeId: stop.placeId,
+            resolutionStatus: stop.resolutionStatus ?? 'UNRESOLVED',
             facilityName: stop.facilityName,
             address: stop.address,
             city: stop.city,

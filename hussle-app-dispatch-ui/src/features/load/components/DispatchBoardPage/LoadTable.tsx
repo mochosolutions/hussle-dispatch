@@ -5,6 +5,7 @@ import { ActionsCell, MainCard, NewDataGrid } from '@mocho/ui/components';
 import type { ActionsCellConfig } from 'mocho/components/DataGrid/ActionsCell';
 import { EmptyState } from 'mocho/components/EmptyState/EmptyState';
 import { formatEquipmentType } from 'features/load/constants';
+import { selectLoadContactName } from 'features/load/store/selectors/loadSelectors';
 import type { LoadListItem } from 'features/load/types';
 import {
   LoadNumberCellRenderer,
@@ -70,11 +71,11 @@ export const LoadTable: React.FC<LoadTableProps> = ({ loads, loading = false, to
         cellRenderer: AssignmentCellRenderer,
       },
       {
-        field: 'customer.contactName',
+        field: 'contact',
         headerName: 'Contact',
         flex: 1,
         minWidth: 120,
-        valueGetter: (params: { data: LoadListItem }) => params.data.customer.contactName ?? '',
+        valueGetter: (params: { data: LoadListItem }) => selectLoadContactName(params.data) ?? '',
       },
       {
         field: 'financials.carrierPayout',

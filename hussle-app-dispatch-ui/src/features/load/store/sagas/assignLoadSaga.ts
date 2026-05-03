@@ -8,7 +8,6 @@ import {
   assignLoadFailure,
 } from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
-import { mapDetailToListItem } from './detailToListItemMapper';
 
 export function* assignLoadSaga(action: ReturnType<typeof assignLoadRequest>): Generator {
   const { loadId, data } = action.payload;
@@ -22,7 +21,6 @@ export function* assignLoadSaga(action: ReturnType<typeof assignLoadRequest>): G
 
     const { load } = response;
 
-    yield put(loadActions.updateOne({ id: loadId, changes: mapDetailToListItem(load) }));
     yield put(loadActions.upsertOne(load));
     yield put(assignLoadSuccess({ loadId }));
     yield put(notify({ message: 'Assignment updated', variant: 'success' }));

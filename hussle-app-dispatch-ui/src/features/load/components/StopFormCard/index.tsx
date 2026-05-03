@@ -311,9 +311,7 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
-              <HintText sx={{ display: 'block', mt: 0.5 }}>
-                {activeHint}
-              </HintText>
+              <HintText sx={{ display: 'block', mt: 0.5 }}>{activeHint}</HintText>
             </Box>
 
             {/* Conditional fields based on scheduling type */}
@@ -337,13 +335,13 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                     required
                   />
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                {/* <Box sx={{ flex: 1 }}>
                   <TextField
                     name={`${prefix}.appointmentNumber`}
                     label="Appt #"
                     formik={stopFormik}
                   />
-                </Box>
+                </Box> */}
               </Box>
             )}
 
@@ -554,7 +552,13 @@ export const StopFormCard = <T extends StopsFormShape = StopsFormShape>({
                     />
                   </Box>
                 </Box>
-                <TextField name={`${prefix}.notes`} label="Notes" formik={stopFormik} />
+                <TextField
+                  name={`${prefix}.notes`}
+                  label="Notes"
+                  formik={stopFormik}
+                  multiline
+                  minRows={4}
+                />
               </Stack>
             </Collapse>
           </Box>
