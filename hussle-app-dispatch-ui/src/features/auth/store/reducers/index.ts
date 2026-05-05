@@ -8,6 +8,7 @@ import {refreshTokenReducer} from './refreshTokenReducer';
 import {forceChangePasswordReducer} from './forceChangePasswordReducer';
 import {passwordResetReducer} from './passwordResetReducer';
 import {switchOrgReducer} from "./switchOrgReducer"
+import {acceptInviteReducer} from './acceptInviteReducer';
 
 export {
   signupReducer,
@@ -20,4 +21,5 @@ export {
   forceChangePasswordReducer,
   passwordResetReducer,
   switchOrgReducer,
+  acceptInviteReducer,
 };

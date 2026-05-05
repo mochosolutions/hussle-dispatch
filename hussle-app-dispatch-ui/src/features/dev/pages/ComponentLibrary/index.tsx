@@ -5,6 +5,7 @@ import ReusableComponentsSection from './sections/ReusableComponentsSection';
 import PaletteSection from './sections/PaletteSection';
 import StatusChipSection from './sections/StatusChipSection';
 import ButtonSection from './sections/ButtonSection';
+import SplitButtonSection from './sections/SplitButtonSection';
 import CardSection from './sections/CardSection';
 import DrawerSectionDemo from './sections/DrawerSection';
 import AlertSection from './sections/AlertSection';
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { id: 'components', label: 'Reusable Components' },
   { id: 'palette', label: 'Palette' },
   { id: 'buttons', label: 'Buttons' },
+  { id: 'split-button', label: 'Split Button' },
   { id: 'status-chips', label: 'Status Chips' },
   { id: 'cards', label: 'Cards & Rows' },
   { id: 'drawers', label: 'Edit Drawer' },
@@ -111,6 +113,14 @@ const ComponentLibrary = () => (
         description="Button variants, colors, sizes, and icon usage. textTransform: none applied globally."
       >
         <ButtonSection />
+      </SectionWrapper>
+
+      <SectionWrapper
+        id="split-button"
+        title="Split Button"
+        description="Reusable action dropdown. Two modes: split (selection persists, primary action visible) and menu (single Actions trigger collapsing many actions into one dropdown). Supports icons, dividers, danger items, disabled-with-reason, and icon-only triggers."
+      >
+        <SplitButtonSection />
       </SectionWrapper>
 
       <SectionWrapper

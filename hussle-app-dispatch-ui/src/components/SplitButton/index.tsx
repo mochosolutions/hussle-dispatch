@@ -1,161 +1,299 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import Button from '@mui/material/Button';
-import ButtonGroup from '@mui/material/ButtonGroup';
+import { Fragment, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+
+import {
+  Button,
+  ButtonGroup,
+  ClickAwayListener,
+  Divider,
+  Grow,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  MenuList,
+  Paper,
+  Popper,
+  Tooltip,
+} from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ClickAwayListener from '@mui/material/ClickAwayListener';
-import Grow from '@mui/material/Grow';
-import Paper from '@mui/material/Paper';
-import Popper from '@mui/material/Popper';
-import MenuItem from '@mui/material/MenuItem';
-import MenuList from '@mui/material/MenuList';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
+import CheckIcon from '@mui/icons-material/Check';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import type { ButtonProps } from '@mui/material/Button';
 import type { ButtonGroupProps } from '@mui/material/ButtonGroup';
 
-export interface SplitButtonOption {
-  id: string;
+export interface SplitButtonItem {
+  key: string;
   label: string;
+  busyLabel?: string;
+  icon?: ReactNode;
   onClick: () => void;
   disabled?: boolean;
-  icon?: ReactNode;
+  disabledReason?: string;
+  hidden?: boolean;
+  danger?: boolean;
+  dividerAfter?: boolean;
 }
 
 interface SplitButtonProps {
-  options: SplitButtonOption[];
-  initialSelectedIndex?: number;
-  buttonGroupAriaLabel?: string;
-  menuAriaLabel?: string;
+  items: SplitButtonItem[];
+  ariaLabel: string;
+  busy?: boolean;
+  variant?: 'split' | 'menu' | 'action';
+  triggerVariant?: 'text' | 'icon';
+  triggerLabel?: string;
+  triggerIcon?: ReactNode;
+  defaultKey?: string;
+  primary?: SplitButtonItem;
   buttonVariant?: ButtonGroupProps['variant'];
-  buttonSize?: ButtonProps['size'];
-  showOptionIcons?: boolean;
-  primaryButtonIcon?: ReactNode;
-  iconOnlyPrimary?: boolean;
-  primaryButtonAriaLabel?: string;
-  onSelectionChange?: (index: number, option: SplitButtonOption) => void;
+  color?: ButtonProps['color'];
+  size?: 'small' | 'medium' | 'large';
 }
 
-const SplitButton: React.FC<SplitButtonProps> = ({
-  options,
-  initialSelectedIndex = 0,
-  buttonGroupAriaLabel = 'Split button',
-  menuAriaLabel = 'Select option',
+export const SplitButton: React.FC<SplitButtonProps> = ({
+  items,
+  ariaLabel,
+  busy = false,
+  variant = 'split',
+  triggerVariant = 'text',
+  triggerLabel = 'Actions',
+  triggerIcon,
+  defaultKey,
+  primary,
   buttonVariant = 'contained',
-  buttonSize = 'medium',
-  showOptionIcons = true,
-  primaryButtonIcon,
-  iconOnlyPrimary = false,
-  primaryButtonAriaLabel,
-  onSelectionChange,
+  color = 'primary',
+  size = 'medium',
 }) => {
-  const [open, setOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
-  const hasOptions = options.length > 0;
-  const safeInitialIndex =
-    initialSelectedIndex >= 0 && initialSelectedIndex < options.length ? initialSelectedIndex : 0;
-  const [selectedIndex, setSelectedIndex] = useState(safeInitialIndex);
+  const visibleItems = useMemo(() => items.filter((item) => !item.hidden), [items]);
 
-  const selectedOption = useMemo(() => options[selectedIndex], [options, selectedIndex]);
-  const effectivePrimaryIcon = primaryButtonIcon ?? selectedOption?.icon;
+  const renderedItems = useMemo(
+    () =>
+      visibleItems.map((item, idx) => ({
+        ...item,
+        dividerAfter: Boolean(item.dividerAfter) && idx < visibleItems.length - 1,
+      })),
+    [visibleItems]
+  );
 
-  const handleAnchorRef = useCallback((node: HTMLDivElement | null) => {
-    setAnchorEl(node);
+  const initialKey = defaultKey ?? visibleItems[0]?.key ?? '';
+  const [selectedKey, setSelectedKey] = useState<string>(initialKey);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const groupRef = useRef<HTMLDivElement>(null);
+  const iconRef = useRef<HTMLButtonElement>(null);
+
+  const selected = visibleItems.find((item) => item.key === selectedKey) ?? visibleItems[0];
+
+  const handleToggleMenu = useCallback(() => {
+    setMenuOpen((prev) => !prev);
   }, []);
 
-  const handleClick = () => {
-    if (!selectedOption || selectedOption.disabled) {
+  const handleCloseMenu = useCallback((event: Event | React.SyntheticEvent) => {
+    const target = event.target as Node | null;
+    if (!target) {
+      setMenuOpen(false);
       return;
     }
-
-    selectedOption.onClick();
-  };
-
-  const handleMenuItemClick = (index: number) => {
-    setSelectedIndex(index);
-    setOpen(false);
-    onSelectionChange?.(index, options[index]);
-  };
-
-  const handleToggle = () => {
-    if (!hasOptions) {
+    if (groupRef.current?.contains(target) || iconRef.current?.contains(target)) {
       return;
     }
+    setMenuOpen(false);
+  }, []);
 
-    setOpen((prevOpen) => !prevOpen);
-  };
+  const handlePrimaryClick = useCallback(() => {
+    if (selected && !selected.disabled) {
+      selected.onClick();
+    }
+  }, [selected]);
 
-  const handleClose = (event: MouseEvent | TouchEvent) => {
-    if (!(event.target instanceof Node)) {
-      setOpen(false);
-      return;
+  const handleItemClick = useCallback(
+    (item: SplitButtonItem) => {
+      setMenuOpen(false);
+      if (variant === 'split') {
+        setSelectedKey(item.key);
+      }
+      item.onClick();
+    },
+    [variant]
+  );
+
+  if (visibleItems.length === 0) {
+    return null;
+  }
+
+  const renderTrigger = () => {
+    if (variant === 'action' && primary) {
+      const primaryLabel = busy && primary.busyLabel ? primary.busyLabel : primary.label;
+      return (
+        <ButtonGroup
+          variant={buttonVariant}
+          color={color}
+          size={size}
+          ref={groupRef}
+          aria-label={ariaLabel}
+        >
+          <Button
+            onClick={() => {
+              if (!primary.disabled) {
+                primary.onClick();
+              }
+            }}
+            startIcon={primary.icon}
+            disabled={busy || primary.disabled}
+          >
+            {primaryLabel}
+          </Button>
+          <Button
+            size="small"
+            aria-controls={menuOpen ? 'split-button-menu' : undefined}
+            aria-expanded={menuOpen ? 'true' : undefined}
+            aria-label={`${ariaLabel} options`}
+            aria-haspopup="menu"
+            onClick={handleToggleMenu}
+            disabled={busy}
+          >
+            <ArrowDropDownIcon />
+          </Button>
+        </ButtonGroup>
+      );
     }
 
-    if (anchorEl?.contains(event.target)) {
-      return;
+    if (variant === 'split') {
+      const primaryLabel = busy && selected?.busyLabel ? selected.busyLabel : selected?.label;
+      return (
+        <ButtonGroup
+          variant={buttonVariant}
+          color={color}
+          size={size}
+          ref={groupRef}
+          aria-label={ariaLabel}
+        >
+          <Button
+            onClick={handlePrimaryClick}
+            startIcon={selected?.icon}
+            disabled={busy || selected?.disabled}
+          >
+            {primaryLabel}
+          </Button>
+          <Button
+            size="small"
+            aria-controls={menuOpen ? 'split-button-menu' : undefined}
+            aria-expanded={menuOpen ? 'true' : undefined}
+            aria-label={`${ariaLabel} options`}
+            aria-haspopup="menu"
+            onClick={handleToggleMenu}
+            disabled={busy}
+          >
+            <ArrowDropDownIcon />
+          </Button>
+        </ButtonGroup>
+      );
     }
 
-    setOpen(false);
+    if (triggerVariant === 'icon') {
+      const iconSize = size === 'large' ? 'medium' : size;
+      return (
+        <IconButton
+          ref={iconRef}
+          aria-label={ariaLabel}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen ? 'true' : undefined}
+          onClick={handleToggleMenu}
+          size={iconSize}
+          color={color}
+        >
+          {triggerIcon ?? <MoreVertIcon />}
+        </IconButton>
+      );
+    }
+
+    return (
+      <ButtonGroup
+        variant={buttonVariant}
+        color={color}
+        size={size}
+        ref={groupRef}
+        aria-label={ariaLabel}
+      >
+        <Button
+          aria-controls={menuOpen ? 'split-button-menu' : undefined}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen ? 'true' : undefined}
+          onClick={handleToggleMenu}
+          startIcon={triggerIcon}
+          endIcon={<ArrowDropDownIcon />}
+        >
+          {triggerLabel}
+        </Button>
+      </ButtonGroup>
+    );
   };
+
+  const popperAnchor =
+    variant === 'menu' && triggerVariant === 'icon' ? iconRef.current : groupRef.current;
 
   return (
     <>
-      <ButtonGroup variant={buttonVariant} ref={handleAnchorRef} aria-label={buttonGroupAriaLabel}>
-        <Button
-          onClick={handleClick}
-          size={buttonSize}
-          disabled={!selectedOption || selectedOption.disabled}
-          startIcon={iconOnlyPrimary ? undefined : effectivePrimaryIcon}
-          aria-label={primaryButtonAriaLabel}
-        >
-          {iconOnlyPrimary && effectivePrimaryIcon
-            ? effectivePrimaryIcon
-            : (selectedOption?.label ?? 'Select option')}
-        </Button>
-        <Button
-          size={buttonSize}
-          aria-controls={open ? 'split-button-menu' : undefined}
-          aria-expanded={open ? 'true' : undefined}
-          aria-label={menuAriaLabel}
-          aria-haspopup="menu"
-          onClick={handleToggle}
-          disabled={!hasOptions}
-        >
-          <ArrowDropDownIcon />
-        </Button>
-      </ButtonGroup>
+      {renderTrigger()}
       <Popper
-        sx={{
-          zIndex: 1,
-        }}
-        open={open}
-        anchorEl={anchorEl}
+        sx={{ zIndex: 1300 }}
+        open={menuOpen}
+        anchorEl={popperAnchor}
         role={undefined}
         transition
         disablePortal
+        placement="bottom-end"
       >
         {({ TransitionProps, placement }) => (
           <Grow
             {...TransitionProps}
             style={{
-              transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom',
+              transformOrigin: placement.startsWith('bottom') ? 'right top' : 'right bottom',
             }}
           >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  {options.map((option, index) => (
-                    <MenuItem
-                      key={option.id}
-                      disabled={option.disabled}
-                      selected={index === selectedIndex}
-                      onClick={() => handleMenuItemClick(index)}
-                    >
-                      {showOptionIcons && option.icon ? (
-                        <ListItemIcon>{option.icon}</ListItemIcon>
-                      ) : null}
-                      <ListItemText>{option.label}</ListItemText>
-                    </MenuItem>
-                  ))}
+            <Paper elevation={3} sx={{ minWidth: 220 }}>
+              <ClickAwayListener onClickAway={handleCloseMenu}>
+                <MenuList id="split-button-menu" autoFocusItem={menuOpen}>
+                  {renderedItems.map((item) => {
+                    const isSelected = variant === 'split' && item.key === selected?.key;
+                    const itemSx = item.danger ? { color: 'error.main' } : undefined;
+                    const iconSx = item.danger ? { color: 'error.main' } : undefined;
+
+                    const node = (
+                      <MenuItem
+                        selected={isSelected}
+                        disabled={item.disabled}
+                        onClick={() => handleItemClick(item)}
+                        sx={itemSx}
+                      >
+                        {variant === 'split' && (
+                          <ListItemIcon
+                            sx={{ visibility: isSelected ? 'visible' : 'hidden' }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </ListItemIcon>
+                        )}
+                        {(variant === 'menu' || variant === 'action') && item.icon && (
+                          <ListItemIcon sx={iconSx}>{item.icon}</ListItemIcon>
+                        )}
+                        <ListItemText>{item.label}</ListItemText>
+                      </MenuItem>
+                    );
+
+                    const wrapped =
+                      item.disabled && item.disabledReason ? (
+                        <Tooltip title={item.disabledReason} placement="left">
+                          <span style={{ display: 'block' }}>{node}</span>
+                        </Tooltip>
+                      ) : (
+                        node
+                      );
+
+                    return (
+                      <Fragment key={item.key}>
+                        {wrapped}
+                        {item.dividerAfter && <Divider />}
+                      </Fragment>
+                    );
+                  })}
                 </MenuList>
               </ClickAwayListener>
             </Paper>
@@ -165,5 +303,3 @@ const SplitButton: React.FC<SplitButtonProps> = ({
     </>
   );
 };
-
-export default SplitButton;

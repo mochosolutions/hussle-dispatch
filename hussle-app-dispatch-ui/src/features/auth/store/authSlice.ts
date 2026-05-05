@@ -10,6 +10,7 @@ import {
   forceChangePasswordReducer,
   passwordResetReducer,
   switchOrgReducer,
+  acceptInviteReducer,
 } from './reducers';
 
 export type UserProfile = {
@@ -139,6 +140,7 @@ export const loginSlice = createSlice({
     ...forceChangePasswordReducer,
     ...passwordResetReducer,
     ...switchOrgReducer,
+    ...acceptInviteReducer,
   },
 });
 
@@ -196,6 +198,9 @@ export const {
   switchOrgRequest,
   switchOrgSuccess,
   switchOrgFailure,
+  acceptInviteRequest,
+  acceptInviteSuccess,
+  acceptInviteFailure,
 } = loginSlice.actions;
 
 export const authReducer = loginSlice.reducer;

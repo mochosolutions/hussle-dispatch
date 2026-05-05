@@ -35,7 +35,7 @@ export const STATUS_LABELS: Record<LoadStatus, string> = {
   PAID: 'Paid',
   EXCEPTION: 'Exception',
   CANCELED: 'Canceled',
-  TONU: 'TONU',
+  TONU: 'Truck Ordered Not Used',
 };
 
 export const STATUS_COLORS: Record<LoadStatus, ChipColor> = {

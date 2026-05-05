@@ -190,7 +190,7 @@ const STATUS_CONFIG: Record<string, BadgeStyle> = {
     bg: P.r50,
     color: P.r700,
     border: P.r200,
-    label: 'TONU',
+    label: 'Truck Ordered Not Used',
   },
 
   // ── INVOICE STATUS ─────────────────────────────────────────────────────────

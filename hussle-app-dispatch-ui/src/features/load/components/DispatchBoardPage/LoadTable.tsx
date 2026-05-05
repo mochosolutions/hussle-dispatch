@@ -144,8 +144,8 @@ export const LoadTable: React.FC<LoadTableProps> = ({ loads, loading = false, to
             rowCountLabel="loads"
             gridOptions={{
               domLayout: 'normal',
-              pagination: true,
-              paginationPageSize: 25,
+              // pagination: true,
+              // paginationPageSize: 25,
               suppressCellFocus: true,
               headerHeight: 44,
               rowHeight: 56,

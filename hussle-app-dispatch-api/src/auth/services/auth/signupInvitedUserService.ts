@@ -1,8 +1,9 @@
 import type { PrismaTransaction } from '@/shared/prisma';
 import { logger } from '@/shared/utils/logger';
 import { MembershipStatus } from '../../constants/enums';
-import { ROLES } from '@/config/roles';
+import { BadRequestError } from '@mocho/common';
 import { NotFoundError } from '@/shared/errors';
+import type { Invite } from '../../types/invite';
 import type { CreateMembershipInput, Membership } from '../../types/membershipTypes';
 import type { Organization } from '../../types/organizationTypes';
 import type { SignupOrgResult } from '../../types/signupOrgTypes';
@@ -12,7 +13,10 @@ export interface SignupInvitedUserUseCaseDeps {
   transactionManager: {
     runInTransaction: <T>(fn: (tx: PrismaTransaction) => Promise<T>) => Promise<T>;
   };
-  acceptInvitationService: (data: AcceptInvitationInput, tx: PrismaTransaction) => Promise<{ invite: unknown }>;
+  acceptInvitationService: (
+    data: AcceptInvitationInput,
+    tx: PrismaTransaction,
+  ) => Promise<{ invite: Invite }>;
   createUserService: (data: CreateUserInput, tx: PrismaTransaction) => Promise<User>;
   createMembershipService: (
     data: CreateMembershipInput,
@@ -35,34 +39,19 @@ export interface SignupInvitedUserUseCaseDeps {
 }
 
 interface AcceptInvitationInput {
-  email: string;
   invitationToken: string;
-  organizationId: string;
 }
 
 interface SignupInvitedUserInput {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  role: string;
   invitationToken: string;
-  organizationId: string;
+  password: string;
 }
 
 export const signupInvitedUserUseCase = async (
   data: SignupInvitedUserInput,
   deps: SignupInvitedUserUseCaseDeps
 ): Promise<SignupOrgResult> => {
-  const {
-    role,
-    email,
-    password,
-    firstName,
-    lastName,
-    invitationToken,
-    organizationId,
-  } = data;
+  const { invitationToken, password } = data;
 
   let externalUserId: string | undefined;
   const {
@@ -75,16 +64,13 @@ export const signupInvitedUserUseCase = async (
 
   try {
     return await transactionManager.runInTransaction(async (tx) => {
-      await deps.acceptInvitationService(
-        {
-          email,
-          invitationToken,
-          organizationId,
-        },
-        tx
-      );
+      const { invite } = await deps.acceptInvitationService({ invitationToken }, tx);
 
-      logger.info('Invitation accepted', { organizationId });
+      const { email, firstName, lastName, role, organizationId } = invite;
+
+      if (!firstName || !lastName) {
+        throw new BadRequestError('Invitation is missing user details');
+      }
 
       const externalUser = await authProvider.createUser({
         email,
@@ -117,12 +103,13 @@ export const signupInvitedUserUseCase = async (
         tx
       );
 
-      // Fetch organization details for the tenant object
       const organization = await findOrganizationById(organizationId, tx);
 
       if (!organization) {
         throw new NotFoundError('Organization not found');
       }
+
+      logger.info('Invitation accepted', { organizationId });
 
       return {
         user: {

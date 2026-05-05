@@ -1,20 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
   Box,
   CircularProgress,
   Grid,
-  Stack,
   Typography,
   Alert,
 } from '@mui/material';
 import { BodyMuted, SectionTitle } from 'components/Typography';
 import { AccessTime, ErrorOutline } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { useDispatch } from 'store';
-import { notify } from 'features/ui/store/reducers/notificationSlice';
+import { useDispatch, useSelector } from 'store';
+import ConfirmDialog from 'mocho/components/ConfirmDialog';
 
 import AuthWrapper from 'features/auth/sections/AuthWrapper';
 import AuthFormWrapper from 'features/auth/sections/AuthFormWrapper';
@@ -28,7 +27,9 @@ import {
 } from 'mocho/components/form-fields';
 import type { FormikFieldProps } from 'mocho/components/form-fields';
 import type { InvitationVerification } from 'utils/api/team/teamApi';
-import { verifyInvitation, acceptInvitation } from 'utils/api/team/teamApi';
+import { verifyInvitation } from 'utils/api/team/teamApi';
+import { acceptInviteRequest, initRequest, logoutRequest } from 'features/auth/store/authSlice';
+import { selectIsLoggedIn, currentUserSelector } from 'features/auth/store/selectors';
 
 type VerifyStatus = 'loading' | 'valid' | 'expired' | 'invalid';
 
@@ -47,11 +48,17 @@ const acceptInviteSchema = Yup.object({
 
 const AcceptInvitePage = () => {
   const { token } = useParams<{ token: string }>();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const currentUser = useSelector(currentUserSelector);
 
   const [status, setStatus] = useState<VerifyStatus>('loading');
   const [invitation, setInvitation] = useState<InvitationVerification | null>(null);
+  const [pendingPassword, setPendingPassword] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(initRequest());
+  }, [dispatch]);
 
   useEffect(() => {
     if (!token) {
@@ -79,6 +86,11 @@ const AcceptInvitePage = () => {
     verify();
   }, [token]);
 
+  const submitAccept = (password: string) => {
+    if (!token) return;
+    dispatch(acceptInviteRequest({ invitationToken: token, password }));
+  };
+
   const formik = useFormik<AcceptInviteFormValues>({
     initialValues: {
       password: '',
@@ -86,31 +98,32 @@ const AcceptInvitePage = () => {
       submit: null,
     },
     validationSchema: acceptInviteSchema,
-    onSubmit: async (values, { setErrors }) => {
+    onSubmit: (values) => {
       if (!token || !invitation) {
         return;
       }
 
-      try {
-        await acceptInvitation({
-          invitationToken: token,
-          email: invitation.email,
-          password: values.password,
-          firstName: invitation.firstName,
-          lastName: invitation.lastName,
-          role: invitation.role,
-          organizationId: invitation.organizationId,
-        });
+      const isDifferentUser =
+        isLoggedIn &&
+        currentUser?.email &&
+        currentUser.email.toLowerCase() !== invitation.email.toLowerCase();
 
-        dispatch(notify({ message: 'Invitation accepted! Please log in.', variant: 'success' }));
-        navigate('/login');
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to accept invitation';
-        setErrors({ submit: message });
+      if (isDifferentUser) {
+        setPendingPassword(values.password);
+        return;
       }
+
+      submitAccept(values.password);
     },
   });
+
+  const handleConfirmSwap = () => {
+    if (!pendingPassword) return;
+    const password = pendingPassword;
+    setPendingPassword(null);
+    dispatch(logoutRequest());
+    submitAccept(password);
+  };
 
   const formikProps = useMemo<FormikFieldProps>(
     () => ({
@@ -291,6 +304,17 @@ const AcceptInvitePage = () => {
           </Grid>
         </Box>
       </AuthFormWrapper>
+
+      <ConfirmDialog
+        open={pendingPassword !== null}
+        title="Switch accounts?"
+        message={`You're signed in as ${currentUser?.email}. Accepting this invitation will sign you out and sign you in as ${invitation?.email}.`}
+        confirmLabel="Switch accounts"
+        cancelLabel="Cancel"
+        severity="warning"
+        onConfirm={handleConfirmSwap}
+        onClose={() => setPendingPassword(null)}
+      />
     </AuthWrapper>
   );
 };

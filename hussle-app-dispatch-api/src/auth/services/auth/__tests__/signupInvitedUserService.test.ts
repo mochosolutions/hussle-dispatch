@@ -2,14 +2,17 @@ import { signupInvitedUserUseCase } from '../signupInvitedUserService';
 
 describe('signupInvitedUserUseCase', () => {
   const baseInput = {
-    email: 'invited@example.com',
+    invitationToken: 'invite-token',
     password: 'password-1',
+  };
+
+  const baseInvite = {
+    id: 'invite-1',
+    email: 'invited@example.com',
     firstName: 'Invited',
     lastName: 'User',
     role: 'admin',
-    invitationToken: 'invite-token',
     organizationId: 'org-1',
-
   };
 
   it('accepts invite and creates invited user membership', async () => {
@@ -17,7 +20,7 @@ describe('signupInvitedUserUseCase', () => {
       transactionManager: {
         runInTransaction: jest.fn(async (fn) => fn({})),
       },
-      acceptInvitationService: jest.fn().mockResolvedValue({ id: 'invite-1' }),
+      acceptInvitationService: jest.fn().mockResolvedValue({ invite: baseInvite }),
       createUserService: jest.fn().mockResolvedValue({
         id: 'user-1',
         firstName: 'Invited',
@@ -48,8 +51,20 @@ describe('signupInvitedUserUseCase', () => {
 
     const result = await signupInvitedUserUseCase(baseInput, deps);
 
-    expect(deps.acceptInvitationService).toHaveBeenCalled();
-    expect(deps.authProvider.createUser).toHaveBeenCalled();
+    expect(deps.acceptInvitationService).toHaveBeenCalledWith(
+      { invitationToken: 'invite-token' },
+      expect.anything(),
+    );
+    expect(deps.authProvider.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'invited@example.com',
+        password: 'password-1',
+        firstName: 'Invited',
+        lastName: 'User',
+        orgRole: 'admin',
+        orgId: 'org-1',
+      }),
+    );
     expect(deps.createUserService).toHaveBeenCalled();
     expect(result.user.userId).toBe('user-1');
     expect(result.tenant.tenantId).toBe('org-1');
@@ -60,7 +75,7 @@ describe('signupInvitedUserUseCase', () => {
       transactionManager: {
         runInTransaction: jest.fn(async (fn) => fn({})),
       },
-      acceptInvitationService: jest.fn().mockResolvedValue({ id: 'invite-1' }),
+      acceptInvitationService: jest.fn().mockResolvedValue({ invite: baseInvite }),
       createUserService: jest.fn().mockResolvedValue({
         id: 'user-1',
         firstName: 'Invited',
@@ -90,12 +105,11 @@ describe('signupInvitedUserUseCase', () => {
   });
 
   it('cleans up external user when transaction fails after Cognito user creation', async () => {
-    // Arrange
     const deps = {
       transactionManager: {
         runInTransaction: jest.fn(async (fn) => fn({})),
       },
-      acceptInvitationService: jest.fn().mockResolvedValue({ id: 'invite-1' }),
+      acceptInvitationService: jest.fn().mockResolvedValue({ invite: baseInvite }),
       createUserService: jest.fn().mockResolvedValue({
         id: 'user-1',
         firstName: 'Invited',
@@ -123,7 +137,6 @@ describe('signupInvitedUserUseCase', () => {
       },
     };
 
-    // Act & Assert
     await expect(signupInvitedUserUseCase(baseInput, deps)).rejects.toThrow(
       'Membership creation failed',
     );
@@ -131,7 +144,6 @@ describe('signupInvitedUserUseCase', () => {
   });
 
   it('rolls back invitation status when user creation fails', async () => {
-    // Arrange
     let transactionRolledBack = false;
     const deps = {
       transactionManager: {
@@ -144,7 +156,7 @@ describe('signupInvitedUserUseCase', () => {
           }
         }),
       },
-      acceptInvitationService: jest.fn().mockResolvedValue({ id: 'invite-1' }),
+      acceptInvitationService: jest.fn().mockResolvedValue({ invite: baseInvite }),
       createUserService: jest.fn().mockRejectedValue(
         new Error('User creation failed'),
       ),
@@ -161,18 +173,35 @@ describe('signupInvitedUserUseCase', () => {
       },
     };
 
-    // Act & Assert
     await expect(signupInvitedUserUseCase(baseInput, deps)).rejects.toThrow(
       'User creation failed',
     );
 
-    // The transaction should have rolled back (invitation stays PENDING)
     expect(transactionRolledBack).toBe(true);
-
-    // External user should be cleaned up since it was created before the failure
     expect(deps.authProvider.deleteUser).toHaveBeenCalledWith('ext-1');
-
-    // Membership should never have been attempted
     expect(deps.createMembershipService).not.toHaveBeenCalled();
+  });
+
+  it('throws when invitation is missing first/last name', async () => {
+    const deps = {
+      transactionManager: {
+        runInTransaction: jest.fn(async (fn) => fn({})),
+      },
+      acceptInvitationService: jest.fn().mockResolvedValue({
+        invite: { ...baseInvite, firstName: null, lastName: null },
+      }),
+      createUserService: jest.fn(),
+      createMembershipService: jest.fn(),
+      findOrganizationById: jest.fn(),
+      authProvider: {
+        createUser: jest.fn(),
+        deleteUser: jest.fn(),
+      },
+    };
+
+    await expect(signupInvitedUserUseCase(baseInput, deps)).rejects.toThrow(
+      'Invitation is missing user details',
+    );
+    expect(deps.authProvider.createUser).not.toHaveBeenCalled();
   });
 });

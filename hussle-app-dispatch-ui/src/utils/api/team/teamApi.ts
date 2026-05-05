@@ -57,12 +57,7 @@ export interface InviteMemberInput {
 
 export interface AcceptInvitationInput {
   invitationToken: string;
-  email: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  organizationId: string;
 }
 
 export interface InviteResult {
@@ -100,7 +95,7 @@ interface VerifyInvitationResponse {
 }
 
 interface AcceptInvitationResponse {
-  data: { message: string };
+  message: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -164,10 +159,10 @@ export const verifyInvitation = async (token: string): Promise<InvitationVerific
 
 export const acceptInvitation = async (
   data: AcceptInvitationInput,
-): Promise<{ message: string }> => {
+): Promise<AcceptInvitationResponse> => {
   const response = await axiosInstance.post<AcceptInvitationResponse>(
     '/invitations/accept',
     data,
   );
-  return response.data.data;
+  return response.data;
 };

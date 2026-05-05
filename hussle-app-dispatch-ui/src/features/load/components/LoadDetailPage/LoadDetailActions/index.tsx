@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react';
-import { Box, Button, Divider, ListItemIcon, Menu, MenuItem, Tooltip } from '@mui/material';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { useCallback } from 'react';
+import { Button } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import SmsOutlinedIcon from '@mui/icons-material/SmsOutlined';
 import { useDispatch } from 'store';
+import { SplitButton, type SplitButtonItem } from 'components/SplitButton';
 import { openModal } from 'features/ui/store/reducers/uiSlice';
 import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
@@ -41,6 +41,8 @@ const SMS_PROMPT_STATUSES: readonly LoadStatus[] = [
   'AT_DELIVERY',
 ];
 
+const STATUS_BUTTON_ALTS: readonly LoadStatus[] = ['EXCEPTION', 'TONU'];
+
 export const LoadDetailActions = ({
   load,
   onCreateInvoice,
@@ -48,7 +50,6 @@ export const LoadDetailActions = ({
 }: LoadDetailActionsProps) => {
   const dispatch = useDispatch();
   const { openModal: openModalAction } = useModalActions();
-  const [alternativesAnchor, setAlternativesAnchor] = useState<null | HTMLElement>(null);
 
   const nextStatus = NEXT_STATUS[load.status];
   const altStatuses = ALTERNATIVE_STATUSES[load.status] ?? [];
@@ -71,24 +72,7 @@ export const LoadDetailActions = ({
     }
   }, [nextStatus, openStatusChangeDialog]);
 
-  const handleAlternativeClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setAlternativesAnchor(event.currentTarget);
-  }, []);
-
-  const handleAlternativeSelect = useCallback(
-    (status: LoadStatus) => {
-      setAlternativesAnchor(null);
-      openStatusChangeDialog(status);
-    },
-    [openStatusChangeDialog],
-  );
-
-  const handleCloseMenu = useCallback(() => {
-    setAlternativesAnchor(null);
-  }, []);
-
   const handleCopyPortalLink = useCallback(async () => {
-    setAlternativesAnchor(null);
     try {
       const url = await getDriverPortalLink(load.id);
       await navigator.clipboard.writeText(url);
@@ -113,99 +97,139 @@ export const LoadDetailActions = ({
     );
   }, [dispatch, load.id, load.loadNumber]);
 
+  const handleSendSms = useCallback(
+    () => openModalAction('loadSendSmsPrompt', { loadId: load.id }),
+    [openModalAction, load.id],
+  );
+
   const canCheckCall = CHECK_CALL_STATUSES.includes(load.status);
   const canSendSms = SMS_PROMPT_STATUSES.includes(load.status);
   const canCopyPortalLink = SMS_PROMPT_STATUSES.includes(load.status);
   const driverPhone = load.assignment?.driver?.phone ?? null;
-  const handleSendSms = () => openModalAction('loadSendSmsPrompt', { loadId: load.id });
   const invoiceReadiness = load.tracking?.invoiceReadiness;
   const invoiceReady = invoiceReadiness === 'READY' || invoiceReadiness === 'INVOICE_CREATED';
   const sendInvoiceDisabledReason = invoiceReady
     ? ''
     : 'Required documents (Rate Con, signed BOL, POD) must be confirmed before sending.';
 
+  const statusButtonAltItems: SplitButtonItem[] = altStatuses
+    .filter((status) => STATUS_BUTTON_ALTS.includes(status))
+    .map((status) => ({
+      key: `status-${status}`,
+      label: STATUS_LABELS[status],
+      onClick: () => openStatusChangeDialog(status),
+    }));
+
+  const altStatusItems: SplitButtonItem[] = altStatuses
+    .filter((status) => !STATUS_BUTTON_ALTS.includes(status))
+    .map((status) => ({
+      key: `status-${status}`,
+      label: STATUS_LABELS[status],
+      onClick: () => openStatusChangeDialog(status),
+    }));
+
+  const commItems: SplitButtonItem[] = [];
+  if (canCheckCall) {
+    commItems.push({
+      key: 'check-call',
+      label: 'Check Call',
+      icon: <PhoneInTalkIcon fontSize="small" />,
+      onClick: onCheckCall,
+    });
+  }
+  if (canSendSms) {
+    commItems.push({
+      key: 'send-sms',
+      label: 'Send Check-in SMS',
+      icon: <SmsOutlinedIcon fontSize="small" />,
+      onClick: handleSendSms,
+      disabled: driverPhone === null,
+      disabledReason: 'Driver has no phone number',
+    });
+  }
+  if (load.status === 'DELIVERED') {
+    commItems.push({
+      key: 'send-invoice',
+      label: 'Send Invoice',
+      icon: <ReceiptLongIcon fontSize="small" />,
+      onClick: onCreateInvoice,
+      disabled: !invoiceReady,
+      disabledReason: sendInvoiceDisabledReason,
+    });
+  }
+
+  const utilityItems: SplitButtonItem[] = [];
+  if (canCopyPortalLink) {
+    utilityItems.push({
+      key: 'copy-portal',
+      label: 'Copy Driver Portal Link',
+      icon: <ContentCopyIcon fontSize="small" />,
+      onClick: handleCopyPortalLink,
+    });
+  }
+
+  const destructiveItems: SplitButtonItem[] = [
+    {
+      key: 'delete',
+      label: 'Delete Load',
+      icon: <DeleteOutlineIcon fontSize="small" />,
+      onClick: handleDeleteClick,
+      danger: true,
+    },
+  ];
+
+  const groups = [altStatusItems, commItems, utilityItems, destructiveItems].filter(
+    (group) => group.length > 0,
+  );
+
+  const items: SplitButtonItem[] = groups.flatMap((group, groupIdx) => {
+    const isLastGroup = groupIdx === groups.length - 1;
+    if (isLastGroup) {
+      return group;
+    }
+    return group.map((item, idx) =>
+      idx === group.length - 1 ? { ...item, dividerAfter: true } : item,
+    );
+  });
+
+  const primaryStatusLabel = nextStatus
+    ? (NEXT_STATUS_LABELS[load.status] ?? STATUS_LABELS[nextStatus])
+    : '';
+
+  const renderStatusButton = () => {
+    if (!nextStatus) {
+      return null;
+    }
+    if (statusButtonAltItems.length === 0) {
+      return (
+        <Button variant="contained" onClick={handlePrimaryAction}>
+          {primaryStatusLabel}
+        </Button>
+      );
+    }
+    return (
+      <SplitButton
+        variant="action"
+        ariaLabel="status change"
+        primary={{
+          key: 'next-status',
+          label: primaryStatusLabel,
+          onClick: handlePrimaryAction,
+        }}
+        items={statusButtonAltItems}
+      />
+    );
+  };
+
   return (
     <>
-      {canCheckCall && (
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<PhoneInTalkIcon />}
-          onClick={onCheckCall}
-        >
-          Check Call
-        </Button>
-      )}
-      {canSendSms && (
-        <Tooltip title={driverPhone === null ? 'Driver has no phone number' : ''} placement="top">
-          <Box component="span" sx={{ display: 'inline-flex' }}>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<SmsOutlinedIcon />}
-              onClick={handleSendSms}
-              disabled={driverPhone === null}
-            >
-              Send Check-in SMS
-            </Button>
-          </Box>
-        </Tooltip>
-      )}
-      {load.status === 'DELIVERED' && (
-        <Tooltip title={sendInvoiceDisabledReason} placement="top">
-          <Box component="span" sx={{ display: 'inline-flex' }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<ReceiptLongIcon />}
-              onClick={onCreateInvoice}
-              disabled={!invoiceReady}
-            >
-              Send Invoice
-            </Button>
-          </Box>
-        </Tooltip>
-      )}
-      {nextStatus && (
-        <Button variant="contained" onClick={handlePrimaryAction}>
-          {NEXT_STATUS_LABELS[load.status] ?? STATUS_LABELS[nextStatus]}
-        </Button>
-      )}
-      <Button
-        variant="contained"
-        size="small"
-        onClick={handleAlternativeClick}
-        endIcon={<ArrowDropDownIcon />}
-      >
-        More
-      </Button>
-      <Menu
-        anchorEl={alternativesAnchor}
-        open={Boolean(alternativesAnchor)}
-        onClose={handleCloseMenu}
-      >
-        {altStatuses.map((status) => (
-          <MenuItem key={status} onClick={() => handleAlternativeSelect(status)}>
-            {STATUS_LABELS[status]}
-          </MenuItem>
-        ))}
-        {altStatuses.length > 0 && <Divider />}
-        {canCopyPortalLink && (
-          <MenuItem onClick={handleCopyPortalLink}>
-            <ListItemIcon>
-              <ContentCopyIcon fontSize="small" />
-            </ListItemIcon>
-            Copy Driver Portal Link
-          </MenuItem>
-        )}
-        {canCopyPortalLink && <Divider />}
-        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
-            <DeleteOutlineIcon fontSize="small" sx={{ color: 'error.main' }} />
-          </ListItemIcon>
-          Delete Load
-        </MenuItem>
-      </Menu>
+      {renderStatusButton()}
+      <SplitButton
+        variant="menu"
+        triggerLabel="Actions"
+        ariaLabel="load actions"
+        items={items}
+      />
     </>
   );
 };
