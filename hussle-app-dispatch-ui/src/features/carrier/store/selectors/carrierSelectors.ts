@@ -103,39 +103,28 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
 // List page filtering selectors
 // ---------------------------------------------------------------------------
 
-export type CarrierTab = 'all' | 'active' | 'inactive' | 'onboarding';
+import { CARRIER_TAB_TO_STATUSES, type CarrierTab } from '../../constants';
+
+export type { CarrierTab };
 
 export const selectFilteredCarriers = (activeTab: CarrierTab) =>
   createSelector([selectAllCarriers], (carriers) => {
     const formatted = carriers.map((c) => ({ ...c, phone: formatPhone(c.phone) }));
-    if (activeTab === 'all') {
-      return [...formatted];
+    const statuses = CARRIER_TAB_TO_STATUSES[activeTab];
+    if (statuses === undefined) {
+      return formatted;
     }
-    if (activeTab === 'active') {
-      return formatted.filter((carrier) => carrier.status === 'ACTIVE');
-    }
-    if (activeTab === 'inactive') {
-      return formatted.filter((carrier) => carrier.status !== 'ACTIVE');
-    }
-    // onboarding
-    return formatted.filter((carrier) => !carrier.onboardingComplete);
+    return formatted.filter((carrier) => statuses.includes(carrier.status));
   });
 
-export const selectCarrierTabCounts = createSelector(
-  [selectAllCarriers],
-  (carriers) => ({
-    all: carriers.length,
-    active: carriers.filter((carrier) => carrier.status === 'ACTIVE').length,
-    inactive: carriers.filter((carrier) => carrier.status !== 'ACTIVE').length,
-    onboarding: carriers.filter((carrier) => !carrier.onboardingComplete).length,
-  }),
-);
+export const selectCarrierTabCounts = (state: RootState) =>
+  (state.pages.carriers as CarrierPageState).tabCounts;
 
 export const selectCarrierKpis = (activeTab: CarrierTab) =>
   createSelector(
     [selectFilteredCarriers(activeTab)],
     (carriers): CarrierKpiItem[] => {
-      const activeCount = carriers.filter((carrier) => carrier.onboardingComplete).length;
+      const activeCount = carriers.filter((carrier) => carrier.status === 'ACTIVE').length;
       const totalDrivers = carriers.reduce((sum, carrier) => sum + carrier.driverCount, 0);
       const totalVehicles = carriers.reduce((sum, carrier) => sum + carrier.vehicleCount, 0);
       const totalRevenue = carriers.reduce((sum) => sum + 0, 0);

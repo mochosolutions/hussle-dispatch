@@ -78,10 +78,15 @@ describe('carrierService', () => {
     countNotes: jest.fn(),
   };
 
+  const mockAuditLog = {
+    create: jest.fn().mockResolvedValue(undefined),
+  };
+
   const carrierService = createCarrierService({
     carrierRepository: mockCarrierRepository,
     loadRepository: mockLoadRepository,
     noteRepository: mockNoteRepository,
+    auditLog: mockAuditLog,
   });
 
   beforeEach(() => {
@@ -228,7 +233,7 @@ describe('carrierService', () => {
           type: CarrierType.EXTERNAL_CARRIER,
           dispatchFeeType: DispatchFeeType.PERCENTAGE,
           dispatchFeePercent: 10,
-          drivers: [{ firstName: 'John', lastName: 'Doe' }],
+          drivers: [{ firstName: 'John', lastName: 'Doe', payType: 'PER_MILE' as const, payRate: 0.5 }],
           vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
         },
         role: 'admin',
@@ -242,10 +247,10 @@ describe('carrierService', () => {
             type: CarrierType.EXTERNAL_CARRIER,
             dispatchFeeType: DispatchFeeType.PERCENTAGE,
             dispatchFeePercent: 10,
-            drivers: [{ firstName: 'John', lastName: 'Doe' }],
+            drivers: [{ firstName: 'John', lastName: 'Doe', payType: 'PER_MILE' as const, payRate: 0.5 }],
             vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
           },
-          drivers: [{ firstName: 'John', lastName: 'Doe' }],
+          drivers: [{ firstName: 'John', lastName: 'Doe', payType: 'PER_MILE' as const, payRate: 0.5 }],
           vehicles: [{ unitNumber: 'T-100', type: 'DRY_VAN' }],
         },
       );

@@ -7,6 +7,7 @@ import type { CarrierControllers } from '../controllers/carrierController';
 import type { InviteControllers } from '../controllers/inviteController';
 import type { OnboardingDetailControllers } from '../controllers/onboardingDetailController';
 import type { DispatchOverrideControllers } from '../controllers/dispatchOverrideController';
+import type { SuspendControllers } from '../controllers/suspendController';
 import {
   carrierIdParamValidator,
   carrierNotesParamValidator,
@@ -20,10 +21,20 @@ import {
   approveCarrierValidator,
   rejectCarrierValidator,
 } from '../validators/approvalValidators';
+import {
+  adminActivateCarrierValidator,
+  suspendCarrierValidator,
+  unsuspendCarrierValidator,
+} from '../validators/suspendValidators';
 import { dispatchOverrideValidator } from '../validators/dispatchOverrideValidator';
 
 export const createCarriersRouter = (
-  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers,
+  controllers: CarrierControllers
+    & InviteControllers
+    & ApprovalControllers
+    & OnboardingDetailControllers
+    & DispatchOverrideControllers
+    & SuspendControllers,
 ): express.Router => {
   const router = express.Router();
 
@@ -42,6 +53,7 @@ export const createCarriersRouter = (
     controllers.createCarrierWithAssets,
   );
   router.get('/', requireAuth, validateRequest(listCarriersValidator), controllers.listCarriers);
+  router.get('/tab-counts', requireAuth, controllers.getCarrierTabCounts);
   router.post(
     '/:id/invite',
     requireAuth,
@@ -120,6 +132,27 @@ export const createCarriersRouter = (
     requireRole([ROLES.ADMIN]),
     validateRequest(dispatchOverrideValidator),
     controllers.dispatchOverride,
+  );
+  router.post(
+    '/:id/suspend',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(suspendCarrierValidator),
+    controllers.suspend,
+  );
+  router.post(
+    '/:id/unsuspend',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(unsuspendCarrierValidator),
+    controllers.unsuspend,
+  );
+  router.post(
+    '/:id/admin-activate',
+    requireAuth,
+    requireRole([ROLES.ADMIN]),
+    validateRequest(adminActivateCarrierValidator),
+    controllers.adminActivate,
   );
 
   return router;

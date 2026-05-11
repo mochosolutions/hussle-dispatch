@@ -7,7 +7,7 @@ export interface PendingCarrierResponse {
   email: string | null;
   phone: string | null;
   type: string;
-  onboardingStatus: string;
+  status: string;
   entryMethod: string | null;
   completedAt: string | null;
   inviteSentAt: string | null;
@@ -21,7 +21,7 @@ export const toPendingCarrierResponse = (carrier: PendingCarrier): PendingCarrie
   email: carrier.email,
   phone: carrier.phone,
   type: carrier.type,
-  onboardingStatus: carrier.onboardingStatus,
+  status: carrier.status,
   entryMethod: carrier.entryMethod,
   completedAt: carrier.completedAt?.toISOString() ?? null,
   inviteSentAt: carrier.inviteSentAt?.toISOString() ?? null,

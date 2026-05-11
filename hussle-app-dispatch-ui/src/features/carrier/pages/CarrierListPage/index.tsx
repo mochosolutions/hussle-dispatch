@@ -19,18 +19,24 @@ import { useDispatch, useSelector } from 'store';
 import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
 import type { CarrierListItem } from '../../types';
-import { fetchCarriersRequest } from '../../store/reducers/carrierNewPageSlice';
+import { CARRIER_TAB_TO_STATUSES, type CarrierTab } from '../../constants';
+import {
+  fetchCarriersRequest,
+  fetchCarrierTabCountsRequest,
+} from '../../store/reducers/carrierNewPageSlice';
 import {
   selectCarrierKpis,
   selectFilteredCarriers,
   selectCarrierTabCounts,
 } from '../../store/selectors/carrierSelectors';
-import type { CarrierTab } from '../../store/selectors/carrierSelectors';
 import {
   CarrierNameCellRenderer,
   CarrierTypeCellRenderer,
   CarrierContactCellRenderer,
   CarrierStatusCellRenderer,
+  InvitedAtCellRenderer,
+  LastActivityCellRenderer,
+  PhaseProgressCellRenderer,
 } from '../../components/CarrierCellRenderers';
 
 const CarrierListPage = () => {
@@ -47,30 +53,43 @@ const CarrierListPage = () => {
   const store = useStore<RootState>();
 
   useEffect(() => {
-    // Read lastFetchedAt at effect time so the effect deps stay stable
-    // (depending on lastFetchedAt would loop: success updates it, which retriggers the fetch).
     const { lastFetchedAt } = store.getState().pages.carriers;
     if (isStale(lastFetchedAt)) {
       dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
     }
+    dispatch(fetchCarrierTabCountsRequest());
   }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
     (value: string | number) => {
+      const statuses = CARRIER_TAB_TO_STATUSES[activeTab];
       dispatch(
         fetchCarriersRequest({
           page: 1,
           limit: 25,
           search: String(value),
+          ...(statuses !== undefined && { status: statuses }),
+        }),
+      );
+    },
+    [dispatch, activeTab],
+  );
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      const nextTab = value as CarrierTab;
+      setActiveTab(nextTab);
+      const statuses = CARRIER_TAB_TO_STATUSES[nextTab];
+      dispatch(
+        fetchCarriersRequest({
+          page: 1,
+          limit: 25,
+          ...(statuses !== undefined && { status: statuses }),
         }),
       );
     },
     [dispatch],
   );
-
-  const handleStatusChange = useCallback((value: string) => {
-    setActiveTab(value as CarrierTab);
-  }, []);
 
   const handleOpenCreate = useCallback(() => {
     navigate('/carriers/create');
@@ -95,7 +114,7 @@ const CarrierListPage = () => {
     [],
   );
 
-  const columnDefs = useMemo<ColDef<CarrierListItem>[]>(
+  const standardColumns = useMemo<ColDef<CarrierListItem>[]>(
     () => [
       {
         headerName: 'Carrier',
@@ -149,12 +168,68 @@ const CarrierListPage = () => {
     [actionsConfig],
   );
 
+  const onboardingColumns = useMemo<ColDef<CarrierListItem>[]>(
+    () => [
+      {
+        headerName: 'Carrier',
+        field: 'name',
+        minWidth: 120,
+        flex: 1,
+        cellRenderer: CarrierNameCellRenderer,
+      },
+      {
+        headerName: 'Type',
+        field: 'type',
+        minWidth: 160,
+        cellRenderer: CarrierTypeCellRenderer,
+      },
+      {
+        headerName: 'Status',
+        field: 'status',
+        minWidth: 160,
+        cellRenderer: CarrierStatusCellRenderer,
+      },
+      {
+        headerName: 'Invited',
+        field: 'inviteSentAt',
+        minWidth: 130,
+        cellRenderer: InvitedAtCellRenderer,
+      },
+      {
+        headerName: 'Last Activity',
+        colId: 'lastActivity',
+        minWidth: 150,
+        cellRenderer: LastActivityCellRenderer,
+      },
+      {
+        headerName: 'Phase Progress',
+        colId: 'phaseProgress',
+        minWidth: 160,
+        cellRenderer: PhaseProgressCellRenderer,
+      },
+      {
+        headerName: '',
+        colId: 'actions',
+        minWidth: 130,
+        maxWidth: 150,
+        sortable: false,
+        cellRenderer: ActionsCell,
+        cellRendererParams: { config: actionsConfig },
+      },
+    ],
+    [actionsConfig],
+  );
+
+  const columnDefs = activeTab === 'onboarding' ? onboardingColumns : standardColumns;
+
   const tabOptions = useMemo(
     () => [
       { value: 'all', label: `All (${tabCounts.all})` },
+      { value: 'onboarding', label: `Onboarding (${tabCounts.onboarding})` },
       { value: 'active', label: `Active (${tabCounts.active})` },
-      { value: 'inactive', label: `Inactive (${tabCounts.inactive})` },
-      { value: 'onboarding', label: `Onboarding Pending (${tabCounts.onboarding})` },
+      { value: 'actionRequired', label: `Action Required (${tabCounts.actionRequired})` },
+      { value: 'suspended', label: `Suspended (${tabCounts.suspended})` },
+      { value: 'rejected', label: `Rejected (${tabCounts.rejected})` },
     ],
     [tabCounts],
   );

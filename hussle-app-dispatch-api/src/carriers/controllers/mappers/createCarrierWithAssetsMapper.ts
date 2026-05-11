@@ -11,6 +11,7 @@ export const createCarrierWithAssetsMapper = (
 
   return {
     ...context,
+    userId: req.user?.userId ?? null,
     input,
   };
 };

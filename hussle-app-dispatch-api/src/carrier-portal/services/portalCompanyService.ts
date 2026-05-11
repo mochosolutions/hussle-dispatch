@@ -29,7 +29,7 @@ export interface CarrierSummary {
   name: string;
   email: string | null;
   phone: string | null;
-  onboardingStatus: string;
+  status: string;
   type: string;
 }
 
@@ -59,7 +59,7 @@ const toCarrierSummary = (carrier: Carrier): CarrierSummary => ({
   name: carrier.name,
   email: carrier.email,
   phone: carrier.phone,
-  onboardingStatus: carrier.onboardingStatus,
+  status: carrier.status,
   type: carrier.type,
 });
 

@@ -37,6 +37,7 @@ export interface CarrierControllers {
   listNotes: RequestHandler;
   createNote: RequestHandler;
   getCarrierStats: RequestHandler;
+  getCarrierTabCounts: RequestHandler;
 }
 
 export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierControllers => ({
@@ -114,5 +115,11 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
     await deps.carrierService.getCarrierById({ ...context, id });
     const stats = await deps.carrierStatsQuery.getStats(id, context.organizationId);
     sendSingle(res, stats);
+  },
+
+  getCarrierTabCounts: async (req: Request, res: Response): Promise<void> => {
+    const context = getRequestContextMapper(req);
+    const counts = await deps.carrierStatsQuery.getTabCounts(context.organizationId);
+    sendSingle(res, counts);
   },
 });

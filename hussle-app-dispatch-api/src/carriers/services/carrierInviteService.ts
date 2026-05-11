@@ -1,11 +1,20 @@
 import crypto from 'node:crypto';
+import { CarrierStatus } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { CarrierRepositoryPort, UpdateCarrierInput } from '../types/carrierTypes';
 import type { CarrierInviteTokenRepoPort } from '@/carrier-portal/types/carrierInviteTokenRepoPort';
+import type { CarrierAuditPort } from '../types/carrierAuditPort';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors';
+import { assertTransition } from './carrierStateMachine';
 
 const INVITE_TOKEN_BYTES = 32;
 const INVITE_EXPIRY_DAYS = 7;
+
+const RESEND_ALLOWED_STATUSES: readonly CarrierStatus[] = [
+  CarrierStatus.INVITED,
+  CarrierStatus.ONBOARDING,
+  CarrierStatus.PENDING_APPROVAL,
+];
 
 interface SendInviteInput {
   carrierId: string;
@@ -23,6 +32,7 @@ interface CarrierInviteServiceDeps {
   carrierRepo: CarrierRepositoryPort;
   inviteTokenRepo: CarrierInviteTokenRepoPort;
   eventBus: EventBus;
+  auditLog: CarrierAuditPort;
 }
 
 const generateInviteToken = () => {
@@ -32,13 +42,24 @@ const generateInviteToken = () => {
   return { token, now, expiresAt };
 };
 
-const issueInvite = async (
-  deps: CarrierInviteServiceDeps,
-  input: SendInviteInput,
-  carrier: { name: string; email: string; phone?: string | null },
-): Promise<SendInviteResult> => {
-  const { token, now, expiresAt } = generateInviteToken();
+interface InviteCarrierContext {
+  id: string;
+  status: CarrierStatus;
+  name: string;
+  email: string;
+  phone?: string | null;
+}
 
+interface IssueParams {
+  deps: CarrierInviteServiceDeps;
+  input: SendInviteInput;
+  carrier: InviteCarrierContext;
+  token: string;
+  expiresAt: Date;
+}
+
+const writeTokenAndPublish = async (params: IssueParams): Promise<void> => {
+  const { deps, input, carrier, token, expiresAt } = params;
   await deps.inviteTokenRepo.revokeByCarrierId(input.carrierId);
 
   await deps.inviteTokenRepo.create({
@@ -47,10 +68,6 @@ const issueInvite = async (
     token,
     expiresAt,
   });
-
-  await deps.carrierRepo.update(input.carrierId, input.organizationId, {
-    inviteSentAt: now,
-  } satisfies UpdateCarrierInput);
 
   await deps.eventBus.publish('carrier.invited', {
     carrierId: input.carrierId,
@@ -61,8 +78,6 @@ const issueInvite = async (
     inviteToken: token,
     invitedByUserId: input.userId,
   });
-
-  return { inviteSentAt: now, tokenExpiresAt: expiresAt };
 };
 
 export const createCarrierInviteService = (deps: CarrierInviteServiceDeps) => ({
@@ -72,32 +87,48 @@ export const createCarrierInviteService = (deps: CarrierInviteServiceDeps) => ({
     if (carrier === null) {
       throw new NotFoundError('Carrier not found.');
     }
-
     if (!carrier.email) {
       throw new ValidationError('Carrier must have an email address');
     }
 
-    if (carrier.status === 'ACTIVE' && carrier.onboardingStatus === 'APPROVED') {
-      throw new ConflictError('Carrier is already active');
-    }
+    assertTransition(carrier.status, CarrierStatus.INVITED);
 
-    if (
-      carrier.onboardingStatus === 'COMPLETED' ||
-      carrier.onboardingStatus === 'APPROVED'
-    ) {
-      throw new ConflictError('Carrier onboarding is already completed or approved');
-    }
+    const { token, now, expiresAt } = generateInviteToken();
+    const action =
+      carrier.status === CarrierStatus.REJECTED ? 'CARRIER_REINVITED' : 'CARRIER_INVITED';
 
     await deps.carrierRepo.update(input.carrierId, input.organizationId, {
-      onboardingStatus: 'NOT_STARTED',
+      inviteSentAt: now,
       entryMethod: 'INVITE',
+      status: CarrierStatus.INVITED,
     } satisfies UpdateCarrierInput);
 
-    return issueInvite(deps, input, {
-      name: carrier.name,
-      email: carrier.email,
-      phone: carrier.phone,
+    await writeTokenAndPublish({
+      deps,
+      input,
+      carrier: {
+        id: carrier.id,
+        status: carrier.status,
+        name: carrier.name,
+        email: carrier.email,
+        phone: carrier.phone,
+      },
+      token,
+      expiresAt,
     });
+
+    await deps.auditLog
+      .create(input.organizationId, {
+        userId: input.userId,
+        action,
+        entityType: 'CARRIER',
+        entityId: input.carrierId,
+        changes: { status: { old: carrier.status, new: CarrierStatus.INVITED } },
+        metadata: { tokenExpiresAt: expiresAt.toISOString() },
+      })
+      .catch(() => undefined);
+
+    return { inviteSentAt: now, tokenExpiresAt: expiresAt };
   },
 
   resendInvite: async (input: SendInviteInput): Promise<SendInviteResult> => {
@@ -106,19 +137,47 @@ export const createCarrierInviteService = (deps: CarrierInviteServiceDeps) => ({
     if (carrier === null) {
       throw new NotFoundError('Carrier not found.');
     }
-
     if (!carrier.email) {
       throw new ValidationError('Carrier must have an email address');
     }
 
-    if (carrier.status === 'ACTIVE') {
-      throw new ConflictError('Carrier is already active');
+    if (!RESEND_ALLOWED_STATUSES.includes(carrier.status)) {
+      throw new ConflictError(
+        `Cannot resend invite for carrier in status ${carrier.status}. Allowed: ${RESEND_ALLOWED_STATUSES.join(', ')}.`,
+      );
     }
 
-    return issueInvite(deps, input, {
-      name: carrier.name,
-      email: carrier.email,
-      phone: carrier.phone,
+    const { token, now, expiresAt } = generateInviteToken();
+
+    await deps.carrierRepo.update(input.carrierId, input.organizationId, {
+      inviteSentAt: now,
+    } satisfies UpdateCarrierInput);
+
+    await writeTokenAndPublish({
+      deps,
+      input,
+      carrier: {
+        id: carrier.id,
+        status: carrier.status,
+        name: carrier.name,
+        email: carrier.email,
+        phone: carrier.phone,
+      },
+      token,
+      expiresAt,
     });
+
+    await deps.auditLog
+      .create(input.organizationId, {
+        userId: input.userId,
+        action: 'CARRIER_INVITE_RESENT',
+        entityType: 'CARRIER',
+        entityId: input.carrierId,
+        changes: null,
+        metadata: { tokenExpiresAt: expiresAt.toISOString() },
+      })
+      .catch(() => undefined);
+
+    return { inviteSentAt: now, tokenExpiresAt: expiresAt };
   },
 });

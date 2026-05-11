@@ -20,6 +20,7 @@ interface GetCarriersParams {
   limit?: number;
   search?: string;
   type?: string;
+  status?: string | string[];
   sort?: string;
   order?: 'asc' | 'desc';
 }
@@ -329,13 +330,27 @@ export const resendCarrierInvite = async (
 export interface ApproveCarrierResponse {
   id: string;
   status: string;
-  onboardingStatus: string;
   minimumRatePerMile: number | null;
 }
 
 export interface RejectCarrierResponse {
   id: string;
-  onboardingStatus: string;
+  status: string;
+}
+
+export interface AdminActivateCarrierResponse {
+  id: string;
+  status: string;
+  minimumRatePerMile: number | null;
+}
+
+export interface CarrierTabCountsResponse {
+  all: number;
+  onboarding: number;
+  active: number;
+  actionRequired: number;
+  suspended: number;
+  rejected: number;
 }
 
 interface ApproveCarrierApiResponse {
@@ -360,6 +375,48 @@ export const rejectCarrier = async (
   const response = await axiosInstance.post<RejectCarrierApiResponse>(
     `/carriers/${carrierId}/reject`,
     { reason },
+  );
+  return response.data.data;
+};
+
+interface AdminActivateApiResponse {
+  data: AdminActivateCarrierResponse;
+}
+
+export const adminActivateCarrier = async (
+  carrierId: string,
+  body: { reason: string; evidenceDocumentId?: string },
+): Promise<AdminActivateCarrierResponse> => {
+  const response = await axiosInstance.post<AdminActivateApiResponse>(
+    `/carriers/${carrierId}/admin-activate`,
+    body,
+  );
+  return response.data.data;
+};
+
+export const suspendCarrier = async (
+  carrierId: string,
+  reason: string,
+): Promise<{ id: string; status: string }> => {
+  const response = await axiosInstance.post<{ data: { id: string; status: string } }>(
+    `/carriers/${carrierId}/suspend`,
+    { reason },
+  );
+  return response.data.data;
+};
+
+export const unsuspendCarrier = async (
+  carrierId: string,
+): Promise<{ id: string; status: string }> => {
+  const response = await axiosInstance.post<{ data: { id: string; status: string } }>(
+    `/carriers/${carrierId}/unsuspend`,
+  );
+  return response.data.data;
+};
+
+export const getCarrierTabCounts = async (): Promise<CarrierTabCountsResponse> => {
+  const response = await axiosInstance.get<{ data: CarrierTabCountsResponse }>(
+    '/carriers/tab-counts',
   );
   return response.data.data;
 };

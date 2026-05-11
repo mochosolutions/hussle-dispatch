@@ -7,7 +7,7 @@ interface CarrierSummary {
   name: string;
   email: string | null;
   phone: string | null;
-  onboardingStatus: string;
+  status: string;
   type: string;
 }
 

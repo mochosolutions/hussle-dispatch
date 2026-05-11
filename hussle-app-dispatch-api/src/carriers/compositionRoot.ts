@@ -12,16 +12,21 @@ import { createOnboardingDetailControllers } from './controllers/onboardingDetai
 import type { OnboardingDetailControllers } from './controllers/onboardingDetailController';
 import { carrierRepositoryPrisma } from './repositories/carrierRepositoryPrisma';
 import { carrierStatsQueryPrisma } from './repositories/carrierStatsQueryPrisma';
+import { carrierAuditPortPrisma } from './repositories/carrierAuditPortPrisma';
 import { carrierInviteTokenRepoPrisma } from '../carrier-portal/repositories/carrierInviteTokenRepoPrisma';
 import { createCarrierApprovalService } from './services/carrierApprovalService';
 import { createCarrierOnboardingDetailService } from './services/carrierOnboardingDetailService';
 import { createCarrierService } from './services/carrierService';
 import { createCarrierInviteService } from './services/carrierInviteService';
 import { createDispatchOverrideService } from './services/dispatchOverrideService';
+import { createCarrierSuspendService } from './services/carrierSuspendService';
 import { initializeCarrierSubscriber } from './services/carrierSubscriber';
 import { createDispatchOverrideControllers } from './controllers/dispatchOverrideController';
 import type { DispatchOverrideControllers } from './controllers/dispatchOverrideController';
+import { createSuspendControllers } from './controllers/suspendController';
+import type { SuspendControllers } from './controllers/suspendController';
 import type { CarrierApprovalPort } from './types/approvalTypes';
+import type { CarrierSuspendPort } from './types/suspendTypes';
 import type { OnboardingDetailPort, OnboardingDetail } from './types/onboardingDetailTypes';
 
 interface CarrierModuleDeps {
@@ -35,12 +40,13 @@ export const createCarriersModule = ({
   eventBus,
   logger,
 }: CarrierModuleDeps): {
-  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers;
+  controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers & SuspendControllers;
   initializeSubscriber: () => Promise<void>;
 } => {
   const repositories = carrierRepositoryPrisma(prismaClient);
   const carrierStatsQuery = carrierStatsQueryPrisma(prismaClient);
   const inviteTokenRepo = carrierInviteTokenRepoPrisma(prismaClient);
+  const auditLog = carrierAuditPortPrisma(prismaClient);
 
   const approvalPort: CarrierApprovalPort = {
     findById: (id, organizationId) =>
@@ -52,27 +58,19 @@ export const createCarriersModule = ({
           email: true,
           phone: true,
           managedByOrgId: true,
-          onboardingStatus: true,
           status: true,
           minimumRatePerMile: true,
         },
       }),
-    approve: (id) =>
+    setStatus: (id, status) =>
       prismaClient.carrier.update({
         where: { id },
-        data: { status: 'ACTIVE', onboardingStatus: 'APPROVED' },
+        data: { status },
         select: {
           id: true,
           status: true,
-          onboardingStatus: true,
           minimumRatePerMile: true,
         },
-      }),
-    reject: (id) =>
-      prismaClient.carrier.update({
-        where: { id },
-        data: { onboardingStatus: 'REJECTED' },
-        select: { id: true, onboardingStatus: true },
       }),
   };
 
@@ -80,16 +78,48 @@ export const createCarriersModule = ({
     carrierRepository: repositories,
     loadRepository: repositories,
     noteRepository: repositories,
+    auditLog,
   });
 
   const carrierInviteService = createCarrierInviteService({
     carrierRepo: repositories,
     inviteTokenRepo,
     eventBus,
+    auditLog,
   });
 
   const carrierApprovalService = createCarrierApprovalService({
     approvalPort,
+    auditLog,
+  });
+
+  const suspendPort: CarrierSuspendPort = {
+    findById: (id, organizationId) =>
+      prismaClient.carrier.findUnique({
+        where: { id, managedByOrgId: organizationId, deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          managedByOrgId: true,
+          status: true,
+          type: true,
+          dispatchAgreementOnFile: true,
+          insuranceCertOnFile: true,
+          insuranceExpiry: true,
+          w9OnFile: true,
+        },
+      }),
+    setStatus: (id, status) =>
+      prismaClient.carrier.update({
+        where: { id },
+        data: { status },
+        select: { id: true, status: true },
+      }),
+  };
+
+  const carrierSuspendService = createCarrierSuspendService({
+    suspendPort,
+    auditLog,
   });
 
   const onboardingDetailPort: OnboardingDetailPort = {
@@ -210,35 +240,15 @@ export const createCarriersModule = ({
           },
         }),
     },
-    auditLog: {
-      create: (
-        organizationId: string,
-        input: {
-          userId: string | null;
-          action: string;
-          entityType: string;
-          entityId: string;
-          changes: Record<string, { old: unknown; new: unknown }> | null;
-          metadata: Record<string, unknown> | null;
-        },
-      ) =>
-        prismaClient.auditLog.create({
-          data: {
-            organizationId,
-            userId: input.userId,
-            action: input.action,
-            entityType: input.entityType,
-            entityId: input.entityId,
-            changes: input.changes as unknown as import('@prisma/client').Prisma.InputJsonValue,
-            metadata: input.metadata as unknown as import('@prisma/client').Prisma.InputJsonValue,
-            timestamp: new Date(),
-          },
-        }),
-    },
+    auditLog,
   });
 
   const dispatchOverrideControllers = createDispatchOverrideControllers({
     dispatchOverrideService,
+  });
+
+  const suspendControllers = createSuspendControllers({
+    carrierSuspendService,
   });
 
   const controllers = {
@@ -247,6 +257,7 @@ export const createCarriersModule = ({
     ...approvalControllers,
     ...onboardingDetailControllers,
     ...dispatchOverrideControllers,
+    ...suspendControllers,
   };
 
   const initializeSubscriber = () =>
@@ -254,6 +265,7 @@ export const createCarriersModule = ({
       eventBus,
       carrierRepo: repositories,
       logger,
+      auditLog,
     });
 
   return { controllers, initializeSubscriber };

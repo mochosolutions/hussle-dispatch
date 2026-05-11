@@ -177,7 +177,6 @@ describe('loadStatusService', () => {
         insuranceExpiry: null,
         w9OnFile: true,
         carrierPacketOnFile: false,
-        onboardingStatus: 'NOT_STARTED',
         minimumRatePerMile: null,
         inviteSentAt: null,
         entryMethod: 'INVITE',

@@ -303,10 +303,14 @@ enum AccessorialType {
 }
 
 enum CarrierStatus {
-  ACTIVE
-  PENDING
-  SUSPENDED
   DRAFT
+  INVITED
+  ONBOARDING
+  PENDING_APPROVAL
+  REJECTED
+  ACTIVE
+  ACTION_REQUIRED
+  SUSPENDED
 }
 
 enum VehicleCategory {
@@ -314,14 +318,6 @@ enum VehicleCategory {
   BOX_TRUCK
   CARGO_VAN
   PERSONAL_VEHICLE
-}
-
-enum OnboardingStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  APPROVED
-  REJECTED
 }
 
 enum DriverStatus {
@@ -596,7 +592,6 @@ model Carrier {
   insuranceExpiry                   DateTime?
   w9OnFile                          Boolean              @default(false)
   carrierPacketOnFile               Boolean              @default(false)
-  onboardingStatus                  OnboardingStatus     @default(NOT_STARTED)
   minimumRatePerMile                Decimal?             @db.Decimal(10, 2)
   inviteSentAt                      DateTime?
   entryMethod                       String?              @default("INVITE")
@@ -616,7 +611,7 @@ model Carrier {
   factoringNoa                      String?              @db.Text
   outboundEmailMode                 EmailMode            @default(MANUAL)
   replyToEmail                      String?
-  status                            CarrierStatus        @default(ACTIVE)
+  status                            CarrierStatus        @default(DRAFT)
   description                       String?
   createdAt                         DateTime             @default(now())
   updatedAt                         DateTime             @updatedAt

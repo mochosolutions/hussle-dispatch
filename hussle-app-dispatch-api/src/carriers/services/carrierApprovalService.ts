@@ -1,12 +1,13 @@
-import { ConflictError, NotFoundError } from '@/shared/errors';
+import { CarrierStatus } from '@prisma/client';
+import { NotFoundError } from '@/shared/errors';
 import type { EventMap } from '@/shared/messaging/eventMap';
 import type {
   CarrierApprovalPort,
   CarrierApproved,
   CarrierRejected,
 } from '../types/approvalTypes';
-
-const ONBOARDING_COMPLETED = 'COMPLETED' as const;
+import type { CarrierAuditPort } from '../types/carrierAuditPort';
+import { assertTransition } from './carrierStateMachine';
 
 interface ApproveInput {
   carrierId: string;
@@ -21,6 +22,14 @@ interface RejectInput {
   reason: string;
 }
 
+interface AdminActivateInput {
+  carrierId: string;
+  organizationId: string;
+  userId: string;
+  reason: string;
+  evidenceDocumentId?: string;
+}
+
 interface ApproveResult {
   data: CarrierApproved;
   event: { name: 'carrier.onboarding.approved'; payload: EventMap['carrier.onboarding.approved'] };
@@ -31,9 +40,38 @@ interface RejectResult {
   event: { name: 'carrier.onboarding.rejected'; payload: EventMap['carrier.onboarding.rejected'] };
 }
 
+interface AdminActivateResult {
+  data: CarrierApproved;
+}
+
 interface CarrierApprovalServiceDeps {
   approvalPort: CarrierApprovalPort;
+  auditLog: CarrierAuditPort;
 }
+
+const writeStatusAudit = async (
+  deps: CarrierApprovalServiceDeps,
+  args: {
+    organizationId: string;
+    carrierId: string;
+    userId: string;
+    action: string;
+    fromStatus: CarrierStatus;
+    toStatus: CarrierStatus;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<void> => {
+  await deps.auditLog
+    .create(args.organizationId, {
+      userId: args.userId,
+      action: args.action,
+      entityType: 'CARRIER',
+      entityId: args.carrierId,
+      changes: { status: { old: args.fromStatus, new: args.toStatus } },
+      metadata: args.metadata ?? null,
+    })
+    .catch(() => undefined);
+};
 
 export const createCarrierApprovalService = (deps: CarrierApprovalServiceDeps) => ({
   approve: async (input: ApproveInput): Promise<ApproveResult> => {
@@ -42,11 +80,18 @@ export const createCarrierApprovalService = (deps: CarrierApprovalServiceDeps) =
       throw new NotFoundError('Carrier not found.');
     }
 
-    if (carrier.onboardingStatus !== ONBOARDING_COMPLETED) {
-      throw new ConflictError('Carrier onboarding is not completed');
-    }
+    assertTransition(carrier.status, CarrierStatus.ACTIVE);
 
-    const updated = await deps.approvalPort.approve(input.carrierId);
+    const updated = await deps.approvalPort.setStatus(input.carrierId, CarrierStatus.ACTIVE);
+
+    await writeStatusAudit(deps, {
+      organizationId: input.organizationId,
+      carrierId: carrier.id,
+      userId: input.userId,
+      action: 'CARRIER_APPROVED',
+      fromStatus: carrier.status,
+      toStatus: CarrierStatus.ACTIVE,
+    });
 
     return {
       data: updated,
@@ -71,14 +116,22 @@ export const createCarrierApprovalService = (deps: CarrierApprovalServiceDeps) =
       throw new NotFoundError('Carrier not found.');
     }
 
-    if (carrier.onboardingStatus !== ONBOARDING_COMPLETED) {
-      throw new ConflictError('Carrier onboarding is not completed');
-    }
+    assertTransition(carrier.status, CarrierStatus.REJECTED);
 
-    const updated = await deps.approvalPort.reject(input.carrierId);
+    const updated = await deps.approvalPort.setStatus(input.carrierId, CarrierStatus.REJECTED);
+
+    await writeStatusAudit(deps, {
+      organizationId: input.organizationId,
+      carrierId: carrier.id,
+      userId: input.userId,
+      action: 'CARRIER_REJECTED',
+      fromStatus: carrier.status,
+      toStatus: CarrierStatus.REJECTED,
+      metadata: { reason: input.reason },
+    });
 
     return {
-      data: updated,
+      data: { id: updated.id, status: updated.status },
       event: {
         name: 'carrier.onboarding.rejected',
         payload: {
@@ -92,5 +145,33 @@ export const createCarrierApprovalService = (deps: CarrierApprovalServiceDeps) =
         },
       },
     };
+  },
+
+  adminActivate: async (input: AdminActivateInput): Promise<AdminActivateResult> => {
+    const carrier = await deps.approvalPort.findById(input.carrierId, input.organizationId);
+    if (carrier === null) {
+      throw new NotFoundError('Carrier not found.');
+    }
+
+    assertTransition(carrier.status, CarrierStatus.ACTIVE);
+
+    const updated = await deps.approvalPort.setStatus(input.carrierId, CarrierStatus.ACTIVE);
+
+    await writeStatusAudit(deps, {
+      organizationId: input.organizationId,
+      carrierId: carrier.id,
+      userId: input.userId,
+      action: 'CARRIER_ADMIN_ACTIVATED',
+      fromStatus: carrier.status,
+      toStatus: CarrierStatus.ACTIVE,
+      metadata: {
+        reason: input.reason,
+        ...(input.evidenceDocumentId !== undefined && {
+          evidenceDocumentId: input.evidenceDocumentId,
+        }),
+      },
+    });
+
+    return { data: updated };
   },
 });

@@ -42,7 +42,7 @@ export interface PortalEquipmentServiceDeps {
   findCarrierById: (carrierId: string) => Promise<CarrierRecord | null>;
   deleteVehiclesByCarrierId: (carrierId: string) => Promise<void>;
   createVehicles: (
-    data: Array<{
+    data: {
       carrierId: string;
       unitNumber: string;
       type: EquipmentType;
@@ -58,8 +58,8 @@ export interface PortalEquipmentServiceDeps {
       loanInterestRate?: number;
       insuranceMonthlyCost?: number;
       deliveryTypes?: string[];
-    }>,
-  ) => Promise<Array<{ id: string; category: VehicleCategory | null; make: string | null; model: string | null; year: number | null }>>;
+    }[],
+  ) => Promise<{ id: string; category: VehicleCategory | null; make: string | null; model: string | null; year: number | null }[]>;
 }
 
 const CATEGORY_TO_EQUIPMENT_TYPE: Record<VehicleCategory, EquipmentType> = {

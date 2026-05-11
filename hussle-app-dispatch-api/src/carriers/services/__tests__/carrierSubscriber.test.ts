@@ -11,7 +11,7 @@ describe('initializeCarrierSubscriber', () => {
   };
 
   const mockCarrierRepo = {
-    create: jest.fn(),
+    create: jest.fn().mockResolvedValue({ id: 'carrier-1' }),
   };
 
   const mockLogger = {
@@ -21,10 +21,15 @@ describe('initializeCarrierSubscriber', () => {
     debug: jest.fn(),
   };
 
+  const mockAuditLog = {
+    create: jest.fn().mockResolvedValue(undefined),
+  };
+
   const deps = {
     eventBus: mockEventBus as EventBus,
     carrierRepo: mockCarrierRepo,
     logger: mockLogger,
+    auditLog: mockAuditLog,
   };
 
   let capturedHandler: SubscribeHandler;

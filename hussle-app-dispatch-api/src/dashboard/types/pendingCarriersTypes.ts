@@ -12,7 +12,7 @@ export interface PendingCarrier {
   email: string | null;
   phone: string | null;
   type: string;
-  onboardingStatus: string;
+  status: string;
   entryMethod: string | null;
   completedAt: Date | null;
   inviteSentAt: Date | null;

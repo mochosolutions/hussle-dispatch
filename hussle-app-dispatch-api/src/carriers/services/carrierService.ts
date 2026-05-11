@@ -1,5 +1,5 @@
 import { BadRequestError } from '@mocho/common';
-import { CarrierType, DispatchFeeType } from '@prisma/client';
+import { CarrierStatus, CarrierType, DispatchFeeType } from '@prisma/client';
 import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { CARRIER_BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import {
@@ -19,6 +19,7 @@ import type {
   InsuranceWarning,
   LoadRepositoryPort,
 } from '../types/carrierTypes';
+import type { CarrierAuditPort } from '../types/carrierAuditPort';
 import type {
   CarrierService,
   CreateCarrierNoteServiceInput,
@@ -143,7 +144,31 @@ interface CarrierServiceDeps {
   carrierRepository: CarrierRepositoryPort;
   loadRepository: LoadRepositoryPort;
   noteRepository: CarrierNoteRepositoryPort;
+  auditLog: CarrierAuditPort;
 }
+
+const auditCarrierCreated = async (
+  deps: CarrierServiceDeps,
+  args: {
+    organizationId: string;
+    userId: string | null;
+    carrierId: string;
+    carrierType: CarrierType;
+    initialStatus: CarrierStatus;
+    source: string;
+  },
+): Promise<void> => {
+  await deps.auditLog
+    .create(args.organizationId, {
+      userId: args.userId,
+      action: 'CARRIER_CREATED',
+      entityType: 'CARRIER',
+      entityId: args.carrierId,
+      changes: { status: { old: null, new: args.initialStatus } },
+      metadata: { source: args.source, carrierType: args.carrierType },
+    })
+    .catch(() => undefined);
+};
 
 const findCarrierOrThrow = async (
   id: string,
@@ -158,7 +183,7 @@ const findCarrierOrThrow = async (
 };
 
 export const createCarrierService = (deps: CarrierServiceDeps): CarrierService => ({
-  createCarrier: async ({ organizationId, role, input }: CreateCarrierServiceInput) => {
+  createCarrier: async ({ organizationId, role, userId, input }: CreateCarrierServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
 
     assertExternalCarrierHasNonZeroFee(
@@ -169,12 +194,23 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     );
 
     const carrier = await deps.carrierRepository.create(organizationId, input);
+
+    await auditCarrierCreated(deps, {
+      organizationId,
+      userId: userId ?? null,
+      carrierId: carrier.id,
+      carrierType: carrier.type,
+      initialStatus: carrier.status,
+      source: 'manual',
+    });
+
     return enrichCarrier(carrier, role);
   },
 
   createCarrierWithAssets: async ({
     organizationId,
     role,
+    userId,
     input,
   }: CreateCarrierWithAssetsServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
@@ -191,6 +227,16 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       drivers: input.drivers,
       vehicles: input.vehicles,
     });
+
+    await auditCarrierCreated(deps, {
+      organizationId,
+      userId: userId ?? null,
+      carrierId: carrier.id,
+      carrierType: carrier.type,
+      initialStatus: carrier.status,
+      source: 'manual_with_assets',
+    });
+
     return enrichCarrierWithAssets(carrier, role);
   },
 

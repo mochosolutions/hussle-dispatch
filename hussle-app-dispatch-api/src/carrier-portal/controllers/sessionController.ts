@@ -40,7 +40,7 @@ export const createSessionControllers = (deps: SessionControllerDeps) => ({
           name: carrier.name,
           email: carrier.email,
           phone: carrier.phone,
-          onboardingStatus: carrier.onboardingStatus,
+          status: carrier.status,
           type: carrier.type,
         }
       : null;

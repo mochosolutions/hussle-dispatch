@@ -11,7 +11,7 @@ interface InviteCarrierButtonProps {
   inviteSentAt?: string | null;
 }
 
-const HIDDEN_STATUSES = new Set(['APPROVED', 'ACTIVE']);
+const HIDDEN_STATUSES = new Set(['ACTIVE', 'ACTION_REQUIRED', 'SUSPENDED']);
 
 export const InviteCarrierButton: React.FC<InviteCarrierButtonProps> = ({
   carrierId,

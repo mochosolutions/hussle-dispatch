@@ -9,6 +9,7 @@ export const createCarrierMapper = (req: Request): CreateCarrierServiceInput => 
 
   return {
     ...context,
+    userId: req.user?.userId ?? null,
     input,
   };
 };

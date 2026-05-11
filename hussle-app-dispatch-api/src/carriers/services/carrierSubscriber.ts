@@ -1,21 +1,28 @@
+import { CarrierStatus } from '@prisma/client';
 import type { EventBus } from '../../shared/messaging/eventBus';
 import type { Logger } from '../../shared/utils/logger';
 import type { CreateCarrierInput } from '../types/carrierTypes';
+import type { CarrierAuditPort } from '../types/carrierAuditPort';
+
+interface CreatedCarrier {
+  id: string;
+}
 
 interface CarrierCreatePort {
-  create(organizationId: string, input: CreateCarrierInput): Promise<unknown>;
+  create(organizationId: string, input: CreateCarrierInput): Promise<CreatedCarrier>;
 }
 
 interface CarrierSubscriberDeps {
   eventBus: EventBus;
   carrierRepo: CarrierCreatePort;
   logger: Logger;
+  auditLog: CarrierAuditPort;
 }
 
 const isErrorWithMessage = (error: unknown): error is { message: string } =>
   typeof error === 'object' && error !== null && 'message' in error;
 
-const ORG_ROLES_WITH_COMPANY_ASSET: ReadonlyArray<string> = ['CARRIER', 'DISPATCH_COMPANY'];
+const ORG_ROLES_WITH_COMPANY_ASSET: readonly string[] = ['CARRIER', 'DISPATCH_COMPANY'];
 
 /**
  * Subscribes to 'organization.created' events on the EventBus
@@ -37,14 +44,29 @@ export const initializeCarrierSubscriber = async (
       : undefined;
 
     try {
-      await deps.carrierRepo.create(data.orgId, {
+      // COMPANY_ASSET represents the org's own fleet, not a third party.
+      // It bypasses the invite/onboarding workflow and lands directly in ACTIVE
+      // because there's no separate party to vet — the doc-check job still
+      // governs ACTIVE ↔ ACTION_REQUIRED based on insurance validity.
+      const carrier = await deps.carrierRepo.create(data.orgId, {
         name: data.orgName,
         type: 'COMPANY_ASSET',
         carrierOrgId: data.orgId,
         mcNumber,
         dotNumber,
-        status: 'ACTIVE',
+        status: CarrierStatus.ACTIVE,
       });
+
+      await deps.auditLog
+        .create(data.orgId, {
+          userId: null,
+          action: 'CARRIER_CREATED',
+          entityType: 'CARRIER',
+          entityId: carrier.id,
+          changes: { status: { old: null, new: CarrierStatus.ACTIVE } },
+          metadata: { source: 'organization.created', carrierType: 'COMPANY_ASSET' },
+        })
+        .catch(() => undefined);
 
       deps.logger.info('Auto-created COMPANY_ASSET carrier for org', { orgId: data.orgId });
     } catch (error: unknown) {

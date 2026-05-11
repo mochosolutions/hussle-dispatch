@@ -3,6 +3,7 @@ import type { PrismaTransaction } from '@/config/database';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
 import { carrierInviteTokenRepoPrisma } from './repositories/carrierInviteTokenRepoPrisma';
+import { carrierAuditPortPrisma } from '@/carriers/repositories/carrierAuditPortPrisma';
 import { onboardingSessionRepoPrisma } from './repositories/onboardingSessionRepoPrisma';
 import { portalCarrierRepoPrisma } from './repositories/portalCarrierRepoPrisma';
 import { portalDocumentRepoPrisma } from './repositories/portalDocumentRepoPrisma';
@@ -41,6 +42,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const tokenRepo = carrierInviteTokenRepoPrisma(deps.prismaClient);
   const sessionRepo = onboardingSessionRepoPrisma(deps.prismaClient);
   const carrierRepo = portalCarrierRepoPrisma(deps.prismaClient);
+  const auditLog = carrierAuditPortPrisma(deps.prismaClient);
   const documentRepo = portalDocumentRepoPrisma(deps.prismaClient);
   const vehicleRepo = portalVehicleRepoPrisma(deps.prismaClient);
   const contactRepo = portalContactRepoPrisma(deps.prismaClient);
@@ -62,6 +64,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     },
     eventBus: deps.eventBus,
     logger: deps.logger,
+    auditLog,
   });
 
   const companyService = createPortalCompanyService({ carrierRepo, contactRepo });

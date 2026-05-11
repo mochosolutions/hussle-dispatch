@@ -41,25 +41,43 @@ export const CONTACT_ROLES = [
 export const PAYMENT_TERMS_OPTIONS = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Quick Pay'];
 
 export const CARRIER_STATUS_LABELS: Record<CarrierStatus, string> = {
-  ACTIVE: 'Active',
-  PENDING: 'Pending',
-  SUSPENDED: 'Suspended',
   DRAFT: 'Draft',
+  INVITED: 'Invited',
+  ONBOARDING: 'Onboarding',
+  PENDING_APPROVAL: 'Pending Approval',
+  REJECTED: 'Rejected',
+  ACTIVE: 'Active',
+  ACTION_REQUIRED: 'Action Required',
+  SUSPENDED: 'Suspended',
 };
 
 export const CARRIER_STATUS_COLORS: Record<CarrierStatus, ChipColor> = {
-  ACTIVE: 'success',
-  PENDING: 'warning',
-  SUSPENDED: 'error',
   DRAFT: 'default',
+  INVITED: 'info',
+  ONBOARDING: 'info',
+  PENDING_APPROVAL: 'primary',
+  REJECTED: 'error',
+  ACTIVE: 'success',
+  ACTION_REQUIRED: 'warning',
+  SUSPENDED: 'warning',
 };
 
-export const STATUS_OPTIONS: { value: CarrierStatus; label: string; color: string }[] = [
-  { value: 'ACTIVE', label: 'Active', color: 'success.main' },
-  { value: 'PENDING', label: 'Pending Review', color: 'warning.main' },
-  { value: 'SUSPENDED', label: 'Suspended', color: 'error.main' },
-  { value: 'DRAFT', label: 'Draft', color: 'text.disabled' },
-];
+export type CarrierTab =
+  | 'all'
+  | 'onboarding'
+  | 'active'
+  | 'actionRequired'
+  | 'suspended'
+  | 'rejected';
+
+export const CARRIER_TAB_TO_STATUSES: Record<CarrierTab, CarrierStatus[] | undefined> = {
+  all: undefined,
+  onboarding: ['DRAFT', 'INVITED', 'ONBOARDING', 'PENDING_APPROVAL'],
+  active: ['ACTIVE'],
+  actionRequired: ['ACTION_REQUIRED'],
+  suspended: ['SUSPENDED'],
+  rejected: ['REJECTED'],
+};
 
 
 

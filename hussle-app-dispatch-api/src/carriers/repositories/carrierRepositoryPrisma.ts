@@ -65,6 +65,14 @@ const selectWithCounts = {
       },
     },
   },
+  onboardingSession: {
+    select: {
+      lastActiveAt: true,
+      currentPhase: true,
+      completedPhases: true,
+      completedAt: true,
+    },
+  },
   primaryContact: {
     select: {
       id: true,
@@ -84,6 +92,7 @@ const buildListWhere = (
     managedByOrgId: string;
     deletedAt: null;
     type?: ListCarriersRepositoryInput['filters']['type'];
+    status?: { in: ListCarriersRepositoryInput['filters']['status'] };
     OR?: {
       name?: { contains: string; mode: 'insensitive' };
       mcNumber?: { contains: string; mode: 'insensitive' };
@@ -95,6 +104,10 @@ const buildListWhere = (
 
   if (filters.type !== undefined) {
     where.type = filters.type;
+  }
+
+  if (filters.status !== undefined && filters.status.length > 0) {
+    where.status = { in: filters.status };
   }
 
   if (filters.search !== undefined && filters.search.length > 0) {

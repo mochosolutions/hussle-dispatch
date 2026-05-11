@@ -33,7 +33,7 @@ const makeCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
     insuranceCertOnFile: true,
     insuranceExpiry: futureDate,
     w9OnFile: true,
-    onboardingStatus: 'IN_PROGRESS',
+    status: 'ONBOARDING',
     managedByOrgId: 'org-1',
     ...overrides,
   }) as Carrier;
@@ -60,6 +60,9 @@ const makeDeps = () => ({
     error: jest.fn(),
     debug: jest.fn(),
   },
+  auditLog: {
+    create: jest.fn().mockResolvedValue(undefined),
+  },
 });
 
 describe('onboardingSessionService.complete — document validation', () => {
@@ -84,7 +87,7 @@ describe('onboardingSessionService.complete — document validation', () => {
       completedAt: expect.any(Date),
     });
     expect(deps.carrierRepo.update).toHaveBeenCalledWith('carrier-1', {
-      onboardingStatus: 'COMPLETED',
+      status: 'PENDING_APPROVAL',
     });
   });
 
@@ -178,7 +181,7 @@ describe('onboardingSessionService.complete — document validation', () => {
       completedAt: expect.any(Date),
     });
     expect(deps.carrierRepo.update).toHaveBeenCalledWith('carrier-1', {
-      onboardingStatus: 'COMPLETED',
+      status: 'PENDING_APPROVAL',
     });
   });
 });

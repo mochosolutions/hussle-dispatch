@@ -104,6 +104,7 @@ export type ModalType =
   | 'markInvoicePaid'
   | 'loadSendSmsPrompt'
   | 'dispatchOverride'
+  | 'adminActivateCarrier'
   | 'confirmDeleteDocument'
   | 'upgradePlan';
 
@@ -140,6 +141,7 @@ export interface ModalTypeMap {
     loadId: string;
     missingDocuments: string[];
   };
+  adminActivateCarrier: { carrierId: string; carrierName: string };
   confirmDeleteDocument: { documentId: string; fileName: string; type: DocumentType };
   upgradePlan: {
     resourceType: 'team members' | 'vehicles';

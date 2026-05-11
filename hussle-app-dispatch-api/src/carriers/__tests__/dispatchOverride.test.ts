@@ -136,8 +136,8 @@ describe('dispatchOverrideService', () => {
       metadata: {
         reason: 'Urgent shipment - docs arriving tomorrow',
         missingDocuments: [
-          'Signed Dispatch Agreement',
           'Certificate of Insurance',
+          'Signed Dispatch Agreement',
           'W-9',
         ],
         carrierId: 'carrier-1',

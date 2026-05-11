@@ -2,7 +2,22 @@
 
 export type CarrierType = 'COMPANY_ASSET' | 'EXTERNAL_CARRIER' | 'LEASED_CARRIER';
 
-export type CarrierStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'DRAFT';
+export type CarrierStatus =
+  | 'DRAFT'
+  | 'INVITED'
+  | 'ONBOARDING'
+  | 'PENDING_APPROVAL'
+  | 'REJECTED'
+  | 'ACTIVE'
+  | 'ACTION_REQUIRED'
+  | 'SUSPENDED';
+
+export interface CarrierOnboardingSessionSummary {
+  lastActiveAt: string;
+  currentPhase: number;
+  completedPhases: number[];
+  completedAt: string | null;
+}
 
 export type InsuranceWarning = '30_DAY' | '7_DAY' | 'EXPIRED' | null;
 
@@ -93,6 +108,8 @@ export interface CarrierListItem extends Carrier {
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
+  inviteSentAt: string | null;
 }
 
 export interface CarrierOnboardingStatus {

@@ -1,4 +1,4 @@
-import type { Carrier, OnboardingSession, Prisma } from '@prisma/client';
+import { CarrierStatus, type Carrier, type OnboardingSession, type Prisma } from '@prisma/client';
 import type {
   OnboardingSessionRepoPort,
   OnboardingSessionUpdateData,
@@ -8,6 +8,8 @@ import type { Logger } from '@/shared/utils/logger';
 import { NotFoundError, OnboardingBlockError, ValidationError } from '@/shared/errors/commonErrors';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
+import { assertTransition } from '@/carriers/services/carrierStateMachine';
+import type { CarrierAuditPort } from '@/carriers/types/carrierAuditPort';
 
 const TOTAL_PHASES = 6;
 
@@ -21,7 +23,30 @@ interface OnboardingSessionServiceDeps {
   carrierRepo: CarrierRepoPort;
   eventBus: EventBus;
   logger: Logger;
+  auditLog: CarrierAuditPort;
 }
+
+const writeStatusAudit = async (
+  deps: OnboardingSessionServiceDeps,
+  args: {
+    organizationId: string;
+    carrierId: string;
+    action: string;
+    fromStatus: CarrierStatus;
+    toStatus: CarrierStatus;
+  },
+): Promise<void> => {
+  await deps.auditLog
+    .create(args.organizationId, {
+      userId: null,
+      action: args.action,
+      entityType: 'CARRIER',
+      entityId: args.carrierId,
+      changes: { status: { old: args.fromStatus, new: args.toStatus } },
+      metadata: null,
+    })
+    .catch(() => undefined);
+};
 
 export interface SaveAnswerInput {
   questionId: string;
@@ -44,9 +69,17 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     const session = await deps.sessionRepo.create({ carrierId });
 
     const carrier = await deps.carrierRepo.findById(carrierId);
-    if (carrier && carrier.onboardingStatus === 'NOT_STARTED') {
-      await deps.carrierRepo.update(carrierId, { onboardingStatus: 'IN_PROGRESS' });
-      deps.logger.info('Carrier onboarding status set to IN_PROGRESS', { carrierId });
+    if (carrier && carrier.status === CarrierStatus.INVITED) {
+      assertTransition(carrier.status, CarrierStatus.ONBOARDING);
+      await deps.carrierRepo.update(carrierId, { status: CarrierStatus.ONBOARDING });
+      await writeStatusAudit(deps, {
+        organizationId: carrier.managedByOrgId,
+        carrierId,
+        action: 'CARRIER_ONBOARDING_STARTED',
+        fromStatus: carrier.status,
+        toStatus: CarrierStatus.ONBOARDING,
+      });
+      deps.logger.info('Carrier status set to ONBOARDING', { carrierId });
     }
 
     deps.logger.info('Onboarding session created', { carrierId, sessionId: session.id });
@@ -132,7 +165,17 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
       completedAt: new Date(),
     });
 
-    await deps.carrierRepo.update(carrierId, { onboardingStatus: 'COMPLETED' });
+    if (carrier) {
+      assertTransition(carrier.status, CarrierStatus.PENDING_APPROVAL);
+      await deps.carrierRepo.update(carrierId, { status: CarrierStatus.PENDING_APPROVAL });
+      await writeStatusAudit(deps, {
+        organizationId: carrier.managedByOrgId,
+        carrierId,
+        action: 'CARRIER_ONBOARDING_COMPLETED',
+        fromStatus: carrier.status,
+        toStatus: CarrierStatus.PENDING_APPROVAL,
+      });
+    }
 
     const organizationId = carrier?.managedByOrgId ?? '';
 

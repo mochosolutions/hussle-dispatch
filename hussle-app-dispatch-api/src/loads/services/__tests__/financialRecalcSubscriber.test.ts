@@ -39,7 +39,6 @@ const buildCarrier = () => ({
   insuranceExpiry: null,
   w9OnFile: true,
   carrierPacketOnFile: false,
-  onboardingStatus: 'APPROVED' as const,
   minimumRatePerMile: null,
   inviteSentAt: null,
   entryMethod: 'MANUAL',

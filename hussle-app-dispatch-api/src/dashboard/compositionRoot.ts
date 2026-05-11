@@ -36,7 +36,7 @@ export const createDashboardModule = ({
 
       const whereClause = {
         managedByOrgId: organizationId,
-        onboardingStatus: 'COMPLETED' as const,
+        status: 'PENDING_APPROVAL' as const,
         deletedAt: null,
       };
 
@@ -85,7 +85,7 @@ export const createDashboardModule = ({
         email: carrier.email ?? null,
         phone: carrier.phone ?? null,
         type: carrier.type ?? '',
-        onboardingStatus: carrier.onboardingStatus ?? '',
+        status: carrier.status,
         entryMethod: carrier.entryMethod ?? null,
         completedAt: sessionMap.get(carrier.id) ?? null,
         inviteSentAt: carrier.inviteSentAt ?? null,

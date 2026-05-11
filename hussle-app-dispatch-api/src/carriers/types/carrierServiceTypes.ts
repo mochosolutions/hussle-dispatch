@@ -15,12 +15,14 @@ import type { PaginatedResult } from '@/shared/pagination';
 export interface CreateCarrierServiceInput {
   organizationId: string;
   role: string;
+  userId?: string | null;
   input: CreateCarrierInput;
 }
 
 export interface CreateCarrierWithAssetsServiceInput {
   organizationId: string;
   role: string;
+  userId?: string | null;
   input: CreateCarrierWithAssetsInput;
 }
 

@@ -15,25 +15,16 @@ export interface CarrierOnboardingResult {
 }
 
 /**
- * Determines whether a carrier is allowed to be assigned to a load.
+ * Determines whether a carrier currently has valid documents to be assigned to a load.
  *
- * COMPANY_ASSET carriers always pass.
- * EXTERNAL_CARRIER and LEASED_CARRIER carriers must have dispatch agreement,
- * valid insurance, and W-9.
+ * COMPANY_ASSET — own fleet, no dispatch agreement or W-9 (org doesn't sign with itself);
+ *   only insurance must be on file and unexpired.
+ * EXTERNAL_CARRIER / LEASED_CARRIER — full document set required.
  */
 export const checkCarrierOnboarding = (
   input: CarrierOnboardingInput,
 ): CarrierOnboardingResult => {
-  if (input.carrierType === CARRIER_TYPES.COMPANY_ASSET) {
-    return { allowed: true, missingDocuments: [] };
-  }
-
-  // EXTERNAL_CARRIER / LEASED_CARRIER — collect all missing documents
   const missingDocuments: string[] = [];
-
-  if (!input.dispatchAgreementOnFile) {
-    missingDocuments.push('Signed Dispatch Agreement');
-  }
 
   if (!input.insuranceCertOnFile) {
     missingDocuments.push('Certificate of Insurance');
@@ -42,8 +33,13 @@ export const checkCarrierOnboarding = (
     missingDocuments.push(`Insurance expired on ${expiryDateString}`);
   }
 
-  if (!input.w9OnFile) {
-    missingDocuments.push('W-9');
+  if (input.carrierType !== CARRIER_TYPES.COMPANY_ASSET) {
+    if (!input.dispatchAgreementOnFile) {
+      missingDocuments.push('Signed Dispatch Agreement');
+    }
+    if (!input.w9OnFile) {
+      missingDocuments.push('W-9');
+    }
   }
 
   return {

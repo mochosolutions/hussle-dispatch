@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, lazy } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Alert } from '@mui/material';
+import { Alert, Stack } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { DataGuard, PageWrapper } from '@mocho/ui/components';
 import Loadable from 'mocho/components/Loadable';
@@ -8,6 +8,7 @@ import { DetailLayout } from 'components/DetailLayout';
 import { BodyMuted } from 'components/Typography';
 import { CarrierKPI } from '../../components/CarrierKPI';
 import { InviteCarrierButton } from '../../components/InviteCarrierButton';
+import { AdminActivateButton } from '../../components/AdminActivateButton';
 import { CARRIER_DETAIL_TAB_ITEMS } from '../../constants';
 import {
   selectFormattedCarrierById,
@@ -23,12 +24,16 @@ import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 const GeneralTab = Loadable(
   lazy(() =>
-    import('../../components/CarrierDetailPage/GeneralTab').then((m) => ({ default: m.GeneralTab })),
+    import('../../components/CarrierDetailPage/GeneralTab').then((m) => ({
+      default: m.GeneralTab,
+    })),
   ),
 );
 const DriversTab = Loadable(
   lazy(() =>
-    import('../../components/CarrierDetailPage/DriversTab').then((m) => ({ default: m.DriversTab })),
+    import('../../components/CarrierDetailPage/DriversTab').then((m) => ({
+      default: m.DriversTab,
+    })),
   ),
 );
 const VehiclesTab = Loadable(
@@ -77,6 +82,8 @@ const CarrierDetailEditable: React.FC = () => {
     (state) => !!carrierPageSelectors.selectEntityError('getById', id ?? '')(state),
   );
 
+  console.log('Carrier', { carrier, isError });
+
   const carrierStats = useSelector(selectCarrierStats);
   const statsLoading = useSelector(selectCarrierStatsLoading);
 
@@ -93,7 +100,10 @@ const CarrierDetailEditable: React.FC = () => {
 
   return (
     <PageWrapper isError={isError} errorContext="CarrierDetailPage">
-      <DataGuard data={carrier} emptyComponent={<BodyMuted sx={{ p: 4 }}>Carrier not found.</BodyMuted>}>
+      <DataGuard
+        data={carrier}
+        emptyComponent={<BodyMuted sx={{ p: 4 }}>Carrier not found.</BodyMuted>}
+      >
         {(c) => (
           <DetailLayout
             id={c.name}
@@ -101,12 +111,15 @@ const CarrierDetailEditable: React.FC = () => {
             breadcrumb={{ label: 'Carriers', href: '/carriers' }}
             onBack={handleBack}
             actions={
-              <InviteCarrierButton
-                carrierId={c.id}
-                carrierName={c.name}
-                carrierEmail={c.email}
-                onboardingStatus={c.status}
-              />
+              <Stack direction="row" spacing={1}>
+                <InviteCarrierButton
+                  carrierId={c.id}
+                  carrierName={c.name}
+                  carrierEmail={c.email}
+                  onboardingStatus={c.status}
+                />
+                <AdminActivateButton carrierId={c.id} carrierName={c.name} status={c.status} />
+              </Stack>
             }
             summary={<CarrierKPI c={c} stats={carrierStats} statsLoading={statsLoading} />}
             tabs={

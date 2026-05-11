@@ -1,11 +1,15 @@
 import { takeLatest } from 'redux-saga/effects';
 import { fetchCarriersSaga } from './fetchCarriersSaga';
 import {
+  adminActivateCarrierRequest,
   carrierPageSlice,
   fetchCarrierStatsRequest,
+  fetchCarrierTabCountsRequest,
 } from '../reducers/carrierNewPageSlice';
 import { fetchCarrierDetailsSaga } from './fetchCarrierDetailsSaga';
 import { fetchCarrierStatsSaga } from './fetchCarrierStatsSaga';
+import { fetchCarrierTabCountsSaga } from './fetchCarrierTabCountsSaga';
+import { adminActivateCarrierSaga } from './adminActivateCarrierSaga';
 import { createCarrierSaga } from './createCarrierSaga';
 import { updateCarrierSaga } from './updateCarrierSaga';
 import { deleteCarrierSaga } from './deleteCarrierSaga';
@@ -28,6 +32,8 @@ export function* carrierSagaWatcher(): Generator {
   yield takeLatest(carrierPageActions.fetchAllRequest.type, fetchCarriersSaga);
   yield takeLatest(carrierPageActions.fetchByIdRequest.type, fetchCarrierDetailsSaga);
   yield takeLatest(fetchCarrierStatsRequest.type, fetchCarrierStatsSaga);
+  yield takeLatest(fetchCarrierTabCountsRequest.type, fetchCarrierTabCountsSaga);
+  yield takeLatest(adminActivateCarrierRequest.type, adminActivateCarrierSaga);
   yield takeLatest(carrierPageActions.createRequest.type, createCarrierSaga);
   yield takeLatest(carrierPageActions.updateRequest.type, updateCarrierSaga);
   yield takeLatest(carrierPageActions.deleteRequest.type, deleteCarrierSaga);

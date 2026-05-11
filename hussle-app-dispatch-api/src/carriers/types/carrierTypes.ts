@@ -1,5 +1,6 @@
 import type {
   Carrier,
+  CarrierStatus,
   CarrierType,
   LoadStatus,
   Driver,
@@ -38,9 +39,8 @@ export interface CreateCarrierInput {
   insuranceExpiry?: Date;
   w9OnFile?: boolean;
   carrierPacketOnFile?: boolean;
-  onboardingStatus?: string;
   authorityStatus?: string;
-  status?: string;
+  status?: CarrierStatus;
   description?: string;
   primaryContactId?: string;
   billingMethod?: BillingMethod;
@@ -83,9 +83,8 @@ export interface UpdateCarrierInput {
   insuranceExpiry?: Date;
   w9OnFile?: boolean;
   carrierPacketOnFile?: boolean;
-  onboardingStatus?: string;
   authorityStatus?: string;
-  status?: string;
+  status?: CarrierStatus;
   description?: string;
   primaryContactId?: string;
   billingMethod?: BillingMethod;
@@ -103,6 +102,7 @@ export interface UpdateCarrierInput {
 
 export interface CarrierListFilters {
   type?: CarrierType;
+  status?: CarrierStatus[];
   search?: string;
 }
 
@@ -116,12 +116,20 @@ export interface PrimaryContactInfo {
   email: string | null;
 }
 
+export interface CarrierOnboardingSessionSummary {
+  lastActiveAt: Date;
+  currentPhase: number;
+  completedPhases: number[];
+  completedAt: Date | null;
+}
+
 export interface CarrierWithCounts extends Carrier {
   _count: {
     drivers: number;
     vehicles: number;
   };
   primaryContact: PrimaryContactInfo | null;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
 }
 
 export interface CarrierWithAssets extends CarrierWithCounts {
@@ -134,6 +142,7 @@ export interface CarrierServiceOutput extends Omit<Carrier, 'partnerSplitPercent
   vehicleCount: number;
   onboardingComplete: boolean;
   insuranceWarning: InsuranceWarning | null;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
 }
 
@@ -148,6 +157,7 @@ export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   vehicleCount: number;
   onboardingComplete: boolean;
   insuranceWarning: InsuranceWarning | null;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
 }
 

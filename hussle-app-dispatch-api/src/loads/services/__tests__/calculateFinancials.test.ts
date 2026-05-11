@@ -40,7 +40,6 @@ const baseCarrier: NonNullable<LoadWithRelations['carrier']> = {
   insuranceExpiry: null,
   w9OnFile: true,
   carrierPacketOnFile: false,
-  onboardingStatus: 'APPROVED',
   minimumRatePerMile: null,
   inviteSentAt: null,
   entryMethod: 'MANUAL',
