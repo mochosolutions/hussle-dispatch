@@ -576,6 +576,8 @@ model Carrier {
   city                              String?
   state                             String?
   zip                               String?
+  lat                               Decimal?             @db.Decimal(9, 6)
+  lng                               Decimal?             @db.Decimal(9, 6)
   primaryContactId                  String?
   dispatchFeeType                   DispatchFeeType      @default(PERCENTAGE)
   dispatchFeePercent                Decimal              @default(10.0000) @db.Decimal(7, 4)

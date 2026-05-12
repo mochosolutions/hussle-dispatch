@@ -34,37 +34,50 @@ interface GetCarriersParams {
 // ---------------------------------------------------------------------------
 
 interface WireCarrier
-  extends Omit<Carrier, 'companyMarginPercent' | 'dispatchFeeAmount'> {
+  extends Omit<Carrier, 'companyMarginPercent' | 'dispatchFeeAmount' | 'lat' | 'lng'> {
   dispatchFeePercent?: number | string | null;
   dispatchFeeAmount?: number | string | null;
+  lat?: number | string | null;
+  lng?: number | string | null;
 }
 
 interface WireCarrierListItem
-  extends Omit<CarrierListItem, 'companyMarginPercent' | 'dispatchFeeAmount'> {
+  extends Omit<CarrierListItem, 'companyMarginPercent' | 'dispatchFeeAmount' | 'lat' | 'lng'> {
   dispatchFeePercent?: number | string | null;
   dispatchFeeAmount?: number | string | null;
+  lat?: number | string | null;
+  lng?: number | string | null;
 }
+
+const parseDecimal = (value: number | string | null | undefined): number | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return typeof value === 'string' ? Number(value) : value;
+};
 
 const fromWireCarrier = <
   T extends {
     dispatchFeePercent?: number | string | null;
     dispatchFeeAmount?: number | string | null;
+    lat?: number | string | null;
+    lng?: number | string | null;
   },
 >(
   wire: T,
-): Omit<T, 'dispatchFeePercent' | 'dispatchFeeAmount'> & {
+): Omit<T, 'dispatchFeePercent' | 'dispatchFeeAmount' | 'lat' | 'lng'> & {
   companyMarginPercent: number;
   dispatchFeeAmount: number;
+  lat: number | null;
+  lng: number | null;
 } => {
-  const { dispatchFeePercent, dispatchFeeAmount, ...rest } = wire;
-  const parsedPercent =
-    typeof dispatchFeePercent === 'string' ? Number(dispatchFeePercent) : dispatchFeePercent;
-  const parsedAmount =
-    typeof dispatchFeeAmount === 'string' ? Number(dispatchFeeAmount) : dispatchFeeAmount;
+  const { dispatchFeePercent, dispatchFeeAmount, lat, lng, ...rest } = wire;
   return {
     ...rest,
-    companyMarginPercent: parsedPercent ?? 0,
-    dispatchFeeAmount: parsedAmount ?? 0,
+    companyMarginPercent: parseDecimal(dispatchFeePercent) ?? 0,
+    dispatchFeeAmount: parseDecimal(dispatchFeeAmount) ?? 0,
+    lat: parseDecimal(lat),
+    lng: parseDecimal(lng),
   };
 };
 

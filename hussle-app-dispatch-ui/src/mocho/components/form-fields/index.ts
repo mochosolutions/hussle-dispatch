@@ -15,6 +15,8 @@ export { OTPField } from './OTPField';
 export { CheckboxField } from './CheckboxField';
 export { SelectField } from './SelectField';
 export { TypeaheadField } from './TypeaheadField';
+export { AddressField } from './AddressField';
+export type { AddressFieldProps } from './AddressField';
 export { DateField } from './DateField';
 export { TimeField } from './TimeField';
 
@@ -25,6 +27,7 @@ export { NumericField } from './NumericField';
 export { PercentField } from './PercentField';
 export { StateField } from './StateField';
 export { ZipCodeField } from './ZipCodeField';
+export { EINField } from './EINField';
 export { ContentSelectorField } from './ContentSelectorField';
 
 // Extended input components

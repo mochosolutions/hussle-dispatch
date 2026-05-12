@@ -15,6 +15,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import WarehouseOutlined from '@mui/icons-material/WarehouseOutlined';
 import PlaceOutlined from '@mui/icons-material/PlaceOutlined';
 import ClearIcon from '@mui/icons-material/Clear';
+import axios from 'axios';
 import { searchAddresses } from 'utils/api/places/placeApi';
 import type { AddressSearchResult } from 'features/place/types';
 
@@ -23,6 +24,20 @@ const LONG_DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * AddressTypeahead — debounced autocomplete that searches saved facilities and
+ * external address results.
+ *
+ * Selection lifecycle: when the input already has a selection (`hasSelection`),
+ * typing any character fires `onClear()` immediately to wipe the parent's
+ * structured fields. Consumers must surface this in their UX expectations.
+ *
+ * Modes:
+ * - `facility` (default): shows SAVED + EXTERNAL groups, warehouse iconography,
+ *   and facility-type chips. Intended for picking dock/yard facilities.
+ * - `address`: filters out SAVED results entirely. Intended for picking a
+ *   business address where saved-facility matches would be semantically wrong.
+ */
 export interface AddressTypeaheadProps {
   /** Current display value for the input */
   value: string;
@@ -36,8 +51,12 @@ export interface AddressTypeaheadProps {
   disabled?: boolean;
   /** Placeholder text */
   placeholder?: string;
-  /** Label above the field */
+  /** Label above the field. Omit to suppress the built-in label (e.g. when a wrapper provides one). */
   label?: string;
+  /** Search target — facility picker vs. business-address picker. Defaults to 'facility'. */
+  mode?: 'facility' | 'address';
+  /** DOM id for the underlying input; used to wire htmlFor on an external label. */
+  id?: string;
 }
 
 interface AddressOption {
@@ -81,7 +100,9 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
   hasSelection = false,
   disabled = false,
   placeholder = 'Search saved places or type an address',
-  label = 'Facility / Address',
+  label,
+  mode = 'facility',
+  id,
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [results, setResults] = useState<AddressSearchResult[]>([]);
@@ -150,12 +171,13 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
           if (controller.signal.aborted) {
             return;
           }
-          setResults(response);
-          setDropdownOpen(response.length > 0);
-          cacheRef.current.set(cacheKey, { results: response, timestamp: Date.now() });
+          const filtered = mode === 'address' ? response.filter((r) => r.source !== 'SAVED') : response;
+          setResults(filtered);
+          setDropdownOpen(filtered.length > 0);
+          cacheRef.current.set(cacheKey, { results: filtered, timestamp: Date.now() });
         })
         .catch((error: unknown) => {
-          if (error instanceof Error && error.name === 'CanceledError') {
+          if (axios.isCancel(error)) {
             return;
           }
           setResults([]);
@@ -171,7 +193,7 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [inputValue]);
+  }, [inputValue, mode]);
 
   // Cleanup on unmount
   useEffect(
@@ -263,15 +285,7 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
 
   return (
     <Stack spacing={1}>
-      {label ? (
-        <InputLabel
-        // variant="caption"
-        // color="text.secondary"
-        // sx={{ fontWeight: 600, textTransform: 'uppercase', mb: 0.5, display: 'block' }}
-        >
-          {label}
-        </InputLabel>
-      ) : null}
+      {label ? <InputLabel htmlFor={id}>{label}</InputLabel> : null}
 
       <Autocomplete<AddressOption, false, false, false>
         disabled={disabled}
@@ -387,6 +401,7 @@ export const AddressTypeahead: React.FC<AddressTypeaheadProps> = ({
             fullWidth
             inputRef={inputRef}
             onFocus={handleInputFocus}
+            id={id}
             InputProps={{
               ...params.InputProps,
               startAdornment: (

@@ -1,7 +1,7 @@
 import type { PopupComponentMap } from '../../mocho/types/popup';
 import { DirtyFormConfirmModal } from './components/DirtyFormConfirmModal';
 import { ConfirmDeleteLoadDialog } from 'features/load/components/ConfirmDeleteLoadDialog';
-import { CreateLoadModal } from 'features/load/components/CreateLoadModal';
+// import { CreateLoadModal } from 'features/load/components/CreateLoadModal';
 import { SendSmsPromptModal } from 'features/load/components/SendSmsPromptModal';
 import { StatusChangeDialog } from 'features/load/components/StatusChangeDialog';
 import { InviteMemberDialog } from '../settings/components/InviteMemberDialog';
@@ -17,7 +17,6 @@ import { ConfirmDeleteDocumentModal } from '../documents/components/ConfirmDelet
 import UpgradePlanDialog from 'components/UpgradePlanDialog';
 
 const modalRegistry: PopupComponentMap = {
-  createLoadModal: CreateLoadModal,
   confirmDeleteLoadDialog: ConfirmDeleteLoadDialog,
   statusChangeDialog: StatusChangeDialog,
   dirtyFormConfirm: DirtyFormConfirmModal,

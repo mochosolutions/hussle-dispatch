@@ -92,7 +92,6 @@ export interface DrawerTypeMap {
 
 export type ModalType =
   | 'dirtyFormConfirm'
-  | 'createLoadModal'
   | 'statusChangeDialog'
   | 'confirmDeleteLoadDialog'
   | 'inviteMember'
@@ -110,10 +109,6 @@ export type ModalType =
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
-  createLoadModal: {
-    onSelect: (loadType: string, template?: LoadTemplate) => void;
-    onCancel?: () => void;
-  };
   statusChangeDialog: {
     load: LoadDetail;
     targetStatus: LoadStatus;

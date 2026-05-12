@@ -20,6 +20,16 @@ const createBodySchema = Yup.object({
   city: optionalTrimmed,
   state: optionalTrimmed,
   zip: optionalTrimmed,
+  lat: Yup.number()
+    .min(-90, 'lat must be between -90 and 90')
+    .max(90, 'lat must be between -90 and 90')
+    .nullable()
+    .notRequired(),
+  lng: Yup.number()
+    .min(-180, 'lng must be between -180 and 180')
+    .max(180, 'lng must be between -180 and 180')
+    .nullable()
+    .notRequired(),
   dispatchFeePercent: Yup.number().min(0).max(100).notRequired(),
   dispatchFeeType: Yup.mixed<DispatchFeeType>()
     .oneOf(dispatchFeeTypeValues, 'dispatchFeeType must be PERCENTAGE or FLAT')

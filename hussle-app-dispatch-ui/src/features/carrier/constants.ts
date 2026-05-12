@@ -79,8 +79,6 @@ export const CARRIER_TAB_TO_STATUSES: Record<CarrierTab, CarrierStatus[] | undef
   rejected: ['REJECTED'],
 };
 
-
-
 export const CARRIER_TYPE_OPTIONS = [
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
@@ -102,3 +100,8 @@ export const ONBOARDING_ITEMS = [
   { key: 'w9OnFile', label: 'W-9' },
   { key: 'carrierPacketOnFile', label: 'Carrier Packet' },
 ] as const;
+
+export const FEE_TYPE_OPTIONS = [
+  { value: 'PERCENTAGE', label: 'Percentage' },
+  { value: 'FLAT', label: 'Flat' },
+];

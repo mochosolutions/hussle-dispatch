@@ -6,17 +6,50 @@ import type { CarrierType, DispatchFeeType } from '../types';
  * Schema for the full onboarding create-carrier form (CreateCarrierPage).
  */
 export const carrierSchema = Yup.object({
-  name: Yup.string().required('Legal name is required').min(2, 'Min 2 characters'),
+  name: Yup.string().required('Legal name is required').min(2, 'Min 2 characters').required(),
+  email: Yup.string().email('Invalid email').required(),
   type: Yup.mixed<CarrierType>()
     .oneOf(['COMPANY_ASSET', 'EXTERNAL_CARRIER', 'LEASED_CARRIER'])
     .required('Type is required'),
-  mcNumber: Yup.string().min(5, 'Min 5 characters').default(''),
+  mcNumber: Yup.string()
+    .default('')
+    .test('mc-min', 'Min 5 characters', (value) => !value || value.length >= 5),
   dotNumber: Yup.string().default(''),
+  ein: Yup.string()
+    .default('')
+    .test(
+      'ein-format',
+      'EIN must be 9 digits',
+      (value) => !value || /^\d{9}$/.test(value),
+    ),
   phone: Yup.string().required('Phone is required').min(10, 'Enter a valid phone'),
-  email: Yup.string().email('Invalid email').default(''),
-  address: Yup.string().default(''),
+  address: Yup.string().required('Address is required'),
+  city: Yup.string().default(''),
+  state: Yup.string().default(''),
+  zip: Yup.string().default(''),
+  lat: Yup.number().nullable().default(null),
+  lng: Yup.number().nullable().default(null),
   notes: Yup.string().default(''),
-}).required();
+  dispatchFeeType: Yup.mixed<DispatchFeeType>()
+    .oneOf(['PERCENTAGE', 'FLAT'])
+    .default('PERCENTAGE')
+    .required('Dispatch fee type is required'),
+  companyMarginPercent: Yup.number()
+    .min(0, 'Min 0%')
+    .max(100, 'Max 100%')
+    .when('dispatchFeeType', {
+      is: 'PERCENTAGE',
+      then: (schema) => schema.required('Company margin is required'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+  dispatchFeeAmount: Yup.number()
+    .min(0, 'Min 0')
+    .when('dispatchFeeType', {
+      is: 'FLAT',
+      then: (schema) => schema.required('Dispatch fee amount is required'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+});
 
 export type CarrierFormValues = InferType<typeof carrierSchema>;
 
@@ -54,9 +87,7 @@ export const carrierEditSchema = Yup.object({
         return (value ?? 0) > 0;
       },
     ),
-  dispatchFeeType: Yup.mixed<DispatchFeeType>()
-    .oneOf(['PERCENTAGE', 'FLAT'])
-    .default('PERCENTAGE'),
+  dispatchFeeType: Yup.mixed<DispatchFeeType>().oneOf(['PERCENTAGE', 'FLAT']).default('PERCENTAGE'),
   dispatchFeeAmount: Yup.number()
     .min(0, 'Min 0')
     .notRequired()

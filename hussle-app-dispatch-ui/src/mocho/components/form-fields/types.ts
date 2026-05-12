@@ -408,6 +408,19 @@ export interface ZipCodeFieldProps {
 }
 
 /**
+ * Props for EINField component.
+ * Masked EIN input: ##-#######  (stores 9 digits only in Formik).
+ */
+export interface EINFieldProps {
+	name: string;
+	label: string;
+	placeholder?: string;
+	disabled?: boolean;
+	required?: boolean;
+	formik: FormikFieldProps;
+}
+
+/**
  * Option for ContentSelectorField.
  */
 export interface ContentSelectorOption {

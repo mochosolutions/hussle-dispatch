@@ -4,6 +4,7 @@ import { Button, Stack } from '@mui/material';
 import { useDispatch } from 'store';
 import { PageWrapper } from '@mocho/ui/components';
 import { InnerPageHeader } from 'components/InnerPageHeader';
+import { DetailLayout } from 'components/DetailLayout';
 import { useFormRef } from '../../../../mocho/hooks/useFormRef';
 import { useDirtyFormBlocker } from '../../../../mocho/forms/hooks/useDirtyFormBlocker';
 import { useModalActions } from '../../../ui/hooks/useModalActions';
@@ -28,6 +29,10 @@ const CreateCarrierPage = () => {
     },
   });
 
+  const handleBack = () => {
+    navigate('/carriers');
+  };
+
   const handleSubmit = useCallback(
     (values: CarrierCreateFormWithAssets) => {
       dispatch(createCarrierRequest({ data: { ...values } }));
@@ -37,26 +42,24 @@ const CreateCarrierPage = () => {
 
   return (
     <PageWrapper errorContext="CreateCarrierPage">
-      <InnerPageHeader
-        onBack={() => navigate('/carriers')}
-        backLabel="Carriers"
-        title="Add New Carrier"
+      <DetailLayout
+        id="Create Carrier"
+        breadcrumb={{ label: 'Add New Carrier', href: '/carriers' }}
+        onBack={handleBack}
         actions={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined" onClick={() => navigate('/carriers')}>
-              Cancel
-            </Button>
             <Button variant="contained" onClick={submitForm} disabled={formState.isSubmitting}>
               {formState.isSubmitting ? 'Creating...' : 'Create Carrier'}
             </Button>
           </Stack>
         }
-      />
-      <CarrierCreateForm
-        ref={formRef}
-        onSubmit={handleSubmit}
-        onStateChange={handleFormStateChange}
-      />
+      >
+        <CarrierCreateForm
+          ref={formRef}
+          onSubmit={handleSubmit}
+          onStateChange={handleFormStateChange}
+        />
+      </DetailLayout>
     </PageWrapper>
   );
 };

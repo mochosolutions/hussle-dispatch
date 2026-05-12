@@ -12,21 +12,19 @@ import { dispatchTermsSchema } from '../../validators/fleetSchema';
 import { selectCarrierById } from '../../store/selectors/carrierSelectors';
 import { updateCarrierRequest } from '../../store/reducers/carrierNewPageSlice';
 import type { DispatchFeeType } from '../../types';
+import { FEE_TYPE_OPTIONS } from '../../constants';
 
 interface DispatchTermsDrawerProps {
   carrierId: string;
   onClose: () => void;
 }
 
-const FEE_TYPE_OPTIONS = [
-  { value: 'PERCENTAGE', label: 'Percentage' },
-  { value: 'FLAT', label: 'Flat' },
-];
+// export const FEE_TYPE_OPTIONS = [
+//   { value: 'PERCENTAGE', label: 'Percentage' },
+//   { value: 'FLAT', label: 'Flat' },
+// ];
 
-export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({
-  carrierId,
-  onClose,
-}) => {
+export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({ carrierId, onClose }) => {
   const dispatch = useDispatch();
   const carrier = useSelector(selectCarrierById(carrierId));
 

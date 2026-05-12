@@ -27,6 +27,8 @@ export interface CreateCarrierInput {
   city?: string;
   state?: string;
   zip?: string;
+  lat?: string | number | null;
+  lng?: string | number | null;
   dispatchFeePercent?: string | number;
   dispatchFeeType?: DispatchFeeType;
   dispatchFeeAmount?: string | number;
@@ -71,6 +73,8 @@ export interface UpdateCarrierInput {
   city?: string;
   state?: string;
   zip?: string;
+  lat?: string | number | null;
+  lng?: string | number | null;
   dispatchFeePercent?: string | number;
   dispatchFeeType?: DispatchFeeType;
   dispatchFeeAmount?: string | number;

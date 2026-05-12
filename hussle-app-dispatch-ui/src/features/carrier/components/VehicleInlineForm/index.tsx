@@ -1,4 +1,4 @@
-import { Box, Button } from '@mui/material';
+import { Box, Button, Grid } from '@mui/material';
 import { CancelButton } from '@mocho/ui/components';
 import { Formik } from 'formik';
 import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
@@ -53,49 +53,46 @@ export const VehicleInlineForm = ({
         <Box
           sx={{
             p: 2.5,
-            bgcolor: 'primary.light',
+            bgcolor: 'background.paper',
             border: 1,
-            borderColor: 'primary.main',
+            borderColor: 'divider',
             borderRadius: 1,
-            opacity: 0.95,
           }}
         >
-          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-            <Box sx={{ flex: 3 }}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={3}>
               <TextField name="unitNumber" label="Unit #" placeholder="TRK-001" formik={formikProps} />
-            </Box>
-            <Box sx={{ flex: 2 }}>
+            </Grid>
+            <Grid item xs={6} sm={2}>
               <TextField name="year" label="Year" placeholder="2022" formik={formikProps} />
-            </Box>
-            <Box sx={{ flex: 4 }}>
+            </Grid>
+            <Grid item xs={6} sm={4}>
               <SelectField
                 name="make"
                 label="Make"
                 data={[{ value: '', label: 'Select make' }, ...VEHICLE_MAKES.map((m) => ({ value: m, label: m }))]}
                 formik={formikProps}
               />
-            </Box>
-            <Box sx={{ flex: 3 }}>
+            </Grid>
+            <Grid item xs={12} sm={3}>
               <TextField name="model" label="Model" placeholder="Cascadia" formik={formikProps} />
-            </Box>
-          </Box>
+            </Grid>
 
-          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-            <Box sx={{ flex: 1 }}>
+            <Grid item xs={12} sm={4}>
               <TextField name="vin" label="VIN" placeholder="1FUJGLDR..." formik={formikProps} />
-            </Box>
-            <Box sx={{ flex: 1 }}>
+            </Grid>
+            <Grid item xs={12} sm={4}>
               <SelectField
                 name="type"
                 label="Equipment Type"
                 data={[{ value: '', label: '—' }, ...EQUIPMENT_OPTIONS]}
                 formik={formikProps}
               />
-            </Box>
-            <Box sx={{ flex: 1 }}>
+            </Grid>
+            <Grid item xs={12} sm={4}>
               <TextField name="licensePlate" label="License Plate" placeholder="ABC-1234" formik={formikProps} />
-            </Box>
-          </Box>
+            </Grid>
+          </Grid>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
             <CancelButton onClick={onCancel} size="small" />

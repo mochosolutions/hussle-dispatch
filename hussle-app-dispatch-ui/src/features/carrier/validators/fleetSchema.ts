@@ -11,6 +11,8 @@ export const companyInfoSchema = Yup.object().shape({
   city: Yup.string(),
   state: Yup.string(),
   zip: Yup.string(),
+  lat: Yup.number().nullable().default(null),
+  lng: Yup.number().nullable().default(null),
 });
 
 export const dispatchTermsSchema = Yup.object().shape({

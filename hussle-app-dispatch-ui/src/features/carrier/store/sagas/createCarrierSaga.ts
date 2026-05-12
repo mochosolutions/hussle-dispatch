@@ -24,6 +24,12 @@ export function* createCarrierSaga(
   try {
     const { drivers, vehicles, ...carrierFields } = action.payload.data;
 
+    console.log('createCarrierSaga payload', {
+      ...action.payload.data,
+      driversCount: drivers.length,
+      vehiclesCount: vehicles.length,
+    });
+
     const mappedDrivers = drivers.map((d) => ({
       firstName: d.firstName,
       lastName: d.lastName,

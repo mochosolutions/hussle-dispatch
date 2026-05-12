@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Divider, Stack } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
-import { TextField, EmailField, PhoneField, StateField, ZipCodeField } from '../../../../mocho/components';
+import { TextField, EmailField, PhoneField, AddressField } from '../../../../mocho/components';
 import { FormDrawer } from '../../../../mocho/components/FormDrawer';
 import { SectionLabel } from 'components/Typography';
 import { companyInfoSchema } from '../../validators/fleetSchema';
@@ -32,6 +32,8 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
     city: carrier.city ?? '',
     state: carrier.state ?? '',
     zip: carrier.zip ?? '',
+    lat: carrier.lat ?? null,
+    lng: carrier.lng ?? null,
   };
 
   return (
@@ -59,18 +61,42 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
             </Box>
           </Box>
           <TextField name="ein" label="EIN" formik={formik} />
-          <TextField name="address" label="Address" formik={formik} />
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 5 }}>
-              <TextField name="city" label="City" formik={formik} />
-            </Box>
-            <Box sx={{ flex: 3 }}>
-              <StateField name="state" label="State" formik={formik} />
-            </Box>
-            <Box sx={{ flex: 4 }}>
-              <ZipCodeField name="zip" label="ZIP" formik={formik} />
-            </Box>
-          </Box>
+          <AddressField
+            name="address"
+            label="Address"
+            placeholder="Search a business address"
+            mode="address"
+            formik={formik}
+            getSelectionState={(v) => {
+              const head = [v.address, v.city, v.state].filter(Boolean).join(', ');
+              let display = head;
+              if (v.zip) {
+                display = head ? `${head} ${v.zip}` : v.zip;
+              }
+              return {
+                display,
+                hasSelection:
+                  (v.lat !== null && v.lat !== undefined && v.lng !== null && v.lng !== undefined) ||
+                  Boolean(v.city && v.state && v.zip),
+              };
+            }}
+            onResolve={(r, f) => {
+              void f.setFieldValue('address', r.address);
+              void f.setFieldValue('city', r.city);
+              void f.setFieldValue('state', r.state);
+              void f.setFieldValue('zip', r.zip);
+              void f.setFieldValue('lat', r.lat);
+              void f.setFieldValue('lng', r.lng);
+            }}
+            onClear={(f) => {
+              void f.setFieldValue('address', '');
+              void f.setFieldValue('city', '');
+              void f.setFieldValue('state', '');
+              void f.setFieldValue('zip', '');
+              void f.setFieldValue('lat', null);
+              void f.setFieldValue('lng', null);
+            }}
+          />
 
           <Divider sx={{ my: 0.5 }} />
 
