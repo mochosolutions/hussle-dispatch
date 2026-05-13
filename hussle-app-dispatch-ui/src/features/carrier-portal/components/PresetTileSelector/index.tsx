@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { Box, Chip, TextField } from '@mui/material';
-
-interface PresetOption {
-  value: number;
-  label: string;
-}
+import type { PresetOption } from 'components/ConversationalForm/questionSchema';
 
 interface PresetTileSelectorProps {
   presets: PresetOption[];
