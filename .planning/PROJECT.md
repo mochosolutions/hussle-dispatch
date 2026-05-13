@@ -1,173 +1,230 @@
-# FleetCommand — MVP Staging Demo
+# FleetCommand — Carrier Onboarding Refactor
 
 ## What This Is
 
-FleetCommand is a freight dispatch operating system for small-fleet dispatchers: one operator runs every load from broker booking through driver SMS prompts, portal check-ins, document collection, customer invoicing, and carrier/driver settlement. This project scopes the **final push to a staging-shippable MVP** — the dispatch loop already runs end-to-end in code; we are closing verification, UI alignment, polish, and the live trial gate.
+A magic-link carrier onboarding portal — invited → signed → ready-to-dispatch in under 15 minutes, on a phone, conversational interview UX. Six phases on the carrier side (Company → Equipment → Drivers → Cost Analysis → Lane Preferences → Documents) with mid-flow dispatch-agreement signing. This GSD project tracks the **6-phase architectural refactor** from `docs/carrier-onboarding-implementation-plan.md` — stabilize the existing flow, close security gaps, then incrementally adopt the tech-spec patterns (schema-as-data, pure-function engine, mid-flow signing + field locking, WebSocket scaffold, FMCSA scaffold).
 
 ## Core Value
 
-**A solo dispatcher can run one real load end-to-end on staging** — dispatch → SMS-prompted driver portal check-ins → BOL/POD uploads → auto-generated customer invoice → settlement PDF — without a developer in the loop.
+**A carrier can complete onboarding end-to-end on a phone in under 15 minutes** — and the patterns we land here become the architectural standard the rest of the app gets refactored toward.
 
 ## Requirements
 
 ### Validated
 
-<!-- Shipped and code-verified in Tracks 0–11. Locked. -->
+<!-- Already-shipped Phase 1 carrier-portal work (backend ~95%, frontend ~70%). -->
 
-- ✓ **VAL-01** Twilio/SES/S3/AWS Location ports production-ready (Track 0)
-- ✓ **VAL-02** Audit logging wired for logout, org switch, role change (Track 0)
-- ✓ **VAL-03** Settlement Decimal accumulation correct (Track 0)
-- ✓ **VAL-04** Carrier primary contact uses `primaryContactId` FK pattern (Track 0)
-- ✓ **VAL-05** `invoiceReadinessSubscriber` is sole invoice creator (Track 0)
-- ✓ **VAL-06** `OWNER_OPERATOR` carrier type dropped; migration applied (Track 1)
-- ✓ **VAL-07** EXTERNAL/LEASED branching audited end-to-end (Track 1)
-- ✓ **VAL-08** Dispatch terms field reconciled at UI HTTP boundary (Track 1)
-- ✓ **VAL-09** 401/403 global axios interceptor + atomic popup reset (Track 1)
-- ✓ **VAL-10** `StatusChangeDialog` mark-dispatched flow (Track 2)
-- ✓ **VAL-11** Send Invoice action wired to `POST /invoices/from-load/:loadId` (Track 2)
-- ✓ **VAL-12** Manual check-call drawer + notification subscriber (Track 2)
-- ✓ **VAL-13** CC emails on contacts + notification overrides (Track 2)
-- ✓ **VAL-14** Custom accessorial type (OTHER) with required description (Track 2)
-- ✓ **VAL-15** Address typeahead with debounce, abort, TTL cache (Track 2)
-- ✓ **VAL-16** Hybrid SMS prompt scheduler — DISPATCHED + pre-pickup + post-pickup + transit interval (Track 3)
-- ✓ **VAL-17** Manual SMS send endpoint + UI modal (Track 3)
-- ✓ **VAL-18** RabbitMQ delayed-message exchange for prompt scheduling (Track 3)
-- ✓ **VAL-19** Portal deep-link via existing driver tracking token (Track 3)
-- ✓ **VAL-20** Org-configurable SMS timing (lead/interval/escalation/cooldown) (Track 3)
-- ✓ **VAL-21** SMS prompt history panel on load detail (Track 3)
-- ✓ **VAL-22** Driver portal Playwright suite (94 tests, mobile + desktop) (Track 4)
-- ✓ **VAL-23** Driver portal document upload — MIME + size validation (Track 4)
-- ✓ **VAL-24** Stop `schedulingType` exposed in driver portal (Track 4)
-- ✓ **VAL-25** Check-in error surfacing + notes character limit (Track 4)
-- ✓ **VAL-26** `s3Url` → `url` rename across model + responses (Track 5)
-- ✓ **VAL-27** Driver portal upload consolidated to `PortalDocumentUpload` (Track 5)
-- ✓ **VAL-28** Onboarding gate blocks at Documents phase for EXTERNAL/LEASED (Track 6)
-- ✓ **VAL-29** Admin "Dispatch anyway" override with audit log (Track 6)
-- ✓ **VAL-30** Onboarding completion email sends via SES (Track 6)
-- ✓ **VAL-31** Insurance expiry badges on carrier KPI (Track 6)
-- ✓ **VAL-32** Driver `payType` + `payRate` required at creation + backfill migration (Track 7)
-- ✓ **VAL-33** Driver weekly schedule + override drawers (Track 7)
-- ✓ **VAL-34** Driver location auto-geocodes on `PATCH /drivers/:id` (Track 7)
-- ✓ **VAL-35** Dispatch fee model: PERCENTAGE + FLAT, per-carrier + per-load override (Track 8+9)
-- ✓ **VAL-36** EXTERNAL_CARRIER auto-generates DISPATCH_FEE invoice on delivery (Track 8+9)
-- ✓ **VAL-37** Customer `billingMethod` (DIRECT/FACTORED) — DRAFT + skip auto-email when FACTORED (Track 8+9)
-- ✓ **VAL-38** Settlement DRIVER_PAY line for all 4 payTypes (Track 8+9)
-- ✓ **VAL-39** Settlement role-gating (writes ADMIN/DISPATCHER; approve/pay ADMIN-only) (Track 8+9)
-- ✓ **VAL-40** Settlement PDF download (Track 8+9)
-- ✓ **VAL-41** Per-org API keys + `apiKeyAuth` middleware (Track 10)
-- ✓ **VAL-42** Chrome extension TS port — DAT + Relay scrapers, popup UX, failure surfacing (Track 10)
-- ✓ **VAL-43** Strict ingest validation + Redis dedup (Track 10)
-- ✓ **VAL-44** Tenant-scoped notification queries (load joined on `organizationId`) (Track 11)
-- ✓ **VAL-45** `DOCUMENT_UPLOADED` event → enriched customer notification (Track 11)
+- ✓ **VAL-01** `OnboardingSession` model with `currentPhase`, `currentQuestionIndex`, `answers` JSONB, `completedPhases`, `lastActiveAt`
+- ✓ **VAL-02** `CarrierInviteToken` model — 7-day expiry, revocation support (plaintext today; hashing in Phase 1)
+- ✓ **VAL-03** `Carrier` extended — `onboardingStatus`, `minimumRatePerMile`, `entryMethod`, `costProfileVersion`/`Source`, consent IP/UA, fuel card providers
+- ✓ **VAL-04** `Vehicle` extended — `category` enum, `gvwr`, financing fields, insurance cost, delivery types
+- ✓ **VAL-05** `Document` model — `signatureData` (base64), `reviewStatus`, signed timestamps
+- ✓ **VAL-06** Carrier portal endpoints — GET/PUT session, POST per-phase saves, document presign/confirm/sign
+- ✓ **VAL-07** Admin endpoints — invite, resend, approve, reject, pending queue
+- ✓ **VAL-08** Token-auth middleware (`authenticateCarrierToken`)
+- ✓ **VAL-09** Events — `carrier.invited`, `carrier.onboarding.completed`/`approved`/`rejected`
+- ✓ **VAL-10** Email templates — invite, approval, rejection, completion
+- ✓ **VAL-11** SMS via Twilio + subscribers for invitation/approval notifications
+- ✓ **VAL-12** `CarrierPortalPage` — 4-phase flow (Company, Equipment, Drivers, Documents)
+- ✓ **VAL-13** `ConversationalForm` with 15 input types
+- ✓ **VAL-14** `PortalLayout`, `PortalHeader`, `PortalStepper`, `PortalFooterBar`, `PortalAuthGuard`
+- ✓ **VAL-15** Question definitions for Phases 1–3 + Documents
+- ✓ **VAL-16** Redux slice + sagas (fetchSession, savePhaseData)
+- ✓ **VAL-17** Auto-save via 500ms debounced `PUT /carrier-portal/session/answer`
+- ✓ **VAL-18** Admin UI — invite dialog, approval modal, pending carriers card, onboarding tab
 
 ### Active
 
-<!-- Remaining work to ship staging demo. -->
+<!-- 6 phases from docs/carrier-onboarding-implementation-plan.md. -->
 
-#### Verification — Track 0 staging configuration
+#### Phase 0 — Stabilize (≈3 working days)
 
-- [ ] **STG-01** Set `SMS_BACKEND=twilio` + `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM_NUMBER` in staging `.env`
-- [ ] **STG-02** Set `SES_FROM_EMAIL` + AWS credentials for SES on staging
-- [ ] **STG-03** Set `STORAGE_BACKEND=s3` + `S3_BUCKET` + AWS credentials on staging
-- [ ] **STG-04** Set `AWS_LOCATION_PLACE_INDEX_NAME` + `AWS_LOCATION_ROUTE_CALCULATOR_NAME` + `AWS_LOCATION_MAP_NAME` on staging
-- [ ] **STG-05** Apply all outstanding Prisma migrations on staging DB
+- [ ] **STAB-01**: `handleSubmit` in `CarrierPortalPage` dispatches phase-save actions; phase advance moves to `useEffect` watching save-success state
+- [ ] **STAB-02**: Validation errors surfaced visibly via notistack snackbar; scroll to first error field
+- [ ] **STAB-03**: Final-phase logic dispatches `completeOnboarding` (API), not `sessionCompleted` (local only)
+- [ ] **STAB-04**: Phase list extracted to `features/carrier-portal/constants.ts`; consumed by both `CarrierPortalPage` and `PortalLayout`
+- [ ] **STAB-05**: `setCurrentPhase` reducer no longer silently guards on `if (state.session)` (remove the mask; surface bugs)
+- [ ] **STAB-06**: `costAnalysisQuestions.ts` built per `.planning-legacy/carrier-onboarding/designs/interview-cost-analysis.md`
+- [ ] **STAB-07**: `PresetTileSelector` component (pill-shaped chips + custom-value option)
+- [ ] **STAB-08**: `CostResultCard` component (dark-bg full-screen result; animated count-up; break-even RPM + minimum booking rate)
+- [ ] **STAB-09**: `lanePreferencesQuestions.ts` built
+- [ ] **STAB-10**: `StateGrid` component (50-state clickable grid with preference cycling: preferred / avoided / neutral)
+- [ ] **STAB-11**: `SubQuestion` + `SubAnswer` components with colored left borders (blue/green/red/grey)
+- [ ] **STAB-12**: `presetTiles` and `stateGrid` cases added to `InputRenderer`
+- [ ] **STAB-13**: `PHASE_LABELS` and `TOTAL_PHASES` expanded to 6 phases
+- [ ] **STAB-14**: Playwright e2e test — invite → portal → all 6 phases → submit → approve; runs in CI
+- [ ] **STAB-15**: Manual smoke test of full flow
 
-#### UI Alignment — Track 12 (all 6 entity pages)
+#### Phase 1 — Security & Hygiene (≈3 working days)
 
-- [ ] **UI-01** Carriers — list (FilterBar + ListKpiBar + DataGrid) + detail (DetailPageShell) + drawers (FormDrawer + drawer registry)
-- [ ] **UI-02** Drivers — list + detail + drawers aligned to load/dispatch pattern
-- [ ] **UI-03** Vehicles — list + detail + drawers aligned
-- [ ] **UI-04** Customers — list + detail + drawers aligned
-- [ ] **UI-05** Contacts — list + detail + drawers aligned
-- [ ] **UI-06** Places — list + detail + drawers aligned
-- [ ] **UI-07** Side-by-side visual review across all 6 entities
+- [ ] **SEC-01**: Hashed invitation tokens — `tokenHash` column with `@@unique`, HMAC-SHA-256 with peppered env/KMS key, migration backfills hash for existing tokens, lookup queries use hash, plaintext column dropped after backfill verification
+- [ ] **SEC-02**: EIN encryption — `einCiphertext: Bytes?` column with AES-256-GCM via KMS data key (cached in app memory), `einLast4: String?` denormalized plaintext for UI, decrypt only for downstream PDF generation, migration encrypts existing values and drops plaintext column
+- [ ] **SEC-03**: Composite index `(organizationId, dotNumber)` on `Carrier`
+- [ ] **SEC-04**: Document retention policy at `docs/legal-retention-policy.md` (7-year retention for signed agreements + audit logs)
 
-#### MVP Polish
+#### Phase 2 — Schema + Engine (≈10 working days)
 
-- [ ] **POL-01** Switch off-mode color uses neutral (not secondary)
-- [ ] **POL-02** Typography scale up globally (body/label sizes)
-- [ ] **POL-03** Skeleton loaders on list + detail pages (replace full-screen spinners)
-- [ ] **POL-04** Alerts/toasts position bottom-right
-- [ ] **POL-05** Drawer submit buttons use loading state button component
-- [ ] **POL-06** Framer-motion animations — page transitions, drawer open/close, alert enter/exit
-- [ ] **POL-07** Drawer header color from theme token
-- [ ] **POL-08** Signup password requirements — realtime feedback + rules list
-- [ ] **POL-09** `.gitignore` — ensure `dist/` directories never committed
+- [ ] **SCH-01**: `hussle-app-dispatch-api/src/carrier-onboarding/schemas/v1.ts` declarative Phase → Step → Question shape
+- [ ] **SCH-02**: Predicate operators — `eq`, `in`, `and`, `or`, `not` (skip `jsonpath` until needed)
+- [ ] **SCH-03**: Prefill bindings — structured objects `{ source: 'fmcsa' | 'invitation' | 'answers', field/stepId/questionId }`
+- [ ] **SCH-04**: Side-effect descriptors — `fmcsa_lookup`, `generate_agreement`, `eligibility_recalc`, `notify_dispatcher`
+- [ ] **SCH-05**: Step types (8) — `segmentation`, `input`, `verification`, `upload`, `signing`, `review`, `checkpoint`, `complete`
+- [ ] **SCH-06**: Field types — existing 15 `ConversationalForm` types + 4 new (`email`, `phone`, `cards`, `mc`)
+- [ ] **SCH-07**: JSON Schema validator (`ajv`) runs at import time and in CI
+- [ ] **SCH-08**: Existing TS question files migrated to new schema shape (still TS, not DB)
+- [ ] **ENG-01**: `hussle-app-dispatch-api/src/carrier-onboarding/engine/` directory created
+- [ ] **ENG-02**: Pure functions — `evaluatePredicate`, `resolveContext`, `getVisibleSteps`, `getNextStepId`, `getPrevStepId`, `computeInvalidations`
+- [ ] **ENG-03**: Engine types — `Command`, `EngineResult`, `EngineError`, `EngineWarning`, `DomainEventEnvelope`
+- [ ] **ENG-04**: Declarative `ValidationRule[]` per question (`required`, `minLength`, `regex`, `email`, `mc_number`, `requiredWhen`, `mustEqualField`) compiled to Yup at runtime
+- [ ] **ENG-05**: Named business-rule registry (start empty; add as needed) for complex cross-field rules
+- [ ] **ENG-06**: ESLint rule — `engine/` cannot import from `services/`, `controllers/`, `repositories/`, `prisma`
+- [ ] **ENG-07**: Engine pure-function unit tests target ~100% coverage
+- [ ] **ENG-08**: Existing `carrier-portal/` services consume engine for visibility/navigation/validation (keep save logic in services)
+- [ ] **ENG-09**: New API contract — `getSchema(token)` endpoint returns active schema; client renders + validates via engine output
+- [ ] **DOC-01**: ADR-001 — "Carrier onboarding adopts schema + engine pattern" written at `docs/adrs/`
+- [ ] **DOC-02**: README in `engine/` — pure-function rule, boundary, testing strategy
 
-#### Done Criteria — V.E2E Playwright
+#### Phase 3 — Mid-Flow Signing + Field Locking (≈5 working days)
 
-- [ ] **E2E-01** Playwright spec covering full MVP loop: create carrier (3 types) → onboard → create driver (4 pay types) → create customer → create load → assign → dispatch → DISPATCHED SMS → portal check-in → pre-pickup SMS → transit SMS → BOL upload → deliver → invoice auto-generated → email sent → mark paid → generate settlement → download PDF
-- [ ] **E2E-02** Screenshots attached at every critical assertion
+- [ ] **SIGN-01**: Schema insert — `signing` step after business profile + signatory phases, before equipment
+- [ ] **SIGN-02**: `locksFields: string[]` metadata on the signing step definition
+- [ ] **SIGN-03**: Engine `NavigateBack` handler refuses navigation to locked fields when any downstream signing step is `Signed`; returns `LOCK_VIOLATION` warning
+- [ ] **SIGN-04**: Backend `VoidAgreement` command (admin-only) — transitions agreement to `Voided`, archives signature data, unlocks fields, emits `agreement.voided`
+- [ ] **SIGN-05**: Frontend — read-only display + lock icon + "contact dispatcher" CTA for locked fields
+- [ ] **SIGN-06**: Frontend — signing step renders mid-flow with dispatch agreement preview + signature canvas
+- [ ] **SIGN-07**: E-SIGN consent capture (IP + UA on `Carrier`) verified to fire at the right moment
+- [ ] **SIGN-08**: Completion flow updated — signing mid-flow; post-signing carrier continues to equipment/banking/docs
 
-#### Done Criteria — V.MAN Manual Test Script
+#### Phase 4 — WebSocket Scaffold (≈5 working days)
 
-- [ ] **MAN-01** Write `docs/mvp-test-script.md` (human checklist form)
-- [ ] **MAN-02** Human walk-through on staging — every step checked
+- [ ] **WS-01**: Socket.io server in dispatch-api — auth: carrier opaque token (query param + `Authorization` header upgrade); dispatcher JWT cookie
+- [ ] **WS-02**: Redis pub/sub fan-out using existing `redisClient`
+- [ ] **WS-03**: Two channels — `session-state.{sessionId}` (carrier-side), `dispatcher.{orgId}.invitations` (dispatcher-side)
+- [ ] **WS-04**: Connection lifecycle — auth → join channel → server pushes on state changes → graceful close
+- [ ] **WS-05**: Client-side hook `useSessionWebSocket(sessionId)` in `features/carrier-portal/hooks/` — subscribe, reconnection w/ exponential backoff
+- [ ] **WS-06**: Smoke feature — echo session state changes across carrier's open tabs (proves the pipe; no business value yet)
+- [ ] **WS-07**: `docs/websocket-patterns.md` — adding WS-driven features, channel auth model, reconnection patterns
+- [ ] **WS-08**: Load test — 1k concurrent connections on Dokploy container; baseline numbers documented
+- [ ] **DOC-03**: ADR-002 — "WebSocket gateway adopts Socket.io + Redis pub/sub; per-session + per-org channels"
 
-#### Done Criteria — V.TRIAL Real Dispatcher Trial
+#### Phase 5 — FMCSA Scaffold (≈3 working days)
 
-- [ ] **TRIAL-01** Real dispatcher runs one real load end-to-end on staging
-- [ ] **TRIAL-02** Debrief + log gaps as follow-ups (non-blocking unless critical)
+- [ ] **FMC-01**: Events added to `eventMap.ts` — `onboarding.fmcsa.requested`, `onboarding.fmcsa.completed`
+- [ ] **FMC-02**: `FmcsaLookupSubscriber` in `hussle-app-dispatch-api/src/carrier-onboarding/fmcsa/` consumes `requested`, calls mock adapter, publishes `completed`
+- [ ] **FMC-03**: `SaferWebPort` interface defined
+- [ ] **FMC-04**: `MockSaferWebAdapter` returning realistic fake data (legalName, dba, address, dotNumber, fleetSize, safetyRating, authorityStatus, officerName)
+- [ ] **FMC-05**: `fmcsaSnapshot: Json?` field on `OnboardingSession`
+- [ ] **FMC-06**: Engine handler for `verification` step type — waits for `fmcsa.completed` ExternalEvent before advancing
+- [ ] **FMC-07**: Schema integration — `prefillFrom: { source: 'fmcsa', field: 'legalName' }` works against `fmcsaSnapshot`
+- [ ] **FMC-08**: UI — verification step shows "Looking up your authority…" spinner; advances on event arrival
+- [ ] **DOC-04**: ADR-003 — "FMCSA integration via SaferWebPort + adapter pattern; mock first, real later"
 
 ### Out of Scope
 
-<!-- Explicit deferrals. Add as we discover edges. -->
+<!-- All deferrals from §7 of the implementation plan, plus explicit rejections from prior decisions. -->
 
-- **Customer portal** — Email-only delivery for MVP; portal is post-MVP (per scope-lock 2026-04-21)
-- **Settlement cron auto-draft** (9.DEFER.1) — Manual generation only for MVP
-- **Dispatcher commission tracking** — Schema fields kept; dropped from MVP per solo-operator persona refinement (2026-04-24)
-- **Insurance expiry nightly job** (6.BE.3) — Dispatch-time gate + UI badge sufficient; nightly cron post-MVP
-- **WebSocket push migration** — Saga polling acceptable for MVP; supersedes per-loop backoff work (Track 3 US-06 #6)
-- **SMS quiet hours / driver availability honoring** — No quiet hours; scheduler does not consult `DriverAvailability` (per scope-lock)
-- **OWNER_OPERATOR carrier type** — Merged into EXTERNAL_CARRIER (per scope-lock)
-- **Twilio delivery webhook callbacks** (3.INF.1) — Synchronous SID capture sufficient; revisit post-MVP
-- **Rate-con in load templates** (5.UI.2) — Rate cons are per-load contracts, never reusable
-- **Production hardening** — Staging demo only; production launch is a downstream milestone
-- **Customer portal, dashboard onboarding tool, load map/Relay nav, notes CRUD, today/tomorrow feed filter, team comm, "find matching loads"** — All explicitly deferred per `docs/tasks/mvp-plan.md` DEFERRED section
-- **HIGH-06/07/08/14/16/17/18/20 audit items** — Tracked in audit; post-MVP
-- **QuickBooks integration, FMCSA auto-verification, geofencing auto-arrival** — Post-MVP
-- **Backfill tests for `invoiceGenerationService` / `invoiceBuilderService`** — Requires port-injection refactor; deferred
-- **Yup `.strict()` / `.noUnknown()` API-wide** — Broader hardening; post-MVP
+| Capability | Revisit when |
+|---|---|
+| JSON-stored schema + version pinning | Non-engineer needs to edit flows, or in-flight schema migrations become a real problem |
+| Pure-function engine for save logic (full command/result decomposition) | Service-layer test pain becomes painful |
+| Event sourcing / `OnboardingEvent` log | Carrier dispute requires session replay, or legal review demands it |
+| Outbox pattern | **Rejected outright** — events publish inline as today; reject again unless real event-loss incident occurs |
+| DocuSeal migration | Legal review requires audit certificate, or base64 signing causes a real dispute |
+| Live eligibility sidebar | Sales/UX commits; needs Phase 4 done first |
+| Co-pilot bidirectional editing | **Deferred indefinitely** — wait for real support workflow demanding it |
+| Session abandonment watchdog | Abandoned sessions exceed 20% rate |
+| Carrier Cognito provisioning | Post-onboarding carrier portal becomes a real use case |
+| Dispatcher dashboard real-time updates | Dispatchers complain about staleness; needs Phase 4 done first |
+| Real SaferWebAPI integration | Provider contract + pricing signed |
+| Document OCR (Textract) | Manual review volume becomes unmanageable |
+| Self-registration entry point | Sales pipeline supports unsolicited inbound |
 
 ## Context
 
-**Codebase state.** Brownfield monorepo with two TS packages (`hussle-app-dispatch-api/`, `hussle-app-dispatch-ui/`) + `hussle-emails/` (React Email) + `dat-load-scraper/` (Chrome extension). Express + Prisma + Postgres + Redis + RabbitMQ (delayed-message exchange) backend; React 18 + MUI v5 + Redux Toolkit + Saga + Vite frontend. Internal dispatch SPA and public carrier/driver portals share the same UI repo.
+**Why this matters.** Carrier onboarding is the first concrete touchpoint where FleetCommand's "fewer clicks to result" promise meets reality. It sets the carrier's mental model of the platform, and the patterns landed here become the architectural standard for the rest of the app.
 
-**Prior planning.** A comprehensive audit (2026-04-20) and consolidated MVP plan (2026-04-21, last updated 2026-04-26) live in `docs/`. Legacy phase artifacts moved to `.planning-legacy/` before this GSD bootstrap (commit 291219735). Codebase map regenerated 2026-05-13 (commit 514f779d1).
+**Where the work lives.**
+- API: `hussle-app-dispatch-api/src/carrier-portal/` + `hussle-app-dispatch-api/src/carriers/`
+- UI: `hussle-app-dispatch-ui/src/features/carrier-portal/` + `hussle-app-dispatch-ui/src/features/carrier/`
+- Form primitives: `hussle-app-dispatch-ui/src/components/ConversationalForm/`
+- DB schema: `hussle-app-dispatch-api/prisma/schema.prisma`
+- Messaging: `hussle-app-dispatch-api/src/shared/messaging/`
+- Email templates: `hussle-app-dispatch-api/src/shared/emails/carrierInvite/`
+- Legacy Phase 1 artifacts (authoritative for what shipped): `.planning-legacy/carrier-onboarding/`
+- Tech-spec sources: `docs/onboarding-example-tech-spec/`
 
-**Test posture.** 968/968 backend tests green; UI tests 163/165 (two pre-existing `AddressSearchField` failures); driver-portal Playwright 94/94. End-to-end Playwright for the full MVP loop is the headline remaining work.
+**Known bugs blocking traffic.**
+1. `Save & Continue` does nothing visible — `handleSubmit` (CarrierPortalPage:76) never dispatches phase-save actions
+2. Hardcoded 4-phase list in two places (PortalLayout:18, CarrierPortalPage:25) — drift hazard
+3. `setCurrentPhase` reducer silently guards on `if (state.session)` (carrierPortalSlice:95-99)
+4. Final phase dispatches local-only `sessionCompleted` instead of API `completeOnboarding` (CarrierPortalPage:81-83)
+5. Validation failures invisible — no snackbar; errors only show if InputRenderer wires them correctly
 
-**External services.** Twilio (SMS), AWS SES (email), AWS S3 (document storage, presigned URLs), AWS Location (typeahead/routing/maps), Postgres, Redis, RabbitMQ with `rabbitmq_delayed_message_exchange` plugin v3.13.0.
+**Carrier-arrival contingencies.**
+- Carriers arrive in week 2 → existing flow handles them post-Phase-0+1; Phase 2 happens during traffic; data migrates when Phase 2 lands
+- Carriers arrive in week 4 → onboarding on new architecture from day one
+- Carriers arrive in week 6+ → full plan ships before traffic
 
-**Infrastructure.** Terraform/Ansible/Dokploy stack built 2026-04-28. Dev environment bootstrapped on mocho's shared server; staging deploy pending Dokploy API token.
+**MVP relationship.** The MVP staging-demo work continues in parallel via `docs/tasks/mvp-plan.md` as the operational ledger. The archived MVP GSD roadmap lives at `.planning-archive/mvp-staging-demo/` for reference.
 
 ## Constraints
 
-- **Tech stack** — Locked: Node + Express + Prisma + React 18 + MUI v5 + Redux Toolkit + Saga + Formik/Yup + Jest + Playwright. No framework swaps in this milestone.
-- **Deployment target** — Staging demo only. Real Twilio/SES/S3/AWS Location, not production-hardened.
-- **Persona** — Small fleet dispatcher (solo operator). No multi-dispatcher commission flows.
-- **Carrier types** — COMPANY_ASSET, EXTERNAL_CARRIER, LEASED_CARRIER only.
-- **Client delivery** — Email + PDF attachment only (no shipper portal).
-- **SMS policy** — Hybrid event-anchored + manual; no quiet hours; org-configurable timing.
-- **Settlement generation** — Manual only.
-- **Onboarding doc gate** — Must block until docs signed/uploaded; admin override audit-logged.
-- **Visual consistency target** — "Same building blocks across entities," not pixel-perfect.
-- **Git identity** — All commits must use the configured user identity; no `Co-Authored-By` lines.
-- **Test gates** — Done is defined by all three Done Criteria passing: Playwright E2E + manual checklist + real dispatcher trial.
+- **Solo engineer (Jr building).** Sequential phases only; no parallelization across phases. Phases land with clean exit criteria.
+- **Top priority for the next ~6 weeks.** Real carriers arriving in weeks. Existing flow must work before traffic.
+- **Dev mode — no production carriers yet.** Replace in place; no parallel-stack maintenance; no feature-flag overhead.
+- **Sets the architectural standard.** Patterns established here get copied to future features. Quality and clarity matter.
+- **Refactor toward, don't rewrite.** Every step preserves working code. New abstractions land alongside old ones until validated.
+- **Schema is data, stored as code first.** Declarative predicates/prefill/side-effects — yes. JSON-in-DB + version-pinning — only when there's a real need.
+- **Engine is an interface, not a rewrite.** Pure-function engine exposes visibility/navigation/validation; existing services consume it; full command/result decomposition can wait.
+- **Infrastructure ships before features use it.** WebSocket gateway + FMCSA event topology land empty, prove the pipe, then features adopt them.
+- **Security hygiene non-negotiable.** Token hashing, EIN encryption, UI bug fixes. Cheap, real, can't defer.
+- **Test at boundaries.** Engine purity defended via ESLint import rule. Services stay imperative-style with mocked repos.
+- **No half-finished implementations.** Each phase has an exit criterion. Don't move on until the previous phase ships.
+- **Standard is available, not mandatory.** The schema/engine pattern earns its keep for declarative-rule features. For non-declarative features (load dispatch, settlement math), let the pattern not apply.
+- **Tech stack.** Node + Express + Prisma + Postgres + Redis + RabbitMQ on the API; React 18 + MUI v5 + Redux Toolkit + Saga + Yup on the UI. Validator: Yup (codebase incumbent).
+- **Git identity.** No `Co-Authored-By` lines. Use configured user identity only.
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Treat completed tracks as Validated, scope project to remaining work | Tracks 1–11 are code-verified; re-litigating them adds noise. Active set is verification + Track 12 + Polish + Done Criteria. | — Pending |
-| Keep Track 12 (UI alignment) in MVP scope | Per original scope-lock: "all entity pages adopt load/dispatch patterns." Demo polish depends on it. | — Pending |
-| All three Done Criteria gate MVP (E2E + manual + real dispatcher trial) | Matches canonical `mvp-plan.md` gate. Real-dispatcher trial catches gaps automation can't. | — Pending |
-| `docs/tasks/mvp-plan.md` remains the operational source-of-truth alongside `.planning/` | User follows the MACHO/RUNBOOK workflow; mvp-plan.md is the running ledger. GSD artifacts complement, not replace. | ✓ Good |
-| Drop OWNER_OPERATOR carrier type; merge into EXTERNAL_CARRIER | Scope-lock 2026-04-21 — simplifies branching across settlements/onboarding/invoices. | ✓ Good (Track 1) |
-| Dispatcher commission dropped from MVP; schema fields retained | Solo-operator persona = self-dispatch; commission flow is a separate post-MVP payroll track. | ✓ Good (Track 8+9) |
-| `feeIncludesAccessorials` default = `true` | Customer-billed accessorials inflate the dispatch-fee base — matches industry norm. | ✓ Good (Track 8+9) |
-| RabbitMQ delayed-message exchange (not Bull) for SMS prompts | Reuses existing event-bus infra; lower operational surface area. | ✓ Good (Track 3) |
-| Saga polling acceptable for MVP; WebSocket migration deferred | Push migration is a milestone unto itself; polling works at staging-demo scale. | — Pending |
+Locked decisions from the implementation plan — do not relitigate.
+
+| Decision | Choice | Outcome |
+|----------|--------|---------|
+| Migration posture | Replace in place (dev mode permits) | ✓ Good |
+| Tech-spec scope | Adopt 4 core features (schema, WebSocket, FMCSA scaffold, mid-flow signing); defer the rest with revisit conditions | — Pending |
+| Architectural approach | Incremental refactor toward tech-spec patterns, not greenfield rebuild | — Pending |
+| Standard-setting | This work sets the pattern for future features (schema + engine + boundary ESLint rule) | — Pending |
+| Phase sequencing | Strictly sequential; solo dev; ruthless scope discipline; ADR per phase; Playwright e2e as safety net | — Pending |
+| Outbox pattern | **Rejected** (events publish inline as today) | ✓ Good |
+| DocuSeal | Deferred — base64 signing continues | ✓ Good |
+| Co-pilot mode | Deferred indefinitely | ✓ Good |
+| Event sourcing | Deferred — `AuditLog` covers current needs | ✓ Good |
+| Carrier Cognito | Deferred — opaque token suffices | ✓ Good |
+| WebSocket scope | Scaffold only initially; features that use it ship later | — Pending |
+| Scoring engine | Local in-process behind `EligibilityProvider` port | — Pending |
+| FMCSA | Adopt scaffold; real SaferWebAPI integration deferred | — Pending |
+| Schema language | Declarative concepts (predicates, prefill bindings, step types); keep TS files (no DB storage yet) | — Pending |
+| Engine architecture | Thin pure-function engine alongside existing services; not full command/result rewrite | — Pending |
+| Token type | Opaque (matches existing); add HMAC-SHA-256 hashing in Phase 1 | — Pending |
+| Token expiration | 7-day unopened (tighter than tech spec's 14/30) | ✓ Good |
+| EIN encryption | App-layer AES-256-GCM with KMS data key; `einLast4` denormalized | — Pending |
+| Validator library | Yup (codebase incumbent) | ✓ Good |
+| Field locking after signature | Adopt — engine refuses NavigateBack to locked fields | — Pending |
+| Frontend state | Redux + Saga (codebase consistency) | ✓ Good |
+| Mid-flow signing | Adopt as core feature; refactor existing Phase 6 signing | — Pending |
+
+## Risk Gates
+
+From §8 of the implementation plan:
+
+| Gate | Trigger | Action |
+|---|---|---|
+| End of Phase 0 | Flow still doesn't work end-to-end | **Stop.** Don't proceed to architecture work until carriers can complete onboarding. |
+| Mid Phase 2 (day 6 of 10) | Engine refactor >50% over budget | **Stop. Step back. Rescope.** Cost of "engine done wrong" > cost of "TS arrays done well." |
+| End of Phase 2 | Engine unit tests reveal logic bugs in existing services | Patch in-place. Don't ship a "perfectly redesigned" engine if it surfaces bugs we have to fix. |
+| Before Phase 4 ships | WS gateway load test fails | Reassess deployment topology — possibly extract to its own container. |
+| Before any real SaferWebAPI work | Provider contract / pricing unclear | Pause. Don't integrate before legal + commercial signed. |
+| Any phase | Solo-dev burnout symptoms | Each phase has a natural shipping moment. Take a breath between them. |
 
 ## Evolution
 
@@ -187,4 +244,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-13 after initialization*
+*Last updated: 2026-05-13 after re-bootstrap from `docs/carrier-onboarding-implementation-plan.md`*
