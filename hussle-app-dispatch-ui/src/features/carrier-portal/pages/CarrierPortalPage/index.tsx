@@ -16,21 +16,8 @@ import {
   selectSession,
 } from '../../store/selectors/portalSelectors';
 import { carrierPortalActions } from '../../store/slices/carrierPortalSlice';
-import { companyQuestions } from '../../questions/companyQuestions';
-import { equipmentQuestions } from '../../questions/equipmentQuestions';
-import { driversQuestions } from '../../questions/driversQuestions';
-import { documentsQuestions } from '../../questions/documentsQuestions';
+import { PHASE_LABELS, QUESTIONS_BY_PHASE, TOTAL_PHASES } from '../../constants';
 import { buildPhaseSchema } from '../../validators/buildPhaseSchema';
-
-const PHASE_LABELS = ['Company', 'Equipment', 'Drivers', 'Documents'];
-const TOTAL_PHASES = PHASE_LABELS.length;
-
-const questionsByPhase: Record<number, QuestionDefinition[]> = {
-  1: companyQuestions,
-  2: equipmentQuestions,
-  3: driversQuestions,
-  4: documentsQuestions,
-};
 
 const AUTOSAVE_DEBOUNCE_MS = 500;
 
@@ -54,7 +41,7 @@ const CarrierPortalPage = () => {
   const currentPhase = useSelector(selectCurrentPhase);
   const answers = useSelector(selectAnswers);
 
-  const phaseQuestions = questionsByPhase[currentPhase] ?? [];
+  const phaseQuestions = QUESTIONS_BY_PHASE[currentPhase] ?? [];
   const phaseLabel = PHASE_LABELS[currentPhase - 1] ?? PHASE_LABELS[0];
   const isComplete = Boolean(session?.completedAt);
 
