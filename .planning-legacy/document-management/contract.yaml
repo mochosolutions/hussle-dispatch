@@ -1,0 +1,862 @@
+openapi: 3.0.3
+
+info:
+  title: FleetCommand Document Management API
+  version: 1.0.0
+  description: |
+    Document upload, presign/confirm, listing, download, and lifecycle (archive)
+    for documents attached to loads, carriers, drivers, and vehicles.
+
+    This contract documents the **existing** `/api/v1/documents` surface plus the
+    Document Management MVP changes:
+
+    - `PATCH /:id/archive` is now **ADMIN-only** (`requireRole(['ADMIN'])`).
+    - `confirm` and `archive` emit `DOCUMENT_REPLACED` and `DOCUMENT_ARCHIVED`
+      audit log entries (server-side; not exposed via HTTP).
+    - `DocumentMetadata` now includes a `customLabel` field used by `OTHER`-typed
+      documents (max 80 chars).
+    - `DocumentResponse` now embeds `uploadedBy: { firstName, lastName } | null`
+      (non-breaking; additive). Implementation requires the repository to
+      `include` the `uploadedByUser` relation in Prisma queries.
+    - The `DocumentType` enum is extended with 25 new values across driver,
+      carrier, vehicle, and load contexts.
+
+    No new endpoints. Auth uses HttpOnly JWT cookies; `organizationId` is
+    derived from the JWT and used to scope every query.
+
+servers:
+  - url: /api/v1
+    description: Default mount under `/api/v1` in `app.ts`
+
+# ---------------------------------------------------------------------------
+# Security
+# ---------------------------------------------------------------------------
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: |
+        HttpOnly session cookie containing a signed JWT. Validated by the
+        `requireAuth` middleware which injects `req.user`,
+        `req.organizationId`, and `req.orgSlug` for all downstream handlers.
+
+security:
+  - cookieAuth: []
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+
+paths:
+
+  /documents/presign:
+    post:
+      summary: Generate a presigned PUT URL and create a pending Document row
+      operationId: presignDocument
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignDocumentRequest'
+      responses:
+        '201':
+          description: Presigned URL issued and a pending Document row created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignDocumentResponse'
+        '400':
+          description: Validation error (invalid mime type, missing fields, malformed UUID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{id}/confirm:
+    post:
+      summary: Confirm a pending upload (after the client PUT to S3 succeeded)
+      operationId: confirmDocument
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmDocumentRequest'
+      responses:
+        '200':
+          description: |
+            Document marked as confirmed. If `onePer === true` for the document
+            type, prior confirmed documents of the same type for the same entity
+            are auto-archived; one `DOCUMENT_REPLACED` audit log entry is
+            emitted per superseded document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponseEnvelope'
+        '400':
+          description: Validation error or invalid metadata payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Document not found in this organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Document is already confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            File was not detected in S3 at the expected key — the client must
+            re-PUT before confirming. Maps to `DocumentUploadNotConfirmedError`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents:
+    get:
+      summary: List documents for the current organization, optionally filtered
+      operationId: listDocuments
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: entityType
+          schema:
+            $ref: '#/components/schemas/DocumentEntityType'
+        - in: query
+          name: entityId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/DocumentType'
+        - in: query
+          name: expiringBefore
+          description: ISO date — returns only documents with `expiresAt <= expiringBefore`
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: includeArchived
+          description: Include soft-deleted (archived) documents. Default `false`.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of documents matching the filters, scoped to the organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+        '400':
+          description: Invalid query parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{id}:
+    get:
+      summary: Get a single document by id
+      operationId: getDocumentById
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentIdParam'
+      responses:
+        '200':
+          description: Document found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponseEnvelope'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Document not found in this organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{id}/download:
+    get:
+      summary: Get a presigned GET URL for downloading or previewing a document
+      operationId: getDocumentDownloadUrl
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentIdParam'
+      responses:
+        '200':
+          description: |
+            Presigned GET URL valid for the configured TTL (default 15 min).
+            Used by both the View action (inline preview in the detail drawer)
+            and the Download action (`window.open`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadUrlResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Document not found in this organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Document upload was never confirmed — cannot download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{id}/archive:
+    patch:
+      summary: Soft-delete (archive) a document — ADMIN only
+      operationId: archiveDocument
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      description: |
+        Sets `isArchived: true`. The S3 object is intentionally retained for
+        recovery. Emits a `DOCUMENT_ARCHIVED` audit log entry. **Restricted
+        to ADMIN role** as enforced by the `requireRole(['ADMIN'])` middleware.
+      parameters:
+        - $ref: '#/components/parameters/DocumentIdParam'
+      responses:
+        '200':
+          description: Document archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponseEnvelope'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Document not found in this organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/bulk-download:
+    post:
+      summary: Get presigned download URLs for many documents at once
+      operationId: bulkDownloadDocuments
+      tags: [Documents]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDownloadRequest'
+      responses:
+        '200':
+          description: |
+            Per-document download URLs. Documents that fail (not found, not
+            confirmed, etc.) appear in `errors` rather than failing the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkDownloadResponse'
+        '400':
+          description: Validation error (empty array or > 50 ids)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# ---------------------------------------------------------------------------
+# Reusable parameters
+# ---------------------------------------------------------------------------
+
+  parameters:
+    DocumentIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+# ---------------------------------------------------------------------------
+# Schemas
+# ---------------------------------------------------------------------------
+
+  schemas:
+
+    # -------- Enums --------
+
+    DocumentType:
+      type: string
+      description: |
+        Document type. Allowed values per entity context are enforced
+        client-side via `DOCUMENT_CONTEXTS`. Server enforces only the union.
+      enum:
+        # Existing
+        - BROKER_RATE_CON
+        - BOL_UNSIGNED
+        - BOL_SIGNED
+        - DISPATCH_AGREEMENT
+        - INSURANCE_CERT
+        - W9
+        - CARRIER_PACKET
+        - INVOICE
+        - LUMPER_RECEIPT
+        - SCALE_TICKET
+        - POD
+        - HAZMAT
+        - LOA
+        - DETENTION
+        - LICENSE
+        - REGISTRATION
+        - INSPECTION_CERT
+        - OTHER
+        # New — Driver pack
+        - MEDICAL_CARD
+        - MVR
+        - DRUG_TEST
+        - ROAD_TEST_CERT
+        - DRIVER_APPLICATION
+        - PSP_REPORT
+        - BACKGROUND_CHECK
+        - ANNUAL_REVIEW
+        - HAZMAT_ENDORSEMENT
+        - TWIC_CARD
+        # New — Carrier pack
+        - MC_AUTHORITY
+        - VOIDED_CHECK
+        - NOTICE_OF_ASSIGNMENT
+        - BOC3
+        - IFTA_LICENSE
+        # New — Vehicle pack
+        - TITLE
+        - IFTA_DECAL
+        - IRP_CAB_CARD
+        - MAINTENANCE_RECORD
+        - LEASE_AGREEMENT
+        - BIT_INSPECTION
+        # New — Load pack
+        - TEMPERATURE_LOG
+        - TONU_DOC
+        - FUEL_RECEIPT
+        - LOAD_PHOTO
+      x-display-names:
+        BROKER_RATE_CON: "Rate Confirmation"
+        BOL_UNSIGNED: "BOL (Unsigned)"
+        BOL_SIGNED: "BOL (Signed)"
+        DISPATCH_AGREEMENT: "Dispatch Agreement"
+        INSURANCE_CERT: "Insurance Certificate"
+        W9: "W-9"
+        CARRIER_PACKET: "Carrier Packet"
+        INVOICE: "Invoice"
+        LUMPER_RECEIPT: "Lumper Receipt"
+        SCALE_TICKET: "Scale Ticket"
+        POD: "Proof of Delivery"
+        HAZMAT: "HazMat"
+        LOA: "Letter of Authorization"
+        DETENTION: "Detention"
+        LICENSE: "Driver's License / CDL"
+        REGISTRATION: "Vehicle Registration"
+        INSPECTION_CERT: "Inspection Certificate"
+        OTHER: "Other"
+        MEDICAL_CARD: "DOT Medical Card"
+        MVR: "Motor Vehicle Record"
+        DRUG_TEST: "Drug Test Result"
+        ROAD_TEST_CERT: "Road Test Certificate"
+        DRIVER_APPLICATION: "Driver Application"
+        PSP_REPORT: "PSP Report"
+        BACKGROUND_CHECK: "Background Check"
+        ANNUAL_REVIEW: "Annual Review"
+        HAZMAT_ENDORSEMENT: "HazMat Endorsement"
+        TWIC_CARD: "TWIC Card"
+        MC_AUTHORITY: "MC / Operating Authority"
+        VOIDED_CHECK: "Voided Check"
+        NOTICE_OF_ASSIGNMENT: "Notice of Assignment"
+        BOC3: "BOC-3"
+        IFTA_LICENSE: "IFTA License"
+        TITLE: "Vehicle Title"
+        IFTA_DECAL: "IFTA Decal"
+        IRP_CAB_CARD: "IRP Cab Card"
+        MAINTENANCE_RECORD: "Maintenance Record"
+        LEASE_AGREEMENT: "Lease Agreement"
+        BIT_INSPECTION: "BIT Inspection (CA)"
+        TEMPERATURE_LOG: "Temperature Log"
+        TONU_DOC: "TONU Documentation"
+        FUEL_RECEIPT: "Fuel Receipt"
+        LOAD_PHOTO: "Load Photo"
+
+    DocumentEntityType:
+      type: string
+      enum:
+        - load
+        - carrier
+        - driver
+        - vehicle
+      x-display-names:
+        load: "Load"
+        carrier: "Carrier"
+        driver: "Driver"
+        vehicle: "Vehicle"
+
+    DocumentUploadStatus:
+      type: string
+      enum:
+        - pending
+        - confirmed
+      x-display-names:
+        pending: "Pending"
+        confirmed: "Confirmed"
+
+    DocumentMimeType:
+      type: string
+      enum:
+        - application/pdf
+        - image/png
+        - image/jpeg
+        - image/jpg
+
+    # -------- Document --------
+
+    DocumentMetadata:
+      type: object
+      description: |
+        Free-form per-type metadata. Known fields are enumerated below; unknown
+        keys are preserved verbatim. `customLabel` is used when `type === OTHER`.
+      additionalProperties: true
+      properties:
+        customLabel:
+          type: string
+          maxLength: 80
+          description: |
+            Required when `type === OTHER`. Displayed instead of the generic
+            "Other" label in lists, the detail drawer, and the upload status row.
+        policyNumber:
+          type: string
+          maxLength: 80
+        licenseNumber:
+          type: string
+          maxLength: 80
+        issuingState:
+          type: string
+          maxLength: 80
+        cdlClass:
+          type: string
+          maxLength: 8
+        issuingAuthority:
+          type: string
+          maxLength: 120
+
+    DocumentUploader:
+      type: object
+      description: |
+        Embedded uploader info. Resolved server-side via Prisma `include`.
+        Returns `null` when `uploadedByUserId` is not set or the user record
+        was deleted.
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+      required: [firstName, lastName]
+
+    DocumentResponse:
+      type: object
+      required:
+        - id
+        - entityType
+        - entityId
+        - type
+        - fileName
+        - uploadStatus
+        - isArchived
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        entityType:
+          $ref: '#/components/schemas/DocumentEntityType'
+        entityId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/DocumentType'
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          nullable: true
+          description: Size in bytes
+        mimeType:
+          allOf:
+            - $ref: '#/components/schemas/DocumentMimeType'
+          nullable: true
+        url:
+          type: string
+          nullable: true
+          description: Canonical S3 URL (not a presigned URL — use /download for that)
+        uploadStatus:
+          $ref: '#/components/schemas/DocumentUploadStatus'
+        isArchived:
+          type: boolean
+        uploadedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        uploadedBy:
+          allOf:
+            - $ref: '#/components/schemas/DocumentUploader'
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          allOf:
+            - $ref: '#/components/schemas/DocumentMetadata'
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    DocumentResponseEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/DocumentResponse'
+
+    DocumentListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResponse'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    PaginationMeta:
+      type: object
+      required: [page, limit, total, totalPages, hasMore]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 1
+        hasMore:
+          type: boolean
+      description: |
+        Currently the documents list returns all matching rows in a single
+        page (`page=1, limit=total, totalPages=1, hasMore=false`). True
+        pagination is deferred — see Out of Scope in the plan.
+
+    # -------- Requests --------
+
+    PresignDocumentRequest:
+      type: object
+      required:
+        - fileName
+        - mimeType
+        - type
+        - entityType
+        - entityId
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        mimeType:
+          $ref: '#/components/schemas/DocumentMimeType'
+        type:
+          $ref: '#/components/schemas/DocumentType'
+        entityType:
+          $ref: '#/components/schemas/DocumentEntityType'
+        entityId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+
+    PresignDocumentResponse:
+      type: object
+      required: [documentId, presignedUrl, expiresIn]
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        presignedUrl:
+          type: string
+          format: uri
+        expiresIn:
+          type: integer
+          description: Seconds the presigned URL remains valid (default 900)
+
+    ConfirmDocumentRequest:
+      type: object
+      properties:
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+
+    BulkDownloadRequest:
+      type: object
+      required: [documentIds]
+      properties:
+        documentIds:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+
+    BulkDownloadResponse:
+      type: object
+      required: [downloads, errors]
+      properties:
+        downloads:
+          type: array
+          items:
+            type: object
+            required: [documentId, fileName, presignedUrl]
+            properties:
+              documentId:
+                type: string
+                format: uuid
+              fileName:
+                type: string
+              presignedUrl:
+                type: string
+                format: uri
+        errors:
+          type: array
+          items:
+            type: object
+            required: [documentId, reason]
+            properties:
+              documentId:
+                type: string
+                format: uuid
+              reason:
+                type: string
+
+    DownloadUrlResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Presigned GET URL with TTL (default 15 minutes)
+
+    # -------- Errors --------
+
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+              field:
+                type: string
+                description: Set on validation errors to identify the offending field
+              code:
+                type: string
+                description: |
+                  Machine-readable error code. Known values for this surface:
+                  `DOCUMENT_NOT_FOUND`, `DOCUMENT_UPLOAD_NOT_CONFIRMED`,
+                  `DOCUMENT_ALREADY_CONFIRMED`.
+
+# ---------------------------------------------------------------------------
+# Auth Matrix
+# ---------------------------------------------------------------------------
+
+x-auth-matrix:
+  - endpoint: "POST /documents/presign"
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from session JWT"
+  - endpoint: "POST /documents/{id}/confirm"
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from session JWT"
+  - endpoint: "GET /documents"
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from session JWT"
+  - endpoint: "GET /documents/{id}"
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from session JWT"
+  - endpoint: "GET /documents/{id}/download"
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from session JWT"
+  - endpoint: "PATCH /documents/{id}/archive"
+    roles: [ADMIN]
+    scoping: "organizationId from session JWT"
+    enforced_by: "requireRole(['ADMIN']) middleware — added in this MVP"
+  - endpoint: "POST /documents/bulk-download"
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from session JWT"
+
+# ---------------------------------------------------------------------------
+# Data Flows
+# ---------------------------------------------------------------------------
+
+x-data-flow:
+
+  "Upload a new document":
+    trigger: "User picks a doc type in DocumentUploadDrawer and selects a file"
+    steps:
+      - "Frontend: POST /documents/presign with { fileName, mimeType, type, entityType, entityId, ... }"
+      - "Backend: documentService.presign() inserts a pending Document row, returns presigned PUT URL"
+      - "Frontend: PUT file directly to S3 using presignedUrl (no API gateway involvement)"
+      - "Frontend: POST /documents/{documentId}/confirm with optional { expiresAt, metadata }"
+      - "Backend: documentService.confirm() verifies S3 object exists, marks status=confirmed, archives prior of same type for onePer types"
+      - "Backend: emits DOCUMENT_REPLACED audit log per superseded prior document"
+      - "Backend: returns confirmed Document"
+      - "Frontend: refresh DocumentTable rows; show success toast"
+    services: [dispatch-ui, dispatch-api]
+
+  "View a document in the detail drawer":
+    trigger: "User clicks a row in DocumentTable"
+    steps:
+      - "Frontend: openDrawer('documentDetail', { documentId })"
+      - "Frontend: GET /documents/{id} for metadata (includes uploadedBy)"
+      - "Frontend: GET /documents/{id}/download to get presigned GET URL for the iframe/img preview"
+      - "Frontend: render iframe (PDF) or img (image) inline; metadata in the SectionCard above"
+    services: [dispatch-ui, dispatch-api]
+
+  "Replace a document":
+    trigger: "User clicks Replace from kebab or detail drawer footer"
+    steps:
+      - "Frontend: closeDrawer('documentDetail') if open"
+      - "Frontend: openDrawer('documentUpload', { context, entityType, entityId, preselectedDocType: row.type, lockDocType: true })"
+      - "Frontend: same upload-flow as new doc — POST /presign → PUT S3 → POST /confirm"
+      - "Backend: confirm() auto-archives the prior doc of the same type for onePer types"
+      - "Backend: emits DOCUMENT_REPLACED audit log entry with metadata.replacedBy = newDocId, metadata.priorS3Key"
+    services: [dispatch-ui, dispatch-api]
+
+  "Delete (archive) a document":
+    trigger: "Admin clicks Delete in kebab; confirms in ConfirmDeleteDocumentModal"
+    steps:
+      - "Frontend: openModal('confirmDeleteDocument', { documentId, fileName, type })"
+      - "Frontend: on confirm, dispatch archiveDocumentRequest({ documentId })"
+      - "Frontend: PATCH /documents/{id}/archive"
+      - "Backend: requireRole(['ADMIN']) middleware rejects non-admin with 403"
+      - "Backend: documentService.archive() sets isArchived=true; S3 object retained"
+      - "Backend: emits DOCUMENT_ARCHIVED audit log entry"
+      - "Frontend: remove row from entity slice; success toast"
+    services: [dispatch-ui, dispatch-api]
+
+  "Bulk download selected documents":
+    trigger: "User selects rows in DocumentTable and clicks Download Selected"
+    steps:
+      - "Frontend: POST /documents/bulk-download with { documentIds: [...] }"
+      - "Backend: documentService.bulkDownload() returns presigned GET URLs and per-id errors"
+      - "Frontend: open each successful URL in a new tab (or zip on the client — current behavior)"
+    services: [dispatch-ui, dispatch-api]
+
+  "View expiry status":
+    trigger: "DocumentTable row renders, or DocumentDetailDrawer opens"
+    steps:
+      - "Frontend: ExpiryBadge reads doc.expiresAt"
+      - "Frontend: differenceInCalendarDays(expiresAt, now) → null | warning | error chip"
+      - "No API call — purely client-side from data already loaded"
+    services: [dispatch-ui]

@@ -1,0 +1,14 @@
+{
+  "name": "geocoding-comparison",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compare": "node --import tsx compareGeocoding.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-location": "^3.1024.0",
+    "@aws-sdk/client-geo-places": "^3.1024.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.0"
+  }
+}
