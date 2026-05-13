@@ -24,6 +24,15 @@ interface SelectOption {
   label: string;
 }
 
+/**
+ * A preset option for the presetTiles input type.
+ * Promoted from PresetTileSelector/index.tsx to a shared export (RESEARCH.md Pitfall 5).
+ */
+interface PresetOption {
+  value: number;
+  label: string;
+}
+
 interface SubQuestionAlert {
   severity: 'success' | 'warning' | 'error';
   message: string;
@@ -55,6 +64,11 @@ interface QuestionDefinition {
   hint?: string;
   inputType: InputType;
   options?: SelectOption[];
+  /**
+   * Preset tile options for inputType: 'presetTiles'.
+   * Typed as PresetOption[] — never use any (RESEARCH.md Pitfall 5).
+   */
+  presets?: PresetOption[];
   validation?: Schema;
   subQuestions?: SubQuestionDefinition[];
   condition?: (answers: Record<string, unknown>) => boolean;
@@ -67,6 +81,7 @@ interface QuestionDefinition {
 export type {
   BorderColor,
   InputType,
+  PresetOption,
   QuestionDefinition,
   SelectOption,
   SubQuestionAlert,

@@ -5,6 +5,7 @@ import { ConfirmDialog } from 'mocho/components';
 
 import { useSelector } from 'store';
 
+import { PHASE_LABELS } from '../../constants';
 import {
   selectCompletedPhases,
   selectCurrentPhase,
@@ -14,8 +15,6 @@ import {
 import PortalHeader from '../PortalHeader';
 import PortalStepper from '../PortalStepper';
 import PortalFooterBar from '../PortalFooterBar';
-
-const PHASES = ['Company', 'Equipment', 'Drivers', 'Documents'];
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -44,7 +43,7 @@ const PortalLayout: React.FC<PortalLayoutProps> = ({
   const lastSavedAt = useSelector(selectLastSavedAt);
   const [exitOpen, setExitOpen] = useState(false);
 
-  const phaseLabel = PHASES[currentPhase - 1] ?? PHASES[0];
+  const phaseLabel = PHASE_LABELS[currentPhase - 1] ?? PHASE_LABELS[0];
 
   const handleExitConfirm = () => {
     setExitOpen(false);
@@ -55,7 +54,7 @@ const PortalLayout: React.FC<PortalLayoutProps> = ({
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', display: 'flex', flexDirection: 'column' }}>
       <PortalHeader savingAnswer={savingAnswer} lastSavedAt={lastSavedAt} />
       <PortalStepper
-        phases={PHASES}
+        phases={[...PHASE_LABELS]}
         activePhase={currentPhase}
         completedPhases={completedPhases}
       />
