@@ -11,8 +11,10 @@ import type {
   PresignResponse,
   SaveAnswerRequest,
   SaveCompanyRequest,
+  SaveCostAnalysisRequest,
   SaveDriversRequest,
   SaveEquipmentRequest,
+  SaveLanePreferencesRequest,
   SignDocumentRequest,
   VehicleEntry,
 } from 'features/carrier-portal/types';
@@ -108,6 +110,38 @@ export const saveDrivers = async (
 ): Promise<DriverEntry[]> => {
   const response = await axiosInstance.post<DataEnvelope<DriverEntry[]>>(
     '/carrier-portal/drivers',
+    data,
+    portalHeaders(token),
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Cost Analysis
+// ---------------------------------------------------------------------------
+
+export const saveCostAnalysis = async (
+  token: string,
+  data: SaveCostAnalysisRequest,
+): Promise<CarrierPortalSummary> => {
+  const response = await axiosInstance.post<DataEnvelope<CarrierPortalSummary>>(
+    '/carrier-portal/cost-analysis',
+    data,
+    portalHeaders(token),
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Lane Preferences
+// ---------------------------------------------------------------------------
+
+export const saveLanePreferences = async (
+  token: string,
+  data: SaveLanePreferencesRequest,
+): Promise<CarrierPortalSummary> => {
+  const response = await axiosInstance.post<DataEnvelope<CarrierPortalSummary>>(
+    '/carrier-portal/lane-preferences',
     data,
     portalHeaders(token),
   );

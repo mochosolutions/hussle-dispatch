@@ -4,8 +4,10 @@ import type {
   CarrierPortalSummary,
   OnboardingSession,
   SaveCompanyRequest,
+  SaveCostAnalysisRequest,
   SaveDriversRequest,
   SaveEquipmentRequest,
+  SaveLanePreferencesRequest,
 } from 'features/carrier-portal/types';
 
 // ---------------------------------------------------------------------------
@@ -22,6 +24,8 @@ interface CarrierPortalState {
   savingAnswer: boolean;
   savingPhase: boolean;
   lastSavedAt: string | null;
+  currentPhase: number;
+  lastSavedPhase: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,6 +42,8 @@ const initialState: CarrierPortalState = {
   savingAnswer: false,
   savingPhase: false,
   lastSavedAt: null,
+  currentPhase: 1,
+  lastSavedPhase: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -93,9 +99,10 @@ const carrierPortalSlice = createSlice({
       }
     },
     setCurrentPhase(state, action: PayloadAction<number>) {
-      if (state.session) {
-        state.session.currentPhase = action.payload;
-      }
+      state.currentPhase = action.payload;
+    },
+    phaseAdvanceConsumed(state) {
+      state.lastSavedPhase = null;
     },
     markPhaseCompleted(state, action: PayloadAction<number>) {
       if (state.session && !state.session.completedPhases.includes(action.payload)) {
@@ -110,6 +117,7 @@ const carrierPortalSlice = createSlice({
     },
     saveCompanySuccess(state) {
       state.savingPhase = false;
+      state.lastSavedPhase = 1;
     },
     saveCompanyFailure(state, action: PayloadAction<string>) {
       state.savingPhase = false;
@@ -123,6 +131,7 @@ const carrierPortalSlice = createSlice({
     },
     saveEquipmentSuccess(state) {
       state.savingPhase = false;
+      state.lastSavedPhase = 2;
     },
     saveEquipmentFailure(state, action: PayloadAction<string>) {
       state.savingPhase = false;
@@ -136,8 +145,37 @@ const carrierPortalSlice = createSlice({
     },
     saveDriversSuccess(state) {
       state.savingPhase = false;
+      state.lastSavedPhase = 3;
     },
     saveDriversFailure(state, action: PayloadAction<string>) {
+      state.savingPhase = false;
+      state.error = action.payload;
+    },
+
+    // Phase saves — cost analysis
+    saveCostAnalysis(state, _action: PayloadAction<SaveCostAnalysisRequest>) {
+      state.savingPhase = true;
+      state.error = null;
+    },
+    saveCostAnalysisSuccess(state) {
+      state.savingPhase = false;
+      state.lastSavedPhase = 4;
+    },
+    saveCostAnalysisFailure(state, action: PayloadAction<string>) {
+      state.savingPhase = false;
+      state.error = action.payload;
+    },
+
+    // Phase saves — lane preferences
+    saveLanePreferences(state, _action: PayloadAction<SaveLanePreferencesRequest>) {
+      state.savingPhase = true;
+      state.error = null;
+    },
+    saveLanePreferencesSuccess(state) {
+      state.savingPhase = false;
+      state.lastSavedPhase = 5;
+    },
+    saveLanePreferencesFailure(state, action: PayloadAction<string>) {
       state.savingPhase = false;
       state.error = action.payload;
     },
@@ -150,6 +188,7 @@ const carrierPortalSlice = createSlice({
     completeOnboardingSuccess(state, action: PayloadAction<OnboardingSession>) {
       state.savingPhase = false;
       state.session = action.payload;
+      state.lastSavedPhase = 6;
     },
     completeOnboardingFailure(state, action: PayloadAction<string>) {
       state.savingPhase = false;

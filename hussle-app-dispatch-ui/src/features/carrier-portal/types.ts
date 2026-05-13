@@ -133,6 +133,34 @@ export interface SaveDriversRequest {
   drivers?: DriverEntry[];
 }
 
+// ── Cost Analysis ──────────────────────────
+
+export interface SaveCostAnalysisRequest {
+  truckPayment: number;
+  insuranceCost: number;
+  fuelCostPerGallon: number;
+  milesPerGallon: number;
+  maintenanceMonthlyCost: number;
+  otherMonthlyCosts: number;
+  ownsOutright?: boolean;
+}
+
+// ── Lane Preferences ───────────────────────
+
+export interface StatePreference {
+  state: string;
+  preference: 'PREFERRED' | 'AVOIDED';
+}
+
+export interface SaveLanePreferencesRequest {
+  homeBaseCity?: string;
+  homeBaseState?: string;
+  maxDaysOut?: number;
+  preferredLanes?: string[];
+  statePreferences?: StatePreference[];
+  freightPreferences?: string[];
+}
+
 // ── Documents ──────────────────────────────
 
 export interface PortalDocument {

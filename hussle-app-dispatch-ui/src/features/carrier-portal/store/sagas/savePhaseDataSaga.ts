@@ -4,8 +4,10 @@ import type { RootState } from 'store';
 import type {
   OnboardingSession,
   SaveCompanyRequest,
+  SaveCostAnalysisRequest,
   SaveDriversRequest,
   SaveEquipmentRequest,
+  SaveLanePreferencesRequest,
 } from 'features/carrier-portal/types';
 import { carrierPortalActions } from '../slices/carrierPortalSlice';
 import * as api from '../../../../utils/api/fleet/carrierPortalApi';
@@ -70,6 +72,38 @@ function* handleSaveDrivers(action: PayloadAction<SaveDriversRequest>): Generato
   }
 }
 
+function* handleSaveCostAnalysis(action: PayloadAction<SaveCostAnalysisRequest>): Generator {
+  try {
+    const token: string | null = yield* getToken();
+    if (!token) {
+      yield put(carrierPortalActions.saveCostAnalysisFailure('No token available'));
+      return;
+    }
+    yield call(api.saveCostAnalysis, token, action.payload);
+    yield put(carrierPortalActions.saveCostAnalysisSuccess());
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to save cost analysis';
+    yield put(carrierPortalActions.saveCostAnalysisFailure(message));
+  }
+}
+
+function* handleSaveLanePreferences(
+  action: PayloadAction<SaveLanePreferencesRequest>,
+): Generator {
+  try {
+    const token: string | null = yield* getToken();
+    if (!token) {
+      yield put(carrierPortalActions.saveLanePreferencesFailure('No token available'));
+      return;
+    }
+    yield call(api.saveLanePreferences, token, action.payload);
+    yield put(carrierPortalActions.saveLanePreferencesSuccess());
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to save lane preferences';
+    yield put(carrierPortalActions.saveLanePreferencesFailure(message));
+  }
+}
+
 function* handleCompleteOnboarding(): Generator {
   try {
     const token: string | null = yield* getToken();
@@ -93,5 +127,7 @@ export function* savePhaseDataSaga(): Generator {
   yield takeLatest(carrierPortalActions.saveCompany.type, handleSaveCompany);
   yield takeLatest(carrierPortalActions.saveEquipment.type, handleSaveEquipment);
   yield takeLatest(carrierPortalActions.saveDrivers.type, handleSaveDrivers);
+  yield takeLatest(carrierPortalActions.saveCostAnalysis.type, handleSaveCostAnalysis);
+  yield takeLatest(carrierPortalActions.saveLanePreferences.type, handleSaveLanePreferences);
   yield takeLatest(carrierPortalActions.completeOnboarding.type, handleCompleteOnboarding);
 }
