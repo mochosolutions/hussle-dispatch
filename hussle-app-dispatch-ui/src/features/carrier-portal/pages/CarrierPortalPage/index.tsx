@@ -11,8 +11,11 @@ import PortalAuthGuard from '../../components/PortalAuthGuard';
 import PortalLayout from '../../components/PortalLayout';
 import PhaseForm from '../../components/PhaseForm';
 import PortalCompleteView from '../../components/PortalCompleteView';
+import { CostResultCard } from '../../components/CostResultCard';
+import type { CostInputs } from '../../components/CostResultCard';
 import {
   selectAnswers,
+  selectCarrier,
   selectCurrentPhase,
   selectLastSavedPhase,
   selectSession,
@@ -94,6 +97,7 @@ const CarrierPortalPage = () => {
   const dispatch = useDispatch();
   const { token = '' } = useParams<{ token: string }>();
   const session = useSelector(selectSession);
+  const carrier = useSelector(selectCarrier);
   const currentPhase = useSelector(selectCurrentPhase);
   const lastSavedPhase = useSelector(selectLastSavedPhase);
   const answers = useSelector(selectAnswers);
@@ -186,12 +190,26 @@ const CarrierPortalPage = () => {
             currentPhase={currentPhase}
             onBack={handleBack}
             token={token}
+            firstName={carrier?.name ?? undefined}
           />
         )}
       </Formik>
     </PortalAuthGuard>
   );
 };
+
+// ---------------------------------------------------------------------------
+// Cost-analysis field IDs (prefixed, as they appear in formik.values)
+// ---------------------------------------------------------------------------
+
+const COST_FIELD_IDS = [
+  'costAnalysis.truckPayment',
+  'costAnalysis.insuranceCost',
+  'costAnalysis.fuelCostPerGallon',
+  'costAnalysis.milesPerGallon',
+  'costAnalysis.maintenanceMonthlyCost',
+  'costAnalysis.otherMonthlyCosts',
+] as const;
 
 interface PortalPhaseRunnerProps {
   formik: {
@@ -215,6 +233,7 @@ interface PortalPhaseRunnerProps {
   currentPhase: number;
   onBack: () => void;
   token: string;
+  firstName?: string;
 }
 
 const PortalPhaseRunner: React.FC<PortalPhaseRunnerProps> = ({
@@ -224,6 +243,7 @@ const PortalPhaseRunner: React.FC<PortalPhaseRunnerProps> = ({
   currentPhase,
   onBack,
   token,
+  firstName,
 }) => {
   const dispatch = useDispatch();
   const lastDispatched = useRef<Record<string, unknown>>({});
@@ -283,6 +303,39 @@ const PortalPhaseRunner: React.FC<PortalPhaseRunnerProps> = ({
     }
     await formik.submitForm();
   }, [formik, phaseQuestions]);
+
+  // STAB-08 / BLOCKER 3: Phase 4 cost-analysis field extraction for CostResultCard.
+  // All 6 fields must be non-empty for the result card to replace the question thread.
+  const allCostFieldsPopulated =
+    currentPhase === 4 &&
+    COST_FIELD_IDS.every((id) => {
+      const v = formik.values[id];
+      return typeof v === 'number' || (typeof v === 'string' && v.trim() !== '');
+    });
+
+  const costInputs: CostInputs = {
+    truckPayment: Number(formik.values['costAnalysis.truckPayment'] ?? 0),
+    insuranceCost: Number(formik.values['costAnalysis.insuranceCost'] ?? 0),
+    fuelCostPerGallon: Number(formik.values['costAnalysis.fuelCostPerGallon'] ?? 0),
+    // Guard against 0 to prevent divide-by-zero in computeCostAnalysis.
+    milesPerGallon: Number(formik.values['costAnalysis.milesPerGallon'] ?? 1) || 1,
+    maintenanceMonthlyCost: Number(formik.values['costAnalysis.maintenanceMonthlyCost'] ?? 0),
+    otherMonthlyCosts: Number(formik.values['costAnalysis.otherMonthlyCosts'] ?? 0),
+    ownsOutright: Boolean(formik.values['costAnalysis.ownsOutright']),
+  };
+
+  // BLOCKER 3: Phase 4 — swap question thread for CostResultCard when all fields answered.
+  // onContinue dispatches saveCostAnalysis via the existing Formik.onSubmit (handleSubmit)
+  // path: submitForm() → handleSubmit(values) → buildSaveActionForPhase(4, values).
+  if (currentPhase === 4 && allCostFieldsPopulated) {
+    return (
+      <CostResultCard
+        inputs={costInputs}
+        firstName={firstName}
+        onContinue={() => void formik.submitForm()}
+      />
+    );
+  }
 
   return (
     <PortalLayout

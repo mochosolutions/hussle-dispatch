@@ -44,13 +44,14 @@ interface BuildStoreOptions {
   completedAt?: string | null;
   currentPhase?: number;
   lastSavedPhase?: number | null;
-  formValues?: Record<string, unknown>;
+  answers?: Record<string, unknown>;
 }
 
 const buildStore = ({
   completedAt = null,
   currentPhase = 1,
   lastSavedPhase = null,
+  answers = {},
 }: BuildStoreOptions = {}) => {
   const preloadedState = {
     pages: {
@@ -61,7 +62,7 @@ const buildStore = ({
               id: 'session-1',
               currentPhase,
               currentQuestionIndex: 0,
-              answers: {},
+              answers,
               completedPhases: [],
               lastActiveAt: new Date().toISOString(),
               completedAt,
@@ -70,12 +71,12 @@ const buildStore = ({
               id: 'session-1',
               currentPhase,
               currentQuestionIndex: 0,
-              answers: {},
+              answers,
               completedPhases: [],
               lastActiveAt: new Date().toISOString(),
             },
-        carrier: { id: 'carrier-1', name: 'Test Carrier', firstName: 'Test' },
-        answers: {},
+        carrier: { id: 'carrier-1', name: 'Test Carrier' },
+        answers,
         loading: false,
         error: null,
         savingAnswer: false,
@@ -169,5 +170,23 @@ describe('CarrierPortalPage — Plan 02/03/06 behavior', () => {
 
     // Assert: CostResultCard's unique text is NOT in the DOM
     expect(screen.queryByText(/cost analysis complete/i)).not.toBeInTheDocument();
+  });
+
+  it('renders CostResultCard when Phase 4 and all 6 cost fields are populated — STAB-08 wiring', () => {
+    // Arrange: Phase 4 with all 6 required cost fields in Redux answers (seeds Formik initialValues)
+    renderPage({
+      currentPhase: 4,
+      answers: {
+        'costAnalysis.truckPayment': 1200,
+        'costAnalysis.insuranceCost': 800,
+        'costAnalysis.fuelCostPerGallon': 3.75,
+        'costAnalysis.milesPerGallon': 6,
+        'costAnalysis.maintenanceMonthlyCost': 500,
+        'costAnalysis.otherMonthlyCosts': 250,
+      },
+    });
+
+    // Assert: CostResultCard is rendered (identified by its unique heading text)
+    expect(screen.getByText(/cost analysis complete/i)).toBeInTheDocument();
   });
 });
