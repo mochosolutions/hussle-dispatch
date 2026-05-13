@@ -6,8 +6,10 @@ export const selectCarrier = (state: RootState) => state.pages.carrierPortal.car
 
 export const selectAnswers = (state: RootState) => state.pages.carrierPortal.answers;
 
-export const selectCurrentPhase = (state: RootState) =>
-  state.pages.carrierPortal.session?.currentPhase ?? 1;
+export const selectCurrentPhase = (state: RootState) => state.pages.carrierPortal.currentPhase;
+
+export const selectLastSavedPhase = (state: RootState) =>
+  state.pages.carrierPortal.lastSavedPhase;
 
 export const selectIsLoading = (state: RootState) => state.pages.carrierPortal.loading;
 
