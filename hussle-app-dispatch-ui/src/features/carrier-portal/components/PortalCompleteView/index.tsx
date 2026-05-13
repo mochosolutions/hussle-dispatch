@@ -5,9 +5,8 @@ import { useSelector } from 'store';
 
 import { Body, BodyMuted, KpiLabel, PageTitle, SectionTitle } from 'components/Typography';
 
+import { PHASE_LABELS } from '../../constants';
 import { selectCarrier } from '../../store/selectors/portalSelectors';
-
-const PHASES = ['Company', 'Equipment', 'Drivers', 'Cost Analysis', 'Lane Preferences', 'Documents'];
 
 const PortalCompleteView: React.FC = () => {
   const carrier = useSelector(selectCarrier);
@@ -44,7 +43,7 @@ const PortalCompleteView: React.FC = () => {
         >
           <KpiLabel sx={{ mb: 2 }}>WHAT YOU COMPLETED</KpiLabel>
           <Stack spacing={1.5}>
-            {PHASES.map((phase) => (
+            {PHASE_LABELS.map((phase) => (
               <Box key={phase} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <CheckCircle sx={{ fontSize: 18, color: 'success.main' }} />
                 <Body>{phase}</Body>
