@@ -1,10 +1,11 @@
 ---
 phase: 1
 slug: stabilize
-status: draft
+status: approved
 shadcn_initialized: false
 preset: not applicable
 created: 2026-05-13
+reviewed_at: 2026-05-13
 ---
 
 # Phase 1 — UI Design Contract: Stabilize Carrier Onboarding
@@ -360,7 +361,7 @@ The project does not use shadcn or any third-party component registry. All compo
 - [ ] Dimension 5 Spacing: PASS — MUI 8-point scale, 4 hard-coded pixel exceptions all justified (touch targets, content widths)
 - [ ] Dimension 6 Registry Safety: PASS — no shadcn, no third-party registry, no new deps
 
-**Approval:** pending
+**Approval:** APPROVED 2026-05-13 (6/6 dimensions; 2 non-blocking FLAGs: D1 "Edit" single-word link preserved as existing pattern, D4 CostResultCard isolation zone enforcement depends on code-review discipline — add execution-checklist item to confirm sizes 24/30/48/60 + weight 700 do not appear outside `CostResultCard/index.tsx`)
 
 ---
 
