@@ -300,13 +300,14 @@ const PhaseForm: React.FC<PhaseFormProps> = ({ questions, phaseLabel, formik, to
           if (row.kind === 'single') {
             const q = row.items[0];
             return (
-              <Box key={q.id}>
+              <Box key={q.id} data-question-id={q.id}>
                 <QuestionField question={q} formik={formik} token={token} />
                 {(q.subQuestions ?? [])
                   .filter((sub) => isVisible(sub, formik.values))
                   .map((sub) => (
                     <Box
                       key={sub.id}
+                      data-question-id={sub.id}
                       sx={{
                         mt: 2,
                         ml: { xs: 1, sm: 2 },
@@ -332,7 +333,9 @@ const PhaseForm: React.FC<PhaseFormProps> = ({ questions, phaseLabel, formik, to
             >
               <Stack spacing={3}>
                 {row.items.map((q) => (
-                  <QuestionField key={q.id} question={q} formik={formik} token={token} />
+                  <Box key={q.id} data-question-id={q.id}>
+                    <QuestionField question={q} formik={formik} token={token} />
+                  </Box>
                 ))}
               </Stack>
             </Box>
