@@ -74,3 +74,488 @@
 - **`hussle-emails/` added** — React Email library for transactional email templates.
 - **`extension/` added** — Chrome extension for DAT load scraping (esbuild + Jest).
 - **Packages updated:** 4 packages detected (dispatch-api, dispatch-ui, emails, extension). See `.planning/codebase/packages.json`.
+
+<!-- GSD:project-start source:PROJECT.md -->
+## Project
+
+**FleetCommand — MVP Staging Demo**
+
+FleetCommand is a freight dispatch operating system for small-fleet dispatchers: one operator runs every load from broker booking through driver SMS prompts, portal check-ins, document collection, customer invoicing, and carrier/driver settlement. This project scopes the **final push to a staging-shippable MVP** — the dispatch loop already runs end-to-end in code; we are closing verification, UI alignment, polish, and the live trial gate.
+
+**Core Value:** **A solo dispatcher can run one real load end-to-end on staging** — dispatch → SMS-prompted driver portal check-ins → BOL/POD uploads → auto-generated customer invoice → settlement PDF — without a developer in the loop.
+
+### Constraints
+
+- **Tech stack** — Locked: Node + Express + Prisma + React 18 + MUI v5 + Redux Toolkit + Saga + Formik/Yup + Jest + Playwright. No framework swaps in this milestone.
+- **Deployment target** — Staging demo only. Real Twilio/SES/S3/AWS Location, not production-hardened.
+- **Persona** — Small fleet dispatcher (solo operator). No multi-dispatcher commission flows.
+- **Carrier types** — COMPANY_ASSET, EXTERNAL_CARRIER, LEASED_CARRIER only.
+- **Client delivery** — Email + PDF attachment only (no shipper portal).
+- **SMS policy** — Hybrid event-anchored + manual; no quiet hours; org-configurable timing.
+- **Settlement generation** — Manual only.
+- **Onboarding doc gate** — Must block until docs signed/uploaded; admin override audit-logged.
+- **Visual consistency target** — "Same building blocks across entities," not pixel-perfect.
+- **Git identity** — All commits must use the configured user identity; no `Co-Authored-By` lines.
+- **Test gates** — Done is defined by all three Done Criteria passing: Playwright E2E + manual checklist + real dispatcher trial.
+<!-- GSD:project-end -->
+
+<!-- GSD:stack-start source:codebase/STACK.md -->
+## Technology Stack
+
+- `hussle-app-dispatch-api/` — Express + Prisma backend
+- `hussle-app-dispatch-ui/` — React + Vite frontend
+- `dat-load-scraper/` — Chrome extension (Manifest V3) for DAT / Amazon Relay load board ingestion
+## Languages
+- TypeScript 5.5 (`hussle-app-dispatch-api/`, target Node)
+- TypeScript ~5.9 (`hussle-app-dispatch-ui/`, target browser via Vite)
+- TypeScript 4.8 (`dat-load-scraper/`, target Chrome MV3 / Webpack 5)
+- TSX (React) — used in both the UI app and inside API email templates (`hussle-app-dispatch-api/src/shared/emails/**/*.tsx`)
+- JSON — Prisma schema, Postman collection, tsconfig
+## Runtime
+- Node.js (no `.nvmrc` detected in any package). `hussle-app-dispatch-api/package.json` pins `@types/node` to `^20.14.10` — Node 20 is the implied target. `hussle-app-dispatch-ui/package.json` includes `@types/node` `^24.10.1` for Vite tooling.
+- Browser (Chrome) for the UI bundle and for the `dat-load-scraper` extension (Manifest V3 service worker).
+- npm (per-package `package-lock.json` files committed in each package; no `yarn.lock` / `pnpm-lock.yaml`)
+- No monorepo orchestrator (Nx / Turborepo / npm workspaces) — packages installed and built independently.
+- Lockfile: present in all three packages.
+## Frameworks
+### `hussle-app-dispatch-api/` — Express modular monolith
+- `express` `^4.19.2` — HTTP server
+- `express-async-errors` `^3.1.1` — forward async errors to centralized handler (`src/shared/middleware/errorHandler.ts`)
+- `@prisma/client` `^5.16.0` + `prisma` `^5.16.0` (devDep) — PostgreSQL ORM (`prisma/schema.prisma`)
+- `cors` `^2.8.5`, `helmet` `^7.1.0`, `cookie-parser` `^1.4.7`, `morgan` `^1.10.0`, `express-rate-limit` `^8.2.1` — standard middleware
+- `ioredis` `^5.4.1` — Redis client (`src/shared/redisClient.ts`)
+- `amqplib` `^0.10.9` — RabbitMQ event bus (`src/shared/messaging/rabbitMqEventBus.ts`)
+- `jsonwebtoken` `^9.0.3` — JWT signing for access / refresh tokens
+- `yup` `^1.4.0` — request validators (`src/<feature>/validators/`)
+- `react` `^19.2.4` + `react-dom` `^19.2.4` — used **only** for rendering React Email templates server-side (not for the UI)
+- `@react-email/components` `^0.0.36` — transactional email components
+- `nodemailer` `^8.0.3` — SMTP transport + MIME builder used by the SES sender
+- `puppeteer` `^24.40.0` — headless Chromium for invoice / settlement PDF generation (`src/shared/providers/puppeteerBrowserPool.ts`)
+- `decimal.js` `^10.4.3` — money math; serialized as strings in JSON responses (`src/app.ts` `decimalReplacer`)
+- `node-cron` `^4.2.1` — scheduled jobs
+- `archiver` `^7.0.1` — zip archive generation for document export
+- `slugify` `^1.6.6`, `uuid` `^9.0.1`, `lodash` `^4.17.23`
+- Turf geo-libraries (`@turf/helpers`, `@turf/length`, `@turf/line-slice`, `@turf/line-split`, `@turf/line-intersect`, `@turf/boolean-point-in-polygon`, all `^7.3.4`) for route geometry calculations
+- `@mocho/common` `^1.0.40` — shared error classes (`BadRequestError`, etc.) consumed by repositories and services
+- `jest` `^29.7.0` + `ts-jest` `^29.2.2` — unit and integration tests (`src/**/__tests__/**`)
+- `ts-node-dev` `^2.0.0` — hot-reload dev server (`npm run dev`)
+- `tsc` + `tsc-alias` `^1.8.16` — production build (`npm run build`)
+- `tsconfig-paths` `^4.2.0` — runtime path alias resolution
+### `hussle-app-dispatch-ui/` — React 18 SPA
+- `react` `^18.3.1` + `react-dom` `^18.3.1`
+- `vite` `^7.3.1` + `@vitejs/plugin-react` `^5.1.1` — dev server and bundler (`vite.config.ts`)
+- `@mui/material` `^5.15.21`, `@mui/system`, `@mui/lab`, `@mui/icons-material`, `@mui/x-date-pickers`, `@mui/base` — MUI v5 component system
+- `@emotion/react` `^11.11.4` + `@emotion/styled` `^11.11.5` — MUI styling engine
+- `@ant-design/icons` `^5.3.7` — secondary icon set
+- `@reduxjs/toolkit` `^2.2.6` + `react-redux` `^9.1.2` — client state (`src/store/`)
+- `redux-saga` `^1.3.0` — async side-effect orchestration; thunks are explicitly disabled
+- `redux-saga-test-plan` `^4.0.6` (devDep) — saga testing
+- `normalizr` `^3.6.2` — entity normalization for Redux slices
+- `formik` `^2.4.6` + `yup` `^1.4.0` — forms and validation
+- `axios` `^1.7.2` — HTTP client (`src/utils/axios.ts`) with cookie-based auth + 401 refresh interceptor
+- `@tanstack/react-query` `^5.51.3`, `@tanstack/react-table` `^8.19.3`, `@tanstack/react-virtual` `^3.8.3` — query/data tooling
+- `ag-grid-community` + `ag-grid-react` `^32.2.0` — data grids (wrapped by `NewDataGrid` in `src/mocho/components`)
+- `react-router` + `react-router-dom` `^6.24.1` — routing
+- `maplibre-gl` `^5.20.2` + `react-map-gl` `^8.1.0` — maps (consumes AWS-Location-backed style JSON proxied by the API at `/api/v1/maps/style.json`)
+- `@react-pdf/renderer` `^4.3.2` — client-side PDF rendering
+- `@tiptap/react` `^3.9.1` + extensions (link, image, placeholder, starter-kit) — rich text editor (`RichTextEditorField`)
+- `react-apexcharts` `^1.4.1` — charts
+- `react-dnd` `^16.0.1`, `react-dropzone` `^14.2.3`, `react-csv` `^2.2.2`, `react-slick` + `slick-carousel`, `react18-input-otp`, `react-number-format`, `react-device-detect`, `react-intl`, `framer-motion` `^11.3.4`
+- `date-fns` `^3.6.0` (preferred) + `moment` `^2.30.1` (legacy; CLAUDE.md prohibits new usage)
+- `notistack` `^3.0.1` — snackbar/toast notifications
+- `dompurify` `^3.2.5` — HTML sanitization
+- `simplebar-react` `^3.2.6` — custom scrollbars
+- `lucide-react` `^0.577.0` — additional icons
+- `lodash` `^4.17.21`, `chance` `^1.1.12`, `history` `^5.3.0`
+- `@fontsource/plus-jakarta-sans` `^5.2.8` — font
+- `jest` `^30.2.0` + `ts-jest` `^29.4.6` + `jest-environment-jsdom` `^30.2.0`
+- `@testing-library/react` `^16.3.2`, `@testing-library/user-event` `^14.6.1`, `@testing-library/jest-dom` `^6.9.1`
+- `msw` `^2.12.10` — Mock Service Worker for HTTP mocking
+- `@playwright/test` `^1.59.1` — end-to-end tests (`e2e/`, config `playwright.config.ts`)
+- `identity-obj-proxy` `^3.0.0` — CSS module mocks
+- `vite` (dev server on `:5173`; build via `tsc -b && vite build`)
+- `tsc` — type-checking against `tsconfig.app.json`
+### `dat-load-scraper/` — Chrome Extension (Manifest V3)
+- `react` `^18.2.0` + `react-dom` `^18.2.0` — popup UI only
+- `@reduxjs/toolkit` `^1.9.0` + `redux` `^4.2.0` — extension state
+- `redux-saga` `^1.2.1`, `redux-thunk` `^2.4.2`, `redux-logger` `^3.0.6`
+- `formik` `^2.2.9`
+- `lodash` `^4.17.21`
+- `typescript` `^4.8.4`
+- Manifest V3 service worker + content scripts (`src/static/manifest.json`)
+- AWS SDK v3 clients (`@aws-sdk/client-s3`, `@aws-sdk/client-sqs`) — historical / referenced in `src/utils/s3.ts`. Note: hardcoded credentials called out in `dat-load-scraper/CLAUDE.md` as a known issue.
+- `webpack` `^5.74.0` + `webpack-cli` `^4.10.0` + `webpack-merge` `^5.8.0`
+- `ts-loader` `^9.4.1`, `style-loader`, `css-loader`, `postcss-loader`
+- `clean-webpack-plugin`, `copy-webpack-plugin`, `html-webpack-plugin`
+- `cross-env` `^7.0.3` — env injection for staging/prod build targets
+- Configs: `webpack.common.js`, `webpack.dev.js`, `webpack.prod.js`
+- `jest` `^29.7.0` + `ts-jest` `^29.1.5` + `jest-environment-jsdom` `^29.7.0`
+- No lint/format scripts configured.
+## Lint & Format
+| Package | Linter | Formatter | Architecture rules |
+|---------|--------|-----------|--------------------|
+| `hussle-app-dispatch-api/` | ESLint `^10.0.2` flat config (`eslint.config.mjs`) + `typescript-eslint` `^8.56.1` | Prettier `^3.8.1` (no `.prettierrc` at API root — uses defaults) | `dependency-cruiser` `^16.10.4` via `.dependency-cruiser.cjs` (rules: `no-prisma-in-services`, `no-repo-implementations-in-services`, `no-services-to-controllers`, `no-circular`) |
+| `hussle-app-dispatch-ui/` | ESLint `^9.39.3` flat config (`eslint.config.js`) + `typescript-eslint` `^8.56.1` + `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh` | Prettier `^3.8.1` (`.prettierrc`: 2 spaces, 100 print width, single quotes, trailing commas all) | `dependency-cruiser` `^17.3.8` |
+| `dat-load-scraper/` | none configured | none configured | none |
+## Build Outputs
+- API: `hussle-app-dispatch-api/dist/` (compiled JS, entry `dist/index.js`).
+- UI: `hussle-app-dispatch-ui/dist/` (Vite static bundle served by nginx in prod — `nginx.conf` present).
+- Extension: `dat-load-scraper/dist/` (Webpack bundle loaded as unpacked extension).
+## Configuration
+| Var | Purpose | Required in prod |
+|-----|---------|------------------|
+| `PORT` | HTTP port (default `3001`) | no |
+| `NODE_ENV` | `development` / `production` / `test` | no |
+| `ENVIRONMENT_NAME` | `local` / `dev` / `staging` / `prod` | no |
+| `DATABASE_URL` | PostgreSQL connection (Prisma) | **yes (all envs)** |
+| `REDIS_URL` | Redis connection (default `redis://localhost:6379`) | no |
+| `RABBITMQ_URL` | AMQP connection (default `amqp://guest:guest@localhost:5672`) | no |
+| `JWT_SECRET` | Access-token signing key | **yes (all envs)** |
+| `REFRESH_SECRET` | Refresh-token signing key | **yes (all envs)** |
+| `COGNITO_CLIENT_ID`, `COGNITO_USER_POOL_ID` | AWS Cognito user pool | prod only |
+| `S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3 + SDK auth | prod only |
+| `SES_FROM_EMAIL` | SES sender address | prod only |
+| `STORAGE_BACKEND` | `local` or `s3` (selects provider in `src/shared/storage/index.ts`) | prod only |
+| `STORAGE_LOCAL_PATH` | Local storage root (default `./storage`) | no |
+| `ROUTE_CALCULATOR_ENABLED` | Toggle AWS Location route calculator | no |
+| `AWS_LOCATION_MAP_NAME` | Map name for `/api/v1/maps/style.json` | no |
+| `FRONTEND_URL` | Used for email/SMS links (default `http://localhost:5173`) | no |
+| `TRACKING_BASE_URL` | Public base for driver tracking links | no |
+| `PUBLIC_SHORT_BASE_URL` | Base for `/s/:slug` short-link redirects | no |
+| `ALLOWED_EXTENSION_IDS` | Comma-separated Chrome extension IDs allowed to call load-board ingest | no |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | SMTP transport (Mailpit on `:1025` in dev) | no |
+| `SMS_BACKEND` | `console` or `twilio` | prod only |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | Twilio REST credentials | prod only |
+- `VITE_API_URL` (default `http://localhost:3001`)
+- `API_URL` — switched between `https://api-staging.fleetcommand.app` (staging) and `https://api.fleetcommand.app` (prod).
+## Platform Requirements
+- Docker + Docker Compose for local stack (`docker-compose.yml`, `docker-compose.local.yml`)
+- Local services brought up by compose:
+- Node 20+ assumed for the API; Node 18+ for the UI Vite tooling.
+- API container built from `hussle-app-dispatch-api/Dockerfile.prod`
+- UI container built from `hussle-app-dispatch-ui/Dockerfile.prod` (served via `nginx.conf`)
+- Deployed via Dokploy / Hetzner Cloud — infrastructure code in `hussle-app-dispatch-infra/` and `mocho-infra-modules/` (Terraform + Ansible) wired through repo-root `Makefile`
+- CI: `Jenkinsfile.build`, `Jenkinsfile.deploy` at repo root
+<!-- GSD:stack-end -->
+
+<!-- GSD:conventions-start source:CONVENTIONS.md -->
+## Conventions
+
+## Naming Patterns
+| Element | Convention | Example |
+|---------|------------|---------|
+| API services | camelCase, one function per file | `hussle-app-dispatch-api/src/documents/services/documentService.ts` |
+| API repositories | camelCase + Prisma suffix | `entityRepositoryPrisma.ts` |
+| API controllers | camelCase + `Controller` suffix | `companyController.ts` |
+| API validators | camelCase + `Validator` suffix | `equipmentValidator.ts` |
+| API per-module DI | `compositionRoot.ts` | `hussle-app-dispatch-api/src/carriers/compositionRoot.ts` |
+| API event subscribers | camelCase + `Subscriber` suffix | `notificationSubscriber.ts`, `carrierOnboardingSubscriber.ts` |
+| UI page components | PascalCase folder with `index.tsx` | `CarrierPortalPage/index.tsx` |
+| UI shared components | PascalCase folder | `MainCard/`, `BaseFieldWrapper/` |
+| UI Redux slice | camelCase + `Slice` suffix | `uiSlice.ts`, `featurePageSlice.ts` |
+| UI Redux saga | camelCase + `Saga` suffix | `createPostSaga.ts`, `fetchAllSaga.ts` |
+| UI selectors | camelCase + `Selectors` suffix | `featureSelectors.ts` |
+| UI route files | PascalCase + `Routes` suffix | `CarrierRoutes.tsx`, `BlogRoutes.tsx` |
+| UI hooks | camelCase with `use` prefix | `useAuth.ts`, `useDirtyFormBlocker.ts` |
+| UI API client | camelCase by resource | `utils/api/carriers/index.ts` |
+| Email templates | PascalCase + `Email` suffix | `shared/emails/carrierInvite/CarrierInviteEmail.tsx` |
+| Tests | `<source>.test.ts(x)` co-located or in `__tests__/` | `documentService.test.ts` |
+| Storybook | `.stories.tsx` co-located | `*.stories.tsx` |
+- Verbs preferred: `createCarrier`, `validateStops`, `composeSmsBody`, `resolveStopTimezone`.
+- API service module factories use `create<Service>` (e.g., `createDocumentService`).
+- React props always suffixed `Props` (e.g., `ConfirmDialogProps`, `TextFieldProps`).
+- API ports suffixed `Port` (e.g., `DocumentRepoPort`, `EventDispatcherPort`).
+- Service-input types use `<Verb><Entity>Input` (e.g., `VerbEntityInput`).
+- ESLint enforces `consistent-type-definitions: 'interface'` on the API (error) and `'warn'` on the UI — prefer `interface` over `type` for object shapes.
+- Frontend env vars must start with `VITE_` (e.g., `VITE_API_URL`).
+- API exit constants in `src/shared/`.
+## Code Style
+- Tool: Prettier 3.x.
+- Configs (identical): `hussle-app-dispatch-api/.prettierrc`, `hussle-app-dispatch-ui/.prettierrc`.
+- Settings:
+- `eslint-config-prettier` is loaded last in every ESLint config — formatting rules are owned exclusively by Prettier.
+- Tool: ESLint 9/10 flat config + `typescript-eslint` 8.x.
+- API config: `hussle-app-dispatch-api/eslint.config.mjs`.
+- UI config: `hussle-app-dispatch-ui/eslint.config.js`.
+- Shared base: `js.configs.recommended`, `tseslint.configs.strict`, `tseslint.configs.stylistic`, `prettierConfig`.
+- UI adds: `eslint-plugin-react-hooks` (`...reactHooks.configs.recommended.rules`) and `eslint-plugin-react-refresh` (`only-export-components: 'warn'`).
+| Rule | API (`eslint.config.mjs`) | UI (`eslint.config.js`) |
+|------|----------|---------|
+| `max-params` | `['error', 3]` — middleware error handler exempt | `['error', 5]` |
+| `@typescript-eslint/no-explicit-any` | `'error'` (strict for new backend code) | `'warn'` (migration override) |
+| `@typescript-eslint/no-non-null-assertion` | `'error'` | `'warn'` (migration override) |
+| `@typescript-eslint/consistent-type-definitions` | `['error', 'interface']` | `'warn'` |
+| Test files (`__tests__/**`, `*.test.*`) | `no-explicit-any` relaxed to `warn`, `consistent-type-definitions` off | inherits default but parser project disabled |
+| Setting | API (`tsconfig.json`) | UI (`tsconfig.app.json`) |
+|---------|---|---|
+| `strict` | `true` | `true` |
+| `noImplicitAny` | `true` (explicit) | inherited from `strict` |
+| `noImplicitReturns` | `true` | not set |
+| `noFallthroughCasesInSwitch` | `true` | `true` |
+| `noUncheckedIndexedAccess` | `true` (very strict) | not set |
+| `noUncheckedSideEffectImports` | not set | `true` |
+| `target` / `module` | `ES2020` / `commonjs` | `ES2022` / `ESNext` (bundler) |
+| Path alias | `@/*` → `./src/*` | `store`, `utils/*`, `components/*`, `pages/*`, `hooks/*`, `types/*`, `features/*`, `mocho/*`, `@mocho/ui[/...]` |
+## Import Organization
+- `store` → `src/store`
+- `utils/*` → `src/utils/*`
+- `components/*` → `src/components/*`
+- `pages/*` → `src/pages/*`
+- `hooks/*` → `src/hooks/*`
+- `types/*` → `src/types/*`
+- `features/*` → `src/features/*`
+- `mocho/*` → `src/mocho/*`
+- `@mocho/ui[/redux|/components|/forms|/hooks|/utils|/types|/theme]` → `src/mocho[/...]`
+## Error Handling
+| Class | Status | `code` |
+|-------|--------|--------|
+| `NotFoundError` | 404 | `NOT_FOUND` |
+| `ValidationError` | 400 | `VALIDATION_ERROR` |
+| `ConflictError` | 409 | `CONFLICT` |
+| `ActiveLoadsConflictError` | 409 | `ACTIVE_LOADS` |
+| `AssignmentValidationError` | 422 | `ASSIGNMENT_BLOCKED` |
+| `UnauthorizedError` | 401 | `UNAUTHORIZED` |
+| `ForbiddenError` | 403 | `FORBIDDEN` |
+| `OrgSuspendedError` | 403 | `ORG_SUSPENDED` |
+| `InvalidTransitionError` | 422 | `INVALID_STATUS_TRANSITION` |
+| `OnboardingBlockError` | 422 | `ONBOARDING_INCOMPLETE` |
+| `ProhibitedCommodityError` | 422 | `PROHIBITED_COMMODITY` |
+| `InsuranceExpiredError` | 422 | `INSURANCE_EXPIRED` |
+| `ConcurrentEditError` | 409 | `CONCURRENT_EDIT` |
+| `SequenceError` | 500 | `SEQUENCE_ERROR` |
+| `SeatLimitReachedError` | 429 | `SEAT_LIMIT_REACHED` |
+| `LastAdminError` | 409 | `LAST_ADMIN` |
+- `hussle-app-dispatch-api/src/shared/errors/authError.ts`
+- `hussle-app-dispatch-api/src/shared/errors/goneError.ts`
+- `hussle-app-dispatch-api/src/shared/errors/missingEnvError.ts`
+- `hussle-app-dispatch-api/src/shared/errors/missingEstimatedHoursError.ts`
+- `hussle-app-dispatch-api/src/shared/errors/requestValidationError.ts`
+| Layer | File | Handles |
+|-------|------|---------|
+| Axios interceptor | `hussle-app-dispatch-ui/src/utils/axios.ts` | 401 → refresh token → retry queue → on failure: logout + redirect |
+| Saga try/catch | per-saga files in `pages/<feature>/store/sagas/` | API errors → dispatch failure action + `enqueueSnackbar` |
+| ErrorBoundary | `hussle-app-dispatch-ui/src/mocho/components/ErrorBoundary/ErrorBoundary.tsx` (via `PageWrapper`) | React render crashes → fallback UI |
+- NEVER throw generic `Error`.
+- Always `catch (error: unknown)` and narrow with `instanceof` checks or type guards.
+- NEVER use `error: any`.
+## Logging
+## Comments
+- `/** ... */` for multiline JSDoc on exported functions, hooks, and components (see `hussle-app-dispatch-ui/src/mocho/forms/hooks/useDirtyFormBlocker.ts`).
+- `//` for single-line clarifications, with a space after `//` and a blank line before.
+- Section dividers in larger test files use `// ---------------------------------------------------------------------------` (see `documentService.test.ts`).
+- `FIXME:` for known problems, `TODO:` for planned work.
+- Do not narrate obvious code.
+## Function Design
+- Accepts a single `input` argument and a single `deps` argument.
+- Depends only on port interfaces, never on Prisma directly (enforced by `dependency-cruiser` rule `no-prisma-in-services`).
+- Returns `Promise<ServiceResult<T>>` where `ServiceResult<T> = { data: T; events: DomainEvent[] }`.
+- Throws typed errors on rule violations.
+- Logs business operations via `deps.logger`.
+- `mapper(req) → input` (translates `req.body`, `req.params`, `req.query`, `req.user`, `req.scope` into service input).
+- `service(input) → { data, events }`.
+- `transformer(data) → response` (shapes the JSON payload).
+- Dispatch returned events fire-and-forget via `eventDispatcher.dispatchAll(result.events)`.
+- Shared components — `React.FC<Props>` with named export.
+- Page components — arrow function with default export.
+- Event handler naming: `handle*` for handlers defined inside the component, `on*` for handlers received as props.
+## Module Design
+- Default export for page components and layouts.
+- Named exports for utilities, types, selectors, hooks, shared components.
+- API service factories export the factory function and the inferred service type.
+## Forms & Validation
+| Layer | What | Where | Trigger |
+|-------|------|-------|---------|
+| Format validation | "Required", "must be email", "must be UUID" | `validators/*.ts` (Yup) | Express middleware before controller |
+| Business rules | "Slug must be unique", "Cannot publish without docs" | `services/*.ts` | Inside service function, throws typed error |
+## Type Safety
+- `noUncheckedIndexedAccess: true` — array/index access always yields `T | undefined`.
+- `@typescript-eslint/no-explicit-any: 'error'` — no `any` in production code.
+- `@typescript-eslint/no-non-null-assertion: 'error'` — no `!` operator.
+- Entity types derive from Prisma (`import { Entity } from '@prisma/client'`) — never hand-write entity shapes.
+- Service-input types live in `types/` and use the `<Verb><Entity>Input` pattern.
+- `@typescript-eslint/no-explicit-any: 'warn'` — migration override; new code must comply.
+- `@typescript-eslint/no-non-null-assertion: 'warn'` — same.
+- `@typescript-eslint/consistent-type-definitions: 'warn'` — prefer `interface`.
+## State Management (UI)
+- Redux Toolkit + Redux Saga only — thunks are **explicitly disabled** in the store config.
+- Typed hooks (`useSelector`, `useDispatch`) come from `store` — never from `react-redux`.
+- Dual-slice pattern: each CRUD entity has a **page slice** (UI state, composite keys like `"update:<id>"`) AND an **entity slice** (normalized via `createEntityAdapter`).
+- Factories live in `hussle-app-dispatch-ui/src/utils/redux/`: `createCrudSlice`, `createEntityModule`, `createCrudSagas`.
+- One saga per file, named `<operation><Entity>Saga.ts`. Watchers use `takeLatest` and live alongside the saga files.
+- Modals and drawers open through `pages/ui/store/uiSlice.ts` via `useDrawerActions().openDrawer(type, props)` and `useModalActions().openModal(type, props)`. Never use local `useState` for drawer/modal visibility.
+## Architectural Enforcement
+| Rule | Forbids |
+|------|---------|
+| `no-prisma-in-services` | `src/.+/services/` importing `@prisma/client` |
+| `no-repo-implementations-in-services` | `src/.+/services/` importing from `src/.+/repositories/` |
+| `no-services-to-controllers` | `src/.+/services/` importing from `src/.+/controllers/` |
+| `no-circular` | Any circular dependency |
+## Validation Commands
+| Package | Single command | What it runs |
+|---------|----------------|--------------|
+| `hussle-app-dispatch-api/` | `npm run validate` | `lint` → `lint:deps` → `check-ts` → `test` |
+| `hussle-app-dispatch-ui/` | `npm run validate` | `lint` → `lint:deps` → `check-ts` → `test` |
+<!-- GSD:conventions-end -->
+
+<!-- GSD:architecture-start source:ARCHITECTURE.md -->
+## Architecture
+
+## System Overview
+```text
+```
+## Monorepo Layout
+- `hussle-app-dispatch-api/` — Express + Prisma + Redis + RabbitMQ backend (modular monolith).
+- `hussle-app-dispatch-ui/` — React 18 + Vite SPA (internal dispatch app + public portals).
+- `hussle-app-dispatch-infra/` — Terraform/Ansible/Dokploy infrastructure (out of scope for app architecture).
+- Transactional email templates live **inside the API package** at `hussle-app-dispatch-api/src/shared/emails/`; there is no separate `hussle-emails/` workspace at the repo root.
+- There is no separate `extension/` Chrome-extension workspace at the repo root; the DAT load-scraper tooling lives under `dat-load-scraper/`.
+## Component Responsibilities
+| Component | Responsibility | File / Path |
+|-----------|----------------|-------------|
+| API startup | Boot Redis, RabbitMQ bus, Prisma, mount Express app, graceful shutdown | `hussle-app-dispatch-api/src/index.ts` |
+| Express app | Security middleware, JSON body parsing, route mounting, error handler | `hussle-app-dispatch-api/src/app.ts` |
+| Feature module router | Mounted on `/api/v1/<feature>` | e.g. `src/carriers/routes/carrierRoutes.ts` |
+| Per-module composition root | Wires repos → services → controllers + subscribers | e.g. `src/carriers/compositionRoot.ts` |
+| Domain event bus (prod) | RabbitMQ-backed pub/sub typed by `EventMap` | `src/shared/messaging/rabbitMqEventBus.ts` |
+| Domain event bus (test) | In-memory implementation of same contract | `src/shared/messaging/inMemoryEventBus.ts` |
+| Shared event bus singleton | Process-wide singleton used by module index files | `src/shared/messaging/sharedEventBus.ts` |
+| Centralized error handler | Maps typed errors → JSON; logs unknown | `src/shared/middleware/errorHandler.ts` |
+| Auth middleware | `requireAuth`, `requireRole(roles[])` | `src/middleware/auth.ts` |
+| API auth (alt) | API-key + session middleware | `src/shared/middleware/apiKeyAuth.ts`, `sessionOrApiKeyAuth.ts` |
+| Validation middleware | Yup schema runner | `src/shared/middleware/validateRequest.ts` |
+| Frontend store | Redux Toolkit store + saga middleware | `hussle-app-dispatch-ui/src/store/index.ts` |
+| Frontend root reducer | `{ pages, entities, auth }` shape | `hussle-app-dispatch-ui/src/store/reducers/index.ts` |
+| Frontend root saga | `all([...feature watchers])` | `hussle-app-dispatch-ui/src/store/sagas/rootsaga.ts` |
+| Axios client | Cookie-auth, 401 → refresh queue, logout fallback | `hussle-app-dispatch-ui/src/utils/axios.ts` |
+| Router composition | `createBrowserRouter` + per-feature route modules | `hussle-app-dispatch-ui/src/routes/index.tsx` |
+| App shell | `ThemeCustomization → Locales → Notistack → Outlet + ModalManager + DrawerManager` | `hussle-app-dispatch-ui/src/App.tsx` |
+## Pattern Overview
+- API: hexagonal-style per-feature modules — controllers → services → ports → repositories — wired by per-module `compositionRoot.ts` factories that accept shared deps (`prisma`, `eventBus`, `logger`).
+- API: cross-module communication is via the typed RabbitMQ event bus (`EventMap`), never direct service-to-service imports.
+- API: shared infrastructure (errors, middleware, messaging, scoring, prisma client) lives under `src/shared/`.
+- UI: feature folders under `src/features/<feature>/` each own their `pages/`, `components/`, `routes/`, `store/{reducers,sagas,selectors}/`, and `validators/`.
+- UI: dual-slice Redux entity pattern — every CRUD entity has a **page slice** (UI state, loading flags, query) AND an **entity slice** (`createEntityAdapter` normalized data).
+- UI: all async side effects flow through Redux Saga; thunks are disabled in the store config.
+- Both: TypeScript strict, Airbnb-derived style, no `any`/`as`/`!`, no `console.log`, no thrown generic `Error`.
+## Layers (API)
+## Layers (UI)
+## Data Flow
+### Primary API Request Path (typical write)
+### Domain Event / Side-Effect Flow
+### UI Side-Effect Flow (Redux Saga)
+### Auth Flow
+- Server data: Redux entity slices (`entities.<feature>`) populated by sagas.
+- UI state: Redux page slices (`pages.<feature>`) for query, selection, per-operation loading.
+- Modals/drawers: Redux `uiSlice` with `openModal`/`openDrawer` action — never component `useState`.
+- Auth state: `auth` slice; tokens themselves stay in cookies only.
+## Key Abstractions
+- Purpose: Typed pub/sub for domain events with optional delayed delivery.
+- Implementations: `rabbitMqEventBus.ts` (production), `inMemoryEventBus.ts` (tests).
+- All events typed by `EventMap` (`src/shared/messaging/eventMap.ts`).
+- Purpose: Single factory that wires a feature's repositories, services, controllers, and subscribers.
+- Pattern: `createXxxModule({ prismaClient, eventBus, logger, ...crossModuleQueries })` → `{ controllers, initializeSubscriber? }`.
+- Examples: `src/carriers/compositionRoot.ts`, `src/notifications/compositionRoot.ts`, `src/carrier-portal/compositionRoot.ts`.
+- Cross-module reads happen via injected query ports (see `inviteTokenRepo` from `carrier-portal/repositories/` passed into `carriers/compositionRoot.ts`).
+- Purpose: Define repository/service contracts so services depend on abstractions.
+- Examples: `CarrierApprovalPort`, `CarrierSuspendPort`, `OnboardingDetailPort`, `CarrierAuditPort`.
+- Purpose: Services return data plus domain events for the controller to publish.
+- Used throughout new-style services (carriers, settlements, invoices).
+- `CustomError` (abstract base — `src/shared/errors/authError.ts` and `commonErrors.ts` extend), `RequestValidationError`, `MissingEnvError`, `MissingEstimatedHoursError`, `GoneError`.
+- All caught by `src/shared/middleware/errorHandler.ts` and serialized to a uniform `{ errors: [...] }` response.
+- Entity slice via `createEntityAdapter`: normalized `{ ids, entities }`.
+- Page slice with composite-key loading map: `loading: { 'getAll': 'Pending', 'update:<id>': 'Pending' }`.
+- Factories at `hussle-app-dispatch-ui/src/utils/redux/` (`createEntityModule.ts`, `createCrudReducers.ts`).
+- `features/ui/drawerRegistry.ts` + `modalRegistry.ts` map a `DrawerType`/`ModalType` union to a component.
+- Open via `useDrawerActions().openDrawer('CarrierCompanyInfo', { entityId })` — IDs only, never raw entity objects.
+- Generic engine at `hussle-app-dispatch-ui/src/components/ConversationalForm/`.
+- Per-phase question schemas at `features/carrier-portal/questions/{companyQuestions,equipmentQuestions,driversQuestions,documentsQuestions}.ts`.
+## Entry Points
+- Location: `hussle-app-dispatch-api/src/index.ts`
+- Triggers: `npm start` / Docker `Dockerfile.prod` `CMD`.
+- Responsibilities: connect Redis, construct RabbitMQ bus, call `createApp({ prisma, redis })`, register `SIGTERM`/`SIGINT` shutdown, listen on `env.PORT`.
+- Location: `hussle-app-dispatch-api/src/app.ts`
+- Triggers: invoked by `src/index.ts` and by integration tests.
+- Responsibilities: install security middleware, JSON body parsing (2MB limit), cookie parsing, mount auth + feature routers, mount local-storage route (dev), install `errorHandler` last. Side-effect imports (`./audit`, `./notifications`) initialize subscribers on first import.
+- Location: `hussle-app-dispatch-ui/src/index.tsx`
+- Triggers: Vite dev server (`npm run dev`) or static build.
+- Responsibilities: wrap `RouterProvider` (`createBrowserRouter(routes, ...)`) in `ReduxProvider`; `routes` composed in `src/routes/index.tsx`.
+- Location: `hussle-app-dispatch-ui/src/App.tsx`
+- Triggers: rendered for every route under the main `App` parent in the route tree.
+- Responsibilities: `ThemeCustomization` → `Locales` → `Notistack` → `<Outlet />` + `ModalManager` + `DrawerManager`.
+- Location: `PortalShell` inline in `hussle-app-dispatch-ui/src/routes/index.tsx`
+- Triggers: parent route element for `DriverPortalRoutes` and `CarrierPortalRoutes`.
+- Responsibilities: provide theme but skip the internal-app chrome (`AppLayout`, sidebar, etc).
+## Architectural Constraints
+- **Threading:** Single Node.js event loop on the API; long work delegated to RabbitMQ subscribers or future workers. Subscribers run in-process today via the same Node runtime as the HTTP server.
+- **Global state (API):** Three intentional singletons — `prisma` (`src/config/database.ts`), `redisClient` (`src/shared/redisClient.ts`), `sharedEventBus` (`src/shared/messaging/sharedEventBus.ts`). All other state is injected through module composition roots.
+- **Global state (UI):** Single Redux store at `src/store/index.ts`. Auth tokens NEVER stored in Redux state or `localStorage` — HttpOnly cookies only.
+- **Decimal precision:** Financial fields use `decimal.js`; the API's JSON serializer registers `decimalReplacer` to emit Decimals as strings, preventing silent precision loss (`src/app.ts:47-52`). Frontend must treat money fields as strings.
+- **DI direction (API):** Services depend on port interfaces; never import `@prisma/client` directly, never import repositories directly. Enforced by `dependency-cruiser` (`npm run lint:deps`).
+- **No thunks (UI):** `configureStore` sets `thunk: false`. All async goes through Redux Saga.
+- **One UI library:** MUI v5 only (`@mui/material`, `@mui/lab`, `@ant-design/icons`). No `styled-components`, no Tailwind, no second component lib.
+- **Routes don't reach Prisma:** Routes receive pre-wired controllers from `compositionRoot.ts` and apply middleware only.
+## Anti-Patterns
+### Importing repositories directly into services
+### Cross-module service-to-service imports
+### `req.body` / `req.params` access in controllers
+### UI `useState` for popup visibility
+### Page-level `isLoading` on `PageWrapper` for list pages
+### `type` over `interface` for object shapes
+## Error Handling
+- API: `CustomError` (abstract) extended by `BadRequestError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`, `RequestValidationError`, `GoneError`, `MissingEnvError`. See `src/shared/errors/`.
+- API: controllers never `try/catch`; errors propagate automatically (`import 'express-async-errors'` at top of `src/app.ts`).
+- API: services log business events via injected `LoggerPort` (`src/shared/utils/logger.ts`).
+- UI: three error layers — axios interceptor handles `401`, saga `try/catch` handles API errors and dispatches `enqueueSnackbar` toasts, `ErrorBoundary` inside `PageWrapper` catches render crashes.
+## Cross-Cutting Concerns
+- API: `src/shared/utils/logger.ts` — a `LoggerPort` injected through composition roots. Never `console.log`.
+- UI: notifications via Redux `notificationSlice` → `notistack`; `closeSnackbar` is the only direct `notistack` import outside the slice (`utils/axios.ts:6`).
+- API: format validation via Yup schemas in `<feature>/validators/`, run by `validateRequest` middleware. Business rules live in services.
+- UI: Yup schemas in `features/<feature>/validators/`, types derived via `InferType<typeof schema>`. Used with Formik forms and `@mocho/ui` form-field components.
+- Internal app: cookie-based JWT issued by `rootAuthRouter`. Middleware: `requireAuth` (`src/middleware/auth.ts`), `requireRole`.
+- API keys: `apiKeyAuth` and `sessionOrApiKeyAuth` (`src/shared/middleware/`).
+- Portals: invite-token flow via `requireAuthOrInviteToken` (`src/shared/middleware/requireAuthOrInviteToken.ts`).
+- Route-level: `requireRole([ROLES.ADMIN, ROLES.DISPATCHER])` middleware. Roles defined in `src/config/roles.ts`.
+- Service-level: ownership / organization scoping enforced inside service functions (e.g. all carrier queries scoped by `managedByOrgId`).
+- Every list/read query passes `organizationId` (and sometimes `managedByOrgId` for carriers) through mapper → service → repository where Prisma's `where` clause enforces tenant isolation. Soft-delete enforced via `deletedAt: null`.
+- RabbitMQ queue groups (`eventBus.subscribe(event, queueGroup, handler)`) ensure each subscriber group processes a message at least once. Subscribers must be idempotent — typical pattern is `findOrCreate` or guard-by-existing-state-check.
+<!-- GSD:architecture-end -->
+
+<!-- GSD:skills-start source:skills/ -->
+## Project Skills
+
+| Skill | Description | Path |
+|-------|-------------|------|
+| bootstrap |  | `.claude/skills/bootstrap/SKILL.md` |
+| build |  | `.claude/skills/build/SKILL.md` |
+| contract-freeze |  | `.claude/skills/contract-freeze/SKILL.md` |
+| conventions |  | `.claude/skills/conventions/SKILL.md` |
+| design |  | `.claude/skills/design/SKILL.md` |
+| design-principles |  | `.claude/skills/design-principles/SKILL.md` |
+| feature-done |  | `.claude/skills/feature-done/SKILL.md` |
+| feature-init |  | `.claude/skills/feature-init/SKILL.md` |
+| improve |  | `.claude/skills/improve/SKILL.md` |
+| prd-refine |  | `.claude/skills/prd-refine/SKILL.md` |
+| screenshots |  | `.claude/skills/screenshots/SKILL.md` |
+| status |  | `.claude/skills/status/SKILL.md` |
+| testing-conventions |  | `.claude/skills/testing-conventions/SKILL.md` |
+<!-- GSD:skills-end -->
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+
+Use these entry points:
+- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd-debug` for investigation and bug fixing
+- `/gsd-execute-phase` for planned phase work
+
+Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+<!-- GSD:workflow-end -->
+
+<!-- GSD:profile-start -->
+## Developer Profile
+
+> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
+> This section is managed by `generate-claude-profile` -- do not edit manually.
+<!-- GSD:profile-end -->

@@ -135,39 +135,39 @@ Populated during roadmap creation by the gsd-roadmapper agent.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STG-01 | TBD | Pending |
-| STG-02 | TBD | Pending |
-| STG-03 | TBD | Pending |
-| STG-04 | TBD | Pending |
-| STG-05 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| UI-06 | TBD | Pending |
-| UI-07 | TBD | Pending |
-| POL-01 | TBD | Pending |
-| POL-02 | TBD | Pending |
-| POL-03 | TBD | Pending |
-| POL-04 | TBD | Pending |
-| POL-05 | TBD | Pending |
-| POL-06 | TBD | Pending |
-| POL-07 | TBD | Pending |
-| POL-08 | TBD | Pending |
-| POL-09 | TBD | Pending |
-| E2E-01 | TBD | Pending |
-| E2E-02 | TBD | Pending |
-| MAN-01 | TBD | Pending |
-| MAN-02 | TBD | Pending |
-| TRIAL-01 | TBD | Pending |
-| TRIAL-02 | TBD | Pending |
+| STG-01 | Phase 1 | Pending |
+| STG-02 | Phase 1 | Pending |
+| STG-03 | Phase 1 | Pending |
+| STG-04 | Phase 1 | Pending |
+| STG-05 | Phase 1 | Pending |
+| UI-01 | Phase 2 | Pending |
+| UI-02 | Phase 2 | Pending |
+| UI-03 | Phase 2 | Pending |
+| UI-04 | Phase 2 | Pending |
+| UI-05 | Phase 2 | Pending |
+| UI-06 | Phase 2 | Pending |
+| UI-07 | Phase 2 | Pending |
+| POL-01 | Phase 3 | Pending |
+| POL-02 | Phase 3 | Pending |
+| POL-03 | Phase 3 | Pending |
+| POL-04 | Phase 3 | Pending |
+| POL-05 | Phase 3 | Pending |
+| POL-06 | Phase 3 | Pending |
+| POL-07 | Phase 3 | Pending |
+| POL-08 | Phase 3 | Pending |
+| POL-09 | Phase 3 | Pending |
+| E2E-01 | Phase 4 | Pending |
+| E2E-02 | Phase 4 | Pending |
+| MAN-01 | Phase 5 | Pending |
+| MAN-02 | Phase 5 | Pending |
+| TRIAL-01 | Phase 6 | Pending |
+| TRIAL-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
-- Mapped to phases: 0 (roadmap not yet created)
-- Unmapped: 27 ⚠️ (will resolve after roadmap)
+- Mapped to phases: 27 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-13*
-*Last updated: 2026-05-13 after initial definition*
+*Last updated: 2026-05-13 after roadmap creation (traceability populated)*
