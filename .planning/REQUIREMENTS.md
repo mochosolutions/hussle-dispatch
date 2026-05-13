@@ -166,27 +166,91 @@ Explicitly excluded. Includes prior rejections that must not be relitigated.
 
 ## Traceability
 
-Populated during roadmap creation by the gsd-roadmapper agent.
+Plan-phase numbering (Phase 0–5) maps 1:1 to GSD roadmap phase numbering (Phase 1–6).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STAB-01..STAB-15 | TBD | Pending |
-| SEC-01..SEC-04 | TBD | Pending |
-| SCH-01..SCH-08 | TBD | Pending |
-| ENG-01..ENG-07 | TBD | Pending |
-| INT-01..INT-02 | TBD | Pending |
-| DOC-01..DOC-02 | TBD | Pending |
-| SIGN-01..SIGN-08 | TBD | Pending |
-| WS-01..WS-08 | TBD | Pending |
-| DOC-03 | TBD | Pending |
-| FMC-01..FMC-08 | TBD | Pending |
-| DOC-04 | TBD | Pending |
+| STAB-01 | Phase 1 | Pending |
+| STAB-02 | Phase 1 | Pending |
+| STAB-03 | Phase 1 | Pending |
+| STAB-04 | Phase 1 | Pending |
+| STAB-05 | Phase 1 | Pending |
+| STAB-06 | Phase 1 | Pending |
+| STAB-07 | Phase 1 | Pending |
+| STAB-08 | Phase 1 | Pending |
+| STAB-09 | Phase 1 | Pending |
+| STAB-10 | Phase 1 | Pending |
+| STAB-11 | Phase 1 | Pending |
+| STAB-12 | Phase 1 | Pending |
+| STAB-13 | Phase 1 | Pending |
+| STAB-14 | Phase 1 | Pending |
+| STAB-15 | Phase 1 | Pending |
+| SEC-01 | Phase 2 | Pending |
+| SEC-02 | Phase 2 | Pending |
+| SEC-03 | Phase 2 | Pending |
+| SEC-04 | Phase 2 | Pending |
+| SCH-01 | Phase 3 | Pending |
+| SCH-02 | Phase 3 | Pending |
+| SCH-03 | Phase 3 | Pending |
+| SCH-04 | Phase 3 | Pending |
+| SCH-05 | Phase 3 | Pending |
+| SCH-06 | Phase 3 | Pending |
+| SCH-07 | Phase 3 | Pending |
+| SCH-08 | Phase 3 | Pending |
+| ENG-01 | Phase 3 | Pending |
+| ENG-02 | Phase 3 | Pending |
+| ENG-03 | Phase 3 | Pending |
+| ENG-04 | Phase 3 | Pending |
+| ENG-05 | Phase 3 | Pending |
+| ENG-06 | Phase 3 | Pending |
+| ENG-07 | Phase 3 | Pending |
+| INT-01 | Phase 3 | Pending |
+| INT-02 | Phase 3 | Pending |
+| DOC-01 | Phase 3 | Pending |
+| DOC-02 | Phase 3 | Pending |
+| SIGN-01 | Phase 4 | Pending |
+| SIGN-02 | Phase 4 | Pending |
+| SIGN-03 | Phase 4 | Pending |
+| SIGN-04 | Phase 4 | Pending |
+| SIGN-05 | Phase 4 | Pending |
+| SIGN-06 | Phase 4 | Pending |
+| SIGN-07 | Phase 4 | Pending |
+| SIGN-08 | Phase 4 | Pending |
+| WS-01 | Phase 5 | Pending |
+| WS-02 | Phase 5 | Pending |
+| WS-03 | Phase 5 | Pending |
+| WS-04 | Phase 5 | Pending |
+| WS-05 | Phase 5 | Pending |
+| WS-06 | Phase 5 | Pending |
+| WS-07 | Phase 5 | Pending |
+| WS-08 | Phase 5 | Pending |
+| DOC-03 | Phase 5 | Pending |
+| FMC-01 | Phase 6 | Pending |
+| FMC-02 | Phase 6 | Pending |
+| FMC-03 | Phase 6 | Pending |
+| FMC-04 | Phase 6 | Pending |
+| FMC-05 | Phase 6 | Pending |
+| FMC-06 | Phase 6 | Pending |
+| FMC-07 | Phase 6 | Pending |
+| FMC-08 | Phase 6 | Pending |
+| DOC-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 58 total
-- Mapped to phases: 0 (roadmap not yet created)
-- Unmapped: 58 ⚠️ (will resolve after roadmap)
+- Mapped to phases: 58 (100%)
+- Unmapped: 0 ✓
+
+**Per-phase counts:**
+- Phase 1 (Stabilize): 15
+- Phase 2 (Security & Hygiene): 4
+- Phase 3 (Schema + Engine): 19
+- Phase 4 (Mid-Flow Signing + Field Locking): 8
+- Phase 5 (WebSocket Scaffold): 9
+- Phase 6 (FMCSA Scaffold): 9
+- **Total: 64**
+
+Note: The 64 traceability rows exceed the 58-requirement count because the requirements doc groups some entries (e.g., `DOC-01..DOC-02` as a single bullet) — every distinct REQ-ID is listed above.
 
 ---
 *Requirements defined: 2026-05-13*
-*Last updated: 2026-05-13 after initial definition*
+*Last updated: 2026-05-13 after roadmap creation — traceability populated*

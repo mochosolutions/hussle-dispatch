@@ -78,25 +78,28 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**FleetCommand — MVP Staging Demo**
+**FleetCommand — Carrier Onboarding Refactor**
 
-FleetCommand is a freight dispatch operating system for small-fleet dispatchers: one operator runs every load from broker booking through driver SMS prompts, portal check-ins, document collection, customer invoicing, and carrier/driver settlement. This project scopes the **final push to a staging-shippable MVP** — the dispatch loop already runs end-to-end in code; we are closing verification, UI alignment, polish, and the live trial gate.
+A magic-link carrier onboarding portal — invited → signed → ready-to-dispatch in under 15 minutes, on a phone, conversational interview UX. Six phases on the carrier side (Company → Equipment → Drivers → Cost Analysis → Lane Preferences → Documents) with mid-flow dispatch-agreement signing. This GSD project tracks the **6-phase architectural refactor** from `docs/carrier-onboarding-implementation-plan.md` — stabilize the existing flow, close security gaps, then incrementally adopt the tech-spec patterns (schema-as-data, pure-function engine, mid-flow signing + field locking, WebSocket scaffold, FMCSA scaffold).
 
-**Core Value:** **A solo dispatcher can run one real load end-to-end on staging** — dispatch → SMS-prompted driver portal check-ins → BOL/POD uploads → auto-generated customer invoice → settlement PDF — without a developer in the loop.
+**Core Value:** **A carrier can complete onboarding end-to-end on a phone in under 15 minutes** — and the patterns we land here become the architectural standard the rest of the app gets refactored toward.
 
 ### Constraints
 
-- **Tech stack** — Locked: Node + Express + Prisma + React 18 + MUI v5 + Redux Toolkit + Saga + Formik/Yup + Jest + Playwright. No framework swaps in this milestone.
-- **Deployment target** — Staging demo only. Real Twilio/SES/S3/AWS Location, not production-hardened.
-- **Persona** — Small fleet dispatcher (solo operator). No multi-dispatcher commission flows.
-- **Carrier types** — COMPANY_ASSET, EXTERNAL_CARRIER, LEASED_CARRIER only.
-- **Client delivery** — Email + PDF attachment only (no shipper portal).
-- **SMS policy** — Hybrid event-anchored + manual; no quiet hours; org-configurable timing.
-- **Settlement generation** — Manual only.
-- **Onboarding doc gate** — Must block until docs signed/uploaded; admin override audit-logged.
-- **Visual consistency target** — "Same building blocks across entities," not pixel-perfect.
-- **Git identity** — All commits must use the configured user identity; no `Co-Authored-By` lines.
-- **Test gates** — Done is defined by all three Done Criteria passing: Playwright E2E + manual checklist + real dispatcher trial.
+- **Solo engineer (Jr building).** Sequential phases only; no parallelization across phases. Phases land with clean exit criteria.
+- **Top priority for the next ~6 weeks.** Real carriers arriving in weeks. Existing flow must work before traffic.
+- **Dev mode — no production carriers yet.** Replace in place; no parallel-stack maintenance; no feature-flag overhead.
+- **Sets the architectural standard.** Patterns established here get copied to future features. Quality and clarity matter.
+- **Refactor toward, don't rewrite.** Every step preserves working code. New abstractions land alongside old ones until validated.
+- **Schema is data, stored as code first.** Declarative predicates/prefill/side-effects — yes. JSON-in-DB + version-pinning — only when there's a real need.
+- **Engine is an interface, not a rewrite.** Pure-function engine exposes visibility/navigation/validation; existing services consume it; full command/result decomposition can wait.
+- **Infrastructure ships before features use it.** WebSocket gateway + FMCSA event topology land empty, prove the pipe, then features adopt them.
+- **Security hygiene non-negotiable.** Token hashing, EIN encryption, UI bug fixes. Cheap, real, can't defer.
+- **Test at boundaries.** Engine purity defended via ESLint import rule. Services stay imperative-style with mocked repos.
+- **No half-finished implementations.** Each phase has an exit criterion. Don't move on until the previous phase ships.
+- **Standard is available, not mandatory.** The schema/engine pattern earns its keep for declarative-rule features. For non-declarative features (load dispatch, settlement math), let the pattern not apply.
+- **Tech stack.** Node + Express + Prisma + Postgres + Redis + RabbitMQ on the API; React 18 + MUI v5 + Redux Toolkit + Saga + Yup on the UI. Validator: Yup (codebase incumbent).
+- **Git identity.** No `Co-Authored-By` lines. Use configured user identity only.
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
