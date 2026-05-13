@@ -13,6 +13,7 @@ import PortalCompleteView from '../../components/PortalCompleteView';
 import {
   selectAnswers,
   selectCurrentPhase,
+  selectLastSavedPhase,
   selectSession,
 } from '../../store/selectors/portalSelectors';
 import { carrierPortalActions } from '../../store/slices/carrierPortalSlice';
@@ -20,6 +21,42 @@ import { PHASE_LABELS, QUESTIONS_BY_PHASE, TOTAL_PHASES } from '../../constants'
 import { buildPhaseSchema } from '../../validators/buildPhaseSchema';
 
 const AUTOSAVE_DEBOUNCE_MS = 500;
+
+// ---------------------------------------------------------------------------
+// Phase-save helpers
+// ---------------------------------------------------------------------------
+
+/** Strip a namespace prefix from a flat form-values object (e.g. 'company.' → bare keys). */
+const stripPrefix = (
+  values: Record<string, unknown>,
+  prefix: string,
+): Record<string, unknown> => {
+  const result: Record<string, unknown> = {};
+  Object.entries(values).forEach(([key, value]) => {
+    if (key.startsWith(prefix)) {
+      result[key.slice(prefix.length)] = value;
+    }
+  });
+  return result;
+};
+
+/** Returns the correct saga action creator call for the given phase + form values. */
+const buildSaveActionForPhase = (phase: number, values: Record<string, unknown>) => {
+  switch (phase) {
+    case 1:
+      return carrierPortalActions.saveCompany(stripPrefix(values, 'company.'));
+    case 2:
+      return carrierPortalActions.saveEquipment(stripPrefix(values, 'equipment.'));
+    case 3:
+      return carrierPortalActions.saveDrivers(stripPrefix(values, 'drivers.'));
+    case 4:
+      return carrierPortalActions.saveCostAnalysis(stripPrefix(values, 'costAnalysis.'));
+    case 5:
+      return carrierPortalActions.saveLanePreferences(stripPrefix(values, 'lanePreferences.'));
+    default:
+      return carrierPortalActions.completeOnboarding();
+  }
+};
 
 const collectFieldIds = (questions: QuestionDefinition[]): string[] => {
   const ids: string[] = [];
@@ -39,6 +76,7 @@ const CarrierPortalPage = () => {
   const { token = '' } = useParams<{ token: string }>();
   const session = useSelector(selectSession);
   const currentPhase = useSelector(selectCurrentPhase);
+  const lastSavedPhase = useSelector(selectLastSavedPhase);
   const answers = useSelector(selectAnswers);
 
   const phaseQuestions = QUESTIONS_BY_PHASE[currentPhase] ?? [];
@@ -60,19 +98,36 @@ const CarrierPortalPage = () => {
     }
   }, [dispatch, currentPhase]);
 
-  const handleSubmit = useCallback(() => {
-    dispatch(carrierPortalActions.markPhaseCompleted(currentPhase));
+  // STAB-01: Dispatch phase-save saga action; final phase dispatches completeOnboarding.
+  // Formik calls onSubmit with the current form values after validation passes.
+  const handleSubmit = useCallback(
+    (values: Record<string, unknown>) => {
+      if (currentPhase < TOTAL_PHASES) {
+        dispatch(buildSaveActionForPhase(currentPhase, values));
+      } else {
+        dispatch(carrierPortalActions.completeOnboarding());
+      }
+    },
+    [dispatch, currentPhase],
+  );
+
+  // STAB-01 rising-edge: advance phase once save saga signals success via lastSavedPhase.
+  useEffect(() => {
+    if (lastSavedPhase === null) return;
+    if (lastSavedPhase !== currentPhase) return;
+
     if (currentPhase < TOTAL_PHASES) {
       dispatch(carrierPortalActions.setCurrentPhase(currentPhase + 1));
-    } else {
-      dispatch(
-        carrierPortalActions.sessionCompleted({ completedAt: new Date().toISOString() }),
-      );
+      if (typeof window !== 'undefined') {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+      }
     }
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [dispatch, currentPhase]);
+    // For currentPhase === TOTAL_PHASES, completeOnboardingSuccess (Plan 02 reducer) sets
+    // lastSavedPhase = 6 AND populates state.session.completedAt from the API payload.
+    // The existing session.completedAt render branch swaps to PortalCompleteView (BLOCKER 2).
+    dispatch(carrierPortalActions.phaseAdvanceConsumed());
+  }, [lastSavedPhase, currentPhase, dispatch]);
 
   const validate = useCallback(
     (values: Record<string, unknown>) => {
