@@ -57,24 +57,42 @@ Inherits the MUI 8-point spacing scale (`theme.spacing(n)` = `n * 8px`). All `sx
 
 ## Typography
 
-The MUI theme is the source of truth. Phase 1 declares the *roles* used and the size/weight pairing each role resolves to. Do not invent new variants.
+The MUI theme is the source of truth. Phase 1's type system is declared in **two separate tables**: the system-wide thread scale (Table 1, reusable across every surface in the conversational flow) and the **CostResultCard isolation zone** (Table 2, scoped exclusively to one full-viewport result component and explicitly NOT part of the system type scale).
+
+### Table 1 — Conversational Thread Scale (system contract)
+
+This is the design-system type scale for Phase 1. Everything in the conversational thread, header chrome, footer chrome, sub-questions, answered cards, sub-answers, hints, saving indicators, snackbars, and stepper labels resolves to one of these rows. Reusable everywhere.
 
 | Role | Size | Weight | Line Height | MUI Token / Helper | Used For |
 |------|------|--------|-------------|--------------------|----------|
-| Body | 16px | 400 | 1.5 | `Body` helper / `body1` | Conversational thread default copy, hint text body |
-| Body strong | 16px | 600 | 1.4 | `BodyStrong` helper | Answered-card value, sub-answer value |
-| Body muted | 14px | 400 | 1.5 | `BodyMuted` / `body2` color `text.secondary` | Hints, disclaimers, "Saving…" indicator |
-| Meta / overline | 12px | 600 (uppercase, letter-spacing 1px) | 1.4 | `Meta` / `KpiLabel` / `overline` | Phase breadcrumb ("EQUIPMENT"), category tags ("DOT REGISTRATION — REQUIRED"), result-card labels ("YOUR BREAK-EVEN RATE PER MILE") |
-| Question (active) | 20px | 600 | 1.3 | `sx={{ fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}` | Active question label in the thread |
-| Sub-question (active) | 18px | 600 | 1.3 | Already implemented in `SubQuestion.tsx` | Sub-question label |
-| Result heading | 30px | 700 | 1.2 | `sx={{ fontSize: { xs: 24, sm: 30 }, fontWeight: 700, lineHeight: 1.2 }}` | "Here's your real cost picture, {firstName}." |
-| Result value (break-even) | 48px | 700 | 1.0 | `sx={{ fontSize: { xs: 36, sm: 48 }, fontWeight: 700, lineHeight: 1 }}` | "$1.94" animated value |
-| Result value (minimum rate) | 60px | 700 | 1.0 | `sx={{ fontSize: { xs: 44, sm: 60 }, fontWeight: 700, lineHeight: 1 }}` color `success.light` | "$2.44" animated value |
-| Expense tile value | 24px | 700 | 1.2 | `sx={{ fontSize: 24, fontWeight: 700 }}` | Monthly Fixed / Variable / Fuel-per-mile values |
+| Meta / overline | 12 | 600 (uppercase, letter-spacing 1px) | 1.4 | `Meta` / `KpiLabel` / `overline` | Phase breadcrumb, category tags, stepper compressed label, phase divider |
+| Body muted | 14 | 400 | 1.5 | `BodyMuted` / `body2` color `text.secondary` | Hints, disclaimers, "Saving…" indicator, helper text |
+| Body | 16 | 400 | 1.5 | `Body` / `body1` | Conversational thread default copy |
+| Body strong | 16 | 600 | 1.4 | `BodyStrong` | Answered-card value, sub-answer value |
+| Sub-question (active) | 18 | 600 | 1.3 | `SubQuestion.tsx` (existing) | Sub-question label |
+| Question (active) | 20 | 600 | 1.3 | `sx={{ fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}` | Active question label |
 
-**5 effective thread sizes** (each serving a distinct semantic role): meta 12, body muted 14, body 16, sub-question 18, active question 20. Plus **4 display sizes** reserved exclusively for `CostResultCard` (expense-tile 24, heading 30, break-even 48, minimum rate 60). The result-card display sizes do not bleed into any other surface. Total declared sizes across all surfaces: 9.
+**Thread scale totals: 5 sizes (12, 14, 16, 18, 20), 2 weights (400, 600).** Each size carries a distinct semantic role. The single +2px step from sub-question (18) to active-question (20) is the contract — both visual *and* semantic hierarchy is preserved at phone reading distance.
 
-Only **2 weights** in regular use across the conversational thread: **400** (regular) and **600** (semibold). **700** (bold) is reserved exclusively for the four `CostResultCard` display values (heading 30, break-even 48, minimum rate 60, expense tile 24). No thread-level surface uses 700.
+### Table 2 — CostResultCard Display ONLY (declared isolation zone, NOT part of the system contract)
+
+These four display sizes and weight 700 are **scoped exclusively to `CostResultCard`**. They are NOT reusable outside that component. Any future component that wants a similar treatment must declare its own isolation zone — the system type scale (Table 1) does NOT include these values.
+
+| Role | Size | Weight | Line Height | Used For |
+|------|------|--------|-------------|----------|
+| Expense tile value | 24 | 700 | 1.2 | Monthly Fixed / Variable / Fuel-per-mile values |
+| Result heading | 30 (xs: 24) | 700 | 1.2 | "Here's your real cost picture, {firstName}." |
+| Break-even value | 48 (xs: 36) | 700 | 1.0 | "$1.94" animated value |
+| Minimum rate value | 60 (xs: 44) | 700 | 1.0 | "$2.44" animated value, `color: success.light` |
+
+**Isolation-zone totals: 4 display sizes, 1 weight (700).** These four sizes and weight 700 do not appear on any other surface in the application. CostResultCard is a full-viewport, dark-overlay, single-occurrence result screen (rendered once per onboarding session at the end of phase 4) — analogous to a data-visualization component or a celebratory results card. Treating its display values as a system-level type scale would over-constrain a one-off surface and dilute the system contract for the surfaces that actually compose the conversational thread.
+
+**Isolation commitment (explicit in spec):**
+> The CostResultCard display sizes (24/30/48/60) and weight 700 are **declared not-part-of-the-system-type-scale**. They are NOT reusable outside CostResultCard. ESLint / code-review / future Phase 2 onward must treat any reuse of these values on a non-CostResultCard surface as a violation. The system type scale for the project is Table 1 only.
+
+**System type scale (Table 1):** 5 thread sizes, 2 weights — within the system constraint of "constrained scale with distinct semantic roles per row."
+
+**CostResultCard isolation zone (Table 2):** 4 display sizes + weight 700, declared not-part-of-the-system-type-scale and not reusable outside that component.
 
 ---
 
@@ -339,7 +357,7 @@ The project does not use shadcn or any third-party component registry. All compo
 - [ ] Dimension 1 Copywriting: PASS — phase labels, CTAs, validation snackbar, saving indicators, sub-question category tags all declared verbatim
 - [ ] Dimension 2 Visuals: PASS — component inventory mapped 1:1 to STAB requirements; visual contracts defer to legacy designs where they specify pixels
 - [ ] Dimension 3 Color: PASS — uses existing MUI palette tokens only; one justified dark surface for `CostResultCard`; accent reserved-for list is explicit
-- [ ] Dimension 4 Typography: PASS — 5 thread sizes (12/14/16/18/20) + 4 result-card display sizes (24/30/48/60) isolated to CostResultCard. 2 weights in the thread (400/600). 700 reserved exclusively for the 4 CostResultCard display values. No thread surface uses 700.
+- [ ] Dimension 4 Typography: PASS — Thread scale (Table 1) declares 5 sizes (12/14/16/18/20) with 2 weights (400/600). CostResultCard (Table 2) is a declared isolation zone: 4 display sizes (24/30/48/60) + weight 700, scoped exclusively to that one full-viewport component, not reusable elsewhere, and explicitly not part of the system type scale.
 - [ ] Dimension 5 Spacing: PASS — MUI 8-point scale, 4 hard-coded pixel exceptions all justified (touch targets, content widths)
 - [ ] Dimension 6 Registry Safety: PASS — no shadcn, no third-party registry, no new deps
 
