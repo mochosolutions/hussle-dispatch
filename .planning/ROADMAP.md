@@ -34,10 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 8 plans
 - [x] 01-01-PLAN.md — Wave 0 test scaffolds (jest harnesses + playwright stub for STAB-01/02/03/05/07/08/10/11/12/14)
 - [x] 01-02-PLAN.md — Slice + saga foundation (lift currentPhase, lastSavedPhase rising-edge, 2 new save action triples + saga workers + API client; STAB-01 mechanism + STAB-03 saga + STAB-05)
-- [ ] 01-03-PLAN.md — Phase metadata constants + PortalLayout migration (STAB-04 PortalLayout side + STAB-13)
-- [ ] 01-04-PLAN.md — Cost analysis schema + CostResultCard rebuild + questionSchema PresetOption (STAB-06, STAB-08)
-- [ ] 01-05-PLAN.md — Lane preferences schema (STAB-09)
-- [ ] 01-06-PLAN.md — CarrierPortalPage wiring: saga-driven Save & Continue + validation snackbar + scroll-to-error + completeOnboarding dispatch + constants imports (STAB-01 full, STAB-02, STAB-03 full, STAB-04 page side)
+- [x] 01-03-PLAN.md — Phase metadata constants + PortalLayout migration (STAB-04 PortalLayout side + STAB-13)
+- [x] 01-04-PLAN.md — Cost analysis schema + CostResultCard rebuild + questionSchema PresetOption (STAB-06, STAB-08)
+- [x] 01-05-PLAN.md — Lane preferences schema (STAB-09)
+- [x] 01-06-PLAN.md — CarrierPortalPage wiring: saga-driven Save & Continue + validation snackbar + scroll-to-error + completeOnboarding dispatch + constants imports (STAB-01 full, STAB-02, STAB-03 full, STAB-04 page side)
 - [ ] 01-07-PLAN.md — Component wiring: InputRenderer presetTiles case + StateGrid a11y attrs + SubQuestion typography 16/600 (STAB-07, STAB-10, STAB-11, STAB-12)
 - [ ] 01-08-PLAN.md — Playwright e2e flip + SMOKE-CHECKLIST.md + CI hook (STAB-14, STAB-15)
 **UI hint**: yes
