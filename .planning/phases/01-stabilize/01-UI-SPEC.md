@@ -68,11 +68,10 @@ This is the design-system type scale for Phase 1. Everything in the conversation
 | Meta / overline | 12 | 600 (uppercase, letter-spacing 1px) | 1.4 | `Meta` / `KpiLabel` / `overline` | Phase breadcrumb, category tags, stepper compressed label, phase divider |
 | Body muted | 14 | 400 | 1.5 | `BodyMuted` / `body2` color `text.secondary` | Hints, disclaimers, "Saving…" indicator, helper text |
 | Body | 16 | 400 | 1.5 | `Body` / `body1` | Conversational thread default copy |
-| Body strong | 16 | 600 | 1.4 | `BodyStrong` | Answered-card value, sub-answer value |
-| Sub-question (active) | 18 | 600 | 1.3 | `SubQuestion.tsx` (existing) | Sub-question label |
+| Body strong / Sub-question (active) | 16 | 600 | 1.4 | `BodyStrong` (re-used in `SubQuestion.tsx`) | Answered-card value, sub-answer value, **sub-question label** (already visually differentiated by the 4px colored left border, category tag, and indented layout — size emphasis is not needed) |
 | Question (active) | 20 | 600 | 1.3 | `sx={{ fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}` | Active question label |
 
-**Thread scale totals: 5 sizes (12, 14, 16, 18, 20), 2 weights (400, 600).** Each size carries a distinct semantic role. The single +2px step from sub-question (18) to active-question (20) is the contract — both visual *and* semantic hierarchy is preserved at phone reading distance.
+**Thread scale totals: 4 sizes (12, 14, 16, 20), 2 weights (400, 600).** Each size carries a distinct semantic role. The sub-question label collapses into the 16/600 row (Body strong) — it is already visually distinguished from regular body copy by the colored left border, the category tag, the indent (`ml: 4` on `SubAnswer`), and the 600 weight; an additional +2px size step would add noise without semantic value. The +4px jump from 16 to 20 preserves the active-question emphasis on phone.
 
 ### Table 2 — CostResultCard Display ONLY (declared isolation zone, NOT part of the system contract)
 
@@ -90,7 +89,7 @@ These four display sizes and weight 700 are **scoped exclusively to `CostResultC
 **Isolation commitment (explicit in spec):**
 > The CostResultCard display sizes (24/30/48/60) and weight 700 are **declared not-part-of-the-system-type-scale**. They are NOT reusable outside CostResultCard. ESLint / code-review / future Phase 2 onward must treat any reuse of these values on a non-CostResultCard surface as a violation. The system type scale for the project is Table 1 only.
 
-**System type scale (Table 1):** 5 thread sizes, 2 weights — within the system constraint of "constrained scale with distinct semantic roles per row."
+**System type scale (Table 1):** 4 thread sizes (12/14/16/20), 2 weights (400/600) — within the system constraint of "constrained scale with distinct semantic roles per row."
 
 **CostResultCard isolation zone (Table 2):** 4 display sizes + weight 700, declared not-part-of-the-system-type-scale and not reusable outside that component.
 
@@ -221,7 +220,7 @@ The executor builds or finishes the components below. Each row maps to a STAB re
 |-----------|------|------|--------|
 | `PresetTileSelector` | `features/carrier-portal/components/PresetTileSelector/index.tsx` | STAB-07 | **Built.** Pill chips via MUI `Chip` filled/outlined; Custom chip reveals inline number input. Executor must: (1) wire it into `InputRenderer` `presetTiles` case (currently a placeholder — STAB-12); (2) verify currency presets render with `$` prefix when a question opts in; (3) confirm touch target ≥ 32px height (default MUI `Chip` is 32 — acceptable on phone with the 8px gap). |
 | `StateGrid` | `features/carrier-portal/components/StateGrid/index.tsx` | STAB-10 | **Built.** 48×48 tiles, 3-state cycle Neutral → Preferred → Avoided → Neutral, legend strip above grid. Already imported by `InputRenderer` `stateGrid` case. Executor must: (1) verify cycle order matches the spec (neutral start, removes key from object on neutral); (2) add `role="button"` + `aria-pressed` + `aria-label="{stateCode} preference: {Neutral|Preferred|Avoided}, tap to cycle"` for screen readers; (3) verify legend uses `Meta` typography helper (already does). |
-| `SubQuestion` | `components/ConversationalForm/SubQuestion.tsx` | STAB-11 | **Built.** 4px `borderLeft` in blue/green/red/grey via MUI tokens. Verify `data-question-id` attribute is present (it is — line 36 of file) — this attribute is what scroll-to-error depends on. |
+| `SubQuestion` | `components/ConversationalForm/SubQuestion.tsx` | STAB-11 | **Built.** 4px `borderLeft` in blue/green/red/grey via MUI tokens. Verify `data-question-id` attribute is present (it is — line 36 of file) — this attribute is what scroll-to-error depends on. **Sub-question label resolves to 16/600 (Table 1 Body strong row), not 18px** — if the existing implementation pins 18px, demote to 16/600 during execution (the colored left border + category tag + indent carry the visual differentiation). |
 | `SubAnswer` | `components/ConversationalForm/SubAnswer.tsx` | STAB-11 | **Built.** Same border-color tokens, tinted background. Indented `ml: 4`. No changes required for Phase 1. |
 | `PortalLayout` | `features/carrier-portal/components/PortalLayout/index.tsx` | STAB-04, STAB-13 | Replace the inline `PHASES = ['Company', 'Equipment', 'Drivers', 'Documents']` array (line 18) with import from `features/carrier-portal/constants.ts`. |
 | `PortalStepper` | `features/carrier-portal/components/PortalStepper/index.tsx` | STAB-13 | Already accepts a `phases` prop — must render 6 dots, not 4. Verify mobile layout: on `xs` viewports the stepper compresses to "`Phase {N} of 6 — {Label}`" text per the existing `interview-shell.md` responsive spec; do not show 6 horizontal dots cramped on a phone. Use `useMediaQuery(theme.breakpoints.down('sm'))` to toggle. |
@@ -357,7 +356,7 @@ The project does not use shadcn or any third-party component registry. All compo
 - [ ] Dimension 1 Copywriting: PASS — phase labels, CTAs, validation snackbar, saving indicators, sub-question category tags all declared verbatim
 - [ ] Dimension 2 Visuals: PASS — component inventory mapped 1:1 to STAB requirements; visual contracts defer to legacy designs where they specify pixels
 - [ ] Dimension 3 Color: PASS — uses existing MUI palette tokens only; one justified dark surface for `CostResultCard`; accent reserved-for list is explicit
-- [ ] Dimension 4 Typography: PASS — Thread scale (Table 1) declares 5 sizes (12/14/16/18/20) with 2 weights (400/600). CostResultCard (Table 2) is a declared isolation zone: 4 display sizes (24/30/48/60) + weight 700, scoped exclusively to that one full-viewport component, not reusable elsewhere, and explicitly not part of the system type scale.
+- [ ] Dimension 4 Typography: PASS — Thread scale (Table 1) declares 4 sizes (12/14/16/20) with 2 weights (400/600); sub-question label resolves to 16/600 (differentiated by colored left border + category tag + indent, not by size). CostResultCard (Table 2) is a declared isolation zone: 4 display sizes (24/30/48/60) + weight 700, scoped exclusively to that one full-viewport component, not reusable elsewhere, and explicitly not part of the system type scale.
 - [ ] Dimension 5 Spacing: PASS — MUI 8-point scale, 4 hard-coded pixel exceptions all justified (touch targets, content widths)
 - [ ] Dimension 6 Registry Safety: PASS — no shadcn, no third-party registry, no new deps
 
