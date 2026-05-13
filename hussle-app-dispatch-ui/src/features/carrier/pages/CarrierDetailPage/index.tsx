@@ -9,6 +9,7 @@ import { BodyMuted } from 'components/Typography';
 import { CarrierKPI } from '../../components/CarrierKPI';
 import { InviteCarrierButton } from '../../components/InviteCarrierButton';
 import { AdminActivateButton } from '../../components/AdminActivateButton';
+import { ActivateCarrierButton } from '../../components/ActivateCarrierButton';
 import { CARRIER_DETAIL_TAB_ITEMS } from '../../constants';
 import {
   selectFormattedCarrierById,
@@ -117,16 +118,19 @@ const CarrierDetailEditable: React.FC = () => {
                   carrierName={c.name}
                   carrierEmail={c.email}
                   onboardingStatus={c.status}
+                  inviteSentAt={c.inviteSentAt}
+                />
+                <ActivateCarrierButton
+                  carrierId={c.id}
+                  carrierName={c.name}
+                  status={c.status}
+                  dispatchableStatus={c.dispatchableStatus}
                 />
                 <AdminActivateButton carrierId={c.id} carrierName={c.name} status={c.status} />
               </Stack>
             }
             summary={<CarrierKPI c={c} stats={carrierStats} statsLoading={statsLoading} />}
-            tabs={
-              c.status !== 'DRAFT'
-                ? [...CARRIER_DETAIL_TAB_ITEMS, { value: 'onboarding', label: 'Onboarding' }]
-                : CARRIER_DETAIL_TAB_ITEMS
-            }
+            tabs={CARRIER_DETAIL_TAB_ITEMS}
             activeTab={activeTab}
             onTabChange={setActiveTab}
           >
@@ -153,14 +157,6 @@ const CarrierDetailEditable: React.FC = () => {
             {activeTab === 'documents' && id && <DocumentsTab carrierId={id} />}
 
             {activeTab === 'notes' && id && <NotesTab carrierId={id} />}
-
-            {activeTab === 'onboarding' && id && (
-              <OnboardingTab
-                carrierId={id}
-                carrierName={c.name}
-                onStatusChanged={() => dispatch(fetchCarrierDetailsRequest({ id }))}
-              />
-            )}
           </DetailLayout>
         )}
       </DataGuard>

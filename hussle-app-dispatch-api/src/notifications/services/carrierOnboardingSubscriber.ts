@@ -8,6 +8,7 @@ import {
   renderCarrierApprovedEmail,
   renderCarrierRejectedEmail,
 } from '@/shared/emails';
+import { REQUIRED_CARRIER_DOCUMENTS } from '@/shared/constants/requiredCarrierDocuments';
 
 const DEFAULT_FROM_EMAIL = 'notifications@hussle.app';
 const QUEUE_GROUP = 'carrier-onboarding-notifications';
@@ -48,10 +49,14 @@ export const initializeCarrierOnboardingSubscriber = async (
       organizationId: data.organizationId,
     });
 
+    const org = await deps.organizationQuery.findNameById(data.organizationId);
+    const organizationName = org?.name ?? 'Your Organization';
+
     const { subject, html } = await renderCarrierInviteEmail({
       carrierName: data.carrierName,
-      organizationName: data.organizationId,
+      organizationName,
       portalUrl,
+      documents: REQUIRED_CARRIER_DOCUMENTS,
     });
 
     await deps.emailService.sendEmail({

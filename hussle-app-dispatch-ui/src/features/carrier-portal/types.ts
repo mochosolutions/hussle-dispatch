@@ -45,36 +45,6 @@ export enum DocumentReviewStatus {
   REJECTED = 'rejected',
 }
 
-export enum StatePreference {
-  NEUTRAL = 'NEUTRAL',
-  PREFERRED = 'PREFERRED',
-  AVOIDED = 'AVOIDED',
-}
-
-export enum FreightPreference {
-  DRY_VAN = 'DRY_VAN',
-  REEFER = 'REEFER',
-  FLATBED = 'FLATBED',
-  STEP_DECK = 'STEP_DECK',
-  POWER_ONLY = 'POWER_ONLY',
-  HOTSHOT = 'HOTSHOT',
-  BOX_TRUCK = 'BOX_TRUCK',
-  SPRINTER_VAN = 'SPRINTER_VAN',
-}
-
-export enum CostProfileSource {
-  ONBOARDING_ESTIMATE = 'onboarding_estimate',
-  DISPATCHER_REVIEW = 'dispatcher_review',
-}
-
-export enum DeliveryType {
-  COURIER = 'COURIER',
-  LAST_MILE = 'LAST_MILE',
-  MEDICAL_COURIER = 'MEDICAL_COURIER',
-  GROCERY = 'GROCERY',
-  PHARMACY = 'PHARMACY',
-  OTHER = 'OTHER',
-}
 
 // ── Session & Carrier ──────────────────────
 
@@ -128,16 +98,8 @@ export interface SaveCompanyRequest {
   city?: string;
   state?: string;
   zip?: string;
-  primaryContactName?: string;
-  primaryContactPhone?: string;
-  primaryContactEmail?: string;
-  factoringCompanyName?: string;
-  factoringCompanyEmail?: string;
-  factoringSubmissionMethod?: string;
-  factoringAdvanceRate?: number;
-  factoringFeePercent?: number;
-  fuelCardProviders?: string[];
-  howFoundUs?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 // ── Equipment ──────────────────────────────
@@ -150,24 +112,10 @@ export interface VehicleEntry {
   vin?: string;
   licensePlate?: string;
   gvwr?: number;
-  lenderName?: string;
-  loanPayment?: number;
-  loanInterestRate?: number;
-  insuranceMonthlyCost?: number;
-  deliveryTypes?: DeliveryType[];
-  insuranceAttested?: boolean;
-  insuranceAttestedAt?: string;
-}
-
-export interface MedicalCourierCompliance {
-  transportsPharma?: boolean;
-  controlledSubstances?: boolean;
-  complianceCallRequired?: boolean;
 }
 
 export interface SaveEquipmentRequest {
   vehicles: VehicleEntry[];
-  medicalCourierCompliance?: MedicalCourierCompliance;
 }
 
 // ── Drivers ────────────────────────────────
@@ -182,51 +130,7 @@ export interface DriverEntry {
 }
 
 export interface SaveDriversRequest {
-  hasAdditionalDrivers: boolean;
   drivers?: DriverEntry[];
-}
-
-// ── Cost Analysis ──────────────────────────
-
-export interface SaveCostAnalysisRequest {
-  truckPayment: number;
-  insuranceCost: number;
-  fuelCostPerGallon: number;
-  milesPerGallon: number;
-  maintenanceMonthlyCost: number;
-  otherMonthlyCosts: number;
-}
-
-export interface CostAnalysisResult {
-  breakEvenRpm: number;
-  minimumRatePerMile: number;
-  totalMonthlyExpenses: number;
-  fuelCostPerMile: number;
-  projectedNetPerMonth: number;
-  revenuePerMile: number;
-  costProfileVersion: number;
-  costProfileSource: CostProfileSource;
-}
-
-// ── Lane Preferences ──────────────────────
-
-export interface LanePreferenceEntry {
-  origin?: string;
-  destination?: string;
-}
-
-export interface StatePreferenceEntry {
-  state: string;
-  preference: StatePreference;
-}
-
-export interface SaveLanePreferencesRequest {
-  homeBaseCity?: string;
-  homeBaseState?: string;
-  maxDaysOut?: number;
-  preferredLanes?: LanePreferenceEntry[];
-  statePreferences?: StatePreferenceEntry[];
-  freightPreferences?: FreightPreference[];
 }
 
 // ── Documents ──────────────────────────────

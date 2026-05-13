@@ -9,19 +9,12 @@ interface VehicleInput {
   vin?: string;
   licensePlate?: string;
   gvwr?: number;
-  lenderName?: string;
-  loanPayment?: number;
-  loanInterestRate?: number;
-  insuranceMonthlyCost?: number;
-  deliveryTypes?: string[];
-  insuranceAttested?: boolean;
 }
 
 export interface SaveEquipmentInput {
   carrierId: string;
   organizationId: string;
   vehicles: VehicleInput[];
-  medicalCourierCompliance?: Record<string, unknown>;
 }
 
 interface CreatedVehicleSummary {
@@ -53,13 +46,14 @@ export interface PortalEquipmentServiceDeps {
       vin?: string;
       licensePlate?: string;
       gvwr?: number;
-      lenderName?: string;
-      loanPayment?: number;
-      loanInterestRate?: number;
-      insuranceMonthlyCost?: number;
-      deliveryTypes?: string[];
     }[],
-  ) => Promise<{ id: string; category: VehicleCategory | null; make: string | null; model: string | null; year: number | null }[]>;
+  ) => Promise<{
+    id: string;
+    category: VehicleCategory | null;
+    make: string | null;
+    model: string | null;
+    year: number | null;
+  }[]>;
 }
 
 const CATEGORY_TO_EQUIPMENT_TYPE: Record<VehicleCategory, EquipmentType> = {
@@ -97,14 +91,6 @@ const validateComplianceRules = (
         }
         break;
       }
-      case 'PERSONAL_VEHICLE': {
-        if (!vehicle.deliveryTypes || vehicle.deliveryTypes.length === 0) {
-          throw new ValidationError(
-            'At least one delivery type is required for personal vehicles',
-          );
-        }
-        break;
-      }
       default:
         break;
     }
@@ -136,11 +122,6 @@ export const createPortalEquipmentService = (deps: PortalEquipmentServiceDeps) =
       vin: v.vin,
       licensePlate: v.licensePlate,
       gvwr: v.gvwr,
-      lenderName: v.lenderName,
-      loanPayment: v.loanPayment,
-      loanInterestRate: v.loanInterestRate,
-      insuranceMonthlyCost: v.insuranceMonthlyCost,
-      deliveryTypes: v.deliveryTypes,
     }));
 
     const created = await deps.createVehicles(vehicleData);

@@ -4,9 +4,9 @@ import { SteppedConversationalForm } from 'components/SteppedConversationalForm'
 import { companyQuestions } from 'features/carrier-portal/questions/companyQuestions';
 import { equipmentQuestions } from 'features/carrier-portal/questions/equipmentQuestions';
 import { driversQuestions } from 'features/carrier-portal/questions/driversQuestions';
-import { costAnalysisQuestions } from 'features/carrier-portal/questions/costAnalysisQuestions';
+import { documentsQuestions } from 'features/carrier-portal/questions/documentsQuestions';
 
-const PHASES = ['Company', 'Equipment', 'Drivers', 'Cost Analysis', 'Lane Preferences', 'Documents'];
+const PHASES = ['Company', 'Equipment', 'Drivers', 'Documents'];
 
 const prefilledAnswers: Record<string, unknown> = {
   'equipment.vehicleTypes': ['BOX_TRUCK'],
@@ -43,7 +43,7 @@ const EquipmentPreview = () => (
         ...companyQuestions,
         ...equipmentQuestions,
         ...driversQuestions,
-        ...costAnalysisQuestions,
+        ...documentsQuestions,
       ]}
       phases={PHASES}
       initialValues={prefilledAnswers}

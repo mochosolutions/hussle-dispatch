@@ -110,17 +110,20 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
     if (isEditing && driverId) {
       dispatch(updateDriverRequest({ id: driverId, data: { ...values, payType, payRate } }));
     } else {
+      const data = {
+        ...values,
+        carrierId: values.carrierId || null,
+        homeBaseCity: values.homeBaseCity || null,
+        homeBaseState: values.homeBaseState || null,
+        payType,
+        payRate,
+      };
       dispatch(
-        createDriverRequest({
-          data: {
-            ...values,
-            carrierId: values.carrierId || null,
-            homeBaseCity: values.homeBaseCity || null,
-            homeBaseState: values.homeBaseState || null,
-            payType,
-            payRate,
-          },
-        }),
+        createDriverRequest(
+          initialCarrierId
+            ? { data, onCreated: () => onClose() }
+            : { data, redirectTo: '/drivers' },
+        ),
       );
     }
   };
@@ -141,7 +144,7 @@ export const DriverFormDrawer: React.FC<DriverFormDrawerProps> = ({
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          {!isEditing && <CarrierAutocomplete formik={formik} />}
+          {!isEditing && !initialCarrierId && <CarrierAutocomplete formik={formik} />}
 
           <DrawerSection label="Personal Info">
             <Box sx={{ display: 'flex', gap: 2 }}>

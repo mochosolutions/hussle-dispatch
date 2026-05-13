@@ -20,15 +20,7 @@ export const companyValidator = Yup.object({
     zip: Yup.string()
       .optional()
       .matches(/^[0-9]{5}(-[0-9]{4})?$/, 'zip must be in format XXXXX or XXXXX-XXXX'),
-    primaryContactName: Yup.string().optional(),
-    primaryContactPhone: Yup.string().optional(),
-    primaryContactEmail: Yup.string().optional(),
-    factoringCompanyName: Yup.string().optional(),
-    factoringCompanyEmail: Yup.string().optional(),
-    factoringSubmissionMethod: Yup.string().optional(),
-    factoringAdvanceRate: Yup.number().min(0).max(100).optional(),
-    factoringFeePercent: Yup.number().min(0).max(100).optional(),
-    fuelCardProviders: Yup.array().of(Yup.string().required()).optional(),
-    howFoundUs: Yup.string().optional(),
+    lat: Yup.number().nullable().optional(),
+    lng: Yup.number().nullable().optional(),
   }),
 });

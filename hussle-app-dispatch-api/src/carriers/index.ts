@@ -17,4 +17,11 @@ carriersModule.initializeSubscriber().catch((error: unknown) => {
   });
 });
 
+// Initialize compliance subscriber for document.confirmed events
+carriersModule.initializeComplianceSubscriber().catch((error: unknown) => {
+  logger.error('Failed to initialize carrier compliance subscriber', {
+    error: error instanceof Error ? error.message : String(error),
+  });
+});
+
 export const carriersRouter = createCarriersRouter(carriersModule.controllers);

@@ -2,13 +2,10 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type {
   CarrierPortalSummary,
-  CostAnalysisResult,
   OnboardingSession,
   SaveCompanyRequest,
-  SaveCostAnalysisRequest,
   SaveDriversRequest,
   SaveEquipmentRequest,
-  SaveLanePreferencesRequest,
 } from 'features/carrier-portal/types';
 
 // ---------------------------------------------------------------------------
@@ -24,7 +21,7 @@ interface CarrierPortalState {
   error: string | null;
   savingAnswer: boolean;
   savingPhase: boolean;
-  costAnalysisResult: CostAnalysisResult | null;
+  lastSavedAt: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,7 +37,7 @@ const initialState: CarrierPortalState = {
   error: null,
   savingAnswer: false,
   savingPhase: false,
-  costAnalysisResult: null,
+  lastSavedAt: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -85,6 +82,7 @@ const carrierPortalSlice = createSlice({
     },
     answerSaved(state) {
       state.savingAnswer = false;
+      state.lastSavedAt = new Date().toISOString();
     },
     answerSaveFailed(state) {
       state.savingAnswer = false;
@@ -92,6 +90,16 @@ const carrierPortalSlice = createSlice({
     sessionCompleted(state, action: PayloadAction<{ completedAt: string }>) {
       if (state.session) {
         state.session.completedAt = action.payload.completedAt;
+      }
+    },
+    setCurrentPhase(state, action: PayloadAction<number>) {
+      if (state.session) {
+        state.session.currentPhase = action.payload;
+      }
+    },
+    markPhaseCompleted(state, action: PayloadAction<number>) {
+      if (state.session && !state.session.completedPhases.includes(action.payload)) {
+        state.session.completedPhases = [...state.session.completedPhases, action.payload];
       }
     },
 
@@ -130,33 +138,6 @@ const carrierPortalSlice = createSlice({
       state.savingPhase = false;
     },
     saveDriversFailure(state, action: PayloadAction<string>) {
-      state.savingPhase = false;
-      state.error = action.payload;
-    },
-
-    // Phase saves — cost analysis
-    saveCostAnalysis(state, _action: PayloadAction<SaveCostAnalysisRequest>) {
-      state.savingPhase = true;
-      state.error = null;
-    },
-    saveCostAnalysisSuccess(state, action: PayloadAction<CostAnalysisResult>) {
-      state.savingPhase = false;
-      state.costAnalysisResult = action.payload;
-    },
-    saveCostAnalysisFailure(state, action: PayloadAction<string>) {
-      state.savingPhase = false;
-      state.error = action.payload;
-    },
-
-    // Phase saves — lane preferences
-    saveLanePreferences(state, _action: PayloadAction<SaveLanePreferencesRequest>) {
-      state.savingPhase = true;
-      state.error = null;
-    },
-    saveLanePreferencesSuccess(state) {
-      state.savingPhase = false;
-    },
-    saveLanePreferencesFailure(state, action: PayloadAction<string>) {
       state.savingPhase = false;
       state.error = action.payload;
     },

@@ -356,6 +356,7 @@ describe('notificationSubscriber', () => {
       entityId: 'load-1',
       documentType: 'BOL_SIGNED',
       organizationId: 'org-1',
+      expiresAt: null,
       loadId: 'load-1',
       customerId: 'cust-1',
       loadNumber: 'LD-001',

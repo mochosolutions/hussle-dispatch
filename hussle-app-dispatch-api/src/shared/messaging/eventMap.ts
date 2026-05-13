@@ -48,6 +48,7 @@ export interface EventMap {
     documentType: string;
     organizationId: string;
     requestingUserId?: string | null;
+    expiresAt: string | null;
     // Enriched fields (present when entityType === 'load')
     loadId?: string;
     customerId?: string | null;

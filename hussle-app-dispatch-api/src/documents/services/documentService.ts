@@ -175,6 +175,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       documentType: document.type,
       organizationId: document.organizationId,
       requestingUserId: input.requestingUserId ?? null,
+      expiresAt: document.expiresAt !== null ? document.expiresAt.toISOString() : null,
       ...enrichedFields,
     });
 

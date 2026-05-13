@@ -1,9 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import type { ColDef, ValueGetterParams } from 'ag-grid-community';
-import { Box, Chip } from '@mui/material';
+import { Box, Tooltip, IconButton } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import AgGridTable from '../../../../mocho/components/NewDataGrid';
 import SectionCard from 'components/SectionCard';
 import { useDispatch, useSelector } from 'store';
+import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 import { selectVehiclesByCarrierId } from '../../store/selectors/carrierSelectors';
 import { fetchCarrierVehiclesRequest } from '../../store/reducers';
 import { EQUIPMENT_OPTIONS } from '../../constants';
@@ -15,8 +17,13 @@ interface VehiclesTabProps {
 
 export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
   const dispatch = useDispatch();
+  const { openDrawer } = useDrawerActions();
   const vehiclesSelector = useMemo(() => selectVehiclesByCarrierId(carrierId), [carrierId]);
   const vehicles = useSelector(vehiclesSelector);
+
+  const handleAddVehicle = () => {
+    openDrawer('vehicleCreate', { onClose: () => undefined, initialCarrierId: carrierId });
+  };
 
   useEffect(() => {
     dispatch(fetchCarrierVehiclesRequest({ carrierId }));
@@ -36,8 +43,7 @@ export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
         valueGetter: (params: ValueGetterParams<Vehicle>) => {
           if (!params.data) return '';
           return (
-            EQUIPMENT_OPTIONS.find((e) => e.value === params.data?.type)?.label ??
-            params.data.type
+            EQUIPMENT_OPTIONS.find((e) => e.value === params.data?.type)?.label ?? params.data.type
           );
         },
       },
@@ -82,12 +88,16 @@ export const VehiclesTab: React.FC<VehiclesTabProps> = ({ carrierId }) => {
     <SectionCard
       title="Vehicles"
       actions={
-        <Chip
-          label={vehicles.length}
-          size="small"
-          variant="outlined"
-          sx={{ height: 22, fontSize: '0.75rem' }}
-        />
+        <Tooltip title="Add vehicle">
+          <IconButton
+            size="small"
+            onClick={handleAddVehicle}
+            sx={{ color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
+            aria-label="Add vehicle"
+          >
+            <AddIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
       }
     >
       <Box sx={{ height: 400 }}>

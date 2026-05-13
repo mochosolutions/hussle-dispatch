@@ -56,8 +56,8 @@ export interface DrawerTypeMap {
   driverLocation: { driverId: string };
   driverWeeklySchedule: { driverId: string };
   driverScheduleOverride: { driverId: string };
-  vehicleCreate: { onClose: () => void };
-  driverCreate: { onClose: () => void };
+  vehicleCreate: { onClose: () => void; initialCarrierId?: string };
+  driverCreate: { onClose: () => void; initialCarrierId?: string };
   carrierForm: {
     open: boolean;
     onClose: () => void;
@@ -104,6 +104,7 @@ export type ModalType =
   | 'loadSendSmsPrompt'
   | 'dispatchOverride'
   | 'adminActivateCarrier'
+  | 'activateCarrier'
   | 'confirmDeleteDocument'
   | 'upgradePlan';
 
@@ -137,6 +138,7 @@ export interface ModalTypeMap {
     missingDocuments: string[];
   };
   adminActivateCarrier: { carrierId: string; carrierName: string };
+  activateCarrier: { carrierId: string; carrierName: string };
   confirmDeleteDocument: { documentId: string; fileName: string; type: DocumentType };
   upgradePlan: {
     resourceType: 'team members' | 'vehicles';

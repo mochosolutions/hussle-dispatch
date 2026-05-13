@@ -3,7 +3,6 @@ import axiosInstance from 'utils/axios';
 import type {
   CarrierPortalSummary,
   ConfirmUploadRequest,
-  CostAnalysisResult,
   DriverEntry,
   OnboardingSession,
   PortalDocument,
@@ -12,10 +11,8 @@ import type {
   PresignResponse,
   SaveAnswerRequest,
   SaveCompanyRequest,
-  SaveCostAnalysisRequest,
   SaveDriversRequest,
   SaveEquipmentRequest,
-  SaveLanePreferencesRequest,
   SignDocumentRequest,
   VehicleEntry,
 } from 'features/carrier-portal/types';
@@ -111,38 +108,6 @@ export const saveDrivers = async (
 ): Promise<DriverEntry[]> => {
   const response = await axiosInstance.post<DataEnvelope<DriverEntry[]>>(
     '/carrier-portal/drivers',
-    data,
-    portalHeaders(token),
-  );
-  return response.data.data;
-};
-
-// ---------------------------------------------------------------------------
-// Cost Analysis
-// ---------------------------------------------------------------------------
-
-export const saveCostAnalysis = async (
-  token: string,
-  data: SaveCostAnalysisRequest,
-): Promise<CostAnalysisResult> => {
-  const response = await axiosInstance.post<DataEnvelope<CostAnalysisResult>>(
-    '/carrier-portal/cost-analysis',
-    data,
-    portalHeaders(token),
-  );
-  return response.data.data;
-};
-
-// ---------------------------------------------------------------------------
-// Lane Preferences
-// ---------------------------------------------------------------------------
-
-export const saveLanePreferences = async (
-  token: string,
-  data: SaveLanePreferencesRequest,
-): Promise<{ saved: boolean }> => {
-  const response = await axiosInstance.post<DataEnvelope<{ saved: boolean }>>(
-    '/carrier-portal/lane-preferences',
     data,
     portalHeaders(token),
   );

@@ -2,6 +2,7 @@ import type { Schema } from 'yup';
 
 type InputType =
   | 'text'
+  | 'address'
   | 'currency'
   | 'number'
   | 'select'
@@ -10,7 +11,11 @@ type InputType =
   | 'presetTiles'
   | 'stateGrid'
   | 'slider'
-  | 'tagInput';
+  | 'tagInput'
+  | 'vehicleList'
+  | 'driverList'
+  | 'documentSign'
+  | 'documentUpload';
 
 type BorderColor = 'blue' | 'green' | 'red' | 'grey';
 
@@ -56,6 +61,7 @@ interface QuestionDefinition {
   required?: boolean;
   startAdornment?: string;
   endAdornment?: string;
+  documentType?: string;
 }
 
 export type {

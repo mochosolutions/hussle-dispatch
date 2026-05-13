@@ -1,5 +1,5 @@
 import React from 'react';
-import { InputAdornment, OutlinedInput } from '@mui/material';
+import { InputAdornment, OutlinedInput, Typography } from '@mui/material';
 import { DollarOutlined } from '@ant-design/icons';
 import { getIn } from 'formik';
 import { NumericFormat } from 'react-number-format';
@@ -12,6 +12,7 @@ export const CurrencyField: React.FC<CurrencyFieldProps> = ({
   placeholder = '0.00',
   disabled = false,
   required = false,
+  suffix,
   formik,
 }) => {
   const error = getIn(formik.errors, name) as string | undefined;
@@ -41,6 +42,15 @@ export const CurrencyField: React.FC<CurrencyFieldProps> = ({
           <InputAdornment position="start">
             <DollarOutlined style={{ fontSize: 16, color: 'inherit', opacity: 0.45 }} />
           </InputAdornment>
+        }
+        endAdornment={
+          suffix ? (
+            <InputAdornment position="end">
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                {suffix}
+              </Typography>
+            </InputAdornment>
+          ) : undefined
         }
       />
     </BaseFieldWrapper>

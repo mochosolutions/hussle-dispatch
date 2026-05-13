@@ -118,6 +118,10 @@ const enrichCarrier = (carrier: CarrierWithCounts, role: string): CarrierService
     driverCount: carrier._count.drivers,
     vehicleCount: carrier._count.vehicles,
     onboardingComplete: onboarding.allowed,
+    dispatchableStatus: {
+      ready: onboarding.allowed,
+      missing: onboarding.missingDocuments,
+    },
     insuranceWarning: getInsuranceWarning(carrier.insuranceExpiry),
   };
 

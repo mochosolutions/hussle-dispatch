@@ -1,5 +1,6 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
+import ThemeCustomization from '@mocho/ui/theme';
 import DashboardRoutes from 'features/dashboard/routes/DashboardRoutes';
 import LoginRoutes from 'features/auth/routes/LoginRoutes';
 import CarrierRoutes from 'features/carrier/routes/carrierRoutes';
@@ -18,9 +19,17 @@ import DevRoutes from 'features/dev/routes/devRoutes';
 import ErrorPage from 'components/ErrorPage';
 import App from '../App';
 
+const PortalShell = () => (
+  <ThemeCustomization>
+    <Outlet />
+  </ThemeCustomization>
+);
+
 export const routes: RouteObject[] = [
-  DriverPortalRoutes,
-  CarrierPortalRoutes,
+  {
+    element: <PortalShell />,
+    children: [DriverPortalRoutes, CarrierPortalRoutes],
+  },
   {
     element: <App />,
     children: [

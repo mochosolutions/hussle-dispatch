@@ -20,17 +20,10 @@ interface VehicleRequestBody {
   vin?: string;
   licensePlate?: string;
   gvwr?: number;
-  lenderName?: string;
-  loanPayment?: number;
-  loanInterestRate?: number;
-  insuranceMonthlyCost?: number;
-  deliveryTypes?: string[];
-  insuranceAttested?: boolean;
 }
 
 interface SaveEquipmentRequestBody {
   vehicles: VehicleRequestBody[];
-  medicalCourierCompliance?: Record<string, unknown>;
 }
 
 const mapRequestToInput = (req: Request): SaveEquipmentInput => {
@@ -53,14 +46,7 @@ const mapRequestToInput = (req: Request): SaveEquipmentInput => {
       vin: v.vin,
       licensePlate: v.licensePlate,
       gvwr: v.gvwr,
-      lenderName: v.lenderName,
-      loanPayment: v.loanPayment,
-      loanInterestRate: v.loanInterestRate,
-      insuranceMonthlyCost: v.insuranceMonthlyCost,
-      deliveryTypes: v.deliveryTypes,
-      insuranceAttested: v.insuranceAttested,
     })),
-    medicalCourierCompliance: body.medicalCourierCompliance,
   };
 };
 

@@ -25,8 +25,14 @@ export function* createDriverSaga(action: CreateDriverAction): Generator {
 
     yield put(notify({ message: 'Driver created', variant: 'success' }));
 
-    const navigate = (yield call(getNavigate)) as (path: string) => void;
-    yield call(navigate, '/drivers');
+    const { redirectTo, onCreated } = action.payload;
+    if (onCreated) {
+      onCreated(response.id);
+    }
+    if (redirectTo) {
+      const navigate = (yield call(getNavigate)) as (path: string) => void;
+      yield call(navigate, redirectTo);
+    }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create driver';
     yield put(createDriverFailure({ error: errorMessage }));

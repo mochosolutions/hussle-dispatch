@@ -87,6 +87,7 @@ describe('createDocumentArchiveSubscriber', () => {
     entityId: 'load-1',
     documentType: 'BROKER_RATE_CON',
     organizationId: 'org-1',
+    expiresAt: null,
     ...overrides,
   });
 

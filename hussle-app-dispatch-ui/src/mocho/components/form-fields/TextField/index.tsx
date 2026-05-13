@@ -1,5 +1,5 @@
 import React from 'react';
-import { OutlinedInput } from '@mui/material';
+import { InputAdornment, OutlinedInput, Typography } from '@mui/material';
 import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { TextFieldProps } from '../types';
@@ -22,11 +22,21 @@ export const TextField: React.FC<TextFieldProps> = ({
   autoComplete,
   multiline = false,
   minRows,
+  startAdornment,
+  endAdornment,
   formik,
   ...rest
 }) => {
   const error = getIn(formik.errors, name) as string | undefined;
   const touched = getIn(formik.touched, name) as boolean | undefined;
+
+  const renderAdornment = (text: string, position: 'start' | 'end') => (
+    <InputAdornment position={position}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+        {text}
+      </Typography>
+    </InputAdornment>
+  );
 
   return (
     <BaseFieldWrapper name={name} label={label} required={required} error={error} touched={touched}>
@@ -44,6 +54,8 @@ export const TextField: React.FC<TextFieldProps> = ({
         minRows={minRows}
         fullWidth
         error={Boolean(touched && error)}
+        startAdornment={startAdornment ? renderAdornment(startAdornment, 'start') : undefined}
+        endAdornment={endAdornment ? renderAdornment(endAdornment, 'end') : undefined}
         {...rest}
       />
     </BaseFieldWrapper>

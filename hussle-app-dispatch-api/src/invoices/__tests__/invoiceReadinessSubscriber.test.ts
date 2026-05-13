@@ -286,6 +286,7 @@ describe('initializeReadinessSubscriber', () => {
         entityId: 'load-1',
         documentType: 'BOL_SIGNED',
         organizationId: 'org-1',
+        expiresAt: null,
       });
 
       // Assert
@@ -307,6 +308,7 @@ describe('initializeReadinessSubscriber', () => {
         entityId: 'carrier-1',
         documentType: 'BOL_SIGNED',
         organizationId: 'org-1',
+        expiresAt: null,
       });
 
       // Assert

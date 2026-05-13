@@ -62,6 +62,11 @@ export interface PaginationMeta {
   hasMore: boolean;
 }
 
+export interface DispatchableStatus {
+  ready: boolean;
+  missing: string[];
+}
+
 export interface Carrier {
   id: string;
   name: string;
@@ -101,6 +106,7 @@ export interface Carrier {
   outboundEmailMode: string;
   replyToEmail: string | null;
   notes: string | null;
+  dispatchableStatus: DispatchableStatus;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

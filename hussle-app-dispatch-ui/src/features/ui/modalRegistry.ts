@@ -13,6 +13,7 @@ import { SendInvoiceModal } from '../invoices/components/SendInvoiceModal';
 import { PaymentDrawer } from '../invoices/components/PaymentDrawer';
 import { DispatchOverrideModal } from '../carrier/components/DispatchOverrideModal';
 import { AdminActivateModal } from '../carrier/components/AdminActivateModal';
+import { ActivateCarrierModal } from '../carrier/components/ActivateCarrierModal';
 import { ConfirmDeleteDocumentModal } from '../documents/components/ConfirmDeleteDocumentModal';
 import UpgradePlanDialog from 'components/UpgradePlanDialog';
 
@@ -30,6 +31,7 @@ const modalRegistry: PopupComponentMap = {
   loadSendSmsPrompt: SendSmsPromptModal,
   dispatchOverride: DispatchOverrideModal,
   adminActivateCarrier: AdminActivateModal,
+  activateCarrier: ActivateCarrierModal,
   confirmDeleteDocument: ConfirmDeleteDocumentModal,
   upgradePlan: UpgradePlanDialog,
 };

@@ -21,6 +21,7 @@ import { createCarrierInviteService } from './services/carrierInviteService';
 import { createDispatchOverrideService } from './services/dispatchOverrideService';
 import { createCarrierSuspendService } from './services/carrierSuspendService';
 import { initializeCarrierSubscriber } from './services/carrierSubscriber';
+import { initializeCarrierComplianceSubscriber } from './services/carrierComplianceSubscriber';
 import { createDispatchOverrideControllers } from './controllers/dispatchOverrideController';
 import type { DispatchOverrideControllers } from './controllers/dispatchOverrideController';
 import { createSuspendControllers } from './controllers/suspendController';
@@ -42,6 +43,7 @@ export const createCarriersModule = ({
 }: CarrierModuleDeps): {
   controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers & SuspendControllers;
   initializeSubscriber: () => Promise<void>;
+  initializeComplianceSubscriber: () => Promise<void>;
 } => {
   const repositories = carrierRepositoryPrisma(prismaClient);
   const carrierStatsQuery = carrierStatsQueryPrisma(prismaClient);
@@ -268,5 +270,19 @@ export const createCarriersModule = ({
       auditLog,
     });
 
-  return { controllers, initializeSubscriber };
+  const initializeComplianceSubscriber = () =>
+    initializeCarrierComplianceSubscriber({
+      eventBus,
+      carrierCompliance: {
+        updateComplianceFlags: async (carrierId, organizationId, flags) => {
+          await prismaClient.carrier.update({
+            where: { id: carrierId, managedByOrgId: organizationId },
+            data: flags,
+          });
+        },
+      },
+      logger,
+    });
+
+  return { controllers, initializeSubscriber, initializeComplianceSubscriber };
 };

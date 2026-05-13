@@ -55,6 +55,8 @@ export interface TextFieldProps extends BaseInputFieldProps {
 	type?: 'text' | 'number' | 'tel';
 	multiline?: boolean;
 	minRows?: number;
+	startAdornment?: string;
+	endAdornment?: string;
 }
 
 /**
@@ -350,6 +352,7 @@ export interface CurrencyFieldProps {
 	placeholder?: string;
 	disabled?: boolean;
 	required?: boolean;
+	suffix?: string;
 	formik: FormikFieldProps;
 }
 

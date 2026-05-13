@@ -22,20 +22,9 @@ interface SaveCompanyFields {
   city?: string;
   state?: string;
   zip?: string;
-  primaryContactName?: string;
-  primaryContactPhone?: string;
-  primaryContactEmail?: string;
-  factoringCompanyName?: string;
-  factoringCompanyEmail?: string;
-  factoringSubmissionMethod?: string;
-  factoringAdvanceRate?: number;
-  factoringFeePercent?: number;
-  fuelCardProviders?: string[];
-  howFoundUs?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
-
-// Note: primaryContactName/Phone/Email are still accepted from the form.
-// The service creates/updates a Contact record and sets primaryContactId on the carrier.
 
 interface CompanyService {
   saveCompany(carrierId: string, organizationId: string, fields: SaveCompanyFields): Promise<CarrierSummary>;

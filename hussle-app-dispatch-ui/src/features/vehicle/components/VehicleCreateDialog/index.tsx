@@ -63,14 +63,17 @@ export const VehicleCreateDrawer: React.FC<VehicleCreateDrawerProps> = ({
       validationSchema={vehicleInfoSchema}
       onSubmit={(values) => {
         const { carrierId, year, ...rest } = values;
+        const data = {
+          ...rest,
+          ...(carrierId ? { carrierId } : {}),
+          ...(year ? { year: Number(year) } : {}),
+        };
         dispatch(
-          createVehicleRequest({
-            data: {
-              ...rest,
-              ...(carrierId ? { carrierId } : {}),
-              ...(year ? { year: Number(year) } : {}),
-            },
-          }),
+          createVehicleRequest(
+            initialCarrierId
+              ? { data, onCreated: () => onClose() }
+              : { data, redirectTo: '/vehicles' },
+          ),
         );
       }}
       saveLabel="Create"
@@ -78,7 +81,7 @@ export const VehicleCreateDrawer: React.FC<VehicleCreateDrawerProps> = ({
     >
       {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <CarrierAutocomplete formik={formik} />
+          {!initialCarrierId && <CarrierAutocomplete formik={formik} />}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <TextField name="unitNumber" label="Unit Number" formik={formik} required />

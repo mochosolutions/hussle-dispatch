@@ -207,6 +207,7 @@ describe('createDocumentService', () => {
         documentType: 'BOL_SIGNED',
         organizationId: 'org-1',
         requestingUserId: null,
+        expiresAt: null,
       });
       expect(result).toEqual(confirmedDoc);
     });

@@ -1,5 +1,11 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { LoadingState, setPending, setFulfilled, setRejected } from '@mocho/ui/redux';
+import {
+  LoadingState,
+  setPending,
+  setFulfilled,
+  setRejected,
+  type CreateRequestPayload,
+} from '@mocho/ui/redux';
 import type { CreateDriverInput, UpdateDriverInput } from 'features/carrier/types';
 import type {
   WeeklyScheduleEntry,
@@ -119,7 +125,7 @@ const driverPageSlice = createSlice({
       });
     },
 
-    createDriverRequest(state, _action: PayloadAction<{ data: CreateDriverInput }>) {
+    createDriverRequest(state, _action: PayloadAction<CreateRequestPayload<CreateDriverInput>>) {
       setPending(state, { key: 'create' });
     },
     createDriverSuccess(state, _action: PayloadAction<void>) {

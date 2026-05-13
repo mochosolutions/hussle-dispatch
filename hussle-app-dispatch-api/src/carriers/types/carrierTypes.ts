@@ -141,10 +141,16 @@ export interface CarrierWithAssets extends CarrierWithCounts {
   vehicles: VehicleWithExpenses[];
 }
 
+export interface DispatchableStatus {
+  ready: boolean;
+  missing: string[];
+}
+
 export interface CarrierServiceOutput extends Omit<Carrier, 'partnerSplitPercent'> {
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;
+  dispatchableStatus: DispatchableStatus;
   insuranceWarning: InsuranceWarning | null;
   onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
@@ -160,6 +166,7 @@ export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;
+  dispatchableStatus: DispatchableStatus;
   insuranceWarning: InsuranceWarning | null;
   onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];

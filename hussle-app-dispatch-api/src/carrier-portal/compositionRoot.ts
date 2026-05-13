@@ -8,7 +8,6 @@ import { onboardingSessionRepoPrisma } from './repositories/onboardingSessionRep
 import { portalCarrierRepoPrisma } from './repositories/portalCarrierRepoPrisma';
 import { portalDocumentRepoPrisma } from './repositories/portalDocumentRepoPrisma';
 import { portalVehicleRepoPrisma } from './repositories/portalVehicleRepoPrisma';
-import { portalContactRepoPrisma } from './repositories/portalContactRepoPrisma';
 import { portalDriverRepoPrisma } from './repositories/portalDriverRepoPrisma';
 import { portalLanePreferencesSessionRepoPrisma } from './repositories/portalSessionRepoPrisma';
 import { createAuthenticateCarrierToken } from './middleware/authenticateCarrierToken';
@@ -45,7 +44,6 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const auditLog = carrierAuditPortPrisma(deps.prismaClient);
   const documentRepo = portalDocumentRepoPrisma(deps.prismaClient);
   const vehicleRepo = portalVehicleRepoPrisma(deps.prismaClient);
-  const contactRepo = portalContactRepoPrisma(deps.prismaClient);
   const driverRepo = portalDriverRepoPrisma(deps.prismaClient);
   const laneSessionRepo = portalLanePreferencesSessionRepoPrisma(deps.prismaClient);
 
@@ -67,7 +65,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     auditLog,
   });
 
-  const companyService = createPortalCompanyService({ carrierRepo, contactRepo });
+  const companyService = createPortalCompanyService({ carrierRepo });
 
   const equipmentService = createPortalEquipmentService({
     findCarrierById: async (carrierId: string) => {

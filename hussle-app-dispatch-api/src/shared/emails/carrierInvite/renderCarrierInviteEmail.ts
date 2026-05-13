@@ -1,10 +1,12 @@
 import { render } from '@react-email/components';
 import CarrierInviteEmail from './CarrierInviteEmail';
+import type { RequiredCarrierDocument } from '@/shared/constants/requiredCarrierDocuments';
 
 export interface CarrierInviteEmailData {
   carrierName: string;
   organizationName: string;
   portalUrl: string;
+  documents: readonly RequiredCarrierDocument[];
   message?: string;
 }
 

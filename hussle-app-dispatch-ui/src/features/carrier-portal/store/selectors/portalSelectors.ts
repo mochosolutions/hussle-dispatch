@@ -20,5 +20,4 @@ export const selectCompletedPhases = (state: RootState) =>
 
 export const selectIsSavingPhase = (state: RootState) => state.pages.carrierPortal.savingPhase;
 
-export const selectCostAnalysisResult = (state: RootState) =>
-  state.pages.carrierPortal.costAnalysisResult;
+export const selectLastSavedAt = (state: RootState) => state.pages.carrierPortal.lastSavedAt;

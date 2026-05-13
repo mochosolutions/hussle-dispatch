@@ -1,5 +1,4 @@
-import type { Carrier, Contact } from '@prisma/client';
-import { NotFoundError } from '@/shared/errors/commonErrors';
+import type { Carrier } from '@prisma/client';
 
 export interface SaveCompanyRequest {
   name: string;
@@ -12,16 +11,8 @@ export interface SaveCompanyRequest {
   city?: string;
   state?: string;
   zip?: string;
-  primaryContactName?: string;
-  primaryContactPhone?: string;
-  primaryContactEmail?: string;
-  factoringCompanyName?: string;
-  factoringCompanyEmail?: string;
-  factoringSubmissionMethod?: string;
-  factoringAdvanceRate?: number;
-  factoringFeePercent?: number;
-  fuelCardProviders?: string[];
-  howFoundUs?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface CarrierSummary {
@@ -38,20 +29,8 @@ interface CarrierRepo {
   update(carrierId: string, organizationId: string, data: Record<string, unknown>): Promise<Carrier>;
 }
 
-interface ContactRepo {
-  upsertPrimaryContact(input: {
-    organizationId: string;
-    existingContactId: string | null;
-    firstName: string;
-    lastName: string;
-    phone?: string;
-    email?: string;
-  }): Promise<Contact>;
-}
-
 interface PortalCompanyServiceDeps {
   carrierRepo: CarrierRepo;
-  contactRepo: ContactRepo;
 }
 
 const toCarrierSummary = (carrier: Carrier): CarrierSummary => ({
@@ -63,61 +42,15 @@ const toCarrierSummary = (carrier: Carrier): CarrierSummary => ({
   type: carrier.type,
 });
 
-const splitName = (fullName: string): { firstName: string; lastName: string } => {
-  const trimmed = fullName.trim();
-  const spaceIndex = trimmed.indexOf(' ');
-  if (spaceIndex === -1) {
-    return { firstName: trimmed, lastName: '' };
-  }
-  return {
-    firstName: trimmed.substring(0, spaceIndex),
-    lastName: trimmed.substring(spaceIndex + 1),
-  };
-};
-
 export const createPortalCompanyService = (deps: PortalCompanyServiceDeps) => ({
   saveCompany: async (
     carrierId: string,
     organizationId: string,
     fields: SaveCompanyRequest,
   ): Promise<CarrierSummary> => {
-    const existing = await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
+    await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
 
-    const {
-      primaryContactName,
-      primaryContactPhone,
-      primaryContactEmail,
-      ...carrierFields
-    } = fields;
-
-    const hasPrimaryContactInput =
-      primaryContactName !== undefined ||
-      primaryContactPhone !== undefined ||
-      primaryContactEmail !== undefined;
-
-    let primaryContactId: string | undefined;
-
-    if (hasPrimaryContactInput && primaryContactName !== undefined) {
-      const { firstName, lastName } = splitName(primaryContactName);
-
-      const contact = await deps.contactRepo.upsertPrimaryContact({
-        organizationId: existing.managedByOrgId,
-        existingContactId: existing.primaryContactId,
-        firstName,
-        lastName,
-        phone: primaryContactPhone,
-        email: primaryContactEmail,
-      });
-
-      primaryContactId = contact.id;
-    }
-
-    const updateData: Record<string, unknown> = { ...carrierFields };
-    if (primaryContactId !== undefined) {
-      updateData.primaryContactId = primaryContactId;
-    }
-
-    const updated = await deps.carrierRepo.update(carrierId, organizationId, updateData);
+    const updated = await deps.carrierRepo.update(carrierId, organizationId, { ...fields });
 
     return toCarrierSummary(updated);
   },
