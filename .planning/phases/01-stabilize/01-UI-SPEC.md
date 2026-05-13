@@ -64,7 +64,7 @@ The MUI theme is the source of truth. Phase 1 declares the *roles* used and the 
 | Body | 16px | 400 | 1.5 | `Body` helper / `body1` | Conversational thread default copy, hint text body |
 | Body strong | 16px | 600 | 1.4 | `BodyStrong` helper | Answered-card value, sub-answer value |
 | Body muted | 14px | 400 | 1.5 | `BodyMuted` / `body2` color `text.secondary` | Hints, disclaimers, "Saving…" indicator |
-| Meta / overline | 12px | 700 (uppercase, letter-spacing 1px) | 1.4 | `Meta` / `KpiLabel` / `overline` | Phase breadcrumb ("EQUIPMENT"), category tags ("DOT REGISTRATION — REQUIRED"), result-card labels ("YOUR BREAK-EVEN RATE PER MILE") |
+| Meta / overline | 12px | 600 (uppercase, letter-spacing 1px) | 1.4 | `Meta` / `KpiLabel` / `overline` | Phase breadcrumb ("EQUIPMENT"), category tags ("DOT REGISTRATION — REQUIRED"), result-card labels ("YOUR BREAK-EVEN RATE PER MILE") |
 | Question (active) | 20px | 600 | 1.3 | `sx={{ fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}` | Active question label in the thread |
 | Sub-question (active) | 18px | 600 | 1.3 | Already implemented in `SubQuestion.tsx` | Sub-question label |
 | Result heading | 30px | 700 | 1.2 | `sx={{ fontSize: { xs: 24, sm: 30 }, fontWeight: 700, lineHeight: 1.2 }}` | "Here's your real cost picture, {firstName}." |
@@ -72,9 +72,9 @@ The MUI theme is the source of truth. Phase 1 declares the *roles* used and the 
 | Result value (minimum rate) | 60px | 700 | 1.0 | `sx={{ fontSize: { xs: 44, sm: 60 }, fontWeight: 700, lineHeight: 1 }}` color `success.light` | "$2.44" animated value |
 | Expense tile value | 24px | 700 | 1.2 | `sx={{ fontSize: 24, fontWeight: 700 }}` | Monthly Fixed / Variable / Fuel-per-mile values |
 
-Only **4 effective sizes** in the conversational thread (body 16, sub 18, question 20, meta 12) plus **3 display sizes** reserved exclusively for `CostResultCard` (heading 30, break-even 48, minimum rate 60). The result-card display sizes do not bleed into any other surface.
+**5 effective thread sizes** (each serving a distinct semantic role): meta 12, body muted 14, body 16, sub-question 18, active question 20. Plus **4 display sizes** reserved exclusively for `CostResultCard` (expense-tile 24, heading 30, break-even 48, minimum rate 60). The result-card display sizes do not bleed into any other surface. Total declared sizes across all surfaces: 9.
 
-Only **2 weights** in regular use: 400 (regular) and 600 (semibold). 700 (bold) is reserved for the result-card heading + value displays and `Meta`/category tags.
+Only **2 weights** in regular use across the conversational thread: **400** (regular) and **600** (semibold). **700** (bold) is reserved exclusively for the four `CostResultCard` display values (heading 30, break-even 48, minimum rate 60, expense tile 24). No thread-level surface uses 700.
 
 ---
 
@@ -195,7 +195,7 @@ The executor builds or finishes the components below. Each row maps to a STAB re
 
 | Component | Path | STAB | Visual contract |
 |-----------|------|------|-----------------|
-| `CostResultCard` | `features/carrier-portal/components/CostResultCard/index.tsx` | STAB-08 | Dark `#0F172A` full-viewport surface, centered `maxWidth: 700px`, single-column. Order: overline `COST ANALYSIS COMPLETE` (12 / 700 / grey.400) → heading 30/700/white → subtext 16/400/grey.300 → break-even card (dark elevated, value 48/700/white, animated count-up from $0 over 1500ms ease-out) → minimum-rate card (slightly more elevated, value 60/700/success.light, count-up starts 300ms after break-even) → 3-tile expense breakdown (Monthly Fixed / Monthly Variable / Fuel Cost/Mile — value 24/700/white, label 13/400/grey.400; fade-in as group 600ms after numbers settle) → disclaimer 14/400/grey.400 max-width 600 → success.main CTA `This looks right — Continue →` full-width on mobile, 280px max on desktop. **`prefers-reduced-motion`:** skip all count-up + fade animations, render final values immediately. Receives `{ answers, firstName, onContinue }` props; computes break-even RPM + minimum booking rate inline (formula source: legacy design). |
+| `CostResultCard` | `features/carrier-portal/components/CostResultCard/index.tsx` | STAB-08 | Dark `#0F172A` full-viewport surface, centered `maxWidth: 700px`, single-column. Order: overline `COST ANALYSIS COMPLETE` (12 / 600 / grey.400) → heading 30/700/white → subtext 16/400/grey.300 → break-even card (dark elevated, value 48/700/white, animated count-up from $0 over 1500ms ease-out) → minimum-rate card (slightly more elevated, value 60/700/success.light, count-up starts 300ms after break-even) → 3-tile expense breakdown (Monthly Fixed / Monthly Variable / Fuel Cost/Mile — value 24/700/white, label 13/400/grey.400; fade-in as group 600ms after numbers settle) → disclaimer 14/400/grey.400 max-width 600 → success.main CTA `This looks right — Continue →` full-width on mobile, 280px max on desktop. **`prefers-reduced-motion`:** skip all count-up + fade animations, render final values immediately. Receives `{ answers, firstName, onContinue }` props; computes break-even RPM + minimum booking rate inline (formula source: legacy design). |
 
 ### B. Components that already exist and need verification/wiring (no visual changes unless gaps found)
 
@@ -339,7 +339,7 @@ The project does not use shadcn or any third-party component registry. All compo
 - [ ] Dimension 1 Copywriting: PASS — phase labels, CTAs, validation snackbar, saving indicators, sub-question category tags all declared verbatim
 - [ ] Dimension 2 Visuals: PASS — component inventory mapped 1:1 to STAB requirements; visual contracts defer to legacy designs where they specify pixels
 - [ ] Dimension 3 Color: PASS — uses existing MUI palette tokens only; one justified dark surface for `CostResultCard`; accent reserved-for list is explicit
-- [ ] Dimension 4 Typography: PASS — 4 thread sizes + 3 result-display sizes, 2 weights (400/600) with 700 reserved for displays
+- [ ] Dimension 4 Typography: PASS — 5 thread sizes (12/14/16/18/20) + 4 result-card display sizes (24/30/48/60) isolated to CostResultCard. 2 weights in the thread (400/600). 700 reserved exclusively for the 4 CostResultCard display values. No thread surface uses 700.
 - [ ] Dimension 5 Spacing: PASS — MUI 8-point scale, 4 hard-coded pixel exceptions all justified (touch targets, content widths)
 - [ ] Dimension 6 Registry Safety: PASS — no shadcn, no third-party registry, no new deps
 
