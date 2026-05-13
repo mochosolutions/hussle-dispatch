@@ -31,7 +31,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Validation failures surface visibly via notistack snackbar and the page scrolls to the first error field
   4. Phase metadata (`PHASE_LABELS`, `TOTAL_PHASES`, phase list) lives in a single `features/carrier-portal/constants.ts` consumed by both `CarrierPortalPage` and `PortalLayout`
   5. Playwright e2e test `invite → portal → all 6 phases → submit → approve` runs green in CI
-**Plans**: TBD
+**Plans**: 8 plans
+- [ ] 01-01-PLAN.md — Wave 0 test scaffolds (jest harnesses + playwright stub for STAB-01/02/03/05/07/08/10/11/12/14)
+- [ ] 01-02-PLAN.md — Slice + saga foundation (lift currentPhase, lastSavedPhase rising-edge, 2 new save action triples + saga workers + API client; STAB-01 mechanism + STAB-03 saga + STAB-05)
+- [ ] 01-03-PLAN.md — Phase metadata constants + PortalLayout migration (STAB-04 PortalLayout side + STAB-13)
+- [ ] 01-04-PLAN.md — Cost analysis schema + CostResultCard rebuild + questionSchema PresetOption (STAB-06, STAB-08)
+- [ ] 01-05-PLAN.md — Lane preferences schema (STAB-09)
+- [ ] 01-06-PLAN.md — CarrierPortalPage wiring: saga-driven Save & Continue + validation snackbar + scroll-to-error + completeOnboarding dispatch + constants imports (STAB-01 full, STAB-02, STAB-03 full, STAB-04 page side)
+- [ ] 01-07-PLAN.md — Component wiring: InputRenderer presetTiles case + StateGrid a11y attrs + SubQuestion typography 16/600 (STAB-07, STAB-10, STAB-11, STAB-12)
+- [ ] 01-08-PLAN.md — Playwright e2e flip + SMOKE-CHECKLIST.md + CI hook (STAB-14, STAB-15)
 **UI hint**: yes
 
 ### Phase 2: Security & Hygiene
@@ -105,7 +113,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 (strictly seque
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stabilize | 0/TBD | Not started | - |
+| 1. Stabilize | 0/8 | Not started | - |
 | 2. Security & Hygiene | 0/TBD | Not started | - |
 | 3. Schema + Engine | 0/TBD | Not started | - |
 | 4. Mid-Flow Signing + Field Locking | 0/TBD | Not started | - |
