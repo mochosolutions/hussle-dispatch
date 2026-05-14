@@ -190,5 +190,31 @@ describe('createRedisCacheAdapter', () => {
 
       expect(result).toBeNull();
     });
+
+    it.each([
+      ['top-level non-object', '"just-a-string"'],
+      ['mcNumber wrong type', { override: { mcNumber: 123 } }],
+      ['dotNumber wrong type', { override: { dotNumber: 5 } }],
+      ['legalName wrong type', { override: { legalName: false } }],
+      ['dba wrong type', { override: { dba: 42 } }],
+      ['address wrong type', { override: { address: true } }],
+      ['authorityStatus invalid', { override: { authorityStatus: 'BOGUS' } }],
+      ['safetyRating invalid', { override: { safetyRating: 'POOR' } }],
+      ['fleetSize wrong type', { override: { fleetSize: 'lots' } }],
+      ['officerName wrong type', { override: { officerName: 7 } }],
+      ['lastCheckedAt wrong type', { override: { lastCheckedAt: true } }],
+      ['raw wrong type', { override: { raw: 'oops' } }],
+    ])('returns null when %s', async (_label, payload) => {
+      const { adapter, redis } = makeHarness();
+      const stored =
+        typeof payload === 'string'
+          ? payload
+          : JSON.stringify({ ...makeSnapshot(), ...payload.override });
+      redis.__store.set('fmcsa:mc:MC123456', stored);
+
+      const result = await adapter.get('fmcsa:mc:MC123456');
+
+      expect(result).toBeNull();
+    });
   });
 });
