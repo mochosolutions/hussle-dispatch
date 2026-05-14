@@ -225,4 +225,60 @@ export interface EventMap {
     identifier: { type: 'mc' | 'dot'; value: string };
     reason: 'timeout' | 'rate_limit' | 'provider_error';
   };
+  'agreement.generated': {
+    agreementId: string;
+    organizationId: string;
+    carrierId: string;
+    templateKey: 'DISPATCH_AGREEMENT';
+    providerSubmissionId: string;
+    correlationId: string;
+  };
+  'agreement.signed': {
+    agreementId: string;
+    organizationId: string;
+    carrierId: string;
+    providerSubmissionId: string;
+    signedAt: string;
+    correlationId: string;
+  };
+  'agreement.declined': {
+    agreementId: string;
+    organizationId: string;
+    carrierId: string;
+    providerSubmissionId: string;
+    declinedAt: string;
+  };
+  'agreement.expired': {
+    agreementId: string;
+    organizationId: string;
+    carrierId: string;
+    providerSubmissionId: string;
+    expiredAt: string;
+  };
+  'agreement.voided': {
+    agreementId: string;
+    organizationId: string;
+    carrierId: string;
+    voidedAt: string;
+    voidReason: string | null;
+    voidedByUserId: string | null;
+  };
+  'agreement.finalized': {
+    agreementId: string;
+    organizationId: string;
+    carrierId: string;
+    signedPdfS3Key: string;
+    auditCertificateS3Key: string;
+    signedPdfSha256: string;
+  };
+  'signature.submission.created': {
+    correlationId: string;
+    providerSubmissionId: string;
+    templateKey: 'DISPATCH_AGREEMENT';
+  };
+  'signature.submission.failed': {
+    correlationId: string;
+    templateKey: 'DISPATCH_AGREEMENT';
+    reason: 'timeout' | 'rate_limit' | 'provider_error';
+  };
 }
