@@ -183,6 +183,7 @@ A magic-link carrier onboarding portal — invited → signed → ready-to-dispa
 - **Standard is available, not mandatory.** The schema/engine pattern earns its keep for declarative-rule features. For non-declarative features (load dispatch, settlement math), let the pattern not apply.
 - **Tech stack.** Node + Express + Prisma + Postgres + Redis + RabbitMQ on the API; React 18 + MUI v5 + Redux Toolkit + Saga + Yup on the UI. Validator: Yup (codebase incumbent).
 - **Git identity.** No `Co-Authored-By` lines. Use configured user identity only.
+- **Parallel MVP push exists, but is gated on this project.** A separate end-to-end dispatch loop (load → SMS → docs → invoice → settlement) is tracked at `docs/tasks/mvp-plan.md` (Tracks 0–11 done; Track 12 + V.E2E.1/V.MAN.1/V.TRIAL.1 pending). MVP verification (V.E2E.1 Playwright full loop, V.TRIAL.1 real dispatcher trial) **is blocked on Phase 1 exit** — the onboarding flow has to actually work before the dispatch loop can be end-to-end verified. Phase 2 (Security & Hygiene) **must ship before MVP production traffic**; staging demo on synthetic data is fine pre-Phase 2.
 
 ## Key Decisions
 

@@ -72,14 +72,24 @@ export const initializeCarrierOnboardingSubscriber = async (
     });
 
     if (data.carrierPhone) {
-      await deps.smsService.sendSms({
-        to: data.carrierPhone,
-        body: `You've been invited to onboard as a carrier. Complete your profile here: ${portalUrl}`,
-      });
+      try {
+        await deps.smsService.sendSms({
+          to: data.carrierPhone,
+          body: `You've been invited to onboard as a carrier. Complete your profile here: ${portalUrl}`,
+        });
 
-      deps.logger.info('Carrier invite SMS sent', {
-        carrierId: data.carrierId,
-      });
+        deps.logger.info('Carrier invite SMS sent', {
+          carrierId: data.carrierId,
+        });
+      } catch (error: unknown) {
+        // SMS is best-effort — never re-throw, or the message will be requeued
+        // and the invite email will be sent again on every retry.
+        deps.logger.warn('Carrier invite SMS failed — continuing', {
+          carrierId: data.carrierId,
+          carrierPhone: data.carrierPhone,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   });
 
@@ -147,14 +157,22 @@ export const initializeCarrierOnboardingSubscriber = async (
     });
 
     if (data.carrierPhone) {
-      await deps.smsService.sendSms({
-        to: data.carrierPhone,
-        body: `Congratulations! You've been approved as a carrier with ${data.organizationId}. You can now receive load dispatches.`,
-      });
+      try {
+        await deps.smsService.sendSms({
+          to: data.carrierPhone,
+          body: `Congratulations! You've been approved as a carrier with ${data.organizationId}. You can now receive load dispatches.`,
+        });
 
-      deps.logger.info('Carrier approved SMS sent', {
-        carrierId: data.carrierId,
-      });
+        deps.logger.info('Carrier approved SMS sent', {
+          carrierId: data.carrierId,
+        });
+      } catch (error: unknown) {
+        deps.logger.warn('Carrier approved SMS failed — continuing', {
+          carrierId: data.carrierId,
+          carrierPhone: data.carrierPhone,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   });
 
@@ -183,14 +201,22 @@ export const initializeCarrierOnboardingSubscriber = async (
     });
 
     if (data.carrierPhone) {
-      await deps.smsService.sendSms({
-        to: data.carrierPhone,
-        body: 'Update on your carrier application: Unfortunately your application was not approved at this time. Please check your email for details.',
-      });
+      try {
+        await deps.smsService.sendSms({
+          to: data.carrierPhone,
+          body: 'Update on your carrier application: Unfortunately your application was not approved at this time. Please check your email for details.',
+        });
 
-      deps.logger.info('Carrier rejected SMS sent', {
-        carrierId: data.carrierId,
-      });
+        deps.logger.info('Carrier rejected SMS sent', {
+          carrierId: data.carrierId,
+        });
+      } catch (error: unknown) {
+        deps.logger.warn('Carrier rejected SMS failed — continuing', {
+          carrierId: data.carrierId,
+          carrierPhone: data.carrierPhone,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   });
 

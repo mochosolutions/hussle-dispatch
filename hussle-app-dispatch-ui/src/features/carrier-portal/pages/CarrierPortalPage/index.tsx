@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Formik, yupToFormErrors } from 'formik';
+import { Formik, setIn, yupToFormErrors } from 'formik';
 import type { FormikErrors, FormikTouched } from 'formik';
-import { enqueueSnackbar } from 'notistack';
 import { useSelector, useDispatch } from 'store';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 
 import type { QuestionDefinition } from 'components/ConversationalForm';
 
@@ -269,20 +269,22 @@ const PortalPhaseRunner: React.FC<PortalPhaseRunnerProps> = ({
   // STAB-02: surface validation failures via snackbar + scroll-to-first-error.
   const handleContinue = useCallback(async () => {
     const errors = await formik.validateForm();
-    const allTouched: FormikTouched<Record<string, unknown>> = {};
+    // Build touched as a nested shape that matches what Formik's setIn produces
+    // for errors — otherwise getIn(touched, 'company.firstName') returns
+    // undefined and BaseFieldWrapper hides the error.
+    let allTouched: FormikTouched<Record<string, unknown>> = {};
     collectFieldIds(phaseQuestions).forEach((id) => {
-      allTouched[id] = true;
+      allTouched = setIn(allTouched, id, true) as FormikTouched<Record<string, unknown>>;
     });
     await formik.setTouched(allTouched, false);
 
     if (Object.keys(errors).length > 0) {
-      enqueueSnackbar('Please answer the highlighted questions before continuing.', {
-        variant: 'warning',
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        autoHideDuration: 4000,
-        preventDuplicate: true,
-        key: 'phase-validation-error',
-      });
+      dispatch(
+        notify({
+          message: 'Please answer the highlighted questions before continuing.',
+          variant: 'warning',
+        }),
+      );
 
       const firstErrorId = Object.keys(errors)[0];
       if (firstErrorId !== undefined) {
@@ -302,7 +304,7 @@ const PortalPhaseRunner: React.FC<PortalPhaseRunnerProps> = ({
       return;
     }
     await formik.submitForm();
-  }, [formik, phaseQuestions]);
+  }, [dispatch, formik, phaseQuestions]);
 
   // STAB-08 / BLOCKER 3: Phase 4 cost-analysis field extraction for CostResultCard.
   // All 6 fields must be non-empty for the result card to replace the question thread.

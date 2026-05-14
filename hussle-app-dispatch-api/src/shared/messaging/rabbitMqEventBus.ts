@@ -21,6 +21,10 @@ const DELAYED_EXCHANGE_NAME = 'fleet-command.delayed';
 const DELAYED_EXCHANGE_TYPE = 'x-delayed-message';
 const RECONNECT_DELAY_MS = 5000;
 const MAX_RETRIES = 3;
+const RETRY_COUNT_HEADER = 'x-retry-count';
+// Backoff per retry attempt (ms). Index 0 = delay before retry #1.
+// Falls back to immediate republish when the delayed exchange plugin is unavailable.
+const RETRY_BACKOFF_MS = [1000, 5000, 30000];
 
 interface PendingSubscription {
   event: string;
@@ -56,36 +60,25 @@ class DelayedExchangeUnavailableError extends Error {
 }
 
 /**
- * Type guard for x-death entries with a numeric count field.
- */
-const isXDeathWithCount = (value: unknown): value is { count: number } => {
-  if (typeof value !== 'object' || value === null || !('count' in value)) {
-    return false;
-  }
-  return typeof value.count === 'number';
-};
-
-/**
- * Extracts the retry count from a message's x-death header.
- * Returns 0 if the header is absent or malformed.
+ * Reads the retry count tracked in our custom `x-retry-count` header.
+ *
+ * We intentionally don't rely on the broker's `x-death` header: that header
+ * is only populated when a message is dead-lettered via a DLX, not on plain
+ * `nack(requeue=true)`. Tracking the count ourselves and republishing keeps
+ * the retry contract independent of DLX topology.
  */
 const getRetryCount = (msg: ConsumeMessage): number => {
   const headers = msg.properties.headers;
   if (!headers) {
     return 0;
   }
+  const raw = headers[RETRY_COUNT_HEADER];
+  return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? raw : 0;
+};
 
-  const xDeath = headers['x-death'];
-  if (!Array.isArray(xDeath) || xDeath.length === 0) {
-    return 0;
-  }
-
-  const firstEntry: unknown = xDeath[0];
-  if (isXDeathWithCount(firstEntry)) {
-    return firstEntry.count;
-  }
-
-  return 0;
+const getBackoffMs = (retryCount: number): number => {
+  const idx = Math.min(retryCount, RETRY_BACKOFF_MS.length - 1);
+  return RETRY_BACKOFF_MS[idx] ?? 0;
 };
 
 export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus => {
@@ -189,21 +182,53 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
         })
         .catch((error: unknown) => {
           const retryCount = getRetryCount(msg);
+          const nextRetry = retryCount + 1;
 
-          if (retryCount < MAX_RETRIES) {
-            logger.warn('Event handler failed, requeueing for retry', {
-              event,
-              retryCount: retryCount + 1,
-              maxRetries: MAX_RETRIES,
-              error: String(error),
-            });
-            ch.nack(msg, false, true);
-          } else {
+          if (nextRetry > MAX_RETRIES) {
             logger.error('Event handler failed after max retries, discarding message', {
               event,
               retryCount,
               maxRetries: MAX_RETRIES,
               error: String(error),
+              payload: content,
+            });
+            ch.ack(msg);
+            return;
+          }
+
+          const backoffMs = getBackoffMs(retryCount);
+          const useDelayed = delayedExchangeAvailable && backoffMs > 0;
+          const targetExchange = useDelayed ? DELAYED_EXCHANGE_NAME : EXCHANGE_NAME;
+          const publishHeaders: Record<string, unknown> = {
+            ...(msg.properties.headers ?? {}),
+            [RETRY_COUNT_HEADER]: nextRetry,
+          };
+          if (useDelayed) {
+            publishHeaders['x-delay'] = backoffMs;
+          }
+
+          try {
+            ch.publish(targetExchange, event, msg.content, {
+              persistent: true,
+              contentType: msg.properties.contentType ?? 'application/json',
+              headers: publishHeaders,
+            });
+            logger.warn('Event handler failed, scheduled retry', {
+              event,
+              retryCount: nextRetry,
+              maxRetries: MAX_RETRIES,
+              delayMs: useDelayed ? backoffMs : 0,
+              error: String(error),
+            });
+            ch.ack(msg);
+          } catch (republishError: unknown) {
+            // If we can't republish, drop the message rather than risk an
+            // infinite redelivery loop. The original error is the real signal.
+            logger.error('Failed to republish for retry, discarding message', {
+              event,
+              retryCount,
+              originalError: String(error),
+              republishError: String(republishError),
               payload: content,
             });
             ch.nack(msg, false, false);

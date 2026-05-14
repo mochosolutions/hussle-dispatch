@@ -77,7 +77,7 @@ const PortalFooterBar: React.FC<PortalFooterBarProps> = ({
             endIcon={<ArrowForward />}
             onClick={onContinue}
             loading={isContinuing}
-            disabled={!canContinue}
+            // disabled={!canContinue}
           >
             Save &amp; Continue
           </LoadingButton>

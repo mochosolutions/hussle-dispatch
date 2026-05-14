@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Container } from '@mui/material';
-import { ConfirmDialog } from 'mocho/components';
 
 import { useSelector } from 'store';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 
 import { PHASE_LABELS } from '../../constants';
 import {
@@ -41,13 +40,14 @@ const PortalLayout: React.FC<PortalLayoutProps> = ({
   const completedPhases = useSelector(selectCompletedPhases);
   const savingAnswer = useSelector(selectIsSavingAnswer);
   const lastSavedAt = useSelector(selectLastSavedAt);
-  const [exitOpen, setExitOpen] = useState(false);
+  const { openModal } = useModalActions();
 
   const phaseLabel = PHASE_LABELS[currentPhase - 1] ?? PHASE_LABELS[0];
 
-  const handleExitConfirm = () => {
-    setExitOpen(false);
-    window.close();
+  const handleSaveExit = () => {
+    openModal('portalSaveExitConfirm', {
+      onConfirm: () => window.close(),
+    });
   };
 
   return (
@@ -72,20 +72,9 @@ const PortalLayout: React.FC<PortalLayoutProps> = ({
           onContinue={onContinue}
           isContinuing={isContinuing}
           canContinue={canContinue}
-          onSaveExit={() => setExitOpen(true)}
+          onSaveExit={handleSaveExit}
         />
       ) : null}
-
-      <ConfirmDialog
-        open={exitOpen}
-        title="All set for now"
-        content="Your progress is saved. Come back any time using the same invitation link to pick up where you left off."
-        confirmLabel="Got it"
-        cancelLabel="Keep going"
-        severity="info"
-        onConfirm={handleExitConfirm}
-        onClose={() => setExitOpen(false)}
-      />
     </Box>
   );
 };

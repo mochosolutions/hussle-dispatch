@@ -106,7 +106,8 @@ export type ModalType =
   | 'adminActivateCarrier'
   | 'activateCarrier'
   | 'confirmDeleteDocument'
-  | 'upgradePlan';
+  | 'upgradePlan'
+  | 'portalSaveExitConfirm';
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
@@ -144,4 +145,5 @@ export interface ModalTypeMap {
     resourceType: 'team members' | 'vehicles';
     limit: number;
   };
+  portalSaveExitConfirm: { onConfirm: () => void };
 }
