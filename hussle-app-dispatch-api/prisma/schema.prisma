@@ -54,6 +54,7 @@ model Organization {
   loans                 Loan[]
   smsPromptSchedules    SmsPromptSchedule[]
   apiKeys               OrgApiKey[]
+  agreements            Agreement[]
 
   @@index([slug])
   @@index([deleted, status])
@@ -89,6 +90,8 @@ model User {
   statusChanges      LoadStatusHistory[]
   checkCalls         CheckCall[]
   documentsUploaded  Document[]          @relation("DocumentUploader")
+  agreementsCreated  Agreement[]         @relation("AgreementCreator")
+  agreementsVoided   Agreement[]         @relation("AgreementVoider")
 
   @@index([externalId])
   @@index([email])
@@ -629,6 +632,7 @@ model Carrier {
   onboardingSession                 OnboardingSession?
   carrierInviteTokens               CarrierInviteToken[]
   settlements                       Settlement[]
+  agreements                        Agreement[]
 
   @@index([managedByOrgId])
 }
@@ -1518,4 +1522,52 @@ model ShortLink {
 
   @@index([loadId])
   @@index([expiresAt])
+}
+
+enum AgreementStatus {
+  DRAFT
+  PENDING
+  SIGNED
+  VOIDED
+  EXPIRED
+  DECLINED
+}
+
+enum AgreementTemplateKey {
+  DISPATCH_AGREEMENT
+}
+
+model Agreement {
+  id                    String               @id @default(uuid())
+  organizationId        String
+  carrierId             String
+  templateKey           AgreementTemplateKey
+  status                AgreementStatus      @default(PENDING)
+  providerName          String
+  providerSubmissionId  String?              @unique
+  embedUrl              String?
+  embedUrlExpiresAt     DateTime?
+  signerName            String?
+  signerEmail           String?
+  variables             Json                 @default("{}")
+  signedPdfS3Key        String?
+  auditCertificateS3Key String?
+  signedPdfSha256       String?
+  signedAt              DateTime?
+  declinedAt            DateTime?
+  expiredAt             DateTime?
+  voidedAt              DateTime?
+  voidedByUserId        String?
+  voidReason            String?
+  createdAt             DateTime             @default(now())
+  createdByUserId       String?
+  updatedAt             DateTime             @updatedAt
+  organization          Organization         @relation(fields: [organizationId], references: [id])
+  carrier               Carrier              @relation(fields: [carrierId], references: [id])
+  createdByUser         User?                @relation("AgreementCreator", fields: [createdByUserId], references: [id])
+  voidedByUser          User?                @relation("AgreementVoider", fields: [voidedByUserId], references: [id])
+
+  @@index([organizationId, carrierId, status])
+  @@index([status, updatedAt])
+  @@index([organizationId])
 }
