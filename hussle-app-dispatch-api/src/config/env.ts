@@ -54,6 +54,7 @@ export const env = {
   SMTP_PASS: getEnv('SMTP_PASS', ''),
   SMTP_SECURE: getEnv('SMTP_SECURE', 'false') === 'true',
   SMS_BACKEND: requireInProd('SMS_BACKEND') as 'console' | 'twilio',
+  FMCSA_PROVIDER: getEnv('FMCSA_PROVIDER', 'mock') as 'mock' | 'safer-web',
   TWILIO_ACCOUNT_SID: requireInProd('TWILIO_ACCOUNT_SID'),
   TWILIO_AUTH_TOKEN: requireInProd('TWILIO_AUTH_TOKEN'),
   TWILIO_FROM_NUMBER: requireInProd('TWILIO_FROM_NUMBER'),

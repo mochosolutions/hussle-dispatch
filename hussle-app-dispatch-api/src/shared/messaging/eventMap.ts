@@ -1,3 +1,5 @@
+import type { FmcsaSnapshot } from '@/shared/fmcsa/types';
+
 /**
  * Single source of truth mapping event names to typed payloads.
  * Adding a new event = one entry in this interface.
@@ -210,5 +212,17 @@ export interface EventMap {
     smsPromptScheduleId: string;
     loadId: string;
     reason: string;
+  };
+  'fmcsa.lookup.completed': {
+    correlationId: string;
+    identifier: { type: 'mc' | 'dot'; value: string };
+    result:
+      | { status: 'found'; snapshot: FmcsaSnapshot }
+      | { status: 'not_found' };
+  };
+  'fmcsa.lookup.failed': {
+    correlationId: string;
+    identifier: { type: 'mc' | 'dot'; value: string };
+    reason: 'timeout' | 'rate_limit' | 'provider_error';
   };
 }
