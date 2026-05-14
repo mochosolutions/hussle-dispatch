@@ -54,7 +54,7 @@ export const SubQuestion: React.FC<SubQuestionProps> = ({
 
       <Typography
         sx={{
-          fontSize: '18px',
+          fontSize: 16,
           fontWeight: 600,
           color: 'text.primary',
           lineHeight: 1.3,

@@ -39,6 +39,16 @@ const getNextPreference = (current: string | undefined): StatePreference | undef
   return CYCLE_ORDER[nextIndex];
 };
 
+const labelForPreference = (preference: StatePreference | undefined): string => {
+  if (preference === 'PREFERRED') {
+    return 'Preferred';
+  }
+  if (preference === 'AVOIDED') {
+    return 'Avoided';
+  }
+  return 'Neutral';
+};
+
 const getTileStyles = (preference: string | undefined) => {
   if (preference === 'PREFERRED') {
     return { bgcolor: 'success.light', borderColor: 'success.main' };
@@ -97,13 +107,24 @@ export const StateGrid: React.FC<StateGridProps> = ({ value, onChange }) => {
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
         {US_STATES.map((stateCode) => {
-          const preference = value[stateCode];
+          const preference = value[stateCode] as StatePreference | undefined;
           const styles = getTileStyles(preference);
+          const prefLabel = labelForPreference(preference);
 
           return (
             <Box
               key={stateCode}
+              role="button"
+              tabIndex={0}
+              aria-pressed={preference !== undefined}
+              aria-label={`${stateCode}: ${prefLabel}, tap to cycle`}
               onClick={() => handleClick(stateCode)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClick(stateCode);
+                }
+              }}
               sx={{
                 width: 48,
                 height: 48,
