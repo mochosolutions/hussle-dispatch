@@ -11,3 +11,22 @@ hussle-app-dispatch-api/node_modules/
 
 **/dist/*
 mocho-infra-modules/
+
+# OS metadata
+.DS_Store
+**/.DS_Store
+
+# Editor / tooling configs (machine-local)
+.vscode/
+.codex/
+.claude/settings.local.json
+.claude/worktrees/
+
+# Test / debug artifacts
+.playwright-mcp/
+**/.playwright-mcp/
+screenshots/
+/*.png
+
+# Backend dev storage (local-only carrier file uploads)
+hussle-app-dispatch-api/storage/*/
