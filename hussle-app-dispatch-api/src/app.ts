@@ -30,6 +30,7 @@ import { settlementsRouter } from './settlements';
 // Side-effect imports: initialize subscribers on startup
 import './audit';
 import './notifications';
+import '@/shared/fmcsa';
 import { smsPromptsRouter } from './sms-prompts';
 import { shortLinksRouter } from './short-links';
 import { env } from './config/env';
