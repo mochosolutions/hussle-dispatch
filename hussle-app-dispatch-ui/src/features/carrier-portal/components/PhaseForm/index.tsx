@@ -231,6 +231,7 @@ const QuestionField: React.FC<FieldProps> = ({ question, formik, token }) => {
             value={formik.values[id]}
             onChange={(value) => formik.setFieldValue(id, value)}
             options={options}
+            presets={'presets' in question ? question.presets : undefined}
             required={required}
           />
         </Box>

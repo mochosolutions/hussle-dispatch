@@ -31,5 +31,26 @@ describe('InputRenderer routing', () => {
     expect(screen.getByText('CA')).toBeInTheDocument();
   });
 
-  it.todo('routes inputType="presetTiles" to PresetTileSelector — STAB-12');
+  it('routes inputType="presetTiles" to PresetTileSelector — STAB-12', () => {
+    // Arrange
+    const presets = [
+      { value: 100, label: '$100' },
+      { value: 250, label: '$250' },
+    ];
+
+    // Act
+    renderWithTheme(
+      <InputRenderer
+        inputType="presetTiles"
+        value={100}
+        onChange={jest.fn()}
+        presets={presets}
+      />,
+    );
+
+    // Assert — PresetTileSelector renders its preset chips plus the Custom chip.
+    expect(screen.getByText('$100')).toBeInTheDocument();
+    expect(screen.getByText('$250')).toBeInTheDocument();
+    expect(screen.getByText('Custom')).toBeInTheDocument();
+  });
 });
