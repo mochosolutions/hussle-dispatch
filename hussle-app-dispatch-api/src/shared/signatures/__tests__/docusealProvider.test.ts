@@ -35,21 +35,29 @@ const makeLogger = (): Logger => ({
 
 const baseInput: CreateSubmissionInput = {
   templateKey: 'DISPATCH_AGREEMENT',
-  variables: { carrierName: 'Acme Trucking' },
+  variables: {
+    carrier_legal_name: 'Acme Trucking',
+    mc_number: 'MC123456',
+    dot_number: 'DOT789012',
+    dispatcher_org_name: 'Mocho Solutions',
+    effective_date: '2026-05-15',
+  },
   signer: { name: 'Jane Driver', email: 'jane@acme.test' },
-  metadata: { html: '<html><body>Sign here</body></html>', agreementId: 'a1' },
+  metadata: { agreementId: 'a1' },
 };
 
-const sampleCreateResponse = {
-  id: 'sub_abc',
-  status: 'pending',
-  submitters: [
-    { embed_src: 'https://docuseal/embed/xyz', email: 'jane@acme.test' },
-  ],
-  expire_at: '2026-06-01T00:00:00.000Z',
-  documents: [{ url: 'https://docuseal/doc/abc.pdf' }],
-  audit_log_url: 'https://docuseal/audit/abc.pdf',
-};
+const sampleCreateResponse = [
+  {
+    submission_id: 42,
+    slug: 'abc123',
+    uuid: 'uuid-1',
+    name: 'Jane Driver',
+    email: 'jane@acme.test',
+    status: 'awaiting',
+    embed_src: 'http://localhost:3030/s/abc123',
+    completed_at: null,
+  },
+];
 
 const baseGetResponse = {
   id: 'sub_abc',
@@ -69,6 +77,7 @@ describe('docusealProvider', () => {
         createDocusealProvider({
           baseUrl: '',
           apiKey: 'k',
+          templateId: 1,
           logger: makeLogger(),
         })
       ).toThrow(/DocuSeal config missing/);
@@ -79,6 +88,7 @@ describe('docusealProvider', () => {
         createDocusealProvider({
           baseUrl: 'https://docuseal.test',
           apiKey: '',
+          templateId: 1,
           logger: makeLogger(),
         })
       ).toThrow(/DocuSeal config missing/);
@@ -86,7 +96,7 @@ describe('docusealProvider', () => {
   });
 
   describe('createSubmission', () => {
-    it('posts to {baseUrl}/api/submissions with X-Auth-Token header and JSON body', async () => {
+    it('posts template_id + submitters[].values to {baseUrl}/api/submissions with X-Auth-Token header', async () => {
       const fetch = jest.fn().mockResolvedValue(
         makeResponse({ status: 200, body: sampleCreateResponse })
       );
@@ -94,12 +104,13 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'secret-key',
+        templateId: 7,
         fetch,
         sleep,
         logger: makeLogger(),
       });
 
-      const ref = await provider.createSubmission(baseInput);
+      await provider.createSubmission(baseInput);
 
       expect(fetch).toHaveBeenCalledTimes(1);
       const [url, init] = fetch.mock.calls[0];
@@ -108,15 +119,57 @@ describe('docusealProvider', () => {
       expect(init.headers['X-Auth-Token']).toBe('secret-key');
       expect(init.headers['Content-Type']).toBe('application/json');
       const parsedBody = JSON.parse(init.body);
-      expect(parsedBody.template_html).toBe('<html><body>Sign here</body></html>');
-      expect(parsedBody.submitters).toEqual([
-        { name: 'Jane Driver', email: 'jane@acme.test', role: 'First Party' },
-      ]);
-      expect(ref).toEqual({
-        providerSubmissionId: 'sub_abc',
-        embedUrl: 'https://docuseal/embed/xyz',
-        expiresAt: new Date('2026-06-01T00:00:00.000Z'),
+      expect(parsedBody.template_id).toBe(7);
+      expect(parsedBody.template_html).toBeUndefined();
+      expect(parsedBody.send_email).toBe(false);
+      expect(parsedBody.submitters).toHaveLength(1);
+      expect(parsedBody.submitters[0].name).toBe('Jane Driver');
+      expect(parsedBody.submitters[0].email).toBe('jane@acme.test');
+      expect(parsedBody.submitters[0].role).toBe('Carrier');
+      expect(parsedBody.submitters[0].values).toEqual(baseInput.variables);
+    });
+
+    it('parses embed_src and submission_id from top-level array response', async () => {
+      // Arrange
+      const fetch = jest.fn().mockResolvedValue(
+        makeResponse({ status: 200, body: sampleCreateResponse })
+      );
+      const provider = createDocusealProvider({
+        baseUrl: 'https://docuseal.test',
+        apiKey: 'k',
+        templateId: 1,
+        fetch,
+        sleep: jest.fn().mockResolvedValue(undefined),
+        logger: makeLogger(),
       });
+      const before = Date.now();
+
+      // Act
+      const ref = await provider.createSubmission(baseInput);
+
+      // Assert
+      expect(ref.providerSubmissionId).toBe('42');
+      expect(ref.embedUrl).toBe('http://localhost:3030/s/abc123');
+      const expectedExpiry = before + 24 * 60 * 60 * 1000;
+      expect(ref.expiresAt.getTime()).toBeGreaterThanOrEqual(expectedExpiry - 1_000);
+      expect(ref.expiresAt.getTime()).toBeLessThanOrEqual(expectedExpiry + 5_000);
+    });
+
+    it('throws before HTTP call when templateId is 0', async () => {
+      const fetch = jest.fn();
+      const provider = createDocusealProvider({
+        baseUrl: 'https://docuseal.test',
+        apiKey: 'k',
+        templateId: 0,
+        fetch,
+        sleep: jest.fn().mockResolvedValue(undefined),
+        logger: makeLogger(),
+      });
+
+      await expect(provider.createSubmission(baseInput)).rejects.toThrow(
+        /DOCUSEAL_DISPATCH_TEMPLATE_ID env var is required/
+      );
+      expect(fetch).not.toHaveBeenCalled();
     });
 
     it('retries on 502 twice then succeeds; sleep called with 1000, 5000', async () => {
@@ -129,6 +182,7 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep,
         logger: makeLogger(),
@@ -136,7 +190,7 @@ describe('docusealProvider', () => {
 
       const ref = await provider.createSubmission(baseInput);
 
-      expect(ref.providerSubmissionId).toBe('sub_abc');
+      expect(ref.providerSubmissionId).toBe('42');
       expect(fetch).toHaveBeenCalledTimes(3);
       expect(sleep).toHaveBeenCalledTimes(2);
       expect(sleep).toHaveBeenNthCalledWith(1, 1_000);
@@ -149,37 +203,15 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep,
         logger: makeLogger(),
       });
 
-      await expect(provider.createSubmission(baseInput)).rejects.toThrow(
-        /status 400/
-      );
+      await expect(provider.createSubmission(baseInput)).rejects.toThrow(/status 400/);
       expect(fetch).toHaveBeenCalledTimes(1);
       expect(sleep).not.toHaveBeenCalled();
-    });
-
-    it('throws when input.metadata.html is missing', async () => {
-      const fetch = jest.fn();
-      const provider = createDocusealProvider({
-        baseUrl: 'https://docuseal.test',
-        apiKey: 'k',
-        fetch,
-        sleep: jest.fn(),
-        logger: makeLogger(),
-      });
-
-      const inputWithoutHtml: CreateSubmissionInput = {
-        ...baseInput,
-        metadata: { agreementId: 'a1' },
-      };
-
-      await expect(provider.createSubmission(inputWithoutHtml)).rejects.toThrow(
-        /requires input.metadata.html/
-      );
-      expect(fetch).not.toHaveBeenCalled();
     });
   });
 
@@ -189,6 +221,7 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep: jest.fn().mockResolvedValue(undefined),
         logger: makeLogger(),
@@ -266,6 +299,7 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep: jest.fn().mockResolvedValue(undefined),
         logger: makeLogger(),
@@ -285,6 +319,7 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep: jest.fn().mockResolvedValue(undefined),
         logger: makeLogger(),
@@ -302,6 +337,7 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep: jest.fn().mockResolvedValue(undefined),
         logger: makeLogger(),
@@ -330,14 +366,13 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep: jest.fn().mockResolvedValue(undefined),
         logger: makeLogger(),
       });
 
-      await expect(provider.refreshEmbedUrl('sub_abc')).rejects.toThrow(
-        /no submitters/
-      );
+      await expect(provider.refreshEmbedUrl('sub_abc')).rejects.toThrow(/no submitters/);
     });
   });
 
@@ -357,6 +392,7 @@ describe('docusealProvider', () => {
       const provider = createDocusealProvider({
         baseUrl: 'https://docuseal.test',
         apiKey: 'k',
+        templateId: 1,
         fetch,
         sleep: jest.fn().mockResolvedValue(undefined),
         logger: makeLogger(),
