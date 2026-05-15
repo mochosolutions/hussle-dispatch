@@ -57,6 +57,18 @@ export const runSignatureProviderContract = (
       await expect(handle.port.voidSubmission(ref.providerSubmissionId)).resolves.toBeUndefined();
     });
 
+    it('refreshEmbedUrl returns a SubmissionRef with same providerSubmissionId and a future expiresAt', async () => {
+      const handle = normalize(makeProvider());
+      const ref = await handle.port.createSubmission(baseInput);
+
+      const refreshed = await handle.port.refreshEmbedUrl(ref.providerSubmissionId);
+
+      expect(refreshed.providerSubmissionId).toBe(ref.providerSubmissionId);
+      expect(refreshed.embedUrl).toBeTruthy();
+      expect(refreshed.expiresAt).toBeInstanceOf(Date);
+      expect(refreshed.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    });
+
     it('markSigned + getSubmission narrows to signed; fetchSignedArtifacts returns Buffers', async () => {
       const handle = normalize(makeProvider());
       if (handle.markSigned === undefined) {

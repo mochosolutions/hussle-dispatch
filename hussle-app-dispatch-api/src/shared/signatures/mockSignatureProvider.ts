@@ -132,6 +132,21 @@ export const createMockSignatureProvider = (): MockSignatureProvider => {
     };
   };
 
+  const refreshEmbedUrl = async (
+    providerSubmissionId: string
+  ): Promise<SubmissionRef> => {
+    const state = submissions.get(providerSubmissionId);
+    if (!state) {
+      throw new Error('Submission not found');
+    }
+    const expiresAt = new Date(Date.now() + SUBMISSION_LIFETIME_MS);
+    return {
+      providerSubmissionId,
+      embedUrl: `/dev/sign/${providerSubmissionId}`,
+      expiresAt,
+    };
+  };
+
   const testHelpers: MockSignatureProviderTestHelpers = {
     markSigned: (providerSubmissionId) => {
       const state = submissions.get(providerSubmissionId);
@@ -151,6 +166,7 @@ export const createMockSignatureProvider = (): MockSignatureProvider => {
     getSubmission,
     voidSubmission,
     fetchSignedArtifacts,
+    refreshEmbedUrl,
     __testHelpers: testHelpers,
   };
 };

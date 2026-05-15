@@ -294,6 +294,53 @@ describe('docusealProvider', () => {
     });
   });
 
+  describe('refreshEmbedUrl', () => {
+    it('GETs {baseUrl}/api/submissions/{id}, returns SubmissionRef from submitters[0].embed_src with future expiresAt', async () => {
+      const fetch = jest.fn().mockResolvedValue(
+        makeResponse({ status: 200, body: { ...baseGetResponse, status: 'pending' } })
+      );
+      const provider = createDocusealProvider({
+        baseUrl: 'https://docuseal.test',
+        apiKey: 'k',
+        fetch,
+        sleep: jest.fn().mockResolvedValue(undefined),
+        logger: makeLogger(),
+      });
+
+      const before = Date.now();
+      const refreshed = await provider.refreshEmbedUrl('sub_abc');
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+      const [url, init] = fetch.mock.calls[0];
+      expect(url).toBe('https://docuseal.test/api/submissions/sub_abc');
+      expect(init.method).toBe('GET');
+      expect(init.headers['X-Auth-Token']).toBe('k');
+      expect(refreshed.providerSubmissionId).toBe('sub_abc');
+      expect(refreshed.embedUrl).toBe('https://docuseal/embed/xyz');
+      expect(refreshed.expiresAt.getTime()).toBeGreaterThanOrEqual(before);
+    });
+
+    it('throws when submitters array is empty', async () => {
+      const fetch = jest.fn().mockResolvedValue(
+        makeResponse({
+          status: 200,
+          body: { ...baseGetResponse, status: 'pending', submitters: [] },
+        })
+      );
+      const provider = createDocusealProvider({
+        baseUrl: 'https://docuseal.test',
+        apiKey: 'k',
+        fetch,
+        sleep: jest.fn().mockResolvedValue(undefined),
+        logger: makeLogger(),
+      });
+
+      await expect(provider.refreshEmbedUrl('sub_abc')).rejects.toThrow(
+        /no submitters/
+      );
+    });
+  });
+
   describe('fetchSignedArtifacts', () => {
     it('fetches the document url and audit log url, returning two Buffers', async () => {
       const fetch = jest

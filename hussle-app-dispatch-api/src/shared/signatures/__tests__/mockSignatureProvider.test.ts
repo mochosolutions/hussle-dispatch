@@ -138,6 +138,25 @@ describe('mockSignatureProvider', () => {
     });
   });
 
+  describe('refreshEmbedUrl', () => {
+    it('returns same providerSubmissionId, same embedUrl shape, and a future expiresAt', async () => {
+      const provider = createMockSignatureProvider();
+      const ref = await provider.createSubmission(baseInput);
+
+      const refreshed = await provider.refreshEmbedUrl(ref.providerSubmissionId);
+
+      expect(refreshed.providerSubmissionId).toBe(ref.providerSubmissionId);
+      expect(refreshed.embedUrl).toBe(`/dev/sign/${ref.providerSubmissionId}`);
+      expect(refreshed.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('throws when the submission has not been created', async () => {
+      const provider = createMockSignatureProvider();
+
+      await expect(provider.refreshEmbedUrl('mock_unknown')).rejects.toThrow();
+    });
+  });
+
   describe('reset helper', () => {
     it('clears all state', async () => {
       const provider = createMockSignatureProvider();

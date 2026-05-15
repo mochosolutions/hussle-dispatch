@@ -23,6 +23,10 @@ import type {
 
 const RETRY_DELAYS_MS = [1_000, 5_000, 30_000] as const;
 
+// DocuSeal embed URLs default to ~24h TTL. Real value should be sourced from
+// provider config in a future iteration; for now we recompute conservatively.
+const EMBED_URL_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -270,10 +274,29 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
     return { signedPdf, auditCertificate };
   };
 
+  const refreshEmbedUrl = async (
+    providerSubmissionId: string
+  ): Promise<SubmissionRef> => {
+    const response = await fetchSubmission(providerSubmissionId);
+    const firstSubmitter = response.submitters[0];
+    if (firstSubmitter === undefined) {
+      throw new Error('DocuSeal refreshEmbedUrl returned no submitters');
+    }
+    if (firstSubmitter.embed_src === undefined) {
+      throw new Error('DocuSeal refreshEmbedUrl returned submitter without embed_src');
+    }
+    return {
+      providerSubmissionId: String(response.id),
+      embedUrl: firstSubmitter.embed_src,
+      expiresAt: new Date(Date.now() + EMBED_URL_LIFETIME_MS),
+    };
+  };
+
   return {
     createSubmission,
     getSubmission,
     voidSubmission,
     fetchSignedArtifacts,
+    refreshEmbedUrl,
   };
 };

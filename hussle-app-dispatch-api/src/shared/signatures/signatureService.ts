@@ -152,5 +152,10 @@ export const createSignatureService = (deps: SignatureServiceDeps): SignatureSer
       logger.info('signatureService.fetchSignedArtifacts', { providerSubmissionId });
       return provider.fetchSignedArtifacts(providerSubmissionId);
     },
+
+    refreshEmbedUrl: async (providerSubmissionId: string): Promise<SubmissionRef> => {
+      logger.info('signatureService.refreshEmbedUrl', { providerSubmissionId });
+      return provider.refreshEmbedUrl(providerSubmissionId);
+    },
   };
 };

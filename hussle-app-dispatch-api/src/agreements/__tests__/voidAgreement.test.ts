@@ -57,6 +57,7 @@ const makeDeps = () => {
     getSubmission: jest.fn(),
     voidSubmission: jest.fn(),
     fetchSignedArtifacts: jest.fn(),
+    refreshEmbedUrl: jest.fn(),
   };
   const logger: jest.Mocked<Logger> = {
     info: jest.fn(),

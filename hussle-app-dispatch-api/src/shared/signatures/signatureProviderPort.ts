@@ -1,8 +1,8 @@
 import type {
   CreateSubmissionInput,
-  SignedArtifacts,
   SubmissionRef,
   SubmissionStatus,
+  SignedArtifacts,
 } from './types';
 
 export interface SignatureProviderPort {
@@ -10,4 +10,5 @@ export interface SignatureProviderPort {
   getSubmission(providerSubmissionId: string): Promise<SubmissionStatus>;
   voidSubmission(providerSubmissionId: string): Promise<void>;
   fetchSignedArtifacts(providerSubmissionId: string): Promise<SignedArtifacts>;
+  refreshEmbedUrl(providerSubmissionId: string): Promise<SubmissionRef>;
 }

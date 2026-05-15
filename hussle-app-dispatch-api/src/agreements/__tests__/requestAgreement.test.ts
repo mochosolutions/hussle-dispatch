@@ -76,6 +76,7 @@ const makeDeps = () => {
     getSubmission: jest.fn(),
     voidSubmission: jest.fn(),
     fetchSignedArtifacts: jest.fn(),
+    refreshEmbedUrl: jest.fn(),
   };
   const renderDispatchAgreement = jest.fn<Promise<string>, [DispatchAgreementVariables]>();
   const carrierQueries: jest.Mocked<CarrierQueryPort> = { findById: jest.fn() };

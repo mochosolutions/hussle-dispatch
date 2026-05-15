@@ -26,6 +26,7 @@ const makeDeps = (): TestDeps => {
     getSubmission: jest.fn(),
     voidSubmission: jest.fn(),
     fetchSignedArtifacts: jest.fn(),
+    refreshEmbedUrl: jest.fn(),
   };
   const eventBus: jest.Mocked<EventBus> = {
     publish: jest.fn().mockResolvedValue(undefined),
