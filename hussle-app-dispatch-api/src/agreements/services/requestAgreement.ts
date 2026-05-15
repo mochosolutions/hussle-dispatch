@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
+import {
+  DISPATCH_AGREEMENT_FIELDS,
+  type DispatchAgreementFieldName,
+} from '@/agreements/templates/dispatchAgreementFields';
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { Logger } from '@/shared/utils/logger';
@@ -38,18 +42,9 @@ export interface CarrierQueryPort {
   } | null>;
 }
 
-export interface DispatchAgreementVariables {
-  carrierLegalName: string;
-  carrierMcNumber: string;
-  carrierDotNumber: string;
-  orgName: string;
-  effectiveDate: string;
-}
-
 export interface RequestAgreementDeps {
   agreementRepo: AgreementRepoPort;
   signatureService: SignatureService;
-  renderDispatchAgreement: (vars: DispatchAgreementVariables) => Promise<string>;
   carrierQueries: CarrierQueryPort;
   providerName: 'MOCK' | 'DOCUSEAL';
   logger: Logger;
@@ -61,7 +56,7 @@ export interface RequestAgreementDeps {
  * Generate a dispatch agreement for a carrier:
  *   1. Resolve carrier (org-scoped read)
  *   2. Reject if a PENDING agreement already exists for this template
- *   3. Render HTML, create signature submission, persist agreement
+ *   3. Build typed field values, create signature submission, persist agreement
  *   4. Emit agreement.generated event
  */
 export const requestAgreement = async (
@@ -88,15 +83,13 @@ export const requestAgreement = async (
 
   const effectiveDate = now.toISOString().slice(0, 10);
 
-  const variables: DispatchAgreementVariables = {
-    carrierLegalName: carrier.legalName,
-    carrierMcNumber: carrier.mcNumber,
-    carrierDotNumber: carrier.dotNumber ?? '',
-    orgName: input.orgName,
-    effectiveDate,
+  const variables: Record<DispatchAgreementFieldName, string> = {
+    [DISPATCH_AGREEMENT_FIELDS.CARRIER_LEGAL_NAME]: carrier.legalName,
+    [DISPATCH_AGREEMENT_FIELDS.CARRIER_MC_NUMBER]: carrier.mcNumber,
+    [DISPATCH_AGREEMENT_FIELDS.CARRIER_DOT_NUMBER]: carrier.dotNumber ?? '',
+    [DISPATCH_AGREEMENT_FIELDS.DISPATCHER_ORG_NAME]: input.orgName,
+    [DISPATCH_AGREEMENT_FIELDS.EFFECTIVE_DATE]: effectiveDate,
   };
-
-  const html = await deps.renderDispatchAgreement(variables);
 
   const signerName = input.signerName ?? carrier.primaryContactName ?? carrier.legalName;
   const signerEmail = input.signerEmail ?? carrier.primaryContactEmail;
@@ -112,10 +105,9 @@ export const requestAgreement = async (
   const ref = await deps.signatureService.createSubmission(
     {
       templateKey: input.templateKey,
-      variables: variables as unknown as Record<string, unknown>,
+      variables,
       signer: { name: signerName, email: signerEmail },
       metadata: {
-        html,
         carrierId: input.carrierId,
         organizationId: input.organizationId,
       },
