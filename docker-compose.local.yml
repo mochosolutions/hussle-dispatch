@@ -52,7 +52,28 @@ services:
     networks:
       - dokploy-network
 
+  # DocuSeal (document signing) — optional service. Start with `--profile docuseal`.
+  # When SIGNATURE_PROVIDER=mock (default in local dev), this service is unused.
+  # When SIGNATURE_PROVIDER=docuseal, point DOCUSEAL_BASE_URL=http://localhost:3030.
+  # On first boot, log into the admin UI and generate API key + webhook secret,
+  # then copy them into hussle-app-dispatch-api/.env (DOCUSEAL_API_KEY, DOCUSEAL_WEBHOOK_SECRET).
+  docuseal:
+    image: docuseal/docuseal:latest
+    ports:
+      - "3030:3000"
+    environment:
+      FORCE_SSL: "false"
+      HOST: localhost:3030
+    volumes:
+      - docuseal_data:/data
+    networks:
+      - dokploy-network
+    profiles: ["docuseal"]
+
 networks:
   dokploy-network:
     external: false
     driver: bridge
+
+volumes:
+  docuseal_data:
