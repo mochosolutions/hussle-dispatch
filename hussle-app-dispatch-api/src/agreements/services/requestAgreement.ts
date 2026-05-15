@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Prisma } from '@prisma/client';
-
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { Logger } from '@/shared/utils/logger';
@@ -135,7 +133,7 @@ export const requestAgreement = async (
     embedUrlExpiresAt: ref.expiresAt,
     signerName,
     signerEmail,
-    variables: variables as unknown as Prisma.InputJsonValue,
+    variables: { ...variables },
     status: 'PENDING',
     createdByUserId: input.requestingUserId,
   });
