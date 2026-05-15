@@ -6,10 +6,10 @@ import { AgreementAlreadyPendingError } from '../errors/agreementErrors';
 import {
   requestAgreement,
   type CarrierQueryPort,
-  type DispatchAgreementVariables,
   type RequestAgreementDeps,
   type RequestAgreementInput,
 } from '../services/requestAgreement';
+import { DISPATCH_AGREEMENT_FIELDS } from '../templates/dispatchAgreementFields';
 import type { AgreementRepoPort } from '../types/agreementRepoPort';
 import type { Agreement } from '../types/agreementTypes';
 
@@ -78,7 +78,6 @@ const makeDeps = () => {
     fetchSignedArtifacts: jest.fn(),
     refreshEmbedUrl: jest.fn(),
   };
-  const renderDispatchAgreement = jest.fn<Promise<string>, [DispatchAgreementVariables]>();
   const carrierQueries: jest.Mocked<CarrierQueryPort> = { findById: jest.fn() };
   const logger: jest.Mocked<Logger> = {
     info: jest.fn(),
@@ -92,7 +91,6 @@ const makeDeps = () => {
   const deps: RequestAgreementDeps = {
     agreementRepo,
     signatureService,
-    renderDispatchAgreement,
     carrierQueries,
     providerName: 'MOCK',
     logger,
@@ -100,7 +98,7 @@ const makeDeps = () => {
     now,
   };
 
-  return { deps, agreementRepo, signatureService, renderDispatchAgreement, carrierQueries, logger, uuid, now };
+  return { deps, agreementRepo, signatureService, carrierQueries, logger, uuid, now };
 };
 
 const baseInput = (overrides: Partial<RequestAgreementInput> = {}): RequestAgreementInput => ({
@@ -121,7 +119,6 @@ describe('requestAgreement', () => {
     const fixtures = makeDeps();
     fixtures.carrierQueries.findById.mockResolvedValue(makeCarrier());
     fixtures.agreementRepo.countActivePending.mockResolvedValue(0);
-    fixtures.renderDispatchAgreement.mockResolvedValue('<html>contract</html>');
     fixtures.signatureService.createSubmission.mockResolvedValue(makeRef());
     const persisted = makeAgreement();
     fixtures.agreementRepo.create.mockResolvedValue(persisted);
@@ -186,7 +183,6 @@ describe('requestAgreement', () => {
       makeCarrier({ primaryContactEmail: 'fallback@acme.test' }),
     );
     fixtures.agreementRepo.countActivePending.mockResolvedValue(0);
-    fixtures.renderDispatchAgreement.mockResolvedValue('<html/>');
     fixtures.signatureService.createSubmission.mockResolvedValue(makeRef());
     fixtures.agreementRepo.create.mockResolvedValue(makeAgreement());
 
@@ -215,7 +211,6 @@ describe('requestAgreement', () => {
       makeCarrier({ primaryContactEmail: null }),
     );
     fixtures.agreementRepo.countActivePending.mockResolvedValue(0);
-    fixtures.renderDispatchAgreement.mockResolvedValue('<html/>');
 
     await expect(requestAgreement(baseInput(), fixtures.deps)).rejects.toThrow(ValidationError);
     expect(fixtures.signatureService.createSubmission).not.toHaveBeenCalled();
@@ -225,7 +220,6 @@ describe('requestAgreement', () => {
     const fixtures = makeDeps();
     fixtures.carrierQueries.findById.mockResolvedValue(makeCarrier());
     fixtures.agreementRepo.countActivePending.mockResolvedValue(0);
-    fixtures.renderDispatchAgreement.mockResolvedValue('<html/>');
     fixtures.signatureService.createSubmission.mockResolvedValue(makeRef());
     fixtures.agreementRepo.create.mockResolvedValue(makeAgreement());
 
@@ -245,7 +239,7 @@ describe('requestAgreement', () => {
     expect(fixtures.uuid).not.toHaveBeenCalled();
   });
 
-  it('renders the dispatch agreement template with the expected variable shape', async () => {
+  it('passes correctly-shaped values to signatureService.createSubmission', async () => {
     const fixtures = makeDeps();
     fixtures.carrierQueries.findById.mockResolvedValue(
       makeCarrier({
@@ -255,18 +249,27 @@ describe('requestAgreement', () => {
       }),
     );
     fixtures.agreementRepo.countActivePending.mockResolvedValue(0);
-    fixtures.renderDispatchAgreement.mockResolvedValue('<html/>');
     fixtures.signatureService.createSubmission.mockResolvedValue(makeRef());
     fixtures.agreementRepo.create.mockResolvedValue(makeAgreement());
 
     await requestAgreement(baseInput({ orgName: 'Hussle Dispatch' }), fixtures.deps);
 
-    expect(fixtures.renderDispatchAgreement).toHaveBeenCalledWith({
-      carrierLegalName: 'Acme Trucking LLC',
-      carrierMcNumber: 'MC123456',
-      carrierDotNumber: 'DOT789',
-      orgName: 'Hussle Dispatch',
-      effectiveDate: '2026-05-14',
-    });
+    expect(fixtures.signatureService.createSubmission).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateKey: 'DISPATCH_AGREEMENT',
+        variables: {
+          [DISPATCH_AGREEMENT_FIELDS.CARRIER_LEGAL_NAME]: 'Acme Trucking LLC',
+          [DISPATCH_AGREEMENT_FIELDS.CARRIER_MC_NUMBER]: 'MC123456',
+          [DISPATCH_AGREEMENT_FIELDS.CARRIER_DOT_NUMBER]: 'DOT789',
+          [DISPATCH_AGREEMENT_FIELDS.DISPATCHER_ORG_NAME]: 'Hussle Dispatch',
+          [DISPATCH_AGREEMENT_FIELDS.EFFECTIVE_DATE]: '2026-05-14',
+        },
+        metadata: {
+          carrierId: 'car-1',
+          organizationId: 'org-1',
+        },
+      }),
+      expect.any(Object),
+    );
   });
 });
