@@ -35,6 +35,7 @@ const defaultSleep = (ms: number): Promise<void> =>
 export interface DocusealProviderDeps {
   baseUrl: string;
   apiKey: string;
+  templateId: number;
   logger: Logger;
   fetch?: typeof globalThis.fetch;
   sleep?: (ms: number) => Promise<void>;
@@ -45,14 +46,19 @@ interface DocuSealSubmitter {
   embed_src?: string;
 }
 
-interface DocuSealDocument {
-  url: string;
+interface DocuSealCreateSubmitter {
+  submission_id: number;
+  slug: string;
+  uuid: string;
+  name: string;
+  email: string;
+  status: string;
+  embed_src?: string;
+  completed_at: string | null;
 }
 
-interface DocuSealCreateResponse {
-  id: string | number;
-  submitters: DocuSealSubmitter[];
-  expire_at: string;
+interface DocuSealDocument {
+  url: string;
 }
 
 interface DocuSealGetResponse {
@@ -74,7 +80,7 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
     throw new Error('DocuSeal config missing: DOCUSEAL_BASE_URL or DOCUSEAL_API_KEY empty');
   }
 
-  const { baseUrl, apiKey, logger } = deps;
+  const { baseUrl, apiKey, templateId, logger } = deps;
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const sleep = deps.sleep ?? defaultSleep;
 
@@ -126,24 +132,26 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
   });
 
   const createSubmission = async (input: CreateSubmissionInput): Promise<SubmissionRef> => {
-    const html = input.metadata?.['html'];
-    if (html === undefined || html === '') {
-      throw new Error('DocuSeal createSubmission requires input.metadata.html');
+    if (templateId === 0) {
+      throw new Error(
+        'DOCUSEAL_DISPATCH_TEMPLATE_ID env var is required for DocuSeal provider — set it to the template ID from your DocuSeal admin UI'
+      );
     }
 
     const body = JSON.stringify({
-      template_html: html,
+      template_id: templateId,
+      send_email: false,
       submitters: [
         {
           name: input.signer.name,
           email: input.signer.email,
-          role: 'First Party',
+          role: 'Carrier',
+          values: input.variables,
         },
       ],
-      metadata: input.metadata,
     });
 
-    const response = await callWithRetry<DocuSealCreateResponse>('createSubmission', () =>
+    const response = await callWithRetry<DocuSealCreateSubmitter[]>('createSubmission', () =>
       fetchImpl(`${baseUrl}/api/submissions`, {
         method: 'POST',
         headers: buildHeaders({ 'Content-Type': 'application/json' }),
@@ -151,18 +159,18 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
       })
     );
 
-    const firstSubmitter = response.submitters[0];
-    if (firstSubmitter === undefined) {
-      throw new Error('DocuSeal createSubmission returned no submitters');
+    const submitter = response[0];
+    if (submitter === undefined) {
+      throw new Error('DocuSeal createSubmission returned empty submitters array');
     }
-    if (firstSubmitter.embed_src === undefined) {
+    if (submitter.embed_src === undefined) {
       throw new Error('DocuSeal createSubmission returned submitter without embed_src');
     }
 
     return {
-      providerSubmissionId: String(response.id),
-      embedUrl: firstSubmitter.embed_src,
-      expiresAt: new Date(response.expire_at),
+      providerSubmissionId: String(submitter.submission_id),
+      embedUrl: submitter.embed_src,
+      expiresAt: new Date(Date.now() + EMBED_URL_LIFETIME_MS),
     };
   };
 
