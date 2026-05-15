@@ -1,7 +1,8 @@
-import { ForbiddenError, InvalidTransitionError, NotFoundError } from '@/shared/errors';
+import { ForbiddenError, NotFoundError } from '@/shared/errors';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { Logger } from '@/shared/utils/logger';
 
+import { AgreementNotVoidableError } from '../errors/agreementErrors';
 import type { AgreementRepoPort } from '../types/agreementRepoPort';
 import type { AgreementServiceResult } from '../types/agreementServiceResult';
 import type { Agreement } from '../types/agreementTypes';
@@ -43,7 +44,7 @@ export const voidAgreement = async (
   }
 
   if (agreement.status !== 'PENDING') {
-    throw new InvalidTransitionError(agreement.status, 'VOIDED', ['PENDING']);
+    throw new AgreementNotVoidableError(agreement.status);
   }
 
   if (agreement.providerSubmissionId !== null && agreement.providerSubmissionId.length > 0) {

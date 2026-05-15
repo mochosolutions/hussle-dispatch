@@ -1,7 +1,8 @@
-import { ForbiddenError, InvalidTransitionError } from '@/shared/errors';
+import { ForbiddenError } from '@/shared/errors';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { Logger } from '@/shared/utils/logger';
 
+import { AgreementNotVoidableError } from '../errors/agreementErrors';
 import {
   voidAgreement,
   type VoidAgreementDeps,
@@ -130,28 +131,34 @@ describe('voidAgreement', () => {
     expect(fixtures.agreementRepo.update).not.toHaveBeenCalled();
   });
 
-  it('throws InvalidTransitionError (statusCode 422) when agreement.status is SIGNED', async () => {
+  it('throws AgreementNotVoidableError (statusCode 409, code AGREEMENT_NOT_VOIDABLE) when agreement.status is SIGNED', async () => {
     const fixtures = makeDeps();
     fixtures.agreementRepo.findById.mockResolvedValue(
       makeAgreement({ status: 'SIGNED' as AgreementStatus }),
     );
 
     const promise = voidAgreement(baseInput(), fixtures.deps);
-    await expect(promise).rejects.toBeInstanceOf(InvalidTransitionError);
-    await expect(promise).rejects.toMatchObject({ statusCode: 422 });
+    await expect(promise).rejects.toBeInstanceOf(AgreementNotVoidableError);
+    await expect(promise).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'AGREEMENT_NOT_VOIDABLE',
+    });
     expect(fixtures.signatureService.voidSubmission).not.toHaveBeenCalled();
     expect(fixtures.agreementRepo.update).not.toHaveBeenCalled();
   });
 
-  it('throws InvalidTransitionError when agreement.status is already VOIDED', async () => {
+  it('throws AgreementNotVoidableError when agreement.status is already VOIDED', async () => {
     const fixtures = makeDeps();
     fixtures.agreementRepo.findById.mockResolvedValue(
       makeAgreement({ status: 'VOIDED' as AgreementStatus }),
     );
 
-    await expect(voidAgreement(baseInput(), fixtures.deps)).rejects.toBeInstanceOf(
-      InvalidTransitionError,
-    );
+    const promise = voidAgreement(baseInput(), fixtures.deps);
+    await expect(promise).rejects.toBeInstanceOf(AgreementNotVoidableError);
+    await expect(promise).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'AGREEMENT_NOT_VOIDABLE',
+    });
     expect(fixtures.signatureService.voidSubmission).not.toHaveBeenCalled();
     expect(fixtures.agreementRepo.update).not.toHaveBeenCalled();
   });
