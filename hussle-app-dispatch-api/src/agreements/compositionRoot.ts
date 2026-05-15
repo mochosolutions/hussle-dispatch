@@ -1,7 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 
 import type { EventBus } from '@/shared/messaging/eventBus';
-import { renderDispatchAgreement } from '@/shared/signatures/agreementTemplates/renderDispatchAgreement';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { StorageProvider } from '@/shared/storage';
 import type { Logger } from '@/shared/utils/logger';
@@ -73,7 +72,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     requestAgreement(input, {
       agreementRepo,
       signatureService: deps.signatureService,
-      renderDispatchAgreement,
       carrierQueries,
       providerName,
       logger: deps.logger,
