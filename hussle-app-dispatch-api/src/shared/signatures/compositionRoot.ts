@@ -14,6 +14,7 @@ export interface SignatureModuleDeps {
     SIGNATURE_PROVIDER: SignatureProviderKind;
     DOCUSEAL_BASE_URL: string;
     DOCUSEAL_API_KEY: string;
+    DOCUSEAL_DISPATCH_TEMPLATE_ID: number;
   };
   eventBus: EventBus;
   logger: Logger;
@@ -32,6 +33,7 @@ const selectProvider = (deps: SignatureModuleDeps): SignatureProviderPort => {
       return createDocusealProvider({
         baseUrl: deps.env.DOCUSEAL_BASE_URL,
         apiKey: deps.env.DOCUSEAL_API_KEY,
+        templateId: deps.env.DOCUSEAL_DISPATCH_TEMPLATE_ID,
         logger: deps.logger,
       });
     default: {
