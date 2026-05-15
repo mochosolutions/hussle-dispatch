@@ -31,6 +31,7 @@ import { settlementsRouter } from './settlements';
 import './audit';
 import './notifications';
 import '@/shared/fmcsa';
+import { agreementsRouter, docusealWebhookRouter } from './agreements';
 import { smsPromptsRouter } from './sms-prompts';
 import { shortLinksRouter } from './short-links';
 import { env } from './config/env';
@@ -125,6 +126,7 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
 
   // // Feature routes mount here (added by each feature story)
   app.use('/api/v1/api-keys', apiKeyRouter);
+  app.use('/api/v1/agreements', agreementsRouter);
   app.use('/api/v1/carriers', carriersRouter);
   app.use('/api/v1/contacts', contactsRouter);
   app.use('/api/v1/customers', customersRouter);
@@ -161,6 +163,9 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
     );
     mountLocalStorageRoutes(app, storageProvider);
   }
+
+  // Public DocuSeal webhook — mounted outside /api/v1 (HMAC-verified, no auth)
+  app.use('/webhooks', docusealWebhookRouter);
 
   // Centralized error handler — must be last
   app.use(errorHandler);

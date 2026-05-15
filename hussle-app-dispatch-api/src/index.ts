@@ -5,6 +5,7 @@ import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
 import { createRabbitMqEventBus } from './shared/messaging';
 import { logger } from './shared/utils/logger';
+import { stopAgreements } from './agreements';
 
 const start = async (): Promise<void> => {
   await redisClient.connect();
@@ -17,6 +18,7 @@ const start = async (): Promise<void> => {
   // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {
     logger.info('Shutting down...');
+    stopAgreements();
     await eventBus.close();
     await redisClient.quit();
     process.exit(0);
