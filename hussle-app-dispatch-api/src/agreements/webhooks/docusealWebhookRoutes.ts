@@ -1,7 +1,7 @@
 import express from 'express';
 import type { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 
-import './express.d';
+import './expressRequestAugmentation';
 
 interface DocusealWebhookRouterDeps {
   controller: RequestHandler;

@@ -4,7 +4,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import type { Logger } from '@/shared/utils/logger';
 
-import './express.d';
+import './expressRequestAugmentation';
 
 interface VerifyDocusealHmacDeps {
   secret: string;
