@@ -394,7 +394,7 @@ must_haves:
 ---
 
 ## US-11: APP_NAME constant + PDF template sweep
-_Priority: P1 | Services: dispatch-api | Agent: backend | Status: todo_
+_Priority: P1 | Services: dispatch-api | Agent: backend | Status: done_
 
 must_haves:
   truths:
@@ -402,7 +402,7 @@ must_haves:
     - "`InvoicePdfTemplate` + `SettlementPdfTemplate` read brand name from a shared constant."
 
 **Tasks:**
-[ ] T-28 [API] Add APP_NAME constant + replace hardcodes
+[x] T-28 [API] Add APP_NAME constant + replace hardcodes
          └─ Detail: New file `src/shared/constants/app.ts` exporting `export const APP_NAME = process.env.APP_NAME ?? 'FleetCommand';`. Replace hardcoded `"FleetCommand"` in `src/invoices/templates/InvoicePdfTemplate.tsx` and `src/settlements/templates/SettlementPdfTemplate.tsx` with `APP_NAME` import.
          └─ Files: [hussle-app-dispatch-api/src/shared/constants/app.ts, hussle-app-dispatch-api/src/invoices/templates/InvoicePdfTemplate.tsx, hussle-app-dispatch-api/src/settlements/templates/SettlementPdfTemplate.tsx]
          └─ Depends on: —
@@ -938,7 +938,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-08 Cost analysis service | 2 | 2 | 0 | 1/1 |
 | US-09 Lane prefs service | 2 | 2 | 0 | 1/1 |
 | US-10 Agreements query | 2 | 2 | 0 | 1/1 |
-| US-11 APP_NAME (api) | 1 | 0 | 0 | — |
+| US-11 APP_NAME (api) | 1 | 1 | 0 | — |
 | US-12 Engine module | 5 | 0 | 0 | 0/2 |
 | US-13 Schema module | 2 | 0 | 0 | 0/1 |
 | US-14 Bug-fix components | 2 | 2 | 0 | 2/2 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **29** | **0** | **16/29** |
+| **All** | **62** | **30** | **0** | **16/29** |
