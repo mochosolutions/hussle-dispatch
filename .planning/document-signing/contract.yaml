@@ -1,0 +1,809 @@
+openapi: 3.1.0
+info:
+  title: Document Signing API
+  description: |
+    E-signature module for dispatch agreements and future legal documents.
+
+    Two surfaces:
+    - Dispatcher-authenticated CRUD over Agreement resources at `/api/v1/agreements`.
+    - Public HMAC-verified webhook receiver at `/webhooks/docuseal` for provider callbacks.
+
+    Provider plumbing lives in `src/shared/signatures/` (port + adapter, FMCSA-mirror).
+    Agreement lifecycle + persistence lives in `src/agreements/`.
+
+    Feature 2 of the MACHO carrier-portal-rebuild sequence (fmcsa-integration → document-signing → carrier-portal-v2).
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: Authenticated dispatcher API. All `/agreements` paths mount here.
+
+# ─────────────────────────────────────────────
+# Default Auth
+# ─────────────────────────────────────────────
+security:
+  - cookieAuth: []
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+      description: JWT access token in HttpOnly cookie. Injected by `requireAuth` middleware.
+    docusealHmac:
+      type: apiKey
+      in: header
+      name: X-Docuseal-Signature
+      description: |
+        HMAC-SHA256 hex digest of the raw request body using `DOCUSEAL_WEBHOOK_SECRET`.
+        Verified by `verifyDocusealHmacMiddleware` via `crypto.timingSafeEqual`.
+
+  # ─────────────────────────────────────────────
+  # Schemas
+  # ─────────────────────────────────────────────
+  schemas:
+
+    # ── Enums ──────────────────────────────────
+
+    AgreementStatus:
+      type: string
+      enum: [DRAFT, PENDING, SIGNED, VOIDED, EXPIRED, DECLINED]
+      x-display-names:
+        DRAFT: "Draft"
+        PENDING: "Pending Signature"
+        SIGNED: "Signed"
+        VOIDED: "Voided"
+        EXPIRED: "Expired"
+        DECLINED: "Declined"
+      description: |
+        Lifecycle: DRAFT → PENDING → (SIGNED | VOIDED | EXPIRED | DECLINED).
+        DRAFT is transient — agreements are created directly into PENDING in v1.
+        Terminal states: SIGNED, VOIDED, EXPIRED, DECLINED.
+
+    AgreementTemplateKey:
+      type: string
+      enum: [DISPATCH_AGREEMENT]
+      x-display-names:
+        DISPATCH_AGREEMENT: "Dispatch Agreement"
+      description: |
+        Single hardcoded template for v1 (React Email TSX under
+        `src/shared/signatures/agreementTemplates/`). DB-stored template
+        versioning is a follow-on.
+
+    DocuSealEventType:
+      type: string
+      enum: [form.completed, form.declined, form.expired, form.viewed]
+      description: |
+        DocuSeal webhook event types. Only `form.completed`, `form.declined`,
+        and `form.expired` trigger state transitions in v1. `form.viewed` is
+        logged for audit but does not change state.
+
+    SignatureProviderName:
+      type: string
+      enum: [MOCK, DOCUSEAL]
+      description: |
+        Identifies which `SignatureProviderPort` impl is wired. Surfaced on
+        agreement reads so dispatchers can tell at a glance whether they're
+        looking at a real signed document or a mock-signed one.
+
+    # ── Common ─────────────────────────────────
+
+    PaginationMeta:
+      type: object
+      required: [page, limit, total, totalPages, hasMore]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+              field:
+                type: string
+              code:
+                type: string
+                description: "Optional machine-readable error code (e.g., AGREEMENT_ALREADY_PENDING)."
+
+    # ── Agreement Resources ────────────────────
+
+    Agreement:
+      type: object
+      required:
+        - id
+        - organizationId
+        - carrierId
+        - templateKey
+        - status
+        - providerName
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        carrierId:
+          type: string
+          format: uuid
+        templateKey:
+          $ref: '#/components/schemas/AgreementTemplateKey'
+        status:
+          $ref: '#/components/schemas/AgreementStatus'
+        providerName:
+          $ref: '#/components/schemas/SignatureProviderName'
+        providerSubmissionId:
+          type: string
+          nullable: true
+          description: "Opaque ID returned by the signature provider. Indexed unique for webhook routing."
+        embedUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: |
+            Embed URL the carrier opens to sign. Null in terminal states.
+            On read, the server transparently refreshes this URL if it has
+            expired and the agreement is still PENDING.
+        embedUrlExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        signerName:
+          type: string
+          nullable: true
+          maxLength: 255
+        signerEmail:
+          type: string
+          format: email
+          nullable: true
+          maxLength: 255
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+          description: "Template variables resolved at creation time (carrier legalName, MC#, DOT#, org name, effective date)."
+        artifacts:
+          $ref: '#/components/schemas/AgreementArtifacts'
+        voidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        voidedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        voidReason:
+          type: string
+          nullable: true
+          maxLength: 500
+        signedAt:
+          type: string
+          format: date-time
+          nullable: true
+        declinedAt:
+          type: string
+          format: date-time
+          nullable: true
+        expiredAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        createdByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    AgreementArtifacts:
+      type: object
+      nullable: true
+      description: |
+        Present only when `status=SIGNED`. URLs are presigned with a 15-minute TTL
+        — callers should re-fetch the parent Agreement to get fresh URLs after expiry.
+      required:
+        - signedPdfUrl
+        - auditCertificateUrl
+        - signedPdfSha256
+        - signedAt
+      properties:
+        signedPdfUrl:
+          type: string
+          format: uri
+          description: "Presigned URL to the signed PDF (15-min TTL)."
+        auditCertificateUrl:
+          type: string
+          format: uri
+          description: "Presigned URL to DocuSeal's audit certificate (15-min TTL)."
+        signedPdfSha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: "SHA-256 of the signed PDF, hex-encoded. Stable artifact integrity check."
+        signedAt:
+          type: string
+          format: date-time
+
+    # ── Requests ───────────────────────────────
+
+    AgreementCreateRequest:
+      type: object
+      required: [carrierId, templateKey]
+      additionalProperties: false
+      properties:
+        carrierId:
+          type: string
+          format: uuid
+        templateKey:
+          $ref: '#/components/schemas/AgreementTemplateKey'
+        signerName:
+          type: string
+          maxLength: 255
+          description: |
+            Optional override. Defaults to the carrier's primary contact
+            name from the Carrier record.
+        signerEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: |
+            Optional override. Defaults to the carrier's primary contact email.
+        correlationId:
+          type: string
+          format: uuid
+          description: |
+            Optional caller-supplied correlation ID for event traceability.
+            Service generates a UUID if absent.
+
+    AgreementVoidRequest:
+      type: object
+      required: []
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          description: "Optional free-text reason recorded on the Agreement and in the `agreement.voided` event."
+
+    # ── Responses ──────────────────────────────
+
+    AgreementResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Agreement'
+
+    AgreementListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agreement'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ── Webhook ────────────────────────────────
+
+    DocuSealWebhookPayload:
+      type: object
+      required: [event_type, timestamp, data]
+      additionalProperties: true
+      description: |
+        DocuSeal webhook envelope. Body is verified via HMAC-SHA256 against
+        `DOCUSEAL_WEBHOOK_SECRET`. Schema is intentionally loose
+        (`additionalProperties: true`) because DocuSeal may add fields over time;
+        only the fields we depend on are explicitly modeled.
+      properties:
+        event_type:
+          $ref: '#/components/schemas/DocuSealEventType'
+        timestamp:
+          type: string
+          format: date-time
+        data:
+          type: object
+          required: [submission_id]
+          additionalProperties: true
+          properties:
+            submission_id:
+              type: string
+              description: "Maps to `Agreement.providerSubmissionId` for lookup."
+            template_id:
+              type: string
+            submitter_email:
+              type: string
+              format: email
+            audit_log_url:
+              type: string
+              format: uri
+              description: "Provider-hosted audit certificate URL. Fetched and stored to S3."
+            documents:
+              type: array
+              items:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                  filename:
+                    type: string
+
+    WebhookAck:
+      type: object
+      required: [received]
+      properties:
+        received:
+          type: boolean
+        replayed:
+          type: boolean
+          description: |
+            `true` when the webhook was a duplicate replay (agreement already
+            in the target terminal state); handler returned 200 with no state
+            change. Useful for DocuSeal log debugging.
+
+# ─────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────
+paths:
+
+  /agreements:
+    post:
+      operationId: createAgreement
+      summary: Request a new agreement for a carrier
+      description: |
+        Renders the dispatch agreement template, creates a submission with the
+        configured signature provider, and persists an Agreement row in `PENDING`.
+
+        Returns the agreement including the embed URL the carrier opens to sign.
+
+        Idempotency: if the carrier already has a `PENDING` agreement for the
+        same `templateKey`, returns `409` with code `AGREEMENT_ALREADY_PENDING`.
+        Dispatcher must explicitly void the existing agreement before creating
+        a new one.
+      tags: [Agreements]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementCreateRequest'
+      responses:
+        '201':
+          description: Agreement created and submission opened with the provider.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementResponse'
+        '400':
+          description: "Invalid request body (missing carrierId, malformed UUID, unknown templateKey, etc.)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated (missing or invalid cookieAuth).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated user is not ADMIN or DISPATCHER for the carrier's organization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Carrier not found, not active, or not in the requester's organization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: "Carrier already has a PENDING agreement for this templateKey (code: AGREEMENT_ALREADY_PENDING). Void it first."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: "Signature provider unreachable after retry budget exhausted. No Agreement persisted; safe to retry."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      operationId: listAgreements
+      summary: List agreements (org-scoped, dispatcher dashboard)
+      tags: [Agreements]
+      parameters:
+        - name: carrierId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter by carrier.
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AgreementStatus'
+          description: Filter by lifecycle status.
+        - name: templateKey
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AgreementTemplateKey'
+        - name: createdAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: createdBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paged list of agreements scoped to the caller's organization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementListResponse'
+        '400':
+          description: Invalid query parameter (malformed UUID, out-of-range page, unknown status).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated user is not ADMIN or DISPATCHER.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agreements/{id}:
+    get:
+      operationId: getAgreement
+      summary: Fetch one agreement by ID
+      description: |
+        Returns the agreement with its current status, provider submission ID,
+        and (when `status=SIGNED`) presigned artifact URLs with a 15-minute TTL.
+
+        Transparent embed URL refresh: if `status=PENDING` and `embedUrlExpiresAt`
+        is in the past, the server calls the signature provider to refresh the
+        embed URL and persists the new value before returning.
+      tags: [Agreements]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agreement found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementResponse'
+        '401':
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated user is not ADMIN or DISPATCHER, or agreement belongs to another organization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agreement not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Embed URL refresh required but signature provider unreachable. Caller may retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agreements/{id}/void:
+    post:
+      operationId: voidAgreement
+      summary: Void a PENDING agreement
+      description: |
+        Transitions a `PENDING` agreement to `VOIDED`. Calls
+        `signatureProvider.voidSubmission()` to revoke the embed URL.
+
+        Voiding any non-PENDING agreement returns `409`.
+      tags: [Agreements]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementVoidRequest'
+      responses:
+        '200':
+          description: Agreement voided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementResponse'
+        '400':
+          description: Malformed request body (e.g., `reason` exceeds 500 chars).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated user is not ADMIN or DISPATCHER, or agreement belongs to another organization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agreement not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: "Agreement is not in PENDING status (code: INVALID_STATUS_TRANSITION). Already terminal."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Signature provider unreachable after retry. Agreement state unchanged; safe to retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─────────────────────────────────────────────
+  # Webhook (public, HMAC-verified)
+  # Mounted outside /api/v1 — server override below.
+  # ─────────────────────────────────────────────
+  /webhooks/docuseal:
+    servers:
+      - url: /
+        description: Public webhook root. NOT under `/api/v1`.
+    post:
+      operationId: docusealWebhook
+      summary: Receive DocuSeal lifecycle events
+      description: |
+        DocuSeal posts here on every form lifecycle event. Verified via HMAC-SHA256
+        of the raw request body against `DOCUSEAL_WEBHOOK_SECRET` using
+        `crypto.timingSafeEqual`.
+
+        Translates provider events to domain events:
+        - `form.completed` → `agreement.signed` → subscriber → `agreement.finalized`
+        - `form.declined`  → `agreement.declined`
+        - `form.expired`   → `agreement.expired`
+        - `form.viewed`    → logged for audit only, no state change
+
+        Idempotent: if the agreement is already in the target terminal state,
+        the handler returns 200 with `replayed: true` and emits no event.
+
+        Replay protection is achieved by the state-machine check, not by
+        dedup-on-event-id; this means DocuSeal redeliveries are safe to process.
+      tags: [Webhooks]
+      security:
+        - docusealHmac: []
+      requestBody:
+        required: true
+        description: "Raw body preserved by `express.json({ verify })` for HMAC verification."
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocuSealWebhookPayload'
+      responses:
+        '200':
+          description: |
+            Webhook accepted. Either translated to a domain event and persisted,
+            or recognized as an idempotent replay (`replayed: true`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAck'
+        '400':
+          description: Malformed JSON or missing required fields (event_type, submission_id).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: HMAC signature missing, malformed, or did not match the recomputed digest.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: |
+            No Agreement found with the provided `submission_id`. Logged and
+            returned but not retried — likely a stale submission or test event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# ─────────────────────────────────────────────
+# Auth & Role Matrix
+# ─────────────────────────────────────────────
+x-auth-matrix:
+  # Dispatcher endpoints — cookie auth, ADMIN | DISPATCHER
+  - endpoint: "POST /agreements"
+    auth: cookieAuth
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from JWT claims; carrierId must belong to caller's org"
+  - endpoint: "GET /agreements"
+    auth: cookieAuth
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from JWT claims"
+  - endpoint: "GET /agreements/{id}"
+    auth: cookieAuth
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from JWT claims; 403 if agreement.organizationId != claim"
+  - endpoint: "POST /agreements/{id}/void"
+    auth: cookieAuth
+    roles: [ADMIN, DISPATCHER]
+    scoping: "organizationId from JWT claims; 403 if agreement.organizationId != claim"
+
+  # Public webhook — HMAC only
+  - endpoint: "POST /webhooks/docuseal"
+    auth: docusealHmac
+    roles: [PUBLIC]
+    scoping: "none — agreement looked up by providerSubmissionId from body"
+
+# ─────────────────────────────────────────────
+# Data Flow Maps
+# ─────────────────────────────────────────────
+x-data-flow:
+  "Request Dispatch Agreement":
+    trigger: "Dispatcher clicks 'Send Dispatch Agreement' on a carrier detail page (UI deferred to follow-on plan; capability exposed here)"
+    steps:
+      - "Frontend: POST /api/v1/agreements with { carrierId, templateKey: 'DISPATCH_AGREEMENT' }"
+      - "Backend: requestAgreement service — checks no existing PENDING for (carrier, templateKey), returns 409 if found"
+      - "Backend: loads Carrier, resolves template variables (legalName, mcNumber, dotNumber, orgName, effectiveDate)"
+      - "Backend: renderDispatchAgreement(variables) → HTML string with DocuSeal text-tag anchors"
+      - "Backend: signatureService.createSubmission({ templateKey, variables, signer }) → { providerSubmissionId, embedUrl, expiresAt }"
+      - "Backend: agreementRepo.create({ status: PENDING, providerSubmissionId, embedUrl, ... })"
+      - "Backend: emits agreement.generated + signature.submission.created"
+      - "Backend: returns 201 with Agreement (embedUrl + embedUrlExpiresAt populated)"
+      - "Frontend: shows embed URL to dispatcher; future portal-v2 opens in iframe"
+    services: [dispatch-api]
+
+  "Carrier Signs (Webhook Path — Primary)":
+    trigger: "Carrier completes signing in the DocuSeal embed; DocuSeal POSTs to /webhooks/docuseal"
+    steps:
+      - "DocuSeal: POST /webhooks/docuseal with body + X-Docuseal-Signature header"
+      - "Backend: rawBodyParser preserves the raw body buffer"
+      - "Backend: verifyDocusealHmacMiddleware computes HMAC-SHA256 + crypto.timingSafeEqual → reject 401 on mismatch"
+      - "Backend: docusealWebhookController loads Agreement by providerSubmissionId; if not found → 404 (logged, not retried)"
+      - "Backend: idempotency check — if Agreement already SIGNED, return 200 { received: true, replayed: true } and emit nothing"
+      - "Backend: maps form.completed → emits agreement.signed event with correlationId"
+      - "Backend: returns 200 { received: true }"
+      - "Subscriber: agreementSignedSubscriber consumes agreement.signed → calls finalizeAgreement"
+      - "finalizeAgreement: signatureProvider.fetchSignedArtifacts(providerSubmissionId) → { signedPdf, auditCertificate }"
+      - "finalizeAgreement: compute SHA-256 of signedPdf"
+      - "finalizeAgreement: storage.write() both to orgs/{orgId}/carriers/{carrierId}/agreements/{agreementId}/signed.pdf and .../audit-certificate.pdf"
+      - "finalizeAgreement: agreementRepo.update({ status: SIGNED, signedPdfS3Key, auditCertificateS3Key, signedPdfSha256, signedAt })"
+      - "finalizeAgreement: emits agreement.finalized"
+    services: [dispatch-api]
+
+  "Carrier Signs (Watchdog Path — Fallback)":
+    trigger: "DocuSeal webhook never fires (network drop, DocuSeal outage, misconfigured endpoint)"
+    steps:
+      - "Cron: signedAgreementWatchdog fires every AGREEMENT_WATCHDOG_INTERVAL_MIN (default 5min)"
+      - "Watchdog: agreementRepo.findStaleInProgress(threshold=10min) → list of PENDING agreements not updated recently"
+      - "Watchdog: for each, signatureProvider.getSubmission(providerSubmissionId)"
+      - "Watchdog: if provider reports 'signed' → eventBus.publish('agreement.signed', { ... }) — same payload the webhook would have emitted"
+      - "Watchdog: if provider reports 'voided' or 'expired' → agreementRepo.update accordingly + emit agreement.voided/expired"
+      - "Subscriber: agreementSignedSubscriber consumes the republished event — finalizeAgreement is idempotent → no duplicate artifacts"
+    services: [dispatch-api]
+
+  "Refresh Stale Embed URL (Transparent)":
+    trigger: "Dispatcher fetches an agreement via GET /agreements/{id} and the embedUrl has expired"
+    steps:
+      - "Frontend: GET /api/v1/agreements/{id}"
+      - "Backend: getAgreement loads Agreement; status=PENDING and embedUrlExpiresAt < now()"
+      - "Backend: signatureProvider.getSubmission(providerSubmissionId) confirms still pending"
+      - "Backend: provider returns a fresh embed URL + new expiresAt (DocuSeal behavior: getSubmission returns current embed link)"
+      - "Backend: agreementRepo.update({ embedUrl, embedUrlExpiresAt })"
+      - "Backend: returns 200 with refreshed Agreement"
+    services: [dispatch-api]
+
+  "Void Pending Agreement":
+    trigger: "Dispatcher clicks 'Void' on a pending agreement"
+    steps:
+      - "Frontend: POST /api/v1/agreements/{id}/void with optional { reason }"
+      - "Backend: voidAgreement service — guards status === PENDING, throws 409 otherwise"
+      - "Backend: signatureService.voidSubmission(providerSubmissionId)"
+      - "Backend: agreementRepo.update({ status: VOIDED, voidedAt, voidedByUserId, voidReason })"
+      - "Backend: emits agreement.voided"
+      - "Backend: returns 200 with VOIDED Agreement"
+    services: [dispatch-api]
+
+  "Fetch Signed Artifacts":
+    trigger: "Dispatcher (or future audit consumer) opens a signed agreement"
+    steps:
+      - "Frontend: GET /api/v1/agreements/{id}"
+      - "Backend: getAgreement loads Agreement; status=SIGNED"
+      - "Backend: storage.presignUrl(signedPdfS3Key, 15min) and storage.presignUrl(auditCertificateS3Key, 15min)"
+      - "Backend: returns 200 with Agreement.artifacts populated { signedPdfUrl, auditCertificateUrl, signedPdfSha256, signedAt }"
+      - "Frontend: renders download links; caller can verify SHA-256 against the downloaded PDF"
+    services: [dispatch-api]

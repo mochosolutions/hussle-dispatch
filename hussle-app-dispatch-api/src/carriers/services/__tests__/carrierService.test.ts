@@ -81,11 +81,19 @@ describe('carrierService', () => {
     create: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockInviteTokenRepo = {
+    findByToken: jest.fn(),
+    create: jest.fn(),
+    revokeByCarrierId: jest.fn().mockResolvedValue(undefined),
+    revokeByOrganizationId: jest.fn().mockResolvedValue(undefined),
+  };
+
   const carrierService = createCarrierService({
     carrierRepository: mockCarrierRepository,
     loadRepository: mockLoadRepository,
     noteRepository: mockNoteRepository,
     auditLog: mockAuditLog,
+    inviteTokenRepo: mockInviteTokenRepo,
   });
 
   beforeEach(() => {
@@ -180,6 +188,9 @@ describe('carrierService', () => {
       '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
       'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
       expect.any(Date),
+    );
+    expect(mockInviteTokenRepo.revokeByCarrierId).toHaveBeenCalledWith(
+      '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
     );
   });
 

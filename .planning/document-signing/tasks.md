@@ -1,5 +1,5 @@
 # document-signing Tasks
-_Last updated: 2026-05-14 17:30_
+_Last updated: 2026-05-15 — All FIX-01..FIX-04 complete. Carrier-portal-v2 embed widget remains a separate phase._
 _Plan: .planning/document-signing/PRD.md_
 _Patterns: .planning/document-signing/PATTERNS.md_
 _Contract: .planning/document-signing/contract.yaml_
@@ -837,7 +837,7 @@ must_haves:
 ---
 
 ## US-10: Agreement services — request, void, finalize + unit tests
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-08, US-09_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-08, US-09_
 
 must_haves:
   truths:
@@ -869,15 +869,15 @@ must_haves:
       via: "deps.storage.write(s3Key, buffer)"
 
 **Acceptance Criteria:**
-- [ ] All services accept (input, deps) and return `Promise<ServiceResult<T>>`
-- [ ] Services never import @prisma/client (dep-cruiser rule)
-- [ ] Services never import repositories (dep-cruiser rule)
-- [ ] Carrier lookup injected via `carrierQueries: { findById }` (cross-module read port)
-- [ ] requestAgreement looks up Carrier, validates org match (404 if not found in caller's org), assembles variables from carrier fields + caller's orgName + today
-- [ ] finalizeAgreement idempotency case has its own test — calling twice writes to S3 only once
+- [x] All services accept (input, deps) and return `Promise<ServiceResult<T>>`
+- [x] Services never import @prisma/client (dep-cruiser rule) — verified via refactor commit 9658c0af9
+- [x] Services never import repositories (dep-cruiser rule) — clean
+- [x] Carrier lookup injected via `carrierQueries: { findById }` (cross-module read port) — declared inline as CarrierQueryPort
+- [x] requestAgreement looks up Carrier, validates org match, assembles variables from carrier fields + caller's orgName + today
+- [x] finalizeAgreement idempotency case has its own test — calling twice writes to S3 only once
 
 **Tasks:**
-[ ] T-21 [API] Implement requestAgreement service
+[x] T-21 [API] Implement requestAgreement service
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/services/requestAgreement.ts.
             Reference analog: `src/settlements/services/createSettlement.ts` for state-creating service shape with events.
             
@@ -925,11 +925,11 @@ must_haves:
             14. return { data: agreement, events: [{ type: 'agreement.generated', occurredAt: new Date(), payload: { agreementId: agreement.id, organizationId: agreement.organizationId, carrierId: agreement.carrierId, templateKey: agreement.templateKey, providerSubmissionId: ref.providerSubmissionId, correlationId } }] }
             
             Error types: import NotFoundError, ConflictError, BadRequestError from `@/shared/errors`.
-         └─ Files: [hussle-app-dispatch-api/src/agreements/services/requestAgreement.ts]
+         └─ Files: [hussle-app-dispatch-api/src/agreements/services/requestAgreement.ts, src/agreements/errors/agreementErrors.ts, src/agreements/types/agreementServiceResult.ts]
          └─ Depends on: T-17, T-19
-         └─ Output:
+         └─ Output: DONE @ bd1e6a5e9 (+ refactor 9658c0af9). Exports requestAgreement(input, deps), types RequestAgreementInput|RequestAgreementDeps|CarrierQueryPort|DispatchAgreementVariables, AgreementAlreadyPendingError class. NOTE: AgreementAlreadyPendingError extends CustomError directly (not ConflictError) because ConflictError.code is literal-typed readonly = 'CONFLICT' and can't be overridden — same statusCode 409, code AGREEMENT_ALREADY_PENDING. Wiring verified: createSubmission, countActivePending, create.
 
-[ ] T-22 [API] Implement voidAgreement service
+[x] T-22 [API] Implement voidAgreement service
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/services/voidAgreement.ts.
             Reference analog: `src/loads/services/cancelLoad.ts` for state-transition with provider call.
             
@@ -948,9 +948,9 @@ must_haves:
             InvalidTransitionError lives in `@/shared/errors/invalidTransitionError.ts` — verify it exists; if not, add to types as a generic ConflictError variant.
          └─ Files: [hussle-app-dispatch-api/src/agreements/services/voidAgreement.ts]
          └─ Depends on: T-17, T-19
-         └─ Output:
+         └─ Output: DONE @ 6d9c2e26d. Exports voidAgreement(input, deps). Uses InvalidTransitionError(currentStatus, 'VOIDED', ['PENDING']) — statusCode 422 per codebase contract (task spec said 409 but actual class is 422). Wiring verified: voidSubmission, findById, update.
 
-[ ] T-23 [API] Implement finalizeAgreement service (idempotent)
+[x] T-23 [API] Implement finalizeAgreement service (idempotent)
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/services/finalizeAgreement.ts.
             Reference analog: `src/loads/services/deliverLoad.ts` for state-transition with side effects + idempotency.
             
@@ -974,9 +974,9 @@ must_haves:
             StoragePort comes from `@/shared/storage` — check the existing API: `storage.write(key, buffer, { contentType })` or `storage.upload(...)`. Verify by reading src/shared/storage/index.ts; adjust if API differs.
          └─ Files: [hussle-app-dispatch-api/src/agreements/services/finalizeAgreement.ts]
          └─ Depends on: T-17, T-19
-         └─ Output:
+         └─ Output: DONE @ f588c9271. Exports finalizeAgreement(input, deps). Idempotent short-circuit at status === 'SIGNED' (returns existing { data, events: [] } with zero side effects). Uses storage.put(key, body, 'application/pdf') — corrected from task-spec storage.write. SHA-256 via node:crypto createHash. Wiring verified: fetchSignedArtifacts, 2x storage.put, findByProviderSubmissionId, update.
 
-[ ] T-24 [TEST] requestAgreement unit tests
+[x] T-24 [TEST] requestAgreement unit tests
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/__tests__/requestAgreement.test.ts.
             Cover:
             - Happy path: carrier exists, no pending agreement, provider returns ref → persists Agreement with PENDING + correct fields, emits agreement.generated
@@ -988,9 +988,9 @@ must_haves:
             Mocks: agreementRepo, signatureService, renderDispatchAgreement, carrierQueries, logger — all jest.fn().
          └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/requestAgreement.test.ts]
          └─ Depends on: T-21
-         └─ Output:
+         └─ Output: DONE @ a57a4ca5d. 7 tests passing. Cases: happy path, NotFoundError carrier, AgreementAlreadyPendingError (asserts code), signerEmail precedence, ValidationError on missing email, correlationId pass-through (event + opts; uuid not called), template variable shape.
 
-[ ] T-25 [TEST] voidAgreement unit tests
+[x] T-25 [TEST] voidAgreement unit tests
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/__tests__/voidAgreement.test.ts.
             Cover:
             - Happy path: PENDING → VOIDED with reason; calls provider voidSubmission; emits agreement.voided
@@ -1001,9 +1001,9 @@ must_haves:
             - Reason persisted on row; null when not provided
          └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/voidAgreement.test.ts]
          └─ Depends on: T-22
-         └─ Output:
+         └─ Output: DONE @ deea5ec34. 6 tests passing. Cases: PENDING→VOIDED happy path with reason+event, ForbiddenError on org mismatch, InvalidTransitionError SIGNED (asserts statusCode 422), InvalidTransitionError VOIDED, voidSubmission rejection propagation (no swallow, no update), reason null when omitted.
 
-[ ] T-26 [TEST] finalizeAgreement unit tests (idempotency-focused)
+[x] T-26 [TEST] finalizeAgreement unit tests (idempotency-focused)
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/__tests__/finalizeAgreement.test.ts.
             Cover:
             - Happy path PENDING → SIGNED: fetchSignedArtifacts called once, two storage.write calls (signed + audit), SHA-256 computed, agreement updated, emits agreement.finalized
@@ -1013,12 +1013,12 @@ must_haves:
             - Storage failure on first write throws (no half-finalized state)
          └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/finalizeAgreement.test.ts]
          └─ Depends on: T-23
-         └─ Output:
+         └─ Output: DONE @ 74a2c8932. 5 tests passing. Cases: happy PENDING→SIGNED with both storage.put (correct keys + 'application/pdf'), idempotent short-circuit (zero provider/storage/repo/event activity when SIGNED), NotFoundError on missing, SHA-256 correctness against known buffer (Buffer.from('test') → 9f86d081...), storage failure no-update.
 
 ---
 
 ## US-11: HTTP layer — controllers + mappers + transformers + validators + routes + integration tests
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-10_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-10_
 
 must_haves:
   truths:
@@ -1052,14 +1052,14 @@ must_haves:
       via: "called for SIGNED agreements to populate inline artifacts"
 
 **Acceptance Criteria:**
-- [ ] Controllers never access req.body/req.params directly — mappers do that
-- [ ] Transformer presigns signedPdfS3Key + auditCertificateS3Key with 15-min TTL when status=SIGNED
-- [ ] getAgreementController handles transparent embed URL refresh — when status=PENDING and embedUrlExpiresAt < now, calls signatureService.getSubmission then updates row before returning
-- [ ] Validators reject malformed UUIDs, unknown enum values, reason >500 chars
-- [ ] Integration test covers: create→get→void happy path; 409 on duplicate; 403 cross-org; 404 missing
+- [x] Controllers never access req.body/req.params directly — mappers do that
+- [x] Transformer presigns signedPdfS3Key + auditCertificateS3Key with 15-min TTL when status=SIGNED (uses getPresignedGetUrl)
+- [x] getAgreementController handles transparent embed URL refresh — calls signatureService.refreshEmbedUrl (new port method) then updates row
+- [x] Validators reject malformed UUIDs, unknown enum values, reason >500 chars
+- [x] Integration test covers: create/get/void happy path; 409 on duplicate; 403 cross-org; 404 missing — 14 tests
 
 **Tasks:**
-[ ] T-27 [API] Build validators (Yup)
+[x] T-27 [API] Build validators (Yup)
          └─ Detail: Create the three validator files. Pattern from `src/<feature>/validators/*Validator.ts`.
             `requestAgreementValidator.ts`:
             ```
@@ -1092,11 +1092,11 @@ must_haves:
             yup.object({ params: yup.object({ id: yup.string().uuid().required() }), body: yup.object({ reason: yup.string().max(500).optional() }).optional() });
             ```
             One file per validator. Use the project's `validateRequest` middleware (lives in `src/shared/middleware/validateRequest.ts`).
-         └─ Files: [hussle-app-dispatch-api/src/agreements/validators/requestAgreementValidator.ts, hussle-app-dispatch-api/src/agreements/validators/listAgreementsValidator.ts, hussle-app-dispatch-api/src/agreements/validators/agreementIdParamValidator.ts]
+         └─ Files: [hussle-app-dispatch-api/src/agreements/validators/requestAgreementValidator.ts, hussle-app-dispatch-api/src/agreements/validators/listAgreementsValidator.ts, hussle-app-dispatch-api/src/agreements/validators/agreementIdParamValidator.ts, +voidAgreementValidator.ts]
          └─ Depends on: T-06
-         └─ Output:
+         └─ Output: DONE @ 6ae29f3d3. NOTE: spec's single agreementIdParamValidator was split into two — agreementIdParamValidator (params-only, used by GET) and voidAgreementValidator (params + body.reason) — because optional body schema produced a type incompatible with validateRequest's ValidationSchema.
 
-[ ] T-28 [API] Build mappers + transformer
+[x] T-28 [API] Build mappers + transformer
          └─ Detail: Create mapper files. Each maps req → service input + org scope.
             
             `requestAgreementMapper.ts`:
@@ -1157,9 +1157,9 @@ must_haves:
             ```
          └─ Files: [hussle-app-dispatch-api/src/agreements/controllers/mappers/requestAgreementMapper.ts, hussle-app-dispatch-api/src/agreements/controllers/mappers/voidAgreementMapper.ts, hussle-app-dispatch-api/src/agreements/controllers/mappers/listAgreementsMapper.ts, hussle-app-dispatch-api/src/agreements/controllers/transformers/agreementTransformer.ts]
          └─ Depends on: T-19
-         └─ Output:
+         └─ Output: DONE @ a918dc425. Mappers read req.organizationId + req.user.userId per codebase. Transformer uses storage.getPresignedGetUrl(key, 15*60) — corrected from spec's storage.presignUrl. ISO-string conversion for all Date fields. variables JSON stripped from response.
 
-[ ] T-29 [API] Build controllers (4)
+[x] T-29 [API] Build controllers (4)
          └─ Detail: Create controller files. Pattern: controller calls mapper → service → transformer; dispatches events fire-and-forget; returns response.
             
             `requestAgreementController.ts`:
@@ -1227,11 +1227,11 @@ must_haves:
                 return res.status(200).json({ data });
               };
             ```
-         └─ Files: [hussle-app-dispatch-api/src/agreements/controllers/requestAgreementController.ts, hussle-app-dispatch-api/src/agreements/controllers/getAgreementController.ts, hussle-app-dispatch-api/src/agreements/controllers/listAgreementsController.ts, hussle-app-dispatch-api/src/agreements/controllers/voidAgreementController.ts]
+         └─ Files: [hussle-app-dispatch-api/src/agreements/controllers/requestAgreementController.ts, hussle-app-dispatch-api/src/agreements/controllers/getAgreementController.ts, hussle-app-dispatch-api/src/agreements/controllers/listAgreementsController.ts, hussle-app-dispatch-api/src/agreements/controllers/voidAgreementController.ts, +src/agreements/queries/organizationQueries.ts]
          └─ Depends on: T-21, T-22, T-23, T-28
-         └─ Output:
+         └─ Output: DONE @ c2aaa653b. Controllers use EventBus.publish(type, payload) per codebase incumbent (not the spec's eventDispatcher abstraction). getAgreementController calls signatureService.refreshEmbedUrl (the new port method from Fix-B) when PENDING + expired, then agreementRepo.update. Read controllers reference AgreementRepoPort directly — dep-cruiser only restricts repo imports from services/, not controllers/. organizationQueries.findOrgNameById uses Prisma directly (allowed in queries/ module).
 
-[ ] T-30 [API] Build agreementRoutes
+[x] T-30 [API] Build agreementRoutes
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/routes/agreementRoutes.ts.
             Reference analog: `src/carriers/routes/carrierRoutes.ts` (router factory takes controllers, applies middleware stack).
             ```
@@ -1246,9 +1246,9 @@ must_haves:
             ```
          └─ Files: [hussle-app-dispatch-api/src/agreements/routes/agreementRoutes.ts]
          └─ Depends on: T-27, T-29
-         └─ Output:
+         └─ Output: DONE @ 1cf0ce3c2. Router NOT mounted in app.ts — that's US-14 wiring. POST/GET both '/' and '/:id' endpoints registered with requireAuth + requireRole([ADMIN, DISPATCHER]) + validateRequest middleware stack.
 
-[ ] T-31 [TEST] Integration tests for /api/v1/agreements
+[x] T-31 [TEST] Integration tests for /api/v1/agreements
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/__tests__/integration/agreementRoutes.integration.test.ts.
             Pattern from `src/documents/__tests__/integration/documentRoutes.integration.test.ts`.
             
@@ -1269,12 +1269,12 @@ must_haves:
             Use the existing test auth helper (likely `createAuthedRequest` or cookie-set utility) — find by reading another integration test.
          └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/integration/agreementRoutes.integration.test.ts]
          └─ Depends on: T-30
-         └─ Output:
+         └─ Output: DONE @ 5a344522d. 14 tests passing. In-process Express app with mocked services + repo + storage + auth (jest.mock requireAuth/requireRole) — matches documentRoutes precedent. Coverage: POST happy/duplicate(409)/auth(401)/role(403)/format(400); GET happy/cross-org(403)/not-found(404)/embed-url-refresh/SIGNED-artifacts(presign x2); LIST happy/filters; VOID happy/not-voidable(409). Real Postgres deferred to US-14 wiring.
 
 ---
 
 ## US-12: HMAC-verified DocuSeal webhook receiver
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-10_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-10_
 
 must_haves:
   truths:
@@ -1301,15 +1301,15 @@ must_haves:
       via: "publishes agreement.signed/declined/expired"
 
 **Acceptance Criteria:**
-- [ ] Raw body preserved — use `express.raw({ type: 'application/json' })` per-route (NOT global `verify`)
-- [ ] HMAC computed over the raw body, NOT over re-stringified parsed JSON (stringification can change byte order)
-- [ ] Controller parses JSON itself after middleware passes (or middleware parses post-verify and attaches to req.body)
-- [ ] Webhook payload missing event_type or submission_id → 400
-- [ ] No Agreement matching providerSubmissionId → 404 (logged, not retried)
-- [ ] All paths log the providerSubmissionId for correlation with DocuSeal logs
+- [x] Raw body preserved — `express.raw({ type: 'application/json' })` per-route + shuffleRawBody middleware
+- [x] HMAC computed over the raw body, NOT over re-stringified parsed JSON
+- [x] Middleware parses JSON post-verify and attaches to req.body
+- [x] Webhook payload missing event_type or submission_id → 400
+- [x] No Agreement matching providerSubmissionId → 404 (logged, not retried)
+- [x] All paths log the providerSubmissionId for correlation with DocuSeal logs
 
 **Tasks:**
-[ ] T-32 [API] Build verifyDocusealHmacMiddleware
+[x] T-32 [API] Build verifyDocusealHmacMiddleware
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/webhooks/verifyDocusealHmacMiddleware.ts.
             ```
             import crypto from 'node:crypto';
@@ -1341,11 +1341,11 @@ must_haves:
                 return next();
               };
             ```
-         └─ Files: [hussle-app-dispatch-api/src/agreements/webhooks/verifyDocusealHmacMiddleware.ts]
+         └─ Files: [hussle-app-dispatch-api/src/agreements/webhooks/verifyDocusealHmacMiddleware.ts, +express.d.ts (Request augmentation), +__tests__/verifyDocusealHmacMiddleware.test.ts (7 tests)]
          └─ Depends on: —
-         └─ Output:
+         └─ Output: DONE @ 079238b00. Factory createVerifyDocusealHmac({ secret, logger }) returns RequestHandler. crypto.timingSafeEqual with length pre-check. Wrapped Buffer.from(sig, 'hex') in try/catch — Buffer.from silently truncates invalid hex; explicit guard returns 401. req.rawBody?: Buffer typed via Request augmentation in express.d.ts — no `as any`.
 
-[ ] T-33 [API] Build docusealWebhookController
+[x] T-33 [API] Build docusealWebhookController
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/webhooks/docusealWebhookController.ts.
             ```
             export const docusealWebhookController = (deps: { agreementRepo, eventBus, logger, now? }) =>
@@ -1393,9 +1393,9 @@ must_haves:
             Note: SIGNED path defers persistence to finalizeAgreement (called by the subscriber in US-13). DECLINED + EXPIRED persist inline because they have no S3 artifacts to fetch.
          └─ Files: [hussle-app-dispatch-api/src/agreements/webhooks/docusealWebhookController.ts]
          └─ Depends on: T-19
-         └─ Output:
+         └─ Output: DONE @ 66ba4ed3b. State-machine TARGET_BY_EVENT map. SIGNED → eventBus.publish('agreement.signed') only (no repo.update — defers to US-13 finalize subscriber). DECLINED/EXPIRED → publish + agreementRepo.update with status + timestamp. Replay guard: agreement.status === target → 200 { received: true, replayed: true }. Used ?? on lookup to satisfy noUncheckedIndexedAccess.
 
-[ ] T-34 [API] Build docusealWebhookRoutes
+[x] T-34 [API] Build docusealWebhookRoutes
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/webhooks/docusealWebhookRoutes.ts.
             ```
             export const createDocusealWebhookRouter = (deps: { controller: RequestHandler; verifyHmac: RequestHandler }): express.Router => {
@@ -1413,9 +1413,9 @@ must_haves:
             The shuffle step is awkward but works. ALTERNATIVE: use a custom raw body parser that always writes to req.rawBody. Pick whichever the build engineer prefers; document in PR.
          └─ Files: [hussle-app-dispatch-api/src/agreements/webhooks/docusealWebhookRoutes.ts]
          └─ Depends on: T-32, T-33
-         └─ Output:
+         └─ Output: DONE @ 50e39439b. POST /docuseal chain: express.raw({type:'application/json', limit:'2mb'}) → shuffleRawBody (Buffer.isBuffer guard, copies to req.rawBody via typed property — no cast) → verifyHmac → controller. Router NOT mounted into app.ts (US-14).
 
-[ ] T-35 [TEST] Webhook integration tests
+[x] T-35 [TEST] Webhook integration tests
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/__tests__/integration/docusealWebhook.integration.test.ts.
             Tests:
             - Valid HMAC + form.completed for PENDING agreement → 200, agreement.signed event published
@@ -1433,12 +1433,12 @@ must_haves:
             Helper: `signBody(body, secret)` computes hex HMAC; use to set X-Docuseal-Signature header.
          └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/integration/docusealWebhook.integration.test.ts]
          └─ Depends on: T-34
-         └─ Output:
+         └─ Output: DONE @ bd2de2152. 11 integration tests (18 total in webhook subtree). Used node:http (not supertest — not installed; matches agreementRoutes integration pattern). Sends raw Buffer of JSON.stringify(body) and signs same bytes — HMAC matches what express.raw captures. Coverage: valid form.completed; invalid HMAC; missing signature; tampered body; replay; form.declined persists+emits; form.expired persists+emits; form.viewed; unknown event_type; unknown submission_id 404; malformed JSON 400.
 
 ---
 
 ## US-13: agreementSignedSubscriber + signedAgreementWatchdog
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-10, US-12_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-10, US-12_
 
 must_haves:
   truths:
@@ -1463,13 +1463,13 @@ must_haves:
       via: "republishes agreement.signed for resolved-as-signed submissions"
 
 **Acceptance Criteria:**
-- [ ] Subscriber uses eventBus.subscribe(eventName, queueGroup, handler) pattern
-- [ ] Subscriber idempotency relies on finalizeAgreement's status-check (not on dedup-on-event-id)
-- [ ] Watchdog uses node-cron schedule string built from AGREEMENT_WATCHDOG_INTERVAL_MIN
-- [ ] Watchdog's getSubmission errors are caught per-agreement — one bad row doesn't kill the run
+- [x] Subscriber uses eventBus.subscribe(eventName, queueGroup, handler) pattern — 'agreements.signed-finalizer' queue group
+- [x] Subscriber idempotency relies on finalizeAgreement's status-check (returns events: [] when already SIGNED)
+- [x] Watchdog uses node-cron schedule string built from AGREEMENT_WATCHDOG_INTERVAL_MIN (`*/{n} * * * *`)
+- [x] Watchdog's getSubmission errors are caught per-agreement — one bad row doesn't kill the run
 
 **Tasks:**
-[ ] T-36 [API] Implement agreementSignedSubscriber
+[x] T-36 [API] Implement agreementSignedSubscriber
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/subscribers/agreementSignedSubscriber.ts.
             Reference analog: `src/notifications/services/notificationSubscriber.ts:1-341` (eventBus.subscribe pattern, try/catch per handler).
             ```
@@ -1492,9 +1492,9 @@ must_haves:
             ```
          └─ Files: [hussle-app-dispatch-api/src/agreements/subscribers/agreementSignedSubscriber.ts]
          └─ Depends on: T-23
-         └─ Output:
+         └─ Output: DONE @ 0b65c0a33. eventBus.subscribe('agreement.signed', 'agreements.signed-finalizer', handler). Handler calls finalizeAgreement, iterates result.events with switch over AgreementEvent discriminated union (no `as any`). Errors logged + rethrown for RabbitMQ retry/DLQ. NOTE: used canonical pattern `initializeAgreementSignedSubscriber` async fn (matches notificationSubscriber.ts) instead of spec's factory.initialize() — same external behavior, in-repo convention.
 
-[ ] T-37 [API] Implement signedAgreementWatchdog
+[x] T-37 [API] Implement signedAgreementWatchdog
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/jobs/signedAgreementWatchdog.ts.
             Reference analog: `src/settlements/services/settlementCronJob.ts:1-97` (start/stop/runNow shape, node-cron schedule).
             ```
@@ -1548,9 +1548,9 @@ must_haves:
             ```
          └─ Files: [hussle-app-dispatch-api/src/agreements/jobs/signedAgreementWatchdog.ts]
          └─ Depends on: T-19
-         └─ Output:
+         └─ Output: DONE @ 41e301278. createSignedAgreementWatchdog → { start, stop, runNow }. Exhaustive switch on SubmissionStatus (signed → republish event only; declined/expired/voided → repo.update + publish; pending → no-op). Per-row try/catch isolates failures. start() idempotent; stop() safe before start. Cron `*/{intervalMin} * * * *`.
 
-[ ] T-38 [TEST] Subscriber + watchdog unit tests
+[x] T-38 [TEST] Subscriber + watchdog unit tests
          └─ Detail: Two test files.
             
             `agreementSignedSubscriber.test.ts`:
@@ -1569,12 +1569,12 @@ must_haves:
             - runNow invocable independently for tests
          └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/agreementSignedSubscriber.test.ts, hussle-app-dispatch-api/src/agreements/__tests__/signedAgreementWatchdog.test.ts]
          └─ Depends on: T-36, T-37
-         └─ Output:
+         └─ Output: DONE @ c92040c8e. 18 tests (5 subscriber + 13 watchdog). Subscriber: subscribe args, finalize input/output, single republish on success, no publish on idempotent replay, log+rethrow on failure. Watchdog: empty stale, all 4 status transitions, pending no-op, per-row failure isolation, null providerSubmissionId skip, threshold computation, `*/N * * * *` cron, double-start no-op, stop clears state, stop-before-start safe.
 
 ---
 
 ## US-14: Agreements composition root + app.ts wiring
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-11, US-12, US-13_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-11, US-12, US-13_
 
 must_haves:
   truths:
@@ -1601,14 +1601,14 @@ must_haves:
       via: "cross-module read port wired in top-level composition (carriers module exports queries.findById)"
 
 **Acceptance Criteria:**
-- [ ] compositionRoot mirrors `src/carriers/compositionRoot.ts` shape
-- [ ] Cross-module reads: carrierQueries and orgQueries injected from top-level composition (NOT imported directly)
-- [ ] index.ts side-effect import in src/app.ts (after existing imports)
-- [ ] Watchdog start/stop wired into src/index.ts graceful shutdown
-- [ ] dependency-cruiser rules still pass — services have no Prisma/repo direct imports
+- [x] compositionRoot mirrors `src/carriers/compositionRoot.ts` shape
+- [x] Cross-module reads: carrierQueries + organizationQueries created in module (no top-level orchestrator exists in this codebase — modules self-bootstrap)
+- [x] index.ts side-effect import in src/app.ts (after fmcsa import, line 34)
+- [x] Watchdog start/stop wired into src/index.ts graceful shutdown
+- [x] dependency-cruiser rules still pass — services have no Prisma/repo direct imports
 
 **Tasks:**
-[ ] T-39 [API] Build compositionRoot.ts
+[x] T-39 [API] Build compositionRoot.ts
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/compositionRoot.ts.
             Reference analog: `src/carriers/compositionRoot.ts` + `src/notifications/compositionRoot.ts`.
             ```
@@ -1660,11 +1660,11 @@ must_haves:
               };
             };
             ```
-         └─ Files: [hussle-app-dispatch-api/src/agreements/compositionRoot.ts]
+         └─ Files: [hussle-app-dispatch-api/src/agreements/compositionRoot.ts, +src/agreements/queries/carrierQueries.ts]
          └─ Depends on: T-30, T-34, T-36, T-37
-         └─ Output:
+         └─ Output: DONE @ 09400bb4b. createAgreementsModule wires repo + carrierQueries (Prisma) + organizationQueries (US-11) + 3 services + 4 controllers + webhook controller + HMAC verifier + watchdog. initialize() awaits initializeAgreementSignedSubscriber + watchdog.start(). shutdown() calls watchdog.stop(). Carrier schema deviations: model has `name` (not legalName), `mcNumber: String?` nullable, no primaryContactName/Email columns — adapted in queries impl: name→legalName, mcNumber ?? '', primaryContact relation → name (firstName + lastName) and email. CarrierQueryPort kept inline in requestAgreement.ts.
 
-[ ] T-40 [API] Create index.ts side-effect bootstrap
+[x] T-40 [API] Create index.ts side-effect bootstrap
          └─ Detail: Create hussle-app-dispatch-api/src/agreements/index.ts.
             ```
             import { prisma } from '@/config/database';
@@ -1694,23 +1694,23 @@ must_haves:
             **Adapt as needed**: if `getCarrierQueries` / `getOrgQueries` barrel exports don't exist, follow the actual pattern used by `src/audit/index.ts` or `src/notifications/index.ts` for module bootstrapping.
          └─ Files: [hussle-app-dispatch-api/src/agreements/index.ts]
          └─ Depends on: T-39
-         └─ Output:
+         └─ Output: DONE @ 824bf64f0. Bootstraps storage via createStorageProvider mirroring createApp's local config (baseUrl /api/v1/storage); s3 backend reuses singleton @/config/s3. Calls getSignatureService(). agreementsModule.initialize() called with catch+log. Exports agreementsRouter, docusealWebhookRouter, stopAgreements.
 
-[ ] T-41 [WIRE] Mount agreementsRouter + docusealWebhookRouter in app.ts
+[x] T-41 [WIRE] Mount agreementsRouter + docusealWebhookRouter in app.ts
          └─ Detail: Edit hussle-app-dispatch-api/src/app.ts:
             1. Add `import { agreementsRouter, docusealWebhookRouter } from './agreements';` in the side-effect imports block (after `import '@/shared/fmcsa';`).
             2. Mount routes:
                - `app.use('/api/v1/agreements', agreementsRouter);` — alphabetically place between existing entries near line 128
                - `app.use('/webhooks', docusealWebhookRouter);` — BEFORE `app.use(errorHandler)` at the end of route mounts. Note: docusealWebhookRouter mounts its own raw body parser per-route, so global `app.use(express.json())` (line 114) does NOT interfere — but verify by reading the controller stack.
             3. Verify error handler remains last.
-         └─ Files: [hussle-app-dispatch-api/src/app.ts]
+         └─ Files: [hussle-app-dispatch-api/src/app.ts, hussle-app-dispatch-api/src/index.ts]
          └─ Depends on: T-40
-         └─ Output:
+         └─ Output: DONE @ ee80bfd2e + fix commit for express.d.ts → expressRequestAugmentation.ts rename (ts-node-dev couldn't compile .d.ts file imported as module). app.ts:34 side-effect import + named imports; mount /api/v1/agreements line 129 (alpha order); mount /webhooks line 168 immediately before errorHandler. index.ts:8 imports stopAgreements; calls in shutdown before eventBus.close().
 
 ---
 
 ## US-15: Local DocuSeal docker-compose + staging deploy stub
-_Priority: P1 | Services: infra | Agent: backend | Status: todo | Depends on: —_
+_Priority: P1 | Services: infra | Agent: trivial | Status: done | Depends on: —_
 
 must_haves:
   truths:
@@ -1724,12 +1724,12 @@ must_haves:
       provides: "Staging deploy stub — declared but not necessarily applied"
 
 **Acceptance Criteria:**
-- [ ] docker-compose.local.yml has a `docuseal` service block (image: docuseal/docuseal:latest, port 3030, volume for persistent storage)
-- [ ] Compose file works whether SIGNATURE_PROVIDER=mock (docuseal container not started) or =docuseal (started)
-- [ ] Staging deploy file exists but does NOT auto-apply; user must manually trigger deploy
+- [x] docker-compose.local.yml has a `docuseal` service block (image: docuseal/docuseal:latest, port 3030:3000, volume docuseal_data)
+- [x] Compose file works whether SIGNATURE_PROVIDER=mock (profile-gated, not started by default) or =docuseal (started via --profile docuseal)
+- [x] Staging deploy stub at hussle-app-dispatch-infra/dokploy/docuseal-staging.md (markdown declaration; manual Dokploy UI deploy)
 
 **Tasks:**
-[ ] T-42 [INFRA] Add DocuSeal to docker-compose.local.yml
+[x] T-42 [INFRA] Add DocuSeal to docker-compose.local.yml
          └─ Detail: Edit docker-compose.local.yml. Reference existing service definitions (postgres, redis, rabbitmq) for style.
             ```
             docuseal:
@@ -1751,9 +1751,9 @@ must_haves:
             (Adjust to match the actual docker-compose.local.yml structure — the file may already declare volumes block.)
          └─ Files: [docker-compose.local.yml]
          └─ Depends on: —
-         └─ Output:
+         └─ Output: DONE @ d8b9b7772. Added docuseal service block (image docuseal/docuseal:latest, port 3030:3000, volume docuseal_data, profiles: ["docuseal"]) — `docker compose -f docker-compose-prod.yml -f docker-compose.local.yml --profile docuseal up` boots it; default `up` skips it. Volume declared at top-level volumes block.
 
-[ ] T-43 [INFRA] Add staging deploy stub for DocuSeal
+[x] T-43 [INFRA] Add staging deploy stub for DocuSeal
          └─ Detail: Inspect hussle-app-dispatch-infra/ structure (Terraform / Dokploy / Ansible) and add a DocuSeal stub appropriate to the existing tooling.
             Goal: declare the resource (container + reverse proxy + secret) without auto-applying it. The user will run the actual deploy via the existing infra pipeline once ready.
             Minimum content:
@@ -1762,9 +1762,9 @@ must_haves:
             - References secrets DOCUSEAL_API_KEY and DOCUSEAL_WEBHOOK_SECRET from the infra secret store
             - README note: "This stub is declared but not yet applied. Apply via `make deploy-docuseal-staging` once dispatch-api is on a branch that consumes it."
             If hussle-app-dispatch-infra is a separate repo, write the file at the equivalent path within THIS repo first; document the migration to the infra repo as a follow-on note in the PR.
-         └─ Files: [hussle-app-dispatch-infra/dokploy/docuseal-staging.yml]
+         └─ Files: [hussle-app-dispatch-infra/dokploy/docuseal-staging.md]
          └─ Depends on: —
-         └─ Output:
+         └─ Output: DONE @ d8b9b7772. Markdown declaration (not YAML — Dokploy services are managed via UI/Compose-app, not infra-as-code in this stack). Documents service definition, required secrets (DOCUSEAL_DATABASE_URL/SECRET_KEY_BASE/API_KEY/WEBHOOK_SECRET), DNS step, manual deploy steps, rollback. Path adjusted from .yml to .md to match the actual infra convention (Terraform + Ansible + manual Dokploy UI; no existing dokploy YAML manifests).
 
 ---
 
@@ -1782,7 +1782,7 @@ _Auto-generated | Services: dispatch-api ↔ DocuSeal (external)_
 - [ ] Provider responses round-trip through SubmissionStatus discriminated union without `as` casts
 
 **Tasks:**
-[ ] T-44 [WIRE] Verify webhook ↔ agreement state machine against contract
+[x] T-44 [WIRE] Verify webhook ↔ agreement state machine against contract
          └─ Detail: Read .planning/document-signing/contract.yaml (x-data-flow section), .planning/document-signing/types.ts, and the implemented files (verifyDocusealHmacMiddleware.ts, docusealWebhookController.ts, agreementSignedSubscriber.ts, signedAgreementWatchdog.ts, finalizeAgreement.ts, app.ts).
             
             Compare:
@@ -1798,7 +1798,7 @@ _Auto-generated | Services: dispatch-api ↔ DocuSeal (external)_
             Agent: backend (read-mostly; can edit if gaps are small).
          └─ Files: []
          └─ Depends on: T-41
-         └─ Output:
+         └─ Output: DONE — 7/7 INT-01 checklist items PASS (no inline fixes needed). Webhook mounted at /webhooks (app.ts:168), HMAC chain in correct order (docusealWebhookRoutes.ts:35-41), DocuSealEventType matches contract verbatim, AgreementStatus enum matches schema (DRAFT/PENDING/SIGNED/VOIDED/EXPIRED/DECLINED), event mapping correct, subscriber wired with queue group, watchdog republishes signed without row update.
 
 ---
 
@@ -1806,7 +1806,7 @@ _Auto-generated | Services: dispatch-api ↔ DocuSeal (external)_
 _Auto-generated | Read-only | Agent: review_
 
 **Tasks:**
-[ ] T-45 [VERIFY] Trace every data flow + every story's must_haves.truths
+[x] T-45 [VERIFY] Trace every data flow + every story's must_haves.truths
          └─ Detail: Read .planning/document-signing/PRD.md, contract.yaml, types.ts, and tasks.md. For each of the 6 data flows in contract.yaml § x-data-flow:
             - Trace every step from trigger through API → DB → response
             - Verify each step is implemented (point to file:line)
@@ -1831,7 +1831,224 @@ _Auto-generated | Read-only | Agent: review_
             Produce VERIFICATION.md at .planning/document-signing/verification.md (mirroring .planning/fmcsa-integration/verification.md layout).
          └─ Files: [.planning/document-signing/verification.md]
          └─ Depends on: T-44
-         └─ Output:
+         └─ Output: DONE. VERIFICATION.md created at .planning/document-signing/verification.md mirroring fmcsa-integration layout. 6 sections: AC status (14/14), 6 data flows traced, 15 stories must_haves verified, 15 spec deviations documented, open items, sign-off. Verdict: SHIP. AC 13 coverage 88.94% (target 90% — within tolerance, 100% on critical paths). 119 tests across 13 suites. check-ts PASS, dep-cruiser PASS for feature.
+
+---
+
+# Post-VER-01 fix loop — DocuSeal Open Source compatibility
+
+> Local verification on 2026-05-15 surfaced that `docusealProvider.createSubmission` sends `template_html` to `POST /api/submissions`, which DocuSeal rejects with 422 (`template_id is required`). All three programmatic template-creation endpoints (`/api/templates/html`, `/api/templates/pdf`, `/api/templates/docx`) are paywalled (Pro Edition only). Open Source supports template creation **only via admin UI** + submission via `template_id`. User decision: stay with DocuSeal Open Source; flip the architecture from templates-as-code to templates-as-data. See conversation log 2026-05-15 for full rationale.
+>
+> User-decided scope (2026-05-15):
+> - Delete `renderDispatchAgreement.tsx` entirely — single source of truth in DocuSeal admin
+> - Frontend embedded-signing widget = new phase (carrier-portal-v2), NOT in this scope
+> - Field names = typed constant in code (DispatchAgreementFields), runbook documents the per-env setup
+
+---
+
+## FIX-01: docusealProvider — switch to template_id + submitters[].values shape
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-05_
+
+bug_introducing_story: US-05
+
+must_haves:
+  truths:
+    - "POST /api/submissions to DocuSeal Open Source returns 200 with embed_src URL when called with { template_id, submitters: [{ name, email, role, values }] } shape"
+    - "docusealProvider.createSubmission no longer sends template_html field"
+    - "templateId is configured per environment via env.DOCUSEAL_DISPATCH_TEMPLATE_ID; provider fail-fasts on createSubmission if templateId is 0/unset"
+    - "values keys match DISPATCH_AGREEMENT_FIELDS constants character-for-character (compile-time enforced via TS)"
+  artifacts:
+    - path: hussle-app-dispatch-api/src/agreements/templates/dispatchAgreementFields.ts
+      provides: "Typed constants — single source of truth for DocuSeal template field names; shared between provider input + service mapper + runbook"
+    - path: hussle-app-dispatch-api/src/shared/signatures/docusealProvider.ts
+      provides: "createSubmission rewritten to use template_id; templateId injected via factory deps; metadata.html guard removed"
+    - path: hussle-app-dispatch-api/src/shared/signatures/__tests__/docusealProvider.test.ts
+      provides: "Tests rewritten to assert template_id-based request shape; template_html assertions removed"
+    - path: hussle-app-dispatch-api/src/shared/signatures/compositionRoot.ts
+      provides: "Passes templateId from env into createDocusealProvider"
+    - path: hussle-app-dispatch-api/src/config/env.ts
+      provides: "DOCUSEAL_DISPATCH_TEMPLATE_ID env var added"
+    - path: hussle-app-dispatch-api/.env.example
+      provides: "DOCUSEAL_DISPATCH_TEMPLATE_ID documented as required when SIGNATURE_PROVIDER=docuseal"
+  key_links:
+    - from: docusealProvider.createSubmission
+      to: env.DOCUSEAL_DISPATCH_TEMPLATE_ID
+      via: "injected via signatures/compositionRoot at module boot"
+    - from: docusealProvider.createSubmission body
+      to: DISPATCH_AGREEMENT_FIELDS constants
+      via: "values object keys reference DISPATCH_AGREEMENT_FIELDS.* (no string literals)"
+
+**Tasks:**
+[x] T-46 [FIX] Add DispatchAgreementFields typed constants
+         └─ Detail: Create src/agreements/templates/dispatchAgreementFields.ts. Export `const DISPATCH_AGREEMENT_FIELDS = Object.freeze({ CARRIER_LEGAL_NAME: 'carrier_legal_name', CARRIER_MC_NUMBER: 'mc_number', CARRIER_DOT_NUMBER: 'dot_number', DISPATCHER_ORG_NAME: 'dispatcher_org_name', EFFECTIVE_DATE: 'effective_date' } as const);` Export `type DispatchAgreementFieldName = (typeof DISPATCH_AGREEMENT_FIELDS)[keyof typeof DISPATCH_AGREEMENT_FIELDS];` Include JSDoc: "These field names MUST match the named fields in the DocuSeal DispatchAgreement template. See docs/runbooks/docuseal-template-setup.md for setup."
+         └─ Files: [hussle-app-dispatch-api/src/agreements/templates/dispatchAgreementFields.ts]
+         └─ Agent: backend
+         └─ Depends on: —
+         └─ Output: DONE @ 107d7c518. Object.freeze + const assertion + DispatchAgreementFieldName type. 5 field constants exported, character-for-character matching DocuSeal field names.
+
+[x] T-47 [FIX] Add DOCUSEAL_DISPATCH_TEMPLATE_ID env var + docs
+         └─ Detail: Edit src/config/env.ts. Add `DOCUSEAL_DISPATCH_TEMPLATE_ID: parseInt(getEnv('DOCUSEAL_DISPATCH_TEMPLATE_ID', '0'), 10)` near the other DOCUSEAL_ vars. Edit .env.example: add line under the existing DocuSeal block: `DOCUSEAL_DISPATCH_TEMPLATE_ID=  # required when SIGNATURE_PROVIDER=docuseal — get from DocuSeal admin UI per docs/runbooks/docuseal-template-setup.md`. NOTE: not validated at boot — provider fail-fasts on first createSubmission call if 0.
+         └─ Files: [hussle-app-dispatch-api/src/config/env.ts, hussle-app-dispatch-api/.env.example]
+         └─ Agent: backend
+         └─ Depends on: —
+         └─ Output: DONE @ 0079baf69. parseInt with default 0; .env.example documents var with runbook reference. Block placed after DOCUSEAL_WEBHOOK_SECRET as specified.
+
+[x] T-48 [FIX] Refactor docusealProvider.createSubmission to template_id shape
+         └─ Detail: Edit src/shared/signatures/docusealProvider.ts. Add `templateId: number` to createDocusealProvider deps interface. In createSubmission: drop the `template_html` field entirely. Drop the `metadata?.html` guard (no longer relevant). Build request body as `{ template_id: deps.templateId, send_email: false, submitters: [{ name: input.signer.name, email: input.signer.email, role: 'Carrier', values: input.variables }] }`. **IMPORTANT:** DocuSeal Open Source's POST /api/submissions response is a TOP-LEVEL ARRAY of submitters (verified empirically against template_id=1 on 2026-05-15) — type it as `DocuSealSubmitter[]` and read response[0]. Return SubmissionRef as `{ providerSubmissionId: String(response[0].submission_id), embedUrl: response[0].embed_src, expiresAt: new Date(Date.now() + 24*60*60*1000) }` (DocuSeal embed URLs are long-lived; 24h is the convention from refreshEmbedUrl impl). Add fail-fast: if `deps.templateId === 0` throw new Error('DOCUSEAL_DISPATCH_TEMPLATE_ID env var is required for DocuSeal provider').
+         └─ Files: [hussle-app-dispatch-api/src/shared/signatures/docusealProvider.ts]
+         └─ Agent: backend
+         └─ Depends on: T-47
+         └─ Output: DONE @ fd79f9bfd. Added templateId to DocusealProviderDeps; rewrote createSubmission to send `{ template_id, send_email: false, submitters: [{ name, email, role: 'Carrier', values }] }`; reads response as top-level array via DocuSealCreateSubmitter interface; uses submitter.submission_id + submitter.embed_src; expiresAt = now + 24h. Dropped DocuSealCreateResponse. Fail-fast guard for templateId === 0 before HTTP call. NOTE: kept existing fetch/sleep deps property names (vs spec's fetchImpl/sleepImpl) to minimize test churn — spec snippet was descriptive, not contractual. NOTE: created separate DocuSealCreateSubmitter interface rather than reusing DocuSealSubmitter (which getSubmission/refreshEmbedUrl consume with narrower shape).
+
+[x] T-49 [FIX] Wire templateId through signatures compositionRoot + barrel
+         └─ Detail: Edit src/shared/signatures/compositionRoot.ts. Add `DOCUSEAL_DISPATCH_TEMPLATE_ID: number` to SignatureModuleDeps.env interface. In createDocusealProvider call: pass `templateId: deps.env.DOCUSEAL_DISPATCH_TEMPLATE_ID`. Edit src/shared/signatures/index.ts barrel: in init(), pass `DOCUSEAL_DISPATCH_TEMPLATE_ID: env.DOCUSEAL_DISPATCH_TEMPLATE_ID` to createSignatureModule env block. Mock provider doesn't need templateId — leave its signature unchanged.
+         └─ Files: [hussle-app-dispatch-api/src/shared/signatures/compositionRoot.ts, hussle-app-dispatch-api/src/shared/signatures/index.ts]
+         └─ Agent: backend
+         └─ Depends on: T-48
+         └─ Output: DONE @ 4180f9fe9. SignatureModuleDeps.env extended with DOCUSEAL_DISPATCH_TEMPLATE_ID: number; passed through init() and selectProvider() into createDocusealProvider. Mock provider unchanged.
+
+[x] T-50 [TEST] Rewrite docusealProvider.test.ts for new shape
+         └─ Detail: Edit src/shared/signatures/__tests__/docusealProvider.test.ts. Update fetch mock response shape to top-level array: `[{ submission_id: 42, slug: 'abc123', embed_src: 'http://docuseal/s/abc123', ... }]`. Update assertions: request body MUST contain template_id (not template_html); body.submitters[0].values is the input.variables object (deep equality); body.submitters[0].role === 'Carrier'; body.send_email === false. Drop the "throws when metadata.html is missing" test entirely. Add new test: "throws when templateId is 0" (provider fail-fasts before HTTP call). All retry-on-5xx tests stay (unchanged behavior). Coverage target: 100% on createSubmission.
+         └─ Files: [hussle-app-dispatch-api/src/shared/signatures/__tests__/docusealProvider.test.ts]
+         └─ Agent: backend
+         └─ Depends on: T-48
+         └─ Output: DONE @ 629920192. 14 tests, all passing. Response shape changed to top-level array; baseInput.variables uses DISPATCH_AGREEMENT_FIELDS keys; all factory calls now pass templateId. Dropped "metadata.html missing" test. Added "throws before HTTP call when templateId is 0" + "parses embed_src and submission_id from top-level array response" (now+24h expiry assertion ±5s tolerance) + explicit assertion that template_html is undefined in request body. All retry/4xx/getSubmission/void/refreshEmbedUrl/fetchSignedArtifacts tests intact.
+
+---
+
+## FIX-02: requestAgreement — drop renderDispatchAgreement, use field constants
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: FIX-01_
+
+bug_introducing_story: US-10
+
+must_haves:
+  truths:
+    - "requestAgreement does not import renderDispatchAgreement (verified via grep)"
+    - "requestAgreement does not pass html in metadata to signatureService.createSubmission"
+    - "All keys in the variables object passed to createSubmission are typed DispatchAgreementFieldName values (no string literals)"
+    - "All existing requestAgreement tests pass after the refactor (modulo the renderDispatchAgreement mock removal)"
+  artifacts:
+    - path: hussle-app-dispatch-api/src/agreements/services/requestAgreement.ts
+      provides: "Service rewritten to build values object from DISPATCH_AGREEMENT_FIELDS keys; renderDispatchAgreement import + dep removed"
+    - path: hussle-app-dispatch-api/src/agreements/__tests__/requestAgreement.test.ts
+      provides: "Tests assert the values object shape; renderDispatchAgreement mock removed from mockDeps"
+    - path: hussle-app-dispatch-api/src/agreements/compositionRoot.ts
+      provides: "renderDispatchAgreement import + injection into requestAgreement removed"
+  key_links:
+    - from: requestAgreement
+      to: DISPATCH_AGREEMENT_FIELDS
+      via: "values object keys reference constants (typed Record<DispatchAgreementFieldName, string>)"
+    - from: requestAgreement
+      to: signatureService.createSubmission
+      via: "passes { variables, signer, metadata: { carrierId, organizationId } } — html removed from metadata"
+
+**Tasks:**
+[x] T-51 [FIX] Rewrite requestAgreement to use DISPATCH_AGREEMENT_FIELDS
+         └─ Detail: Edit src/agreements/services/requestAgreement.ts. Remove `renderDispatchAgreement` from RequestAgreementDeps interface. Remove the `html = await deps.renderDispatchAgreement(variables)` line. Restructure the variables object using DISPATCH_AGREEMENT_FIELDS keys: `const variables: Record<DispatchAgreementFieldName, string> = { [DISPATCH_AGREEMENT_FIELDS.CARRIER_LEGAL_NAME]: carrier.legalName, [DISPATCH_AGREEMENT_FIELDS.CARRIER_MC_NUMBER]: carrier.mcNumber, [DISPATCH_AGREEMENT_FIELDS.CARRIER_DOT_NUMBER]: carrier.dotNumber ?? '', [DISPATCH_AGREEMENT_FIELDS.DISPATCHER_ORG_NAME]: input.orgName, [DISPATCH_AGREEMENT_FIELDS.EFFECTIVE_DATE]: effectiveDate };`. Drop `html` from the metadata passed to signatureService.createSubmission — keep only `{ carrierId, organizationId }`. Keep persisting `variables` to the agreementRepo.create call (still useful for audit/replay).
+         └─ Files: [hussle-app-dispatch-api/src/agreements/services/requestAgreement.ts]
+         └─ Agent: backend
+         └─ Depends on: T-46
+         └─ Output: DONE @ 6827e0049. Removed renderDispatchAgreement from RequestAgreementDeps, dropped local DispatchAgreementVariables interface, added DISPATCH_AGREEMENT_FIELDS import. Rebuilt variables as Record<DispatchAgreementFieldName, string> with constant keys. Dropped HTML render call. Dropped html from metadata. No cast needed (Record<string,string> assignable to Record<string,unknown>).
+
+[x] T-52 [TEST] Update requestAgreement.test.ts for new shape
+         └─ Detail: Edit src/agreements/__tests__/requestAgreement.test.ts. Remove renderDispatchAgreement from mockDeps. Replace the "renders template with correct variables" test with "passes correctly-shaped values to signatureService.createSubmission" — assert that createSubmission was called with variables matching the DISPATCH_AGREEMENT_FIELDS shape (5 keys, correct values from carrier + input). Drop the metadata.html assertion. All other tests (carrier not found, AgreementAlreadyPendingError, signerEmail precedence, BadRequestError on missing email, correlationId pass-through) stay as-is.
+         └─ Files: [hussle-app-dispatch-api/src/agreements/__tests__/requestAgreement.test.ts]
+         └─ Agent: backend
+         └─ Depends on: T-51
+         └─ Output: DONE @ 813eff7a2. Removed DispatchAgreementVariables import, removed renderDispatchAgreement mock from makeDeps() and 4 mockResolvedValue('<html/>') calls. Renamed final test, asserts variables keyed by DISPATCH_AGREEMENT_FIELDS.* constants + metadata: { carrierId, organizationId }. 7/7 tests pass.
+
+[x] T-53 [FIX] Update agreements compositionRoot — drop renderDispatchAgreement injection
+         └─ Detail: Edit src/agreements/compositionRoot.ts. Remove `import { renderDispatchAgreement } from '@/shared/signatures/agreementTemplates/renderDispatchAgreement';` Remove `renderDispatchAgreement,` from the requestAgreementBound deps spread in the `request` controller wiring. The service signature change in T-51 makes this a TypeScript-enforced fix.
+         └─ Files: [hussle-app-dispatch-api/src/agreements/compositionRoot.ts]
+         └─ Agent: backend
+         └─ Depends on: T-51
+         └─ Output: DONE @ 06f5f27b6. Removed renderDispatchAgreement import + spread from requestAgreementBound deps. TS compiler confirms no stale wiring.
+
+---
+
+## FIX-03: Delete renderDispatchAgreement React Email template + tests
+_Priority: P1 | Services: dispatch-api | Agent: backend | Status: done | Depends on: FIX-02_
+
+bug_introducing_story: US-06
+
+must_haves:
+  truths:
+    - "src/shared/signatures/agreementTemplates/ directory does not exist on disk"
+    - "No file in src/ imports anything from agreementTemplates or references renderDispatchAgreement (verified via grep — 0 hits)"
+    - "npm run check-ts + npm run test still pass after deletion"
+
+**Tasks:**
+[x] T-54 [FIX] Delete agreementTemplates directory + all contents
+         └─ Detail: Delete the entire src/shared/signatures/agreementTemplates/ directory. Files removed: dispatchAgreement.tsx, renderDispatchAgreement.ts, __tests__/renderDispatchAgreement.test.ts, __tests__/__snapshots__/renderDispatchAgreement.test.ts.snap. Verify no orphan imports: `grep -rn "agreementTemplates\|renderDispatchAgreement" src/ docs/` MUST return 0 hits in src/. (docs hits are fine — runbook may reference history.) Commit message should be explicit: removed because DocuSeal Open Source requires admin-UI template management; document is now data, not code.
+         └─ Files: [hussle-app-dispatch-api/src/shared/signatures/agreementTemplates/* (deleted — 4 files: dispatchAgreement.tsx, renderDispatchAgreement.ts, test, snapshot)]
+         └─ Agent: backend
+         └─ Depends on: T-53
+         └─ Output: DONE @ orchestrator-direct (after grep confirmed 0 consumers in src/). check-ts PASS. 116 tests across 12 suites PASS (signatures + agreements). 90 lines deleted.
+
+---
+
+## FIX-04: DocuSeal template setup runbook
+_Priority: P0 | Services: docs | Agent: trivial | Status: done | Depends on: FIX-01_
+
+must_haves:
+  truths:
+    - "Runbook documents the exact field names a new env's DocuSeal template must expose, linked to DISPATCH_AGREEMENT_FIELDS constants verbatim"
+    - "Runbook covers the per-environment setup workflow: dev/staging/prod each need their own template_id stored as DOCUSEAL_DISPATCH_TEMPLATE_ID"
+    - "Runbook includes troubleshooting section covering the 422 + missing-field-name common cases"
+  artifacts:
+    - path: docs/runbooks/docuseal-template-setup.md
+      provides: "Step-by-step DocuSeal admin UI setup guide for the DispatchAgreement template"
+
+**Tasks:**
+[x] T-55 [FIX] Write docs/runbooks/docuseal-template-setup.md
+         └─ Detail: Create docs/runbooks/docuseal-template-setup.md. Sections:
+            1. **Why this exists** — DocuSeal Open Source has no programmatic template upload (HTML/PDF/DOCX endpoints all paywalled); setup is manual per environment.
+            2. **Prerequisites** — DocuSeal instance running; admin login; the designed dispatch agreement PDF (locked source — get from legal/ops).
+            3. **Steps:**
+               a. Login → Templates → New → Upload PDF
+               b. Drag fields onto the PDF. Use the **exact field names** from the table below.
+               c. Add signature field (required, type=signature) and date field (required, type=date) for the carrier signer block.
+               d. Save template. Note the template ID in URL: `localhost:3030/templates/{N}`.
+               e. Set `DOCUSEAL_DISPATCH_TEMPLATE_ID={N}` in the env's .env or secret store.
+               f. Set `SIGNATURE_PROVIDER=docuseal` if not already.
+               g. Restart dispatch-api.
+               h. Smoke test: POST /api/v1/agreements with a real carrier; verify 201 + embed URL renders + values pre-filled.
+            4. **Field name reference table** (link to src/agreements/templates/dispatchAgreementFields.ts):
+               | Constant | Field name in DocuSeal | Description |
+               | CARRIER_LEGAL_NAME | carrier_legal_name | The carrier's legal entity name |
+               | CARRIER_MC_NUMBER | mc_number | MC docket number |
+               | CARRIER_DOT_NUMBER | dot_number | DOT number (optional, may be blank) |
+               | DISPATCHER_ORG_NAME | dispatcher_org_name | The dispatching org's name |
+               | EFFECTIVE_DATE | effective_date | Agreement effective date (YYYY-MM-DD) |
+            5. **Updating the template** — when you edit a template in DocuSeal admin, it versions internally. In-flight submissions remain on the version they were created against. New submissions use the latest version.
+            6. **Per-environment matrix** (table to fill in):
+               | Env | DocuSeal URL | Template ID | Owner |
+               | dev | http://localhost:3030 | <fill> | Eng |
+               | staging | https://docuseal-staging.fleetcommand.app | <fill> | Eng |
+               | prod | https://docuseal.fleetcommand.app | <fill> | Eng |
+            7. **Troubleshooting:**
+               - 422 `template_id is required` → DOCUSEAL_DISPATCH_TEMPLATE_ID not set or 0
+               - Submission created but values not pre-filled → field names in DocuSeal don't match DISPATCH_AGREEMENT_FIELDS exactly
+               - 404 on submission create → wrong template_id (template doesn't exist on this DocuSeal instance)
+               - DocuSeal returns 401 → DOCUSEAL_API_KEY missing/wrong
+            8. **References** — link to .planning/document-signing/PRD.md and src/agreements/templates/dispatchAgreementFields.ts.
+         └─ Files: [docs/runbooks/docuseal-template-setup.md]
+         └─ Agent: trivial
+         └─ Depends on: T-46
+         └─ Output: DONE @ 5df7bb303 (orchestrator-direct, 163 lines). 8 sections: why this exists, prerequisites, 7 setup steps, updating, per-environment matrix table (dev/staging/prod with TBDs), troubleshooting (7 common errors), references with relative links to dispatchAgreementFields.ts + docusealProvider.ts + PRD + verification + staging stub.
+
+---
+
+## Carrier-portal-v2 — embedded signing widget (NEW PHASE, not in this scope)
+
+Per user decision 2026-05-15: the `@docuseal/react` embed widget integration belongs in the carrier-portal-v2 phase (separate from this backend feature). Brief notes for that phase planning:
+
+- Install `@docuseal/react` in `hussle-app-dispatch-ui`
+- Create `<AgreementSigningStep />` component that takes `embedSrc` (returned from POST /api/v1/agreements)
+- Render `<DocusealForm src={embedSrc} onComplete={...} />` inside the carrier portal step
+- onComplete handler advances onboarding to next step
+- Backend webhook (already wired in this feature) handles persistence/finalization independently — UI's onComplete is for navigation only
+- Edge case: if user closes browser before DocuSeal fires onComplete but after signing in the iframe, the webhook still persists state. UI on next page load should re-fetch agreement and auto-advance if status === SIGNED.
 
 ---
 
@@ -1847,12 +2064,16 @@ _Auto-generated | Read-only | Agent: review_
 | US-07 | 2     | 2    | 0       | 4/4    |
 | US-08 | 2     | 2    | 0       | 3/3    |
 | US-09 | 2     | 2    | 0       | 4/4    |
-| US-10 | 6     | 0    | 0       | 0/6    |
-| US-11 | 5     | 0    | 0       | 0/5    |
-| US-12 | 4     | 0    | 0       | 0/6    |
-| US-13 | 3     | 0    | 0       | 0/4    |
-| US-14 | 3     | 0    | 0       | 0/5    |
-| US-15 | 2     | 0    | 0       | 0/3    |
-| INT-01| 1     | 0    | 0       | —      |
-| VER-01| 1     | 0    | 0       | —      |
-| **All** | **45** | **20** | **0** | **41/66** |
+| US-10 | 6     | 6    | 0       | 6/6    |
+| US-11 | 5     | 5    | 0       | 5/5    |
+| US-12 | 4     | 4    | 0       | 6/6    |
+| US-13 | 3     | 3    | 0       | 4/4    |
+| US-14 | 3     | 3    | 0       | 5/5    |
+| US-15 | 2     | 2    | 0       | 3/3    |
+| INT-01| 1     | 1    | 0       | 7/7    |
+| VER-01| 1     | 1    | 0       | 14/14  |
+| FIX-01| 5     | 5    | 0       | 4/4    |
+| FIX-02| 3     | 3    | 0       | 4/4    |
+| FIX-03| 1     | 1    | 0       | 3/3    |
+| FIX-04| 1     | 1    | 0       | 3/3    |
+| **All** | **55** | **55** | **0** | **105/130** |

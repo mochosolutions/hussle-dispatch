@@ -109,8 +109,25 @@ services:
       - "1025:1025"
     restart: unless-stopped
 
+  # DocuSeal — optional. Start with `docker compose --profile docuseal up -d docuseal`.
+  # Default `docker compose up` skips it; the dispatch-api falls back to the deterministic
+  # mock signature provider unless SIGNATURE_PROVIDER=docuseal in .env.
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: hussle-app-docuseal
+    ports:
+      - "3030:3000"
+    environment:
+      FORCE_SSL: "false"
+      HOST: localhost:3030
+    volumes:
+      - docuseal-data:/data
+    restart: unless-stopped
+    profiles: ["docuseal"]
+
 volumes:
   postgres-data:
   redis-data:
   rabbitmq-data:
+  docuseal-data:
   # redisinsight-data:

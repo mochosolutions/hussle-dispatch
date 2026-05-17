@@ -108,6 +108,7 @@ export interface DeleteOrganizationArgs {
 export interface DeleteOrganizationServiceDeps {
   findOrganizationById: (id: string) => Promise<Organization | null>;
   deleteOrganization: (id: string) => Promise<Organization | null>;
+  revokeCarrierInviteTokensForOrg: (organizationId: string) => Promise<void>;
 }
 
 // Re-export Prisma enums for convenience

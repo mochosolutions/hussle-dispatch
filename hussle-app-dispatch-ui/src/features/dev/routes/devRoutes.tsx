@@ -19,6 +19,67 @@ const ListLayoutDemo = lazy(() => import('../pages/ListLayoutDemo'));
 const EditDrawerDemo = lazy(() => import('../pages/EditDrawerDemo'));
 const EquipmentPreview = lazy(() => import('../pages/EquipmentPreview'));
 const FormFieldsPreview = lazy(() => import('../pages/FormFieldsPreview'));
+const OnboardingPreviewIndex = lazy(
+  () => import('features/carrier-portal-v2/dev/OnboardingPreview'),
+);
+const WelcomeSegmentationPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/WelcomeSegmentationPreview'
+    ),
+);
+const PortalShellPreview = lazy(
+  () =>
+    import('features/carrier-portal-v2/dev/OnboardingPreview/previews/PortalShellPreview'),
+);
+const CompanyAuthorityPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/CompanyAuthorityPreview'
+    ),
+);
+const LanePreferencesPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/LanePreferencesPreview'
+    ),
+);
+const EquipmentEntryPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/EquipmentEntryPreview'
+    ),
+);
+const DriversListPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/DriversListPreview'
+    ),
+);
+const CostAnalysisPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/CostAnalysisPreview'
+    ),
+);
+const SignAgreementPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/SignAgreementPreview'
+    ),
+);
+const DocumentsUploadPreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/DocumentsUploadPreview'
+    ),
+);
+const LockedStatePreview = lazy(
+  () =>
+    import(
+      'features/carrier-portal-v2/dev/OnboardingPreview/previews/LockedStatePreview'
+    ),
+);
 
 const ProfileHeaderSetup = () => {
   return (
@@ -94,6 +155,50 @@ const DevRoutes: RouteObject[] = [
         <EquipmentPreview />
       </ProfileLayout>
     ),
+  },
+  {
+    path: '/dev/onboarding-preview',
+    element: <OnboardingPreviewIndex />,
+  },
+  {
+    path: '/dev/onboarding-preview/welcome-segmentation',
+    element: <WelcomeSegmentationPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/portal-shell',
+    element: <PortalShellPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/company-authority',
+    element: <CompanyAuthorityPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/lane-preferences',
+    element: <LanePreferencesPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/equipment-entry',
+    element: <EquipmentEntryPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/drivers-list',
+    element: <DriversListPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/cost-analysis',
+    element: <CostAnalysisPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/sign-agreement',
+    element: <SignAgreementPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/documents-upload',
+    element: <DocumentsUploadPreview />,
+  },
+  {
+    path: '/dev/onboarding-preview/locked-state',
+    element: <LockedStatePreview />,
   },
 ];
 

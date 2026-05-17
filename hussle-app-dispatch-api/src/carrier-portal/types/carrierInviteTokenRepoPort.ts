@@ -11,4 +11,5 @@ export interface CarrierInviteTokenRepoPort {
   findByToken(token: string): Promise<CarrierInviteToken | null>;
   create(data: CreateCarrierInviteTokenInput): Promise<CarrierInviteToken>;
   revokeByCarrierId(carrierId: string): Promise<void>;
+  revokeByOrganizationId(organizationId: string): Promise<void>;
 }

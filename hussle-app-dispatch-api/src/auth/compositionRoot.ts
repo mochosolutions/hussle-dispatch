@@ -21,6 +21,7 @@ import { createBulkOrgValidators } from './validators/bulkOrgValidator';
 import type { AuditLogPort } from './types/auditLogPort';
 import { createSubscriptionUsageService } from './services/subscription/subscriptionUsageService';
 import { createMemberManagementService } from './services/membership/memberManagementService';
+import { carrierInviteTokenRepoPrisma } from '@/carrier-portal/repositories/carrierInviteTokenRepoPrisma';
 
 interface AuthModuleConfig {
   allowedRoles: string[];
@@ -205,6 +206,8 @@ export const createAuthModule = ({
     });
   };
 
+  const carrierInviteTokenRepo = carrierInviteTokenRepoPrisma(prismaClient);
+
   const controllers = createAuthControllers({
     auditLogRepo,
     signupTokenProviderInstance,
@@ -223,6 +226,7 @@ export const createAuthModule = ({
     config: { defaultOrgRole: config.defaultOrgRole },
     subscriptionUsageService,
     memberManagementService,
+    revokeCarrierInviteTokensForOrg: carrierInviteTokenRepo.revokeByOrganizationId,
   });
 
   const validators: AuthModuleValidators = {

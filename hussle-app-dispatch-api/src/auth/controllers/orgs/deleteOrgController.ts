@@ -11,10 +11,11 @@ interface OrganizationRepoDeps {
 
 interface DeleteOrganizationControllerDeps {
   orgRepo: OrganizationRepoDeps;
+  revokeCarrierInviteTokensForOrg: (organizationId: string) => Promise<void>;
 }
 
 export const deleteOrganizationController =
-  ({ orgRepo }: DeleteOrganizationControllerDeps): RequestHandler =>
+  ({ orgRepo, revokeCarrierInviteTokensForOrg }: DeleteOrganizationControllerDeps): RequestHandler =>
   async (req: Request, res: Response) => {
     const { organizationId } = deleteOrganizationMapper(req);
 
@@ -23,6 +24,7 @@ export const deleteOrganizationController =
       {
         deleteOrganization: orgRepo.deleteOrganization,
         findOrganizationById: orgRepo.findOrganizationById,
+        revokeCarrierInviteTokensForOrg,
       },
     );
 

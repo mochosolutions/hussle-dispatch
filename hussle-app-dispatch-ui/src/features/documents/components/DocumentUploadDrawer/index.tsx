@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from 'store';
 import { validateUpload } from 'utils/documents/validateUpload';
 import { DOC_TYPE_CONFIG, DOC_CARD_CONFIGS, METADATA_FIELD_LABELS } from '../../constants';
 import type { DocumentContext } from '../../constants';
-import { uploadDocumentRequest, clearUploadStatus } from '../../store/reducers/documentPageSlice';
+import { uploadDocumentRequest } from '../../store/reducers/documentPageSlice';
 import { selectUploadStatus, selectUploadError } from '../../store/selectors/documentSelectors';
 import { DocumentType } from '../../types';
 import type { DocumentEntityType } from '../../types';
@@ -43,6 +43,11 @@ interface UploadItem {
   clientId: string;
   fileName: string;
   documentType: DocumentType;
+}
+
+interface StagedDocument extends QueuedDocument {
+  expiresAt?: string;
+  metadata?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,7 +151,7 @@ const ComplianceForm: React.FC<ComplianceFormProps> = ({
 
         <Stack direction="row" spacing={1}>
           <Button variant="contained" size="small" onClick={handleSubmit}>
-            Upload
+            Add to Queue
           </Button>
           <CancelButton onClick={onCancel} size="small" />
         </Stack>
@@ -220,7 +225,7 @@ export const OtherLabelForm: React.FC<OtherLabelFormProps> = ({
             onClick={handleSubmit}
             disabled={!isValid}
           >
-            Upload
+            Add to Queue
           </Button>
           <CancelButton onClick={onCancel} size="small" />
         </Stack>
@@ -242,6 +247,7 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
   onClose,
 }) => {
   const dispatch = useDispatch();
+  const [stagedDocuments, setStagedDocuments] = useState<StagedDocument[]>([]);
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [pendingCompliance, setPendingCompliance] = useState<QueuedDocument | null>(null);
   const [pendingOther, setPendingOther] = useState<QueuedDocument | null>(null);
@@ -296,22 +302,22 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
 
       const config = DOC_TYPE_CONFIG[doc.documentType];
 
-      // If compliance doc, show metadata form first
+      // If compliance doc, collect metadata before staging
       if (config.compliance) {
         setPendingCompliance(doc);
         return;
       }
 
-      // OTHER doc — gate upload on a custom label
+      // OTHER doc — collect custom label before staging
       if (doc.documentType === DocumentType.OTHER) {
         setPendingOther(doc);
         return;
       }
 
-      // Non-compliance: upload immediately
-      dispatchUpload(doc.file, doc.documentType, doc.clientId);
+      // Stage the document — upload starts when user clicks "Upload"
+      setStagedDocuments((prev) => [...prev, doc]);
     },
-    [dispatchUpload, dispatch],
+    [dispatch],
   );
 
   const handleComplianceSubmit = useCallback(
@@ -319,16 +325,10 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
       if (!pendingCompliance) {
         return;
       }
-      dispatchUpload(
-        pendingCompliance.file,
-        pendingCompliance.documentType,
-        pendingCompliance.clientId,
-        expiresAt,
-        metadata,
-      );
+      setStagedDocuments((prev) => [...prev, { ...pendingCompliance, expiresAt, metadata }]);
       setPendingCompliance(null);
     },
-    [pendingCompliance, dispatchUpload],
+    [pendingCompliance],
   );
 
   const handleComplianceCancel = useCallback(() => {
@@ -340,29 +340,26 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
       if (!pendingOther) {
         return;
       }
-      dispatchUpload(
-        pendingOther.file,
-        pendingOther.documentType,
-        pendingOther.clientId,
-        undefined,
-        { customLabel },
-      );
+      setStagedDocuments((prev) => [...prev, { ...pendingOther, metadata: { customLabel } }]);
       setPendingOther(null);
     },
-    [pendingOther, dispatchUpload],
+    [pendingOther],
   );
 
   const handleOtherCancel = useCallback(() => {
     setPendingOther(null);
   }, []);
 
-  const handleRemove = useCallback(
-    (clientId: string) => {
-      setUploadItems((prev) => prev.filter((item) => item.clientId !== clientId));
-      dispatch(clearUploadStatus({ clientId }));
-    },
-    [dispatch],
-  );
+  const handleRemove = useCallback((clientId: string) => {
+    setStagedDocuments((prev) => prev.filter((doc) => doc.clientId !== clientId));
+  }, []);
+
+  const handleUploadAll = useCallback(() => {
+    stagedDocuments.forEach((doc) => {
+      dispatchUpload(doc.file, doc.documentType, doc.clientId, doc.expiresAt, doc.metadata);
+    });
+    setStagedDocuments([]);
+  }, [stagedDocuments, dispatchUpload]);
 
   return (
     <EditDrawer open onClose={onClose} title={drawerTitle}>
@@ -389,13 +386,20 @@ export const DocumentUploadDrawer: React.FC<DocumentUploadDrawerProps> = ({
           {/* DocumentPicker (hidden while filling compliance or OTHER form) */}
           {!pendingCompliance && !pendingOther && (
             <DocumentPicker
-              documents={[]}
+              documents={stagedDocuments}
               onAdd={handleAdd}
               onRemove={handleRemove}
               docTypes={docTypes}
-              addLabel="Select document to upload"
-              addHelperText="PDF or image · Select type then upload"
+              addLabel="Add document"
+              addHelperText="PDF or image · Add all files before uploading"
             />
+          )}
+
+          {/* Upload trigger — shown once at least one document is staged */}
+          {stagedDocuments.length > 0 && !pendingCompliance && !pendingOther && (
+            <Button variant="contained" fullWidth size="large" onClick={handleUploadAll}>
+              {`Upload ${String(stagedDocuments.length)} ${stagedDocuments.length === 1 ? 'document' : 'documents'}`}
+            </Button>
           )}
 
           {/* Upload status list */}

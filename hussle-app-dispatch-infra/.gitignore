@@ -1,0 +1,96 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+*.sqlite3
+*.db
+*.log
+
+# VSCode
+.vscode/
+.history/
+
+# macOS
+.DS_Store
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfplan
+
+# Terraform variables - ignore secrets only
+*.auto.tfvars
+*secrets.tfvars
+*secrets.tfvars.json
+environments/*/terraform.tfvars.secrets
+environments/*/.terraform.tfvars.secrets
+
+# Allow base and template files
+!*.tfvars.example
+!*.tfvars.template
+!environments/base/terraform.tfvars.json
+!environments/base/terraform.tfvars
+
+# Environment-specific tfvars (review these - commit if non-sensitive)
+# Uncomment to ignore all environment tfvars:
+# environments/*/terraform.tfvars.json
+# environments/*/terraform.tfvars
+
+# Ansible
+*.retry
+*.log
+*.tmp
+*.bak
+*.vault
+
+# Docker
+**/docker-compose.override.yml
+**/docker-compose.local.yml
+**/docker-compose.dev.yml
+
+# Node.js (if present)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build/Test Artifacts
+*.coverage
+*.egg-info/
+dist/
+build/
+*.so
+*.out
+*.test
+*.planfile
+
+# Secrets and credentials
+secrets.*
+*secrets*
+*.pem
+*.key
+*.crt
+*.p12
+credentials.*
+*credentials*
+
+# Misc
+*.swp
+*.swo
+*.lock
+*.bak
+*.tmp
+
+# Ignore generated files
+plan/
+test.log
+.gopath
+vendor/

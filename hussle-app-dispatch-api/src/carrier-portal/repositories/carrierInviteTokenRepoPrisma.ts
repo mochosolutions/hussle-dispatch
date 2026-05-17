@@ -11,6 +11,8 @@ export const carrierInviteTokenRepoPrisma = (
         token,
         revokedAt: null,
         expiresAt: { gt: new Date() },
+        organization: { is: { deleted: false } },
+        carrier: { is: { deletedAt: null } },
       },
     }),
 
@@ -21,6 +23,18 @@ export const carrierInviteTokenRepoPrisma = (
     await prisma.carrierInviteToken.updateMany({
       where: {
         carrierId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  },
+
+  revokeByOrganizationId: async (organizationId) => {
+    await prisma.carrierInviteToken.updateMany({
+      where: {
+        organizationId,
         revokedAt: null,
       },
       data: {

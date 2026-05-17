@@ -116,7 +116,7 @@ must_haves:
 ---
 
 ## US-03: Carrier invite token hardening + cascade revocation
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done_
 
 must_haves:
   truths:
@@ -136,19 +136,19 @@ must_haves:
 - [ ] AC-24 (token validation rejects deleted org/carrier; cascade fires)
 
 **Tasks:**
-[ ] T-09 [API] Harden findByToken + add revokeByOrganizationId
+[x] T-09 [API] Harden findByToken + add revokeByOrganizationId
          └─ Detail: Extend `findByToken` `where` with `organization: { is: { deleted: false } }` and `carrier: { is: { deletedAt: null } }`. Add `revokeByOrganizationId(organizationId: string)` helper that runs `updateMany({ where: { organizationId, revokedAt: null }, data: { revokedAt: new Date() } })`. Confirm port interface at `carrier-portal/types/carrierInviteTokenRepoPort.ts` (or wherever it lives) exposes the new method.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/repositories/carrierInviteTokenRepoPrisma.ts, hussle-app-dispatch-api/src/carrier-portal/types/carrierInviteTokenRepoPort.ts]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-10 [API] Wire cascade on Organization soft-delete + Carrier soft-delete
+[x] T-10 [API] Wire cascade on Organization soft-delete + Carrier soft-delete
          └─ Detail: Find Organization soft-delete site (likely in `src/organizations/services/` or wherever `Organization.update({ deleted: true })` happens). Inject `carrierInviteTokenRepo` into that service and call `revokeByOrganizationId` after the update. For Carrier soft-delete, find the existing pathway and add a `revokeByCarrierId` call if not already present.
          └─ Files: [hussle-app-dispatch-api/src/organizations/services/<file>.ts, hussle-app-dispatch-api/src/organizations/compositionRoot.ts, hussle-app-dispatch-api/src/carriers/services/<soft-delete-site>.ts, hussle-app-dispatch-api/src/carriers/compositionRoot.ts]
          └─ Depends on: T-09
          └─ Output:
 
-[ ] T-11 [TEST] Token validation + cascade tests
+[x] T-11 [TEST] Token validation + cascade tests
          └─ Detail: Add `carrierInviteTokenRepoPrisma.test.ts` (or extend existing): asserts (a) deleted org → null; (b) deleted carrier → null; (c) valid org+carrier → row returned. Add cascade tests for both pathways.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/repositories/__tests__/carrierInviteTokenRepoPrisma.test.ts]
          └─ Depends on: T-10
@@ -930,7 +930,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 |---|---|---|---|---|
 | US-01 Prisma migrations | 6 | 6 | 0 | 2/2 |
 | US-02 w9OnFile readers | 2 | 2 | 0 | 2/2 |
-| US-03 Token hardening | 3 | 0 | 0 | 0/1 |
+| US-03 Token hardening | 3 | 3 | 0 | 1/1 |
 | US-04 portalCompanyService | 3 | 0 | 0 | 0/2 |
 | US-05 Equipment upsert | 2 | 0 | 0 | 0/1 |
 | US-06 Drivers upsert | 2 | 0 | 0 | 0/1 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **8** | **0** | **4/29** |
+| **All** | **62** | **11** | **0** | **5/29** |

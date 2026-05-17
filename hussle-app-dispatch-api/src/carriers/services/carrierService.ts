@@ -20,6 +20,7 @@ import type {
   LoadRepositoryPort,
 } from '../types/carrierTypes';
 import type { CarrierAuditPort } from '../types/carrierAuditPort';
+import type { CarrierInviteTokenRepoPort } from '@/carrier-portal/types/carrierInviteTokenRepoPort';
 import type {
   CarrierService,
   CreateCarrierNoteServiceInput,
@@ -149,6 +150,7 @@ interface CarrierServiceDeps {
   loadRepository: LoadRepositoryPort;
   noteRepository: CarrierNoteRepositoryPort;
   auditLog: CarrierAuditPort;
+  inviteTokenRepo: CarrierInviteTokenRepoPort;
 }
 
 const auditCarrierCreated = async (
@@ -331,6 +333,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     }
 
     await deps.carrierRepository.softDelete(id, organizationId, new Date());
+    await deps.inviteTokenRepo.revokeByCarrierId(id);
   },
 
   getCarrierOnboardingStatus: async ({

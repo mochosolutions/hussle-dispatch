@@ -133,6 +133,7 @@ interface AuthControllerFactoryDeps {
     getUsage: (input: { organizationId: string }) => Promise<SubscriptionUsage>;
   };
   memberManagementService: MemberManagementService;
+  revokeCarrierInviteTokensForOrg: (organizationId: string) => Promise<void>;
 }
 
 export interface AuthControllers {
@@ -185,6 +186,7 @@ export const createAuthControllers = ({
   config,
   subscriptionUsageService,
   memberManagementService,
+  revokeCarrierInviteTokensForOrg,
 }: AuthControllerFactoryDeps): AuthControllers => {
   const getAuthProvider = async () => {
     const { clientId, userPoolId } = await getClientId();
@@ -223,7 +225,7 @@ export const createAuthControllers = ({
     getMembershipController: getMembershipController({ membershipRepo }),
     deleteMembershipController: deleteMembershipController({ membershipRepo }),
     updateMembershipController: updateMembershipController({ membershipRepo }),
-    deleteOrganizationController: deleteOrganizationController({ orgRepo }),
+    deleteOrganizationController: deleteOrganizationController({ orgRepo, revokeCarrierInviteTokensForOrg }),
     inviteUserController: createInviteUserController({
       inviteRepo,
       membershipRepo,

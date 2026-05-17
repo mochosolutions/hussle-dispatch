@@ -81,6 +81,7 @@ export const createCarriersModule = ({
     loadRepository: repositories,
     noteRepository: repositories,
     auditLog,
+    inviteTokenRepo,
   });
 
   const carrierInviteService = createCarrierInviteService({
