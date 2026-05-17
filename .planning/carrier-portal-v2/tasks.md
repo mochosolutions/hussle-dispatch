@@ -205,7 +205,7 @@ must_haves:
 ---
 
 ## US-05: portalEquipmentService — upsert-by-id refactor
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done_
 
 must_haves:
   truths:
@@ -224,13 +224,13 @@ must_haves:
 - [ ] AC-17 partial (equipment side)
 
 **Tasks:**
-[ ] T-15 [API] Refactor saveEquipment to upsert-by-id
+[x] T-15 [API] Refactor saveEquipment to upsert-by-id
          └─ Detail: In `portalEquipmentService.ts`: replace `deleteVehiclesByCarrierId` + create-from-scratch with diff. Compute three sets: `toUpdate` (incoming with id matching existing), `toCreate` (incoming without id), `toDelete` (existing ids missing from incoming). Run inside `prisma.$transaction`. Type input: extend `SaveEquipmentInput.vehicles[]` with optional `id`. Validator at `equipmentValidator.ts` accepts optional `id`. Return shape includes id per row.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/portalEquipmentService.ts, hussle-app-dispatch-api/src/carrier-portal/types/equipmentTypes.ts, hussle-app-dispatch-api/src/carrier-portal/validators/equipmentValidator.ts]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-16 [TEST] Equipment upsert matrix test
+[x] T-16 [TEST] Equipment upsert matrix test
          └─ Detail: Test `portalEquipmentService.test.ts`: matrix (edit/add/remove/unchanged). Assert unchanged row keeps id; edited row keeps id; removed id is gone; added row has fresh id.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/__tests__/portalEquipmentService.test.ts]
          └─ Depends on: T-15
@@ -932,7 +932,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-02 w9OnFile readers | 2 | 2 | 0 | 2/2 |
 | US-03 Token hardening | 3 | 3 | 0 | 1/1 |
 | US-04 portalCompanyService | 3 | 3 | 0 | 2/2 |
-| US-05 Equipment upsert | 2 | 0 | 0 | 0/1 |
+| US-05 Equipment upsert | 2 | 2 | 0 | 1/1 |
 | US-06 Drivers upsert | 2 | 0 | 0 | 0/1 |
 | US-07 submit-step endpoint | 3 | 0 | 0 | 0/2 |
 | US-08 Cost analysis service | 2 | 0 | 0 | 0/1 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **14** | **0** | **7/29** |
+| **All** | **62** | **16** | **0** | **8/29** |

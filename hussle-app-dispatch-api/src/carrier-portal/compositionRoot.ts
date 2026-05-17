@@ -79,8 +79,9 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
         return null;
       }
     },
-    deleteVehiclesByCarrierId: (carrierId: string) => vehicleRepo.deleteByCarrierId(carrierId),
-    createVehicles: (data) => vehicleRepo.createMany(data),
+    findVehiclesByCarrierId: (carrierId: string) => vehicleRepo.findByCarrierId(carrierId),
+    upsertVehicles: (carrierId, data, deleteIds) =>
+      vehicleRepo.upsertMany(carrierId, data, deleteIds),
   });
 
   const driversService = createPortalDriversService({ driverRepo });

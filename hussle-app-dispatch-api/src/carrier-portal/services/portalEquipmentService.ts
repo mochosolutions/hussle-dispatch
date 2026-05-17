@@ -2,6 +2,7 @@ import type { EquipmentType, VehicleCategory } from '@prisma/client';
 import { ValidationError } from '@/shared/errors';
 
 interface VehicleInput {
+  id?: string;
   category: VehicleCategory;
   year?: number;
   make?: string;
@@ -17,7 +18,7 @@ export interface SaveEquipmentInput {
   vehicles: VehicleInput[];
 }
 
-interface CreatedVehicleSummary {
+interface VehicleSummary {
   id: string;
   category: VehicleCategory | null;
   make: string | null;
@@ -31,29 +32,30 @@ interface CarrierRecord {
   dotNumber: string | null;
 }
 
+interface UpsertVehicleData {
+  id?: string;
+  carrierId: string;
+  unitNumber: string;
+  type: EquipmentType;
+  category: VehicleCategory;
+  year?: number;
+  make?: string;
+  model?: string;
+  vin?: string;
+  licensePlate?: string;
+  gvwr?: number;
+}
+
 export interface PortalEquipmentServiceDeps {
   findCarrierById: (carrierId: string) => Promise<CarrierRecord | null>;
-  deleteVehiclesByCarrierId: (carrierId: string) => Promise<void>;
-  createVehicles: (
-    data: {
-      carrierId: string;
-      unitNumber: string;
-      type: EquipmentType;
-      category: VehicleCategory;
-      year?: number;
-      make?: string;
-      model?: string;
-      vin?: string;
-      licensePlate?: string;
-      gvwr?: number;
-    }[],
-  ) => Promise<{
-    id: string;
-    category: VehicleCategory | null;
-    make: string | null;
-    model: string | null;
-    year: number | null;
-  }[]>;
+  findVehiclesByCarrierId: (
+    carrierId: string,
+  ) => Promise<{ id: string; unitNumber: string }[]>;
+  upsertVehicles: (
+    carrierId: string,
+    data: UpsertVehicleData[],
+    deleteIds: string[],
+  ) => Promise<VehicleSummary[]>;
 }
 
 const CATEGORY_TO_EQUIPMENT_TYPE: Record<VehicleCategory, EquipmentType> = {
@@ -65,11 +67,6 @@ const CATEGORY_TO_EQUIPMENT_TYPE: Record<VehicleCategory, EquipmentType> = {
 
 const mapCategoryToEquipmentType = (category: VehicleCategory): EquipmentType =>
   CATEGORY_TO_EQUIPMENT_TYPE[category];
-
-const generateUnitNumber = (index: number): string => {
-  const padded = String(index + 1).padStart(3, '0');
-  return `V-${padded}`;
-};
 
 const validateComplianceRules = (
   vehicles: VehicleInput[],
@@ -97,10 +94,33 @@ const validateComplianceRules = (
   });
 };
 
+const generateUnitNumber = (index: number): string => {
+  const padded = String(index + 1).padStart(3, '0');
+  return `V-${padded}`;
+};
+
+// Pick the next available unitNumber that doesn't collide with one held by an edited row.
+// Existing rows keep their unitNumber so downstream references survive re-saves.
+const computeNewUnitNumber = (
+  reserved: Set<string>,
+  startIndex: number,
+): { unitNumber: string; nextIndex: number } => {
+  let i = startIndex;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const candidate = generateUnitNumber(i);
+    if (!reserved.has(candidate)) {
+      reserved.add(candidate);
+      return { unitNumber: candidate, nextIndex: i + 1 };
+    }
+    i += 1;
+  }
+};
+
 export const createPortalEquipmentService = (deps: PortalEquipmentServiceDeps) => ({
   saveEquipment: async (
     input: SaveEquipmentInput,
-  ): Promise<CreatedVehicleSummary[]> => {
+  ): Promise<VehicleSummary[]> => {
     const carrier = await deps.findCarrierById(input.carrierId);
 
     if (!carrier) {
@@ -109,24 +129,49 @@ export const createPortalEquipmentService = (deps: PortalEquipmentServiceDeps) =
 
     validateComplianceRules(input.vehicles, carrier);
 
-    await deps.deleteVehiclesByCarrierId(input.carrierId);
+    const existing = await deps.findVehiclesByCarrierId(input.carrierId);
+    const existingById = new Map(existing.map((v) => [v.id, v.unitNumber]));
+    const incomingIds = new Set(
+      input.vehicles.map((v) => v.id).filter((id): id is string => Boolean(id)),
+    );
 
-    const vehicleData = input.vehicles.map((v, index) => ({
-      carrierId: input.carrierId,
-      unitNumber: generateUnitNumber(index),
-      type: mapCategoryToEquipmentType(v.category),
-      category: v.category,
-      year: v.year,
-      make: v.make,
-      model: v.model,
-      vin: v.vin,
-      licensePlate: v.licensePlate,
-      gvwr: v.gvwr,
-    }));
+    // Rows to delete: existing ids missing from the incoming list.
+    const deleteIds = existing.map((v) => v.id).filter((id) => !incomingIds.has(id));
 
-    const created = await deps.createVehicles(vehicleData);
+    // Track unitNumbers held by edited rows so new rows don't collide.
+    const reservedUnitNumbers = new Set<string>(
+      input.vehicles
+        .map((v) => (v.id ? existingById.get(v.id) : undefined))
+        .filter((u): u is string => Boolean(u)),
+    );
 
-    return created;
+    let newRowIndex = 0;
+    const upsertData: UpsertVehicleData[] = input.vehicles.map((v) => {
+      const existingUnitNumber = v.id ? existingById.get(v.id) : undefined;
+      let unitNumber: string;
+      if (existingUnitNumber) {
+        unitNumber = existingUnitNumber;
+      } else {
+        const allocated = computeNewUnitNumber(reservedUnitNumbers, newRowIndex);
+        unitNumber = allocated.unitNumber;
+        newRowIndex = allocated.nextIndex;
+      }
+      return {
+        id: v.id,
+        carrierId: input.carrierId,
+        unitNumber,
+        type: mapCategoryToEquipmentType(v.category),
+        category: v.category,
+        year: v.year,
+        make: v.make,
+        model: v.model,
+        vin: v.vin,
+        licensePlate: v.licensePlate,
+        gvwr: v.gvwr,
+      };
+    });
+
+    return deps.upsertVehicles(input.carrierId, upsertData, deleteIds);
   },
 });
 

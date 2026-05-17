@@ -13,6 +13,7 @@ export interface EquipmentControllers {
 }
 
 interface VehicleRequestBody {
+  id?: string;
   category: VehicleCategory;
   year?: number;
   make?: string;
@@ -39,6 +40,7 @@ const mapRequestToInput = (req: Request): SaveEquipmentInput => {
     carrierId: portalContext.carrierId,
     organizationId: portalContext.organizationId,
     vehicles: body.vehicles.map((v) => ({
+      id: v.id,
       category: v.category,
       year: v.year,
       make: v.make,

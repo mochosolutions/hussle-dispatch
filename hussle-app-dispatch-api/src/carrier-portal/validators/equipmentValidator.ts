@@ -3,6 +3,7 @@ import * as Yup from 'yup';
 const VEHICLE_CATEGORIES = ['SEMI_TRUCK', 'BOX_TRUCK', 'CARGO_VAN', 'PERSONAL_VEHICLE'] as const;
 
 const vehicleSchema = Yup.object({
+  id: Yup.string().uuid('Invalid vehicle id').optional(),
   category: Yup.string()
     .oneOf([...VEHICLE_CATEGORIES], 'Invalid vehicle category')
     .required('Vehicle category is required'),
