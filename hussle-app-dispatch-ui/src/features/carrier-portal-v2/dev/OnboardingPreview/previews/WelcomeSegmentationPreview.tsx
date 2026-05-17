@@ -5,7 +5,7 @@ import { LocalShipping, Hub, SyncAlt } from '@mui/icons-material';
 import { BodyMuted, KpiLabel, PageTitle } from 'components/Typography';
 
 import PortalShell from '../../../components/PortalShell';
-import SegmentationStep from '../../../components/steps/SegmentationStep';
+import { SegmentationStepView } from '../../../components/steps/SegmentationStep/SegmentationStepView';
 import type { SelectionCardOption } from '../../../components/SelectionCardGrid';
 
 type CarrierType = 'owner_operator' | 'small_fleet' | 'dispatcher_carrier';
@@ -78,7 +78,7 @@ const WelcomeSegmentationPreview: React.FC = () => {
 
       <StateFrame label="State A · default · nothing selected">
         <PortalShell>
-          <SegmentationStep<CarrierType>
+          <SegmentationStepView<CarrierType>
             eyebrow="Invited by Jared at FleetCommand"
             title={TITLE}
             subtitle={SUBTITLE}
@@ -96,7 +96,7 @@ const WelcomeSegmentationPreview: React.FC = () => {
 
       <StateFrame label='State B · "Owner-operator" selected · continue enabled'>
         <PortalShell>
-          <SegmentationStep<CarrierType>
+          <SegmentationStepView<CarrierType>
             eyebrow="Invited by Jared at FleetCommand"
             title={TITLE}
             subtitle={SUBTITLE}
@@ -114,7 +114,7 @@ const WelcomeSegmentationPreview: React.FC = () => {
 
       <StateFrame label='State C · "Small fleet" selected'>
         <PortalShell>
-          <SegmentationStep<CarrierType>
+          <SegmentationStepView<CarrierType>
             eyebrow="Invited by Jared at FleetCommand"
             title={TITLE}
             subtitle={SUBTITLE}
@@ -132,7 +132,7 @@ const WelcomeSegmentationPreview: React.FC = () => {
 
       <StateFrame label='State D · "Dispatcher-carrier" selected'>
         <PortalShell>
-          <SegmentationStep<CarrierType>
+          <SegmentationStepView<CarrierType>
             eyebrow="Invited by Jared at FleetCommand"
             title={TITLE}
             subtitle={SUBTITLE}
@@ -150,7 +150,7 @@ const WelcomeSegmentationPreview: React.FC = () => {
 
       <StateFrame label="State E · unknown inviter · generic eyebrow">
         <PortalShell>
-          <SegmentationStep<CarrierType>
+          <SegmentationStepView<CarrierType>
             eyebrow="Invited to FleetCommand"
             title={TITLE}
             subtitle={SUBTITLE}
@@ -187,7 +187,7 @@ const WelcomeSegmentationPreview: React.FC = () => {
         }}
       >
         <PortalShell>
-          <SegmentationStep<CarrierType>
+          <SegmentationStepView<CarrierType>
             eyebrow="Invited by Jared at FleetCommand"
             title={TITLE}
             subtitle={SUBTITLE}
