@@ -3,6 +3,7 @@ import { Box, Container } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 
 import { BrandName, Meta } from 'components/Typography';
+import config from '../../../../config';
 
 interface PortalHeaderProps {
   brandSubtitle?: string;
@@ -72,7 +73,7 @@ const PortalHeader: React.FC<PortalHeaderProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
           <PortalLogo />
           <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-            <BrandName sx={{ fontSize: 14, color: 'common.white' }}>FleetCommand</BrandName>
+            <BrandName sx={{ fontSize: 14, color: 'common.white' }}>{config.appName}</BrandName>
             <Meta sx={{ color: 'common.white', opacity: 0.65, fontSize: 11 }}>
               {brandSubtitle}
             </Meta>

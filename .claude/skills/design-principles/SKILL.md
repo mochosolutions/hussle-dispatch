@@ -244,6 +244,14 @@ Use **two-part shadows** (ambient + contact) for realism. Single `box-shadow` lo
 - **`aria-live="polite"`** on regions that update dynamically (toast notifications, inline validation)
 - Use **semantic HTML first** (button, nav, main, article, section, aside). ARIA is a supplement, not a replacement.
 
+## Color-Blind Safety
+
+Every primitive that uses color to convey state MUST pair the color with a shape glyph (icon) and encode the state in `aria-label`. Never rely on color alone.
+
+- Tri-state elements (neutral/preferred/avoid, on/flex/off): each state must have a distinct icon **and** aria-label.
+- Status chips: use `aria-label="{name} — {state}"`.
+- Error/warning callouts: use `role="alert"` on the container.
+
 ## 13. Existing Pattern Reference
 
 <!-- Populated by /bootstrap after scanning the project's existing pages and components. -->

@@ -42,6 +42,7 @@ const DriverChip: React.FC<DriverChipProps> = ({
   return (
     <ButtonBase
       onClick={onClick}
+      aria-label={status === 'overridden' ? `${name} — customized` : name}
       sx={{
         display: 'inline-flex',
         alignItems: 'center',

@@ -48,6 +48,7 @@ const Callout: React.FC<CalloutProps> = ({ variant, icon, children }) => {
 
   return (
     <Box
+      role={variant === 'red' ? 'alert' : undefined}
       sx={{
         mt: 2.5,
         bgcolor: tokens.bg,

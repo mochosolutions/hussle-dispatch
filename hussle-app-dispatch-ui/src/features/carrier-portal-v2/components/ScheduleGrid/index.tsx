@@ -135,6 +135,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
           <ButtonBase
             key={day.key}
             onClick={() => handleCycle(day.key)}
+            aria-label={`${day.head} — ${statusText}`}
             sx={{
               border: '1.5px solid',
               borderColor: tokens.borderColor,
