@@ -11,13 +11,15 @@
 // resolves `phase` from the step's id and passes it as a prop.
 // ---------------------------------------------------------------------------
 
-import { Box, Button, Stack } from '@mui/material';
+import { useCallback } from 'react';
+import { Box, Stack } from '@mui/material';
 import { CheckCircleOutline } from '@mui/icons-material';
 
 import { useDispatch } from 'store';
 import { Body, BodyMuted, PageTitle } from 'components/Typography';
 
 import type { Phase, Step } from 'features/carrier-portal/engine';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 
@@ -31,14 +33,20 @@ const CheckpointStep: React.FC<CheckpointStepProps> = ({ step, phase }) => {
 
   const checkpoint = phase.checkpoint;
 
-  const handleContinue = (): void => {
+  const handleContinue = useCallback((): void => {
     dispatch(
       carrierPortalV2Actions.submitStep({
         stepId: step.id,
         answers: { acknowledged: true },
       }),
     );
-  };
+  }, [dispatch, step.id]);
+
+  useStepNavigation({
+    canContinue: true,
+    onContinue: handleContinue,
+    isPending: false,
+  });
 
   return (
     <Box sx={{ width: '100%', maxWidth: 560, textAlign: 'center' }}>
@@ -77,12 +85,6 @@ const CheckpointStep: React.FC<CheckpointStepProps> = ({ step, phase }) => {
           </Stack>
         </Box>
       ) : null}
-
-      <Box>
-        <Button variant="contained" size="large" onClick={handleContinue}>
-          Continue
-        </Button>
-      </Box>
     </Box>
   );
 };

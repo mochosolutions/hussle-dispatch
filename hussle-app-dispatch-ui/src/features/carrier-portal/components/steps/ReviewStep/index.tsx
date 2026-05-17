@@ -13,7 +13,7 @@
 // saga side-effect (persist server-side currentStepId) is deferred.
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Box, Button, Stack, Tooltip } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 
@@ -23,10 +23,12 @@ import { Body, BodyMuted, BodyStrong, SectionTitle } from 'components/Typography
 import type { Step, VisibleStep } from 'features/carrier-portal/engine';
 import { getVisibleSteps } from 'features/carrier-portal/engine';
 import { onboardingSchema } from 'features/carrier-portal/schema/onboardingSchema';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
   selectIsLocked,
+  selectLoading,
   selectSession,
 } from '../../../store/selectors/carrierPortalSelectors';
 
@@ -51,6 +53,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ step }) => {
   const dispatch = useDispatch();
   const session = useSelector(selectSession);
   const sessionLocked = useSelector(selectIsLocked);
+  const submitStatus = useSelector(selectLoading('submitStep'));
 
   const summarySteps = useMemo<VisibleStep[]>(() => {
     if (!session) {
@@ -60,6 +63,23 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ step }) => {
       (s) => session.completedStepIds.includes(s.id) && s.id !== step.id,
     );
   }, [session, step.id]);
+
+  const handleContinue = useCallback((): void => {
+    dispatch(
+      carrierPortalV2Actions.submitStep({
+        stepId: step.id,
+        answers: { reviewed: true },
+      }),
+    );
+  }, [dispatch, step.id]);
+
+  const isPending = submitStatus === 'pending';
+
+  useStepNavigation({
+    canContinue: !isPending,
+    onContinue: handleContinue,
+    isPending,
+  });
 
   if (!session) {
     return null;

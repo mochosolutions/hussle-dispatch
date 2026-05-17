@@ -16,7 +16,7 @@
 
 import { useMemo } from 'react';
 import type { ChangeEvent } from 'react';
-import { Box, Button, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import {
   AccountBalanceWalletOutlined,
   TimelineOutlined,
@@ -37,6 +37,7 @@ import EditableExpenseRow from 'features/carrier-portal/components/EditableExpen
 import AssetPaymentRow from 'features/carrier-portal/components/AssetPaymentRow';
 import type { AssetPaymentOwnership } from 'features/carrier-portal/components/AssetPaymentRow';
 import RateCard from 'features/carrier-portal/components/RateCard';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
@@ -734,16 +735,11 @@ const CostAnalysisStep: React.FC<CostAnalysisStepProps> = ({ step }) => {
                   }
                 />
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    disabled={!hasVehicles || isPending}
-                  >
-                    Continue
-                  </Button>
-                </Box>
+                <CostAnalysisNavRegister
+                  formik={formik}
+                  hasVehicles={hasVehicles}
+                  isPending={isPending}
+                />
               </Stack>
             </Form>
           );
@@ -751,6 +747,31 @@ const CostAnalysisStep: React.FC<CostAnalysisStepProps> = ({ step }) => {
       </Formik>
     </Box>
   );
+};
+
+// ---------------------------------------------------------------------------
+// CostAnalysisNavRegister — inner registrar so we can read `formik.submitForm`
+// inside the Formik render-prop and surface it to the footer.
+// ---------------------------------------------------------------------------
+
+interface CostAnalysisNavRegisterProps {
+  formik: FormikLike;
+  hasVehicles: boolean;
+  isPending: boolean;
+}
+
+const CostAnalysisNavRegister: React.FC<CostAnalysisNavRegisterProps> = ({
+  formik,
+  hasVehicles,
+  isPending,
+}) => {
+  const { submitForm } = formik;
+  useStepNavigation({
+    canContinue: hasVehicles && !isPending,
+    onContinue: submitForm,
+    isPending,
+  });
+  return null;
 };
 
 export default CostAnalysisStep;

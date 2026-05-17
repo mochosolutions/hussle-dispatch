@@ -14,6 +14,10 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import type { Session, Step } from '../../../engine';
 import { carrierPortalV2Actions, type LoadingStatus } from '../../../store/reducers/carrierPortalSlice';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import LanePreferencesStep from '.';
 
 // ---------------------------------------------------------------------------
@@ -157,9 +161,12 @@ describe('LanePreferencesStep', () => {
     const session = buildSession([{ id: 'd1', firstName: 'James', lastName: 'Miller' }]);
     const store = buildStore(session);
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <LanePreferencesStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <LanePreferencesStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -188,9 +195,12 @@ describe('LanePreferencesStep', () => {
     ]);
     const store = buildStore(session);
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <LanePreferencesStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <LanePreferencesStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -216,9 +226,12 @@ describe('LanePreferencesStep', () => {
     const session = buildSession([]);
     const store = buildStore(session);
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <LanePreferencesStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <LanePreferencesStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -237,22 +250,23 @@ describe('LanePreferencesStep', () => {
     expect(screen.queryByTestId('EditingCallout')).not.toBeInTheDocument();
   });
 
-  it('dispatches saveLanePreferences with { fleet, overrides } payload on Continue', async () => {
+  it('dispatches saveLanePreferences with { fleet, overrides } payload when registered Continue is invoked', () => {
     const session = buildSession([{ id: 'd1', firstName: 'James', lastName: 'Miller' }]);
     const store = buildStore(session);
     const dispatchSpy = jest.spyOn(store, 'dispatch');
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <LanePreferencesStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <LanePreferencesStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    const continueBtn = screen.getByRole('button', { name: /continue/i });
-    expect(continueBtn).toBeEnabled();
-
-    await act(async () => {
-      fireEvent.click(continueBtn);
+    expect(handle.current?.canContinue).toBe(true);
+    act(() => {
+      handle.current?.onContinue();
     });
 
     const found = dispatchSpy.mock.calls.find(([action]) =>

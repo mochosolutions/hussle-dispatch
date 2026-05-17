@@ -6,7 +6,8 @@
 // `entries` array to keep the drivers answer shape consistent.
 // ---------------------------------------------------------------------------
 
-import { Box, Button } from '@mui/material';
+import { useCallback } from 'react';
+import { Box } from '@mui/material';
 import { PersonOutline } from '@mui/icons-material';
 
 import { useDispatch, useSelector } from 'store';
@@ -14,6 +15,7 @@ import { BodyMuted } from 'components/Typography';
 
 import type { Step } from 'features/carrier-portal/engine';
 import OnboardingCard from 'features/carrier-portal/components/OnboardingCard';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
@@ -30,20 +32,26 @@ const DriversSoloConfirmStep: React.FC<DriversSoloConfirmStepProps> = ({ step })
   const session = useSelector(selectSession);
   const submitStatus = useSelector(selectLoading('submitStep'));
 
-  const handleContinue = (): void => {
+  const handleContinue = useCallback((): void => {
     dispatch(
       carrierPortalV2Actions.submitStep({
         stepId: step.id,
         answers: { confirmed: true, entries: [] },
       }),
     );
-  };
+  }, [dispatch, step.id]);
+
+  const isPending = submitStatus === 'pending';
+
+  useStepNavigation({
+    canContinue: !isPending,
+    onContinue: handleContinue,
+    isPending,
+  });
 
   if (!session) {
     return null;
   }
-
-  const isPending = submitStatus === 'pending';
 
   return (
     <OnboardingCard
@@ -84,24 +92,6 @@ const DriversSoloConfirmStep: React.FC<DriversSoloConfirmStepProps> = ({ step })
           We&apos;ve recorded that you operate solo. Loads dispatched from your fleet will be
           assigned to you automatically.
         </BodyMuted>
-      </Box>
-
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          mt: 2,
-        }}
-      >
-        <Button
-          type="button"
-          variant="contained"
-          size="large"
-          onClick={handleContinue}
-          disabled={isPending}
-        >
-          Continue
-        </Button>
       </Box>
     </OnboardingCard>
   );

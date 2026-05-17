@@ -10,7 +10,7 @@
 //   - Owner-operator (0 drivers): per-driver tab is disabled.
 // ---------------------------------------------------------------------------
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Box, Button, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import {
   AcUnit,
@@ -50,6 +50,7 @@ import OptCard from 'features/carrier-portal/components/OptCard';
 import FreightChip, {
   type FreightChipState,
 } from 'features/carrier-portal/components/FreightChip';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import { selectLoading, selectSession } from '../../../store/selectors/carrierPortalSelectors';
@@ -648,7 +649,7 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
   // Submit
   // ---------------------------------------------------------------------------
 
-  const handleSubmit = (): void => {
+  const handleSubmit = useCallback((): void => {
     const payload: Record<string, unknown> = {
       fleet: {
         lanes: fleet.lanes,
@@ -681,7 +682,15 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
       ),
     };
     dispatch(carrierPortalV2Actions.saveLanePreferences(payload));
-  };
+  }, [dispatch, fleet, overrides]);
+
+  const isPending = saveStatus === 'pending';
+
+  useStepNavigation({
+    canContinue: !isPending,
+    onContinue: handleSubmit,
+    isPending,
+  });
 
   // ---------------------------------------------------------------------------
   // Guard
@@ -690,8 +699,6 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
   if (!session) {
     return null;
   }
-
-  const isPending = saveStatus === 'pending';
 
   // ---------------------------------------------------------------------------
   // Render helpers
@@ -929,17 +936,6 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
       {renderLanesSection()}
       {renderScheduleSection()}
       {renderFreightSection()}
-
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        <Button
-          variant="contained"
-          size="large"
-          disabled={isPending}
-          onClick={handleSubmit}
-        >
-          Continue
-        </Button>
-      </Box>
     </Box>
   );
 };

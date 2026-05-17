@@ -6,8 +6,8 @@
 // Continue dispatches `submitStep({ stepId, answers: { entries } })`.
 // ---------------------------------------------------------------------------
 
-import { useMemo, useState } from 'react';
-import { Box, Button } from '@mui/material';
+import { useCallback, useMemo, useState } from 'react';
+import { Box } from '@mui/material';
 import { Formik } from 'formik';
 import type { FormikProps } from 'formik';
 import { PeopleAltOutlined } from '@mui/icons-material';
@@ -28,6 +28,7 @@ import ListBuilderAddMoreButton from 'features/carrier-portal/components/ListBui
 import ListBuilderInlineForm from 'features/carrier-portal/components/ListBuilderInlineForm';
 import FieldGroupLabel from 'features/carrier-portal/components/FieldGroupLabel';
 import OnboardingCard from 'features/carrier-portal/components/OnboardingCard';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
@@ -329,7 +330,7 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
     setDrivers((prev) => prev.filter((d) => d.id !== id));
   };
 
-  const handleContinue = (): void => {
+  const handleContinue = useCallback((): void => {
     if (drivers.length === 0) {
       return;
     }
@@ -339,14 +340,19 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
         answers: { entries: drivers },
       }),
     );
-  };
+  }, [dispatch, drivers, step.id]);
+
+  const isPending = submitStatus === 'pending';
+
+  useStepNavigation({
+    canContinue: drivers.length > 0 && !isPending,
+    onContinue: handleContinue,
+    isPending,
+  });
 
   if (!session) {
     return null;
   }
-
-  const isPending = submitStatus === 'pending';
-  const continueDisabled = drivers.length === 0 || isPending;
 
   return (
     <OnboardingCard
@@ -401,24 +407,6 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
             onClick={() => setFormOpen(true)}
           />
         ) : null}
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            mt: 2,
-          }}
-        >
-          <Button
-            type="button"
-            variant="contained"
-            size="large"
-            onClick={handleContinue}
-            disabled={continueDisabled}
-          >
-            Continue
-          </Button>
-        </Box>
       </Box>
     </OnboardingCard>
   );

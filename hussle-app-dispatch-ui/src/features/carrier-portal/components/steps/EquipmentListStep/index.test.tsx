@@ -1,6 +1,7 @@
+import { act } from 'react';
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import {
@@ -9,6 +10,10 @@ import {
 } from '../../../store/reducers/carrierPortalSlice';
 import type { Session } from '../../../engine';
 import { equipmentPhase } from '../../../schema/equipmentPhase';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import EquipmentListStep from '.';
 
 const equipmentStep = equipmentPhase.steps[0];
@@ -55,10 +60,13 @@ void carrierPortalV2Reducer;
 describe('EquipmentListStep (connected)', () => {
   it('renders the empty state when no vehicles have been added', () => {
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <EquipmentListStep step={equipmentStep} />
+        <TestStepNavProvider handle={handle}>
+          <EquipmentListStep step={equipmentStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -71,10 +79,13 @@ describe('EquipmentListStep (connected)', () => {
   it('opens the inline form when "Add your first vehicle" is clicked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <EquipmentListStep step={equipmentStep} />
+        <TestStepNavProvider handle={handle}>
+          <EquipmentListStep step={equipmentStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -84,14 +95,17 @@ describe('EquipmentListStep (connected)', () => {
     expect(screen.getByRole('button', { name: /save vehicle$/i })).toBeInTheDocument();
   });
 
-  it('dispatches submitStep with a vehicles array after a vehicle is saved and Continue is clicked', async () => {
+  it('dispatches submitStep with a vehicles array after a vehicle is saved and registered Continue is invoked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession() });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <EquipmentListStep step={equipmentStep} />
+        <TestStepNavProvider handle={handle}>
+          <EquipmentListStep step={equipmentStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -106,10 +120,13 @@ describe('EquipmentListStep (connected)', () => {
 
     await user.click(screen.getByRole('button', { name: /save vehicle$/i }));
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).not.toBeDisabled();
+    await waitFor(() => {
+      expect(handle.current?.canContinue).toBe(true);
+    });
 
-    await user.click(continueButton);
+    act(() => {
+      handle.current?.onContinue();
+    });
 
     const submitCalls = dispatchSpy.mock.calls.filter(
       ([action]) =>
@@ -137,16 +154,18 @@ describe('EquipmentListStep (connected)', () => {
     });
   });
 
-  it('disables Continue when no vehicles have been saved', () => {
+  it('registers a disabled Continue when no vehicles have been saved', () => {
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <EquipmentListStep step={equipmentStep} />
+        <TestStepNavProvider handle={handle}>
+          <EquipmentListStep step={equipmentStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).toBeDisabled();
+    expect(handle.current?.canContinue).toBe(false);
   });
 });

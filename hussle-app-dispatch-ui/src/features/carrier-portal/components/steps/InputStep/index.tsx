@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 
 import { useMemo } from 'react';
-import { Box, Button, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { Formik, Form } from 'formik';
 import type { FormikProps } from 'formik';
 
@@ -45,6 +45,7 @@ import AddressTypeaheadField from 'features/carrier-portal/components/AddressTyp
 import LockableField from 'features/carrier-portal/components/LockableField';
 import TinField from 'features/carrier-portal/components/TinField';
 import FieldHint from 'features/carrier-portal/components/FieldHint';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
@@ -224,6 +225,7 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
           const trialSession = buildTrialSession(session, step.id, formik.values);
           return (
             <Form noValidate>
+              <InputStepNavRegister formik={formik} isPending={isPending} />
               <Stack spacing={2.5}>
                 {questions.map((q) => {
                   const visible = !q.visibility || evaluatePredicate(q.visibility, trialSession);
@@ -247,17 +249,6 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
                     </Box>
                   );
                 })}
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    disabled={isPending}
-                  >
-                    Continue
-                  </Button>
-                </Box>
               </Stack>
             </Form>
           );
@@ -265,6 +256,27 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
       </Formik>
     </Box>
   );
+};
+
+// ---------------------------------------------------------------------------
+// InputStepNavRegister — inner component lets us call `useStepNavigation`
+// with the current formik instance, since the hook must run inside Formik's
+// render-prop where `formik.submitForm` and validity flags are available.
+// ---------------------------------------------------------------------------
+
+interface InputStepNavRegisterProps {
+  formik: FormikLike;
+  isPending: boolean;
+}
+
+const InputStepNavRegister: React.FC<InputStepNavRegisterProps> = ({ formik, isPending }) => {
+  const { submitForm, isValid } = formik;
+  useStepNavigation({
+    canContinue: isValid && !isPending,
+    onContinue: submitForm,
+    isPending,
+  });
+  return null;
 };
 
 export default InputStep;

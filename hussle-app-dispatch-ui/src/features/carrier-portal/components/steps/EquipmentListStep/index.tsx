@@ -11,9 +11,9 @@
 // CostAnalysisStep reads from `session.answers['equipment-entry'].vehicles`.
 // ---------------------------------------------------------------------------
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import { Formik } from 'formik';
 import type { FormikProps } from 'formik';
 import { LocalShipping, RvHookup, DirectionsCar } from '@mui/icons-material';
@@ -32,6 +32,7 @@ import Callout from 'features/carrier-portal/components/Callout';
 import OnboardingCard from 'features/carrier-portal/components/OnboardingCard';
 import SelectionCardGrid from 'features/carrier-portal/components/SelectionCardGrid';
 import type { SelectionCardOption } from 'features/carrier-portal/components/SelectionCardGrid';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
@@ -378,7 +379,7 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
     setVehicles((prev) => prev.filter((v) => v.id !== id));
   };
 
-  const handleContinue = (): void => {
+  const handleContinue = useCallback((): void => {
     if (vehicles.length === 0) {
       return;
     }
@@ -388,14 +389,19 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
         answers: { vehicles },
       }),
     );
-  };
+  }, [dispatch, vehicles, step.id]);
+
+  const isPending = submitStatus === 'pending';
+
+  useStepNavigation({
+    canContinue: vehicles.length > 0 && !isPending,
+    onContinue: handleContinue,
+    isPending,
+  });
 
   if (!session) {
     return null;
   }
-
-  const isPending = submitStatus === 'pending';
-  const continueDisabled = vehicles.length === 0 || isPending;
 
   return (
     <OnboardingCard
@@ -451,24 +457,6 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
             onClick={() => setFormOpen(true)}
           />
         ) : null}
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            mt: 2,
-          }}
-        >
-          <Button
-            type="button"
-            variant="contained"
-            size="large"
-            onClick={handleContinue}
-            disabled={continueDisabled}
-          >
-            Continue
-          </Button>
-        </Box>
       </Box>
     </OnboardingCard>
   );

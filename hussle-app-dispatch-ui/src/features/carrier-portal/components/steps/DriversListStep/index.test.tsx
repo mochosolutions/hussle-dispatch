@@ -1,6 +1,7 @@
+import { act } from 'react';
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import {
@@ -9,6 +10,10 @@ import {
 } from '../../../store/reducers/carrierPortalSlice';
 import type { Session, Step } from '../../../engine';
 import { driversPhase } from '../../../schema/driversPhase';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import DriversListStep from '.';
 
 const driversListStep: Step | undefined = driversPhase.steps.find(

@@ -14,6 +14,10 @@ import PortalShell from '../../components/PortalShell';
 import PortalStepper from '../../components/PortalStepper';
 import type { PortalStepperPhase } from '../../components/PortalStepper';
 import PortalFooterBar from '../../components/PortalFooterBar';
+import {
+  StepNavProvider,
+  useStepNavHandler,
+} from '../../components/StepNavContext';
 import StepDispatcher from './StepDispatcher';
 
 // ---------------------------------------------------------------------------
@@ -59,17 +63,20 @@ const SessionLoadingFallback = () => (
 );
 
 // ---------------------------------------------------------------------------
-// CarrierPortalPage
+// PortalPageContent
+// ---------------------------------------------------------------------------
+// Lives inside <StepNavProvider> so it can both render <StepDispatcher>
+// (whose children call `useStepNavigation` to register their submit handler)
+// AND read the registered handler via `useStepNavHandler()` to drive the
+// single Continue button in the footer. The split is necessary because the
+// provider must wrap both the children and the footer prop of PortalShell.
 // ---------------------------------------------------------------------------
 
-const CarrierPortalPage = () => {
+const PortalPageContent = () => {
   const dispatch = useDispatch();
   const session = useSelector(selectSession);
   const currentStep = useSelector(selectCurrentStep);
-
-  useEffect(() => {
-    dispatch(carrierPortalV2Actions.loadSession());
-  }, [dispatch]);
+  const stepNav = useStepNavHandler();
 
   const currentPhaseId = useMemo(() => {
     if (!currentStep) return null;
@@ -108,21 +115,43 @@ const CarrierPortalPage = () => {
       helperText="✓ Progress saved"
       onBack={prevStepId ? handleBack : undefined}
       secondaryAction={{ label: 'Save & Exit', onClick: handleSaveExit }}
+      onContinue={stepNav?.onContinue}
+      continueLabel={stepNav?.continueLabel ?? 'Continue'}
+      continueDisabled={!stepNav?.canContinue}
+      isContinuing={stepNav?.isPending ?? false}
     />
   ) : undefined;
 
   return (
+    <PortalShell
+      stepper={session ? <PortalStepper phases={stepperPhases} /> : undefined}
+      footer={footer}
+    >
+      {currentStep ? (
+        <StepDispatcher step={currentStep} phase={phase} />
+      ) : (
+        <SessionLoadingFallback />
+      )}
+    </PortalShell>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// CarrierPortalPage — owns session loading; wraps content in StepNavProvider.
+// ---------------------------------------------------------------------------
+
+const CarrierPortalPage = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(carrierPortalV2Actions.loadSession());
+  }, [dispatch]);
+
+  return (
     <PortalAuthGuard>
-      <PortalShell
-        stepper={session ? <PortalStepper phases={stepperPhases} /> : undefined}
-        footer={footer}
-      >
-        {currentStep ? (
-          <StepDispatcher step={currentStep} phase={phase} />
-        ) : (
-          <SessionLoadingFallback />
-        )}
-      </PortalShell>
+      <StepNavProvider>
+        <PortalPageContent />
+      </StepNavProvider>
     </PortalAuthGuard>
   );
 };

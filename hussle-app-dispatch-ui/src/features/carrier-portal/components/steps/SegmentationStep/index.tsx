@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { LocalShipping, Hub, SyncAlt } from '@mui/icons-material';
 
 import { useDispatch, useSelector } from 'store';
-import config from 'config';
+import config from '../../../../../config';
 import type { Step } from 'features/carrier-portal/engine';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
@@ -12,6 +12,7 @@ import {
   selectLoading,
 } from '../../../store/selectors/carrierPortalSelectors';
 import type { SelectionCardOption } from '../../SelectionCardGrid';
+import { useStepNavigation } from '../../StepNavContext';
 import { SegmentationStepView } from './SegmentationStepView';
 
 interface SegmentationStepProps {
@@ -57,7 +58,7 @@ const SegmentationStep: React.FC<SegmentationStepProps> = ({ step }) => {
     ? `Invited by ${invitation.organizationName}`
     : `Invited to ${config.appName}`;
 
-  const handleContinue = (): void => {
+  const handleContinue = useCallback((): void => {
     if (!selected || !question) {
       return;
     }
@@ -67,9 +68,15 @@ const SegmentationStep: React.FC<SegmentationStepProps> = ({ step }) => {
         answers: { [question.id]: selected },
       }),
     );
-  };
+  }, [dispatch, selected, question, step.id]);
 
   const isPending = submitStatus === 'pending';
+
+  useStepNavigation({
+    canContinue: selected !== null && !isPending,
+    onContinue: handleContinue,
+    isPending,
+  });
 
   return (
     <SegmentationStepView
@@ -83,8 +90,7 @@ const SegmentationStep: React.FC<SegmentationStepProps> = ({ step }) => {
       }}
       value={selected}
       onChange={setSelected}
-      onContinue={handleContinue}
-      continueDisabled={selected === null || isPending}
+      hideContinue
     />
   );
 };

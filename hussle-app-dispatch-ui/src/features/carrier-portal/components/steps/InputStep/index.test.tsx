@@ -1,6 +1,7 @@
+import { act } from 'react';
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { Session, Step } from '../../../engine';
@@ -8,6 +9,10 @@ import {
   carrierPortalV2Actions,
   type LoadingStatus,
 } from '../../../store/reducers/carrierPortalSlice';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import InputStep from '.';
 
 // ---------------------------------------------------------------------------
@@ -101,9 +106,12 @@ describe('InputStep', () => {
   it('renders all visible questions for the given step', () => {
     const store = buildStore({ session: baseSession });
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <InputStep step={companyStep} />
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={companyStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -115,9 +123,12 @@ describe('InputStep', () => {
   it('does not render a question whose visibility predicate evaluates to false', () => {
     const store = buildStore({ session: baseSession });
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <InputStep step={companyStep} />
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={companyStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -128,9 +139,12 @@ describe('InputStep', () => {
   it('prefills a field from session context via the question.prefillFrom dot-path', () => {
     const store = buildStore({ session: baseSession });
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <InputStep step={companyStep} />
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={companyStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -147,9 +161,12 @@ describe('InputStep', () => {
     };
     const store = buildStore({ session: lockedSession, isLocked: true });
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <InputStep step={companyStep} />
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={companyStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -164,22 +181,31 @@ describe('InputStep', () => {
     expect(screen.getByLabelText(/contact email/i)).toBeInTheDocument();
   });
 
-  it('dispatches submitStep with only visible-field answers on submit', async () => {
+  it('dispatches submitStep with only visible-field answers when registered Continue is invoked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: baseSession });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
 
+    const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
-        <InputStep step={companyStep} />
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={companyStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
     const emailInput = screen.getByLabelText(/contact email/i);
     await user.type(emailInput, 'ops@acme.com');
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    await user.click(continueButton);
+    // Wait for the form to become valid so the registered handler reflects it.
+    await waitFor(() => {
+      expect(handle.current?.canContinue).toBe(true);
+    });
+
+    await act(async () => {
+      await handle.current?.onContinue();
+    });
 
     const submitCall = dispatchSpy.mock.calls.find(
       ([action]) => carrierPortalV2Actions.submitStep.match(action),

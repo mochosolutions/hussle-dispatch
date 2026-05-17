@@ -1,12 +1,16 @@
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 
 import type { Session, Step } from '../../../engine';
 import {
   carrierPortalV2Actions,
   type LoadingStatus,
 } from '../../../store/reducers/carrierPortalSlice';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import CostAnalysisStep from '.';
 import { computeDerivedValues, type CostInputs } from './computations';
 
@@ -63,12 +67,15 @@ const buildStore = (session: Session | null, costStatus: LoadingStatus = 'idle')
 // ---------------------------------------------------------------------------
 
 describe('CostAnalysisStep', () => {
-  it('renders empty-state RateCard and disables Continue when no vehicles exist', () => {
+  it('renders empty-state RateCard and registers a disabled Continue when no vehicles exist', () => {
     const store = buildStore(buildSession([]));
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <CostAnalysisStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <CostAnalysisStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -78,8 +85,7 @@ describe('CostAnalysisStep', () => {
       screen.getByText(/add at least one vehicle in the equipment phase/i),
     ).toBeInTheDocument();
 
-    const continueBtn = screen.getByRole('button', { name: /continue/i });
-    expect(continueBtn).toBeDisabled();
+    expect(handle.current?.canContinue).toBe(false);
   });
 
   it('renders one AssetPaymentRow per vehicle from equipment-entry answers', () => {
@@ -89,10 +95,13 @@ describe('CostAnalysisStep', () => {
         { id: VEHICLE_ID_2, type: 'trailer', year: '2019' },
       ]),
     );
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <CostAnalysisStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <CostAnalysisStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -129,7 +138,7 @@ describe('CostAnalysisStep', () => {
     expect(derived.minRatePerMile).toBe(2);
   });
 
-  it('dispatches saveCostAnalysis with vehicleId-keyed equipmentPayments payload on submit', async () => {
+  it('dispatches saveCostAnalysis with vehicleId-keyed equipmentPayments payload when registered Continue is invoked', async () => {
     const store = buildStore(
       buildSession([
         { id: VEHICLE_ID_1, type: 'semi' },
@@ -137,18 +146,20 @@ describe('CostAnalysisStep', () => {
       ]),
     );
     const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <CostAnalysisStep step={step} />
+        <TestStepNavProvider handle={handle}>
+          <CostAnalysisStep step={step} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    const continueBtn = screen.getByRole('button', { name: /continue/i });
-    expect(continueBtn).toBeEnabled();
+    expect(handle.current?.canContinue).toBe(true);
 
     await act(async () => {
-      fireEvent.click(continueBtn);
+      await handle.current?.onContinue();
     });
 
     await waitFor(() => {

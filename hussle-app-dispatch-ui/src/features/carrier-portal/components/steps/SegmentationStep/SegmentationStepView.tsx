@@ -17,9 +17,10 @@ export interface SegmentationStepViewProps<TValue extends string = string> {
   };
   value: TValue | null;
   onChange: (id: TValue) => void;
-  onContinue: () => void;
+  onContinue?: () => void;
   continueLabel?: string;
   continueDisabled?: boolean;
+  hideContinue?: boolean;
   reassuranceItems?: string[];
 }
 
@@ -39,6 +40,7 @@ export const SegmentationStepView = <TValue extends string = string>({
   onContinue,
   continueLabel = 'Continue',
   continueDisabled,
+  hideContinue = false,
   reassuranceItems = DEFAULT_REASSURANCE,
 }: SegmentationStepViewProps<TValue>) => {
   const disabled = continueDisabled ?? value === null;
@@ -116,25 +118,27 @@ export const SegmentationStepView = <TValue extends string = string>({
           name={question.label}
         />
 
-        <Box sx={{ mt: 4.5, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button
-            variant="contained"
-            color="primary"
-            disabled={disabled}
-            onClick={onContinue}
-            endIcon={<ArrowForward />}
-            sx={{
-              fontWeight: 600,
-              fontSize: 14,
-              px: 2.75,
-              py: 1.375,
-              borderRadius: 1,
-              textTransform: 'none',
-            }}
-          >
-            {continueLabel}
-          </Button>
-        </Box>
+        {hideContinue ? null : (
+          <Box sx={{ mt: 4.5, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={disabled}
+              onClick={onContinue}
+              endIcon={<ArrowForward />}
+              sx={{
+                fontWeight: 600,
+                fontSize: 14,
+                px: 2.75,
+                py: 1.375,
+                borderRadius: 1,
+                textTransform: 'none',
+              }}
+            >
+              {continueLabel}
+            </Button>
+          </Box>
+        )}
       </Box>
 
       <Stack

@@ -1,7 +1,7 @@
+import { act } from 'react';
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 import {
   carrierPortalV2Actions,
@@ -9,6 +9,10 @@ import {
 } from '../../../store/reducers/carrierPortalSlice';
 import type { Session, Step } from '../../../engine';
 import { driversPhase } from '../../../schema/driversPhase';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import DriversSoloConfirmStep from '.';
 
 const soloStep: Step | undefined = driversPhase.steps.find(
@@ -56,10 +60,13 @@ void carrierPortalV2Reducer;
 describe('DriversSoloConfirmStep (connected)', () => {
   it('renders the confirmation copy with the step title', () => {
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <DriversSoloConfirmStep step={soloStep} />
+        <TestStepNavProvider handle={handle}>
+          <DriversSoloConfirmStep step={soloStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -68,33 +75,40 @@ describe('DriversSoloConfirmStep (connected)', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders nothing when session is null', () => {
+  it('renders no card content when session is null', () => {
     const store = buildStore({ session: null });
-
-    const { container } = render(
-      <Provider store={store}>
-        <DriversSoloConfirmStep step={soloStep} />
-      </Provider>,
-    );
-
-    expect(container.firstChild).toBeNull();
-  });
-
-  it('dispatches submitStep with empty entries when Continue is clicked', async () => {
-    const user = userEvent.setup();
-    const store = buildStore({ session: buildSession() });
-    const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <DriversSoloConfirmStep step={soloStep} />
+        <TestStepNavProvider handle={handle}>
+          <DriversSoloConfirmStep step={soloStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).not.toBeDisabled();
+    expect(
+      screen.queryByText(/got it — you're the only driver running loads/i),
+    ).not.toBeInTheDocument();
+  });
 
-    await user.click(continueButton);
+  it('dispatches submitStep with empty entries when registered Continue is invoked', () => {
+    const store = buildStore({ session: buildSession() });
+    const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
+
+    render(
+      <Provider store={store}>
+        <TestStepNavProvider handle={handle}>
+          <DriversSoloConfirmStep step={soloStep} />
+        </TestStepNavProvider>
+      </Provider>,
+    );
+
+    expect(handle.current?.canContinue).toBe(true);
+    act(() => {
+      handle.current?.onContinue();
+    });
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       carrierPortalV2Actions.submitStep({

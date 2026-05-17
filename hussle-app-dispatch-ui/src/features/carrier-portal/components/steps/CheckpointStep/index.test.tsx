@@ -1,13 +1,17 @@
+import { act } from 'react';
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 import type { Phase, Step } from '../../../engine';
 import {
   carrierPortalV2Actions,
   type LoadingStatus,
 } from '../../../store/reducers/carrierPortalSlice';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import CheckpointStep from '.';
 
 const checkpointStep: Step = {
@@ -46,10 +50,13 @@ const buildStore = () => {
 describe('CheckpointStep', () => {
   it('renders the checkpoint title, body, and upcoming list', () => {
     const store = buildStore();
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <CheckpointStep step={checkpointStep} phase={phaseWithCheckpoint} />
+        <TestStepNavProvider handle={handle}>
+          <CheckpointStep step={checkpointStep} phase={phaseWithCheckpoint} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -60,18 +67,23 @@ describe('CheckpointStep', () => {
     expect(screen.getByText('• Drivers')).toBeInTheDocument();
   });
 
-  it('dispatches submitStep advance when Continue is clicked', async () => {
-    const user = userEvent.setup();
+  it('dispatches submitStep advance when the registered Continue handler is invoked', () => {
     const store = buildStore();
     const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <CheckpointStep step={checkpointStep} phase={phaseWithCheckpoint} />
+        <TestStepNavProvider handle={handle}>
+          <CheckpointStep step={checkpointStep} phase={phaseWithCheckpoint} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /continue/i }));
+    expect(handle.current?.canContinue).toBe(true);
+    act(() => {
+      handle.current?.onContinue();
+    });
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       carrierPortalV2Actions.submitStep({

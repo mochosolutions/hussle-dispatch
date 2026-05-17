@@ -1,3 +1,4 @@
+import { act } from 'react';
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { render, screen } from '@testing-library/react';
@@ -9,6 +10,10 @@ import {
 } from '../../../store/reducers/carrierPortalSlice';
 import type { Session } from '../../../engine';
 import { welcomePhase } from '../../../schema/welcomePhase';
+import {
+  TestStepNavProvider,
+  type StepNavTestHandle,
+} from '../../StepNavContext';
 import SegmentationStep from '.';
 
 const welcomeStep = welcomePhase.steps[0];
@@ -52,10 +57,13 @@ const buildStore = ({ session }: BuildStoreOptions) => {
 describe('SegmentationStep (connected)', () => {
   it('renders the generic appName eyebrow when session is null', () => {
     const store = buildStore({ session: null });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <SegmentationStep step={welcomeStep} />
+        <TestStepNavProvider handle={handle}>
+          <SegmentationStep step={welcomeStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -64,47 +72,55 @@ describe('SegmentationStep (connected)', () => {
 
   it('renders the organization-name eyebrow when invitation.organizationName is set', () => {
     const store = buildStore({ session: buildSession('Acme Dispatch') });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <SegmentationStep step={welcomeStep} />
+        <TestStepNavProvider handle={handle}>
+          <SegmentationStep step={welcomeStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
     expect(screen.getByText('Invited by Acme Dispatch')).toBeInTheDocument();
   });
 
-  it('disables Continue until a selection is made', () => {
+  it('registers a disabled Continue until a selection is made', () => {
     const store = buildStore({ session: buildSession('Acme Dispatch') });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <SegmentationStep step={welcomeStep} />
+        <TestStepNavProvider handle={handle}>
+          <SegmentationStep step={welcomeStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).toBeDisabled();
+    expect(handle.current?.canContinue).toBe(false);
   });
 
   it('dispatches submitStep with selected carrier_type on Continue', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession(null) });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <SegmentationStep step={welcomeStep} />
+        <TestStepNavProvider handle={handle}>
+          <SegmentationStep step={welcomeStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
     const ownerOperatorCard = screen.getByRole('radio', { name: /owner-operator/i });
     await user.click(ownerOperatorCard);
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).not.toBeDisabled();
-
-    await user.click(continueButton);
+    expect(handle.current?.canContinue).toBe(true);
+    act(() => {
+      handle.current?.onContinue();
+    });
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       carrierPortalV2Actions.submitStep({
