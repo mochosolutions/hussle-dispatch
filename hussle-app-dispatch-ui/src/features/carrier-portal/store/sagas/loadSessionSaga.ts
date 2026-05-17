@@ -6,7 +6,7 @@ import { getSessionV2 } from 'utils/api/carrierPortal/v2';
 import type { PortalSessionResponseV2 } from 'utils/api/carrierPortal/v2';
 
 import { carrierPortalV2Actions } from '../reducers/carrierPortalSlice';
-import { extractErrorMessage, toEngineSession } from './sessionAdapters';
+import { advanceCurrentStep, extractErrorMessage, toEngineSession } from './sessionAdapters';
 
 // ---------------------------------------------------------------------------
 // Worker
@@ -22,7 +22,7 @@ function* handleLoadSession(): Generator {
       return;
     }
     const response: PortalSessionResponseV2 = yield call(getSessionV2, token);
-    yield put(carrierPortalV2Actions.loadSessionSuccess(toEngineSession(response)));
+    yield put(carrierPortalV2Actions.loadSessionSuccess(advanceCurrentStep(toEngineSession(response))));
   } catch (error: unknown) {
     const message = extractErrorMessage(error, 'Failed to load session');
     yield put(carrierPortalV2Actions.loadSessionFailure(message));

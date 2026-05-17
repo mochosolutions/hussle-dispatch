@@ -8,6 +8,7 @@ import { submitStepV2 } from 'utils/api/carrierPortal/v2';
 
 import { carrierPortalV2Actions } from '../reducers/carrierPortalSlice';
 import {
+  advanceCurrentStep,
   extractErrorMessage,
   extractFieldLockError,
   mergeSubmitStepResponse,
@@ -53,7 +54,7 @@ function* handleSubmitStep(action: PayloadAction<SubmitStepPayload>): Generator 
           raw,
         );
 
-    yield put(carrierPortalV2Actions.submitStepSuccess(merged));
+    yield put(carrierPortalV2Actions.submitStepSuccess(advanceCurrentStep(merged)));
   } catch (error: unknown) {
     const lockError = extractFieldLockError(error);
     if (lockError) {

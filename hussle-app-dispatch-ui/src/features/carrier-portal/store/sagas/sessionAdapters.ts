@@ -17,6 +17,8 @@ import type {
   InvitationContext,
   Session,
 } from 'features/carrier-portal/engine';
+import { getNextStepId } from 'features/carrier-portal/engine';
+import { onboardingSchema } from 'features/carrier-portal/schema/onboardingSchema';
 import type {
   PortalSessionResponseV2,
 } from 'utils/api/carrierPortal/v2';
@@ -57,6 +59,20 @@ const toInvitationContext = (
   phone: raw.phone,
   organizationName: raw.organizationName,
 });
+
+/**
+ * The backend sets currentStepId to the step that was just submitted, not the
+ * next step. Advance past any already-completed step so the UI shows the
+ * correct next screen.
+ */
+export const advanceCurrentStep = (session: Session): Session => {
+  const { currentStepId, completedStepIds } = session;
+  if (!currentStepId || !completedStepIds.includes(currentStepId)) {
+    return session;
+  }
+  const nextStepId = getNextStepId(onboardingSchema, session, currentStepId);
+  return { ...session, currentStepId: nextStepId };
+};
 
 export const toEngineSession = (response: PortalSessionResponseV2): Session => ({
   id: response.session.id,
