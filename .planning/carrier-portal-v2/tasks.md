@@ -411,7 +411,7 @@ must_haves:
 ---
 
 ## US-12: Engine module — types + 6 pure functions + dependency-cruiser rule
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: in-progress_
 
 must_haves:
   truths:
@@ -452,31 +452,31 @@ must_haves:
 - [ ] AC-4 (dependency-cruiser rule enforces purity)
 
 **Tasks:**
-[ ] T-29 [UI] Engine types + LOCKS_FIELDS shared constant
+[x] T-29 [UI] Engine types + LOCKS_FIELDS shared constant
          └─ Detail: Write `engine/types.ts` matching plan §"Engine types". Re-export `LOCKS_FIELDS` from a path the server-side equivalent imports (the constant itself lives in a non-engine path like `features/carrier-portal-v2/schema/locksFields.ts` since servers can't import engine — duplicate the literal and add a CI grep test). Define `Predicate` discriminated union by `op` for type-safety.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/types.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/errors.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/locksFields.ts]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-30 [UI] Implement evaluatePredicate + resolveContext
+[x] T-30 [UI] Implement evaluatePredicate + resolveContext
          └─ Detail: Port from prototype `docs/onboarding-example-tech-spec/CarrierOnboardingPrototype.jsx:221-246`. `resolveContext(session, dotPath)` resolves `answers.<stepId>.<questionId>`, `fmcsa.<field>`, `invitation.<field>`, `agreement.<field>`. `evaluatePredicate(predicate, session)` recursively walks composite operators.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/resolveContext.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/evaluatePredicate.ts]
          └─ Depends on: T-29
          └─ Output:
 
-[ ] T-31 [UI] Implement getVisibleSteps / getNextStepId / getPrevStepId / computeInvalidations
+[x] T-31 [UI] Implement getVisibleSteps / getNextStepId / getPrevStepId / computeInvalidations
          └─ Detail: Port the three traversal functions. `computeInvalidations(schema, session, trialAnswers)` returns ids of completed steps that flip to hidden under the trial state; for each invalidated step, if its `questions[]` overlap with `LOCKS_FIELDS` and the agreement is signed, throw `LockViolationError`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/getVisibleSteps.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/getNextStepId.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/getPrevStepId.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/computeInvalidations.ts]
          └─ Depends on: T-30
          └─ Output:
 
-[ ] T-32 [UI] Engine unit tests (100% coverage)
+[x] T-32 [UI] Engine unit tests (100% coverage)
          └─ Detail: `__tests__/engine.test.ts` covering every operator, every context source, every traversal branch, computeInvalidations both throw-and-return paths.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/engine/__tests__/engine.test.ts]
          └─ Depends on: T-31
          └─ Output:
 
-[ ] T-33 [UI] Add dependency-cruiser rule `no-impure-engine-imports`
+[x] T-33 [UI] Add dependency-cruiser rule `no-impure-engine-imports`
          └─ Detail: Confirm `.dependency-cruiser.cjs` exists in dispatch-ui; if not, scaffold it (devDep present per assumption A4 — verify; if missing, install). Add forbidden rule preventing `features/carrier-portal-v2/engine/**` imports from anything other than `features/carrier-portal-v2/engine/**` + `engine/types.ts` itself. Add `lint:deps` if missing to package.json.
          └─ Files: [hussle-app-dispatch-ui/.dependency-cruiser.cjs, hussle-app-dispatch-ui/package.json]
          └─ Depends on: T-31
@@ -939,7 +939,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-09 Lane prefs service | 2 | 2 | 0 | 1/1 |
 | US-10 Agreements query | 2 | 2 | 0 | 1/1 |
 | US-11 APP_NAME (api) | 1 | 1 | 0 | — |
-| US-12 Engine module | 5 | 0 | 0 | 0/2 |
+| US-12 Engine module | 5 | 5 | 0 | 2/2 |
 | US-13 Schema module | 2 | 0 | 0 | 0/1 |
 | US-14 Bug-fix components | 2 | 2 | 0 | 2/2 |
 | US-15 Slice + sagas | 4 | 0 | 0 | — |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **30** | **0** | **16/29** |
+| **All** | **62** | **35** | **0** | **18/29** |
