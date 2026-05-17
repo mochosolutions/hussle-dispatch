@@ -15,7 +15,10 @@ export type StepType =
   | 'checkpoint'
   | 'complete'
   | 'costAnalysis'
-  | 'lanePreferences';
+  | 'lanePreferences'
+  | 'equipmentList'
+  | 'driversList'
+  | 'driversSoloConfirm';
 
 // ---------- predicate ----------
 

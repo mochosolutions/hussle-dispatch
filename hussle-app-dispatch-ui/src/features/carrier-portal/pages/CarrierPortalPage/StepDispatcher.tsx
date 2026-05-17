@@ -3,6 +3,9 @@ import AgreementSigningStep from '../../components/steps/AgreementSigningStep';
 import CheckpointStep from '../../components/steps/CheckpointStep';
 import CompleteStep from '../../components/steps/CompleteStep';
 import CostAnalysisStep from '../../components/steps/CostAnalysisStep';
+import DriversListStep from '../../components/steps/DriversListStep';
+import DriversSoloConfirmStep from '../../components/steps/DriversSoloConfirmStep';
+import EquipmentListStep from '../../components/steps/EquipmentListStep';
 import InputStep from '../../components/steps/InputStep';
 import LanePreferencesStep from '../../components/steps/LanePreferencesStep';
 import ReviewStep from '../../components/steps/ReviewStep';
@@ -39,6 +42,12 @@ const StepDispatcher: React.FC<StepDispatcherProps> = ({ step, phase }) => {
       return <CostAnalysisStep step={step} />;
     case 'lanePreferences':
       return <LanePreferencesStep step={step} />;
+    case 'equipmentList':
+      return <EquipmentListStep step={step} />;
+    case 'driversList':
+      return <DriversListStep step={step} />;
+    case 'driversSoloConfirm':
+      return <DriversSoloConfirmStep step={step} />;
     default:
       return null;
   }

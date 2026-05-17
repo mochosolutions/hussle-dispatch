@@ -36,23 +36,15 @@ export const driversPhase: Phase = {
     },
     {
       id: 'drivers-list',
-      type: 'input',
+      type: 'driversList',
       title: 'Tell us about your drivers',
       subtitle: 'Add each driver who will run loads for you.',
       visibility: hasEmployeesYes,
-      questions: [
-        {
-          id: 'entries',
-          label: 'Drivers',
-          fieldType: 'cards',
-          helpText:
-            'InputStep renderer dispatches to the driver-list builder when question id is "entries".',
-        },
-      ],
+      questions: [],
     },
     {
       id: 'drivers-solo-confirm',
-      type: 'review',
+      type: 'driversSoloConfirm',
       title: "Got it — you're the only driver running loads.",
       visibility: hasEmployeesNo,
     },
