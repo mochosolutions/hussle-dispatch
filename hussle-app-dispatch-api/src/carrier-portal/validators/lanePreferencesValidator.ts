@@ -1,41 +1,48 @@
 import * as Yup from 'yup';
 
-const STATE_PREFERENCES = ['NEUTRAL', 'PREFERRED', 'AVOIDED'] as const;
-
-const FREIGHT_PREFERENCES = [
-  'DRY_VAN',
-  'REEFER',
-  'FLATBED',
-  'STEP_DECK',
-  'POWER_ONLY',
-  'HOTSHOT',
-  'BOX_TRUCK',
-  'SPRINTER_VAN',
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const FREIGHT_TYPES = [
+  'dry_van',
+  'reefer',
+  'flatbed',
+  'step_deck',
+  'power_only',
+  'containers',
+  'hazmat',
+  'oversize',
+  'auto_haul',
+  'tanker',
+] as const;
+const SCHEDULE_PRESETS = [
+  'weekdays',
+  'weekdays_flex_fri',
+  'long_haul',
+  'regional_61',
+  'custom',
 ] as const;
 
-const lanePreferenceEntrySchema = Yup.object({
-  origin: Yup.string().max(200),
-  destination: Yup.string().max(200),
-});
+const scheduleShape = Yup.object(
+  Object.fromEntries(
+    DAY_KEYS.map((day) => [day, Yup.string().oneOf(['on', 'flex', 'off']).required()]),
+  ),
+);
 
-const statePreferenceEntrySchema = Yup.object({
-  state: Yup.string().length(2).required('state is required'),
-  preference: Yup.string()
-    .oneOf([...STATE_PREFERENCES], 'preference must be NEUTRAL, PREFERRED, or AVOIDED')
-    .required('preference is required'),
+const fleetSchema = Yup.object({
+  lanes: Yup.object().required(),
+  schedule: scheduleShape.required(),
+  schedulePreset: Yup.string().oneOf([...SCHEDULE_PRESETS]).required(),
+  homeBaseCity: Yup.string().nullable().max(100),
+  homeBaseState: Yup.string().nullable().length(2),
+  maxMilesFromHome: Yup.mixed().notRequired(),
+  maxDaysOut: Yup.number().integer().min(1).max(60).notRequired(),
+  freightTypes: Yup.object().required(),
 });
 
 export const lanePreferencesValidator = Yup.object({
   body: Yup.object({
-    homeBaseCity: Yup.string().max(100),
-    homeBaseState: Yup.string().length(2),
-    maxDaysOut: Yup.number().integer().min(1).max(30),
-    preferredLanes: Yup.array().of(lanePreferenceEntrySchema).max(20),
-    statePreferences: Yup.array().of(statePreferenceEntrySchema).max(50),
-    freightPreferences: Yup.array().of(
-      Yup.string()
-        .oneOf([...FREIGHT_PREFERENCES], 'Invalid freight preference')
-        .required(),
-    ),
+    fleet: fleetSchema.required('fleet is required'),
+    overrides: Yup.object().notRequired(),
   }),
 });
+
+export const KNOWN_FREIGHT_TYPES = FREIGHT_TYPES;

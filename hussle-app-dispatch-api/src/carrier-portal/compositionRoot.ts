@@ -9,7 +9,7 @@ import { portalCarrierRepoPrisma } from './repositories/portalCarrierRepoPrisma'
 import { portalDocumentRepoPrisma } from './repositories/portalDocumentRepoPrisma';
 import { portalVehicleRepoPrisma } from './repositories/portalVehicleRepoPrisma';
 import { portalDriverRepoPrisma } from './repositories/portalDriverRepoPrisma';
-import { portalLanePreferencesSessionRepoPrisma } from './repositories/portalSessionRepoPrisma';
+import { portalLanePreferencesWriteAdapter } from './repositories/portalLanePreferencesWriteAdapter';
 import { createAuthenticateCarrierToken } from './middleware/authenticateCarrierToken';
 import { createOnboardingSessionService } from './services/onboardingSessionService';
 import { createPortalCompanyService } from './services/portalCompanyService';
@@ -47,7 +47,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const documentRepo = portalDocumentRepoPrisma(deps.prismaClient);
   const vehicleRepo = portalVehicleRepoPrisma(deps.prismaClient);
   const driverRepo = portalDriverRepoPrisma(deps.prismaClient);
-  const laneSessionRepo = portalLanePreferencesSessionRepoPrisma(deps.prismaClient);
+  const lanePreferencesWritePort = portalLanePreferencesWriteAdapter(deps.prismaClient);
 
   const authenticateCarrierToken = createAuthenticateCarrierToken({ tokenRepo });
 
@@ -97,7 +97,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   });
 
   const lanePreferencesService = createPortalLanePreferencesService({
-    sessionPort: laneSessionRepo,
+    writePort: lanePreferencesWritePort,
   });
 
   const documentsService = createPortalDocumentsService({

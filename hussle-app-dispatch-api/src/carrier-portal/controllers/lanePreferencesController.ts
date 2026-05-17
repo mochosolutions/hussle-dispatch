@@ -7,6 +7,7 @@ import { lanePreferencesTransformer } from './transformers/lanePreferencesTransf
 interface LanePreferencesService {
   saveLanePreferences(
     carrierId: string,
+    organizationId: string,
     input: SaveLanePreferencesInput,
   ): Promise<{ saved: boolean }>;
 }
@@ -17,8 +18,8 @@ interface LanePreferencesControllerDeps {
 
 export const createLanePreferencesControllers = (deps: LanePreferencesControllerDeps) => ({
   saveLanePreferences: async (req: Request, res: Response) => {
-    const { carrierId, input } = lanePreferencesMapper(req);
-    const result = await deps.lanePreferencesService.saveLanePreferences(carrierId, input);
+    const { carrierId, organizationId, input } = lanePreferencesMapper(req);
+    const result = await deps.lanePreferencesService.saveLanePreferences(carrierId, organizationId, input);
     const response = lanePreferencesTransformer(result);
     sendSingle(res, response);
   },

@@ -339,7 +339,7 @@ must_haves:
 ---
 
 ## US-09: portalLanePreferencesService — hybrid storage rewrite
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-01, US-06_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01, US-06_
 
 must_haves:
   truths:
@@ -352,13 +352,13 @@ must_haves:
 - [ ] AC-19
 
 **Tasks:**
-[ ] T-24 [API] Rewrite saveLanePreferences with hybrid storage
+[x] T-24 [API] Rewrite saveLanePreferences with hybrid storage
          └─ Detail: Request body per Delta 2 shape (`fleet` + `overrides: Record<driverId, Partial<FleetLanePreferences>>`). Write fleet keys to Carrier; for each driver in overrides, write the matching Driver columns. Mirror everything in `answers.lanePreferences`. All in one `$transaction`.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/portalLanePreferencesService.ts, hussle-app-dispatch-api/src/carrier-portal/types/lanePreferencesTypes.ts, hussle-app-dispatch-api/src/carrier-portal/validators/lanePreferencesValidator.ts]
          └─ Depends on: US-06 T-17
          └─ Output:
 
-[ ] T-25 [TEST] Lane preferences fleet vs override split test
+[x] T-25 [TEST] Lane preferences fleet vs override split test
          └─ Detail: Assert Carrier columns hold fleet; one driver has overrides; other drivers have NULL on overridden sections.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/__tests__/portalLanePreferencesService.test.ts]
          └─ Depends on: T-24
@@ -936,7 +936,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-06 Drivers upsert | 2 | 2 | 0 | 1/1 |
 | US-07 submit-step endpoint | 3 | 3 | 0 | 2/2 |
 | US-08 Cost analysis service | 2 | 2 | 0 | 1/1 |
-| US-09 Lane prefs service | 2 | 0 | 0 | 0/1 |
+| US-09 Lane prefs service | 2 | 2 | 0 | 1/1 |
 | US-10 Agreements query | 2 | 0 | 0 | 0/1 |
 | US-11 APP_NAME (api) | 1 | 0 | 0 | — |
 | US-12 Engine module | 5 | 0 | 0 | 0/2 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **23** | **0** | **12/29** |
+| **All** | **62** | **25** | **0** | **13/29** |

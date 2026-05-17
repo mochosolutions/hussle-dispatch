@@ -4,24 +4,29 @@ import { UnauthorizedError } from '@/shared/errors/commonErrors';
 
 interface LanePreferencesServiceInput {
   carrierId: string;
+  organizationId: string;
   input: SaveLanePreferencesInput;
 }
 
-const getCarrierId = (req: Request): string => {
+const getPortalContext = (req: Request): { carrierId: string; organizationId: string } => {
   if (!req.carrierPortal) {
     throw new UnauthorizedError('Carrier portal context is required');
   }
-  return req.carrierPortal.carrierId;
+  return {
+    carrierId: req.carrierPortal.carrierId,
+    organizationId: req.carrierPortal.organizationId,
+  };
 };
 
-export const lanePreferencesMapper = (req: Request): LanePreferencesServiceInput => ({
-  carrierId: getCarrierId(req),
-  input: {
-    homeBaseCity: req.body.homeBaseCity,
-    homeBaseState: req.body.homeBaseState,
-    maxDaysOut: req.body.maxDaysOut,
-    preferredLanes: req.body.preferredLanes,
-    statePreferences: req.body.statePreferences,
-    freightPreferences: req.body.freightPreferences,
-  },
-});
+export const lanePreferencesMapper = (req: Request): LanePreferencesServiceInput => {
+  const { carrierId, organizationId } = getPortalContext(req);
+  const body = req.body as { fleet: SaveLanePreferencesInput['fleet']; overrides?: SaveLanePreferencesInput['overrides'] };
+  return {
+    carrierId,
+    organizationId,
+    input: {
+      fleet: body.fleet,
+      overrides: body.overrides ?? {},
+    },
+  };
+};
