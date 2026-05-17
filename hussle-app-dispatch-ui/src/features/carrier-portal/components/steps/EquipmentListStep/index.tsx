@@ -111,8 +111,7 @@ const EMPTY_VEHICLE_FORM: VehicleFormValues = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const generateVehicleId = (): string =>
-  `vehicle-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+const generateVehicleId = (): string => crypto.randomUUID();
 
 const gvwrNumberOf = (gvwr: string): number =>
   Number(String(gvwr).replace(/[^\d]/g, '')) || 0;

@@ -104,8 +104,7 @@ const EMPTY_DRIVER_FORM: DriverFormValues = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const generateDriverId = (): string =>
-  `driver-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+const generateDriverId = (): string => crypto.randomUUID();
 
 const driverNameOf = (d: DriverEntry): string => {
   const name = `${d.firstName} ${d.lastName}`.trim();
