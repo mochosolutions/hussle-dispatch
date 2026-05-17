@@ -7,12 +7,13 @@ import {
   selectSession,
   selectCurrentStep,
 } from '../../store/selectors/carrierPortalSelectors';
-import { findPhaseOfStep } from '../../engine';
+import { findPhaseOfStep, getPrevStepId } from '../../engine';
 import { onboardingSchema } from '../../schema/onboardingSchema';
 import PortalAuthGuard from '../../components/PortalAuthGuard';
 import PortalShell from '../../components/PortalShell';
 import PortalStepper from '../../components/PortalStepper';
 import type { PortalStepperPhase } from '../../components/PortalStepper';
+import PortalFooterBar from '../../components/PortalFooterBar';
 import StepDispatcher from './StepDispatcher';
 
 // ---------------------------------------------------------------------------
@@ -85,9 +86,37 @@ const CarrierPortalPage = () => {
     [currentPhaseId],
   );
 
+  const prevStepId = useMemo(() => {
+    if (!session || !currentStep) return null;
+    return getPrevStepId(onboardingSchema, session, currentStep.id);
+  }, [session, currentStep]);
+
+  const handleBack = () => {
+    if (prevStepId) {
+      dispatch(carrierPortalV2Actions.navigateToStep({ stepId: prevStepId }));
+    }
+  };
+
+  const handleSaveExit = () => {
+    window.location.href = '/';
+  };
+
+  const footer = currentStep && phase ? (
+    <PortalFooterBar
+      phaseLabel={phase.label}
+      metaText={currentStep.title ?? currentStep.id}
+      helperText="✓ Progress saved"
+      onBack={prevStepId ? handleBack : undefined}
+      secondaryAction={{ label: 'Save & Exit', onClick: handleSaveExit }}
+    />
+  ) : undefined;
+
   return (
     <PortalAuthGuard>
-      <PortalShell stepper={session ? <PortalStepper phases={stepperPhases} /> : undefined}>
+      <PortalShell
+        stepper={session ? <PortalStepper phases={stepperPhases} /> : undefined}
+        footer={footer}
+      >
         {currentStep ? (
           <StepDispatcher step={currentStep} phase={phase} />
         ) : (

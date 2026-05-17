@@ -115,29 +115,31 @@ const PortalFooterBar: React.FC<PortalFooterBarProps> = ({
           </Button>
         ) : null}
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={onContinue}
-          disabled={continueDisabled || isContinuing}
-          endIcon={
-            isContinuing ? (
-              <CircularProgress size={14} sx={{ color: 'common.white' }} />
-            ) : (
-              <ArrowForward sx={{ fontSize: 14 }} />
-            )
-          }
-          sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: 14,
-            px: 2.25,
-            py: 1.25,
-            borderRadius: 0.75,
-          }}
-        >
-          {continueLabel}
-        </Button>
+        {onContinue ? (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={onContinue}
+            disabled={continueDisabled || isContinuing}
+            endIcon={
+              isContinuing ? (
+                <CircularProgress size={14} sx={{ color: 'common.white' }} />
+              ) : (
+                <ArrowForward sx={{ fontSize: 14 }} />
+              )
+            }
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: 14,
+              px: 2.25,
+              py: 1.25,
+              borderRadius: 0.75,
+            }}
+          >
+            {continueLabel}
+          </Button>
+        ) : null}
       </Stack>
     </Box>
   );
