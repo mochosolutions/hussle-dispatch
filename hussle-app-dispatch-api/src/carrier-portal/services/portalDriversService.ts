@@ -2,6 +2,7 @@ import type { PortalDriverRepoPort } from '../repositories/portalDriverRepoPrism
 import { DriverStatus, DriverPayType } from '@prisma/client';
 
 interface DriverEntry {
+  id?: string;
   firstName: string;
   lastName: string;
   phone?: string;
@@ -43,35 +44,39 @@ export const createPortalDriversService = (
   saveDrivers: async (input) => {
     const { carrierId, hasAdditionalDrivers, drivers } = input;
 
+    // "No employee drivers" branch: soft-delete everything, return empty list.
     if (!hasAdditionalDrivers) {
       await deps.driverRepo.deleteByCarrierId(carrierId);
       return [];
     }
 
-    if (!drivers || drivers.length === 0) {
+    const incoming = drivers ?? [];
+    const existing = await deps.driverRepo.findByCarrierId(carrierId);
+
+    const incomingIds = new Set(
+      incoming.map((d) => d.id).filter((id): id is string => Boolean(id)),
+    );
+    const deleteIds = existing.map((d) => d.id).filter((id) => !incomingIds.has(id));
+
+    if (incoming.length === 0) {
+      // No drivers in payload but hasAdditionalDrivers=true — treat as wipe.
+      await deps.driverRepo.deleteByCarrierId(carrierId);
       return [];
     }
 
-    await deps.driverRepo.deleteByCarrierId(carrierId);
+    const upsertData = incoming.map((entry) => ({
+      id: entry.id,
+      carrierId,
+      firstName: entry.firstName,
+      lastName: entry.lastName,
+      phone: entry.phone ?? null,
+      email: entry.email ?? null,
+      status: DriverStatus.ACTIVE,
+      notes: null,
+      payType: toDriverPayType(entry.payType),
+      payRate: entry.payRate ?? 0,
+    }));
 
-    const created: SavedDriver[] = [];
-
-    for (const entry of drivers) {
-      const driver = await deps.driverRepo.create({
-        carrierId,
-        firstName: entry.firstName,
-        lastName: entry.lastName,
-        phone: entry.phone ?? null,
-        email: entry.email ?? null,
-        status: DriverStatus.ACTIVE,
-        notes: null,
-        payType: toDriverPayType(entry.payType),
-        payRate: entry.payRate ?? 0,
-      });
-
-      created.push(driver);
-    }
-
-    return created;
+    return deps.driverRepo.upsertMany(carrierId, upsertData, deleteIds);
   },
 });

@@ -3,6 +3,7 @@ import * as Yup from 'yup';
 const PAY_TYPES = ['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE'] as const;
 
 const driverEntrySchema = Yup.object({
+  id: Yup.string().uuid('Invalid driver id').optional(),
   firstName: Yup.string().trim().required('firstName is required').max(100),
   lastName: Yup.string().trim().required('lastName is required').max(100),
   phone: Yup.string().trim().max(20).notRequired(),

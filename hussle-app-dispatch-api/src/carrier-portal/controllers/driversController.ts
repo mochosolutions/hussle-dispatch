@@ -12,6 +12,7 @@ export interface PortalDriversControllers {
 }
 
 interface DriverEntry {
+  id?: string;
   firstName: string;
   lastName: string;
   phone?: string;

@@ -239,7 +239,7 @@ must_haves:
 ---
 
 ## US-06: portalDriversService — upsert-by-id refactor
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done_
 
 must_haves:
   truths:
@@ -250,13 +250,13 @@ must_haves:
 - [ ] AC-17 partial (drivers side)
 
 **Tasks:**
-[ ] T-17 [API] Refactor saveDrivers to upsert-by-id
+[x] T-17 [API] Refactor saveDrivers to upsert-by-id
          └─ Detail: Same shape change as Equipment. `SaveDriversInput.drivers[]` gains optional `id`. Diff + transaction; response carries id. Update validator.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/portalDriversService.ts, hussle-app-dispatch-api/src/carrier-portal/types/driversTypes.ts, hussle-app-dispatch-api/src/carrier-portal/validators/driversValidator.ts]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-18 [TEST] Drivers upsert matrix test
+[x] T-18 [TEST] Drivers upsert matrix test
          └─ Detail: Mirror equipment matrix test.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/__tests__/portalDriversService.test.ts]
          └─ Depends on: T-17
@@ -933,7 +933,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-03 Token hardening | 3 | 3 | 0 | 1/1 |
 | US-04 portalCompanyService | 3 | 3 | 0 | 2/2 |
 | US-05 Equipment upsert | 2 | 2 | 0 | 1/1 |
-| US-06 Drivers upsert | 2 | 0 | 0 | 0/1 |
+| US-06 Drivers upsert | 2 | 2 | 0 | 1/1 |
 | US-07 submit-step endpoint | 3 | 0 | 0 | 0/2 |
 | US-08 Cost analysis service | 2 | 0 | 0 | 0/1 |
 | US-09 Lane prefs service | 2 | 0 | 0 | 0/1 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **16** | **0** | **8/29** |
+| **All** | **62** | **18** | **0** | **9/29** |
