@@ -16,6 +16,7 @@ import { createPortalCompanyService } from './services/portalCompanyService';
 import { createPortalEquipmentService } from './services/portalEquipmentService';
 import { createPortalDriversService } from './services/portalDriversService';
 import { createPortalCostAnalysisService } from './services/portalCostAnalysisService';
+import { portalCostAnalysisWriteAdapter } from './repositories/portalCostAnalysisWriteAdapter';
 import { createSessionControllers } from './controllers/sessionController';
 import { createCompanyControllers } from './controllers/companyController';
 import { createEquipmentControllers } from './controllers/equipmentController';
@@ -36,6 +37,7 @@ interface CarrierPortalModuleDeps {
   eventBus: EventBus;
   logger: Logger;
 }
+
 
 export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const tokenRepo = carrierInviteTokenRepoPrisma(deps.prismaClient);
@@ -90,9 +92,8 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     carrierCostProfileRepo: {
       findById: (carrierId, organizationId) =>
         carrierRepo.findCostProfile(carrierId, organizationId),
-      updateCostProfile: (carrierId, organizationId, data) =>
-        carrierRepo.updateCostProfile(carrierId, organizationId, data),
     },
+    writePort: portalCostAnalysisWriteAdapter(deps.prismaClient),
   });
 
   const lanePreferencesService = createPortalLanePreferencesService({

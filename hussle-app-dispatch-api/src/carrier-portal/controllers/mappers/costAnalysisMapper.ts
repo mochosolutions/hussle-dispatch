@@ -23,13 +23,6 @@ export const costAnalysisMapper = (req: Request): CostAnalysisServiceInput => {
   return {
     carrierId,
     organizationId,
-    input: {
-      truckPayment: req.body.truckPayment,
-      insuranceCost: req.body.insuranceCost,
-      fuelCostPerGallon: req.body.fuelCostPerGallon,
-      milesPerGallon: req.body.milesPerGallon,
-      maintenanceMonthlyCost: req.body.maintenanceMonthlyCost,
-      otherMonthlyCosts: req.body.otherMonthlyCosts,
-    },
+    input: req.body as CostAnalysisInput,
   };
 };

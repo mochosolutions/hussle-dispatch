@@ -311,7 +311,7 @@ must_haves:
 ---
 
 ## US-08: portalCostAnalysisService — hybrid storage rewrite
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-01, US-05_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01, US-05_
 
 must_haves:
   truths:
@@ -324,13 +324,13 @@ must_haves:
 - [ ] AC-18
 
 **Tasks:**
-[ ] T-22 [API] Rewrite saveCostAnalysis with hybrid storage + transaction
+[x] T-22 [API] Rewrite saveCostAnalysis with hybrid storage + transaction
          └─ Detail: Restructure request body shape per plan. Service uses `prisma.$transaction([ ...vehicleUpdates, sessionUpdate, carrierUpdate ])`. Read Vehicle ids from `equipmentPayments[].assetId`. Write `loanPayment`/`ownership`/`insuranceMonthlyCost`. Update `OnboardingSession.answers.costAnalysis` (merge under that key). Update `Carrier.minimumRatePerMile`. Break-even CPM is **not** persisted.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/portalCostAnalysisService.ts, hussle-app-dispatch-api/src/carrier-portal/types/costAnalysisTypes.ts, hussle-app-dispatch-api/src/carrier-portal/validators/costAnalysisValidator.ts]
          └─ Depends on: US-05 T-15
          └─ Output:
 
-[ ] T-23 [TEST] Cost analysis transactional save test
+[x] T-23 [TEST] Cost analysis transactional save test
          └─ Detail: Assert column writes, answers merge, minRate write. Simulate one Vehicle update failure (e.g. id not found) and assert rollback (no partial state).
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/__tests__/portalCostAnalysisService.test.ts]
          └─ Depends on: T-22
@@ -935,7 +935,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-05 Equipment upsert | 2 | 2 | 0 | 1/1 |
 | US-06 Drivers upsert | 2 | 2 | 0 | 1/1 |
 | US-07 submit-step endpoint | 3 | 3 | 0 | 2/2 |
-| US-08 Cost analysis service | 2 | 0 | 0 | 0/1 |
+| US-08 Cost analysis service | 2 | 2 | 0 | 1/1 |
 | US-09 Lane prefs service | 2 | 0 | 0 | 0/1 |
 | US-10 Agreements query | 2 | 0 | 0 | 0/1 |
 | US-11 APP_NAME (api) | 1 | 0 | 0 | — |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **21** | **0** | **11/29** |
+| **All** | **62** | **23** | **0** | **12/29** |
