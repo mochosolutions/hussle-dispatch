@@ -569,6 +569,14 @@ model Carrier {
   managedByOrgId                    String
   carrierOrgId                      String?
   name                              String
+  legalName                         String?
+  dbaName                           String?
+  taxClassification                 String?
+  tin                               String?
+  tinType                           String?
+  signatoryName                     String?
+  signatoryTitle                    String?
+  signedAgreementId                 String?
   type                              CarrierType          @default(EXTERNAL_CARRIER)
   mcNumber                          String?
   dotNumber                         String?
@@ -595,9 +603,13 @@ model Carrier {
   dispatchAgreementSignedAt         DateTime?
   insuranceCertOnFile               Boolean              @default(false)
   insuranceExpiry                   DateTime?
-  w9OnFile                          Boolean              @default(false)
-  carrierPacketOnFile               Boolean              @default(false)
   minimumRatePerMile                Decimal?             @db.Decimal(10, 2)
+  homeBaseCity                      String?
+  homeBaseState                     String?
+  preferredLanes                    Json?
+  weeklySchedule                    Json?
+  freightPreferences                Json?
+  maxDaysOut                        Int?
   inviteSentAt                      DateTime?
   entryMethod                       String?              @default("INVITE")
   dispatchAgreementConsentIp        String?
@@ -683,6 +695,8 @@ model Driver {
   homeBaseState      String?
   maxDaysOut         Int?                     @default(5)
   preferredLanes     Json?
+  weeklySchedule     Json?
+  freightPreferences Json?
   noGoZones          Json?
   isAvailable        Boolean                  @default(true)
   status             DriverStatus             @default(ACTIVE)
@@ -1230,8 +1244,10 @@ model OnboardingSession {
   carrierId            String    @unique
   currentPhase         Int       @default(1)
   currentQuestionIndex Int       @default(0)
+  currentStepId        String?
   answers              Json?
   completedPhases      Int[]     @default([])
+  completedStepIds     String[]  @default([])
   lastActiveAt         DateTime  @default(now())
   completedAt          DateTime?
   createdAt            DateTime  @default(now())
