@@ -265,7 +265,7 @@ must_haves:
 ---
 
 ## US-07: stepId-keyed submit-step endpoint + locked-field rejection
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-01, US-04_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01, US-04_
 
 must_haves:
   truths:
@@ -290,19 +290,19 @@ must_haves:
 - [ ] Session response carries new fields
 
 **Tasks:**
-[ ] T-19 [API] Add submit-step service action + controller + route
+[x] T-19 [API] Add submit-step service action + controller + route
          └─ Detail: New service action `submitStep({ sessionId, stepId, answers })` in `onboardingSessionService.ts`. Persist `session.answers[stepId] = answers`; recompute `currentStepId` (advance by inspecting completed phases — start with a server-side phase-of-step lookup; engine-side advance lives in UI). Append `stepId` to `completedStepIds`. Reject locked-field mutations by inspecting `answers` against `LOCKS_FIELDS`. Add controller method + route POST `/session/submit-step` in `routes/index.ts`. Old phase-keyed endpoints continue to work — leave untouched.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/onboardingSessionService.ts, hussle-app-dispatch-api/src/carrier-portal/controllers/onboardingSessionController.ts, hussle-app-dispatch-api/src/carrier-portal/routes/index.ts, hussle-app-dispatch-api/src/carrier-portal/validators/sessionValidators.ts]
          └─ Depends on: US-04 T-12
          └─ Output:
 
-[ ] T-20 [API] Extend GET /session response
+[x] T-20 [API] Extend GET /session response
          └─ Detail: `getSessionResponse` includes: `currentStepId`, `completedStepIds`, `agreement` snapshot (most-recent DISPATCH_AGREEMENT — null when none), `invitation: { email, phone, organizationName }` resolved from `CarrierInviteToken.organizationId → Organization.name`. The `agreement.signedFieldsLocked` derives from `Carrier.dispatchAgreementSignedAt`.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/onboardingSessionService.ts, hussle-app-dispatch-api/src/carrier-portal/controllers/onboardingSessionController.ts, hussle-app-dispatch-api/src/carrier-portal/types/sessionTypes.ts]
          └─ Depends on: T-19
          └─ Output:
 
-[ ] T-21 [TEST] submit-step + getSession tests
+[x] T-21 [TEST] submit-step + getSession tests
          └─ Detail: Test happy path advance, locked-field rejection (422), organizationName resolution, and signedFieldsLocked flag.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/__tests__/onboardingSessionService.test.ts]
          └─ Depends on: T-20
@@ -934,7 +934,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-04 portalCompanyService | 3 | 3 | 0 | 2/2 |
 | US-05 Equipment upsert | 2 | 2 | 0 | 1/1 |
 | US-06 Drivers upsert | 2 | 2 | 0 | 1/1 |
-| US-07 submit-step endpoint | 3 | 0 | 0 | 0/2 |
+| US-07 submit-step endpoint | 3 | 3 | 0 | 2/2 |
 | US-08 Cost analysis service | 2 | 0 | 0 | 0/1 |
 | US-09 Lane prefs service | 2 | 0 | 0 | 0/1 |
 | US-10 Agreements query | 2 | 0 | 0 | 0/1 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **18** | **0** | **9/29** |
+| **All** | **62** | **21** | **0** | **11/29** |

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import { AgreementTemplateKey, type PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
@@ -124,6 +124,37 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
       sessionService: onboardingSessionService,
       carrierQuery: {
         findById: (id: string) => deps.prismaClient.carrier.findUnique({ where: { id } }),
+      },
+      invitationQuery: {
+        findActiveOrganizationNameByCarrierId: async (carrierId: string) => {
+          const token = await deps.prismaClient.carrierInviteToken.findFirst({
+            where: {
+              carrierId,
+              revokedAt: null,
+              organization: { is: { deleted: false } },
+            },
+            orderBy: { createdAt: 'desc' },
+            include: { organization: true },
+          });
+          return token?.organization?.name ?? null;
+        },
+      },
+      agreementQuery: {
+        findLatestForCarrier: async (carrierId: string) => {
+          const agreement = await deps.prismaClient.agreement.findFirst({
+            where: { carrierId, templateKey: AgreementTemplateKey.DISPATCH_AGREEMENT },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, status: true, embedUrl: true },
+          });
+          if (!agreement) {
+            return null;
+          }
+          return {
+            id: agreement.id,
+            status: agreement.status,
+            embedUrl: agreement.embedUrl,
+          };
+        },
       },
     }),
     company: createCompanyControllers({ companyService }),

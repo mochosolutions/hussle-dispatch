@@ -1,7 +1,7 @@
 import express from 'express';
 import { publicRateLimiter } from '@/shared/middleware/rateLimiter';
 import { validateRequest } from '@/shared/middleware/validateRequest';
-import { saveAnswerValidator } from '../validators/sessionValidators';
+import { saveAnswerValidator, submitStepValidator } from '../validators/sessionValidators';
 import { companyValidator } from '../validators/companyValidator';
 import { equipmentValidator } from '../validators/equipmentValidator';
 import { driversValidator } from '../validators/driversValidator';
@@ -16,6 +16,7 @@ import {
 interface SessionControllers {
   getSession: express.RequestHandler;
   saveAnswer: express.RequestHandler;
+  submitStep: express.RequestHandler;
   completeSession: express.RequestHandler;
 }
 
@@ -72,6 +73,11 @@ export const createCarrierPortalRouter = (
   // Session endpoints
   router.get('/session', controllers.session.getSession);
   router.put('/session/answer', validateRequest(saveAnswerValidator), controllers.session.saveAnswer);
+  router.post(
+    '/session/submit-step',
+    validateRequest(submitStepValidator),
+    controllers.session.submitStep,
+  );
   router.post('/session/complete', controllers.session.completeSession);
 
   // Phase 1: Company

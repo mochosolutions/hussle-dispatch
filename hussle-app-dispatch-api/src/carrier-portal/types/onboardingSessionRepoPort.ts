@@ -3,6 +3,8 @@ import type { OnboardingSession, Prisma } from '@prisma/client';
 export interface OnboardingSessionUpdateData {
   currentPhase?: number;
   currentQuestionIndex?: number;
+  currentStepId?: string | null;
+  completedStepIds?: string[];
   answers?: Prisma.InputJsonValue;
   completedPhases?: number[];
   lastActiveAt?: Date;

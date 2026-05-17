@@ -7,3 +7,10 @@ export const saveAnswerValidator = Yup.object({
     phase: Yup.number().integer().min(1).max(6).optional(),
   }),
 });
+
+export const submitStepValidator = Yup.object({
+  body: Yup.object({
+    stepId: Yup.string().required('stepId is required').max(100),
+    answers: Yup.object().required('answers is required'),
+  }),
+});

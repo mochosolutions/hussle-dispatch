@@ -5,11 +5,17 @@ import type {
 } from '../types/onboardingSessionRepoPort';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
-import { NotFoundError, OnboardingBlockError, ValidationError } from '@/shared/errors/commonErrors';
+import {
+  FieldLockedError,
+  NotFoundError,
+  OnboardingBlockError,
+  ValidationError,
+} from '@/shared/errors/commonErrors';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
 import { assertTransition } from '@/carriers/services/carrierStateMachine';
 import type { CarrierAuditPort } from '@/carriers/types/carrierAuditPort';
+import { LOCKS_FIELDS, companyFieldLockedPath } from '../constants/locksFields';
 
 const TOTAL_PHASES = 6;
 
@@ -53,6 +59,43 @@ export interface SaveAnswerInput {
   value: Prisma.InputJsonValue;
   phase?: number;
 }
+
+export interface SubmitStepInput {
+  stepId: string;
+  answers: Record<string, Prisma.InputJsonValue>;
+}
+
+// Only company-phase stepIds can carry lockable fields.
+const isCompanyStep = (stepId: string): boolean => stepId.startsWith('company-');
+
+const assertNoLockedFieldChange = (
+  stepId: string,
+  incomingAnswers: Record<string, Prisma.InputJsonValue>,
+  existingAnswers: Record<string, unknown>,
+  carrier: Carrier | null,
+): void => {
+  if (!carrier || carrier.dispatchAgreementSignedAt === null) {
+    return;
+  }
+  if (!isCompanyStep(stepId)) {
+    return;
+  }
+
+  const existingStepAnswers = (existingAnswers[stepId] ?? {}) as Record<string, unknown>;
+  for (const [questionId, incomingValue] of Object.entries(incomingAnswers)) {
+    const dotPath = companyFieldLockedPath(questionId);
+    if (!dotPath) continue;
+    const existing = existingStepAnswers[questionId];
+    const a = incomingValue === null ? null : String(incomingValue);
+    const b = existing === null || existing === undefined ? null : String(existing);
+    if (a !== b) {
+      throw new FieldLockedError(dotPath);
+    }
+  }
+};
+
+// LOCKS_FIELDS is iterated by the parity test (see tests/locksFieldsParity.test.ts).
+void LOCKS_FIELDS;
 
 export const createOnboardingSessionService = (deps: OnboardingSessionServiceDeps) => ({
   getOrCreate: async (carrierId: string): Promise<OnboardingSession> => {
@@ -186,6 +229,42 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     });
 
     deps.logger.info('Onboarding completed', { carrierId, sessionId: session.id });
+
+    return updated;
+  },
+
+  submitStep: async (carrierId: string, input: SubmitStepInput): Promise<OnboardingSession> => {
+    const session = await deps.sessionRepo.findByCarrierId(carrierId);
+    if (!session) {
+      throw new NotFoundError(`Onboarding session for carrier ${carrierId} not found`);
+    }
+
+    const carrier = await deps.carrierRepo.findById(carrierId);
+
+    const existingAnswers = (session.answers ?? {}) as Record<string, unknown>;
+    assertNoLockedFieldChange(input.stepId, input.answers, existingAnswers, carrier);
+
+    const mergedAnswers: Record<string, Prisma.InputJsonValue> = {
+      ...(existingAnswers as Record<string, Prisma.InputJsonValue>),
+      [input.stepId]: input.answers,
+    };
+
+    const completed = session.completedStepIds ?? [];
+    const completedStepIds = completed.includes(input.stepId)
+      ? completed
+      : [...completed, input.stepId];
+
+    const updated = await deps.sessionRepo.update(session.id, {
+      answers: mergedAnswers,
+      currentStepId: input.stepId,
+      completedStepIds,
+      lastActiveAt: new Date(),
+    });
+    deps.logger.info('Onboarding step submitted', {
+      carrierId,
+      stepId: input.stepId,
+      sessionId: session.id,
+    });
 
     return updated;
   },
