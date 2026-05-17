@@ -48,8 +48,6 @@ const createBodySchema = Yup.object({
   dispatchAgreementSignedAt: Yup.date().notRequired(),
   insuranceCertOnFile: Yup.boolean().notRequired(),
   insuranceExpiry: Yup.date().notRequired(),
-  w9OnFile: Yup.boolean().notRequired(),
-  carrierPacketOnFile: Yup.boolean().notRequired(),
   onboardingStatus: optionalTrimmed,
   authorityStatus: optionalTrimmed,
   status: optionalTrimmed,

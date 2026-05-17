@@ -153,7 +153,7 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
         dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
         insuranceCertOnFile: carrier.insuranceCertOnFile,
         insuranceExpiry: carrier.insuranceExpiry,
-        w9OnFile: carrier.w9OnFile,
+        tinOnFile: carrier.tin != null,
       });
 
       if (!onboardingResult.allowed) {

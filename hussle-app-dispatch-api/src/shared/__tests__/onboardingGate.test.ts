@@ -15,7 +15,7 @@ describe('checkCarrierOnboarding — COMPANY_ASSET', () => {
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -30,7 +30,7 @@ describe('checkCarrierOnboarding — COMPANY_ASSET', () => {
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -47,7 +47,7 @@ describe('checkCarrierOnboarding — COMPANY_ASSET', () => {
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: true,
       insuranceExpiry: pastDate,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -71,7 +71,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with all docs valid', () =
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -95,7 +95,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing dispatch agreement
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -116,7 +116,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with insuranceCertOnFile=f
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -139,7 +139,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with expired insurance', (
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: pastDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -156,7 +156,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with expired insurance', (
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: false,
       insuranceExpiry: pastDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -181,7 +181,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing W-9', () => {
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -202,7 +202,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing all documents', ()
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);

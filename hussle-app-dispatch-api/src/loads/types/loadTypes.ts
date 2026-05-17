@@ -342,7 +342,7 @@ export interface CarrierAssignmentQueryPort {
     dispatchAgreementOnFile: boolean;
     insuranceCertOnFile: boolean;
     insuranceExpiry: Date | null;
-    w9OnFile: boolean;
+    tinOnFile: boolean;
   } | null>;
 }
 

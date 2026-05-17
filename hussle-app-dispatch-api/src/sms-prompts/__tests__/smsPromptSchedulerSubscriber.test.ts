@@ -71,6 +71,8 @@ const buildMocks = () => {
   const settingsRepo: jest.Mocked<SettingsRepoPort> = {
     findByOrganizationId: jest.fn().mockResolvedValue(null),
     upsert: jest.fn(),
+    getOrganizationHq: jest.fn().mockResolvedValue(null),
+    updateOrganizationHq: jest.fn().mockResolvedValue(undefined),
   };
 
   const logger = {

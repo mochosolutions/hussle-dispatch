@@ -49,8 +49,7 @@ const COMPLIANCE_FLAG_MAP: Record<string, (input: ConfirmInput) => Record<string
     insuranceCertOnFile: true,
     ...(input.insuranceExpiry ? { insuranceExpiry: input.insuranceExpiry } : {}),
   }),
-  W9: () => ({ w9OnFile: true }),
-  CARRIER_PACKET: () => ({ carrierPacketOnFile: true }),
+  W9: () => ({}),
 };
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB

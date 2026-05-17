@@ -19,7 +19,7 @@ const buildCarrier = (overrides: Partial<CarrierForSuspend> = {}): CarrierForSus
   dispatchAgreementOnFile: true,
   insuranceCertOnFile: true,
   insuranceExpiry: futureDate,
-  w9OnFile: true,
+  tinOnFile: true,
   ...overrides,
 });
 

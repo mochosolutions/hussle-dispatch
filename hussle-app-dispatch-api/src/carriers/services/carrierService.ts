@@ -108,7 +108,7 @@ const enrichCarrier = (carrier: CarrierWithCounts, role: string): CarrierService
     dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
     insuranceCertOnFile: carrier.insuranceCertOnFile,
     insuranceExpiry: carrier.insuranceExpiry,
-    w9OnFile: carrier.w9OnFile,
+    tinOnFile: carrier.tin != null,
   });
 
   const { partnerSplitPercent: _partnerSplitPercent, ...carrierWithoutPartnerSplit } = carrier;
@@ -346,7 +346,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       insuranceCertOnFile: carrier.insuranceCertOnFile,
       insuranceExpiry: carrier.insuranceExpiry,
-      w9OnFile: carrier.w9OnFile,
+      tinOnFile: carrier.tin != null,
     });
   },
 

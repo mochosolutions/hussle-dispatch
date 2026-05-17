@@ -17,7 +17,7 @@ interface CarrierForOverride {
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
   insuranceExpiry: Date | null;
-  w9OnFile: boolean;
+  tinOnFile: boolean;
 }
 
 interface LoadForOverride {
@@ -80,7 +80,7 @@ export const createDispatchOverrideService = (deps: DispatchOverrideServiceDeps)
       dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       insuranceCertOnFile: carrier.insuranceCertOnFile,
       insuranceExpiry: carrier.insuranceExpiry,
-      w9OnFile: carrier.w9OnFile,
+      tinOnFile: carrier.tinOnFile,
     });
 
     const updatedLoad = await deps.loadQuery.updateOverride(input.loadId, {

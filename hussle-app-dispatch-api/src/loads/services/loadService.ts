@@ -362,7 +362,7 @@ const validateAssignmentState = async (
     dispatchAgreementOnFile: boolean;
     insuranceCertOnFile: boolean;
     insuranceExpiry: Date | null;
-    w9OnFile: boolean;
+    tinOnFile: boolean;
   } | null = null;
 
   let driver: {
@@ -443,7 +443,7 @@ const validateAssignmentState = async (
       dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       insuranceCertOnFile: carrier.insuranceCertOnFile,
       insuranceExpiry: carrier.insuranceExpiry,
-      w9OnFile: carrier.w9OnFile,
+      tinOnFile: carrier.tinOnFile,
     });
 
     if (!onboardingResult.allowed) {

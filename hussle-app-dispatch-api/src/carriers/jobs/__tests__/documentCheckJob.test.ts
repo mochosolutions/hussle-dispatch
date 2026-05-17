@@ -15,7 +15,7 @@ const buildCarrier = (overrides: Partial<CarrierForSuspend> = {}): CarrierForSus
   dispatchAgreementOnFile: true,
   insuranceCertOnFile: true,
   insuranceExpiry: futureDate,
-  w9OnFile: true,
+  tinOnFile: true,
   ...overrides,
 });
 
@@ -92,7 +92,7 @@ describe('runDocumentCheckJob', () => {
       status: CarrierStatus.ACTIVE,
       type: CarrierType.COMPANY_ASSET,
       dispatchAgreementOnFile: false,
-      w9OnFile: false,
+      tinOnFile: false,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
     });
@@ -101,7 +101,7 @@ describe('runDocumentCheckJob', () => {
       status: CarrierStatus.ACTIVE,
       type: CarrierType.COMPANY_ASSET,
       dispatchAgreementOnFile: false,
-      w9OnFile: false,
+      tinOnFile: false,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
     });

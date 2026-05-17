@@ -96,8 +96,8 @@ export const createCarriersModule = ({
   });
 
   const suspendPort: CarrierSuspendPort = {
-    findById: (id, organizationId) =>
-      prismaClient.carrier.findUnique({
+    findById: async (id, organizationId) => {
+      const carrier = await prismaClient.carrier.findUnique({
         where: { id, managedByOrgId: organizationId, deletedAt: null },
         select: {
           id: true,
@@ -108,9 +108,26 @@ export const createCarriersModule = ({
           dispatchAgreementOnFile: true,
           insuranceCertOnFile: true,
           insuranceExpiry: true,
-          w9OnFile: true,
+          tin: true,
         },
-      }),
+      });
+
+      if (!carrier) {
+        return null;
+      }
+
+      return {
+        id: carrier.id,
+        name: carrier.name,
+        managedByOrgId: carrier.managedByOrgId,
+        status: carrier.status,
+        type: carrier.type,
+        dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
+        insuranceCertOnFile: carrier.insuranceCertOnFile,
+        insuranceExpiry: carrier.insuranceExpiry,
+        tinOnFile: carrier.tin != null,
+      };
+    },
     setStatus: (id, status) =>
       prismaClient.carrier.update({
         where: { id },
@@ -202,8 +219,8 @@ export const createCarriersModule = ({
 
   const dispatchOverrideService = createDispatchOverrideService({
     carrierQuery: {
-      findById: (id: string, organizationId: string) =>
-        prismaClient.carrier.findFirst({
+      findById: async (id: string, organizationId: string) => {
+        const carrier = await prismaClient.carrier.findFirst({
           where: { id, managedByOrgId: organizationId, deletedAt: null },
           select: {
             id: true,
@@ -212,9 +229,24 @@ export const createCarriersModule = ({
             dispatchAgreementOnFile: true,
             insuranceCertOnFile: true,
             insuranceExpiry: true,
-            w9OnFile: true,
+            tin: true,
           },
-        }),
+        });
+
+        if (!carrier) {
+          return null;
+        }
+
+        return {
+          id: carrier.id,
+          name: carrier.name,
+          type: carrier.type,
+          dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
+          insuranceCertOnFile: carrier.insuranceCertOnFile,
+          insuranceExpiry: carrier.insuranceExpiry,
+          tinOnFile: carrier.tin != null,
+        };
+      },
     },
     loadQuery: {
       findById: (id: string, organizationId: string) =>

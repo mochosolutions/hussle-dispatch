@@ -15,7 +15,9 @@ const makeSession = (overrides: Partial<OnboardingSession> = {}): OnboardingSess
   carrierId: 'carrier-1',
   currentPhase: TOTAL_PHASES,
   currentQuestionIndex: 0,
+  currentStepId: null,
   completedPhases: allPhasesCompleted,
+  completedStepIds: [],
   answers: {} as Prisma.JsonValue,
   completedAt: null,
   lastActiveAt: new Date(),
@@ -32,7 +34,7 @@ const makeCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
     dispatchAgreementOnFile: true,
     insuranceCertOnFile: true,
     insuranceExpiry: futureDate,
-    w9OnFile: true,
+    tin: '12-3456789',
     status: 'ONBOARDING',
     managedByOrgId: 'org-1',
     ...overrides,
@@ -140,7 +142,7 @@ describe('onboardingSessionService.complete — document validation', () => {
     const session = makeSession();
     const carrier = makeCarrier({
       type: 'LEASED_CARRIER',
-      w9OnFile: false,
+      tin: null,
     });
 
     deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
@@ -164,7 +166,7 @@ describe('onboardingSessionService.complete — document validation', () => {
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: false,
+      tin: null,
     });
     const updatedSession = makeSession({ completedAt: new Date() });
 

@@ -99,6 +99,8 @@ describe('driverService', () => {
           carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
           firstName: 'Blocked',
           lastName: 'Driver',
+          payType: 'PERCENTAGE',
+          payRate: 25,
         },
       }),
     ).rejects.toBeInstanceOf(ForbiddenError);
@@ -115,6 +117,8 @@ describe('driverService', () => {
           carrierId: '5d153f6d-d8e6-4928-8f9b-652f20e9a8b2',
           firstName: 'New',
           lastName: 'Driver',
+          payType: 'PERCENTAGE',
+          payRate: 25,
         },
       }),
     ).rejects.toBeInstanceOf(NotFoundError);

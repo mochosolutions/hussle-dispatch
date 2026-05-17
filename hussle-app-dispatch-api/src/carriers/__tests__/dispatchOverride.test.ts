@@ -13,7 +13,7 @@ const makeCarrier = (overrides = {}) => ({
   dispatchAgreementOnFile: false,
   insuranceCertOnFile: false,
   insuranceExpiry: null,
-  w9OnFile: false,
+  tinOnFile: false,
   ...overrides,
 });
 
@@ -150,7 +150,7 @@ describe('dispatchOverrideService', () => {
     const carrier = makeCarrier({
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
-      w9OnFile: false,
+      tinOnFile: false,
     });
 
     carrierQuery.findById.mockResolvedValue(carrier);

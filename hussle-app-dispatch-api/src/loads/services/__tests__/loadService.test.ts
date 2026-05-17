@@ -137,7 +137,7 @@ describe('loadService assignment validation', () => {
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: null,
-      w9OnFile: true,
+      tinOnFile: true,
     });
     mockDriverAssignmentQuery.findAssignableById.mockResolvedValue({
       id: 'driver-1',
@@ -233,7 +233,7 @@ describe('loadService assignment validation', () => {
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: true,
       insuranceExpiry: null,
-      w9OnFile: true,
+      tinOnFile: true,
     });
 
     await expect(
@@ -322,8 +322,7 @@ describe('updateLoad financial recalculation', () => {
     dispatchAgreementSignedAt: null,
     insuranceCertOnFile: true,
     insuranceExpiry: null,
-    w9OnFile: true,
-    carrierPacketOnFile: false,
+    tin: '12-3456789',
     minimumRatePerMile: null,
     inviteSentAt: null,
     entryMethod: 'MANUAL',
@@ -345,6 +344,21 @@ describe('updateLoad financial recalculation', () => {
     replyToEmail: null,
     description: null,
     status: 'ACTIVE' as const,
+    lat: null,
+    lng: null,
+    legalName: null,
+    dbaName: null,
+    taxClassification: null,
+    tinType: null,
+    signatoryName: null,
+    signatoryTitle: null,
+    signedAgreementId: null,
+    homeBaseCity: null,
+    homeBaseState: null,
+    preferredLanes: null,
+    weeklySchedule: null,
+    freightPreferences: null,
+    maxDaysOut: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -551,7 +565,7 @@ describe('updateLoad financial recalculation', () => {
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: null,
-      w9OnFile: true,
+      tinOnFile: true,
     });
     mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
     mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);

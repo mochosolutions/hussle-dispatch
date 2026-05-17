@@ -88,7 +88,7 @@ export const createCarrierSuspendService = (deps: CarrierSuspendServiceDeps) => 
       dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
       insuranceCertOnFile: carrier.insuranceCertOnFile,
       insuranceExpiry: carrier.insuranceExpiry,
-      w9OnFile: carrier.w9OnFile,
+      tinOnFile: carrier.tinOnFile,
     });
 
     const targetStatus = gate.allowed ? CarrierStatus.ACTIVE : CarrierStatus.ACTION_REQUIRED;

@@ -1,5 +1,5 @@
 # carrier-portal-v2 Tasks
-_Last updated: 2026-05-17 01:05_
+_Last updated: 2026-05-17 01:30_
 _Plan: .planning/carrier-portal-v2/plan.md_
 _Delta: .planning/carrier-portal-v2/PLAN-DELTA.md_
 _Patterns: .planning/carrier-portal-v2/PATTERNS.md_
@@ -79,7 +79,7 @@ must_haves:
 ---
 
 ## US-02: Reader migration `w9OnFile`/`carrierPacketOnFile` → `tin IS NOT NULL`
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-01_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01_
 
 must_haves:
   truths:
@@ -101,13 +101,13 @@ must_haves:
 - [ ] AC-21 (gate reads `Carrier.tin`)
 
 **Tasks:**
-[ ] T-07 [API] Migrate all `w9OnFile` + `carrierPacketOnFile` readers
+[x] T-07 [API] Migrate all `w9OnFile` + `carrierPacketOnFile` readers
          └─ Detail: Replace every reader in: `src/shared/onboardingGate.ts`, `src/shared/__tests__/onboardingGate.test.ts`, `src/loads/types/loadTypes.ts`, `src/loads/repositories/loadRepositoryPrisma.ts`, `src/loads/services/loadService.ts` and its test files, `src/loads/__tests__/loadStatusService.test.ts`, `src/settlements/services/__tests__/settlementService.test.ts`, `src/carrier-portal/__tests__/onboardingSessionComplete.test.ts`, `src/carrier-portal/services/portalDocumentsService.ts`, `src/carrier-portal/services/onboardingSessionService.ts`, `src/carriers/types/suspendTypes.ts`, `src/carriers/types/carrierTypes.ts`, `src/carriers/jobs/documentCheckJob.ts` and its test, `src/carriers/compositionRoot.ts`, `src/carriers/validators/carrierValidators.ts`, `src/carriers/__tests__/dispatchOverride.test.ts`. Strategy: where the gate logic checked `carrier.w9OnFile`, swap to `carrier.tin != null`. In `portalDocumentsService.COMPLIANCE_FLAG_MAP`, keep `W9` as a no-op (return early), drop `CARRIER_PACKET` entry entirely. Update tests in lockstep (rename `w9OnFile: true` fixtures to `tin: 'XX-XXXXXXX'`).
          └─ Files: [hussle-app-dispatch-api/src/shared/onboardingGate.ts, hussle-app-dispatch-api/src/shared/__tests__/onboardingGate.test.ts, hussle-app-dispatch-api/src/loads/types/loadTypes.ts, hussle-app-dispatch-api/src/loads/repositories/loadRepositoryPrisma.ts, hussle-app-dispatch-api/src/loads/services/loadService.ts, hussle-app-dispatch-api/src/loads/services/__tests__/loadService.test.ts, hussle-app-dispatch-api/src/loads/services/__tests__/calculateFinancials.test.ts, hussle-app-dispatch-api/src/loads/services/__tests__/financialRecalcSubscriber.test.ts, hussle-app-dispatch-api/src/loads/__tests__/loadStatusService.test.ts, hussle-app-dispatch-api/src/settlements/services/__tests__/settlementService.test.ts, hussle-app-dispatch-api/src/carrier-portal/__tests__/onboardingSessionComplete.test.ts, hussle-app-dispatch-api/src/carrier-portal/services/portalDocumentsService.ts, hussle-app-dispatch-api/src/carrier-portal/services/onboardingSessionService.ts, hussle-app-dispatch-api/src/carriers/types/suspendTypes.ts, hussle-app-dispatch-api/src/carriers/types/carrierTypes.ts, hussle-app-dispatch-api/src/carriers/jobs/documentCheckJob.ts, hussle-app-dispatch-api/src/carriers/jobs/__tests__/documentCheckJob.test.ts, hussle-app-dispatch-api/src/carriers/compositionRoot.ts, hussle-app-dispatch-api/src/carriers/validators/carrierValidators.ts, hussle-app-dispatch-api/src/carriers/__tests__/dispatchOverride.test.ts, hussle-app-dispatch-api/src/carriers/services/__tests__/carrierService.test.ts]
          └─ Depends on: US-01 (column drops must follow reader edits in chronological commit order — but the migration timestamp ensures it runs after this commit)
          └─ Output:
 
-[ ] T-08 [TEST] Verify suite passes after reader migration
+[x] T-08 [TEST] Verify suite passes after reader migration
          └─ Detail: `npm --prefix hussle-app-dispatch-api test` (redirect `/tmp/build-us02-test.log`). Then `grep -RIn "w9OnFile\\|carrierPacketOnFile" hussle-app-dispatch-api/src/` — expect zero hits.
          └─ Files: []
          └─ Depends on: T-07
@@ -929,7 +929,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | Story | Tasks | Done | Blocked | AC Met |
 |---|---|---|---|---|
 | US-01 Prisma migrations | 6 | 6 | 0 | 2/2 |
-| US-02 w9OnFile readers | 2 | 0 | 0 | 0/2 |
+| US-02 w9OnFile readers | 2 | 2 | 0 | 2/2 |
 | US-03 Token hardening | 3 | 0 | 0 | 0/1 |
 | US-04 portalCompanyService | 3 | 0 | 0 | 0/2 |
 | US-05 Equipment upsert | 2 | 0 | 0 | 0/1 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **6** | **0** | **2/29** |
+| **All** | **62** | **8** | **0** | **4/29** |

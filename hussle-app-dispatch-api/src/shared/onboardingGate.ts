@@ -6,7 +6,7 @@ export interface CarrierOnboardingInput {
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
   insuranceExpiry: Date | null;
-  w9OnFile: boolean;
+  tinOnFile: boolean;
 }
 
 export interface CarrierOnboardingResult {
@@ -37,7 +37,7 @@ export const checkCarrierOnboarding = (
     if (!input.dispatchAgreementOnFile) {
       missingDocuments.push('Signed Dispatch Agreement');
     }
-    if (!input.w9OnFile) {
+    if (!input.tinOnFile) {
       missingDocuments.push('W-9');
     }
   }

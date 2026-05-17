@@ -24,8 +24,7 @@ const COMPLIANCE_FLAG_BUILDERS: Record<
     insuranceCertOnFile: true,
     ...(input.expiresAt !== null ? { insuranceExpiry: new Date(input.expiresAt) } : {}),
   }),
-  W9: () => ({ w9OnFile: true }),
-  CARRIER_PACKET: () => ({ carrierPacketOnFile: true }),
+  W9: () => ({}),
 };
 
 /**

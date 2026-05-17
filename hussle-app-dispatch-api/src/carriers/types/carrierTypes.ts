@@ -39,8 +39,6 @@ export interface CreateCarrierInput {
   dispatchAgreementSignedAt?: Date;
   insuranceCertOnFile?: boolean;
   insuranceExpiry?: Date;
-  w9OnFile?: boolean;
-  carrierPacketOnFile?: boolean;
   authorityStatus?: string;
   status?: CarrierStatus;
   description?: string;
@@ -85,8 +83,6 @@ export interface UpdateCarrierInput {
   dispatchAgreementSignedAt?: Date;
   insuranceCertOnFile?: boolean;
   insuranceExpiry?: Date;
-  w9OnFile?: boolean;
-  carrierPacketOnFile?: boolean;
   authorityStatus?: string;
   status?: CarrierStatus;
   description?: string;

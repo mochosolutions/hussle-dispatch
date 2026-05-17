@@ -94,10 +94,12 @@ const makeLoad = (overrides: {
   dispatchFeeOverrideAmount: null,
   bolSignedAt: new Date(),
   status: 'DELIVERED',
+  contact: null,
   carrier: {
     id: 'carrier-1',
     name: 'Acme',
     type: overrides.carrierType,
+    billingMethod: 'DIRECT',
     dispatchFeeType:
       overrides.dispatchFeeType === 'FLAT'
         ? DispatchFeeType.FLAT
@@ -109,8 +111,10 @@ const makeLoad = (overrides: {
   },
   customer: {
     id: 'customer-1',
+    email: null,
     paymentTerms: 'net_30',
     paymentTermsDays: 30,
+    billingMethod: 'DIRECT',
   },
   accessorialCharges: (overrides.accessorials ?? []).map(makeAccessorial) as LoadFindResult extends {
     accessorialCharges: infer A;

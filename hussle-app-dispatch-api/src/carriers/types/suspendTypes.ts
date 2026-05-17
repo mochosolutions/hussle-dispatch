@@ -9,7 +9,7 @@ export interface CarrierForSuspend {
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
   insuranceExpiry: Date | null;
-  w9OnFile: boolean;
+  tinOnFile: boolean;
 }
 
 export interface CarrierSuspendPort {

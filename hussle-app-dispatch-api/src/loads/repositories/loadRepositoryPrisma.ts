@@ -491,7 +491,7 @@ export const carrierAssignmentQueryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
 ): CarrierAssignmentQueryPort => ({
   findDispatchableById: async (carrierId, organizationId) => {
-    return prisma.carrier.findFirst({
+    const carrier = await prisma.carrier.findFirst({
       where: {
         id: carrierId,
         managedByOrgId: organizationId,
@@ -505,9 +505,23 @@ export const carrierAssignmentQueryPrisma = (
         dispatchAgreementOnFile: true,
         insuranceCertOnFile: true,
         insuranceExpiry: true,
-        w9OnFile: true,
+        tin: true,
       },
     });
+
+    if (!carrier) {
+      return null;
+    }
+
+    return {
+      id: carrier.id,
+      name: carrier.name,
+      type: carrier.type,
+      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
+      insuranceCertOnFile: carrier.insuranceCertOnFile,
+      insuranceExpiry: carrier.insuranceExpiry,
+      tinOnFile: carrier.tin != null,
+    };
   },
 });
 

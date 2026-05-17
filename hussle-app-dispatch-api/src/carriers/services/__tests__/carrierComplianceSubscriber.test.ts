@@ -97,7 +97,7 @@ describe('initializeCarrierComplianceSubscriber', () => {
     );
   });
 
-  it('sets w9OnFile for W9', async () => {
+  it('calls updateComplianceFlags with an empty object for W9 (no-op after TIN migration)', async () => {
     const handler = await captureHandler();
 
     await handler(buildPayload({ documentType: 'W9' }));
@@ -105,7 +105,7 @@ describe('initializeCarrierComplianceSubscriber', () => {
     expect(mockCompliance.updateComplianceFlags).toHaveBeenCalledWith(
       'carrier-1',
       'org-1',
-      { w9OnFile: true },
+      {},
     );
   });
 
@@ -118,18 +118,6 @@ describe('initializeCarrierComplianceSubscriber', () => {
       'carrier-1',
       'org-1',
       { dispatchAgreementOnFile: true },
-    );
-  });
-
-  it('sets carrierPacketOnFile for CARRIER_PACKET', async () => {
-    const handler = await captureHandler();
-
-    await handler(buildPayload({ documentType: 'CARRIER_PACKET' }));
-
-    expect(mockCompliance.updateComplianceFlags).toHaveBeenCalledWith(
-      'carrier-1',
-      'org-1',
-      { carrierPacketOnFile: true },
     );
   });
 

@@ -123,6 +123,8 @@ const buildMocks = () => {
   const settingsRepo: jest.Mocked<SettingsRepoPort> = {
     findByOrganizationId: jest.fn().mockResolvedValue(settingsRow()),
     upsert: jest.fn(),
+    getOrganizationHq: jest.fn().mockResolvedValue(null),
+    updateOrganizationHq: jest.fn().mockResolvedValue(undefined),
   };
 
   const smsService: jest.Mocked<SmsService> = {

@@ -39,6 +39,7 @@ const baseLoad = (
   organizationId: 'org-1',
   driverId: 'driver-1',
   status: 'DISPATCHED',
+  equipmentType: null,
   stops: [],
   ...overrides,
 });
@@ -100,6 +101,8 @@ const buildMocks = () => {
   const settingsRepo: jest.Mocked<SettingsRepoPort> = {
     findByOrganizationId: jest.fn().mockResolvedValue(settingsRow()),
     upsert: jest.fn(),
+    getOrganizationHq: jest.fn().mockResolvedValue(null),
+    updateOrganizationHq: jest.fn().mockResolvedValue(undefined),
   };
 
   const logger = {
