@@ -2,7 +2,19 @@ import * as Yup from 'yup';
 
 export const companyValidator = Yup.object({
   body: Yup.object({
-    name: Yup.string().required('name is required').max(255),
+    // `name` is derived from dbaName ?? legalName on the server; accept it for
+    // backward compatibility but treat as optional.
+    name: Yup.string().optional().max(255),
+    legalName: Yup.string().nullable().optional().max(255),
+    dbaName: Yup.string().nullable().optional().max(255),
+    taxClassification: Yup.string().nullable().optional().max(64),
+    tin: Yup.string()
+      .nullable()
+      .optional()
+      .matches(/^[0-9]{2}-[0-9]{7}$|^[0-9]{3}-[0-9]{2}-[0-9]{4}$/, 'tin must be EIN or SSN format'),
+    tinType: Yup.string().nullable().optional().oneOf(['EIN', 'SSN', null] as Array<string | null>),
+    signatoryName: Yup.string().nullable().optional().max(255),
+    signatoryTitle: Yup.string().nullable().optional().max(255),
     mcNumber: Yup.string()
       .optional()
       .matches(/^[0-9]{1,8}$/, 'mcNumber must be 1-8 digits'),

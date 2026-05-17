@@ -1,16 +1,27 @@
 import type { Carrier } from '@prisma/client';
+import { FieldLockedError } from '@/shared/errors';
+import { companyFieldLockedPath } from '../constants/locksFields';
 
 export interface SaveCompanyRequest {
-  name: string;
-  mcNumber?: string;
-  dotNumber?: string;
-  ein?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
+  // Display name remains accepted for backward compatibility with the old payload shape.
+  // When omitted, Carrier.name is recomputed from dbaName ?? legalName on every write.
+  name?: string;
+  legalName?: string | null;
+  dbaName?: string | null;
+  taxClassification?: string | null;
+  tin?: string | null;
+  tinType?: string | null;
+  signatoryName?: string | null;
+  signatoryTitle?: string | null;
+  mcNumber?: string | null;
+  dotNumber?: string | null;
+  ein?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
   lat?: number | null;
   lng?: number | null;
 }
@@ -42,15 +53,85 @@ const toCarrierSummary = (carrier: Carrier): CarrierSummary => ({
   type: carrier.type,
 });
 
+// Display name precedence: dbaName (when non-empty) > legalName > existing carrier.name.
+const computeDisplayName = (
+  incoming: SaveCompanyRequest,
+  existing: Pick<Carrier, 'name' | 'legalName' | 'dbaName'>,
+): string => {
+  const trimmedDba = incoming.dbaName?.trim();
+  const trimmedLegal = incoming.legalName?.trim();
+  const effectiveDba =
+    incoming.dbaName !== undefined
+      ? trimmedDba && trimmedDba.length > 0
+        ? trimmedDba
+        : null
+      : existing.dbaName;
+  const effectiveLegal =
+    incoming.legalName !== undefined
+      ? trimmedLegal && trimmedLegal.length > 0
+        ? trimmedLegal
+        : null
+      : existing.legalName;
+
+  if (effectiveDba) {
+    return effectiveDba;
+  }
+  if (effectiveLegal) {
+    return effectiveLegal;
+  }
+  return incoming.name?.trim() || existing.name;
+};
+
+const LOCKABLE_REQUEST_FIELDS = [
+  'legalName',
+  'mcNumber',
+  'dotNumber',
+  'signatoryName',
+  'signatoryTitle',
+  'taxClassification',
+  'tinType',
+  'tin',
+] as const;
+
+const assertLockedFieldsUnchanged = (
+  fields: SaveCompanyRequest,
+  existing: Carrier,
+): void => {
+  if (existing.dispatchAgreementSignedAt === null) {
+    return;
+  }
+
+  for (const field of LOCKABLE_REQUEST_FIELDS) {
+    const incoming = fields[field];
+    if (incoming === undefined) {
+      continue;
+    }
+    const current = existing[field];
+    const incomingNormalized = incoming === null ? null : String(incoming);
+    const currentNormalized = current === null || current === undefined ? null : String(current);
+    if (incomingNormalized !== currentNormalized) {
+      const dotPath = companyFieldLockedPath(field);
+      throw new FieldLockedError(dotPath ?? `company.${field}`);
+    }
+  }
+};
+
 export const createPortalCompanyService = (deps: PortalCompanyServiceDeps) => ({
   saveCompany: async (
     carrierId: string,
     organizationId: string,
     fields: SaveCompanyRequest,
   ): Promise<CarrierSummary> => {
-    await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
+    const existing = await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
 
-    const updated = await deps.carrierRepo.update(carrierId, organizationId, { ...fields });
+    assertLockedFieldsUnchanged(fields, existing);
+
+    const writeData: Record<string, unknown> = { ...fields };
+    // `name` is a derived display column — never write the request's raw `name` field through.
+    delete writeData.name;
+    writeData.name = computeDisplayName(fields, existing);
+
+    const updated = await deps.carrierRepo.update(carrierId, organizationId, writeData);
 
     return toCarrierSummary(updated);
   },

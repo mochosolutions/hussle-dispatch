@@ -20,6 +20,7 @@ export {
   SequenceError,
   SeatLimitReachedError,
   LastAdminError,
+  FieldLockedError,
   isCustomError,
 } from './commonErrors';
 

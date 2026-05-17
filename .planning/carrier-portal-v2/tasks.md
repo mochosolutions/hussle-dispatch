@@ -157,7 +157,7 @@ must_haves:
 ---
 
 ## US-04: portalCompanyService rewrite — column writes + name compute + server-side lock + shared LOCKS_FIELDS
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-01_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01_
 
 must_haves:
   truths:
@@ -180,13 +180,13 @@ must_haves:
 - [ ] AC-22 (Carrier.name = dbaName ?? legalName)
 
 **Tasks:**
-[ ] T-12 [API] Add shared LOCKS_FIELDS constant
+[x] T-12 [API] Add shared LOCKS_FIELDS constant
          └─ Detail: New file `hussle-app-dispatch-api/src/carrier-portal/constants/locksFields.ts` exporting `export const LOCKS_FIELDS = ['company.legalName','company.mcNumber','company.dotNumber','company.signatoryName','company.signatoryTitle','company.taxClassification','company.tinType','company.tin'] as const;`. Add a barrel re-export if convention requires.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/constants/locksFields.ts]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-13 [API] Rewrite portalCompanyService
+[x] T-13 [API] Rewrite portalCompanyService
          └─ Detail: Update `portalCompanyService.ts` saveCompanyAnswers function:
             - Persist incoming `legalName, dbaName, taxClassification, tin, tinType, signatoryName, signatoryTitle` to the new Carrier columns.
             - Compute `name = dbaName?.trim() || legalName?.trim() || existing.name` and write to `Carrier.name`.
@@ -196,7 +196,7 @@ must_haves:
          └─ Depends on: T-12
          └─ Output:
 
-[ ] T-14 [TEST] portalCompanyService tests
+[x] T-14 [TEST] portalCompanyService tests
          └─ Detail: Extend or add `portalCompanyService.test.ts`: (a) dba+legal yields name=dba; (b) no dba yields name=legal; (c) toggling hasDba=false clears dbaName + recomputes name; (d) writing a locked field after dispatchAgreementSignedAt is set → throws with code='FIELD_LOCKED' and field name. Mock prisma + clock.
          └─ Files: [hussle-app-dispatch-api/src/carrier-portal/services/__tests__/portalCompanyService.test.ts]
          └─ Depends on: T-13
@@ -931,7 +931,7 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-01 Prisma migrations | 6 | 6 | 0 | 2/2 |
 | US-02 w9OnFile readers | 2 | 2 | 0 | 2/2 |
 | US-03 Token hardening | 3 | 3 | 0 | 1/1 |
-| US-04 portalCompanyService | 3 | 0 | 0 | 0/2 |
+| US-04 portalCompanyService | 3 | 3 | 0 | 2/2 |
 | US-05 Equipment upsert | 2 | 0 | 0 | 0/1 |
 | US-06 Drivers upsert | 2 | 0 | 0 | 0/1 |
 | US-07 submit-step endpoint | 3 | 0 | 0 | 0/2 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **11** | **0** | **5/29** |
+| **All** | **62** | **14** | **0** | **7/29** |

@@ -265,4 +265,20 @@ export class LastAdminError extends CustomError {
   }
 }
 
+export class FieldLockedError extends CustomError {
+  statusCode = 422;
+  readonly code = 'FIELD_LOCKED';
+  readonly field: string;
+
+  constructor(field: string) {
+    super(`Field ${field} is locked after dispatch agreement was signed`);
+    this.field = field;
+    Object.setPrototypeOf(this, FieldLockedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message, field: this.field }];
+  }
+}
+
 export const isCustomError = (error: unknown): error is CustomError => error instanceof CustomError;
