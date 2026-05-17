@@ -1,4 +1,10 @@
-import { CustomerStatus, CustomerType, NotificationChannel, NotificationTrigger } from '@prisma/client';
+import {
+  BillingMethod,
+  CustomerStatus,
+  CustomerType,
+  NotificationChannel,
+  NotificationTrigger,
+} from '@prisma/client';
 import { ConflictError, NotFoundError } from '@/shared/errors';
 import { createCustomerService } from '../customerService';
 import type { CustomerRepositoryPort, CustomerWithCounts } from '../../types/customerTypes';
@@ -25,6 +31,7 @@ const buildCustomer = (overrides: Partial<CustomerWithCounts> = {}): CustomerWit
   quickPayDiscount: null,
   carrierPacketSentAt: null,
   notes: null,
+  billingMethod: BillingMethod.DIRECT,
   status: CustomerStatus.ACTIVE,
   deleted: false,
   deletedAt: null,
