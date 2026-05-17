@@ -184,6 +184,16 @@ const carrierPortalV2Slice = createSlice({
       markFailure(state, 'saveAndExit', action.payload);
     },
 
+    // ── navigateToStep ────────────────────────────────────────────────────
+    // Client-side back-navigation used by ReviewStep "Edit" links.
+    // NOTE: server-side step update (so refresh lands on the same step) is
+    // deferred — no saga consumes this action yet.
+    navigateToStep(state, action: PayloadAction<{ stepId: string }>) {
+      if (state.session) {
+        state.session.currentStepId = action.payload.stepId;
+      }
+    },
+
     // ── direct setters ────────────────────────────────────────────────────
     setLastSavedAt(state, action: PayloadAction<string>) {
       state.lastSavedAt = action.payload;
