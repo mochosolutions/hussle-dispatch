@@ -13,6 +13,7 @@ import { createSignedAgreementWatchdog } from './jobs/signedAgreementWatchdog';
 import { createCarrierQueries } from './queries/carrierQueries';
 import { createOrganizationQueries } from './queries/organizationQueries';
 import { agreementRepositoryPrisma } from './repositories/agreementRepositoryPrisma';
+import { carrierAgreementWriteRepositoryPrisma } from './repositories/carrierAgreementWriteRepositoryPrisma';
 import { createAgreementsRouter } from './routes/agreementRoutes';
 import type { FinalizeAgreementInput } from './services/finalizeAgreement';
 import { finalizeAgreement } from './services/finalizeAgreement';
@@ -43,9 +44,17 @@ export interface AgreementsModuleDeps {
   env: AgreementsModuleEnv;
 }
 
+export interface AgreementsModuleQueries {
+  findLatestForCarrier: (
+    carrierId: string,
+    templateKey: import('@prisma/client').AgreementTemplateKey,
+  ) => Promise<import('./types/agreementTypes').Agreement | null>;
+}
+
 export interface AgreementsModule {
   agreementsRouter: ReturnType<typeof createAgreementsRouter>;
   docusealWebhookRouter: ReturnType<typeof createDocusealWebhookRouter>;
+  queries: AgreementsModuleQueries;
   initialize: () => Promise<void>;
   shutdown: () => void;
 }
@@ -60,6 +69,7 @@ export interface AgreementsModule {
  */
 export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsModule => {
   const agreementRepo = agreementRepositoryPrisma(deps.prisma);
+  const carrierAgreementWritePort = carrierAgreementWriteRepositoryPrisma(deps.prisma);
   const carrierQueries = createCarrierQueries(deps.prisma);
   const orgQueries = createOrganizationQueries(deps.prisma);
 
@@ -152,6 +162,7 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     await initializeAgreementSignedSubscriber({
       eventBus: deps.eventBus,
       finalizeAgreement: finalizeAgreementBound,
+      carrierWritePort: carrierAgreementWritePort,
       logger: deps.logger,
     });
     watchdog.start();
@@ -161,9 +172,14 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     watchdog.stop();
   };
 
+  const queries: AgreementsModuleQueries = {
+    findLatestForCarrier: agreementRepo.findLatestForCarrier,
+  };
+
   return {
     agreementsRouter,
     docusealWebhookRouter,
+    queries,
     initialize,
     shutdown,
   };

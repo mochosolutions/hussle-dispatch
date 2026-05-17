@@ -58,4 +58,5 @@ agreementsModule.initialize().catch((error: unknown) => {
 
 export const agreementsRouter = agreementsModule.agreementsRouter;
 export const docusealWebhookRouter = agreementsModule.docusealWebhookRouter;
+export const agreementsQueries = agreementsModule.queries;
 export const stopAgreements = agreementsModule.shutdown;

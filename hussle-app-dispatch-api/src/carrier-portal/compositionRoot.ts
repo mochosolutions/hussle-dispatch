@@ -2,6 +2,9 @@ import { AgreementTemplateKey, type PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
+import type { StorageProvider } from '@/shared/storage';
+import type { PortalAgreementQueryPort } from './types/portalAgreementQueryPort';
+import { createPortalAgreementControllers } from './controllers/portalAgreementController';
 import { carrierInviteTokenRepoPrisma } from './repositories/carrierInviteTokenRepoPrisma';
 import { carrierAuditPortPrisma } from '@/carriers/repositories/carrierAuditPortPrisma';
 import { onboardingSessionRepoPrisma } from './repositories/onboardingSessionRepoPrisma';
@@ -36,6 +39,8 @@ interface CarrierPortalModuleDeps {
   prismaClient: PrismaClient | PrismaTransaction;
   eventBus: EventBus;
   logger: Logger;
+  agreementQueries: PortalAgreementQueryPort;
+  storage: StorageProvider;
 }
 
 
@@ -164,6 +169,10 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     costAnalysis: createCostAnalysisControllers({ costAnalysisService }),
     lanePreferences: createLanePreferencesControllers({ lanePreferencesService }),
     documents: createDocumentsControllers({ documentsService }),
+    agreement: createPortalAgreementControllers({
+      agreementQueries: deps.agreementQueries,
+      storage: deps.storage,
+    }),
   };
 
   const middleware = {

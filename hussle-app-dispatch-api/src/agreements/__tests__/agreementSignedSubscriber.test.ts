@@ -78,15 +78,24 @@ describe('initializeAgreementSignedSubscriber', () => {
     Promise<AgreementServiceResult<Agreement>>,
     [{ providerSubmissionId: string }]
   >;
+  let carrierWritePort: { setSignedAgreementId: jest.Mock<Promise<void>, [string, string]> };
 
   beforeEach(() => {
     eventBus = makeEventBus();
     logger = makeLogger();
     finalizeAgreement = jest.fn();
+    carrierWritePort = {
+      setSignedAgreementId: jest.fn<Promise<void>, [string, string]>().mockResolvedValue(undefined),
+    };
   });
 
   it('subscribes to agreement.signed with the agreements.signed-finalizer queue group', async () => {
-    await initializeAgreementSignedSubscriber({ eventBus, finalizeAgreement, logger });
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
 
     expect(eventBus.subscribe).toHaveBeenCalledTimes(1);
     const [eventName, queueGroup, handler] = eventBus.subscribe.mock.calls[0] ?? [];
@@ -97,7 +106,12 @@ describe('initializeAgreementSignedSubscriber', () => {
 
   it('calls finalizeAgreement with providerSubmissionId from payload', async () => {
     finalizeAgreement.mockResolvedValue({ data: makeAgreement(), events: [] });
-    await initializeAgreementSignedSubscriber({ eventBus, finalizeAgreement, logger });
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
     const handler = captureHandler(eventBus);
 
     await handler(signedPayload);
@@ -126,7 +140,12 @@ describe('initializeAgreementSignedSubscriber', () => {
       ],
     });
 
-    await initializeAgreementSignedSubscriber({ eventBus, finalizeAgreement, logger });
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
     const handler = captureHandler(eventBus);
 
     await handler(signedPayload);
@@ -141,7 +160,12 @@ describe('initializeAgreementSignedSubscriber', () => {
 
   it('does not publish further events when finalizeAgreement is idempotent (events: [])', async () => {
     finalizeAgreement.mockResolvedValue({ data: makeAgreement(), events: [] });
-    await initializeAgreementSignedSubscriber({ eventBus, finalizeAgreement, logger });
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
     const handler = captureHandler(eventBus);
 
     await handler(signedPayload);
@@ -155,7 +179,12 @@ describe('initializeAgreementSignedSubscriber', () => {
 
   it('logs and rethrows when finalizeAgreement throws (for RabbitMQ retry / DLQ)', async () => {
     finalizeAgreement.mockRejectedValue(new Error('boom'));
-    await initializeAgreementSignedSubscriber({ eventBus, finalizeAgreement, logger });
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
     const handler = captureHandler(eventBus);
 
     await expect(handler(signedPayload)).rejects.toThrow('boom');
@@ -167,5 +196,43 @@ describe('initializeAgreementSignedSubscriber', () => {
       }),
     );
     expect(eventBus.publish).not.toHaveBeenCalled();
+  });
+
+  it('projects signedAgreementId onto the carrier after finalizing', async () => {
+    finalizeAgreement.mockResolvedValue({ data: makeAgreement(), events: [] });
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
+    const handler = captureHandler(eventBus);
+
+    await handler(signedPayload);
+
+    expect(carrierWritePort.setSignedAgreementId).toHaveBeenCalledTimes(1);
+    expect(carrierWritePort.setSignedAgreementId).toHaveBeenCalledWith('car-1', 'ag-1');
+  });
+
+  it('logs a warning but does not throw when the carrier projection write fails', async () => {
+    finalizeAgreement.mockResolvedValue({ data: makeAgreement(), events: [] });
+    carrierWritePort.setSignedAgreementId.mockRejectedValue(new Error('db down'));
+    await initializeAgreementSignedSubscriber({
+      eventBus,
+      finalizeAgreement,
+      carrierWritePort,
+      logger,
+    });
+    const handler = captureHandler(eventBus);
+
+    await expect(handler(signedPayload)).resolves.toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Failed to project signedAgreementId onto carrier',
+      expect.objectContaining({
+        agreementId: 'ag-1',
+        carrierId: 'car-1',
+        error: 'db down',
+      }),
+    );
   });
 });

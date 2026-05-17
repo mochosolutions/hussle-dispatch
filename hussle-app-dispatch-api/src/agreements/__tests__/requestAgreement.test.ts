@@ -67,6 +67,7 @@ const makeDeps = () => {
     findById: jest.fn(),
     findByProviderSubmissionId: jest.fn(),
     findManyByOrg: jest.fn(),
+    findLatestForCarrier: jest.fn(),
     update: jest.fn(),
     findStaleInProgress: jest.fn(),
     countActivePending: jest.fn(),

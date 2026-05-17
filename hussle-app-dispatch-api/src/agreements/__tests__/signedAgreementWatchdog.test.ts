@@ -53,6 +53,7 @@ const makeRepo = (): jest.Mocked<AgreementRepoPort> => ({
   findById: jest.fn(),
   findByProviderSubmissionId: jest.fn(),
   findManyByOrg: jest.fn(),
+  findLatestForCarrier: jest.fn(),
   update: jest.fn().mockImplementation(async (_id: string, _patch) => makeAgreement()),
   findStaleInProgress: jest.fn().mockResolvedValue([]),
   countActivePending: jest.fn(),

@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import type { AgreementRepoPort } from '../types/agreementRepoPort';
 import type {
+  AgreementTemplateKey,
   CountActivePendingArgs,
   CreateAgreementInput,
   ListAgreementsFilters,
@@ -68,6 +69,12 @@ export const agreementRepositoryPrisma = (
 
     return { data, total };
   },
+
+  findLatestForCarrier: (carrierId: string, templateKey: AgreementTemplateKey) =>
+    prisma.agreement.findFirst({
+      where: { carrierId, templateKey },
+      orderBy: { createdAt: 'desc' },
+    }),
 
   update: (id: string, patch: UpdateAgreementInput) =>
     prisma.agreement.update({ where: { id }, data: patch }),

@@ -12,6 +12,7 @@ import {
   confirmDocumentValidator,
   signDocumentValidator,
 } from '../validators/documentsValidator';
+import { portalAgreementListValidator } from '../validators/portalAgreementListValidator';
 
 interface SessionControllers {
   getSession: express.RequestHandler;
@@ -47,6 +48,10 @@ interface DocumentsControllers {
   signDocument: express.RequestHandler;
 }
 
+interface AgreementControllers {
+  getLatestForCarrier: express.RequestHandler;
+}
+
 interface CarrierPortalRouteControllers {
   session: SessionControllers;
   company: CompanyControllers;
@@ -55,6 +60,7 @@ interface CarrierPortalRouteControllers {
   costAnalysis: CostAnalysisControllers;
   lanePreferences: LanePreferencesControllers;
   documents: DocumentsControllers;
+  agreement: AgreementControllers;
 }
 
 interface CarrierPortalRouteMiddleware {
@@ -119,6 +125,14 @@ export const createCarrierPortalRouter = (
     '/documents/:id/sign',
     validateRequest(signDocumentValidator),
     controllers.documents.signDocument,
+  );
+
+  // Agreements — portal queries the carrier's most-recent agreement for a
+  // template. carrierId comes from the invite-token context, not the query.
+  router.get(
+    '/agreements',
+    validateRequest(portalAgreementListValidator),
+    controllers.agreement.getLatestForCarrier,
   );
 
   return router;
