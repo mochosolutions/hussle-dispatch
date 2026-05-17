@@ -367,7 +367,7 @@ must_haves:
 ---
 
 ## US-10: GET /agreements query extension + signedAgreementId projection
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done_
 
 must_haves:
   truths:
@@ -379,13 +379,13 @@ must_haves:
 - [ ] AC-11
 
 **Tasks:**
-[ ] T-26 [API] Extend GET /agreements with portal query
+[x] T-26 [API] Extend GET /agreements with portal query
          └─ Detail: In `src/agreements/routes/`, add handling for `?carrierId=&templateKey=` — most recent agreement (`orderBy: { createdAt: desc }`, `take: 1`). Authorize via `sessionOrApiKeyAuth` extended to also accept the invite-token middleware (re-use `requireAuthOrInviteToken` if it exists). Update controller/query and tests.
          └─ Files: [hussle-app-dispatch-api/src/agreements/routes/agreementRoutes.ts, hussle-app-dispatch-api/src/agreements/controllers/agreementController.ts, hussle-app-dispatch-api/src/agreements/queries/agreementQueries.ts, hussle-app-dispatch-api/src/agreements/validators/agreementValidators.ts]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-27 [API] Extend agreementSignedSubscriber to write signedAgreementId
+[x] T-27 [API] Extend agreementSignedSubscriber to write signedAgreementId
          └─ Detail: In existing `agreementSignedSubscriber`, on signed event, write `Carrier.signedAgreementId = agreement.id` (and `dispatchAgreementSignedAt = now` if not already set). Idempotent: skip if already set.
          └─ Files: [hussle-app-dispatch-api/src/agreements/subscribers/agreementSignedSubscriber.ts, hussle-app-dispatch-api/src/agreements/subscribers/__tests__/agreementSignedSubscriber.test.ts]
          └─ Depends on: —
@@ -532,7 +532,7 @@ must_haves:
 ---
 
 ## US-14: Bug-fix components — AddressTypeaheadField + TinField
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done_
 
 must_haves:
   truths:
@@ -547,13 +547,13 @@ must_haves:
 - [ ] AC-9 (TIN field accepts EIN+SSN)
 
 **Tasks:**
-[ ] T-36 [UI] AddressTypeaheadField
+[x] T-36 [UI] AddressTypeaheadField
          └─ Detail: Extend the existing typeahead at `hussle-app-dispatch-ui/src/components/AddressTypeahead/` pattern. Visible inline error + Retry button on API failure. Failure counter; at 3 failures or explicit "Skip lookup", swap to manual-entry mode (line1/line2/city/state/zip/country plain inputs). Error logged via `enqueueSnackbar` deduped by session (use a `useRef` flag).
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/AddressTypeaheadField/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/AddressTypeaheadField/index.test.tsx]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-37 [UI] TinField
+[x] T-37 [UI] TinField
          └─ Detail: New field at `components/TinField/`. Strips non-digits on blur; reinserts hyphens by length (9 digits → `XX-XXXXXXX`; if user toggled "individual" → `XXX-XX-XXXX`). Yup fragment: `Yup.string().matches(/^(\\d{2}-\\d{7}|\\d{3}-\\d{2}-\\d{4})$/, 'Must be EIN or SSN format')`. Exposes `tinType` derived from format.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/TinField/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/TinField/index.test.tsx]
          └─ Depends on: —
@@ -937,11 +937,11 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-07 submit-step endpoint | 3 | 3 | 0 | 2/2 |
 | US-08 Cost analysis service | 2 | 2 | 0 | 1/1 |
 | US-09 Lane prefs service | 2 | 2 | 0 | 1/1 |
-| US-10 Agreements query | 2 | 0 | 0 | 0/1 |
+| US-10 Agreements query | 2 | 2 | 0 | 1/1 |
 | US-11 APP_NAME (api) | 1 | 0 | 0 | — |
 | US-12 Engine module | 5 | 0 | 0 | 0/2 |
 | US-13 Schema module | 2 | 0 | 0 | 0/1 |
-| US-14 Bug-fix components | 2 | 0 | 0 | 0/2 |
+| US-14 Bug-fix components | 2 | 2 | 0 | 2/2 |
 | US-15 Slice + sagas | 4 | 0 | 0 | — |
 | US-16 SegmentationStep | 1 | 0 | 0 | 0/1 |
 | US-17 InputStep | 1 | 0 | 0 | 0/1 |
@@ -956,4 +956,4 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **25** | **0** | **13/29** |
+| **All** | **62** | **29** | **0** | **16/29** |
