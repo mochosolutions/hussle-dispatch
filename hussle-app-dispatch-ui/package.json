@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
+    "@docuseal/react": "1.0.75",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
