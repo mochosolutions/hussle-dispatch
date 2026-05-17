@@ -5,8 +5,12 @@ import { Box, CircularProgress, Button } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'store';
 import { Body, BodyMuted, SectionTitle } from 'components/Typography';
-import { carrierPortalActions } from '../../store/slices/carrierPortalSlice';
-import { selectSession, selectIsLoading, selectError } from '../../store/selectors/portalSelectors';
+import { carrierPortalV2Actions } from '../../store/reducers/carrierPortalSlice';
+import {
+  selectSession,
+  selectLoading,
+  selectError,
+} from '../../store/selectors/carrierPortalSelectors';
 
 interface PortalAuthGuardProps {
   children: ReactNode;
@@ -16,13 +20,13 @@ const PortalAuthGuard: React.FC<PortalAuthGuardProps> = ({ children }) => {
   const dispatch = useDispatch();
   const { token } = useParams<{ token: string }>();
   const session = useSelector(selectSession);
-  const loading = useSelector(selectIsLoading);
-  const error = useSelector(selectError);
+  const loading = useSelector(selectLoading('session'));
+  const error = useSelector(selectError('session'));
 
   useEffect(() => {
     if (token) {
-      dispatch(carrierPortalActions.setToken(token));
-      dispatch(carrierPortalActions.fetchSession());
+      dispatch(carrierPortalV2Actions.setToken(token));
+      dispatch(carrierPortalV2Actions.loadSession());
     }
   }, [dispatch, token]);
 
@@ -57,7 +61,7 @@ const PortalAuthGuard: React.FC<PortalAuthGuardProps> = ({ children }) => {
     );
   }
 
-  if (loading) {
+  if (loading === 'pending') {
     return (
       <Box
         sx={{
@@ -112,7 +116,7 @@ const PortalAuthGuard: React.FC<PortalAuthGuardProps> = ({ children }) => {
             <Button
               variant="contained"
               onClick={() => {
-                dispatch(carrierPortalActions.fetchSession());
+                dispatch(carrierPortalV2Actions.loadSession());
               }}
               sx={{ borderRadius: '24px', px: 4 }}
             >

@@ -15,7 +15,6 @@ import { DispatchOverrideModal } from '../carrier/components/DispatchOverrideMod
 import { AdminActivateModal } from '../carrier/components/AdminActivateModal';
 import { ActivateCarrierModal } from '../carrier/components/ActivateCarrierModal';
 import { ConfirmDeleteDocumentModal } from '../documents/components/ConfirmDeleteDocumentModal';
-import { PortalSaveExitConfirmModal } from '../carrier-portal/components/PortalSaveExitConfirmModal';
 import UpgradePlanDialog from 'components/UpgradePlanDialog';
 
 const modalRegistry: PopupComponentMap = {
@@ -35,7 +34,6 @@ const modalRegistry: PopupComponentMap = {
   activateCarrier: ActivateCarrierModal,
   confirmDeleteDocument: ConfirmDeleteDocumentModal,
   upgradePlan: UpgradePlanDialog,
-  portalSaveExitConfirm: PortalSaveExitConfirmModal,
 };
 
 export default modalRegistry;

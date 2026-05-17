@@ -17,67 +17,66 @@ const ComponentLibrary = lazy(() => import('../pages/ComponentLibrary'));
 const DetailLayoutDemo = lazy(() => import('../pages/DetailLayoutDemo'));
 const ListLayoutDemo = lazy(() => import('../pages/ListLayoutDemo'));
 const EditDrawerDemo = lazy(() => import('../pages/EditDrawerDemo'));
-const EquipmentPreview = lazy(() => import('../pages/EquipmentPreview'));
 const FormFieldsPreview = lazy(() => import('../pages/FormFieldsPreview'));
 const OnboardingPreviewIndex = lazy(
-  () => import('features/carrier-portal-v2/dev/OnboardingPreview'),
+  () => import('features/carrier-portal/dev/OnboardingPreview'),
 );
 const WelcomeSegmentationPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/WelcomeSegmentationPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/WelcomeSegmentationPreview'
     ),
 );
 const PortalShellPreview = lazy(
   () =>
-    import('features/carrier-portal-v2/dev/OnboardingPreview/previews/PortalShellPreview'),
+    import('features/carrier-portal/dev/OnboardingPreview/previews/PortalShellPreview'),
 );
 const CompanyAuthorityPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/CompanyAuthorityPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/CompanyAuthorityPreview'
     ),
 );
 const LanePreferencesPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/LanePreferencesPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/LanePreferencesPreview'
     ),
 );
 const EquipmentEntryPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/EquipmentEntryPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/EquipmentEntryPreview'
     ),
 );
 const DriversListPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/DriversListPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/DriversListPreview'
     ),
 );
 const CostAnalysisPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/CostAnalysisPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/CostAnalysisPreview'
     ),
 );
 const SignAgreementPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/SignAgreementPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/SignAgreementPreview'
     ),
 );
 const DocumentsUploadPreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/DocumentsUploadPreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/DocumentsUploadPreview'
     ),
 );
 const LockedStatePreview = lazy(
   () =>
     import(
-      'features/carrier-portal-v2/dev/OnboardingPreview/previews/LockedStatePreview'
+      'features/carrier-portal/dev/OnboardingPreview/previews/LockedStatePreview'
     ),
 );
 
@@ -147,14 +146,6 @@ const DevRoutes: RouteObject[] = [
   {
     path: '/dev/form-fields',
     element: <FormFieldsPreview />,
-  },
-  {
-    path: '/dev/equipment-preview',
-    element: (
-      <ProfileLayout>
-        <EquipmentPreview />
-      </ProfileLayout>
-    ),
   },
   {
     path: '/dev/onboarding-preview',

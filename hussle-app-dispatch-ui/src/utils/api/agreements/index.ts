@@ -13,7 +13,7 @@
 
 import axiosInstance from 'utils/axios';
 
-import type { AgreementContext } from 'features/carrier-portal-v2/engine';
+import type { AgreementContext } from 'features/carrier-portal/engine';
 
 interface CreateAgreementInput {
   carrierId: string;

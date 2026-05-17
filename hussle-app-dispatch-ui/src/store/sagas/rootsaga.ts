@@ -13,8 +13,7 @@ import { authWatcher } from 'features/auth/store';
 import { settingsSagaWatcher } from 'features/settings/store/sagas/settingsSagaWatcher';
 import { teamSagaWatcher } from 'features/settings/store/sagas/teamSagaWatcher';
 import { documentSagaWatcher } from 'features/documents/store/sagas/documentSagaWatcher';
-import { portalRootSaga } from 'features/carrier-portal/store/sagas/portalRootSaga';
-import { carrierPortalV2RootSaga } from 'features/carrier-portal-v2/store/sagas';
+import { carrierPortalV2RootSaga } from 'features/carrier-portal/store/sagas';
 import { settlementSagaWatcher } from 'features/accounting/store/sagas/settlementSagaWatcher';
 import { loadBoardSagaWatcher } from 'features/load/store/sagas/loadBoardSagaWatcher';
 
@@ -34,7 +33,6 @@ export default function* rootSaga() {
     settingsSagaWatcher(),
     teamSagaWatcher(),
     documentSagaWatcher(),
-    portalRootSaga(),
     carrierPortalV2RootSaga(),
     settlementSagaWatcher(),
     loadBoardSagaWatcher(),

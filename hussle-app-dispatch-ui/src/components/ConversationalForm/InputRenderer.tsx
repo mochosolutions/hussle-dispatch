@@ -15,17 +15,13 @@ import {
   Typography,
 } from '@mui/material';
 
-import { PresetTileSelector } from 'features/carrier-portal/components/PresetTileSelector';
-import { StateGrid } from 'features/carrier-portal/components/StateGrid';
-
-import type { InputType, PresetOption, SelectOption } from './questionSchema';
+import type { InputType, SelectOption } from './questionSchema';
 
 interface InputRendererProps {
   inputType: InputType;
   value: unknown;
   onChange: (value: unknown) => void;
   options?: SelectOption[];
-  presets?: PresetOption[];
   label?: string;
   required?: boolean;
   startAdornment?: string;
@@ -292,22 +288,11 @@ const TagInput: React.FC<
   />
 );
 
-const isStringRecord = (value: unknown): value is Record<string, string> => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false;
-  }
-  return Object.values(value).every((v) => typeof v === 'string');
-};
-
-const asStringRecord = (value: unknown): Record<string, string> =>
-  isStringRecord(value) ? value : {};
-
 export const InputRenderer: React.FC<InputRendererProps> = ({
   inputType,
   value,
   onChange,
   options,
-  presets,
   label,
   required,
   startAdornment,
@@ -391,18 +376,6 @@ export const InputRenderer: React.FC<InputRendererProps> = ({
       );
     case 'yesNo':
       return <YesNoInput value={value} onChange={onChange} yesLabel={yesLabel} noLabel={noLabel} />;
-    case 'presetTiles': {
-      const numericValue = typeof value === 'number' ? value : 0;
-      return (
-        <PresetTileSelector
-          presets={presets ?? []}
-          value={numericValue}
-          onChange={(next) => onChange(next)}
-        />
-      );
-    }
-    case 'stateGrid':
-      return <StateGrid value={asStringRecord(value)} onChange={onChange} />;
     case 'slider':
       return <SliderInput value={value} onChange={onChange} />;
     case 'tagInput':

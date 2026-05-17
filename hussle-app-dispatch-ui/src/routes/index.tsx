@@ -26,7 +26,7 @@ import CustomerRoutes from 'features/customer/routes/customerRoutes';
 import SettingsRoutes from 'features/settings/routes/settingsRoutes';
 import AccountingRoutes from 'features/accounting/routes/accountingRoutes';
 import DriverPortalRoutes from 'features/driver-portal/routes/driverPortalRoutes';
-import CarrierPortalRoutes from 'features/carrier-portal-v2/routes/CarrierPortalRoutes';
+import CarrierPortalRoutes from 'features/carrier-portal/routes/CarrierPortalRoutes';
 import DevRoutes from 'features/dev/routes/devRoutes';
 import ErrorPage from 'components/ErrorPage';
 import App from '../App';

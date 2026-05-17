@@ -1,5 +1,5 @@
 # carrier-portal-v2 Tasks
-_Last updated: 2026-05-17 01:30_
+_Last updated: 2026-05-17 02:40_
 _Plan: .planning/carrier-portal-v2/plan.md_
 _Delta: .planning/carrier-portal-v2/PLAN-DELTA.md_
 _Patterns: .planning/carrier-portal-v2/PATTERNS.md_
@@ -485,7 +485,7 @@ must_haves:
 ---
 
 ## US-13: Schema module — 9 phase files + composer + LOCKS_FIELDS share
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-12_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-12_
 
 must_haves:
   truths:
@@ -514,16 +514,16 @@ must_haves:
       via: "imports + spreads into Schema.phases array"
 
 **Acceptance Criteria:**
-- [ ] AC-5 (9 phases declared, composer traverses)
+- [x] AC-5 (9 phases declared, composer traverses)
 
 **Tasks:**
-[ ] T-34 [UI] Author 9 phase files + composer
+[x] T-34 [UI] Author 9 phase files + composer
          └─ Detail: One file per phase. Question content reused from existing `features/carrier-portal/questions/*Questions.ts` where applicable. Encode predicates per plan: `companyPhase` has `company-authority-question` with MC-Yes path (mc-entry → company-fmcsa-verification → company-confirm) and No-path (business-details form via disclosure → equipment). `driversPhase` has `drivers-has-employees` gate. `signingPhase` exports `locksFields` (8 dot-paths) + step `type: 'signing'` + `template: 'dispatch_v1'`. `documentsPhase` lists one doc (`{ id: 'coi', label: 'Certificate of Insurance', required: true }`). `onboardingSchema.ts` composes all 9 with `version: 1`, `metadata: { name: 'carrier-onboarding-v2', estimatedMinutes: 15 }`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/onboardingSchema.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/welcomePhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/companyPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/equipmentPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/driversPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/costAnalysisPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/lanePreferencesPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/signingPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/documentsPhase.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/completePhase.ts]
          └─ Depends on: US-12 T-29
          └─ Output:
 
-[ ] T-35 [TEST] Schema composer smoke test
+[x] T-35 [TEST] Schema composer smoke test
          └─ Detail: Test asserts `onboardingSchema.phases.length === 9`, `getVisibleSteps(onboardingSchema, emptySession).length > 0`, first step id is `welcome-segmentation`, `signingPhase.locksFields.length === 8`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/schema/__tests__/onboardingSchema.test.ts]
          └─ Depends on: T-34
@@ -562,7 +562,7 @@ must_haves:
 ---
 
 ## US-15: Redux slice + sagas + selectors for carrier-portal-v2
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-12, US-13_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-12, US-13_
 
 must_haves:
   truths:
@@ -579,25 +579,25 @@ must_haves:
       via: "axios POST /api/v1/carrier-portal/session/submit-step"
 
 **Tasks:**
-[ ] T-38 [UI] Page slice
+[x] T-38 [UI] Page slice
          └─ Detail: Use `createCrudSlice` pattern from existing `features/carrier-portal/store/slices/carrierPortalSlice.ts` as template. State: `{ session: Session | null, loading: Record<string, LoadingState>, errors: Record<string, string>, lastSavedAt: string | null }`. Actions: `loadSession`, `loadSessionSuccess`, `submitStep`, `submitStepSuccess`, `fetchAgreement`, `fetchAgreementSuccess`, `uploadDocument`, `saveAndExit`, `setLastSavedAt`, etc.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/reducers/carrierPortalSlice.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/reducers/index.ts]
          └─ Depends on: US-13 T-34
          └─ Output:
 
-[ ] T-39 [UI] Sagas (one per operation)
+[x] T-39 [UI] Sagas (one per operation)
          └─ Detail: `loadSessionSaga`, `submitStepSaga`, `fetchAgreementSaga`, `uploadDocumentSaga`, `saveCostAnalysisSaga`, `saveLanePreferencesSaga`, `saveAndExitSaga`. Each `takeLatest`; try/catch dispatches success or failure + `enqueueSnackbar` on error. Use axios client `utils/axios.ts` and API helpers under `utils/api/carrierPortal/`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/index.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/loadSessionSaga.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/submitStepSaga.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/fetchAgreementSaga.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/uploadDocumentSaga.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/saveCostAnalysisSaga.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/saveLanePreferencesSaga.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/saveAndExitSaga.ts, hussle-app-dispatch-ui/src/utils/api/carrierPortal/v2.ts]
          └─ Depends on: T-38
          └─ Output:
 
-[ ] T-40 [UI] Selectors + wire into root saga + root reducer
+[x] T-40 [UI] Selectors + wire into root saga + root reducer
          └─ Detail: `selectSession`, `selectCurrentStep` (resolves via schema), `selectIsLocked` (`agreement.signedFieldsLocked === true`), `selectLoading(key)`, `selectError(key)`, `selectLastSavedAt`. Register the page slice in `store/reducers/index.ts` under `pages.carrierPortalV2`. Register the root saga.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/selectors/carrierPortalSelectors.ts, hussle-app-dispatch-ui/src/store/reducers/index.ts, hussle-app-dispatch-ui/src/store/sagas/rootsaga.ts]
          └─ Depends on: T-39
          └─ Output:
 
-[ ] T-41 [TEST] Saga tests via redux-saga-test-plan
+[x] T-41 [TEST] Saga tests via redux-saga-test-plan
          └─ Detail: Cover happy + error path for submitStepSaga, fetchAgreementSaga, saveCostAnalysisSaga (transaction failure), saveLanePreferencesSaga.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/store/sagas/__tests__/sagas.test.ts]
          └─ Depends on: T-40
@@ -606,7 +606,7 @@ must_haves:
 ---
 
 ## US-16: SegmentationStep finalization (welcome eyebrow)
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-13, US-15_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-13, US-15_
 
 must_haves:
   truths:
@@ -614,10 +614,10 @@ must_haves:
     - "Submitting the segmentation choice dispatches `submitStep` with `{ stepId: 'welcome-segmentation', answers: { carrier_type } }`."
 
 **Acceptance Criteria:**
-- [ ] AC-23 (welcome eyebrow resolution)
+- [x] AC-23 (welcome eyebrow resolution)
 
 **Tasks:**
-[ ] T-42 [UI] Finalize SegmentationStep
+[x] T-42 [UI] Finalize SegmentationStep
          └─ Detail: Build on existing preview at `components/steps/SegmentationStep`. Wire to redux: read `session.invitation.organizationName`; read `config.appName` from `src/config.ts`. Submit dispatches `submitStep` action. Card-grid via `SelectionCardGrid` with three options (owner-operator / small-fleet / dispatcher-carrier).
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/SegmentationStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/SegmentationStep/index.test.tsx]
          └─ Depends on: US-15 T-40
@@ -626,7 +626,7 @@ must_haves:
 ---
 
 ## US-17: InputStep — generic Formik+Yup step renderer
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-13, US-15, US-14_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-13, US-15, US-14_
 
 must_haves:
   truths:
@@ -636,10 +636,10 @@ must_haves:
     - "Wraps any locked field in `<LockableField />` when its dot-path matches `LOCKS_FIELDS` and the session is locked."
 
 **Acceptance Criteria:**
-- [ ] AC-7 UI side (locked-field rendering covered here)
+- [x] AC-7 UI side (locked-field rendering covered here)
 
 **Tasks:**
-[ ] T-43 [UI] InputStep renderer
+[x] T-43 [UI] InputStep renderer
          └─ Detail: At `components/steps/InputStep/`. Build Yup schema by mapping `question.fieldType` → fragment (text/email/select/number/date/address/mc/tin). Use `TinField` for `fieldType: 'tin'`; use `AddressTypeaheadField` for `'address'`. Prefill via `resolveContext(session, question.prefillFrom)`. Locked-field wrapping: derive `isLocked` from selector; if step is in `companyPhase` and the question dot-path is in `LOCKS_FIELDS`, wrap in `LockableField`. Disclosure (RevealSection) for conditional sub-forms.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/InputStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/InputStep/buildYupFromQuestions.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/InputStep/index.test.tsx]
          └─ Depends on: US-14 T-37, US-15 T-40
@@ -648,7 +648,7 @@ must_haves:
 ---
 
 ## US-18: VerificationStep (FMCSA waiting + 3 degraded states)
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-15_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-15_
 
 must_haves:
   truths:
@@ -657,7 +657,7 @@ must_haves:
     - "Found state auto-advances; not-found and service-problem expose primary CTA + a 'Skip and enter manually' fallback."
 
 **Tasks:**
-[ ] T-44 [UI] VerificationStep renderer
+[x] T-44 [UI] VerificationStep renderer
          └─ Detail: At `components/steps/VerificationStep/`. Subscribes to `session.fmcsaSnapshot` via selector. On mount, dispatch FMCSA lookup if not present. State machine: idle/loading → found | not-found | service-problem. Use `OnboardingCard` + `Callout` (amber for not-found, red for service-problem) + appropriate CTAs.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/VerificationStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/VerificationStep/index.test.tsx]
          └─ Depends on: US-15 T-40
@@ -666,7 +666,9 @@ must_haves:
 ---
 
 ## US-19: AgreementSigningStep + @docuseal/react integration
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-15, US-10_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-15, US-10_
+
+> Known gap (deferred): portal cannot self-create agreement — `POST /api/v1/agreements` requires dispatcher org auth. Helper exists at `utils/api/agreements/index.ts` but is not wired. Follow-on: add `POST /carrier-portal/agreements` with invite-token auth.
 
 must_haves:
   truths:
@@ -677,17 +679,17 @@ must_haves:
     - "`onComplete` dispatches navigation only; no API write."
 
 **Acceptance Criteria:**
-- [ ] AC-6 (a/b/c/d)
-- [ ] AC-15 (`@docuseal/react` installed and pinned)
+- [x] AC-6 (a/b/c/d)
+- [x] AC-15 (`@docuseal/react` installed and pinned)
 
 **Tasks:**
-[ ] T-45 [UI] Install + pin @docuseal/react
+[x] T-45 [UI] Install + pin @docuseal/react
          └─ Detail: `cd hussle-app-dispatch-ui && npm install @docuseal/react@<verified-compatible>` — start with latest, smoke-test the embed; if version mismatch with OSS DocuSeal, downgrade per Risks. Pin exact version (no `^`). Commit lockfile.
          └─ Files: [hussle-app-dispatch-ui/package.json, hussle-app-dispatch-ui/package-lock.json]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-46 [UI] AgreementSigningStep renderer
+[x] T-46 [UI] AgreementSigningStep renderer
          └─ Detail: At `components/steps/AgreementSigningStep/`. Compose shipped focus-mode primitives (`FocusHeader`, `DocuSealStage`, `FocusFooter`, `DocumentRow`, `DotTrail`). State: fetch agreement → branch on status. SIGNED → call `advanceToNextStep` via redux. PENDING/missing → render `<DocusealForm src={embedUrl} onComplete={handleSigned} />`. `handleSigned` dispatches navigation only.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/AgreementSigningStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/AgreementSigningStep/index.test.tsx, hussle-app-dispatch-ui/src/utils/api/agreements/index.ts]
          └─ Depends on: T-45, US-15 T-40
@@ -696,7 +698,9 @@ must_haves:
 ---
 
 ## US-20: UploadStep (COI-only) + ReviewStep + CheckpointStep + CompleteStep
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-13, US-15_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-13, US-15_
+
+> Slice extension: `navigateToStep({ stepId })` reducer added in this story (client-only; saga server-persist deferred). File upload payload triggers serializable-state warning in tests (informational; production store middleware concern).
 
 must_haves:
   truths:
@@ -706,28 +710,28 @@ must_haves:
     - "CompleteStep renders personalized headline + 'WHAT YOU COMPLETED' summary card from `completedStepIds` per the PNG reference."
 
 **Acceptance Criteria:**
-- [ ] AC-20 (COI-only)
+- [x] AC-20 (COI-only)
 
 **Tasks:**
-[ ] T-47 [UI] UploadStep
+[x] T-47 [UI] UploadStep
          └─ Detail: At `components/steps/UploadStep/`. Reads `step.documents[]` from schema; composes shipped `UploadZone` per entry. Wires to `uploadDocumentSaga`. Auto-advances when COI hits Pending/Verified.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/UploadStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/UploadStep/index.test.tsx]
          └─ Depends on: US-15 T-40
          └─ Output:
 
-[ ] T-48 [UI] ReviewStep
+[x] T-48 [UI] ReviewStep
          └─ Detail: At `components/steps/ReviewStep/`. Read-only summary; inline "Edit" link dispatches back-nav to the originating step.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/ReviewStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/ReviewStep/index.test.tsx]
          └─ Depends on: US-15 T-40
          └─ Output:
 
-[ ] T-49 [UI] CheckpointStep
+[x] T-49 [UI] CheckpointStep
          └─ Detail: At `components/steps/CheckpointStep/`. Reads `phase.checkpoint`; renders celebratory card; Continue dispatches advance.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CheckpointStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CheckpointStep/index.test.tsx]
          └─ Depends on: US-15 T-40
          └─ Output:
 
-[ ] T-50 [UI] CompleteStep
+[x] T-50 [UI] CompleteStep
          └─ Detail: At `components/steps/CompleteStep/`. Layout per `docs/screenshots/onboarding/carrier_complete.png`: all-green stepper, big green check, personalized headline (`You're submitted, {firstName(signatoryName)}.`), summary card (rows pulled from `phase.steps[].completeSummary?.(answers)`), info callout, no CTA. Resolves dispatcher name from `session.invitation.dispatcher`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CompleteStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CompleteStep/index.test.tsx]
          └─ Depends on: US-15 T-40
@@ -736,7 +740,7 @@ must_haves:
 ---
 
 ## US-21: CostAnalysisStep — dedicated step renderer composing shipped primitives
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-13, US-15, US-08_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-13, US-15, US-08_
 
 must_haves:
   truths:
@@ -746,10 +750,10 @@ must_haves:
     - "Submit dispatches `saveCostAnalysisSaga` with the transactional payload shape."
 
 **Acceptance Criteria:**
-- [ ] AC-18 UI side
+- [x] AC-18 UI side
 
 **Tasks:**
-[ ] T-51 [UI] CostAnalysisStep renderer
+[x] T-51 [UI] CostAnalysisStep renderer
          └─ Detail: At `components/steps/CostAnalysisStep/`. Compose shipped primitives. Formik for state; derived values via `useMemo` for `fuelPerMile`, `ownerPayMonthly`, `breakEvenCpm`, `minBookRate`. Empty-state via `RateCard` `emptyState` prop. On submit, build the payload matching the backend service contract and dispatch.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CostAnalysisStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CostAnalysisStep/computations.ts, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/CostAnalysisStep/index.test.tsx]
          └─ Depends on: US-15 T-40
@@ -758,7 +762,7 @@ must_haves:
 ---
 
 ## US-22: LanePreferencesStep — dedicated step renderer with two scopes + per-driver inheritance
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-13, US-15, US-09_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-13, US-15, US-09_
 
 must_haves:
   truths:
@@ -768,10 +772,10 @@ must_haves:
     - "Submit dispatches `saveLanePreferencesSaga` with `{ fleet, overrides }`."
 
 **Acceptance Criteria:**
-- [ ] AC-19 UI side
+- [x] AC-19 UI side
 
 **Tasks:**
-[ ] T-52 [UI] LanePreferencesStep renderer
+[x] T-52 [UI] LanePreferencesStep renderer
          └─ Detail: At `components/steps/LanePreferencesStep/`. Compose shipped primitives (`ScopeBar`, `DriverChip`, `EditingCallout`, `LaneStateMap`, `ScheduleGrid`, `SchedulePresetGroup`, `OptCard`, `FreightChip`, `SectionHead`, `OverrideBadge`). Internal state machine tracks `scope` and `selectedDriverId`. Effective-section lookup: `overrides[driverId]?.[section] ?? fleet[section]`. On submit, dispatch.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/LanePreferencesStep/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/steps/LanePreferencesStep/index.test.tsx]
          └─ Depends on: US-15 T-40
@@ -780,7 +784,7 @@ must_haves:
 ---
 
 ## US-23: CarrierPortalPage + routes wiring + step dispatcher + PortalAuthGuard port
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-15, US-16, US-17, US-18, US-19, US-20, US-21, US-22_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-15, US-16, US-17, US-18, US-19, US-20, US-21, US-22_
 
 must_haves:
   truths:
@@ -793,22 +797,22 @@ must_haves:
     - path: hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/PortalAuthGuard/index.tsx
 
 **Acceptance Criteria:**
-- [ ] AC-12 (9-stage flow walkable)
+- [x] AC-12 (9-stage flow walkable)
 
 **Tasks:**
-[ ] T-53 [UI] Port PortalAuthGuard from old portal
+[x] T-53 [UI] Port PortalAuthGuard from old portal
          └─ Detail: Copy `features/carrier-portal/components/PortalAuthGuard/` → v2 path. Confirm it still uses `utils/axios.ts` + the existing invite-token validation endpoint.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/PortalAuthGuard/index.tsx]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-54 [UI] CarrierPortalPage + step dispatcher
+[x] T-54 [UI] CarrierPortalPage + step dispatcher
          └─ Detail: At `pages/CarrierPortalPage/index.tsx`. On mount dispatch `loadSession`. Wrap in `PortalShell` + `PortalAuthGuard`. Read `selectCurrentStep`; switch on `step.type` to mount the right renderer. Loading skeleton via existing primitives.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/pages/CarrierPortalPage/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/pages/CarrierPortalPage/StepDispatcher.tsx]
          └─ Depends on: T-53, US-21 T-51, US-22 T-52, US-20 T-50
          └─ Output:
 
-[ ] T-55 [UI] CarrierPortalRoutes + register in app routes
+[x] T-55 [UI] CarrierPortalRoutes + register in app routes
          └─ Detail: `routes/CarrierPortalRoutes.tsx` lazy-loads CarrierPortalPage. Update `src/routes/index.tsx` to import the v2 routes module under the existing `/carrier-portal/*` mount.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/routes/CarrierPortalRoutes.tsx, hussle-app-dispatch-ui/src/routes/index.tsx]
          └─ Depends on: T-54
@@ -817,7 +821,7 @@ must_haves:
 ---
 
 ## US-24: App-name + color-blind safety cross-cutting sweep (UI)
-_Priority: P1 | Services: dispatch-ui | Agent: frontend | Status: todo_
+_Priority: P1 | Services: dispatch-ui | Agent: frontend | Status: done_
 
 must_haves:
   truths:
@@ -826,13 +830,13 @@ must_haves:
     - "Color-blind rule appended to `.claude/skills/design-principles/SKILL.md`."
 
 **Tasks:**
-[ ] T-56 [UI] Replace hardcoded "FleetCommand" with config.appName
+[x] T-56 [UI] Replace hardcoded "FleetCommand" with config.appName
          └─ Detail: Replace in `features/carrier-portal-v2/components/PortalHeader/index.tsx` and `components/Statusbadge/index.tsx` (header comment). Leave `dev/OnboardingPreview/previews/*` as preview-only demo content but spot-check.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/PortalHeader/index.tsx, hussle-app-dispatch-ui/src/components/Statusbadge/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/dev/OnboardingPreview/previews/DocumentsUploadPreview.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/dev/OnboardingPreview/previews/SignAgreementPreview.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/dev/OnboardingPreview/previews/WelcomeSegmentationPreview.tsx]
          └─ Depends on: —
          └─ Output:
 
-[ ] T-57 [UI] Color-blind safety audit fixes + append rule to design-principles
+[x] T-57 [UI] Color-blind safety audit fixes + append rule to design-principles
          └─ Detail: Audit `LaneStateMap`, `DriverChip`, `FreightChip`, `ScheduleGrid`, `OverrideBadge`, `Callout`, etc. Confirm shape glyphs + aria-label state. Fix any gaps inline. Append the rule paragraph to `.claude/skills/design-principles/SKILL.md`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/LaneStateMap/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/DriverChip/index.tsx, hussle-app-dispatch-ui/src/features/carrier-portal-v2/components/FreightChip/index.tsx, .claude/skills/design-principles/SKILL.md]
          └─ Depends on: —
@@ -841,7 +845,7 @@ must_haves:
 ---
 
 ## US-25: Delete legacy carrier-portal + rename v2 → carrier-portal
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-23_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: in-progress | Depends on: US-23_
 
 must_haves:
   truths:
@@ -853,13 +857,13 @@ must_haves:
 - [ ] AC-14
 
 **Tasks:**
-[ ] T-58 [UI] Delete old portal directory
+[~] T-58 [UI] Delete old portal directory
          └─ Detail: `git rm -r hussle-app-dispatch-ui/src/features/carrier-portal`. Confirm nothing outside the old portal imports from it (`grep -rn "from 'features/carrier-portal'" hussle-app-dispatch-ui/src` returns zero hits before delete).
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal/**]
          └─ Depends on: US-23 T-55
          └─ Output:
 
-[ ] T-59 [UI] Rename carrier-portal-v2 → carrier-portal + fix imports
+[~] T-59 [UI] Rename carrier-portal-v2 → carrier-portal + fix imports
          └─ Detail: `git mv features/carrier-portal-v2 features/carrier-portal`. Sed-replace `carrier-portal-v2` → `carrier-portal` across all moved files + routes/index.tsx. Run `npm run check-ts && npm run lint`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal/**, hussle-app-dispatch-ui/src/routes/index.tsx, hussle-app-dispatch-ui/.dependency-cruiser.cjs]
          └─ Depends on: T-58
@@ -940,20 +944,20 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-10 Agreements query | 2 | 2 | 0 | 1/1 |
 | US-11 APP_NAME (api) | 1 | 1 | 0 | — |
 | US-12 Engine module | 5 | 5 | 0 | 2/2 |
-| US-13 Schema module | 2 | 0 | 0 | 0/1 |
+| US-13 Schema module | 2 | 2 | 0 | 1/1 |
 | US-14 Bug-fix components | 2 | 2 | 0 | 2/2 |
-| US-15 Slice + sagas | 4 | 0 | 0 | — |
-| US-16 SegmentationStep | 1 | 0 | 0 | 0/1 |
-| US-17 InputStep | 1 | 0 | 0 | 0/1 |
-| US-18 VerificationStep | 1 | 0 | 0 | — |
-| US-19 AgreementSigningStep | 2 | 0 | 0 | 0/2 |
-| US-20 Upload/Review/Checkpoint/Complete | 4 | 0 | 0 | 0/1 |
-| US-21 CostAnalysisStep | 1 | 0 | 0 | 0/1 |
-| US-22 LanePreferencesStep | 1 | 0 | 0 | 0/1 |
-| US-23 Page + routes wiring | 3 | 0 | 0 | 0/1 |
-| US-24 Cross-cutting sweep (UI) | 2 | 0 | 0 | — |
+| US-15 Slice + sagas | 4 | 4 | 0 | — |
+| US-16 SegmentationStep | 1 | 1 | 0 | 1/1 |
+| US-17 InputStep | 1 | 1 | 0 | 1/1 |
+| US-18 VerificationStep | 1 | 1 | 0 | — |
+| US-19 AgreementSigningStep | 2 | 2 | 0 | 2/2 |
+| US-20 Upload/Review/Checkpoint/Complete | 4 | 4 | 0 | 1/1 |
+| US-21 CostAnalysisStep | 1 | 1 | 0 | 1/1 |
+| US-22 LanePreferencesStep | 1 | 1 | 0 | 1/1 |
+| US-23 Page + routes wiring | 3 | 3 | 0 | 1/1 |
+| US-24 Cross-cutting sweep (UI) | 2 | 2 | 0 | — |
 | US-25 Delete legacy + rename | 2 | 0 | 0 | 0/1 |
 | US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **35** | **0** | **18/29** |
+| **All** | **62** | **57** | **0** | **27/29** |

@@ -1,42 +1,59 @@
-import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Box, Container } from '@mui/material';
-import { CheckCircleOutline } from '@mui/icons-material';
+import { LockOutlined } from '@mui/icons-material';
 
 import { BrandName, Meta } from 'components/Typography';
+import config from '../../../../config';
 
 interface PortalHeaderProps {
-  savingAnswer: boolean;
-  lastSavedAt: string | null;
+  brandSubtitle?: string;
+  rightSlot?: ReactNode;
 }
 
-const SAVED_VISIBLE_MS = 30_000;
+const SecureBadge: React.FC = () => (
+  <Box
+    sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.75,
+      bgcolor: 'rgba(255, 255, 255, 0.08)',
+      border: '1px solid rgba(255, 255, 255, 0.12)',
+      color: 'common.white',
+      px: 1.25,
+      py: 0.5,
+      borderRadius: 999,
+    }}
+  >
+    <LockOutlined sx={{ fontSize: 14, color: 'secondary.light' }} />
+    <Meta sx={{ color: 'common.white', opacity: 0.85 }}>Secure connection</Meta>
+  </Box>
+);
 
-const PortalHeader: React.FC<PortalHeaderProps> = ({ savingAnswer, lastSavedAt }) => {
-  const [now, setNow] = useState(() => Date.now());
+const PortalLogo: React.FC = () => (
+  <Box
+    sx={{
+      width: 28,
+      height: 28,
+      borderRadius: 1,
+      background: (theme) =>
+        `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'common.white',
+      fontWeight: 700,
+      fontSize: 13,
+      lineHeight: 1,
+    }}
+  >
+    F
+  </Box>
+);
 
-  useEffect(() => {
-    if (!lastSavedAt) {
-      return undefined;
-    }
-    const id = window.setInterval(() => setNow(Date.now()), 5_000);
-    return () => window.clearInterval(id);
-  }, [lastSavedAt]);
-
-  const savedRecently =
-    lastSavedAt !== null && now - new Date(lastSavedAt).getTime() < SAVED_VISIBLE_MS;
-
-  let status: React.ReactNode = null;
-  if (savingAnswer) {
-    status = <Meta sx={{ color: 'common.white', opacity: 0.75 }}>Auto-saving…</Meta>;
-  } else if (savedRecently) {
-    status = (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-        <CheckCircleOutline sx={{ fontSize: 16, color: 'common.white', opacity: 0.85 }} />
-        <Meta sx={{ color: 'common.white', opacity: 0.85 }}>Saved</Meta>
-      </Box>
-    );
-  }
-
+const PortalHeader: React.FC<PortalHeaderProps> = ({
+  brandSubtitle = 'Carrier onboarding',
+  rightSlot,
+}) => {
   return (
     <Box
       component="header"
@@ -46,14 +63,23 @@ const PortalHeader: React.FC<PortalHeaderProps> = ({ savingAnswer, lastSavedAt }
         height: 56,
         display: 'flex',
         alignItems: 'center',
+        flexShrink: 0,
       }}
     >
       <Container
         maxWidth="lg"
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
       >
-        <BrandName sx={{ fontSize: 18 }}>Hussle Dispatch</BrandName>
-        {status}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <PortalLogo />
+          <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+            <BrandName sx={{ fontSize: 14, color: 'common.white' }}>{config.appName}</BrandName>
+            <Meta sx={{ color: 'common.white', opacity: 0.65, fontSize: 11 }}>
+              {brandSubtitle}
+            </Meta>
+          </Box>
+        </Box>
+        {rightSlot ?? <SecureBadge />}
       </Container>
     </Box>
   );

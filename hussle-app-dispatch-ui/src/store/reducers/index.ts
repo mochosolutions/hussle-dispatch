@@ -31,8 +31,7 @@ import { settingsEntityReducer } from 'features/settings/store/reducers/settings
 import { teamEntityReducer } from 'features/settings/store/reducers/teamEntitySlice';
 import { documentReducer } from 'features/documents/store/reducers/documentEntitySlice';
 import documentPageReducer from 'features/documents/store/reducers/documentPageSlice';
-import { carrierPortalReducer } from 'features/carrier-portal/store/slices/carrierPortalSlice';
-import { carrierPortalV2Reducer } from 'features/carrier-portal-v2/store/reducers';
+import { carrierPortalV2Reducer } from 'features/carrier-portal/store/reducers';
 import { settlementReducer } from 'features/accounting/store/reducers/settlementEntitySlice';
 import { settlementPageReducer } from 'features/accounting/store/reducers/settlementPageSlice';
 import { iftaPageReducer } from 'features/accounting/store/reducers/iftaPageSlice';
@@ -57,7 +56,6 @@ const pages = combineReducers({
   settings: settingsSlice.reducer,
   team: teamReducer,
   documents: documentPageReducer,
-  carrierPortal: carrierPortalReducer,
   carrierPortalV2: carrierPortalV2Reducer,
   settlements: settlementPageReducer,
   ifta: iftaPageReducer,
