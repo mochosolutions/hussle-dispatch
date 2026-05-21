@@ -25,6 +25,8 @@ __pycache__/
 *.tfstate.*
 crash.log
 *.tfplan
+*.plan
+deploy.plan
 
 # Terraform variables - ignore secrets only
 *.auto.tfvars

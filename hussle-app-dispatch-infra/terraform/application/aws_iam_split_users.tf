@@ -88,6 +88,16 @@ module "iam_api_runtime" {
   }
 }
 
+# AWS auto-attaches AWSCompromisedKeyQuarantineV3 to this user when it detects
+# a leaked access key — the resulting broad Deny overrides the inline Allow
+# above. This resource pins the set of managed-policy attachments to exactly
+# what terraform manages (none), so any out-of-band attachment is removed on
+# the next apply.
+resource "aws_iam_user_policy_attachments_exclusive" "api_runtime" {
+  user_name   = module.iam_api_runtime.user_name
+  policy_arns = []
+}
+
 # ---------------------------------------------------------------------------
 # fleet-ses-sender — SES send email
 # ---------------------------------------------------------------------------
@@ -112,4 +122,10 @@ module "iam_ses_sender" {
     Purpose   = "SES email sending"
     ManagedBy = "terraform"
   }
+}
+
+# Same rationale as api_runtime above.
+resource "aws_iam_user_policy_attachments_exclusive" "ses_sender" {
+  user_name   = module.iam_ses_sender.user_name
+  policy_arns = []
 }

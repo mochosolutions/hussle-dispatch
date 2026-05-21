@@ -27,3 +27,11 @@ module "iam_dokploy_pull" {
     ManagedBy = "terraform"
   }
 }
+
+# See aws_iam_split_users.tf for rationale — pin managed-policy attachments
+# to the empty set so AWS-attached AWSCompromisedKeyQuarantineV3 (or anything
+# else attached out-of-band) is removed on the next apply.
+resource "aws_iam_user_policy_attachments_exclusive" "dokploy_pull" {
+  user_name   = module.iam_dokploy_pull.user_name
+  policy_arns = []
+}

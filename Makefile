@@ -265,7 +265,7 @@ tf-plan: ensure-workspace validate-env
 	@$(CHDIR) plan -input=false -var-file=../stages/$(ENV).tfvars
 
 tf-apply: ensure-workspace validate-env
-	@$(CHDIR) apply -input=false -var-file=../stages/$(ENV).tfvars -auto-approve
+	@$(CHDIR) apply -input=false -var-file=../stages/$(ENV).tfvars -auto-approve $(foreach t,$(REPLACE),-replace='$(t)')
 	@echo "$(GREEN)✅ Applied$(NC)"
 
 tf-destroy: ensure-workspace validate-env
