@@ -484,7 +484,16 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
     if (!session) {
       return {};
     }
-    return (session.answers[step.id] ?? {}) as LanePreferencesAnswers;
+    // After the B6 migration, session.answers[step.id] is empty (the saga
+    // only writes engine state). session.lanePreferences.mirror carries the
+    // full server-projected payload (fleet + per-driver overrides) — fall
+    // back to it so back-navigation and refresh prefill the form.
+    const fromAnswers = session.answers[step.id];
+    if (fromAnswers && Object.keys(fromAnswers).length > 0) {
+      return fromAnswers as LanePreferencesAnswers;
+    }
+    const mirror = session.lanePreferences?.mirror;
+    return (mirror ?? {}) as LanePreferencesAnswers;
   }, [session, step.id]);
 
   // ---------------------------------------------------------------------------

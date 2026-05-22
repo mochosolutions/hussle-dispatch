@@ -23,8 +23,11 @@ export const createCarrierQueries = (prisma: PrismaClient): CarrierQueryPort => 
       select: {
         id: true,
         name: true,
+        legalName: true,
         mcNumber: true,
         dotNumber: true,
+        email: true,
+        signatoryName: true,
         primaryContact: {
           select: {
             firstName: true,
@@ -39,18 +42,23 @@ export const createCarrierQueries = (prisma: PrismaClient): CarrierQueryPort => 
       return null;
     }
 
+    // Prefer the explicit primaryContact relation (legacy dispatcher flow).
+    // Fall back to typed Carrier columns populated by the carrier-portal
+    // self-onboarding flow (signatoryName + email written by
+    // portalCompanyService.saveCompany).
     const primaryContactName =
       carrier.primaryContact !== null
         ? `${carrier.primaryContact.firstName} ${carrier.primaryContact.lastName}`.trim()
-        : null;
+        : (carrier.signatoryName ?? null);
+    const primaryContactEmail = carrier.primaryContact?.email ?? carrier.email ?? null;
 
     return {
       id: carrier.id,
-      legalName: carrier.name,
+      legalName: carrier.legalName ?? carrier.name,
       mcNumber: carrier.mcNumber ?? '',
       dotNumber: carrier.dotNumber,
       primaryContactName,
-      primaryContactEmail: carrier.primaryContact?.email ?? null,
+      primaryContactEmail,
     };
   },
 });

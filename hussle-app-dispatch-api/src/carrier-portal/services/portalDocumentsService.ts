@@ -52,7 +52,18 @@ const COMPLIANCE_FLAG_MAP: Record<string, (input: ConfirmInput) => Record<string
   W9: () => ({}),
 };
 
-const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
+// `maxSize` passed to generatePresignedPutUrl is the client-asserted upload
+// size to compare against the content-type-specific limit in s3Presign.ts:
+//   application/pdf    → 5 MB
+//   image/png/jpg/jpeg → 10 MB
+// We don't know the actual file size at presign time (the UI doesn't send
+// it), so pick the lower of the two so the upper bound is never exceeded.
+const MAX_UPLOAD_SIZE_BY_CONTENT_TYPE: Record<string, number> = {
+  'application/pdf': 5 * 1024 * 1024,
+  'image/png': 10 * 1024 * 1024,
+  'image/jpg': 10 * 1024 * 1024,
+  'image/jpeg': 10 * 1024 * 1024,
+};
 
 export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) => ({
   listDocuments: async (
@@ -72,11 +83,12 @@ export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) =
       filename: input.fileName,
     });
 
+    const maxSize = MAX_UPLOAD_SIZE_BY_CONTENT_TYPE[input.contentType] ?? 5 * 1024 * 1024;
     const { url } = await deps.presignPort.generatePresignedPutUrl({
       bucket: deps.s3Bucket,
       key: s3Key,
       contentType: input.contentType,
-      maxSize: MAX_UPLOAD_SIZE,
+      maxSize,
     });
 
     const doc = await deps.documentRepo.create({

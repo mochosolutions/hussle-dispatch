@@ -20,8 +20,20 @@ interface SavedDriver {
   lastName: string;
 }
 
+export interface DriverPrefillRow {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  email: string | null;
+  payType: DriverPayType | null;
+  // Prisma Decimal — serialized as string by the API JSON replacer.
+  payRate: unknown;
+}
+
 export interface PortalDriverRepoPort {
   findByCarrierId(carrierId: string): Promise<{ id: string }[]>;
+  findPrefillByCarrierId(carrierId: string): Promise<DriverPrefillRow[]>;
   upsertMany(
     carrierId: string,
     data: UpsertDriverData[],
@@ -37,6 +49,21 @@ export const portalDriverRepoPrisma = (
     prisma.driver.findMany({
       where: { carrierId, deletedAt: null },
       select: { id: true },
+    }),
+
+  findPrefillByCarrierId: async (carrierId) =>
+    prisma.driver.findMany({
+      where: { carrierId, deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        payType: true,
+        payRate: true,
+      },
+      orderBy: { createdAt: 'asc' },
     }),
 
   upsertMany: async (carrierId, data, deleteIds) => {

@@ -28,8 +28,20 @@ interface VehicleSummary {
   year: number | null;
 }
 
+export interface VehiclePrefillRow {
+  id: string;
+  category: VehicleCategory | null;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  vin: string | null;
+  licensePlate: string | null;
+  gvwr: number | null;
+}
+
 export interface PortalVehicleRepoPort {
   findByCarrierId(carrierId: string): Promise<{ id: string; unitNumber: string }[]>;
+  findPrefillByCarrierId(carrierId: string): Promise<VehiclePrefillRow[]>;
   upsertMany(
     carrierId: string,
     data: UpsertVehicleData[],
@@ -44,6 +56,22 @@ export const portalVehicleRepoPrisma = (
     prisma.vehicle.findMany({
       where: { carrierId },
       select: { id: true, unitNumber: true },
+    }),
+
+  findPrefillByCarrierId: async (carrierId) =>
+    prisma.vehicle.findMany({
+      where: { carrierId },
+      select: {
+        id: true,
+        category: true,
+        year: true,
+        make: true,
+        model: true,
+        vin: true,
+        licensePlate: true,
+        gvwr: true,
+      },
+      orderBy: { unitNumber: 'asc' },
     }),
 
   upsertMany: async (carrierId, data, deleteIds) => {

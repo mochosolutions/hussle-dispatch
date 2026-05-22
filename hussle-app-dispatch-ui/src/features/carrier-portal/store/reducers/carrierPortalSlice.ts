@@ -166,8 +166,16 @@ const carrierPortalV2Slice = createSlice({
     },
 
     // ── saveCostAnalysis ──────────────────────────────────────────────────
-    saveCostAnalysis(state, _action: PayloadAction<Record<string, unknown>>) {
+    saveCostAnalysis(state, action: PayloadAction<Record<string, unknown>>) {
       markPending(state, 'costAnalysis');
+      // Optimistic write: project the submitted ledger onto
+      // session.costAnalysis so back-navigation prefills the cost-analysis
+      // form without waiting for a session refetch. The saga sends the
+      // same payload shape to the server, where it's stored as
+      // answers.costAnalysis (the projection source).
+      if (state.session) {
+        state.session.costAnalysis = action.payload;
+      }
     },
     saveCostAnalysisSuccess(state) {
       markSuccess(state, 'costAnalysis');
@@ -178,8 +186,19 @@ const carrierPortalV2Slice = createSlice({
     },
 
     // ── saveCompany ───────────────────────────────────────────────────────
-    saveCompany(state, _action: PayloadAction<SaveCompanyPayload>) {
+    saveCompany(state, action: PayloadAction<SaveCompanyPayload>) {
       markPending(state, 'company');
+      // Optimistic write: project the submitted typed fields onto
+      // session.company so back-navigation prefills correctly without
+      // waiting for a session refetch. The typed Carrier columns are the
+      // durable source; this in-memory mirror just keeps the form's
+      // prefillFrom paths populated within the same session.
+      if (state.session) {
+        state.session.company = {
+          ...state.session.company,
+          ...action.payload.fields,
+        };
+      }
     },
     saveCompanySuccess(state) {
       markSuccess(state, 'company');
@@ -190,8 +209,23 @@ const carrierPortalV2Slice = createSlice({
     },
 
     // ── saveEquipment ─────────────────────────────────────────────────────
-    saveEquipment(state, _action: PayloadAction<SaveEquipmentPayload>) {
+    saveEquipment(state, action: PayloadAction<SaveEquipmentPayload>) {
       markPending(state, 'equipment');
+      // Optimistic write: project the submitted vehicles onto session.vehicles
+      // so back-navigation prefills correctly without waiting for a refetch.
+      // The next session refetch will reconcile from the typed Vehicle table.
+      if (state.session) {
+        state.session.vehicles = action.payload.vehicles.map((v) => ({
+          id: v.id ?? '',
+          category: v.category,
+          year: v.year ?? null,
+          make: v.make ?? null,
+          model: v.model ?? null,
+          vin: v.vin ?? null,
+          licensePlate: v.licensePlate ?? null,
+          gvwr: v.gvwr ?? null,
+        }));
+      }
     },
     saveEquipmentSuccess(state) {
       markSuccess(state, 'equipment');
@@ -214,8 +248,25 @@ const carrierPortalV2Slice = createSlice({
     },
 
     // ── saveLanePreferences ───────────────────────────────────────────────
-    saveLanePreferences(state, _action: PayloadAction<Record<string, unknown>>) {
+    saveLanePreferences(state, action: PayloadAction<Record<string, unknown>>) {
       markPending(state, 'lanePreferences');
+      // Optimistic write: project the submitted payload into
+      // session.lanePreferences.mirror so back-navigation prefills the form
+      // without waiting for a session refetch.
+      if (state.session) {
+        state.session.lanePreferences = {
+          ...(state.session.lanePreferences ?? {
+            homeBaseCity: null,
+            homeBaseState: null,
+            maxDaysOut: null,
+            preferredLanes: null,
+            weeklySchedule: null,
+            freightPreferences: null,
+            mirror: null,
+          }),
+          mirror: action.payload,
+        };
+      }
     },
     saveLanePreferencesSuccess(state) {
       markSuccess(state, 'lanePreferences');

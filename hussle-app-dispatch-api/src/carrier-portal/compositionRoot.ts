@@ -153,6 +153,12 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
           return token?.organization?.name ?? null;
         },
       },
+      vehiclePrefillQuery: {
+        findPrefillByCarrierId: (carrierId: string) => vehicleRepo.findPrefillByCarrierId(carrierId),
+      },
+      driverPrefillQuery: {
+        findPrefillByCarrierId: (carrierId: string) => driverRepo.findPrefillByCarrierId(carrierId),
+      },
       agreementQuery: {
         findLatestForCarrier: async (carrierId: string) => {
           const agreement = await deps.prismaClient.agreement.findFirst({

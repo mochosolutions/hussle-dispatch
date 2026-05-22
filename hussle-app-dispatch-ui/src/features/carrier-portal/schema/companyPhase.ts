@@ -90,6 +90,7 @@ export const companyPhase: Phase = {
           helpText:
             'Must match what the IRS has on file for your taxpayer ID. For sole proprietors this is usually your personal name.',
           visibility: mcNo,
+          prefillFrom: 'company.legalName',
         },
         {
           id: 'hasDba',
@@ -103,6 +104,7 @@ export const companyPhase: Phase = {
           label: 'DBA / trade name',
           fieldType: 'text',
           visibility: noPathWithDba,
+          prefillFrom: 'company.dbaName',
         },
         {
           id: 'taxClassification',
@@ -111,6 +113,7 @@ export const companyPhase: Phase = {
           helpText: 'How your business is taxed (line 3 on the W-9).',
           options: TAX_CLASSIFICATION_OPTIONS,
           visibility: mcNo,
+          prefillFrom: 'company.taxClassification',
         },
         {
           id: 'tinType',
@@ -119,6 +122,7 @@ export const companyPhase: Phase = {
           helpText: 'Sole proprietors typically use SSN. LLCs and corporations use EIN.',
           options: TIN_TYPE_OPTIONS,
           visibility: mcNo,
+          prefillFrom: 'company.tinType',
         },
         {
           id: 'tin',
@@ -126,6 +130,7 @@ export const companyPhase: Phase = {
           fieldType: 'tin',
           helpText: 'EIN format: XX-XXXXXXX. SSN format: XXX-XX-XXXX.',
           visibility: mcNo,
+          prefillFrom: 'company.tin',
         },
         {
           id: 'dotNumber',
@@ -133,30 +138,35 @@ export const companyPhase: Phase = {
           fieldType: 'text',
           optional: true,
           visibility: mcNo,
+          prefillFrom: 'company.dotNumber',
         },
         {
           id: 'signatoryName',
           label: 'Signatory name',
           fieldType: 'text',
           visibility: mcNo,
+          prefillFrom: 'company.signatoryName',
         },
         {
           id: 'signatoryTitle',
           label: 'Signatory title',
           fieldType: 'text',
           visibility: mcNo,
+          prefillFrom: 'company.signatoryTitle',
         },
         {
           id: 'phone',
           label: 'Company phone number',
           fieldType: 'text',
           visibility: mcNo,
+          prefillFrom: 'company.phone',
         },
         {
           id: 'email',
           label: 'Company email address',
           fieldType: 'email',
           visibility: mcNo,
+          prefillFrom: 'company.email',
         },
         {
           id: 'address',
@@ -164,6 +174,9 @@ export const companyPhase: Phase = {
           fieldType: 'address',
           helpText: 'Start typing and pick a result from the dropdown.',
           visibility: mcNo,
+          // TODO: prefill from company.address+city+state+zip+lat+lng. The
+          // address field expects a nested AddressFormValue, but session
+          // surfaces flat string columns. Needs a small shape adapter.
         },
       ],
     },

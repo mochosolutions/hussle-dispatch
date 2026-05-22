@@ -300,16 +300,48 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
     return JSON.stringify(answers.entries ?? []);
   }, [session, step.id]);
 
+  // Two sources, in priority order:
+  //  1. `session.answers[step.id].entries` — last-submitted draft (carries
+  //     mid-edit state and is the primary source within a session).
+  //  2. `session.drivers` — typed Driver table projection (durable across
+  //     sessions; primary source on fresh page load when answers is empty).
   const initialDrivers = useMemo<DriverEntry[]>(() => {
     if (!session) {
       return [];
     }
     const answers = (session.answers[step.id] ?? {}) as DriversAnswers;
     const sourceEntries = Array.isArray(answers.entries) ? answers.entries : [];
-    return sourceEntries.map((d) => ({
-      ...d,
-      _tempKey: d._tempKey ?? generateTempKey(),
-    }));
+    if (sourceEntries.length > 0) {
+      return sourceEntries.map((d) => ({
+        ...d,
+        _tempKey: d._tempKey ?? generateTempKey(),
+      }));
+    }
+    const projected = session.drivers ?? [];
+    return projected.map((d) => {
+      const payTypeRaw = d.payType;
+      const payType: PayType =
+        payTypeRaw === 'percentage' || payTypeRaw === 'per_mile' || payTypeRaw === 'flat_rate'
+          ? payTypeRaw
+          : 'percentage';
+      const payRateRaw = d.payRate;
+      const payRate =
+        typeof payRateRaw === 'string'
+          ? payRateRaw
+          : typeof payRateRaw === 'number'
+            ? String(payRateRaw)
+            : '';
+      return {
+        _tempKey: generateTempKey(),
+        id: d.id,
+        firstName: d.firstName,
+        lastName: d.lastName,
+        phone: d.phone ?? '',
+        email: d.email ?? '',
+        payType,
+        payRate,
+      };
+    });
   }, [session, step.id]);
 
   const [driverDraft, setDriverDraft] = useState<DriverDraftState>(() => ({

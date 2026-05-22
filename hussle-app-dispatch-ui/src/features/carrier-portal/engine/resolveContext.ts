@@ -2,15 +2,28 @@ import type { Session } from './types';
 
 // Resolves a dot-path against the session's named context sources.
 //
-// Supported roots: 'answers', 'fmcsa', 'invitation', 'agreement', 'session'.
-// Unknown root → undefined. Missing intermediate key → undefined. Never throws.
+// Supported roots: 'answers', 'fmcsa', 'invitation', 'agreement', 'session',
+// 'company'. Unknown root → undefined. Missing intermediate key → undefined.
+// Never throws.
 //
 //   resolveContext(session, 'answers.company.legalName')
 //   resolveContext(session, 'fmcsa.legalName')
 //   resolveContext(session, 'invitation.organizationName')
 //   resolveContext(session, 'agreement.status')
+//   resolveContext(session, 'company.legalName')
 
-const CONTEXT_ROOTS = ['answers', 'fmcsa', 'invitation', 'agreement', 'session'] as const;
+const CONTEXT_ROOTS = [
+  'answers',
+  'fmcsa',
+  'invitation',
+  'agreement',
+  'session',
+  'company',
+  'vehicles',
+  'drivers',
+  'costAnalysis',
+  'lanePreferences',
+] as const;
 type ContextRoot = (typeof CONTEXT_ROOTS)[number];
 
 const isContextRoot = (value: string): value is ContextRoot =>
@@ -28,6 +41,16 @@ const pickRoot = (session: Session, root: ContextRoot): unknown => {
       return session.agreement ?? null;
     case 'session':
       return session;
+    case 'company':
+      return session.company ?? {};
+    case 'vehicles':
+      return session.vehicles ?? [];
+    case 'drivers':
+      return session.drivers ?? [];
+    case 'costAnalysis':
+      return session.costAnalysis ?? {};
+    case 'lanePreferences':
+      return session.lanePreferences ?? {};
     default: {
       // Exhaustiveness — `root` is narrowed to never if we covered every case.
       const exhaust: never = root;

@@ -49,6 +49,55 @@ export interface PortalSessionResponseV2 {
     status?: string;
     type?: string;
   } | null;
+  company: {
+    legalName: string | null;
+    dbaName: string | null;
+    taxClassification: string | null;
+    tinType: string | null;
+    tin: string | null;
+    mcNumber: string | null;
+    dotNumber: string | null;
+    ein: string | null;
+    phone: string | null;
+    email: string | null;
+    signatoryName: string | null;
+    signatoryTitle: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+    lat: number | null;
+    lng: number | null;
+  } | null;
+  vehicles?: {
+    id: string;
+    category: string | null;
+    year: number | null;
+    make: string | null;
+    model: string | null;
+    vin: string | null;
+    licensePlate: string | null;
+    gvwr: number | null;
+  }[];
+  drivers?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    email: string | null;
+    payType: string | null;
+    payRate: string | number | null;
+  }[];
+  costAnalysis?: Record<string, unknown> | null;
+  lanePreferences?: {
+    homeBaseCity: string | null;
+    homeBaseState: string | null;
+    maxDaysOut: number | null;
+    preferredLanes: unknown;
+    weeklySchedule: unknown;
+    freightPreferences: unknown;
+    mirror: Record<string, unknown> | null;
+  } | null;
   agreement: {
     id: string;
     status: string;

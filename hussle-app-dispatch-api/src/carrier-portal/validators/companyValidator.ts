@@ -16,20 +16,27 @@ export const companyValidator = Yup.object({
     signatoryName: Yup.string().nullable().optional().max(255),
     signatoryTitle: Yup.string().nullable().optional().max(255),
     mcNumber: Yup.string()
+      .nullable()
       .optional()
       .matches(/^[0-9]{1,8}$/, 'mcNumber must be 1-8 digits'),
     dotNumber: Yup.string()
+      .nullable()
       .optional()
       .matches(/^[0-9]{1,8}$/, 'dotNumber must be 1-8 digits'),
     ein: Yup.string()
+      .nullable()
       .optional()
       .matches(/^[0-9]{2}-?[0-9]{7}$/, 'ein must be in format XX-XXXXXXX'),
-    phone: Yup.string().optional(),
-    email: Yup.string().optional(),
-    address: Yup.string().optional(),
-    city: Yup.string().optional(),
-    state: Yup.string().optional().length(2, 'state must be exactly 2 characters'),
+    phone: Yup.string().nullable().optional(),
+    email: Yup.string().nullable().optional(),
+    address: Yup.string().nullable().optional(),
+    city: Yup.string().nullable().optional(),
+    state: Yup.string()
+      .nullable()
+      .optional()
+      .length(2, 'state must be exactly 2 characters'),
     zip: Yup.string()
+      .nullable()
       .optional()
       .matches(/^[0-9]{5}(-[0-9]{4})?$/, 'zip must be in format XXXXX or XXXXX-XXXX'),
     lat: Yup.number().nullable().optional(),

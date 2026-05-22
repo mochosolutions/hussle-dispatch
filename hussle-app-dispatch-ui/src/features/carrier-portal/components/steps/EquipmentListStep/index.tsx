@@ -145,7 +145,13 @@ const normalizeVehicleCategory = (category: VehicleCategoryInput): VehicleCatego
     ? LEGACY_CATEGORY_MAP[category as LegacyVehicleCategory]
     : category;
 
-const optionalNumber = (value: string): number | undefined => {
+const optionalNumber = (value: string | number | null | undefined): number | undefined => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
   if (value.trim().length === 0) {
     return undefined;
   }
@@ -359,16 +365,37 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
   // Read server-persisted vehicles from the session. Each entry has a real
   // `id` (server-assigned UUID). We re-hydrate a local `_tempKey` on top so
   // React can key the list independently of the persisted UUID.
+  //
+  // Two sources, in priority order:
+  //  1. `session.answers[step.id].vehicles` — last-submitted draft (carries
+  //     mid-edit state and is the primary source within a session).
+  //  2. `session.vehicles` — typed Vehicle table projection (durable across
+  //     sessions; primary source on fresh page load when answers is empty).
   const initialVehicles = useMemo<VehicleEntry[]>(() => {
     if (!session) {
       return [];
     }
     const answers = (session.answers[step.id] ?? {}) as EquipmentAnswers;
     const sourceVehicles = Array.isArray(answers.vehicles) ? answers.vehicles : [];
-    return sourceVehicles.map((v) => ({
-      ...v,
-      category: normalizeVehicleCategory(v.category),
-      _tempKey: v._tempKey ?? generateTempKey(),
+    if (sourceVehicles.length > 0) {
+      return sourceVehicles.map((v) => ({
+        ...v,
+        category: normalizeVehicleCategory(v.category),
+        _tempKey: v._tempKey ?? generateTempKey(),
+      }));
+    }
+    const projected = session.vehicles ?? [];
+    return projected.map((v) => ({
+      _tempKey: generateTempKey(),
+      id: v.id,
+      category: normalizeVehicleCategory((v.category ?? 'SEMI_TRUCK') as VehicleCategoryInput),
+      year: v.year === null ? '' : String(v.year),
+      make: v.make ?? '',
+      model: v.model ?? '',
+      vin: v.vin ?? '',
+      licensePlate: v.licensePlate ?? '',
+      gvwr: v.gvwr === null ? '' : String(v.gvwr),
+      type: 'truck',
     }));
   }, [session, step.id]);
 

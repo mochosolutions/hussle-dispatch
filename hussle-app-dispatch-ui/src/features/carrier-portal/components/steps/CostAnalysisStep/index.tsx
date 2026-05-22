@@ -362,7 +362,15 @@ const CostAnalysisStep: React.FC<CostAnalysisStepProps> = ({ step }) => {
     if (!session) {
       return {};
     }
-    return (session.answers[step.id] ?? {}) as CostAnalysisAnswers;
+    // After the B5 migration, the answers blob entry for cost-analysis is
+    // empty (the saga sends only engine state in its submitStep follow-up).
+    // session.costAnalysis carries the server-projected ledger mirror — fall
+    // back to it so the form repopulates on back-navigation and refresh.
+    const fromAnswers = session.answers[step.id];
+    if (fromAnswers && Object.keys(fromAnswers).length > 0) {
+      return fromAnswers as CostAnalysisAnswers;
+    }
+    return (session.costAnalysis ?? {}) as CostAnalysisAnswers;
   }, [session, step.id]);
 
   const initialValues = useMemo<FormValues>(

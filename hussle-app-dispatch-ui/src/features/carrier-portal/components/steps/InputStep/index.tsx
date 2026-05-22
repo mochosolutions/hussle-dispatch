@@ -60,6 +60,8 @@ import {
   selectLoading,
   selectSession,
 } from '../../../store/selectors/carrierPortalSelectors';
+import * as Yup from 'yup';
+
 import { buildYupFromQuestions } from './buildYupFromQuestions';
 
 interface InputStepProps {
@@ -82,6 +84,44 @@ const defaultValueForFieldType = (q: Question): unknown => {
   }
 };
 
+// Build an AddressFormValue from the flat Carrier columns projected onto
+// `session.company`. Returns undefined if no address fields are populated so
+// the caller can fall back to the empty-object default.
+const companyAddressInitialValue = (session: Session): AddressFormValue | undefined => {
+  const company = session.company;
+  if (!company) {
+    return undefined;
+  }
+  const { address, city, state, zip, lat, lng } = company;
+  if (
+    !address &&
+    !city &&
+    !state &&
+    !zip &&
+    lat === null &&
+    lng === null &&
+    lat === undefined &&
+    lng === undefined
+  ) {
+    return undefined;
+  }
+  const value: AddressFormValue = {};
+  if (address) value.line1 = address;
+  if (city) value.city = city;
+  if (state) value.state = state;
+  if (zip) value.zip = zip;
+  if (typeof lat === 'number') value.lat = lat;
+  if (typeof lng === 'number') value.lng = lng;
+  if (Object.keys(value).length === 0) {
+    return undefined;
+  }
+  // Carrier has no `country` column; the address typeahead always emits US.
+  // Default it here so the required-address Yup branch passes on re-submit
+  // after back-navigation.
+  value.country = 'US';
+  return value;
+};
+
 const buildInitialValues = (questions: Question[], session: Session, stepId: string): FormValues => {
   const existing = (session.answers[stepId] ?? {}) as Record<string, unknown>;
   const values: FormValues = {};
@@ -91,6 +131,13 @@ const buildInitialValues = (questions: Question[], session: Session, stepId: str
     } else if (q.prefillFrom) {
       const resolved = resolveContext(session, q.prefillFrom);
       values[q.id] = resolved ?? defaultValueForFieldType(q);
+    } else if (q.fieldType === 'address') {
+      // Address shape adapter: company.address/city/state/zip/lat/lng are
+      // flat string columns on the Carrier table; the address field expects
+      // a nested AddressFormValue. Rehydrate from those columns when no
+      // explicit prefillFrom is configured.
+      const seeded = companyAddressInitialValue(session);
+      values[q.id] = seeded ?? defaultValueForFieldType(q);
     } else {
       values[q.id] = defaultValueForFieldType(q);
     }
@@ -198,6 +245,7 @@ interface AddressFormValue {
   city?: string;
   state?: string;
   zip?: string;
+  country?: string;
   lat?: number;
   lng?: number;
 }
@@ -260,9 +308,17 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
     if (!session) {
       return undefined;
     }
-    const trialSession = buildTrialSession(session, step.id, initialValues);
-    return buildYupFromQuestions({ questions, session: trialSession });
-  }, [questions, session, step.id, initialValues]);
+    // Yup.lazy lets the schema recompute against the CURRENT formik values on
+    // every validation tick. Without it, visibility predicates evaluate
+    // against stale initialValues and conditionally-shown required fields
+    // (e.g. company No-authority fields revealed by hasMcAuthority='no') get
+    // marked notRequired().nullable(), letting empty submits slip through.
+    return Yup.lazy((values: unknown) => {
+      const formValues = (values ?? {}) as FormValues;
+      const trialSession = buildTrialSession(session, step.id, formValues);
+      return buildYupFromQuestions({ questions, session: trialSession });
+    });
+  }, [questions, session, step.id]);
 
   if (!session) {
     return null;

@@ -164,6 +164,71 @@ export interface InvitationContext {
   dispatcher?: { firstName?: string | null; lastName?: string | null } | null;
 }
 
+// Typed Carrier columns projected onto the session response so per-step pages
+// can `prefillFrom: 'company.<field>'` when the user navigates back. The
+// answers JSON blob no longer carries these for migrated steps (B2+).
+export interface CompanyContext {
+  legalName?: string | null;
+  dbaName?: string | null;
+  taxClassification?: string | null;
+  tinType?: string | null;
+  tin?: string | null;
+  mcNumber?: string | null;
+  dotNumber?: string | null;
+  ein?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  signatoryName?: string | null;
+  signatoryTitle?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}
+
+// Per-vehicle prefill projected from the Vehicle Prisma table so the
+// equipment-entry list builder can seed its initial state on back-nav.
+export interface VehicleContext {
+  id: string;
+  category: string | null;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  vin: string | null;
+  licensePlate: string | null;
+  gvwr: number | null;
+}
+
+// Per-driver prefill projected from the Driver Prisma table.
+export interface DriverContext {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  email: string | null;
+  payType: string | null;
+  // Decimal — wire format is string after the API JSON replacer.
+  payRate: string | number | null;
+}
+
+// Mirror of the cost-analysis ledger written by the API. Opaque shape — the
+// cost-analysis step is responsible for projecting it into form values.
+export type CostAnalysisContext = Record<string, unknown>;
+
+// Lane preferences — typed Carrier columns plus a `mirror` of the full saved
+// payload (fleet defaults + per-driver overrides).
+export interface LanePreferencesContext {
+  homeBaseCity: string | null;
+  homeBaseState: string | null;
+  maxDaysOut: number | null;
+  preferredLanes: unknown;
+  weeklySchedule: unknown;
+  freightPreferences: unknown;
+  mirror: Record<string, unknown> | null;
+}
+
 export interface FmcsaSnapshot {
   legalName?: string;
   dba?: string;
@@ -188,6 +253,11 @@ export interface Session {
   completedAt?: string | null;
   answers: Answers;
   fmcsaSnapshot?: FmcsaSnapshot;
+  company?: CompanyContext;
+  vehicles?: VehicleContext[];
+  drivers?: DriverContext[];
+  costAnalysis?: CostAnalysisContext;
+  lanePreferences?: LanePreferencesContext;
   agreement?: AgreementContext;
   invitation: InvitationContext;
 }

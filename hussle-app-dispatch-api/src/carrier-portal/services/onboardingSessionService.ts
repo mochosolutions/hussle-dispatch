@@ -272,12 +272,19 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
       }
     }
 
+    // Pre-check the status transition before persisting completedAt so a
+    // bad state doesn't wedge retries (without this, completedAt gets set
+    // even if the transition throws, and the UI's mount-effect won't
+    // re-dispatch completeSession on the next visit).
+    if (carrier) {
+      assertTransition(carrier.status, CarrierStatus.PENDING_APPROVAL);
+    }
+
     const updated = await deps.sessionRepo.update(session.id, {
       completedAt: new Date(),
     });
 
     if (carrier) {
-      assertTransition(carrier.status, CarrierStatus.PENDING_APPROVAL);
       await deps.carrierRepo.update(carrierId, { status: CarrierStatus.PENDING_APPROVAL });
       await writeStatusAudit(deps, {
         organizationId: carrier.managedByOrgId,

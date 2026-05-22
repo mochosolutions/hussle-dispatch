@@ -8,7 +8,7 @@ import {
   selectSession,
   selectCurrentStep,
 } from '../../store/selectors/carrierPortalSelectors';
-import { findPhaseOfStep, getPrevStepId } from '../../engine';
+import { findPhaseOfStep, findStep, getPrevStepId } from '../../engine';
 import { onboardingSchema } from '../../schema/onboardingSchema';
 import PortalAuthGuard from '../../components/PortalAuthGuard';
 import PortalShell from '../../components/PortalShell';
@@ -85,24 +85,50 @@ const PortalPageContent = () => {
   const currentStep = useSelector(selectCurrentStep);
   const stepNav = useStepNavHandler();
 
-  // Sync Redux currentStepId → URL. Redux is authoritative (server cursor);
-  // URL mirrors it so refresh/back/direct-paste resume on the right step.
+  // URL ↔ Redux sync.
+  // Rules:
+  //   1. No :stepId in URL (initial cold load) → push the server cursor
+  //      (session.currentStepId) into the URL.
+  //   2. URL :stepId is unknown to the schema → snap to the server cursor.
+  //   3. URL :stepId is a completed step → leave the user there (review
+  //      mode). After the agreement is signed, the form renders in locked
+  //      display, but the user can still see what they entered.
+  //   4. URL :stepId matches a real step that hasn't been completed and
+  //      isn't the server cursor → user is trying to skip ahead; snap back
+  //      to the cursor.
   useEffect(() => {
     if (!token || !session?.currentStepId) return;
-    if (urlStepId !== session.currentStepId) {
+    if (!urlStepId) {
+      navigate(`/carrier-portal/${token}/${session.currentStepId}`, { replace: true });
+      return;
+    }
+    if (urlStepId === session.currentStepId) {
+      return;
+    }
+    const stepExists = findStep(onboardingSchema, urlStepId) !== null;
+    const isCompleted = session.completedStepIds.includes(urlStepId);
+    if (!stepExists || (!isCompleted && urlStepId !== session.currentStepId)) {
       navigate(`/carrier-portal/${token}/${session.currentStepId}`, { replace: true });
     }
-  }, [token, session?.currentStepId, urlStepId, navigate]);
+  }, [token, session?.currentStepId, session?.completedStepIds, urlStepId, navigate]);
+
+  // The "active step" for chrome (footer phase label, stepper highlighting)
+  // is driven by the URL — so when the user navigates back to a completed
+  // step for review, the chrome reflects that step (not the server cursor).
+  const activeStep = useMemo(
+    () => (urlStepId ? findStep(onboardingSchema, urlStepId) : currentStep),
+    [urlStepId, currentStep],
+  );
 
   const currentPhaseId = useMemo(() => {
-    if (!currentStep) return null;
-    return findPhaseOfStep(onboardingSchema, currentStep.id)?.id ?? null;
-  }, [currentStep]);
+    if (!activeStep) return null;
+    return findPhaseOfStep(onboardingSchema, activeStep.id)?.id ?? null;
+  }, [activeStep]);
 
   const phase = useMemo(() => {
-    if (!currentStep) return null;
-    return findPhaseOfStep(onboardingSchema, currentStep.id) ?? null;
-  }, [currentStep]);
+    if (!activeStep) return null;
+    return findPhaseOfStep(onboardingSchema, activeStep.id) ?? null;
+  }, [activeStep]);
 
   const stepperPhases = useMemo(
     () => buildStepperPhases(currentPhaseId),
@@ -110,13 +136,16 @@ const PortalPageContent = () => {
   );
 
   const prevStepId = useMemo(() => {
-    if (!session || !currentStep) return null;
-    return getPrevStepId(onboardingSchema, session, currentStep.id);
-  }, [session, currentStep]);
+    if (!session || !activeStep) return null;
+    return getPrevStepId(onboardingSchema, session, activeStep.id);
+  }, [session, activeStep]);
 
   const handleBack = () => {
-    if (prevStepId) {
-      dispatch(carrierPortalV2Actions.navigateToStep({ stepId: prevStepId }));
+    if (prevStepId && token) {
+      // Navigate the URL directly. Don't dispatch navigateToStep — that
+      // would rewind the server cursor in Redux, which breaks review-mode
+      // and clobbers the locked state for already-signed agreements.
+      navigate(`/carrier-portal/${token}/${prevStepId}`);
     }
   };
 
@@ -124,10 +153,10 @@ const PortalPageContent = () => {
     window.location.href = '/';
   };
 
-  const footer = currentStep && phase ? (
+  const footer = activeStep && phase ? (
     <PortalFooterBar
       phaseLabel={phase.label}
-      metaText={currentStep.title ?? currentStep.id}
+      metaText={activeStep.title ?? activeStep.id}
       helperText="✓ Progress saved"
       onBack={prevStepId ? handleBack : undefined}
       secondaryAction={{ label: 'Save & Exit', onClick: handleSaveExit }}

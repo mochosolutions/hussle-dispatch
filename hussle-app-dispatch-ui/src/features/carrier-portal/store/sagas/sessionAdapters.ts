@@ -98,6 +98,11 @@ export const toEngineSession = (response: PortalSessionResponseV2): Session => (
   completedAt: toIsoOrNull(response.session.completedAt),
   answers: response.session.answers ?? {},
   fmcsaSnapshot: undefined,
+  company: response.company ?? undefined,
+  vehicles: response.vehicles ?? [],
+  drivers: response.drivers ?? [],
+  costAnalysis: response.costAnalysis ?? undefined,
+  lanePreferences: response.lanePreferences ?? undefined,
   agreement: toAgreementContext(response.agreement),
   invitation: toInvitationContext(response.invitation),
 });

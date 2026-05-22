@@ -40,8 +40,10 @@ export const presignDocumentMapper = (req: Request): PresignDocumentInput => {
     carrierId,
     organizationId,
     fileName: req.body.fileName,
-    contentType: req.body.contentType,
-    documentType: req.body.documentType,
+    // Wire-format uses `mimeType` and `type` (UI v2 contract). The service
+    // input keeps the older field names; bridge them here.
+    contentType: req.body.mimeType,
+    documentType: req.body.type,
   };
 };
 
@@ -60,7 +62,7 @@ export const confirmDocumentMapper = (req: Request): ConfirmDocumentInput => {
     documentId: req.params.id ?? '',
     carrierId,
     organizationId,
-    documentType: req.body.documentType,
+    documentType: req.body.type,
     insuranceExpiry: req.body.insuranceExpiry,
     coverageConfirmed: req.body.coverageConfirmed,
   };
