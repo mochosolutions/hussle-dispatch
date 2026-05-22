@@ -10,7 +10,7 @@ import {
 export function* downloadPacketSaga(
   action: ReturnType<typeof downloadPacketRequest>,
 ): Generator {
-  const { id } = action.payload;
+  const { id, invoiceNumber } = action.payload;
 
   try {
     const blob = (yield call(
@@ -21,7 +21,10 @@ export function* downloadPacketSaga(
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `invoice-${id}-packet.pdf`;
+    link.download =
+      invoiceNumber !== undefined && invoiceNumber.length > 0
+        ? `Invoice_${invoiceNumber}_Packet.zip`
+        : `invoice-${id}-packet.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

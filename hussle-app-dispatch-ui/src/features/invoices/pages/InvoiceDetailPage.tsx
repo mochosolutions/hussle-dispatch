@@ -112,9 +112,9 @@ const InvoiceDetailPage = () => {
 
   const handleDownloadPacket = useCallback(() => {
     if (invoiceId) {
-      dispatch(downloadPacketRequest({ id: invoiceId }));
+      dispatch(downloadPacketRequest({ id: invoiceId, invoiceNumber: invoice?.invoiceNumber }));
     }
-  }, [dispatch, invoiceId]);
+  }, [dispatch, invoiceId, invoice?.invoiceNumber]);
 
   const handleOpenDelete = useCallback(() => {
     if (invoiceId) {

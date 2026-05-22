@@ -71,7 +71,9 @@ export const voidInvoiceFailure = createAction<{ id: string; error: string }>(
   'invoice/voidInvoiceFailure',
 );
 
-export const downloadPacketRequest = createAction<{ id: string }>('invoice/downloadPacketRequest');
+export const downloadPacketRequest = createAction<{ id: string; invoiceNumber?: string }>(
+  'invoice/downloadPacketRequest',
+);
 export const downloadPacketSuccess = createAction<{ id: string }>('invoice/downloadPacketSuccess');
 export const downloadPacketFailure = createAction<{ id: string; error: string }>(
   'invoice/downloadPacketFailure',

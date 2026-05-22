@@ -98,13 +98,18 @@ export const createDocumentPacketService = (
       }
     }
 
-    await archive.finalize();
-
-    // Wait for stream to finish
-    await new Promise<void>((resolve, reject) => {
+    // Register listeners BEFORE finalize — the 'end' event fires once during
+    // finalize and any listener attached afterwards never sees it (Node streams
+    // do not re-emit 'end' for late listeners), which previously hung the
+    // request indefinitely.
+    const collectionDone = new Promise<void>((resolve, reject) => {
       passThrough.on('end', resolve);
       passThrough.on('error', reject);
+      archive.on('error', reject);
     });
+
+    await archive.finalize();
+    await collectionDone;
 
     deps.logger.info('Document packet generated', {
       invoiceId,
