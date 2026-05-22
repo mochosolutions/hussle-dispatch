@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
 import type { ITokenProvider } from '../../types/tokenProvider';
@@ -50,6 +55,7 @@ export const createSignupOrgController = ({
 
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, refreshToken);
+    setCsrfTokenCookie(res, generateCsrfToken());
 
     return res.status(201).json(toSignupOrgResponse(result));
   };

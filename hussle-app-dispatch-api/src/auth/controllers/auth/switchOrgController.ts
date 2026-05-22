@@ -2,7 +2,12 @@ import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { logger } from '@/shared/utils/logger';
 import { UnauthorizedError } from '@/shared/errors';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
 import type { CreateAuditLogInput } from '../../types/auditLogPort';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import type { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
@@ -58,6 +63,7 @@ export const createSwitchOrgController = ({
 
     setAccessTokenCookie(res, result.accessToken);
     setRefreshTokenCookie(res, result.refreshToken);
+    setCsrfTokenCookie(res, generateCsrfToken());
 
     return res.status(200).json(toSwitchOrgResponse(result));
   };

@@ -1,7 +1,12 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { UnauthorizedError } from '@/shared/errors';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import { refreshUserTokenService } from '../../services';
 import { mapRefreshTokenRequest } from './mappers/mapRefreshTokenRequest';
@@ -33,6 +38,7 @@ export const createRefreshTokenController = ({
 
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, newRefreshToken);
+    setCsrfTokenCookie(res, generateCsrfToken());
 
     return res.status(200).json(toRefreshTokenSuccessResponse());
   };

@@ -35,6 +35,7 @@ import { agreementsRouter, docusealWebhookRouter } from './agreements';
 import { smsPromptsRouter } from './sms-prompts';
 import { shortLinksRouter } from './short-links';
 import { env } from './config/env';
+import { csrfProtection } from './shared/middleware/csrfProtection';
 import { errorHandler } from './shared/middleware/errorHandler';
 import { createStorageProvider } from './shared/storage';
 import { mountLocalStorageRoutes } from './shared/storage/localStorageRoutes';
@@ -129,6 +130,10 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
 
   // Cookie parsing (auth reads tokens from HttpOnly cookies)
   app.use(cookieParser());
+
+  // CSRF double-submit-cookie protection — must come after cookieParser so we
+  // can read csrfToken; exempts public auth + webhook paths internally.
+  app.use(csrfProtection);
 
   // Auth routes
   app.use(rootAuthRouter);

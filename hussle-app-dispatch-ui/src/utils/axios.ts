@@ -68,9 +68,35 @@ const handleAuthFailure = () => {
   }
 };
 
+const CSRF_COOKIE_NAME = 'csrfToken';
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+
+const readCookie = (name: string): string | undefined => {
+  if (typeof document === 'undefined') return undefined;
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(';')) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+  return undefined;
+};
+
 const axiosInstance = axios.create({
   baseURL: `${config.apiUrl}/api/v1`,
   withCredentials: true,
+});
+
+// Forward the CSRF double-submit token from the csrfToken cookie into the
+// X-CSRF-Token header. Server-side csrfProtection middleware skips safe
+// methods + public auth paths, so missing-on-first-request is harmless.
+axiosInstance.interceptors.request.use((requestConfig) => {
+  const csrfToken = readCookie(CSRF_COOKIE_NAME);
+  if (csrfToken !== undefined && csrfToken.length > 0) {
+    requestConfig.headers.set(CSRF_HEADER_NAME, csrfToken);
+  }
+  return requestConfig;
 });
 
 const extractErrorMessage = (error: AxiosError): string => {

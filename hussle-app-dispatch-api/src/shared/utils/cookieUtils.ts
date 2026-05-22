@@ -1,4 +1,12 @@
+import { randomBytes } from 'crypto';
 import type { Response } from 'express';
+
+export const CSRF_COOKIE_NAME = 'csrfToken';
+export const CSRF_HEADER_NAME = 'x-csrf-token';
+const CSRF_TOKEN_BYTES = 32;
+
+export const generateCsrfToken = (): string =>
+  randomBytes(CSRF_TOKEN_BYTES).toString('base64url');
 
 interface SetCookieInput {
   name: string;
@@ -47,7 +55,24 @@ export const setRefreshTokenCookie = (res: Response, refreshToken: string): void
   });
 };
 
+/**
+ * Sets the CSRF double-submit cookie. Unlike the access/refresh cookies this
+ * is intentionally NOT HttpOnly — the SPA reads it via document.cookie and
+ * mirrors the value into the X-CSRF-Token header on mutating requests, so the
+ * server can confirm the request came from same-origin JS.
+ */
+export const setCsrfTokenCookie = (res: Response, csrfToken: string): void => {
+  res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+    httpOnly: false,
+    secure: process.env['NODE_ENV'] === 'production',
+    sameSite: process.env['NODE_ENV'] === 'production' ? 'strict' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+};
+
 export const clearAuthCookies = (res: Response): void => {
   res.clearCookie('accessToken', { httpOnly: true });
   res.clearCookie('refreshToken', { httpOnly: true });
+  res.clearCookie(CSRF_COOKIE_NAME, { httpOnly: false, path: '/' });
 };

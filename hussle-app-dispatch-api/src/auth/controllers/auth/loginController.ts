@@ -4,7 +4,12 @@ import type { CreateAuditLogInput } from '../../types/auditLogPort';
 import { UnauthorizedError } from '@/shared/errors';
 import { decodeToken } from '@/shared/utils/cognito';
 import { AuthStatus } from '@/shared/constants/authConstants';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
 import { cognitoProvider } from '../../providers/authProvider';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import type { Membership } from '../../types/membershipTypes';
@@ -54,6 +59,7 @@ export const createLoginController = ({
     if (status === AuthStatus.AUTHENTICATED && token?.refreshToken) {
       setAccessTokenCookie(res, token.accessToken);
       setRefreshTokenCookie(res, token.refreshToken);
+      setCsrfTokenCookie(res, generateCsrfToken());
 
       if (user.organizationId && user.id) {
         auditLogRepo
@@ -84,6 +90,7 @@ export const createLoginController = ({
     if (status === AuthStatus.AUTHENTICATED) {
       if (token?.accessToken) {
         setAccessTokenCookie(res, token.accessToken);
+        setCsrfTokenCookie(res, generateCsrfToken());
       }
 
       return res.status(200).json({
