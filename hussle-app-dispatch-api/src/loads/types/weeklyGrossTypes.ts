@@ -23,6 +23,24 @@ export interface GetWeeklyGrossInput {
 }
 
 /**
+ * One weekly bucket of revenue for a single vehicle.
+ */
+export interface VehicleWeeklyRevenuePoint {
+  weekStart: Date;
+  weekEnd: Date;
+  revenue: Decimal;
+  loadCount: number;
+  target: Decimal;
+}
+
+export interface GetVehicleWeeklyRevenueInput {
+  organizationId: string;
+  role: string;
+  vehicleId: string;
+  weeks: number;
+}
+
+/**
  * Port for fetching weekly gross data.
  */
 export interface WeeklyGrossQueryPort {
@@ -40,4 +58,13 @@ export interface WeeklyGrossQueryPort {
     weekEnd: Date,
   ): Promise<{ revenue: Decimal; loadCount: number }>;
   getWeeklyGrossTarget(organizationId: string): Promise<Decimal>;
+  /**
+   * Confirms the vehicle exists and belongs to the org. Returns the vehicle's
+   * carrier type (used to choose between customerRate and dispatchFee for
+   * revenue aggregation) or `null` when not found.
+   */
+  findVehicleCarrierType(
+    vehicleId: string,
+    organizationId: string,
+  ): Promise<{ carrierType: string } | null>;
 }

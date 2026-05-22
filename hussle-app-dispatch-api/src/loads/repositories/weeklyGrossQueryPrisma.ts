@@ -72,4 +72,21 @@ export const weeklyGrossQueryPrisma = (
 
     return new Decimal(settings.weeklyGrossTarget.toString());
   },
+
+  findVehicleCarrierType: async (vehicleId, organizationId) => {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+        deletedAt: null,
+        carrier: { managedByOrgId: organizationId, deletedAt: null },
+      },
+      select: { carrier: { select: { type: true } } },
+    });
+
+    if (vehicle === null || vehicle.carrier === null) {
+      return null;
+    }
+
+    return { carrierType: vehicle.carrier.type };
+  },
 });

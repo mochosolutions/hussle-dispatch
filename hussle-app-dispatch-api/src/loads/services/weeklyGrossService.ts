@@ -1,5 +1,8 @@
+import { NotFoundError } from '@/shared/errors';
 import type {
+  GetVehicleWeeklyRevenueInput,
   GetWeeklyGrossInput,
+  VehicleWeeklyRevenuePoint,
   WeeklyGrossItem,
   WeeklyGrossQueryPort,
 } from '../types/weeklyGrossTypes';
@@ -29,8 +32,35 @@ const getWeekEnd = (): Date => {
   return sunday;
 };
 
+const DEFAULT_SERIES_WEEKS = 8;
+const MAX_SERIES_WEEKS = 26;
+
+/**
+ * Builds a list of [weekStart, weekEnd] tuples for the previous `count`
+ * ISO weeks ending with the current week. Returned oldest-first so charts
+ * render left-to-right.
+ */
+const buildWeekRanges = (count: number): { weekStart: Date; weekEnd: Date }[] => {
+  const ranges: { weekStart: Date; weekEnd: Date }[] = [];
+  const currentMonday = getWeekStart();
+
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const weekStart = new Date(currentMonday);
+    weekStart.setDate(currentMonday.getDate() - i * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    ranges.push({ weekStart, weekEnd });
+  }
+
+  return ranges;
+};
+
 export interface WeeklyGrossService {
   getWeeklyGross(input: GetWeeklyGrossInput): Promise<WeeklyGrossItem[]>;
+  getVehicleWeeklyRevenue(
+    input: GetVehicleWeeklyRevenueInput,
+  ): Promise<VehicleWeeklyRevenuePoint[]>;
 }
 
 interface WeeklyGrossServiceDeps {
@@ -79,5 +109,35 @@ export const createWeeklyGrossService = (
     }
 
     return items;
+  },
+
+  getVehicleWeeklyRevenue: async ({ organizationId, vehicleId, weeks }) => {
+    const requested = Number.isFinite(weeks) && weeks > 0 ? Math.floor(weeks) : DEFAULT_SERIES_WEEKS;
+    const safeWeeks = Math.min(requested, MAX_SERIES_WEEKS);
+
+    const ownership = await deps.weeklyGrossQuery.findVehicleCarrierType(
+      vehicleId,
+      organizationId,
+    );
+
+    if (ownership === null) {
+      throw new NotFoundError('Vehicle not found.');
+    }
+
+    const target = await deps.weeklyGrossQuery.getWeeklyGrossTarget(organizationId);
+    const ranges = buildWeekRanges(safeWeeks);
+
+    const points: VehicleWeeklyRevenuePoint[] = await Promise.all(
+      ranges.map(async ({ weekStart, weekEnd }) => {
+        const { revenue, loadCount } = await deps.weeklyGrossQuery.getWeeklyRevenue(
+          vehicleId,
+          weekStart,
+          weekEnd,
+        );
+        return { weekStart, weekEnd, revenue, loadCount, target };
+      }),
+    );
+
+    return points;
   },
 });

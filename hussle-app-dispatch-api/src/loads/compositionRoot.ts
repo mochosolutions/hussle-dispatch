@@ -12,6 +12,7 @@ import { createLoadControllers } from './controllers/loadController';
 import { rankDriversController } from './controllers/rankDriversController';
 import { createStopControllers } from './controllers/stopController';
 import { createTransitionStatusController } from './controllers/transitionStatusController';
+import { createVehicleWeeklyRevenueController } from './controllers/vehicleWeeklyRevenueController';
 import { createWeeklyGrossController } from './controllers/weeklyGrossController';
 import {
   carrierAssignmentQueryPrisma,
@@ -142,6 +143,10 @@ export const createLoadsModule = ({
     weeklyGrossService,
   });
 
+  const getVehicleWeeklyRevenue = createVehicleWeeklyRevenueController({
+    weeklyGrossService,
+  });
+
   const rankDriversHandler = rankDriversController({
     rankDrivers: (input) =>
       rankDrivers(input, {
@@ -166,6 +171,7 @@ export const createLoadsModule = ({
     ...crudControllers,
     transitionStatus,
     getWeeklyGross,
+    getVehicleWeeklyRevenue,
     rankDrivers: rankDriversHandler,
   };
 

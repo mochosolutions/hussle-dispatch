@@ -98,3 +98,26 @@ export const getVehicleLoads = async (
   );
   return response.data;
 };
+
+export interface VehicleWeeklyRevenuePoint {
+  weekStart: string;
+  weekEnd: string;
+  revenue: number;
+  loadCount: number;
+  target: number;
+}
+
+interface GetVehicleWeeklyRevenueResponse {
+  data: VehicleWeeklyRevenuePoint[];
+}
+
+export const getVehicleWeeklyRevenue = async (
+  vehicleId: string,
+  weeks = 8,
+): Promise<VehicleWeeklyRevenuePoint[]> => {
+  const response = await axiosInstance.get<GetVehicleWeeklyRevenueResponse>(
+    `/loads/vehicles/${vehicleId}/weekly-revenue`,
+    { params: { weeks } },
+  );
+  return response.data.data;
+};

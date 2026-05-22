@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Avatar,
@@ -19,6 +19,10 @@ import type { VehicleExpense } from 'features/carrier/types';
 import EditIcon from '@mui/icons-material/Edit';
 import { FieldRow } from 'components/FieldRow';
 import {
+  getVehicleWeeklyRevenue,
+  type VehicleWeeklyRevenuePoint,
+} from 'utils/api/fleet/vehicleApi';
+import {
   assignDriverRequest,
   unassignDriverRequest,
 } from '../../store/reducers';
@@ -28,6 +32,13 @@ interface WeeklyGross {
   week: string;
   amount: number;
 }
+
+const REVENUE_WEEKS = 6;
+
+const formatWeekLabel = (weekStart: string): string => {
+  const date = new Date(weekStart);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 interface CarrierDriver {
   id: string;
@@ -62,8 +73,6 @@ interface VehicleOverviewTabProps {
   onOpenInfoDrawer: () => void;
 }
 
-const WEEKLY_GROSS_DATA: WeeklyGross[] = [];
-
 const currencyCompact = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -79,6 +88,36 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
 
   // Driver assignment state
   const [selectedDriverId, setSelectedDriverId] = useState('');
+
+  // Weekly revenue series
+  const [weeklyRevenue, setWeeklyRevenue] = useState<VehicleWeeklyRevenuePoint[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getVehicleWeeklyRevenue(v.id, REVENUE_WEEKS)
+      .then((points) => {
+        if (!cancelled) {
+          setWeeklyRevenue(points);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWeeklyRevenue([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [v.id]);
+
+  const weeklyGrossData: WeeklyGross[] = useMemo(
+    () =>
+      weeklyRevenue.map((point) => ({
+        week: formatWeekLabel(point.weekStart),
+        amount: point.revenue,
+      })),
+    [weeklyRevenue],
+  );
 
   const costSummary = useMemo(() => {
     const expenseMap: Record<string, number> = {};
@@ -103,18 +142,18 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
   const hasExpenseData = v.expenses.length > 0;
 
   const revenueAverage = useMemo(() => {
-    if (WEEKLY_GROSS_DATA.length === 0) return 0;
+    if (weeklyGrossData.length === 0) return 0;
     return Math.round(
-      WEEKLY_GROSS_DATA.reduce((sum, item) => sum + item.amount, 0) / WEEKLY_GROSS_DATA.length,
+      weeklyGrossData.reduce((sum, item) => sum + item.amount, 0) / weeklyGrossData.length,
     );
-  }, []);
+  }, [weeklyGrossData]);
 
   const maxWeeklyValue = useMemo(
-    () => Math.max(...WEEKLY_GROSS_DATA.map((item) => item.amount), 5000) * 1.15,
-    [],
+    () => Math.max(...weeklyGrossData.map((item) => item.amount), 5000) * 1.15,
+    [weeklyGrossData],
   );
 
-  const hasRevenueData = WEEKLY_GROSS_DATA.length > 0;
+  const hasRevenueData = weeklyGrossData.some((item) => item.amount > 0);
 
   const handleAssignDriver = useCallback(() => {
     if (selectedDriverId) {
@@ -236,7 +275,7 @@ export const VehicleOverviewTab: React.FC<VehicleOverviewTabProps> = ({
                     pb: 1,
                   }}
                 >
-                  {WEEKLY_GROSS_DATA.map((item) => {
+                  {weeklyGrossData.map((item) => {
                     const height = (item.amount / maxWeeklyValue) * 100;
                     const isAboveTarget = item.amount >= 5000;
 

@@ -33,6 +33,7 @@ import { rankDriversValidator } from '../validators/rankDriversValidator';
 export interface LoadRouterControllers extends LoadControllers {
   transitionStatus: RequestHandler;
   getWeeklyGross: RequestHandler;
+  getVehicleWeeklyRevenue: RequestHandler;
   rankDrivers: RequestHandler;
 }
 
@@ -59,6 +60,14 @@ export const createLoadsRouter = (
     requireAuth,
     requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     controllers.getWeeklyGross,
+  );
+
+  // Per-vehicle weekly revenue time series — must be before /:id
+  router.get(
+    '/vehicles/:vehicleId/weekly-revenue',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    controllers.getVehicleWeeklyRevenue,
   );
 
   // Accessorial by-id routes — must be before /:id to avoid param conflict
