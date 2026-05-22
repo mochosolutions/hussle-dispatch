@@ -108,9 +108,9 @@ export const LoadDetailActions = ({
   const driverPhone = load.assignment?.driver?.phone ?? null;
   const invoiceReadiness = load.tracking?.invoiceReadiness;
   const invoiceReady = invoiceReadiness === 'READY' || invoiceReadiness === 'INVOICE_CREATED';
-  const sendInvoiceDisabledReason = invoiceReady
+  const createInvoiceDisabledReason = invoiceReady
     ? ''
-    : 'Required documents (Rate Con, signed BOL, POD) must be confirmed before sending.';
+    : 'Required documents (Rate Con, signed BOL, POD) must be confirmed before creating the invoice.';
 
   const statusButtonAltItems: SplitButtonItem[] = altStatuses
     .filter((status) => STATUS_BUTTON_ALTS.includes(status))
@@ -149,12 +149,12 @@ export const LoadDetailActions = ({
   }
   if (load.status === 'DELIVERED') {
     commItems.push({
-      key: 'send-invoice',
-      label: 'Send Invoice',
+      key: 'create-invoice',
+      label: 'Create Invoice',
       icon: <ReceiptLongIcon fontSize="small" />,
       onClick: onCreateInvoice,
       disabled: !invoiceReady,
-      disabledReason: sendInvoiceDisabledReason,
+      disabledReason: createInvoiceDisabledReason,
     });
   }
 

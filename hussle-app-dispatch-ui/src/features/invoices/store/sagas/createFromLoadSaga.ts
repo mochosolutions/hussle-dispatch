@@ -1,6 +1,7 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { createFromLoad } from 'utils/api/invoices/invoiceApi';
+import { extractErrorMessage } from 'utils/api/extractErrorMessage';
 import { getNavigate } from 'utils/getNavigate';
 import {
   createFromLoadRequest,
@@ -24,8 +25,7 @@ export function* createFromLoadSaga(
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, `/invoices/${response.id}`);
   } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to create invoice from load';
+    const errorMessage = extractErrorMessage(error, 'Failed to create invoice from load');
     yield put(createFromLoadFailure({ error: errorMessage }));
     yield put(notify({ message: errorMessage, variant: 'error' }));
   }
