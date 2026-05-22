@@ -33,6 +33,7 @@ export interface DriverControllers {
   deleteDriver: RequestHandler;
   getLoadHistory: RequestHandler;
   getDeadheadTo: RequestHandler;
+  getDriverLocation: RequestHandler;
 }
 
 export const createDriverControllers = (deps: DriverControllerDeps): DriverControllers => ({
@@ -92,6 +93,16 @@ export const createDriverControllers = (deps: DriverControllerDeps): DriverContr
   getDeadheadTo: async (req: Request, res: Response): Promise<void> => {
     const input = deadheadToMapper(req);
     const result = await deps.deadheadToService(input);
+    sendSingle(res, result);
+  },
+
+  getDriverLocation: async (req: Request, res: Response): Promise<void> => {
+    const context = getRequestContextMapper(req);
+    const id = getRequiredDriverIdMapper(req);
+    const result = await deps.driverService.getDriverLocation({
+      ...context,
+      id,
+    });
     sendSingle(res, result);
   },
 });

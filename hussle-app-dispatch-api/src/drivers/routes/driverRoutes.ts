@@ -59,6 +59,13 @@ export const createDriversRouter = (controllers: DriverRouterControllers): expre
     controllers.getLoadHistory,
   );
 
+  router.get(
+    '/:id/location',
+    requireAuth,
+    validateRequest(driverIdParamValidator),
+    controllers.getDriverLocation,
+  );
+
   // --- Availability sub-routes ---
 
   router.put(

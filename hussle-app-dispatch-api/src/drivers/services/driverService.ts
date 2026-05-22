@@ -15,9 +15,11 @@ import type {
 import type {
   CreateDriverServiceInput,
   DeleteDriverServiceInput,
+  DriverLocationResult,
   DriverService,
   GetDriverByIdServiceInput,
   GetDriverLoadHistoryServiceInput,
+  GetDriverLocationServiceInput,
   ListDriversServiceInput,
   UpdateDriverServiceInput,
 } from '../types/driverServiceTypes';
@@ -171,5 +173,23 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
     await findDriverOrThrow(id, organizationId, deps);
 
     return deps.loadQueryPort.getLoadsByDriverId(id, query);
+  },
+
+  getDriverLocation: async ({
+    id,
+    organizationId,
+    role,
+  }: GetDriverLocationServiceInput): Promise<DriverLocationResult> => {
+    assertOwnerOperatorIsBlocked(role);
+    const driver = await findDriverOrThrow(id, organizationId, deps);
+
+    return {
+      driverId: driver.id,
+      city: driver.currentCity,
+      state: driver.currentState,
+      latitude: driver.currentLatitude !== null ? String(driver.currentLatitude) : null,
+      longitude: driver.currentLongitude !== null ? String(driver.currentLongitude) : null,
+      updatedAt: driver.updatedAt,
+    };
   },
 });

@@ -271,4 +271,70 @@ describe('driverService', () => {
       expect(mockGetCityCoords).not.toHaveBeenCalled();
     });
   });
+
+  describe('getDriverLocation', () => {
+    const ORG_ID = 'f370736f-8d57-47f7-9d7d-a5d6f7a59dad';
+    const DRIVER_ID = '0e1d0809-f323-4698-9dc2-f84bf8e6a968';
+
+    it('returns the driver location with coords serialized as strings', async () => {
+      const driver = {
+        ...buildDriver(),
+        currentLatitude: new Decimal('29.760427'),
+        currentLongitude: new Decimal('-95.369804'),
+      };
+      mockDriverRepository.findById.mockResolvedValue(driver);
+
+      const result = await driverService.getDriverLocation({
+        id: DRIVER_ID,
+        organizationId: ORG_ID,
+        role: 'dispatcher',
+      });
+
+      expect(result).toEqual({
+        driverId: driver.id,
+        city: 'Dallas',
+        state: 'TX',
+        latitude: '29.760427',
+        longitude: '-95.369804',
+        updatedAt: driver.updatedAt,
+      });
+    });
+
+    it('returns nulls for unknown location coordinates', async () => {
+      mockDriverRepository.findById.mockResolvedValue(buildDriver());
+
+      const result = await driverService.getDriverLocation({
+        id: DRIVER_ID,
+        organizationId: ORG_ID,
+        role: 'dispatcher',
+      });
+
+      expect(result.latitude).toBeNull();
+      expect(result.longitude).toBeNull();
+      expect(result.city).toBe('Dallas');
+      expect(result.state).toBe('TX');
+    });
+
+    it('throws NotFoundError when driver does not exist', async () => {
+      mockDriverRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        driverService.getDriverLocation({
+          id: DRIVER_ID,
+          organizationId: ORG_ID,
+          role: 'dispatcher',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it('blocks owner_operator role from reading driver locations', async () => {
+      await expect(
+        driverService.getDriverLocation({
+          id: DRIVER_ID,
+          organizationId: ORG_ID,
+          role: 'owner_operator',
+        }),
+      ).rejects.toBeInstanceOf(ForbiddenError);
+    });
+  });
 });

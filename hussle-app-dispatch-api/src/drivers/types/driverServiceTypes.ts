@@ -47,6 +47,21 @@ export interface GetDriverLoadHistoryServiceInput {
   query: ParsedQs;
 }
 
+export interface GetDriverLocationServiceInput {
+  id: string;
+  organizationId: string;
+  role: string;
+}
+
+export interface DriverLocationResult {
+  driverId: string;
+  city: string | null;
+  state: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  updatedAt: Date;
+}
+
 export interface DriverService {
   createDriver(input: CreateDriverServiceInput): Promise<Driver>;
   listDrivers(input: ListDriversServiceInput): Promise<ListDriversResult>;
@@ -54,4 +69,5 @@ export interface DriverService {
   updateDriver(input: UpdateDriverServiceInput): Promise<Driver>;
   deleteDriver(input: DeleteDriverServiceInput): Promise<void>;
   getLoadHistory(input: GetDriverLoadHistoryServiceInput): Promise<LoadHistoryResult>;
+  getDriverLocation(input: GetDriverLocationServiceInput): Promise<DriverLocationResult>;
 }
