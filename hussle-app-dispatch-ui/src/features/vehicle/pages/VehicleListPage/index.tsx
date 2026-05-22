@@ -13,13 +13,9 @@ import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
 import type { Vehicle } from 'features/carrier/types';
 import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
-import { fetchSubscriptionUsageRequest } from 'features/settings/store/reducers/teamSlice';
 import { selectSubscriptionUsage } from 'features/settings/store/selectors/settingsSelectors';
 import { fetchVehiclesRequest } from '../../store/reducers';
-import {
-  selectVehicleKpis,
-  selectFilteredVehicles,
-} from '../../store/selectors/vehicleSelectors';
+import { selectVehicleKpis, selectFilteredVehicles } from '../../store/selectors/vehicleSelectors';
 import type { VehicleTab } from '../../store/selectors/vehicleSelectors';
 import {
   VehicleUnitCellRenderer,
@@ -54,13 +50,6 @@ const VehicleListPage = () => {
     }
   }, [dispatch, store]);
 
-  useEffect(() => {
-    const { usageLastFetchedAt } = store.getState().pages.team;
-    if (isStale(usageLastFetchedAt)) {
-      dispatch(fetchSubscriptionUsageRequest());
-    }
-  }, [dispatch, store]);
-
   const handleSearchChange = useCallback(
     (value: string | number) => {
       dispatch(fetchVehiclesRequest({ page: 1, limit: 25, search: String(value) }));
@@ -69,19 +58,8 @@ const VehicleListPage = () => {
   );
 
   const handleOpenCreate = useCallback(() => {
-    if (
-      subscriptionUsage &&
-      subscriptionUsage.vehicles.current >= subscriptionUsage.vehicles.limit
-    ) {
-      openModal('upgradePlan', {
-        resourceType: 'vehicles',
-        limit: subscriptionUsage.vehicles.limit,
-      });
-      return;
-    }
-
     openDrawer('vehicleCreate', { onClose: () => undefined });
-  }, [subscriptionUsage, openDrawer, openModal]);
+  }, [openDrawer]);
 
   const handleRowClicked = useCallback(
     (params: { data: Vehicle }) => {
@@ -222,7 +200,6 @@ const VehicleListPage = () => {
         title="Vehicles"
         primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
               Add Vehicle
             </Button>
@@ -261,7 +238,9 @@ const VehicleListPage = () => {
                   showRowCountFooter
                   totalRowCount={filteredVehicles.length}
                   rowCountLabel="vehicles"
-                  noDataComponent={<EmptyState variant="no-results" entityName="Vehicles" compact />}
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="Vehicles" compact />
+                  }
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,

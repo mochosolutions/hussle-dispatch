@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Box, Button, IconButton } from '@mui/material';
 import { EditOutlined, DeleteOutline } from '@mui/icons-material';
 
-import { BodyStrong, Meta } from 'components/Typography';
+import { BodyStrong } from 'components/Typography';
 
 export type ListBuilderTagVariant = 'default' | 'warn' | 'owner';
 
@@ -20,10 +20,7 @@ interface ListBuilderItemProps {
   onRemove?: () => void;
 }
 
-const TAG_TOKENS: Record<
-  ListBuilderTagVariant,
-  { bg: string; color: string }
-> = {
+const TAG_TOKENS: Record<ListBuilderTagVariant, { bg: string; color: string }> = {
   default: { bg: 'rgba(238, 242, 255, 1)', color: 'rgba(55, 48, 163, 1)' },
   warn: { bg: 'rgba(254, 243, 199, 1)', color: 'rgba(120, 53, 15, 1)' },
   owner: { bg: 'rgba(220, 252, 231, 1)', color: 'rgba(20, 83, 45, 1)' },
@@ -79,15 +76,13 @@ const ListBuilderItem: React.FC<ListBuilderItemProps> = ({
 
       <Box sx={{ minWidth: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <BodyStrong sx={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.3 }}>
-            {name}
-          </BodyStrong>
+          <BodyStrong sx={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.3 }}>{name}</BodyStrong>
           {tags.map((tag) => (
             <Tag key={tag.label} {...tag} />
           ))}
         </Box>
         {meta.length > 0 ? (
-          <Meta
+          <Box
             sx={{
               fontSize: 12,
               mt: 0.375,
@@ -95,10 +90,15 @@ const ListBuilderItem: React.FC<ListBuilderItemProps> = ({
               flexWrap: 'wrap',
               gap: 0.75,
               alignItems: 'center',
+              color: 'text.secondary',
             }}
           >
             {meta.map((piece, index) => (
-              <Box key={`${piece}-${index}`} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+              <Box
+                key={`${piece}-${index}`}
+                component="span"
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+              >
                 {index > 0 ? (
                   <Box component="span" sx={{ color: 'grey.300' }} aria-hidden>
                     ·
@@ -107,7 +107,7 @@ const ListBuilderItem: React.FC<ListBuilderItemProps> = ({
                 <Box component="span">{piece}</Box>
               </Box>
             ))}
-          </Meta>
+          </Box>
         ) : null}
       </Box>
 

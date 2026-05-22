@@ -5,7 +5,13 @@ import type { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import type { Logger } from '../utils/logger';
 import { StorageDeleteError, StorageFileNotFoundError, StorageWriteError } from './storageErrors';
-import type { DeleteByPrefixResult, StorageGetResult, StorageObjectMetadata, StorageProvider } from './storageProvider';
+import type {
+  ContentDisposition,
+  DeleteByPrefixResult,
+  StorageGetResult,
+  StorageObjectMetadata,
+  StorageProvider,
+} from './storageProvider';
 
 interface LocalStorageProviderConfig {
   basePath: string;
@@ -115,11 +121,17 @@ export const createLocalStorageProvider = (
     key: string,
     _expiresIn?: number,
     displayName?: string,
+    disposition: ContentDisposition = 'attachment',
   ): Promise<string> => {
     const base = `${baseUrl}/${key}`;
-    return displayName !== undefined
-      ? `${base}?filename=${encodeURIComponent(displayName)}`
-      : base;
+    const params = new URLSearchParams();
+    if (disposition === 'inline') {
+      params.set('disposition', 'inline');
+    } else if (displayName !== undefined) {
+      params.set('filename', displayName);
+    }
+    const query = params.toString();
+    return query.length > 0 ? `${base}?${query}` : base;
   };
 
   const deleteFile = async (key: string): Promise<void> => {

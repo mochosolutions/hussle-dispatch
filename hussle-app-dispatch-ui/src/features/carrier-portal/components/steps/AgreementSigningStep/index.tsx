@@ -1,23 +1,27 @@
 // ---------------------------------------------------------------------------
 // AgreementSigningStep — renders the dispatch agreement signing experience.
 //
-// Behavior (US-19 AC-6 + AC-15):
+// Behavior:
 //   1. On mount, dispatches `fetchAgreement({ templateKey: 'DISPATCH_AGREEMENT' })`.
-//      The saga (US-15) calls `GET /carrier-portal/agreements?templateKey=...`
-//      (invite-token auth) and projects the result into `session.agreement`.
+//      The saga calls `GET /carrier-portal/agreements?templateKey=...` which
+//      lazily creates the DocuSeal envelope (safety net in
+//      `ensureAgreementForCarrier`) if one doesn't exist.
 //   2. Branches on the resolved `AgreementContext`:
-//        - null           → "Contact dispatcher" Callout (GAP: portal cannot
-//                            self-create; dispatcher must send via dispatcher UI).
-//        - PENDING        → `<DocusealForm src={embedUrl} onComplete={...} />`.
-//        - SIGNED         → auto-advance via submitStep (no embed render).
+//        - null           → "Contact dispatcher" Callout (only reachable if
+//                            ensure-create failed; surfaces the error).
+//        - PENDING        → plain `<iframe>` to DocuSeal signing page proxied
+//                            via `/docuseal-embed/*` (Vite strips XFO).
+//        - SIGNED         → auto-advance via submitStep.
 //        - VOIDED/DECLINED/EXPIRED → "Agreement no longer valid" Callout.
-//   3. `onComplete` dispatches navigation only. Server-side persistence is the
-//      webhook's responsibility — the embed never calls a write endpoint.
+//   3. While PENDING, polls the agreement endpoint every 4s so the moment the
+//      DocuSeal webhook flips status to SIGNED, the step advances on its own.
+//      The plain iframe gives us no `onComplete` callback, so polling is the
+//      only signal we have. Polling stops as soon as a non-PENDING status
+//      arrives.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
-import { DocusealForm } from '@docuseal/react';
 
 import { useDispatch, useSelector } from 'store';
 import { PageTitle, BodyMuted } from 'components/Typography';
@@ -37,6 +41,23 @@ interface AgreementSigningStepProps {
 }
 
 const TEMPLATE_KEY = 'DISPATCH_AGREEMENT';
+
+/**
+ * The backend returns DocuSeal's signing URL (e.g.
+ * `http://localhost:3030/s/SLUG`). DocuSeal sends `x-frame-options: SAMEORIGIN`
+ * which blocks iframing from the carrier-portal origin, so we route the iframe
+ * through the same-origin Vite dev proxy at `/docuseal-embed/*` (vite.config.ts)
+ * which strips the frame-blocking headers. In prod the same path should be
+ * proxied at the edge (nginx config).
+ */
+const toEmbedUrl = (raw: string): string => {
+  try {
+    const url = new URL(raw);
+    return `/docuseal-embed${url.pathname}${url.search}`;
+  } catch {
+    return raw;
+  }
+};
 
 const AgreementSigningStep: React.FC<AgreementSigningStepProps> = ({ step }) => {
   const dispatch = useDispatch();
@@ -72,19 +93,23 @@ const AgreementSigningStep: React.FC<AgreementSigningStepProps> = ({ step }) => 
     }
   }, [agreement?.status, dispatch, step.id]);
 
+  // While PENDING, poll the agreement endpoint so the page detects when the
+  // DocuSeal webhook flips the status to SIGNED (the plain iframe gives no
+  // explicit completion callback). Stops as soon as we see anything other
+  // than PENDING.
+  useEffect(() => {
+    if (agreement?.status !== 'PENDING') {
+      return undefined;
+    }
+    const handle = window.setInterval(() => {
+      dispatch(carrierPortalV2Actions.fetchAgreement({ templateKey: TEMPLATE_KEY }));
+    }, 4000);
+    return () => window.clearInterval(handle);
+  }, [agreement?.status, dispatch]);
+
   if (!session) {
     return null;
   }
-
-  const handleSigned = (): void => {
-    // Navigation only — webhook owns server-side persistence (no API write).
-    dispatch(
-      carrierPortalV2Actions.submitStep({
-        stepId: step.id,
-        answers: { signed: true },
-      }),
-    );
-  };
 
   const header = (
     <>
@@ -121,10 +146,28 @@ const AgreementSigningStep: React.FC<AgreementSigningStepProps> = ({ step }) => 
 
   // PENDING (or DRAFT) with embedUrl — render the embed.
   if (agreement?.status === 'PENDING' && agreement.embedUrl) {
+    const embedSrc = toEmbedUrl(agreement.embedUrl);
     return (
-      <Box sx={{ width: '100%', maxWidth: 640 }}>
+      <Box sx={{ width: '100%', maxWidth: 760 }}>
         {header}
-        <DocusealForm src={agreement.embedUrl} onComplete={handleSigned} />
+        <Box
+          component="iframe"
+          src={embedSrc}
+          title="Dispatch agreement"
+          sx={{
+            width: '100%',
+            height: { xs: 'calc(100vh - 280px)', md: 720 },
+            minHeight: 480,
+            border: '1px solid',
+            borderColor: 'grey.200',
+            borderRadius: 1,
+            backgroundColor: 'background.paper',
+          }}
+        />
+        <BodyMuted sx={{ mt: 1.5, fontSize: 12 }}>
+          The page above is the official dispatch agreement. Sign at the bottom
+          to continue.
+        </BodyMuted>
       </Box>
     );
   }

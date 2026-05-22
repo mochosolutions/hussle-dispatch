@@ -121,14 +121,21 @@ export const getAgreementV2 = async (
   token: string,
   templateKey: string,
 ): Promise<AgreementSnapshotV2 | null> => {
-  const response = await axiosInstance.get<DataEnvelope<AgreementSnapshotV2 | null>>(
+  // Backend is a paginated list endpoint: `{ data: AgreementSnapshotV2[],
+  // pagination: {...} }`. Unwrap and return the most recent agreement (or null
+  // when the dispatcher hasn't generated one yet).
+  const response = await axiosInstance.get<DataEnvelope<AgreementSnapshotV2[]>>(
     '/carrier-portal/agreements',
     {
       ...portalHeaders(token),
       params: { templateKey },
     },
   );
-  return response.data.data;
+  const list = response.data.data;
+  if (!Array.isArray(list) || list.length === 0) {
+    return null;
+  }
+  return list[0] ?? null;
 };
 
 // ---------------------------------------------------------------------------

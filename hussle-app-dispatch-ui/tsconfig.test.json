@@ -10,6 +10,7 @@
     "noUnusedParameters": false,
     "module": "CommonJS",
     "moduleResolution": "Node",
+    "isolatedModules": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "paths": {

@@ -10,15 +10,12 @@ import {
 } from '../../../store/reducers/carrierPortalSlice';
 import type { Session, Step } from '../../../engine';
 import { driversPhase } from '../../../schema/driversPhase';
-import {
-  TestStepNavProvider,
-  type StepNavTestHandle,
-} from '../../StepNavContext';
+import { TestStepNavProvider, type StepNavTestHandle } from '../../StepNavContext';
 import DriversListStep from '.';
 
-const driversListStep: Step | undefined = driversPhase.steps.find(
-  (s) => s.id === 'drivers-list',
-);
+void ({} as Step);
+
+const driversListStep: Step | undefined = driversPhase.steps.find((s) => s.id === 'drivers-list');
 if (!driversListStep) {
   throw new Error('drivers-list step is missing from driversPhase');
 }
@@ -61,26 +58,30 @@ void carrierPortalV2Reducer;
 describe('DriversListStep (connected)', () => {
   it('renders the empty state when no drivers have been added', () => {
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <DriversListStep step={driversListStep} />
+        <TestStepNavProvider handle={handle}>
+          <DriversListStep step={driversListStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
     expect(screen.getByText('No drivers added')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /add your first driver/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add your first driver/i })).toBeInTheDocument();
   });
 
   it('opens the inline form when "Add your first driver" is clicked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <DriversListStep step={driversListStep} />
+        <TestStepNavProvider handle={handle}>
+          <DriversListStep step={driversListStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -90,14 +91,17 @@ describe('DriversListStep (connected)', () => {
     expect(screen.getByRole('button', { name: /save driver$/i })).toBeInTheDocument();
   });
 
-  it('dispatches submitStep with an entries array after a driver is saved and Continue is clicked', async () => {
+  it('dispatches submitStep with an entries array after a driver is saved and registered Continue is invoked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession() });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <DriversListStep step={driversListStep} />
+        <TestStepNavProvider handle={handle}>
+          <DriversListStep step={driversListStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
@@ -115,10 +119,13 @@ describe('DriversListStep (connected)', () => {
 
     await user.click(screen.getByRole('button', { name: /save driver$/i }));
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).not.toBeDisabled();
+    await waitFor(() => {
+      expect(handle.current?.canContinue).toBe(true);
+    });
 
-    await user.click(continueButton);
+    act(() => {
+      handle.current?.onContinue();
+    });
 
     const submitCalls = dispatchSpy.mock.calls.filter(
       ([action]) =>
@@ -128,9 +135,7 @@ describe('DriversListStep (connected)', () => {
         action.type === carrierPortalV2Actions.submitStep.type,
     );
     expect(submitCalls).toHaveLength(1);
-    const submitArg = submitCalls[0]?.[0] as ReturnType<
-      typeof carrierPortalV2Actions.submitStep
-    >;
+    const submitArg = submitCalls[0]?.[0] as ReturnType<typeof carrierPortalV2Actions.submitStep>;
     expect(submitArg.payload.stepId).toBe('drivers-list');
     const entries = (submitArg.payload.answers as { entries: unknown[] }).entries;
     expect(Array.isArray(entries)).toBe(true);
@@ -142,18 +147,26 @@ describe('DriversListStep (connected)', () => {
       payType: 'percentage',
       payRate: '70',
     });
+
+    // US-30: never send the client-generated _tempKey or a client-side id to
+    // the server. The server assigns ids; new drivers have no id.
+    const submittedEntry = entries[0] as Record<string, unknown>;
+    expect(submittedEntry).not.toHaveProperty('_tempKey');
+    expect(submittedEntry.id).toBeUndefined();
   });
 
-  it('disables Continue when no drivers have been saved', () => {
+  it('registers a disabled Continue when no drivers have been saved', () => {
     const store = buildStore({ session: buildSession() });
+    const handle: StepNavTestHandle = { current: null };
 
     render(
       <Provider store={store}>
-        <DriversListStep step={driversListStep} />
+        <TestStepNavProvider handle={handle}>
+          <DriversListStep step={driversListStep} />
+        </TestStepNavProvider>
       </Provider>,
     );
 
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    expect(continueButton).toBeDisabled();
+    expect(handle.current?.canContinue).toBe(false);
   });
 });

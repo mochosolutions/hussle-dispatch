@@ -275,7 +275,6 @@ const CarrierListPage = () => {
         title="Carriers"
         primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
               Add Carrier
             </Button>

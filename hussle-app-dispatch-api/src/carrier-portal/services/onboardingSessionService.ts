@@ -1,4 +1,10 @@
-import { CarrierStatus, type Carrier, type OnboardingSession, type Prisma } from '@prisma/client';
+import {
+  CarrierStatus,
+  type Carrier,
+  type OnboardingSession,
+  type Prisma,
+  type VehicleCategory,
+} from '@prisma/client';
 import type {
   OnboardingSessionRepoPort,
   OnboardingSessionUpdateData,
@@ -24,12 +30,65 @@ interface CarrierRepoPort {
   update(id: string, data: Record<string, unknown>): Promise<Carrier>;
 }
 
+interface VehiclePersistedSummary {
+  id: string;
+  category: VehicleCategory | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+}
+
+interface DriverPersistedSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface EquipmentVehicleEntry {
+  id?: string;
+  category: VehicleCategory;
+  year?: number;
+  make?: string;
+  model?: string;
+  vin?: string;
+  licensePlate?: string;
+  gvwr?: number;
+}
+
+interface EquipmentServicePort {
+  saveEquipment: (input: {
+    carrierId: string;
+    organizationId: string;
+    vehicles: EquipmentVehicleEntry[];
+  }) => Promise<VehiclePersistedSummary[]>;
+}
+
+interface DriverEntry {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  payType?: string;
+  payRate?: number;
+}
+
+interface DriversServicePort {
+  saveDrivers: (input: {
+    carrierId: string;
+    hasAdditionalDrivers: boolean;
+    drivers?: DriverEntry[];
+  }) => Promise<DriverPersistedSummary[]>;
+}
+
 interface OnboardingSessionServiceDeps {
   sessionRepo: OnboardingSessionRepoPort;
   carrierRepo: CarrierRepoPort;
   eventBus: EventBus;
   logger: Logger;
   auditLog: CarrierAuditPort;
+  equipmentService?: EquipmentServicePort;
+  driversService?: DriversServicePort;
 }
 
 const writeStatusAudit = async (
@@ -68,12 +127,19 @@ export interface SubmitStepInput {
 // Only company-phase stepIds can carry lockable fields.
 const isCompanyStep = (stepId: string): boolean => stepId.startsWith('company-');
 
-const assertNoLockedFieldChange = (
-  stepId: string,
-  incomingAnswers: Record<string, Prisma.InputJsonValue>,
-  existingAnswers: Record<string, unknown>,
-  carrier: Carrier | null,
-): void => {
+interface AssertNoLockedFieldChangeInput {
+  stepId: string;
+  incomingAnswers: Record<string, Prisma.InputJsonValue>;
+  existingAnswers: Record<string, unknown>;
+  carrier: Carrier | null;
+}
+
+const assertNoLockedFieldChange = ({
+  stepId,
+  incomingAnswers,
+  existingAnswers,
+  carrier,
+}: AssertNoLockedFieldChangeInput): void => {
   if (!carrier || carrier.dispatchAgreementSignedAt === null) {
     return;
   }
@@ -187,16 +253,13 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     const carrier = await deps.carrierRepo.findById(carrierId);
     const carrierName = carrier?.name ?? 'Unknown';
 
-    if (
-      carrier &&
-      carrier.type !== CARRIER_TYPES.COMPANY_ASSET
-    ) {
+    if (carrier && carrier.type !== CARRIER_TYPES.COMPANY_ASSET) {
       const onboardingResult = checkCarrierOnboarding({
         carrierType: carrier.type,
         dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
         insuranceCertOnFile: carrier.insuranceCertOnFile,
         insuranceExpiry: carrier.insuranceExpiry,
-        tinOnFile: carrier.tin != null,
+        tinOnFile: carrier.tin !== null,
       });
 
       if (!onboardingResult.allowed) {
@@ -242,11 +305,91 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     const carrier = await deps.carrierRepo.findById(carrierId);
 
     const existingAnswers = (session.answers ?? {}) as Record<string, unknown>;
-    assertNoLockedFieldChange(input.stepId, input.answers, existingAnswers, carrier);
+    assertNoLockedFieldChange({
+      stepId: input.stepId,
+      incomingAnswers: input.answers,
+      existingAnswers,
+      carrier,
+    });
+
+    // ------------------------------------------------------------------
+    // Route equipment-entry through portalEquipmentService so vehicles
+    // get real Prisma-assigned UUIDs. Replace the incoming `vehicles`
+    // payload with the persisted entities before writing to session.
+    // ------------------------------------------------------------------
+    let normalizedAnswers: Record<string, Prisma.InputJsonValue> = input.answers;
+
+    if (input.stepId === 'equipment-entry' && deps.equipmentService && carrier) {
+      const incoming = input.answers as Record<string, unknown>;
+      const incomingVehicles = Array.isArray(incoming.vehicles)
+        ? (incoming.vehicles as EquipmentVehicleEntry[])
+        : null;
+
+      if (incomingVehicles) {
+        const persisted = await deps.equipmentService.saveEquipment({
+          carrierId,
+          organizationId: carrier.managedByOrgId,
+          vehicles: incomingVehicles,
+        });
+
+        // Merge: keep incoming fields (year, make, vin, etc.) and overlay
+        // the server-assigned `id` from the persisted summary. We pair by
+        // index because portalEquipmentService preserves input order.
+        const mergedVehicles = incomingVehicles.map((incomingVehicle, index) => {
+          const persistedVehicle = persisted[index];
+          return {
+            ...incomingVehicle,
+            id: persistedVehicle?.id ?? incomingVehicle.id,
+          };
+        });
+
+        normalizedAnswers = {
+          ...(input.answers as Record<string, Prisma.InputJsonValue>),
+          vehicles: mergedVehicles as unknown as Prisma.InputJsonValue,
+        };
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Route drivers-list through portalDriversService for the same
+    // reason. The UI ships drivers under `entries`; the persisted
+    // entities (with real UUIDs) overlay back into `entries`.
+    // ------------------------------------------------------------------
+    if (input.stepId === 'drivers-list' && deps.driversService) {
+      const incoming = input.answers as Record<string, unknown>;
+      const incomingEntries = Array.isArray(incoming.entries)
+        ? (incoming.entries as DriverEntry[])
+        : null;
+      const hasAdditionalDrivers =
+        typeof incoming.hasAdditionalDrivers === 'boolean'
+          ? incoming.hasAdditionalDrivers
+          : Array.isArray(incomingEntries) && incomingEntries.length > 0;
+
+      if (incomingEntries) {
+        const persisted = await deps.driversService.saveDrivers({
+          carrierId,
+          hasAdditionalDrivers,
+          drivers: incomingEntries,
+        });
+
+        const mergedEntries = incomingEntries.map((incomingDriver, index) => {
+          const persistedDriver = persisted[index];
+          return {
+            ...incomingDriver,
+            id: persistedDriver?.id ?? incomingDriver.id,
+          };
+        });
+
+        normalizedAnswers = {
+          ...(input.answers as Record<string, Prisma.InputJsonValue>),
+          entries: mergedEntries as unknown as Prisma.InputJsonValue,
+        };
+      }
+    }
 
     const mergedAnswers: Record<string, Prisma.InputJsonValue> = {
       ...(existingAnswers as Record<string, Prisma.InputJsonValue>),
-      [input.stepId]: input.answers,
+      [input.stepId]: normalizedAnswers,
     };
 
     const completed = session.completedStepIds ?? [];

@@ -3,6 +3,9 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { StatusBadge } from 'components/Statusbadge';
 import { BodyStrong, Meta, TwoLineCell } from 'components/Typography';
 import type { CarrierListItem, CarrierType } from '../../types';
+import { CARRIER_STATUS_COLORS, CARRIER_STATUS_LABELS } from '../../constants';
+
+const TOTAL_PHASES = 6;
 
 export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
   COMPANY_ASSET: 'Company Asset',
@@ -53,9 +56,17 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
 export const CarrierTypeCellRenderer = ({ value }: { value: CarrierListItem['type'] }) => {
   const label = CARRIER_TYPE_LABELS[value] ?? 'Unknown';
 
-  return (
-    <StatusBadge status={value} label={label} size="small" />
-  );
+  return <StatusBadge status={value} label={label} />;
+};
+
+export const CarrierStatusCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  const status = data.status ?? 'DRAFT';
+
+  // const chipColor = CARRIER_STATUS_COLORS[status] ?? 'default';
+  const label = CARRIER_STATUS_LABELS[status] ?? status;
+  console.log('status', { status, label });
+  return <StatusBadge status={status} label={label} />;
+  // return <Chip label={label} size="small" color={chipColor} variant="filled" />;
 };
 
 export const CarrierOnboardingTypeCellRenderer = ({ data }: { data: CarrierListItem }) => {
@@ -81,31 +92,7 @@ export const CarrierContactCellRenderer = ({ data }: { data: CarrierListItem }) 
     return <Meta>—</Meta>;
   }
 
-  return (
-    <TwoLineCell
-      primary={name ?? '—'}
-      secondary={email ?? ''}
-    />
-  );
-};
-
-import { CARRIER_STATUS_COLORS, CARRIER_STATUS_LABELS } from '../../constants';
-
-const TOTAL_PHASES = 6;
-
-export const CarrierStatusCellRenderer = ({ data }: { data: CarrierListItem }) => {
-  const status = data.status ?? 'DRAFT';
-  const chipColor = CARRIER_STATUS_COLORS[status] ?? 'default';
-  const label = CARRIER_STATUS_LABELS[status] ?? status;
-
-  return (
-    <Chip
-      label={label}
-      size="small"
-      color={chipColor}
-      variant="filled"
-    />
-  );
+  return <TwoLineCell primary={name ?? '—'} secondary={email ?? ''} />;
 };
 
 export const InvitedAtCellRenderer = ({ data }: { data: CarrierListItem }) => {
@@ -132,11 +119,7 @@ export const PhaseProgressCellRenderer = ({ data }: { data: CarrierListItem }) =
       <Meta sx={{ display: 'block', mb: 0.5 }}>
         {completed} / {TOTAL_PHASES}
       </Meta>
-      <LinearProgress
-        variant="determinate"
-        value={pct}
-        sx={{ height: 4, borderRadius: 2 }}
-      />
+      <LinearProgress variant="determinate" value={pct} sx={{ height: 4, borderRadius: 2 }} />
     </Box>
   );
 };

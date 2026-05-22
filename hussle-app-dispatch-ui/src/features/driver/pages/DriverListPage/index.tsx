@@ -15,10 +15,7 @@ import { isStale } from 'utils/redux/staleness';
 import type { Driver } from 'features/carrier/types';
 import { selectAllCarriers } from 'features/carrier/store/selectors/carrierSelectors';
 import { fetchDriversRequest, setCarrierIdFilter, setQuery } from '../../store/reducers';
-import {
-  selectDriverKpis,
-  selectFilteredDrivers,
-} from '../../store/selectors/driverSelectors';
+import { selectDriverKpis, selectFilteredDrivers } from '../../store/selectors/driverSelectors';
 import type { DriverTab } from '../../store/selectors/driverSelectors';
 import {
   DriverNameCellRenderer,
@@ -37,9 +34,18 @@ const DriverListPage = () => {
 
   const hasLoadedOnce = useSelector((state: RootState) => state.pages.drivers.hasLoadedOnce);
   const carriers = useSelector(selectAllCarriers);
-  const kpiSelector = useMemo(() => selectDriverKpis(activeTab, selectedCarrierId), [activeTab, selectedCarrierId]);
+  const kpiSelector = useMemo(
+    () => selectDriverKpis(activeTab, selectedCarrierId),
+    [activeTab, selectedCarrierId],
+  );
   const kpiData = useSelector(kpiSelector);
   const store = useStore<RootState>();
+
+  const filteredSelector = useMemo(
+    () => selectFilteredDrivers(activeTab, selectedCarrierId),
+    [activeTab, selectedCarrierId],
+  );
+  const filteredDrivers = useSelector(filteredSelector);
 
   useEffect(() => {
     const { lastFetchedAt } = store.getState().pages.drivers;
@@ -98,12 +104,6 @@ const DriverListPage = () => {
     [navigate],
   );
 
-  const filteredSelector = useMemo(
-    () => selectFilteredDrivers(activeTab, selectedCarrierId),
-    [activeTab, selectedCarrierId],
-  );
-  const filteredDrivers = useSelector(filteredSelector);
-
   const actionsConfig = useMemo<ActionsCellConfig<Driver>>(
     () => ({
       showView: true,
@@ -149,7 +149,14 @@ const DriverListPage = () => {
         onChange: handleCarrierFilterChange,
       },
     ],
-    [statusFilterOptions, carrierOptions, activeTab, selectedCarrierId, handleStatusFilterChange, handleCarrierFilterChange],
+    [
+      statusFilterOptions,
+      carrierOptions,
+      activeTab,
+      selectedCarrierId,
+      handleStatusFilterChange,
+      handleCarrierFilterChange,
+    ],
   );
 
   const searchConfig = useMemo<SearchConfig>(
@@ -243,7 +250,7 @@ const DriverListPage = () => {
         title="Drivers"
         primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
+          
             <Button onClick={handleOpenCreate} variant="contained">
               Add Driver
             </Button>
@@ -300,7 +307,6 @@ const DriverListPage = () => {
           </MainCard>
         </Box>
       </ListLayout>
-
     </PageWrapper>
   );
 };

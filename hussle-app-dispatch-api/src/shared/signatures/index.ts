@@ -17,6 +17,7 @@ const init = (): SignatureModule => {
         DOCUSEAL_BASE_URL: env.DOCUSEAL_BASE_URL,
         DOCUSEAL_API_KEY: env.DOCUSEAL_API_KEY,
         DOCUSEAL_DISPATCH_TEMPLATE_ID: env.DOCUSEAL_DISPATCH_TEMPLATE_ID,
+        DOCUSEAL_SUBMITTER_ROLE: env.DOCUSEAL_SUBMITTER_ROLE,
       },
       eventBus: sharedEventBus,
       logger,

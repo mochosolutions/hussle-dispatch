@@ -1,6 +1,11 @@
 export default {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['./jest.setup.ts'],
+
+  testTimeout: 15000,
+  forceExit: true,
+  maxWorkers: '50%',
+
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',

@@ -20,7 +20,10 @@ export interface RequestAgreementInput {
   signerEmail?: string;
   correlationId?: string;
   organizationId: string;
-  requestingUserId: string;
+  // `null` when the carrier triggers creation themselves via the portal safety
+  // net (no dispatcher User in context). `createdByUserId` on the row is
+  // already nullable.
+  requestingUserId: string | null;
   orgName: string;
 }
 

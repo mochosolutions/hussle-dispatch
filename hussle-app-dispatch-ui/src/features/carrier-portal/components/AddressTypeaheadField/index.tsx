@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  FormHelperText,
   InputLabel,
   Link,
   OutlinedInput,
@@ -61,7 +62,7 @@ interface AddressOption {
   description: string;
 }
 
-const MANUAL_FIELDS: Array<{ key: keyof AddressValue; label: string; placeholder: string }> = [
+const MANUAL_FIELDS: { key: keyof AddressValue; label: string; placeholder: string }[] = [
   { key: 'line1', label: 'Address line 1', placeholder: '123 Main St' },
   { key: 'line2', label: 'Address line 2', placeholder: 'Suite 200 (optional)' },
   { key: 'city', label: 'City', placeholder: 'Atlanta' },
@@ -80,6 +81,33 @@ const mapResultsToOptions = (results: AddressSearchResult[]): AddressOption[] =>
     description: formatDisplay(result),
   }));
 
+type AddressErrors = Partial<Record<keyof AddressValue, string>>;
+
+const MANUAL_FIELD_ORDER: (keyof AddressValue)[] = [
+  'line1',
+  'city',
+  'state',
+  'zip',
+  'country',
+];
+
+const getAddressErrors = (raw: unknown): AddressErrors => {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as AddressErrors;
+  }
+  return {};
+};
+
+const getFirstError = (errors: AddressErrors): string | undefined => {
+  for (const field of MANUAL_FIELD_ORDER) {
+    const msg = errors[field];
+    if (typeof msg === 'string' && msg.length > 0) {
+      return msg;
+    }
+  }
+  return undefined;
+};
+
 export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
   name,
   label,
@@ -88,6 +116,20 @@ export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
 }) => {
   const formik = useFormikContext<Record<string, unknown>>();
   const addressValue = (getIn(formik.values, name) as AddressValue | undefined) ?? {};
+  const rawErrors = getIn(formik.errors, name) as unknown;
+  const rawTouched = getIn(formik.touched, name) as unknown;
+  const fieldErrors = getAddressErrors(rawErrors);
+  const touched = (rawTouched && typeof rawTouched === 'object' ? rawTouched : {}) as Record<
+    string,
+    boolean | undefined
+  >;
+  // Surface a single summary error under the typeahead input whenever the
+  // user has attempted submit (formik touches everything) AND any sub-field
+  // is invalid. In manual mode we show per-field errors instead.
+  const summaryError =
+    (touched.line1 || touched.city || touched.state || touched.zip || touched.country)
+      ? getFirstError(fieldErrors)
+      : undefined;
 
   const [mode, setMode] = useState<'typeahead' | 'manual'>('typeahead');
   const [inputValue, setInputValue] = useState<string>(() => {
@@ -293,21 +335,28 @@ export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
             Use lookup again
           </Link>
         </Typography>
-        {MANUAL_FIELDS.map((field) => (
-          <Stack key={field.key} spacing={0.5}>
-            <InputLabel htmlFor={`${name}.${field.key}`}>{field.label}</InputLabel>
-            <OutlinedInput
-              id={`${name}.${field.key}`}
-              name={`${name}.${field.key}`}
-              value={addressValue[field.key] ?? ''}
-              onChange={(e) => setAddressField(field.key, e.target.value)}
-              onBlur={formik.handleBlur}
-              placeholder={field.placeholder}
-              disabled={disabled}
-              fullWidth
-            />
-          </Stack>
-        ))}
+        {MANUAL_FIELDS.map((field) => {
+          const fieldError = fieldErrors[field.key];
+          const fieldTouched = Boolean(touched[field.key]);
+          const showError = fieldTouched && typeof fieldError === 'string' && fieldError.length > 0;
+          return (
+            <Stack key={field.key} spacing={0.5}>
+              <InputLabel htmlFor={`${name}.${field.key}`}>{field.label}</InputLabel>
+              <OutlinedInput
+                id={`${name}.${field.key}`}
+                name={`${name}.${field.key}`}
+                value={addressValue[field.key] ?? ''}
+                onChange={(e) => setAddressField(field.key, e.target.value)}
+                onBlur={formik.handleBlur}
+                placeholder={field.placeholder}
+                disabled={disabled}
+                error={showError}
+                fullWidth
+              />
+              {showError ? <FormHelperText error>{fieldError}</FormHelperText> : null}
+            </Stack>
+          );
+        })}
       </Stack>
     );
   }
@@ -392,6 +441,12 @@ export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
           />
         )}
       />
+
+      {summaryError ? (
+        <FormHelperText error sx={{ mt: 0.5 }}>
+          {summaryError}
+        </FormHelperText>
+      ) : null}
 
       {errorMessage ? (
         <Box

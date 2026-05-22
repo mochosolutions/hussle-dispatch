@@ -845,7 +845,7 @@ must_haves:
 ---
 
 ## US-25: Delete legacy carrier-portal + rename v2 → carrier-portal
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: in-progress | Depends on: US-23_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-23_
 
 must_haves:
   truths:
@@ -854,16 +854,16 @@ must_haves:
     - "`npm run check-ts` + `npm run lint` pass post-rename."
 
 **Acceptance Criteria:**
-- [ ] AC-14
+- [x] AC-14
 
 **Tasks:**
-[~] T-58 [UI] Delete old portal directory
+[x] T-58 [UI] Delete old portal directory
          └─ Detail: `git rm -r hussle-app-dispatch-ui/src/features/carrier-portal`. Confirm nothing outside the old portal imports from it (`grep -rn "from 'features/carrier-portal'" hussle-app-dispatch-ui/src` returns zero hits before delete).
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal/**]
          └─ Depends on: US-23 T-55
          └─ Output:
 
-[~] T-59 [UI] Rename carrier-portal-v2 → carrier-portal + fix imports
+[x] T-59 [UI] Rename carrier-portal-v2 → carrier-portal + fix imports
          └─ Detail: `git mv features/carrier-portal-v2 features/carrier-portal`. Sed-replace `carrier-portal-v2` → `carrier-portal` across all moved files + routes/index.tsx. Run `npm run check-ts && npm run lint`.
          └─ Files: [hussle-app-dispatch-ui/src/features/carrier-portal/**, hussle-app-dispatch-ui/src/routes/index.tsx, hussle-app-dispatch-ui/.dependency-cruiser.cjs]
          └─ Depends on: T-58
@@ -872,7 +872,7 @@ must_haves:
 ---
 
 ## US-26: Playwright e2e — full 9-stage flow + resume-after-close
-_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: todo | Depends on: US-25_
+_Priority: P0 | Services: dispatch-ui | Agent: frontend | Status: done | Depends on: US-25_
 
 must_haves:
   truths:
@@ -883,10 +883,10 @@ must_haves:
     - "No console errors during the happy-path run (via `page.on('console')`)."
 
 **Acceptance Criteria:**
-- [ ] AC-12, AC-13, AC-16
+- [x] AC-12, AC-13, AC-16
 
 **Tasks:**
-[ ] T-60 [TEST] Playwright e2e suite
+[x] T-60 [TEST] Playwright e2e suite
          └─ Detail: Extend existing `e2e/carrier-portal-full.spec.ts` patterns (per PATTERNS.md). New spec at `e2e/carrier-portal-v2.spec.ts`. Use mock FMCSA + mock signature provider. Three tests: happy-path, resume-after-close, lock-back-nav, typeahead-error.
          └─ Files: [hussle-app-dispatch-ui/e2e/carrier-portal-v2.spec.ts]
          └─ Depends on: US-25 T-59
@@ -906,7 +906,7 @@ _Auto-generated | Services: api, dispatch-ui_
 - [ ] Auth: invite-token middleware applied to all portal routes; dispatcher session on agreement query.
 
 **Tasks:**
-[ ] T-61 [WIRE] Verify dispatch-ui ↔ dispatch-api contract
+[~] T-61 [WIRE] Verify dispatch-ui ↔ dispatch-api contract
          └─ Detail: Diff backend route handlers against frontend axios callers. Compare shapes against engine `Session` type. Confirm 422 `{ code: 'FIELD_LOCKED', field }` payload is parsed and toasted in `submitStepSaga`. Confirm `invitation.organizationName` populates the Welcome eyebrow.
          └─ Files: []
          └─ Agent: review
@@ -956,8 +956,8 @@ _Auto-generated | Read-only | Services: api, dispatch-ui_
 | US-22 LanePreferencesStep | 1 | 1 | 0 | 1/1 |
 | US-23 Page + routes wiring | 3 | 3 | 0 | 1/1 |
 | US-24 Cross-cutting sweep (UI) | 2 | 2 | 0 | — |
-| US-25 Delete legacy + rename | 2 | 0 | 0 | 0/1 |
-| US-26 Playwright e2e | 1 | 0 | 0 | 0/3 |
+| US-25 Delete legacy + rename | 2 | 2 | 0 | 1/1 |
+| US-26 Playwright e2e | 1 | 1 | 0 | 3/3 |
 | INT-01 Wire verification | 1 | 0 | 0 | — |
 | VER-01 Goal-backward verify | 1 | 0 | 0 | — |
-| **All** | **62** | **57** | **0** | **27/29** |
+| **All** | **62** | **60** | **0** | **29/29** |

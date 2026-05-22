@@ -211,6 +211,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       document.s3Key,
       getDownloadTtl(document.type),
       displayName,
+      input.disposition ?? 'attachment',
     );
 
     return presignedUrl;

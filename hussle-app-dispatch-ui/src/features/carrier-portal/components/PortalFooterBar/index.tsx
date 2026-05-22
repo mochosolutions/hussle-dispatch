@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Stack } from '@mui/material';
+import { Container, Box, Button, CircularProgress, Stack } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 
 import { BodyStrong, Meta } from 'components/Typography';
@@ -52,95 +52,98 @@ const PortalFooterBar: React.FC<PortalFooterBarProps> = ({
         flexWrap: { xs: 'wrap', md: 'nowrap' },
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <BodyStrong sx={{ fontSize: 13 }}>{phaseLabel}</BodyStrong>
-        {metaText ? (
-          <Meta sx={{ fontSize: 11.5, mt: 0.25 }}>{metaText}</Meta>
-        ) : null}
-      </Box>
-
-      <Stack
-        direction="row"
-        spacing={1.25}
-        alignItems="center"
-        sx={{ flexShrink: 0, flexWrap: { xs: 'wrap', md: 'nowrap' }, rowGap: 1 }}
+      <Container
+        maxWidth="lg"
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
       >
-        {helperText ? (
-          <Meta sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>
-            {helperText}
-          </Meta>
-        ) : null}
+        <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <BodyStrong sx={{ fontSize: 13 }}>{phaseLabel}</BodyStrong>
+          {metaText ? <Meta sx={{ fontSize: 11.5, mt: 0.25 }}>{metaText}</Meta> : null}
+        </Box>
 
-        {secondaryAction ? (
-          <Button
-            variant="text"
-            color="inherit"
-            onClick={secondaryAction.onClick}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: 13.5,
-              color: 'text.secondary',
-              px: 1.5,
-              py: 1.25,
-              borderRadius: 0.75,
-              textDecoration: 'underline',
-              textUnderlineOffset: '3px',
-              '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
-            }}
-          >
-            {secondaryAction.label}
-          </Button>
-        ) : null}
+        <Stack
+          direction="row"
+          spacing={1.25}
+          alignItems="center"
+          sx={{ flexShrink: 0, flexWrap: { xs: 'wrap', md: 'nowrap' }, rowGap: 1 }}
+        >
+          {helperText ? (
+            <Meta sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>
+              {helperText}
+            </Meta>
+          ) : null}
 
-        {onBack ? (
-          <Button
-            variant="outlined"
-            color="inherit"
-            onClick={onBack}
-            startIcon={<ArrowBack sx={{ fontSize: 14 }} />}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: 14,
-              borderColor: 'grey.200',
-              color: 'text.primary',
-              px: 2.25,
-              py: 1.25,
-              borderRadius: 0.75,
-              '&:hover': { bgcolor: 'grey.100', borderColor: 'grey.300' },
-            }}
-          >
-            {backLabel}
-          </Button>
-        ) : null}
+          {secondaryAction ? (
+            <Button
+              variant="text"
+              color="inherit"
+              onClick={secondaryAction.onClick}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 13.5,
+                color: 'text.secondary',
+                px: 1.5,
+                py: 1.25,
+                borderRadius: 0.75,
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px',
+                '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+              }}
+            >
+              {secondaryAction.label}
+            </Button>
+          ) : null}
 
-        {onContinue ? (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={onContinue}
-            disabled={continueDisabled || isContinuing}
-            endIcon={
-              isContinuing ? (
-                <CircularProgress size={14} sx={{ color: 'common.white' }} />
-              ) : (
-                <ArrowForward sx={{ fontSize: 14 }} />
-              )
-            }
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: 14,
-              px: 2.25,
-              py: 1.25,
-              borderRadius: 0.75,
-            }}
-          >
-            {continueLabel}
-          </Button>
-        ) : null}
-      </Stack>
+          {onBack ? (
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={onBack}
+              startIcon={<ArrowBack sx={{ fontSize: 14 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                borderColor: 'grey.200',
+                color: 'text.primary',
+                px: 2.25,
+                py: 1.25,
+                borderRadius: 0.75,
+                '&:hover': { bgcolor: 'grey.100', borderColor: 'grey.300' },
+              }}
+            >
+              {backLabel}
+            </Button>
+          ) : null}
+
+          {onContinue ? (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={onContinue}
+              disabled={continueDisabled || isContinuing}
+              endIcon={
+                isContinuing ? (
+                  <CircularProgress size={14} sx={{ color: 'common.white' }} />
+                ) : (
+                  <ArrowForward sx={{ fontSize: 14 }} />
+                )
+              }
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                px: 2.25,
+                py: 1.25,
+                borderRadius: 0.75,
+              }}
+            >
+              {continueLabel}
+            </Button>
+          ) : null}
+        </Stack>
+      </Container>
     </Box>
   );
 };

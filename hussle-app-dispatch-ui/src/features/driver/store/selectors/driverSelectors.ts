@@ -53,9 +53,8 @@ export const selectFormattedDriverById = (id: string | undefined) =>
   );
 
 export const selectDriversByCarrierId = (carrierId: string) =>
-  createSelector(
-    [(state: RootState) => driverSelectors.selectAll(state)],
-    (drivers) => drivers.filter((driver) => driver.carrierId === carrierId),
+  createSelector([(state: RootState) => driverSelectors.selectAll(state)], (drivers) =>
+    drivers.filter((driver) => driver.carrierId === carrierId),
   );
 
 interface DriverKpiItem {
@@ -64,7 +63,9 @@ interface DriverKpiItem {
   subtitle: string;
 }
 
-const computeDriverKpis = (drivers: ReturnType<typeof driverSelectors.selectAll>): DriverKpiItem[] => {
+const computeDriverKpis = (
+  drivers: ReturnType<typeof driverSelectors.selectAll>,
+): DriverKpiItem[] => {
   const availableCount = drivers.filter((driver) => driver.isAvailable).length;
 
   return [
@@ -100,34 +101,33 @@ export type DriverTab = 'all' | 'available' | 'unavailable';
 export const selectFilteredDrivers = (activeTab: DriverTab, carrierId: string) =>
   createSelector([selectAllDrivers], (drivers) => {
     let filtered = drivers;
+    console.log('filtered drivers', { activeTab, carrierId, count: filtered.length, filtered });
 
     if (carrierId !== 'all') {
       filtered = filtered.filter((driver) => driver.carrierId === carrierId);
     }
 
     if (activeTab === 'available') {
-      return filtered.filter((driver) => driver.isAvailable === true);
+      filtered.filter((driver) => driver.isAvailable === true);
     }
     if (activeTab === 'unavailable') {
-      return filtered.filter((driver) => driver.isAvailable === false);
+      filtered.filter((driver) => driver.isAvailable === false);
     }
-    return filtered;
+
+    return filtered.map((driver) => ({
+      ...driver,
+      phone: formatPhone(driver.phone),
+    }));
   });
 
 export const selectDriverKpis = (activeTab: DriverTab, carrierId: string) =>
-  createSelector(
-    [selectFilteredDrivers(activeTab, carrierId)],
-    computeDriverKpis,
-  );
+  createSelector([selectFilteredDrivers(activeTab, carrierId)], computeDriverKpis);
 
-export const selectDriverTabCounts = createSelector(
-  [selectAllDrivers],
-  (drivers) => ({
-    all: drivers.length,
-    available: drivers.filter((driver) => driver.isAvailable === true).length,
-    unavailable: drivers.filter((driver) => driver.isAvailable === false).length,
-  }),
-);
+export const selectDriverTabCounts = createSelector([selectAllDrivers], (drivers) => ({
+  all: drivers.length,
+  available: drivers.filter((driver) => driver.isAvailable === true).length,
+  unavailable: drivers.filter((driver) => driver.isAvailable === false).length,
+}));
 
 export const selectDriverWithCarrier = (driverId: string) =>
   createSelector(

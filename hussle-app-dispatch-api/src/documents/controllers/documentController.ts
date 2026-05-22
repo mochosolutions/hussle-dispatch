@@ -49,8 +49,9 @@ export const createDocumentControllers = (deps: DocumentControllerDeps): BaseDoc
   },
 
   download: async (req: Request, res: Response): Promise<void> => {
-    const input = documentIdMapper(req);
-    const url = await deps.documentService.getDownloadUrl(input);
+    const baseInput = documentIdMapper(req);
+    const disposition = req.query['disposition'] === 'inline' ? 'inline' : 'attachment';
+    const url = await deps.documentService.getDownloadUrl({ ...baseInput, disposition });
     res.setHeader('Cache-Control', 'no-store');
     res.redirect(302, url);
   },

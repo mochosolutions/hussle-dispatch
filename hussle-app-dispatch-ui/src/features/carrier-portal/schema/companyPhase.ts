@@ -64,7 +64,7 @@ export const companyPhase: Phase = {
         {
           id: 'hasMcAuthority',
           label: 'Do you have your own MC authority?',
-          fieldType: 'select',
+          fieldType: 'cards',
           options: YES_NO_OPTIONS,
         },
         {
@@ -84,7 +84,7 @@ export const companyPhase: Phase = {
         {
           id: 'hasDba',
           label: 'Do you operate under a DBA / trade name?',
-          fieldType: 'select',
+          fieldType: 'toggle',
           options: YES_NO_OPTIONS,
           visibility: mcNo,
         },

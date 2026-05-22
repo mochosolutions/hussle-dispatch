@@ -51,8 +51,10 @@ const PortalShell: React.FC<PortalShellProps> = ({
           display: 'flex',
           justifyContent: 'center',
           px: { xs: 2, md: 3 },
-          py: { xs: 4, md: 5 },
-          pb: footer ? { xs: 3, md: 4 } : { xs: 8, md: 10 },
+          pt: { xs: 4, md: 5 },
+          // Bottom padding must clear the sticky footer (~70px) so long
+          // content (cost-analysis) doesn't end up beneath it.
+          pb: footer ? { xs: 12, md: 14 } : { xs: 8, md: 10 },
         }}
       >
         {children}

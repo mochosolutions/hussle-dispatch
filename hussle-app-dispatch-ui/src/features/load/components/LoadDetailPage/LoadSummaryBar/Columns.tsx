@@ -17,17 +17,17 @@ export const StopColumn: React.FC<{
       <KpiLabel>{label}</KpiLabel>
     </Stack>
 
-    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'flex-start' }}>
       <BodyMuted sx={LABEL_SX}>Facility:</BodyMuted>
       <BodyStrong sx={{ lineHeight: 1.3 }}>{stop.facilityName || '-'}</BodyStrong>
     </Box>
 
-    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'flex-start' }}>
       <BodyMuted sx={LABEL_SX}>Location:</BodyMuted>
       <BodyStrong sx={{ lineHeight: 1.3 }}>{stop.cityState || '-'}</BodyStrong>
     </Box>
 
-    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'flex-start' }}>
       <BodyMuted sx={LABEL_SX}>Date:</BodyMuted>
       <Stack direction="row" spacing={0.5} alignItems="center">
         {stop.isCompleted && <CheckCircleIcon sx={{ fontSize: 12, color: 'success.main' }} />}

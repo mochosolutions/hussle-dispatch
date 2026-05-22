@@ -48,9 +48,7 @@ interface UpsertVehicleData {
 
 export interface PortalEquipmentServiceDeps {
   findCarrierById: (carrierId: string) => Promise<CarrierRecord | null>;
-  findVehiclesByCarrierId: (
-    carrierId: string,
-  ) => Promise<{ id: string; unitNumber: string }[]>;
+  findVehiclesByCarrierId: (carrierId: string) => Promise<{ id: string; unitNumber: string }[]>;
   upsertVehicles: (
     carrierId: string,
     data: UpsertVehicleData[],
@@ -68,28 +66,13 @@ const CATEGORY_TO_EQUIPMENT_TYPE: Record<VehicleCategory, EquipmentType> = {
 const mapCategoryToEquipmentType = (category: VehicleCategory): EquipmentType =>
   CATEGORY_TO_EQUIPMENT_TYPE[category];
 
-const validateComplianceRules = (
-  vehicles: VehicleInput[],
-  carrier: CarrierRecord,
-): void => {
+const validateComplianceRules = (vehicles: VehicleInput[], carrier: CarrierRecord): void => {
   vehicles.forEach((vehicle) => {
-    switch (vehicle.category) {
-      case 'SEMI_TRUCK': {
-        if (!carrier.mcNumber) {
-          throw new ValidationError('MC number is required for semi trucks');
-        }
-        break;
-      }
-      case 'BOX_TRUCK': {
-        if (vehicle.gvwr !== undefined && vehicle.gvwr > 26000 && !carrier.dotNumber) {
-          throw new ValidationError(
-            'DOT number is required for vehicles over 26,000 lbs GVWR',
-          );
-        }
-        break;
-      }
-      default:
-        break;
+    if (vehicle.category === 'SEMI_TRUCK' && !carrier.mcNumber) {
+      throw new ValidationError('MC number is required for carriers operating semi trucks');
+    }
+    if (vehicle.gvwr !== undefined && vehicle.gvwr > 26000 && !carrier.dotNumber) {
+      throw new ValidationError('DOT number is required for vehicles over 26,000 lbs GVWR');
     }
   });
 };
@@ -106,7 +89,6 @@ const computeNewUnitNumber = (
   startIndex: number,
 ): { unitNumber: string; nextIndex: number } => {
   let i = startIndex;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const candidate = generateUnitNumber(i);
     if (!reserved.has(candidate)) {
@@ -118,9 +100,7 @@ const computeNewUnitNumber = (
 };
 
 export const createPortalEquipmentService = (deps: PortalEquipmentServiceDeps) => ({
-  saveEquipment: async (
-    input: SaveEquipmentInput,
-  ): Promise<VehicleSummary[]> => {
+  saveEquipment: async (input: SaveEquipmentInput): Promise<VehicleSummary[]> => {
     const carrier = await deps.findCarrierById(input.carrierId);
 
     if (!carrier) {

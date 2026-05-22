@@ -104,6 +104,8 @@ const PortalPageContent = () => {
     }
   };
 
+  console.log('Current Step:', {currentStep, phase});
+
   const handleSaveExit = () => {
     window.location.href = '/';
   };
@@ -117,7 +119,7 @@ const PortalPageContent = () => {
       secondaryAction={{ label: 'Save & Exit', onClick: handleSaveExit }}
       onContinue={stepNav?.onContinue}
       continueLabel={stepNav?.continueLabel ?? 'Continue'}
-      continueDisabled={!stepNav?.canContinue}
+      continueDisabled={stepNav?.isPending ?? false}
       isContinuing={stepNav?.isPending ?? false}
     />
   ) : undefined;

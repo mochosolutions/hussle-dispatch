@@ -29,10 +29,7 @@ import { createLanePreferencesControllers } from './controllers/lanePreferencesC
 import { createPortalLanePreferencesService } from './services/portalLanePreferencesService';
 import { createDocumentsControllers } from './controllers/documentsController';
 import { createPortalDocumentsService } from './services/portalDocumentsService';
-import {
-  generatePresignedPutUrl,
-  buildCarrierDocumentKey,
-} from '@/shared/s3Presign';
+import { generatePresignedPutUrl, buildCarrierDocumentKey } from '@/shared/s3Presign';
 import { env } from '@/config/env';
 
 interface CarrierPortalModuleDeps {
@@ -42,7 +39,6 @@ interface CarrierPortalModuleDeps {
   agreementQueries: PortalAgreementQueryPort;
   storage: StorageProvider;
 }
-
 
 export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const tokenRepo = carrierInviteTokenRepoPrisma(deps.prismaClient);
@@ -55,22 +51,6 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const lanePreferencesWritePort = portalLanePreferencesWriteAdapter(deps.prismaClient);
 
   const authenticateCarrierToken = createAuthenticateCarrierToken({ tokenRepo });
-
-  // Session service uses carrierId from the token — scoping is enforced by the
-  // authenticateCarrierToken middleware. The carrier repo calls here use
-  // prismaClient directly because the session service interface predates the
-  // scoped repo and only operates on the token-authenticated carrier.
-  const onboardingSessionService = createOnboardingSessionService({
-    sessionRepo,
-    carrierRepo: {
-      findById: (id: string) => deps.prismaClient.carrier.findUnique({ where: { id } }),
-      update: (id: string, data: Record<string, unknown>) =>
-        deps.prismaClient.carrier.update({ where: { id }, data }),
-    },
-    eventBus: deps.eventBus,
-    logger: deps.logger,
-    auditLog,
-  });
 
   const companyService = createPortalCompanyService({ carrierRepo });
 
@@ -93,6 +73,27 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
 
   const driversService = createPortalDriversService({ driverRepo });
 
+  // Session service uses carrierId from the token — scoping is enforced by the
+  // authenticateCarrierToken middleware. The carrier repo calls here use
+  // prismaClient directly because the session service interface predates the
+  // scoped repo and only operates on the token-authenticated carrier.
+  // equipmentService + driversService are injected so submitStep can route
+  // equipment-entry + drivers-list payloads through them and return real
+  // DB-assigned UUIDs (US-30).
+  const onboardingSessionService = createOnboardingSessionService({
+    sessionRepo,
+    carrierRepo: {
+      findById: (id: string) => deps.prismaClient.carrier.findUnique({ where: { id } }),
+      update: (id: string, data: Record<string, unknown>) =>
+        deps.prismaClient.carrier.update({ where: { id }, data }),
+    },
+    eventBus: deps.eventBus,
+    logger: deps.logger,
+    auditLog,
+    equipmentService,
+    driversService,
+  });
+
   const costAnalysisService = createPortalCostAnalysisService({
     carrierCostProfileRepo: {
       findById: (carrierId, organizationId) =>
@@ -112,10 +113,12 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
         // Documents service already receives organizationId from controller
         // and uses findByIdAndCarrier for document verification.
         // Compliance flag updates use carrierId which is token-scoped.
-        return deps.prismaClient.carrier.update({
-          where: { id: carrierId },
-          data: flags,
-        }).then(() => undefined);
+        return deps.prismaClient.carrier
+          .update({
+            where: { id: carrierId },
+            data: flags,
+          })
+          .then(() => undefined);
       },
     },
     presignPort: {
@@ -171,6 +174,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     documents: createDocumentsControllers({ documentsService }),
     agreement: createPortalAgreementControllers({
       agreementQueries: deps.agreementQueries,
+      sessionRepo,
       storage: deps.storage,
     }),
   };

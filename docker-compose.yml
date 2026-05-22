@@ -11,6 +11,10 @@ services:
     command: npx vite --host 0.0.0.0 --force
     environment:
       - CHOKIDAR_USEPOLLING=true
+      # Vite dev proxy at /docuseal-embed/* forwards to this URL and strips
+      # x-frame-options so the AgreementSigningStep iframe can render the
+      # DocuSeal signing page. Resolves via the docker network.
+      - DOCUSEAL_PROXY_TARGET=http://hussle-app-docuseal:3000
   dispatch-api:
     build:
       context: ./hussle-app-dispatch-api

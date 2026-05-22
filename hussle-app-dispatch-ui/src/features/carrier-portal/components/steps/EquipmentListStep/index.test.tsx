@@ -10,10 +10,7 @@ import {
 } from '../../../store/reducers/carrierPortalSlice';
 import type { Session } from '../../../engine';
 import { equipmentPhase } from '../../../schema/equipmentPhase';
-import {
-  TestStepNavProvider,
-  type StepNavTestHandle,
-} from '../../StepNavContext';
+import { TestStepNavProvider, type StepNavTestHandle } from '../../StepNavContext';
 import EquipmentListStep from '.';
 
 const equipmentStep = equipmentPhase.steps[0];
@@ -71,9 +68,7 @@ describe('EquipmentListStep (connected)', () => {
     );
 
     expect(screen.getByText('No vehicles yet')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /add your first vehicle/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add your first vehicle/i })).toBeInTheDocument();
   });
 
   it('opens the inline form when "Add your first vehicle" is clicked', async () => {
@@ -136,22 +131,27 @@ describe('EquipmentListStep (connected)', () => {
         action.type === carrierPortalV2Actions.submitStep.type,
     );
     expect(submitCalls).toHaveLength(1);
-    const submitArg = submitCalls[0]?.[0] as ReturnType<
-      typeof carrierPortalV2Actions.submitStep
-    >;
+    const submitArg = submitCalls[0]?.[0] as ReturnType<typeof carrierPortalV2Actions.submitStep>;
     expect(submitArg.payload.stepId).toBe('equipment-entry');
     const vehicles = (submitArg.payload.answers as { vehicles: unknown[] }).vehicles;
     expect(Array.isArray(vehicles)).toBe(true);
     expect(vehicles).toHaveLength(1);
     expect(vehicles[0]).toMatchObject({
-      year: '2022',
+      category: 'SEMI_TRUCK',
+      year: 2022,
       make: 'Freightliner',
       model: 'Cascadia',
       vin: '1FUJG6DR9NL000001',
       licensePlate: 'NC-TR4892',
-      gvwr: '80000',
+      gvwr: 80000,
       type: 'truck',
     });
+
+    // US-30: never send the client-generated _tempKey or a client-side id to
+    // the server. The server assigns ids on persist; new vehicles have no id.
+    const submittedVehicle = vehicles[0] as Record<string, unknown>;
+    expect(submittedVehicle).not.toHaveProperty('_tempKey');
+    expect(submittedVehicle.id).toBeUndefined();
   });
 
   it('registers a disabled Continue when no vehicles have been saved', () => {

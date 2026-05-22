@@ -275,6 +275,7 @@ describe('createDocumentService', () => {
         doc.s3Key,
         STANDARD_DOWNLOAD_TTL_SECONDS,
         'bol-signed-load-load-1-2026-01-01.pdf',
+        'attachment',
       );
       expect(result).toBe('https://s3.example.com/presigned-get');
     });

@@ -169,6 +169,7 @@ export interface GetDocumentInput {
 export interface DownloadDocumentInput {
   id: string;
   organizationId: string;
+  disposition?: 'inline' | 'attachment';
 }
 
 export interface ArchiveDocumentInput {

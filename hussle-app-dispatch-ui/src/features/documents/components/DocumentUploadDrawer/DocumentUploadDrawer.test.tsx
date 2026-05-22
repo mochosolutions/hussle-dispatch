@@ -92,37 +92,37 @@ describe('OtherLabelForm', () => {
     expect(input).toHaveAttribute('maxLength', '80');
   });
 
-  it('disables the Upload button when label is empty', () => {
+  it('disables the Add to Queue button when label is empty', () => {
     renderOtherLabelForm();
 
-    expect(screen.getByRole('button', { name: /^upload$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add to queue/i })).toBeDisabled();
   });
 
-  it('disables the Upload button when label is whitespace only', async () => {
+  it('disables the Add to Queue button when label is whitespace only', async () => {
     const user = userEvent.setup();
     renderOtherLabelForm();
 
     await user.type(screen.getByLabelText(/document name/i), '   ');
 
-    expect(screen.getByRole('button', { name: /^upload$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add to queue/i })).toBeDisabled();
   });
 
-  it('enables the Upload button after entering a non-empty trimmed label', async () => {
+  it('enables the Add to Queue button after entering a non-empty trimmed label', async () => {
     const user = userEvent.setup();
     renderOtherLabelForm();
 
     await user.type(screen.getByLabelText(/document name/i), 'Customer Form');
 
-    expect(screen.getByRole('button', { name: /^upload$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /add to queue/i })).toBeEnabled();
   });
 
-  it('calls onSubmit with the trimmed label when Upload is clicked', async () => {
+  it('calls onSubmit with the trimmed label when Add to Queue is clicked', async () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn();
     renderOtherLabelForm({ onSubmit });
 
     await user.type(screen.getByLabelText(/document name/i), '  Customer Form  ');
-    await user.click(screen.getByRole('button', { name: /^upload$/i }));
+    await user.click(screen.getByRole('button', { name: /add to queue/i }));
 
     expect(onSubmit).toHaveBeenCalledWith('Customer Form');
   });
@@ -145,7 +145,7 @@ describe('DocumentUploadDrawer', () => {
 
   it('shows replace-mode title when lockDocType and preselectedDocType are set', () => {
     renderDrawer({
-      context: 'driver-profile',
+      context: 'driver-detail',
       entityType: 'driver',
       entityId: 'drv-1',
       lockDocType: true,
@@ -171,7 +171,7 @@ describe('DocumentUploadDrawer', () => {
     });
 
     // Open the picker
-    await user.click(screen.getByRole('button', { name: /select document to upload/i }));
+    await user.click(screen.getByRole('button', { name: /add document/i }));
 
     // Select the "Other" doc type card (card label rendered inside the picker)
     await user.click(screen.getByText('Other'));
@@ -185,10 +185,13 @@ describe('DocumentUploadDrawer', () => {
     const file = new File(['dummy'], 'customer-form.pdf', { type: 'application/pdf' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // OtherLabelForm should now be visible — fill and submit
+    // OtherLabelForm should now be visible — fill and stage
     const nameInput = await screen.findByLabelText(/document name/i);
     await user.type(nameInput, 'Customer Form');
-    await user.click(screen.getByRole('button', { name: /^upload$/i }));
+    await user.click(screen.getByRole('button', { name: /add to queue/i }));
+
+    // Now the staged document shows — click the final upload trigger
+    await user.click(screen.getByRole('button', { name: /upload 1 document/i }));
 
     // Verify dispatch was called with the right shape
     const uploadCall = mockDispatch.mock.calls.find(

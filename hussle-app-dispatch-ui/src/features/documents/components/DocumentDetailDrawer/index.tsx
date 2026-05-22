@@ -82,7 +82,7 @@ const openInNewTab = (url: string): void => {
 interface DocumentPreviewAreaProps {
   fileName: string;
   mimeType: string | null;
-  url: string;
+  previewUrl: string;
   onDownload: () => void;
 }
 
@@ -106,7 +106,7 @@ const PreviewUnavailableFallback: React.FC<{ onDownload: () => void }> = ({ onDo
 const DocumentPreviewArea: React.FC<DocumentPreviewAreaProps> = ({
   fileName,
   mimeType,
-  url,
+  previewUrl,
   onDownload,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -127,7 +127,7 @@ const DocumentPreviewArea: React.FC<DocumentPreviewAreaProps> = ({
           />
         )}
         <iframe
-          src={url}
+          src={previewUrl}
           title={`PDF preview of ${fileName}`}
           aria-label={`PDF preview of ${fileName}`}
           onLoad={() => setIsLoading(false)}
@@ -163,7 +163,7 @@ const DocumentPreviewArea: React.FC<DocumentPreviewAreaProps> = ({
         )}
         <Box
           component="img"
-          src={url}
+          src={previewUrl}
           alt={fileName}
           onLoad={() => setIsLoading(false)}
           onError={() => {
@@ -234,6 +234,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   const { openModal } = useModalActions();
 
   const downloadUrl = `${config.apiUrl}/api/v1/documents/${documentId}/download`;
+  const previewUrl = `${downloadUrl}?disposition=inline`;
 
   // Handle case where the document was deleted while drawer is open
   useEffect(() => {
@@ -371,7 +372,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             <DocumentPreviewArea
               fileName={doc.fileName}
               mimeType={doc.mimeType}
-              url={downloadUrl}
+              previewUrl={previewUrl}
               onDownload={handleDownload}
             />
           </SectionCard>

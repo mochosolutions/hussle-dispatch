@@ -20,7 +20,7 @@ export interface BuildYupFromQuestionsInput {
   session: Session;
 }
 
-const baseFor = (q: Question): Yup.AnySchema => {
+const baseFor = (q: Question, required: boolean): Yup.AnySchema => {
   switch (q.fieldType) {
     case 'email':
       return Yup.string().email('Invalid email');
@@ -34,13 +34,26 @@ const baseFor = (q: Question): Yup.AnySchema => {
       return Yup.boolean();
     case 'select':
     case 'cards':
+    case 'toggle':
       return Yup.string();
     case 'mc':
       return Yup.string()
         .matches(/^(MC-)?\d{3,8}$/i, 'Invalid MC number format')
         .nullable();
     case 'address':
-      return Yup.object();
+      // Required addresses validate every required sub-field so an empty `{}`
+      // (initial state) surfaces specific per-field errors. Optional addresses
+      // accept any shape so they don't block submit.
+      return required
+        ? Yup.object({
+            line1: Yup.string().trim().required('Street address is required'),
+            line2: Yup.string().trim().notRequired().nullable(),
+            city: Yup.string().trim().required('City is required'),
+            state: Yup.string().trim().required('State is required'),
+            zip: Yup.string().trim().required('ZIP is required'),
+            country: Yup.string().trim().required('Country is required'),
+          })
+        : Yup.object().nullable();
     case 'text':
     default:
       return Yup.string();
@@ -55,7 +68,14 @@ export const buildYupFromQuestions = ({
   for (const q of questions) {
     const visible = !q.visibility || evaluatePredicate(q.visibility, session);
     const required = visible && !q.optional;
-    let schema = baseFor(q);
+    let schema = baseFor(q, required);
+    // `address` already wires required sub-fields itself; the wrapper
+    // `.required(...)` on the object would add a redundant "address is
+    // required" message that fights with the per-field messages.
+    if (q.fieldType === 'address') {
+      shape[q.id] = schema;
+      continue;
+    }
     schema = required
       ? schema.required(`${q.label} is required`)
       : schema.notRequired().nullable();

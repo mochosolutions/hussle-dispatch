@@ -214,6 +214,46 @@ const isFreightTypeId = (id: string): id is FreightTypeId =>
     'tanker',
   ].includes(id);
 
+// ---------------------------------------------------------------------------
+// Backend payload mappers
+//
+// The backend `lanePreferencesValidator` (api/src/carrier-portal/validators/
+// lanePreferencesValidator.ts) is the source of truth: `schedule` (not
+// `weeklySchedule`), `freightTypes` (not `freightPreferences`),
+// `maxMilesFromHome` (not `maxMilesFromHomeBase`). It also rejects `'neutral'`
+// — those entries are local UI state only — and accepts the `'no_limit'`
+// sentinel for unlimited radius (UI stores that as `-1`).
+// ---------------------------------------------------------------------------
+
+const toBackendLanes = (
+  lanes: LanePreferences,
+): Record<string, 'preferred' | 'avoid'> => {
+  const out: Record<string, 'preferred' | 'avoid'> = {};
+  for (const [state, value] of Object.entries(lanes)) {
+    if (value === 'preferred' || value === 'avoid') {
+      out[state] = value;
+    }
+  }
+  return out;
+};
+
+const toBackendFreight = (
+  freight: Record<FreightTypeId, FreightChipState>,
+): Record<string, 'on' | 'avoid'> => {
+  const out: Record<string, 'on' | 'avoid'> = {};
+  for (const [id, state] of Object.entries(freight)) {
+    if (state === 'on' || state === 'avoid') {
+      out[id] = state;
+    }
+  }
+  return out;
+};
+
+const NO_LIMIT_SENTINEL = -1;
+
+const toBackendMaxMiles = (value: number): number | 'no_limit' =>
+  value === NO_LIMIT_SENTINEL ? 'no_limit' : value;
+
 const buildInitialFleet = (existing: Partial<FleetPrefs>): FleetPrefs => ({
   lanes: existing.lanes ?? EMPTY_LANES,
   schedule: existing.schedule ?? DEFAULT_SCHEDULE,
@@ -652,10 +692,11 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
   const handleSubmit = useCallback((): void => {
     const payload: Record<string, unknown> = {
       fleet: {
-        lanes: fleet.lanes,
-        weeklySchedule: fleet.schedule,
-        freightPreferences: fleet.freight,
-        maxMilesFromHomeBase: fleet.maxMiles,
+        lanes: toBackendLanes(fleet.lanes),
+        schedule: fleet.schedule,
+        schedulePreset: fleet.schedulePreset,
+        freightTypes: toBackendFreight(fleet.freight),
+        maxMilesFromHome: toBackendMaxMiles(fleet.maxMiles),
         maxDaysOut: fleet.maxDays,
       },
       overrides: Object.fromEntries(
@@ -664,15 +705,20 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
           .map(([driverId, driverOverride]) => [
             driverId,
             {
-              ...(driverOverride.lanes !== undefined ? { lanes: driverOverride.lanes } : {}),
+              ...(driverOverride.lanes !== undefined
+                ? { lanes: toBackendLanes(driverOverride.lanes) }
+                : {}),
               ...(driverOverride.schedule !== undefined
-                ? { weeklySchedule: driverOverride.schedule }
+                ? { schedule: driverOverride.schedule }
+                : {}),
+              ...(driverOverride.schedulePreset !== undefined
+                ? { schedulePreset: driverOverride.schedulePreset }
                 : {}),
               ...(driverOverride.freight !== undefined
-                ? { freightPreferences: driverOverride.freight }
+                ? { freightTypes: toBackendFreight(driverOverride.freight) }
                 : {}),
               ...(driverOverride.maxMiles !== undefined
-                ? { maxMilesFromHomeBase: driverOverride.maxMiles }
+                ? { maxMilesFromHome: toBackendMaxMiles(driverOverride.maxMiles) }
                 : {}),
               ...(driverOverride.maxDays !== undefined
                 ? { maxDaysOut: driverOverride.maxDays }

@@ -36,6 +36,13 @@ export interface DocusealProviderDeps {
   baseUrl: string;
   apiKey: string;
   templateId: number;
+  /**
+   * Submitter role to use when creating a submission. Must match a role
+   * defined on the DocuSeal template (see template's `submitters[].role`).
+   * Defaults to "First Party" — the DocuSeal default for templates created
+   * from a PDF without explicit role definitions.
+   */
+  submitterRole?: string;
   logger: Logger;
   fetch?: typeof globalThis.fetch;
   sleep?: (ms: number) => Promise<void>;
@@ -81,6 +88,7 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
   }
 
   const { baseUrl, apiKey, templateId, logger } = deps;
+  const submitterRole = deps.submitterRole ?? 'First Party';
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const sleep = deps.sleep ?? defaultSleep;
 
@@ -138,6 +146,11 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
       );
     }
 
+    // DocuSeal validates the submitter `role` against roles defined on the
+    // template. New templates created from a PDF default to "First Party";
+    // custom templates may rename it. We default to "First Party" so the
+    // out-of-the-box template works; expose `DOCUSEAL_SUBMITTER_ROLE` for
+    // teams that renamed the role in their template.
     const body = JSON.stringify({
       template_id: templateId,
       send_email: false,
@@ -145,7 +158,7 @@ export const createDocusealProvider = (deps: DocusealProviderDeps): SignaturePro
         {
           name: input.signer.name,
           email: input.signer.email,
-          role: 'Carrier',
+          role: submitterRole,
           values: input.variables,
         },
       ],

@@ -39,6 +39,8 @@ export const mountLocalStorageRoutes = (
 
     const filename =
       typeof req.query['filename'] === 'string' ? req.query['filename'] : undefined;
+    const disposition =
+      req.query['disposition'] === 'inline' ? 'inline' : undefined;
 
     const result = await storageProvider.get(key);
 
@@ -50,7 +52,9 @@ export const mountLocalStorageRoutes = (
     // local storage backend. Override them here so previewing works in dev.
     res.removeHeader('X-Frame-Options');
     res.setHeader('Content-Security-Policy', "frame-ancestors *");
-    if (filename !== undefined) {
+    if (disposition === 'inline') {
+      res.setHeader('Content-Disposition', 'inline');
+    } else if (filename !== undefined) {
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     } else {
       res.setHeader('Content-Disposition', 'inline');

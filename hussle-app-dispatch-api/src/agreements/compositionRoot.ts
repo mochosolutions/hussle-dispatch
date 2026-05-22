@@ -15,6 +15,8 @@ import { createOrganizationQueries } from './queries/organizationQueries';
 import { agreementRepositoryPrisma } from './repositories/agreementRepositoryPrisma';
 import { carrierAgreementWriteRepositoryPrisma } from './repositories/carrierAgreementWriteRepositoryPrisma';
 import { createAgreementsRouter } from './routes/agreementRoutes';
+import type { EnsureAgreementForCarrierInput } from './services/ensureAgreementForCarrier';
+import { ensureAgreementForCarrier } from './services/ensureAgreementForCarrier';
 import type { FinalizeAgreementInput } from './services/finalizeAgreement';
 import { finalizeAgreement } from './services/finalizeAgreement';
 import type { RequestAgreementInput } from './services/requestAgreement';
@@ -49,6 +51,13 @@ export interface AgreementsModuleQueries {
     carrierId: string,
     templateKey: import('@prisma/client').AgreementTemplateKey,
   ) => Promise<import('./types/agreementTypes').Agreement | null>;
+  /**
+   * Idempotent get-or-create for a carrier's agreement. Used by the carrier
+   * portal as a safety net when the dispatcher hasn't pre-generated one.
+   */
+  ensureForCarrier: (
+    input: EnsureAgreementForCarrierInput,
+  ) => Promise<AgreementServiceResult<Agreement>>;
 }
 
 export interface AgreementsModule {
@@ -174,6 +183,13 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
 
   const queries: AgreementsModuleQueries = {
     findLatestForCarrier: agreementRepo.findLatestForCarrier,
+    ensureForCarrier: (input) =>
+      ensureAgreementForCarrier(input, {
+        agreementRepo,
+        orgQueries,
+        requestAgreement: requestAgreementBound,
+        logger: deps.logger,
+      }),
   };
 
   return {

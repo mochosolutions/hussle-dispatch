@@ -13,12 +13,7 @@ import type { FormikProps } from 'formik';
 import { PeopleAltOutlined } from '@mui/icons-material';
 
 import { useDispatch, useSelector } from 'store';
-import {
-  EmailField,
-  PhoneField,
-  SelectField,
-  TextField,
-} from 'mocho/components/form-fields';
+import { EmailField, PhoneField, SelectField, TextField } from 'mocho/components/form-fields';
 
 import type { Step } from 'features/carrier-portal/engine';
 import ListBuilderHeader from 'features/carrier-portal/components/ListBuilderHeader';
@@ -31,10 +26,7 @@ import OnboardingCard from 'features/carrier-portal/components/OnboardingCard';
 import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
-import {
-  selectLoading,
-  selectSession,
-} from '../../../store/selectors/carrierPortalSelectors';
+import { selectLoading, selectSession } from '../../../store/selectors/carrierPortalSelectors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,7 +35,10 @@ import {
 type PayType = 'percentage' | 'per_mile' | 'flat_rate';
 
 interface DriverEntry {
-  id: string;
+  // Local-only React key, never submitted to the server (US-30).
+  _tempKey: string;
+  // Server-assigned UUID — present only after a successful submit round-trip.
+  id?: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -65,8 +60,18 @@ interface DriversListStepProps {
   step: Step;
 }
 
+// Persisted shape from session.answers — server doesn't store _tempKey.
+interface PersistedDriverEntry extends Omit<DriverEntry, '_tempKey'> {
+  _tempKey?: string;
+}
+
 interface DriversAnswers {
-  entries?: DriverEntry[];
+  entries?: PersistedDriverEntry[];
+}
+
+interface DriverDraftState {
+  sourceFingerprint: string;
+  items: DriverEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -104,7 +109,8 @@ const EMPTY_DRIVER_FORM: DriverFormValues = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const generateDriverId = (): string => crypto.randomUUID();
+// Local-only key for React list rendering. Never submitted to the server.
+const generateTempKey = (): string => crypto.randomUUID();
 
 const driverNameOf = (d: DriverEntry): string => {
   const name = `${d.firstName} ${d.lastName}`.trim();
@@ -286,20 +292,42 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
   const session = useSelector(selectSession);
   const submitStatus = useSelector(selectLoading('submitStep'));
 
+  const persistedFingerprint = useMemo(() => {
+    if (!session) {
+      return '';
+    }
+    const answers = (session.answers[step.id] ?? {}) as DriversAnswers;
+    return JSON.stringify(answers.entries ?? []);
+  }, [session, step.id]);
+
   const initialDrivers = useMemo<DriverEntry[]>(() => {
     if (!session) {
       return [];
     }
     const answers = (session.answers[step.id] ?? {}) as DriversAnswers;
-    return Array.isArray(answers.entries) ? answers.entries : [];
+    const sourceEntries = Array.isArray(answers.entries) ? answers.entries : [];
+    return sourceEntries.map((d) => ({
+      ...d,
+      _tempKey: d._tempKey ?? generateTempKey(),
+    }));
   }, [session, step.id]);
 
-  const [drivers, setDrivers] = useState<DriverEntry[]>(initialDrivers);
+  const [driverDraft, setDriverDraft] = useState<DriverDraftState>(() => ({
+    sourceFingerprint: persistedFingerprint,
+    items: initialDrivers,
+  }));
   const [formOpen, setFormOpen] = useState<boolean>(false);
+
+  // After a successful submit, session.answers[stepId].entries is replaced
+  // with the server response containing Prisma UUIDs. When that fingerprint
+  // changes, read from session until the carrier makes a new local edit.
+  const drivers =
+    driverDraft.sourceFingerprint === persistedFingerprint ? driverDraft.items : initialDrivers;
 
   const handleAddSaved = (values: DriverFormValues): void => {
     const next: DriverEntry = {
-      id: generateDriverId(),
+      _tempKey: generateTempKey(),
+      // `id` deliberately omitted — server assigns after submit.
       firstName: values.firstName,
       lastName: values.lastName,
       phone: values.phone,
@@ -307,13 +335,18 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
       payType: values.payType,
       payRate: values.payRate,
     };
-    setDrivers((prev) => [...prev, next]);
+    setDriverDraft((prev) => {
+      const baseItems =
+        prev.sourceFingerprint === persistedFingerprint ? prev.items : initialDrivers;
+      return { sourceFingerprint: persistedFingerprint, items: [...baseItems, next] };
+    });
     setFormOpen(false);
   };
 
   const handleAddSavedAndAddAnother = (values: DriverFormValues): void => {
     const next: DriverEntry = {
-      id: generateDriverId(),
+      _tempKey: generateTempKey(),
+      // `id` deliberately omitted — server assigns after submit.
       firstName: values.firstName,
       lastName: values.lastName,
       phone: values.phone,
@@ -321,22 +354,36 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
       payType: values.payType,
       payRate: values.payRate,
     };
-    setDrivers((prev) => [...prev, next]);
+    setDriverDraft((prev) => {
+      const baseItems =
+        prev.sourceFingerprint === persistedFingerprint ? prev.items : initialDrivers;
+      return { sourceFingerprint: persistedFingerprint, items: [...baseItems, next] };
+    });
     setFormOpen(true);
   };
 
-  const handleRemove = (id: string): void => {
-    setDrivers((prev) => prev.filter((d) => d.id !== id));
+  const handleRemove = (tempKey: string): void => {
+    setDriverDraft((prev) => {
+      const baseItems =
+        prev.sourceFingerprint === persistedFingerprint ? prev.items : initialDrivers;
+      return {
+        sourceFingerprint: persistedFingerprint,
+        items: baseItems.filter((d) => d._tempKey !== tempKey),
+      };
+    });
   };
 
   const handleContinue = useCallback((): void => {
     if (drivers.length === 0) {
       return;
     }
+    // Strip local-only `_tempKey` from the payload. `id` is present only when
+    // the server already assigned one (re-submit/edit case).
+    const payloadEntries = drivers.map(({ _tempKey: _omit, ...rest }) => rest);
     dispatch(
       carrierPortalV2Actions.submitStep({
         stepId: step.id,
-        answers: { entries: drivers },
+        answers: { entries: payloadEntries },
       }),
     );
   }, [dispatch, drivers, step.id]);
@@ -382,11 +429,11 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
 
         {drivers.map((d) => (
           <ListBuilderItem
-            key={d.id}
+            key={d._tempKey}
             thumbnail={<DriverAvatar initials={driverInitialsOf(d)} />}
             name={driverNameOf(d)}
             meta={driverMetaOf(d)}
-            onRemove={() => handleRemove(d.id)}
+            onRemove={() => handleRemove(d._tempKey)}
           />
         ))}
 
@@ -401,10 +448,7 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
         ) : null}
 
         {!formOpen && drivers.length > 0 ? (
-          <ListBuilderAddMoreButton
-            label="Add another driver"
-            onClick={() => setFormOpen(true)}
-          />
+          <ListBuilderAddMoreButton label="Add another driver" onClick={() => setFormOpen(true)} />
         ) : null}
       </Box>
     </OnboardingCard>

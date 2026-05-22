@@ -287,6 +287,13 @@ const STATUS_CONFIG: Record<string, BadgeStyle> = {
     label: 'Draft',
   },
 
+  CARRIER_ONBOARDING: {
+    bg: P.g100,
+    color: P.g600,
+    border: P.g200,
+    label: 'Onboarding',
+  },
+
   // ── DRIVER STATUS ──────────────────────────────────────────────────────────
 
   DRIVER_ACTIVE: {

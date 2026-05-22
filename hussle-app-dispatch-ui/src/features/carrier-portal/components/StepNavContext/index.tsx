@@ -8,7 +8,7 @@
 // hides Continue (or another step takes over).
 // ---------------------------------------------------------------------------
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 export interface StepNavHandler {
@@ -33,7 +33,10 @@ export const StepNavProvider: React.FC<StepNavProviderProps> = ({ children }) =>
   const [handler, setHandler] = useState<StepNavHandler | null>(null);
   // Memoize the context value so consumer effects don't re-fire on every
   // provider render. `setHandler` is already stable from useState.
-  const value = useMemo<StepNavContextValue>(() => ({ handler, setHandler }), [handler]);
+  const value = useMemo<StepNavContextValue>(
+    () => ({ handler, setHandler }),
+    [handler, setHandler],
+  );
   return <StepNavContext.Provider value={value}>{children}</StepNavContext.Provider>;
 };
 
@@ -82,13 +85,21 @@ interface TestStepNavProviderProps {
   children: ReactNode;
 }
 
-export const TestStepNavProvider: React.FC<TestStepNavProviderProps> = ({ handle, children }) => {
+export const TestStepNavProvider: React.FC<TestStepNavProviderProps> = ({
+  handle: handleRef,
+  children,
+}) => {
   const [handler, setHandlerState] = useState<StepNavHandler | null>(null);
-  const setHandler = (next: StepNavHandler | null): void => {
-    handle.current = next;
-    setHandlerState(next);
-  };
-  const value = useMemo<StepNavContextValue>(() => ({ handler, setHandler }), [handler]);
+  const setHandler = useCallback(
+    (next: StepNavHandler | null): void => {
+      handleRef.current = next;
+      setHandlerState(next);
+    },
+    [handleRef],
+  );
+  const value = useMemo<StepNavContextValue>(
+    () => ({ handler, setHandler }),
+    [handler, setHandler],
+  );
   return <StepNavContext.Provider value={value}>{children}</StepNavContext.Provider>;
 };
-

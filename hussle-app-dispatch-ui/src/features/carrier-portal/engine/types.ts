@@ -66,6 +66,7 @@ export type FieldType =
   | 'number'
   | 'address'
   | 'cards'
+  | 'toggle'
   | 'date'
   | 'checkbox'
   | 'email';

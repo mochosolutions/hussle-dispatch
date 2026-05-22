@@ -23,6 +23,7 @@ import { useMemo } from 'react';
 import { Box, Stack } from '@mui/material';
 import { Formik, Form } from 'formik';
 import type { FormikProps } from 'formik';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import { useDispatch, useSelector } from 'store';
 import {
@@ -45,6 +46,10 @@ import AddressTypeaheadField from 'features/carrier-portal/components/AddressTyp
 import LockableField from 'features/carrier-portal/components/LockableField';
 import TinField from 'features/carrier-portal/components/TinField';
 import FieldHint from 'features/carrier-portal/components/FieldHint';
+import SelectionCardGrid from 'features/carrier-portal/components/SelectionCardGrid';
+import type { SelectionCardOption } from 'features/carrier-portal/components/SelectionCardGrid';
+import ToggleCardGrid from 'features/carrier-portal/components/ToggleCardGrid';
+import type { ToggleCardOption } from 'features/carrier-portal/components/ToggleCardGrid';
 import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
@@ -118,7 +123,6 @@ const renderField = (q: Question, formik: FormikLike, disabled: boolean) => {
     case 'number':
       return <NumericField {...baseProps} />;
     case 'select':
-    case 'cards':
       return (
         <SelectField
           name={q.id}
@@ -128,6 +132,42 @@ const renderField = (q: Question, formik: FormikLike, disabled: boolean) => {
           formik={formik}
         />
       );
+    case 'cards': {
+      const cardOptions: SelectionCardOption[] = (q.options ?? []).map((opt) => ({
+        id: opt.value,
+        title: opt.label,
+        subline: opt.description,
+      }));
+      const currentValue = (formik.values[q.id] as string | undefined) ?? null;
+      return (
+        <SelectionCardGrid
+          name={q.id}
+          options={cardOptions}
+          value={currentValue}
+          onChange={(id) => formik.setFieldValue(q.id, id)}
+          columns={cardOptions.length <= 3 ? 2 : 3}
+          locked={disabled}
+        />
+      );
+    }
+    case 'toggle': {
+      const toggleOptions: ToggleCardOption[] = (q.options ?? []).map((opt) => ({
+        id: opt.value,
+        label: opt.label,
+        subline: opt.description,
+      }));
+      const currentValue = (formik.values[q.id] as string | undefined) ?? null;
+      return (
+        <ToggleCardGrid
+          name={q.id}
+          options={toggleOptions}
+          value={currentValue}
+          onChange={(id) => formik.setFieldValue(q.id, id)}
+          size="sm"
+          locked={disabled}
+        />
+      );
+    }
     case 'date':
       return <DateField name={q.id} label={q.label} required={!q.optional} formik={formik} />;
     case 'checkbox':
@@ -227,28 +267,43 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
             <Form noValidate>
               <InputStepNavRegister formik={formik} isPending={isPending} />
               <Stack spacing={2.5}>
-                {questions.map((q) => {
-                  const visible = !q.visibility || evaluatePredicate(q.visibility, trialSession);
-                  if (!visible) {
-                    return null;
-                  }
-                  const lockKey = isCompanyPhaseStep ? `company.${q.id}` : null;
-                  const isLockableField =
-                    lockKey !== null && (LOCKS_FIELDS as readonly string[]).includes(lockKey);
-                  const isLocked = sessionLocked && isLockableField;
-                  const fieldNode = renderField(q, formik, isLocked);
-                  return (
-                    <Box key={q.id}>
-                      <LockableField
-                        locked={isLocked}
-                        value={formatLockedValue(formik.values[q.id])}
+                <AnimatePresence initial={false}>
+                  {questions.map((q) => {
+                    const visible =
+                      !q.visibility || evaluatePredicate(q.visibility, trialSession);
+                    if (!visible) {
+                      return null;
+                    }
+                    const lockKey = isCompanyPhaseStep ? `company.${q.id}` : null;
+                    const isLockableField =
+                      lockKey !== null && (LOCKS_FIELDS as readonly string[]).includes(lockKey);
+                    const isLocked = sessionLocked && isLockableField;
+                    const fieldNode = renderField(q, formik, isLocked);
+                    return (
+                      <motion.div
+                        key={q.id}
+                        layout
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          transition: { duration: 0.32, ease: 'easeOut' },
+                        }}
+                        exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
                       >
-                        {fieldNode}
-                      </LockableField>
-                      {q.helpText ? <FieldHint>{q.helpText}</FieldHint> : null}
-                    </Box>
-                  );
-                })}
+                        <Box>
+                          <LockableField
+                            locked={isLocked}
+                            value={formatLockedValue(formik.values[q.id])}
+                          >
+                            {fieldNode}
+                          </LockableField>
+                          {q.helpText ? <FieldHint>{q.helpText}</FieldHint> : null}
+                        </Box>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </Stack>
             </Form>
           );
@@ -270,9 +325,11 @@ interface InputStepNavRegisterProps {
 }
 
 const InputStepNavRegister: React.FC<InputStepNavRegisterProps> = ({ formik, isPending }) => {
-  const { submitForm, isValid } = formik;
+  const { submitForm } = formik;
   useStepNavigation({
-    canContinue: isValid && !isPending,
+    // Continue is always clickable — submitForm() touches all fields and runs
+    // Yup validation, so inline errors surface only on click for an invalid form.
+    canContinue: !isPending,
     onContinue: submitForm,
     isPending,
   });

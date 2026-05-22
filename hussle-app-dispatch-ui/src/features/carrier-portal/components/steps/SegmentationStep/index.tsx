@@ -10,6 +10,7 @@ import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSli
 import {
   selectInvitation,
   selectLoading,
+  selectSession,
 } from '../../../store/selectors/carrierPortalSelectors';
 import type { SelectionCardOption } from '../../SelectionCardGrid';
 import { useStepNavigation } from '../../StepNavContext';
@@ -36,11 +37,24 @@ const ICON_BY_VALUE: Record<string, ReactNode> = {
 const SegmentationStep: React.FC<SegmentationStepProps> = ({ step }) => {
   const dispatch = useDispatch();
   const invitation = useSelector(selectInvitation);
+  const session = useSelector(selectSession);
   const submitStatus = useSelector(selectLoading('submitStep'));
 
-  const [selected, setSelected] = useState<string | null>(null);
-
   const question = step.questions?.[0];
+
+  const existingAnswer = useMemo<string | null>(() => {
+    if (!session || !question) {
+      return null;
+    }
+    const stepAnswers = session.answers[step.id];
+    const value = stepAnswers?.[question.id];
+    return typeof value === 'string' ? value : null;
+  }, [session, step.id, question]);
+
+  // SegmentationStep mounts only after Redux session is hydrated (StepDispatcher
+  // gates on `currentStep`), so the initial value is always correct. On back-nav
+  // the component remounts and reads the persisted answer here.
+  const [selected, setSelected] = useState<string | null>(existingAnswer);
 
   const options = useMemo<SelectionCardOption[]>(() => {
     if (!question?.options) {
@@ -73,7 +87,9 @@ const SegmentationStep: React.FC<SegmentationStepProps> = ({ step }) => {
   const isPending = submitStatus === 'pending';
 
   useStepNavigation({
-    canContinue: selected !== null && !isPending,
+    // Continue is always clickable; handleContinue no-ops if nothing selected
+    // so the user can click freely without a disabled-state dead-end.
+    canContinue: !isPending,
     onContinue: handleContinue,
     isPending,
   });

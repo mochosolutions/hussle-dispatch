@@ -85,8 +85,9 @@ describe('SegmentationStep (connected)', () => {
     expect(screen.getByText('Invited by Acme Dispatch')).toBeInTheDocument();
   });
 
-  it('registers a disabled Continue until a selection is made', () => {
+  it('registers a Continue that no-ops until a selection is made', () => {
     const store = buildStore({ session: buildSession('Acme Dispatch') });
+    const dispatchSpy = jest.spyOn(store, 'dispatch');
     const handle: StepNavTestHandle = { current: null };
 
     render(
@@ -97,7 +98,22 @@ describe('SegmentationStep (connected)', () => {
       </Provider>,
     );
 
-    expect(handle.current?.canContinue).toBe(false);
+    // Continue is always clickable (no dead-end disabled state) — verified by
+    // canContinue=true even before any card is selected.
+    expect(handle.current?.canContinue).toBe(true);
+
+    // But invoking onContinue without a selection no-ops — no submit dispatched.
+    act(() => {
+      handle.current?.onContinue();
+    });
+    const submitCalls = dispatchSpy.mock.calls.filter(
+      ([action]) =>
+        typeof action === 'object' &&
+        action !== null &&
+        'type' in action &&
+        action.type === carrierPortalV2Actions.submitStep.type,
+    );
+    expect(submitCalls).toHaveLength(0);
   });
 
   it('dispatches submitStep with selected carrier_type on Continue', async () => {

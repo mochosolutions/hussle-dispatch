@@ -16,7 +16,13 @@ import {
   StorageReadError,
   StorageWriteError,
 } from './storageErrors';
-import type { DeleteByPrefixResult, StorageGetResult, StorageObjectMetadata, StorageProvider } from './storageProvider';
+import type {
+  ContentDisposition,
+  DeleteByPrefixResult,
+  StorageGetResult,
+  StorageObjectMetadata,
+  StorageProvider,
+} from './storageProvider';
 
 interface S3StorageProviderConfig {
   s3Client: S3Client;
@@ -188,13 +194,22 @@ export const createS3StorageProvider = (
     key: string,
     expiresIn?: number,
     displayName?: string,
+    disposition: ContentDisposition = 'attachment',
   ): Promise<string> => {
     const normalizedKey = normalizeKey(key);
     const ttl = expiresIn ?? DEFAULT_PRESIGN_EXPIRATION_SECONDS;
     logger.info(`${PROVIDER_NAME}: generating presigned GET URL`, {
       key: normalizedKey,
       expiresIn: ttl,
+      disposition,
     });
+
+    const contentDisposition =
+      disposition === 'inline'
+        ? 'inline'
+        : displayName !== undefined
+          ? `attachment; filename="${displayName}"`
+          : undefined;
 
     try {
       const url = await getSignedUrl(
@@ -202,8 +217,8 @@ export const createS3StorageProvider = (
         new GetObjectCommand({
           Bucket: bucket,
           Key: normalizedKey,
-          ...(displayName !== undefined && {
-            ResponseContentDisposition: `attachment; filename="${displayName}"`,
+          ...(contentDisposition !== undefined && {
+            ResponseContentDisposition: contentDisposition,
           }),
         }),
         { expiresIn: ttl },

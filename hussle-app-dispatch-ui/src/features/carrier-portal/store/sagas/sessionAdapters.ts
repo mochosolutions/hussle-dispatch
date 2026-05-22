@@ -32,7 +32,10 @@ const AGREEMENT_STATUSES: readonly AgreementStatus[] = [
   'DRAFT',
 ] as const;
 
-const toAgreementStatus = (raw: string): AgreementStatus => {
+const toAgreementStatus = (raw: unknown): AgreementStatus => {
+  if (typeof raw !== 'string') {
+    return 'PENDING';
+  }
   const upper = raw.toUpperCase();
   const match = AGREEMENT_STATUSES.find((status) => status === upper);
   return match ?? 'PENDING';

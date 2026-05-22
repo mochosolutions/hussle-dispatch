@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
-import { Box } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { Check, LockOutlined } from '@mui/icons-material';
 
 import { Meta } from 'components/Typography';
+import PortalStepperMobile from '../PortalStepperMobile';
 
 export type StepperPhaseState = 'pending' | 'active' | 'done' | 'locked' | 'locked-viewing';
 
@@ -83,10 +85,30 @@ const labelColor = (state: StepperPhaseState): string => {
   }
 };
 
-const labelWeight = (state: StepperPhaseState): number =>
-  state === 'pending' ? 500 : 600;
+const labelWeight = (state: StepperPhaseState): number => (state === 'pending' ? 500 : 600);
 
 const PortalStepper: React.FC<PortalStepperProps> = ({ phases }) => {
+  const theme = useTheme();
+  const isNarrow = useMediaQuery(theme.breakpoints.down('md'));
+
+  if (isNarrow && phases.length > 0) {
+    const activeIndex = Math.max(
+      0,
+      phases.findIndex((p) => p.state === 'active' || p.state === 'locked-viewing'),
+    );
+    const safeIndex = activeIndex < 0 ? 0 : activeIndex;
+    const activePhase = phases[safeIndex];
+    const completedCount = phases.filter((p) => isCompletedState(p.state)).length;
+    return (
+      <PortalStepperMobile
+        activePhaseLabel={activePhase?.label ?? ''}
+        activePhaseNumber={safeIndex + 1}
+        totalPhases={phases.length}
+        progressPercent={(completedCount / phases.length) * 100}
+      />
+    );
+  }
+
   return (
     <Box
       role="progressbar"
@@ -96,8 +118,9 @@ const PortalStepper: React.FC<PortalStepperProps> = ({ phases }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        maxWidth: 900,
-        mx: 'auto',
+        // maxWidth: 900,
+        // mx: 'auto',
+        overflow: 'hidden',
       }}
     >
       {phases.map((phase, index) => {
@@ -137,6 +160,13 @@ const PortalStepper: React.FC<PortalStepperProps> = ({ phases }) => {
                   fontWeight: labelWeight(phase.state),
                   color: labelColor(phase.state),
                   whiteSpace: 'nowrap',
+                  // Hide non-active labels below `lg` so the row never overflows
+                  // at md viewports. Active phase keeps its label so users can
+                  // always see where they are.
+                  display:
+                    phase.state === 'active' || phase.state === 'locked-viewing'
+                      ? 'block'
+                      : { xs: 'none', lg: 'block' },
                 }}
               >
                 {phase.label}

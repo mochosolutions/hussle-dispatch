@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { Stack, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import {
-  ActionsCell,
-  MainCard,
-  NewDataGrid,
-  PageWrapper,
-} from '@mocho/ui/components';
+import { ActionsCell, MainCard, NewDataGrid, PageWrapper } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
 import { EmptyState } from 'mocho/components/EmptyState';
 import { ListLayout } from 'components/ListLayout';
@@ -18,10 +13,7 @@ import { useDispatch, useSelector } from 'store';
 import type { RootState } from 'store';
 import { isStale } from 'utils/redux/staleness';
 import type { Customer, CustomerFilters } from '../../types';
-import {
-  fetchCustomersRequest,
-  setCustomerFilters,
-} from '../../store/reducers/customerPageSlice';
+import { fetchCustomersRequest, setCustomerFilters } from '../../store/reducers/customerPageSlice';
 import {
   selectCustomerFilters,
   selectCustomerKpis,
@@ -274,7 +266,6 @@ const CustomerListPage = () => {
         title="Customers"
         primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
               Add Customer
             </Button>
@@ -301,11 +292,7 @@ const CustomerListPage = () => {
             content={false}
             sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <FilterBar
-              filters={filterConfigs}
-              search={searchConfig}
-              sx={{ px: 2, py: 1.5 }}
-            />
+            <FilterBar filters={filterConfigs} search={searchConfig} sx={{ px: 2, py: 1.5 }} />
 
             <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
               <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
@@ -316,7 +303,9 @@ const CustomerListPage = () => {
                   showRowCountFooter
                   totalRowCount={filteredCustomers.length}
                   rowCountLabel="customers"
-                  noDataComponent={<EmptyState variant="no-results" entityName="Customers" compact />}
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="Customers" compact />
+                  }
                   gridOptions={{
                     domLayout: 'normal',
                     pagination: true,
