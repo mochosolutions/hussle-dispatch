@@ -22,6 +22,16 @@ const YES_NO_OPTIONS = [
   { value: 'no', label: 'No' },
 ];
 
+const MC_AUTHORITY_OPTIONS = [
+  {
+    value: 'yes',
+    label: 'Yes',
+    description: 'FMCSA verification coming soon — choose No to enter your details manually.',
+    disabled: true,
+  },
+  { value: 'no', label: 'No' },
+];
+
 const mcYes: Predicate = {
   op: 'eq',
   field: 'answers.company-authority-question.hasMcAuthority',
@@ -65,7 +75,7 @@ export const companyPhase: Phase = {
           id: 'hasMcAuthority',
           label: 'Do you have your own MC authority?',
           fieldType: 'cards',
-          options: YES_NO_OPTIONS,
+          options: MC_AUTHORITY_OPTIONS,
         },
         {
           id: 'mcNumber',

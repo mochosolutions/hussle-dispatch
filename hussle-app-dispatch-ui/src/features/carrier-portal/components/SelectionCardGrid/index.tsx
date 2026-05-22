@@ -15,6 +15,7 @@ export interface SelectionCardOption<TValue extends string = string> {
   title: string;
   subline?: string;
   footnote?: string;
+  disabled?: boolean;
 }
 
 interface SelectionCardGridProps<TValue extends string = string> {
@@ -63,14 +64,15 @@ const SelectionCardGrid = <TValue extends string = string>({
     >
       {options.map((option) => {
         const selected = value === option.id;
+        const optionDisabled = locked || option.disabled === true;
 
         return (
           <ButtonBase
             key={option.id}
             role="radio"
             aria-checked={selected}
-            disabled={locked}
-            onClick={() => !locked && onChange(option.id)}
+            disabled={optionDisabled}
+            onClick={() => !optionDisabled && onChange(option.id)}
             sx={{
               position: 'relative',
               borderRadius: 1,
@@ -81,14 +83,14 @@ const SelectionCardGrid = <TValue extends string = string>({
               textAlign: 'left',
               transition: 'all 0.15s ease',
               ...sizing,
-              ...selectionCardStateSx({ selected, locked }),
+              ...selectionCardStateSx({ selected, locked: optionDisabled }),
             }}
           >
             {showRadio ? (
               <Box
                 aria-hidden
                 sx={{
-                  ...selectionCardRadioSx({ selected, locked }),
+                  ...selectionCardRadioSx({ selected, locked: optionDisabled }),
                   mb: option.icon ? 1.25 : 1,
                 }}
               >
@@ -99,7 +101,7 @@ const SelectionCardGrid = <TValue extends string = string>({
             ) : null}
 
             {option.icon ? (
-              <Box sx={{ ...selectionCardIconSx({ selected, locked }), mb: 1.5 }}>
+              <Box sx={{ ...selectionCardIconSx({ selected, locked: optionDisabled }), mb: 1.5 }}>
                 {option.icon}
               </Box>
             ) : null}

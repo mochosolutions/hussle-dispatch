@@ -137,6 +137,7 @@ const renderField = (q: Question, formik: FormikLike, disabled: boolean) => {
         id: opt.value,
         title: opt.label,
         subline: opt.description,
+        disabled: opt.disabled,
       }));
       const currentValue = (formik.values[q.id] as string | undefined) ?? null;
       return (

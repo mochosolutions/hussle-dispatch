@@ -84,7 +84,7 @@ export interface Question {
   prefillFrom?: string; // dot-path into context
   optional?: boolean;
   helpText?: string;
-  options?: { value: string; label: string; description?: string }[];
+  options?: { value: string; label: string; description?: string; disabled?: boolean }[];
 }
 
 export interface DocumentSlot {
