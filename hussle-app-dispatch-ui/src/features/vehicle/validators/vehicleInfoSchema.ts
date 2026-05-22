@@ -23,6 +23,9 @@ export const vehicleInfoSchema = Yup.object({
   monthlyGrossTarget: Yup.mixed<string | number>().defined().default(''),
   monthlyMilesTarget: Yup.mixed<string | number>().defined().default(''),
   workingDaysPerMonth: Yup.mixed<string | number>().defined().default(''),
+  lenderName: Yup.string().trim().defined().default(''),
+  loanPayment: Yup.mixed<string | number>().defined().default(''),
+  insuranceMonthlyCost: Yup.mixed<string | number>().defined().default(''),
   carrierId: Yup.string().defined().default(''),
 }).required();
 

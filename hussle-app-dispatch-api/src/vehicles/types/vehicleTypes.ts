@@ -34,6 +34,9 @@ export interface CreateVehicleInput {
   monthlyGrossTarget?: string | number;
   monthlyMilesTarget?: number;
   workingDaysPerMonth?: number;
+  lenderName?: string;
+  loanPayment?: string | number;
+  insuranceMonthlyCost?: string | number;
   isActive?: boolean;
   notes?: string;
 }
@@ -55,6 +58,9 @@ export interface UpdateVehicleDataInput {
   monthlyGrossTarget?: string | number;
   monthlyMilesTarget?: number;
   workingDaysPerMonth?: number;
+  lenderName?: string;
+  loanPayment?: string | number;
+  insuranceMonthlyCost?: string | number;
   isActive?: boolean;
   notes?: string;
 }

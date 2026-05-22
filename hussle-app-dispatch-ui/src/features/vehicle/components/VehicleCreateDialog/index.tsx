@@ -42,6 +42,9 @@ const INITIAL_VALUES: VehicleInfoFormValues = {
   monthlyGrossTarget: '',
   monthlyMilesTarget: '',
   workingDaysPerMonth: '',
+  lenderName: '',
+  loanPayment: '',
+  insuranceMonthlyCost: '',
 };
 
 export const VehicleCreateDrawer: React.FC<VehicleCreateDrawerProps> = ({

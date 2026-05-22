@@ -126,6 +126,9 @@ const toUpdateVehicleData = (
   monthlyGrossTarget: input.monthlyGrossTarget,
   monthlyMilesTarget: input.monthlyMilesTarget,
   workingDaysPerMonth: input.workingDaysPerMonth,
+  lenderName: input.lenderName,
+  loanPayment: input.loanPayment,
+  insuranceMonthlyCost: input.insuranceMonthlyCost,
   isActive: input.isActive,
   notes: input.notes,
 });

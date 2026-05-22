@@ -326,6 +326,9 @@ export interface Vehicle {
   monthlyGrossTarget: string | null;
   monthlyMilesTarget: number | null;
   workingDaysPerMonth: number | null;
+  lenderName: string | null;
+  loanPayment: string | null;
+  insuranceMonthlyCost: string | null;
   activeLoadCount?: number;
   expenses: VehicleExpense[];
   notes: string | null;
@@ -352,6 +355,9 @@ export interface CreateVehicleInput {
   monthlyGrossTarget?: string | null;
   monthlyMilesTarget?: number | null;
   workingDaysPerMonth?: number | null;
+  lenderName?: string | null;
+  loanPayment?: string | null;
+  insuranceMonthlyCost?: string | null;
   notes?: string | null;
 }
 
@@ -373,6 +379,9 @@ export type UpdateVehicleInput = {
   monthlyGrossTarget?: string | null;
   monthlyMilesTarget?: number | null;
   workingDaysPerMonth?: number | null;
+  lenderName?: string | null;
+  loanPayment?: string | null;
+  insuranceMonthlyCost?: string | null;
   expenses?: UpsertVehicleExpense[];
   notes?: string | null;
 };

@@ -44,6 +44,9 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId,
     monthlyGrossTarget: vehicle.monthlyGrossTarget ?? '',
     monthlyMilesTarget: vehicle.monthlyMilesTarget ?? '',
     workingDaysPerMonth: vehicle.workingDaysPerMonth ?? '',
+    lenderName: vehicle.lenderName ?? '',
+    loanPayment: vehicle.loanPayment ?? '',
+    insuranceMonthlyCost: vehicle.insuranceMonthlyCost ?? '',
     emergencyContactName: vehicle.emergencyContactName ?? '',
     emergencyContactPhone: vehicle.emergencyContactPhone ?? '',
     warrantyInfo: vehicle.warrantyInfo ?? '',
@@ -78,6 +81,10 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId,
         values.monthlyMilesTarget !== '' ? Number(values.monthlyMilesTarget) : null,
       workingDaysPerMonth:
         values.workingDaysPerMonth !== '' ? Number(values.workingDaysPerMonth) : null,
+      lenderName: values.lenderName || null,
+      loanPayment: values.loanPayment !== '' ? String(values.loanPayment) : null,
+      insuranceMonthlyCost:
+        values.insuranceMonthlyCost !== '' ? String(values.insuranceMonthlyCost) : null,
       emergencyContactName: values.emergencyContactName || null,
       emergencyContactPhone: values.emergencyContactPhone || null,
       warrantyInfo: values.warrantyInfo || null,
@@ -157,6 +164,29 @@ export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId,
                 <NumericField
                   name="workingDaysPerMonth"
                   label="Working Days / Month"
+                  formik={formik}
+                />
+              </Box>
+            </Box>
+          </DrawerSection>
+
+          <Divider sx={{ my: 0.5 }} />
+
+          {/* Finance */}
+          <DrawerSection label="Finance">
+            <TextField name="lenderName" label="Lender Name" formik={formik} />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <CurrencyField
+                  name="loanPayment"
+                  label="Monthly Loan Payment"
+                  formik={formik}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <CurrencyField
+                  name="insuranceMonthlyCost"
+                  label="Monthly Insurance Cost"
                   formik={formik}
                 />
               </Box>

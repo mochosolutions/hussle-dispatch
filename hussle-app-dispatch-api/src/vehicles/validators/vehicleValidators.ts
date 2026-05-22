@@ -37,6 +37,9 @@ const createBodySchema = Yup.object({
   monthlyGrossTarget: Yup.number().min(0).notRequired(),
   monthlyMilesTarget: Yup.number().integer().min(0).notRequired(),
   workingDaysPerMonth: Yup.number().integer().min(1).max(31).notRequired(),
+  lenderName: optionalTrimmed,
+  loanPayment: Yup.number().min(0).notRequired(),
+  insuranceMonthlyCost: Yup.number().min(0).notRequired(),
   isActive: Yup.boolean().notRequired(),
   notes: optionalTrimmed,
 });
