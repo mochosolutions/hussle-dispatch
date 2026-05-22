@@ -77,11 +77,25 @@ export const advanceCurrentStep = (session: Session): Session => {
   return { ...session, currentStepId: nextStepId };
 };
 
+const toIsoOrNull = (value: unknown): string | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  return null;
+};
+
 export const toEngineSession = (response: PortalSessionResponseV2): Session => ({
   id: response.session.id,
   carrierId: response.session.carrierId,
   currentStepId: response.session.currentStepId,
   completedStepIds: response.session.completedStepIds ?? [],
+  completedAt: toIsoOrNull(response.session.completedAt),
   answers: response.session.answers ?? {},
   fmcsaSnapshot: undefined,
   agreement: toAgreementContext(response.agreement),

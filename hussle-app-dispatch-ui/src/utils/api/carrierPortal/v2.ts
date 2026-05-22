@@ -190,6 +190,86 @@ export const saveCompanyV2 = async (
   return response.data.data;
 };
 
+// ---------------------------------------------------------------------------
+// Equipment (B3 — equipment-entry dedicated endpoint)
+// ---------------------------------------------------------------------------
+
+export interface VehicleInput {
+  id?: string;
+  category: string;
+  year?: number;
+  make?: string;
+  model?: string;
+  vin?: string;
+  licensePlate?: string;
+  gvwr?: number;
+}
+
+export interface SaveEquipmentRequest {
+  vehicles: VehicleInput[];
+}
+
+export interface VehicleSummary {
+  id: string;
+  category: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+}
+
+export const saveEquipmentV2 = async (
+  token: string,
+  payload: SaveEquipmentRequest,
+): Promise<VehicleSummary[]> => {
+  const response = await axiosInstance.post<DataEnvelope<VehicleSummary[]>>(
+    '/carrier-portal/equipment',
+    payload,
+    portalHeaders(token),
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Drivers (B4 — drivers-list / drivers-solo-confirm dedicated endpoint)
+// ---------------------------------------------------------------------------
+
+export interface DriverInput {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  payType?: string;
+  payRate?: number;
+}
+
+export interface SaveDriversRequest {
+  hasAdditionalDrivers: boolean;
+  drivers?: DriverInput[];
+}
+
+export interface SavedDriver {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  email: string | null;
+  payType: string | null;
+  payRate: number | null;
+}
+
+export const saveDriversV2 = async (
+  token: string,
+  payload: SaveDriversRequest,
+): Promise<SavedDriver[]> => {
+  const response = await axiosInstance.post<DataEnvelope<SavedDriver[]>>(
+    '/carrier-portal/drivers',
+    payload,
+    portalHeaders(token),
+  );
+  return response.data.data;
+};
+
 export const saveCostAnalysisV2 = async (
   token: string,
   payload: Record<string, unknown>,
@@ -200,6 +280,35 @@ export const saveCostAnalysisV2 = async (
     portalHeaders(token),
   );
   return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Complete (B9 — terminal `complete` step)
+// ---------------------------------------------------------------------------
+
+export interface CompleteSessionResponseV2 {
+  completedAt: string | null;
+}
+
+interface CompleteSessionRow {
+  completedAt?: string | Date | null;
+}
+
+export const completeSessionV2 = async (token: string): Promise<CompleteSessionResponseV2> => {
+  const response = await axiosInstance.post<DataEnvelope<CompleteSessionRow>>(
+    '/carrier-portal/session/complete',
+    {},
+    portalHeaders(token),
+  );
+  const row = response.data.data;
+  const raw = row?.completedAt ?? null;
+  if (raw === null) {
+    return { completedAt: null };
+  }
+  if (raw instanceof Date) {
+    return { completedAt: raw.toISOString() };
+  }
+  return { completedAt: raw };
 };
 
 export const saveLanePreferencesV2 = async (

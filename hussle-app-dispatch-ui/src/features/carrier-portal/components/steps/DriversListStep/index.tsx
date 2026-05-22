@@ -290,7 +290,7 @@ const DriverForm: React.FC<DriverFormProps> = ({
 const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
   const dispatch = useDispatch();
   const session = useSelector(selectSession);
-  const submitStatus = useSelector(selectLoading('submitStep'));
+  const submitStatus = useSelector(selectLoading('drivers'));
 
   const persistedFingerprint = useMemo(() => {
     if (!session) {
@@ -378,15 +378,22 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
       return;
     }
     // Strip local-only `_tempKey` from the payload. `id` is present only when
-    // the server already assigned one (re-submit/edit case).
-    const payloadEntries = drivers.map(({ _tempKey: _omit, ...rest }) => rest);
+    // the server already assigned one (re-submit/edit case). Convert payRate
+    // from the form's string representation to the number the API expects.
+    const payloadDrivers = drivers.map(({ _tempKey: _omit, payRate, ...rest }) => {
+      const parsed = Number(payRate);
+      return {
+        ...rest,
+        payRate: Number.isFinite(parsed) ? parsed : 0,
+      };
+    });
     dispatch(
-      carrierPortalV2Actions.submitStep({
-        stepId: step.id,
-        answers: { entries: payloadEntries },
+      carrierPortalV2Actions.saveDrivers({
+        hasAdditionalDrivers: true,
+        drivers: payloadDrivers,
       }),
     );
-  }, [dispatch, drivers, step.id]);
+  }, [dispatch, drivers]);
 
   const isPending = submitStatus === 'pending';
 

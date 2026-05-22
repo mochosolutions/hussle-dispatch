@@ -15,6 +15,10 @@ const buildSession = (overrides: Partial<Session> = {}): Session => ({
   id: 'sess-1',
   carrierId: 'carr-1',
   currentStepId: 'complete',
+  // Seeded as already-complete so the post-mount UI (headline + summary + CTA)
+  // renders synchronously. B9 added a "Wrapping up..." gate that shows until
+  // session.completedAt lands; tests skip that gate by seeding it.
+  completedAt: '2026-05-22T12:00:00.000Z',
   completedStepIds: ['company-confirm', 'equipment-entry'],
   answers: {
     'company-authority-question': { hasMcAuthority: 'yes' },

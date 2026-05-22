@@ -90,7 +90,7 @@ describe('EquipmentListStep (connected)', () => {
     expect(screen.getByRole('button', { name: /save vehicle$/i })).toBeInTheDocument();
   });
 
-  it('dispatches submitStep with a vehicles array after a vehicle is saved and registered Continue is invoked', async () => {
+  it('dispatches saveEquipment with a vehicles array after a vehicle is saved and registered Continue is invoked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession() });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
@@ -128,12 +128,13 @@ describe('EquipmentListStep (connected)', () => {
         typeof action === 'object' &&
         action !== null &&
         'type' in action &&
-        action.type === carrierPortalV2Actions.submitStep.type,
+        action.type === carrierPortalV2Actions.saveEquipment.type,
     );
     expect(submitCalls).toHaveLength(1);
-    const submitArg = submitCalls[0]?.[0] as ReturnType<typeof carrierPortalV2Actions.submitStep>;
-    expect(submitArg.payload.stepId).toBe('equipment-entry');
-    const vehicles = (submitArg.payload.answers as { vehicles: unknown[] }).vehicles;
+    const submitArg = submitCalls[0]?.[0] as ReturnType<
+      typeof carrierPortalV2Actions.saveEquipment
+    >;
+    const vehicles = submitArg.payload.vehicles as unknown[];
     expect(Array.isArray(vehicles)).toBe(true);
     expect(vehicles).toHaveLength(1);
     expect(vehicles[0]).toMatchObject({

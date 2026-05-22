@@ -1,8 +1,16 @@
 import type { Phase, Predicate } from '../engine';
 
-const YES_NO_OPTIONS = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'no', label: 'No' },
+const HAS_EMPLOYEES_OPTIONS = [
+  {
+    value: 'yes',
+    label: 'Yes',
+    description: 'I employ drivers',
+  },
+  {
+    value: 'no',
+    label: 'No',
+    description: 'Just me / owner-operator',
+  },
 ];
 
 const hasEmployeesYes: Predicate = {
@@ -29,8 +37,8 @@ export const driversPhase: Phase = {
         {
           id: 'hasEmployeeDrivers',
           label: 'Do you have employee drivers?',
-          fieldType: 'select',
-          options: YES_NO_OPTIONS,
+          fieldType: 'cards',
+          options: HAS_EMPLOYEES_OPTIONS,
         },
       ],
     },

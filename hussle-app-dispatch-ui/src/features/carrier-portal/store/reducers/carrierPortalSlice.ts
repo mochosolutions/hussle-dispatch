@@ -15,7 +15,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 import type { AgreementContext, Session } from 'features/carrier-portal/engine';
-import type { SaveCompanyRequest } from 'utils/api/carrierPortal/v2';
+import type { DriverInput, SaveCompanyRequest, VehicleInput } from 'utils/api/carrierPortal/v2';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,12 +31,24 @@ export type LoadingKey =
   | 'costAnalysis'
   | 'lanePreferences'
   | 'saveAndExit'
-  | 'company';
+  | 'company'
+  | 'equipment'
+  | 'drivers'
+  | 'completeSession';
 
 export interface SaveCompanyPayload {
   fields: SaveCompanyRequest;
   hasMcAuthority?: string;
   hasDba?: string;
+}
+
+export interface SaveEquipmentPayload {
+  vehicles: VehicleInput[];
+}
+
+export interface SaveDriversPayload {
+  hasAdditionalDrivers: boolean;
+  drivers?: DriverInput[];
 }
 
 export interface CarrierPortalV2State {
@@ -177,6 +189,30 @@ const carrierPortalV2Slice = createSlice({
       markFailure(state, 'company', action.payload);
     },
 
+    // ── saveEquipment ─────────────────────────────────────────────────────
+    saveEquipment(state, _action: PayloadAction<SaveEquipmentPayload>) {
+      markPending(state, 'equipment');
+    },
+    saveEquipmentSuccess(state) {
+      markSuccess(state, 'equipment');
+      touchSavedAt(state);
+    },
+    saveEquipmentFailure(state, action: PayloadAction<string>) {
+      markFailure(state, 'equipment', action.payload);
+    },
+
+    // ── saveDrivers ───────────────────────────────────────────────────────
+    saveDrivers(state, _action: PayloadAction<SaveDriversPayload>) {
+      markPending(state, 'drivers');
+    },
+    saveDriversSuccess(state) {
+      markSuccess(state, 'drivers');
+      touchSavedAt(state);
+    },
+    saveDriversFailure(state, action: PayloadAction<string>) {
+      markFailure(state, 'drivers', action.payload);
+    },
+
     // ── saveLanePreferences ───────────────────────────────────────────────
     saveLanePreferences(state, _action: PayloadAction<Record<string, unknown>>) {
       markPending(state, 'lanePreferences');
@@ -187,6 +223,21 @@ const carrierPortalV2Slice = createSlice({
     },
     saveLanePreferencesFailure(state, action: PayloadAction<string>) {
       markFailure(state, 'lanePreferences', action.payload);
+    },
+
+    // ── completeSession (B9 — terminal complete step) ─────────────────────
+    completeSession(state) {
+      markPending(state, 'completeSession');
+    },
+    completeSessionSuccess(state, action: PayloadAction<{ completedAt: string | null }>) {
+      if (state.session) {
+        state.session.completedAt = action.payload.completedAt;
+      }
+      markSuccess(state, 'completeSession');
+      touchSavedAt(state);
+    },
+    completeSessionFailure(state, action: PayloadAction<string>) {
+      markFailure(state, 'completeSession', action.payload);
     },
 
     // ── saveAndExit ───────────────────────────────────────────────────────

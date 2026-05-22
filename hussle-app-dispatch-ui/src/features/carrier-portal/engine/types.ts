@@ -183,6 +183,9 @@ export interface Session {
   carrierId: string;
   currentStepId: string | null;
   completedStepIds: string[];
+  // Set when the terminal `complete` step has been confirmed server-side
+  // (POST /carrier-portal/session/complete). Null until the round-trip lands.
+  completedAt?: string | null;
   answers: Answers;
   fmcsaSnapshot?: FmcsaSnapshot;
   agreement?: AgreementContext;

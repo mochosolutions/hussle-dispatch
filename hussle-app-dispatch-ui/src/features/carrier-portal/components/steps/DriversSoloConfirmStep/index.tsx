@@ -30,16 +30,15 @@ interface DriversSoloConfirmStepProps {
 const DriversSoloConfirmStep: React.FC<DriversSoloConfirmStepProps> = ({ step }) => {
   const dispatch = useDispatch();
   const session = useSelector(selectSession);
-  const submitStatus = useSelector(selectLoading('submitStep'));
+  const submitStatus = useSelector(selectLoading('drivers'));
 
   const handleContinue = useCallback((): void => {
     dispatch(
-      carrierPortalV2Actions.submitStep({
-        stepId: step.id,
-        answers: { confirmed: true, entries: [] },
+      carrierPortalV2Actions.saveDrivers({
+        hasAdditionalDrivers: false,
       }),
     );
-  }, [dispatch, step.id]);
+  }, [dispatch]);
 
   const isPending = submitStatus === 'pending';
 

@@ -9,14 +9,26 @@
 //     using each step's optional `completeSummary(answers)` formatter or
 //     falling back to the step title.
 //   - Info Callout pointing at the first-load notification.
-//   - No CTA — this is the terminal screen.
+//
+// B9 additions:
+//   - BUG-12: dispatches `completeSession` once on mount (ref-guarded) to call
+//             POST /carrier-portal/session/complete. Until the round-trip
+//             succeeds (session.completedAt becomes set), the cheerful copy is
+//             swapped for a quieter "Wrapping up your onboarding..." state.
+//   - UX-02:  adds a Sign Agreement row to the summary that reads the typed
+//             Agreement state from Redux (`selectAgreement`). SIGNED → check;
+//             anything else → muted "Sign Agreement".
+//   - UX-03:  adds a primary terminal CTA — "Take me to my carrier
+//             dashboard". For now this navigates to `/` (matches Save & Exit
+//             behavior); when a carrier dashboard route lands this becomes a
+//             one-line update.
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
-import { Box, Stack } from '@mui/material';
+import { useEffect, useMemo, useRef } from 'react';
+import { Box, Button, CircularProgress, Stack } from '@mui/material';
 import { CheckCircleOutline, CheckOutlined } from '@mui/icons-material';
 
-import { useSelector } from 'store';
+import { useDispatch, useSelector } from 'store';
 import { Body, BodyMuted, KpiLabel, PageTitle } from 'components/Typography';
 
 import type { Step } from 'features/carrier-portal/engine';
@@ -24,11 +36,23 @@ import { findStep } from 'features/carrier-portal/engine';
 import { onboardingSchema } from 'features/carrier-portal/schema/onboardingSchema';
 import Callout from 'features/carrier-portal/components/Callout';
 
-import { selectSession } from '../../../store/selectors/carrierPortalSelectors';
+import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
+import {
+  selectAgreement,
+  selectSession,
+} from '../../../store/selectors/carrierPortalSelectors';
 
 interface CompleteStepProps {
   step: Step;
 }
+
+interface SummaryRow {
+  key: string;
+  line: string;
+  signed: boolean;
+}
+
+const SIGN_AGREEMENT_STEP_ID = 'sign-agreement';
 
 const firstNameOf = (fullName: string | undefined): string => {
   if (!fullName) {
@@ -40,14 +64,52 @@ const firstNameOf = (fullName: string | undefined): string => {
 
 const CompleteStep: React.FC<CompleteStepProps> = ({ step }) => {
   void step;
+  const dispatch = useDispatch();
   const session = useSelector(selectSession);
+  const agreement = useSelector(selectAgreement);
+  const completeDispatched = useRef(false);
 
-  const summaryLines = useMemo<{ stepId: string; line: string }[]>(() => {
+  const isComplete = Boolean(session?.completedAt);
+
+  // BUG-12 — fire completeSession exactly once on mount (ref-guarded). The
+  // server-side endpoint flips Carrier.status to ACTIVE and stamps
+  // OnboardingSession.completedAt. Until that round-trip lands, the UI shows
+  // a quieter "Wrapping up..." state (see below).
+  useEffect(() => {
+    if (!session || isComplete || completeDispatched.current) {
+      return;
+    }
+    completeDispatched.current = true;
+    dispatch(carrierPortalV2Actions.completeSession());
+  }, [dispatch, session, isComplete]);
+
+  const summaryRows = useMemo<SummaryRow[]>(() => {
     if (!session) {
       return [];
     }
-    const lines: { stepId: string; line: string }[] = [];
+    const rows: SummaryRow[] = [];
+    let agreementRowInserted = false;
+
+    const pushAgreementRow = (): void => {
+      if (agreementRowInserted) {
+        return;
+      }
+      agreementRowInserted = true;
+      const signed = agreement?.status === 'SIGNED';
+      rows.push({
+        key: SIGN_AGREEMENT_STEP_ID,
+        line: signed ? 'Dispatch agreement signed' : 'Sign Agreement',
+        signed,
+      });
+    };
+
     for (const stepId of session.completedStepIds) {
+      // Sign-agreement state is driven by the typed Agreement table, not by
+      // completedStepIds. Skip and render an explicit row instead (UX-02).
+      if (stepId === SIGN_AGREEMENT_STEP_ID) {
+        pushAgreementRow();
+        continue;
+      }
       const schemaStep = findStep(onboardingSchema, stepId);
       if (!schemaStep) {
         continue;
@@ -58,10 +120,18 @@ const CompleteStep: React.FC<CompleteStepProps> = ({ step }) => {
       } else {
         line = schemaStep.title ?? schemaStep.id;
       }
-      lines.push({ stepId, line });
+      rows.push({ key: stepId, line, signed: true });
     }
-    return lines;
-  }, [session]);
+
+    // If sign-agreement wasn't in completedStepIds (e.g. SIGNED reached the
+    // Agreement record but the step wasn't marked complete), surface it
+    // anyway so the summary always reflects the agreement table.
+    if (!agreementRowInserted && agreement) {
+      pushAgreementRow();
+    }
+
+    return rows;
+  }, [session, agreement]);
 
   if (!session) {
     return null;
@@ -84,6 +154,38 @@ const CompleteStep: React.FC<CompleteStepProps> = ({ step }) => {
     ? [dispatcher.firstName, dispatcher.lastName].filter(Boolean).join(' ').trim() ||
       'Your dispatcher'
     : 'Your dispatcher';
+
+  // UX-03 — terminal CTA. No carrier dashboard route exists yet, so route to
+  // `/` (matches the existing Save & Exit pattern). Easy one-line update when
+  // a real dashboard lands.
+  const handleGoToDashboard = (): void => {
+    window.location.href = '/';
+  };
+
+  // BUG-12 gating — until the server confirms completion, render a quieter
+  // "Wrapping up..." state instead of the triumphant copy + summary.
+  if (!isComplete) {
+    return (
+      <Box sx={{ width: '100%', maxWidth: 560, textAlign: 'center' }}>
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 72,
+            height: 72,
+            mb: 2.5,
+          }}
+        >
+          <CircularProgress size={40} />
+        </Box>
+        <PageTitle sx={{ mb: 1.5 }}>Wrapping up your onboarding...</PageTitle>
+        <BodyMuted sx={{ fontSize: 14, lineHeight: 1.6 }}>
+          Hang tight for a moment while we finalize your application.
+        </BodyMuted>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', maxWidth: 560, textAlign: 'center' }}>
@@ -111,7 +213,7 @@ const CompleteStep: React.FC<CompleteStepProps> = ({ step }) => {
         few hours. You&apos;ll get a text when you&apos;re live.
       </BodyMuted>
 
-      {summaryLines.length > 0 ? (
+      {summaryRows.length > 0 ? (
         <Box
           sx={{
             border: '1px solid',
@@ -126,24 +228,37 @@ const CompleteStep: React.FC<CompleteStepProps> = ({ step }) => {
             WHAT YOU COMPLETED
           </KpiLabel>
           <Stack spacing={1}>
-            {summaryLines.map(({ stepId, line }) => (
-              <Box key={stepId} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+            {summaryRows.map(({ key, line, signed }) => (
+              <Box key={key} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                 <CheckOutlined
-                  sx={{ fontSize: 18, color: 'rgba(22, 163, 74, 1)', mt: 0.25, flexShrink: 0 }}
+                  sx={{
+                    fontSize: 18,
+                    color: signed ? 'rgba(22, 163, 74, 1)' : 'grey.400',
+                    mt: 0.25,
+                    flexShrink: 0,
+                  }}
                 />
-                <Body sx={{ fontSize: 14, lineHeight: 1.5 }}>{line}</Body>
+                {signed ? (
+                  <Body sx={{ fontSize: 14, lineHeight: 1.5 }}>{line}</Body>
+                ) : (
+                  <BodyMuted sx={{ fontSize: 14, lineHeight: 1.5 }}>{line}</BodyMuted>
+                )}
               </Box>
             ))}
           </Stack>
         </Box>
       ) : null}
 
-      <Box sx={{ textAlign: 'left' }}>
+      <Box sx={{ textAlign: 'left', mb: 3 }}>
         <Callout variant="amber">
           <strong>One thing to do after activation</strong> — Watch for your first load
           notification. You&apos;ll have 30 minutes to accept or decline.
         </Callout>
       </Box>
+
+      <Button variant="contained" size="large" fullWidth onClick={handleGoToDashboard}>
+        Take me to my carrier dashboard
+      </Button>
     </Box>
   );
 };

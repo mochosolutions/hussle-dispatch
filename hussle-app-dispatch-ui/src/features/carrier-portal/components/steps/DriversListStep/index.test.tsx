@@ -91,7 +91,7 @@ describe('DriversListStep (connected)', () => {
     expect(screen.getByRole('button', { name: /save driver$/i })).toBeInTheDocument();
   });
 
-  it('dispatches submitStep with an entries array after a driver is saved and registered Continue is invoked', async () => {
+  it('dispatches saveDrivers with a drivers array after a driver is saved and registered Continue is invoked', async () => {
     const user = userEvent.setup();
     const store = buildStore({ session: buildSession() });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
@@ -127,30 +127,30 @@ describe('DriversListStep (connected)', () => {
       handle.current?.onContinue();
     });
 
-    const submitCalls = dispatchSpy.mock.calls.filter(
+    const saveCalls = dispatchSpy.mock.calls.filter(
       ([action]) =>
         typeof action === 'object' &&
         action !== null &&
         'type' in action &&
-        action.type === carrierPortalV2Actions.submitStep.type,
+        action.type === carrierPortalV2Actions.saveDrivers.type,
     );
-    expect(submitCalls).toHaveLength(1);
-    const submitArg = submitCalls[0]?.[0] as ReturnType<typeof carrierPortalV2Actions.submitStep>;
-    expect(submitArg.payload.stepId).toBe('drivers-list');
-    const entries = (submitArg.payload.answers as { entries: unknown[] }).entries;
-    expect(Array.isArray(entries)).toBe(true);
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({
+    expect(saveCalls).toHaveLength(1);
+    const saveArg = saveCalls[0]?.[0] as ReturnType<typeof carrierPortalV2Actions.saveDrivers>;
+    expect(saveArg.payload.hasAdditionalDrivers).toBe(true);
+    const drivers = saveArg.payload.drivers ?? [];
+    expect(Array.isArray(drivers)).toBe(true);
+    expect(drivers).toHaveLength(1);
+    expect(drivers[0]).toMatchObject({
       firstName: 'Isaiah',
       lastName: 'Williams',
       email: 'isaiah@example.com',
       payType: 'percentage',
-      payRate: '70',
+      payRate: 70,
     });
 
     // US-30: never send the client-generated _tempKey or a client-side id to
     // the server. The server assigns ids; new drivers have no id.
-    const submittedEntry = entries[0] as Record<string, unknown>;
+    const submittedEntry = drivers[0] as Record<string, unknown>;
     expect(submittedEntry).not.toHaveProperty('_tempKey');
     expect(submittedEntry.id).toBeUndefined();
   });

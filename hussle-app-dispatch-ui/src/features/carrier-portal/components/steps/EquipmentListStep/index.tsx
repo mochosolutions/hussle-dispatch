@@ -450,12 +450,11 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
       gvwr: optionalNumber(rest.gvwr),
     }));
     dispatch(
-      carrierPortalV2Actions.submitStep({
-        stepId: step.id,
-        answers: { vehicles: payloadVehicles },
+      carrierPortalV2Actions.saveEquipment({
+        vehicles: payloadVehicles,
       }),
     );
-  }, [dispatch, vehicles, step.id]);
+  }, [dispatch, vehicles]);
 
   const isPending = submitStatus === 'pending';
 

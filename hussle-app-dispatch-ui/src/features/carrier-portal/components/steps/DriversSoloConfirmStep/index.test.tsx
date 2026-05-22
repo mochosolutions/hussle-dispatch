@@ -92,7 +92,7 @@ describe('DriversSoloConfirmStep (connected)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('dispatches submitStep with empty entries when registered Continue is invoked', () => {
+  it('dispatches saveDrivers with hasAdditionalDrivers=false when registered Continue is invoked', () => {
     const store = buildStore({ session: buildSession() });
     const dispatchSpy = jest.spyOn(store, 'dispatch');
     const handle: StepNavTestHandle = { current: null };
@@ -111,9 +111,8 @@ describe('DriversSoloConfirmStep (connected)', () => {
     });
 
     expect(dispatchSpy).toHaveBeenCalledWith(
-      carrierPortalV2Actions.submitStep({
-        stepId: 'drivers-solo-confirm',
-        answers: { confirmed: true, entries: [] },
+      carrierPortalV2Actions.saveDrivers({
+        hasAdditionalDrivers: false,
       }),
     );
   });
