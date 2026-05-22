@@ -9,7 +9,6 @@ import EquipmentListStep from '../../components/steps/EquipmentListStep';
 import InputStep from '../../components/steps/InputStep';
 import LanePreferencesStep from '../../components/steps/LanePreferencesStep';
 import ReviewStep from '../../components/steps/ReviewStep';
-import SegmentationStep from '../../components/steps/SegmentationStep';
 import UploadStep from '../../components/steps/UploadStep';
 import VerificationStep from '../../components/steps/VerificationStep';
 
@@ -22,8 +21,6 @@ const EMPTY_PHASE: Phase = { id: '', label: '', steps: [] };
 
 const StepDispatcher: React.FC<StepDispatcherProps> = ({ step, phase }) => {
   switch (step.type) {
-    case 'segmentation':
-      return <SegmentationStep step={step} />;
     case 'input':
       return <InputStep step={step} />;
     case 'verification':

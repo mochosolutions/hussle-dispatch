@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 
 import { useSelector, useDispatch } from 'store';
 import { carrierPortalV2Actions } from '../../store/reducers/carrierPortalSlice';
@@ -18,7 +19,6 @@ import {
   StepNavProvider,
   useStepNavHandler,
 } from '../../components/StepNavContext';
-import StepDispatcher from './StepDispatcher';
 
 // ---------------------------------------------------------------------------
 // Phase-state derivation — maps schema phases to PortalStepper display states.
@@ -72,11 +72,27 @@ const SessionLoadingFallback = () => (
 // provider must wrap both the children and the footer prop of PortalShell.
 // ---------------------------------------------------------------------------
 
+interface PortalRouteParams extends Record<string, string | undefined> {
+  token?: string;
+  stepId?: string;
+}
+
 const PortalPageContent = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { token, stepId: urlStepId } = useParams<PortalRouteParams>();
   const session = useSelector(selectSession);
   const currentStep = useSelector(selectCurrentStep);
   const stepNav = useStepNavHandler();
+
+  // Sync Redux currentStepId → URL. Redux is authoritative (server cursor);
+  // URL mirrors it so refresh/back/direct-paste resume on the right step.
+  useEffect(() => {
+    if (!token || !session?.currentStepId) return;
+    if (urlStepId !== session.currentStepId) {
+      navigate(`/carrier-portal/${token}/${session.currentStepId}`, { replace: true });
+    }
+  }, [token, session?.currentStepId, urlStepId, navigate]);
 
   const currentPhaseId = useMemo(() => {
     if (!currentStep) return null;
@@ -104,8 +120,6 @@ const PortalPageContent = () => {
     }
   };
 
-  console.log('Current Step:', {currentStep, phase});
-
   const handleSaveExit = () => {
     window.location.href = '/';
   };
@@ -129,11 +143,7 @@ const PortalPageContent = () => {
       stepper={session ? <PortalStepper phases={stepperPhases} /> : undefined}
       footer={footer}
     >
-      {currentStep ? (
-        <StepDispatcher step={currentStep} phase={phase} />
-      ) : (
-        <SessionLoadingFallback />
-      )}
+      {currentStep ? <Outlet /> : <SessionLoadingFallback />}
     </PortalShell>
   );
 };
