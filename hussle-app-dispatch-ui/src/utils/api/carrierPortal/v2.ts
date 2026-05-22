@@ -144,6 +144,52 @@ export const getAgreementV2 = async (
 // Cost Analysis / Lane Preferences
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Company (B2 — company-authority-question dedicated endpoint)
+// ---------------------------------------------------------------------------
+
+export interface SaveCompanyRequest {
+  legalName?: string | null;
+  dbaName?: string | null;
+  taxClassification?: string | null;
+  tin?: string | null;
+  tinType?: string | null;
+  signatoryName?: string | null;
+  signatoryTitle?: string | null;
+  mcNumber?: string | null;
+  dotNumber?: string | null;
+  ein?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}
+
+export interface CarrierSummary {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  type: string;
+}
+
+export const saveCompanyV2 = async (
+  token: string,
+  payload: SaveCompanyRequest,
+): Promise<CarrierSummary> => {
+  const response = await axiosInstance.post<DataEnvelope<CarrierSummary>>(
+    '/carrier-portal/company',
+    payload,
+    portalHeaders(token),
+  );
+  return response.data.data;
+};
+
 export const saveCostAnalysisV2 = async (
   token: string,
   payload: Record<string, unknown>,

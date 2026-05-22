@@ -52,6 +52,8 @@ import ToggleCardGrid from 'features/carrier-portal/components/ToggleCardGrid';
 import type { ToggleCardOption } from 'features/carrier-portal/components/ToggleCardGrid';
 import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
 
+import type { SaveCompanyRequest } from 'utils/api/carrierPortal/v2';
+
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
   selectIsLocked,
@@ -191,6 +193,41 @@ const renderField = (q: Question, formik: FormikLike, disabled: boolean) => {
   }
 };
 
+interface AddressFormValue {
+  line1?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  lat?: number;
+  lng?: number;
+}
+
+const asString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined;
+
+const buildCompanyRequest = (values: FormValues): SaveCompanyRequest => {
+  const hasDba = values.hasDba === 'yes';
+  const address = (values.address ?? {}) as AddressFormValue;
+  return {
+    legalName: asString(values.legalName) ?? null,
+    dbaName: hasDba ? (asString(values.dbaName) ?? null) : null,
+    taxClassification: asString(values.taxClassification) ?? null,
+    tinType: asString(values.tinType) ?? null,
+    tin: asString(values.tin) ?? null,
+    dotNumber: asString(values.dotNumber) ?? null,
+    signatoryName: asString(values.signatoryName) ?? null,
+    signatoryTitle: asString(values.signatoryTitle) ?? null,
+    phone: asString(values.phone) ?? null,
+    email: asString(values.email) ?? null,
+    address: asString(address.line1) ?? null,
+    city: asString(address.city) ?? null,
+    state: asString(address.state) ?? null,
+    zip: asString(address.zip) ?? null,
+    lat: typeof address.lat === 'number' ? address.lat : null,
+    lng: typeof address.lng === 'number' ? address.lng : null,
+  };
+};
+
 const formatLockedValue = (value: unknown): string => {
   if (value === null || value === undefined) {
     return '';
@@ -239,6 +276,16 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
       if (visible) {
         visibleAnswers[q.id] = values[q.id];
       }
+    }
+    if (step.id === 'company-authority-question') {
+      dispatch(
+        carrierPortalV2Actions.saveCompany({
+          fields: buildCompanyRequest(values),
+          hasMcAuthority: asString(values.hasMcAuthority),
+          hasDba: asString(values.hasDba),
+        }),
+      );
+      return;
     }
     dispatch(
       carrierPortalV2Actions.submitStep({

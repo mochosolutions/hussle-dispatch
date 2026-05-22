@@ -5,6 +5,7 @@ import { all, fork } from 'redux-saga/effects';
 import { fetchAgreementSaga } from './fetchAgreementSaga';
 import { loadSessionSaga } from './loadSessionSaga';
 import { saveAndExitSaga } from './saveAndExitSaga';
+import { saveCompanySaga } from './saveCompanySaga';
 import { saveCostAnalysisSaga } from './saveCostAnalysisSaga';
 import { saveLanePreferencesSaga } from './saveLanePreferencesSaga';
 import { submitStepSaga } from './submitStepSaga';
@@ -16,6 +17,7 @@ export function* carrierPortalV2RootSaga(): Generator {
     fork(submitStepSaga),
     fork(fetchAgreementSaga),
     fork(uploadDocumentSaga),
+    fork(saveCompanySaga),
     fork(saveCostAnalysisSaga),
     fork(saveLanePreferencesSaga),
     fork(saveAndExitSaga),

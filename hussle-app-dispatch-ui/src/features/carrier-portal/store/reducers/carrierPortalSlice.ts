@@ -15,6 +15,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 import type { AgreementContext, Session } from 'features/carrier-portal/engine';
+import type { SaveCompanyRequest } from 'utils/api/carrierPortal/v2';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,7 +30,14 @@ export type LoadingKey =
   | 'upload'
   | 'costAnalysis'
   | 'lanePreferences'
-  | 'saveAndExit';
+  | 'saveAndExit'
+  | 'company';
+
+export interface SaveCompanyPayload {
+  fields: SaveCompanyRequest;
+  hasMcAuthority?: string;
+  hasDba?: string;
+}
 
 export interface CarrierPortalV2State {
   token: string | null;
@@ -155,6 +163,18 @@ const carrierPortalV2Slice = createSlice({
     },
     saveCostAnalysisFailure(state, action: PayloadAction<string>) {
       markFailure(state, 'costAnalysis', action.payload);
+    },
+
+    // ── saveCompany ───────────────────────────────────────────────────────
+    saveCompany(state, _action: PayloadAction<SaveCompanyPayload>) {
+      markPending(state, 'company');
+    },
+    saveCompanySuccess(state) {
+      markSuccess(state, 'company');
+      touchSavedAt(state);
+    },
+    saveCompanyFailure(state, action: PayloadAction<string>) {
+      markFailure(state, 'company', action.payload);
     },
 
     // ── saveLanePreferences ───────────────────────────────────────────────

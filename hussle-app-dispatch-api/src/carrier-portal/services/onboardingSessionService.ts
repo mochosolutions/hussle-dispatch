@@ -175,7 +175,12 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
       return updated;
     }
 
-    const session = await deps.sessionRepo.create({ carrierId });
+    const created = await deps.sessionRepo.create({ carrierId });
+    // BUG-01: seed currentStepId so the UI lands on the first step instead of
+    // spinning indefinitely waiting for a step id to materialize.
+    const session = await deps.sessionRepo.update(created.id, {
+      currentStepId: 'welcome-segmentation',
+    });
 
     const carrier = await deps.carrierRepo.findById(carrierId);
     if (carrier && carrier.status === CarrierStatus.INVITED) {
