@@ -62,16 +62,26 @@ export interface HealthRedisPort {
   ping: () => Promise<string>;
 }
 
+/**
+ * Minimal port for the event bus used by the health check. Synchronous so the
+ * probe stays cheap — implementations report the cached broker-connection
+ * state, not a fresh network round-trip.
+ */
+export interface HealthEventBusPort {
+  isReady: () => boolean;
+}
+
 export interface CreateAppDeps {
   prisma: PrismaClient;
   redis: HealthRedisPort;
+  eventBus: HealthEventBusPort;
 }
 
 type CheckStatus = 'ok' | 'fail';
 
 interface HealthCheckResult {
   status: 'ok' | 'degraded';
-  checks: { db: CheckStatus; redis: CheckStatus };
+  checks: { db: CheckStatus; redis: CheckStatus; eventBus: CheckStatus };
 }
 
 export const createApp = (deps: CreateAppDeps): express.Application => {
@@ -80,7 +90,7 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
   // Serialize Decimal.js instances as strings in all JSON responses
   app.set('json replacer', decimalReplacer);
 
-  // Health check — pings DB + Redis so the orchestrator can detect dependency outages
+  // Health check — pings DB + Redis + RabbitMQ so the orchestrator can detect dependency outages
   app.get('/api/health', async (_req: Request, res: Response) => {
     const [dbResult, redisResult] = await Promise.allSettled([
       deps.prisma.$queryRaw`SELECT 1`,
@@ -92,10 +102,12 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
       checks: {
         db: dbResult.status === 'fulfilled' ? 'ok' : 'fail',
         redis: redisResult.status === 'fulfilled' ? 'ok' : 'fail',
+        eventBus: deps.eventBus.isReady() ? 'ok' : 'fail',
       },
     };
 
-    if (result.checks.db === 'fail' || result.checks.redis === 'fail') {
+    const anyFailed = Object.values(result.checks).some((status) => status === 'fail');
+    if (anyFailed) {
       result.status = 'degraded';
       res.status(503).json(result);
       return;

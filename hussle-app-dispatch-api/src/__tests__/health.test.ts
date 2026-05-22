@@ -6,12 +6,12 @@ process.env['DATABASE_URL'] =
 
 import http from 'http';
 import type { PrismaClient } from '@prisma/client';
-import type { HealthRedisPort } from '../app';
+import type { HealthEventBusPort, HealthRedisPort } from '../app';
 import { createApp } from '../app';
 
 interface FetchResult {
   status: number;
-  body: { status: string; checks: { db: string; redis: string } };
+  body: { status: string; checks: { db: string; redis: string; eventBus: string } };
 }
 
 const fetchHealth = (baseUrl: string): Promise<FetchResult> =>
@@ -39,6 +39,7 @@ interface StartedApp {
 const startServer = async (deps: {
   prisma: PrismaClient;
   redis: HealthRedisPort;
+  eventBus: HealthEventBusPort;
 }): Promise<StartedApp> => {
   const app = createApp(deps);
   const server = http.createServer(app);
@@ -65,11 +66,16 @@ const buildRedisStub = (impl: () => Promise<string>): HealthRedisPort => ({
   ping: jest.fn().mockImplementation(impl),
 });
 
+const buildEventBusStub = (ready: boolean): HealthEventBusPort => ({
+  isReady: jest.fn().mockReturnValue(ready),
+});
+
 describe('GET /api/health', () => {
-  it('returns 200 with both checks ok when prisma and redis succeed', async () => {
+  it('returns 200 with all checks ok when prisma, redis and event bus are ready', async () => {
     const prisma = buildPrismaStub(async () => [{ '?column?': 1 }]);
     const redis = buildRedisStub(async () => 'PONG');
-    const server = await startServer({ prisma, redis });
+    const eventBus = buildEventBusStub(true);
+    const server = await startServer({ prisma, redis, eventBus });
     try {
       const res = await fetchHealth(server.url);
 
@@ -77,6 +83,7 @@ describe('GET /api/health', () => {
       expect(res.body.status).toBe('ok');
       expect(res.body.checks.db).toBe('ok');
       expect(res.body.checks.redis).toBe('ok');
+      expect(res.body.checks.eventBus).toBe('ok');
     } finally {
       await server.close();
     }
@@ -87,7 +94,8 @@ describe('GET /api/health', () => {
       throw new Error('db connection refused');
     });
     const redis = buildRedisStub(async () => 'PONG');
-    const server = await startServer({ prisma, redis });
+    const eventBus = buildEventBusStub(true);
+    const server = await startServer({ prisma, redis, eventBus });
     try {
       const res = await fetchHealth(server.url);
 
@@ -95,6 +103,7 @@ describe('GET /api/health', () => {
       expect(res.body.status).toBe('degraded');
       expect(res.body.checks.db).toBe('fail');
       expect(res.body.checks.redis).toBe('ok');
+      expect(res.body.checks.eventBus).toBe('ok');
     } finally {
       await server.close();
     }
@@ -105,7 +114,8 @@ describe('GET /api/health', () => {
     const redis = buildRedisStub(async () => {
       throw new Error('redis connection refused');
     });
-    const server = await startServer({ prisma, redis });
+    const eventBus = buildEventBusStub(true);
+    const server = await startServer({ prisma, redis, eventBus });
     try {
       const res = await fetchHealth(server.url);
 
@@ -113,6 +123,25 @@ describe('GET /api/health', () => {
       expect(res.body.status).toBe('degraded');
       expect(res.body.checks.db).toBe('ok');
       expect(res.body.checks.redis).toBe('fail');
+      expect(res.body.checks.eventBus).toBe('ok');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('returns 503 with eventBus: fail when the bus is disconnected', async () => {
+    const prisma = buildPrismaStub(async () => [{ '?column?': 1 }]);
+    const redis = buildRedisStub(async () => 'PONG');
+    const eventBus = buildEventBusStub(false);
+    const server = await startServer({ prisma, redis, eventBus });
+    try {
+      const res = await fetchHealth(server.url);
+
+      expect(res.status).toBe(503);
+      expect(res.body.status).toBe('degraded');
+      expect(res.body.checks.db).toBe('ok');
+      expect(res.body.checks.redis).toBe('ok');
+      expect(res.body.checks.eventBus).toBe('fail');
     } finally {
       await server.close();
     }

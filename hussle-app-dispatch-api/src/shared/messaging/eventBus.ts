@@ -21,5 +21,10 @@ export interface EventBus {
     queueGroup: string,
     handler: (data: EventMap[K]) => Promise<void>,
   ): Promise<void>;
+  /**
+   * Returns true when the bus has an active broker connection.
+   * Used by the health endpoint to detect message-bus outages.
+   */
+  isReady(): boolean;
   close(): Promise<void>;
 }

@@ -303,6 +303,8 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     }
   };
 
+  const isReady = (): boolean => channel !== null && !closing;
+
   const close = async (): Promise<void> => {
     closing = true;
     if (channel) {
@@ -322,5 +324,5 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     scheduleReconnect();
   });
 
-  return { publish, publishDelayed, subscribe, close };
+  return { publish, publishDelayed, subscribe, isReady, close };
 };

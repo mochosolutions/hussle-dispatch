@@ -13,7 +13,7 @@ const start = async (): Promise<void> => {
 
   const eventBus = createRabbitMqEventBus(env.RABBITMQ_URL, logger);
 
-  const app = createApp({ prisma, redis: redisClient });
+  const app = createApp({ prisma, redis: redisClient, eventBus });
 
   // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {

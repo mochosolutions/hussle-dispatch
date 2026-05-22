@@ -83,6 +83,8 @@ export const createInMemoryEventBus = (): EventBus & {
     timers.clear();
   };
 
+  const isReady = (): boolean => true;
+
   const close = async (): Promise<void> => {
     clearTimers();
     handlers.clear();
@@ -97,5 +99,14 @@ export const createInMemoryEventBus = (): EventBus & {
     handlers.clear();
   };
 
-  return { publish, publishDelayed, subscribe, close, getHandlers, getPendingDelays, clear };
+  return {
+    publish,
+    publishDelayed,
+    subscribe,
+    isReady,
+    close,
+    getHandlers,
+    getPendingDelays,
+    clear,
+  };
 };
