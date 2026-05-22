@@ -8,6 +8,8 @@
 
 import type { AxiosRequestConfig } from 'axios';
 
+import type { DocumentEntityType, DocumentType } from 'features/documents/types';
+import type { AddressSearchResult } from 'features/place/types';
 import axiosInstance from 'utils/axios';
 
 // ---------------------------------------------------------------------------
@@ -171,9 +173,11 @@ export const saveLanePreferencesV2 = async (
 // ---------------------------------------------------------------------------
 
 export interface PresignBodyV2 {
-  filename: string;
-  contentType: string;
-  documentType: string;
+  fileName: string;
+  mimeType: string;
+  type: DocumentType;
+  entityType: DocumentEntityType;
+  entityId: string;
 }
 
 export const presignDocumentV2 = async (
@@ -197,6 +201,27 @@ export const confirmDocumentV2 = async (
     `/carrier-portal/documents/${id}/confirm`,
     body,
     portalHeaders(token),
+  );
+  return response.data.data;
+};
+
+// ---------------------------------------------------------------------------
+// Places — portal-authenticated address typeahead (BUG-06)
+// ---------------------------------------------------------------------------
+
+export const searchAddressesPortal = async (
+  token: string,
+  query: string,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<AddressSearchResult[]> => {
+  const response = await axiosInstance.get<DataEnvelope<AddressSearchResult[]>>(
+    '/carrier-portal/places/address-search',
+    {
+      ...portalHeaders(token),
+      params: { query, limit },
+      signal,
+    },
   );
   return response.data.data;
 };

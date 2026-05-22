@@ -1,6 +1,7 @@
 import express from 'express';
-import { publicRateLimiter } from '@/shared/middleware/rateLimiter';
+import { publicRateLimiter, geocodingRateLimiter } from '@/shared/middleware/rateLimiter';
 import { validateRequest } from '@/shared/middleware/validateRequest';
+import { addressSearchValidator } from '@/places/validators/addressSearchValidator';
 import { saveAnswerValidator, submitStepValidator } from '../validators/sessionValidators';
 import { companyValidator } from '../validators/companyValidator';
 import { equipmentValidator } from '../validators/equipmentValidator';
@@ -52,6 +53,10 @@ interface AgreementControllers {
   getLatestForCarrier: express.RequestHandler;
 }
 
+interface PlacesControllers {
+  addressSearch: express.RequestHandler;
+}
+
 interface CarrierPortalRouteControllers {
   session: SessionControllers;
   company: CompanyControllers;
@@ -61,6 +66,7 @@ interface CarrierPortalRouteControllers {
   lanePreferences: LanePreferencesControllers;
   documents: DocumentsControllers;
   agreement: AgreementControllers;
+  places: PlacesControllers;
 }
 
 interface CarrierPortalRouteMiddleware {
@@ -125,6 +131,15 @@ export const createCarrierPortalRouter = (
     '/documents/:id/sign',
     validateRequest(signDocumentValidator),
     controllers.documents.signDocument,
+  );
+
+  // Places — portal-authenticated address typeahead (BUG-06). Token auth
+  // middleware is applied at the router level above; do not add requireAuth.
+  router.get(
+    '/places/address-search',
+    geocodingRateLimiter,
+    validateRequest(addressSearchValidator),
+    controllers.places.addressSearch,
   );
 
   // Agreements — portal queries the carrier's most-recent agreement for a

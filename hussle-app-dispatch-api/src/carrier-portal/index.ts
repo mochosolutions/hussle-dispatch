@@ -5,6 +5,7 @@ import { sharedEventBus } from '@/shared/messaging/sharedEventBus';
 import { createStorageProvider, type StorageProvider } from '@/shared/storage';
 import { logger } from '@/shared/utils/logger';
 import { agreementsQueries } from '@/agreements';
+import { placeServices } from '@/places';
 import { createCarrierPortalModule } from './compositionRoot';
 import { createCarrierPortalRouter } from './routes';
 
@@ -37,6 +38,7 @@ const carrierPortalModule = createCarrierPortalModule({
   logger,
   agreementQueries: agreementsQueries,
   storage: buildStorage(),
+  addressSearchService: placeServices.addressSearchService,
 });
 
 export const carrierPortalRouter = createCarrierPortalRouter(

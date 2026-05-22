@@ -23,6 +23,7 @@ const uploadStep: Step = {
       id: 'coi',
       label: 'Certificate of Insurance',
       required: true,
+      documentType: 'INSURANCE_CERT',
     },
   ],
 };
@@ -106,7 +107,7 @@ describe('UploadStep', () => {
     );
     expect(uploadCall).toBeDefined();
     const action = uploadCall?.[0] as ReturnType<typeof carrierPortalV2Actions.uploadDocument>;
-    expect(action.payload.documentType).toBe('COI');
+    expect(action.payload.documentType).toBe('INSURANCE_CERT');
     expect(action.payload.file).toBe(file);
   });
 

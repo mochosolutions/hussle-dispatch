@@ -20,7 +20,7 @@
 //      arrives.
 // ---------------------------------------------------------------------------
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 
 import { useDispatch, useSelector } from 'store';
@@ -67,6 +67,7 @@ const AgreementSigningStep: React.FC<AgreementSigningStepProps> = ({ step }) => 
 
   const fetchDispatched = useRef(false);
   const advanceDispatched = useRef(false);
+  const [iframeFailed, setIframeFailed] = useState(false);
 
   // Fire fetchAgreement once on mount.
   useEffect(() => {
@@ -146,6 +147,17 @@ const AgreementSigningStep: React.FC<AgreementSigningStepProps> = ({ step }) => 
 
   // PENDING (or DRAFT) with embedUrl — render the embed.
   if (agreement?.status === 'PENDING' && agreement.embedUrl) {
+    if (iframeFailed) {
+      return (
+        <Box sx={{ width: '100%', maxWidth: 640 }}>
+          {header}
+          <Callout variant="red">
+            The signing page failed to load. Check your connection and refresh
+            this page, or contact your dispatcher if the problem persists.
+          </Callout>
+        </Box>
+      );
+    }
     const embedSrc = toEmbedUrl(agreement.embedUrl);
     return (
       <Box sx={{ width: '100%', maxWidth: 760 }}>
@@ -154,6 +166,7 @@ const AgreementSigningStep: React.FC<AgreementSigningStepProps> = ({ step }) => 
           component="iframe"
           src={embedSrc}
           title="Dispatch agreement"
+          onError={() => setIframeFailed(true)}
           sx={{
             width: '100%',
             height: { xs: 'calc(100vh - 280px)', md: 720 },

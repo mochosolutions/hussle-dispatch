@@ -3,6 +3,8 @@ import { enqueueSnackbar } from 'notistack';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 import type { RootState } from 'store';
+import type { Session } from 'features/carrier-portal/engine';
+import { DocumentType } from 'features/documents/types';
 import {
   confirmDocumentV2,
   presignDocumentV2,
@@ -18,6 +20,9 @@ interface UploadDocumentPayload {
   file: File;
 }
 
+const isDocumentType = (value: string): value is DocumentType =>
+  (Object.values(DocumentType) as string[]).includes(value);
+
 // ---------------------------------------------------------------------------
 // Worker — 3-step flow: presign → PUT → confirm.
 // ---------------------------------------------------------------------------
@@ -32,12 +37,31 @@ function* handleUploadDocument(action: PayloadAction<UploadDocumentPayload>): Ge
       return;
     }
 
+    const session: Session | null = yield select(
+      (state: RootState) => state.pages.carrierPortalV2.session,
+    );
+    const carrierId = session?.carrierId ?? null;
+    if (!carrierId) {
+      const message = 'Cannot upload document: carrier session not loaded';
+      yield put(carrierPortalV2Actions.uploadDocumentFailure(message));
+      yield call(enqueueSnackbar, message, { variant: 'error' });
+      return;
+    }
+
     const { file, documentType } = action.payload;
+    if (!isDocumentType(documentType)) {
+      const message = `Unknown document type: ${documentType}`;
+      yield put(carrierPortalV2Actions.uploadDocumentFailure(message));
+      yield call(enqueueSnackbar, message, { variant: 'error' });
+      return;
+    }
 
     const presign: PresignResponseV2 = yield call(presignDocumentV2, token, {
-      filename: file.name,
-      contentType: file.type,
-      documentType,
+      fileName: file.name,
+      mimeType: file.type,
+      type: documentType,
+      entityType: 'carrier',
+      entityId: carrierId,
     });
 
     yield call(uploadToPresignedUrl, presign.uploadUrl, file);

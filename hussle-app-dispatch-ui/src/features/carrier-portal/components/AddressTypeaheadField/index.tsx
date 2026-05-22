@@ -19,7 +19,9 @@ import PlaceOutlined from '@mui/icons-material/PlaceOutlined';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { getIn, useFormikContext } from 'formik';
 import { enqueueSnackbar } from 'notistack';
-import { searchAddresses } from 'utils/api/places/placeApi';
+import { useSelector } from 'store';
+import { searchAddressesPortal } from 'utils/api/carrierPortal/v2';
+import { selectToken } from 'features/carrier-portal/store/selectors/carrierPortalSelectors';
 import type { AddressSearchResult } from 'features/place/types';
 
 const DEBOUNCE_MS = 250;
@@ -115,6 +117,7 @@ export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
   disabled = false,
 }) => {
   const formik = useFormikContext<Record<string, unknown>>();
+  const portalToken = useSelector(selectToken);
   const addressValue = (getIn(formik.values, name) as AddressValue | undefined) ?? {};
   const rawErrors = getIn(formik.errors, name) as unknown;
   const rawTouched = getIn(formik.touched, name) as unknown;
@@ -194,7 +197,12 @@ export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      void searchAddresses(inputValue, 10, controller.signal)
+      if (!portalToken) {
+        setLoading(false);
+        return;
+      }
+
+      void searchAddressesPortal(portalToken, inputValue, 10, controller.signal)
         .then((response) => {
           if (controller.signal.aborted) {
             return;
@@ -237,7 +245,7 @@ export const AddressTypeaheadField: React.FC<AddressTypeaheadFieldProps> = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [inputValue, mode, retryNonce]);
+  }, [inputValue, mode, retryNonce, portalToken]);
 
   // Cleanup on unmount.
   useEffect(

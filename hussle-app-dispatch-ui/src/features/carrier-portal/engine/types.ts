@@ -91,6 +91,9 @@ export interface DocumentSlot {
   id: string;
   label: string;
   required: boolean;
+  // Prisma DocumentType enum value sent to the documents API on presign/confirm.
+  // Mirrored locally as a string to keep the engine free of cross-feature imports.
+  documentType: string;
 }
 
 export interface SideEffect {

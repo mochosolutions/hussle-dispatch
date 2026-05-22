@@ -105,7 +105,7 @@ const UploadStep: React.FC<UploadStepProps> = ({ step }) => {
     setZoneStates((prev) => ({ ...prev, [doc.id]: 'uploading' }));
     dispatch(
       carrierPortalV2Actions.uploadDocument({
-        documentType: doc.id.toUpperCase(),
+        documentType: doc.documentType,
         file,
       }),
     );

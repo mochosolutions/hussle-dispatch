@@ -4,7 +4,9 @@ import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
 import type { StorageProvider } from '@/shared/storage';
 import type { PortalAgreementQueryPort } from './types/portalAgreementQueryPort';
+import type { AddressSearchInput, AddressSearchResult } from '@/places/types/addressSearchTypes';
 import { createPortalAgreementControllers } from './controllers/portalAgreementController';
+import { createPortalPlacesControllers } from './controllers/portalPlacesController';
 import { carrierInviteTokenRepoPrisma } from './repositories/carrierInviteTokenRepoPrisma';
 import { carrierAuditPortPrisma } from '@/carriers/repositories/carrierAuditPortPrisma';
 import { onboardingSessionRepoPrisma } from './repositories/onboardingSessionRepoPrisma';
@@ -38,6 +40,9 @@ interface CarrierPortalModuleDeps {
   logger: Logger;
   agreementQueries: PortalAgreementQueryPort;
   storage: StorageProvider;
+  addressSearchService: {
+    search(input: AddressSearchInput): Promise<AddressSearchResult[]>;
+  };
 }
 
 export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
@@ -176,6 +181,9 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
       agreementQueries: deps.agreementQueries,
       sessionRepo,
       storage: deps.storage,
+    }),
+    places: createPortalPlacesControllers({
+      addressSearchService: deps.addressSearchService,
     }),
   };
 

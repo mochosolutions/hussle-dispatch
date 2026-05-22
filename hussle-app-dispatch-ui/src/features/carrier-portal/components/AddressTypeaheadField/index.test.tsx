@@ -3,19 +3,26 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Formik, Form } from 'formik';
 import { AddressTypeaheadField } from './index';
-import { searchAddresses } from 'utils/api/places/placeApi';
+import { searchAddressesPortal } from 'utils/api/carrierPortal/v2';
 import { enqueueSnackbar } from 'notistack';
 import type { AddressSearchResult } from 'features/place/types';
 
-jest.mock('utils/api/places/placeApi', () => ({
-  searchAddresses: jest.fn(),
+jest.mock('utils/api/carrierPortal/v2', () => ({
+  searchAddressesPortal: jest.fn(),
 }));
 
 jest.mock('notistack', () => ({
   enqueueSnackbar: jest.fn(),
 }));
 
-const mockedSearchAddresses = searchAddresses as jest.MockedFunction<typeof searchAddresses>;
+jest.mock('store', () => ({
+  useSelector: (selector: (state: unknown) => unknown) =>
+    selector({ pages: { carrierPortalV2: { token: 'test-token' } } }),
+}));
+
+const mockedSearchAddresses = searchAddressesPortal as jest.MockedFunction<
+  typeof searchAddressesPortal
+>;
 const mockedEnqueueSnackbar = enqueueSnackbar as jest.MockedFunction<typeof enqueueSnackbar>;
 
 interface FormShape {

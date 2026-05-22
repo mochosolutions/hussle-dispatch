@@ -1,3 +1,5 @@
+import { DocumentType } from 'features/documents/types';
+
 import type { Phase } from '../engine';
 
 export const documentsPhase: Phase = {
@@ -14,6 +16,7 @@ export const documentsPhase: Phase = {
           id: 'coi',
           label: 'Certificate of Insurance',
           required: true,
+          documentType: DocumentType.INSURANCE_CERT,
         },
       ],
     },

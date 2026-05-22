@@ -10,6 +10,7 @@ import { placeStatsQueryPrisma } from './repositories/placeStatsQueryPrisma';
 import { organizationQueryPrisma } from './repositories/organizationQueryPrisma';
 import { createPlaceService } from './services/placeService';
 import { createAddressSearchService } from './services/addressSearchService';
+import type { AddressSearchInput, AddressSearchResult } from './types/addressSearchTypes';
 import { createRouteDistanceService } from './services/routeDistanceService';
 import { checkFacilityOpenAt } from './services/facilityHoursService';
 import type { CheckFacilityOpenAtInput } from './services/facilityHoursService';
@@ -38,6 +39,9 @@ export interface PlaceModuleServices {
     stop: ResolveStopInput,
     organizationId: string,
   ) => Promise<ResolveStopResult>;
+  addressSearchService: {
+    search(input: AddressSearchInput): Promise<AddressSearchResult[]>;
+  };
 }
 
 export const createPlacesModule = ({
@@ -98,6 +102,7 @@ export const createPlacesModule = ({
 
   const services: PlaceModuleServices = {
     resolveStopToPlace,
+    addressSearchService,
   };
 
   return { controllers, queries, services };
