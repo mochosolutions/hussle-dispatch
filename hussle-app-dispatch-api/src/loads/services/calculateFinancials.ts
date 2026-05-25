@@ -1,4 +1,5 @@
-import { calculateLoadFinancials } from '@/shared/financials';
+import Decimal from 'decimal.js';
+import { computeLoadFinancials } from './derivedFinancials';
 import { calculateCpm } from '@/shared/scoring/calculateCpm';
 import type { Logger } from '@/shared/utils/logger';
 import type {
@@ -71,25 +72,6 @@ export const calculateAndPersistFinancials = async (
 
   const accessorialsTotal = await loadStatusRepo.sumAccessorialCharges(loadId);
 
-  const driverPayInput =
-    load.driver?.payType !== null &&
-    load.driver?.payType !== undefined &&
-    load.driver?.payRate !== null &&
-    load.driver?.payRate !== undefined
-      ? {
-          payType: load.driver.payType,
-          payRate: load.driver.payRate.toString(),
-          ...(load.driver.payType === 'PER_HOUR'
-            ? {
-                estimatedHours:
-                  load.estimatedHours !== null
-                    ? Number(load.estimatedHours)
-                    : deriveEstimatedHours(load.stops),
-              }
-            : {}),
-        }
-      : undefined;
-
   let vehicleCpm: number | undefined;
   if (load.vehicleId !== null && load.vehicleId !== undefined && vehicleCpmQuery !== undefined) {
     const expenses = await vehicleCpmQuery.getRecurringExpenses(load.vehicleId);
@@ -101,9 +83,22 @@ export const calculateAndPersistFinancials = async (
     }
   }
 
-  let dispatcherCommInput: { commissionType: string; commissionRate: string } | undefined;
+  // Look up the dispatcher profile if we have a dispatcherUserId but no snapshot
+  // yet on the load. This preserves prior behavior for loads booked before US-09
+  // snapshot writes shipped — once US-15's backfill or US-11's read swap lands,
+  // the snapshot columns are authoritative.
+  // For US-10 the orchestrator still reads from snapshot columns first; the
+  // dispatcherProfileQuery is used as a fallback during transition.
+  type DispatcherCommType = NonNullable<typeof load.dispatcherCommissionType>;
+  let snapshotDispatcherType: DispatcherCommType | null =
+    load.dispatcherCommissionType ?? null;
+  let snapshotDispatcherRate: string | null =
+    load.dispatcherCommissionRate !== null && load.dispatcherCommissionRate !== undefined
+      ? load.dispatcherCommissionRate.toString()
+      : null;
 
   if (
+    snapshotDispatcherType === null &&
     load.dispatcherUserId !== null &&
     load.dispatcherUserId !== undefined &&
     deps.dispatcherProfileQuery !== undefined &&
@@ -114,29 +109,75 @@ export const calculateAndPersistFinancials = async (
       deps.organizationId,
     );
     if (profile !== null) {
-      dispatcherCommInput = {
-        commissionType: profile.commissionType,
-        commissionRate: profile.commissionRate,
-      };
+      // profile.commissionType is the string-typed enum value from the profile
+      // row. Narrow to the Prisma enum union via runtime check.
+      const allowedTypes: DispatcherCommType[] = [
+        'PERCENTAGE_OF_MARGIN',
+        'PERCENTAGE_OF_GROSS',
+        'FLAT_PER_LOAD',
+      ];
+      const found = allowedTypes.find((t) => t === profile.commissionType);
+      if (found !== undefined) {
+        snapshotDispatcherType = found;
+        snapshotDispatcherRate = profile.commissionRate;
+      }
     }
   }
 
-  const result = calculateLoadFinancials({
-    customerRate: load.customerRate.toString(),
-    accessorials: accessorialsTotal,
-    loadedMiles: load.loadedMiles,
-    totalMiles: load.totalMiles ?? null,
-    carrier: {
-      type: carrier.type,
-      dispatchFeePercent: carrier.dispatchFeePercent.toString(),
-      partnerSplitPercent: carrier.partnerSplitPercent.toString(),
-      feeIncludesAccessorials: carrier.feeIncludesAccessorials,
-      feeType: carrier.feeType,
-      payFromNet: carrier.payFromNet,
-    },
-    driverPay: driverPayInput,
+  // Driver snapshot fallback — same transitional pattern.
+  let snapshotDriverType: typeof load.driverPayType = load.driverPayType ?? null;
+  let snapshotDriverRate: string | null =
+    load.driverPayRate !== null && load.driverPayRate !== undefined ? load.driverPayRate.toString() : null;
+  if (snapshotDriverType === null && load.driver !== null) {
+    if (load.driver.payType !== null && load.driver.payRate !== null) {
+      snapshotDriverType = load.driver.payType;
+      snapshotDriverRate = load.driver.payRate.toString();
+    }
+  }
+
+  // Carrier-term snapshot fallbacks (transitional).
+  const snapshotDispatchFeeType: 'PERCENTAGE' | 'FLAT' =
+    load.dispatchFeeType ?? (carrier.dispatchFeeType as 'PERCENTAGE' | 'FLAT');
+  const snapshotDispatchFeeAmount: string =
+    load.dispatchFeeAmount !== null && load.dispatchFeeAmount !== undefined
+      ? load.dispatchFeeAmount.toString()
+      : carrier.dispatchFeePercent.toString();
+  const snapshotPartnerSplit: string =
+    load.partnerSplitPercent !== null && load.partnerSplitPercent !== undefined
+      ? load.partnerSplitPercent.toString()
+      : carrier.partnerSplitPercent.toString();
+  const snapshotFeeIncludesAccessorials: boolean =
+    load.feeIncludesAccessorials ?? carrier.feeIncludesAccessorials;
+  const snapshotPayFromNet: boolean = load.payFromNet ?? carrier.payFromNet;
+
+  // PER_HOUR estimatedHours derivation (still callsite-derived, not snapshotted).
+  const resolveEstimatedHours = (): number | undefined => {
+    if (snapshotDriverType !== 'PER_HOUR') return undefined;
+    if (load.estimatedHours !== null) return Number(load.estimatedHours);
+    return deriveEstimatedHours(load.stops);
+  };
+  const estimatedHoursForPerHour = resolveEstimatedHours();
+
+  // Build a shallow Load-shaped object with the resolved snapshot terms, so
+  // computeLoadFinancials sees the effective values. We don't mutate `load`.
+  const loadForCalc = {
+    ...load,
+    dispatchFeeType: snapshotDispatchFeeType,
+    dispatchFeeAmount: snapshotDispatchFeeAmount !== null ? new Decimal(snapshotDispatchFeeAmount) : null,
+    partnerSplitPercent: snapshotPartnerSplit !== null ? new Decimal(snapshotPartnerSplit) : null,
+    driverPayType: snapshotDriverType,
+    driverPayRate: snapshotDriverRate !== null ? new Decimal(snapshotDriverRate) : null,
+    dispatcherCommissionType: snapshotDispatcherType,
+    dispatcherCommissionRate:
+      snapshotDispatcherRate !== null ? new Decimal(snapshotDispatcherRate) : null,
+    feeIncludesAccessorials: snapshotFeeIncludesAccessorials,
+    payFromNet: snapshotPayFromNet,
+  };
+
+  const result = computeLoadFinancials(loadForCalc, new Decimal(accessorialsTotal), {
+    carrierType: carrier.type,
     vehicleCpm,
-    dispatcherComm: dispatcherCommInput,
+    estimatedHours: estimatedHoursForPerHour,
   });
 
   await loadStatusRepo.updateFinancials(loadId, {
