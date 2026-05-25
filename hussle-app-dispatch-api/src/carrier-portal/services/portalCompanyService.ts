@@ -1,5 +1,9 @@
 import type { Carrier } from '@prisma/client';
 import { FieldLockedError } from '@/shared/errors';
+import {
+  computeAgreementStatus,
+  type DerivedComplianceDeps,
+} from '@/carriers/services/derivedCompliance';
 
 export interface SaveCompanyRequest {
   // Display name remains accepted for backward compatibility with the old payload shape.
@@ -41,6 +45,7 @@ interface CarrierRepo {
 
 interface PortalCompanyServiceDeps {
   carrierRepo: CarrierRepo;
+  derivedComplianceDeps: DerivedComplianceDeps;
 }
 
 const toCarrierSummary = (carrier: Carrier): CarrierSummary => ({
@@ -90,8 +95,9 @@ const IDENTITY_FIELDS = ['legalName', 'mcNumber', 'dotNumber'] as const;
 const assertIdentityFieldsUnchanged = (
   fields: SaveCompanyRequest,
   existing: Carrier,
+  agreementSignedAt: Date | null,
 ): void => {
-  if (existing.dispatchAgreementSignedAt === null) {
+  if (agreementSignedAt === null) {
     return;
   }
 
@@ -117,7 +123,11 @@ export const createPortalCompanyService = (deps: PortalCompanyServiceDeps) => ({
   ): Promise<CarrierSummary> => {
     const existing = await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
 
-    assertIdentityFieldsUnchanged(fields, existing);
+    // Identity-field locks engage once a DISPATCH_AGREEMENT has been signed.
+    // The cached Carrier.dispatchAgreementSignedAt column has been retired;
+    // derive the signed timestamp from the Agreement table on each save.
+    const agreement = await computeAgreementStatus(carrierId, deps.derivedComplianceDeps);
+    assertIdentityFieldsUnchanged(fields, existing, agreement.signedAt);
 
     const writeData: Record<string, unknown> = { ...fields };
     // `name` is a derived display column — never write the request's raw `name` field through.

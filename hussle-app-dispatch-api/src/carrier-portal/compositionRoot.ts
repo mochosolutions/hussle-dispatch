@@ -67,7 +67,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
 
   const authenticateCarrierToken = createAuthenticateCarrierToken({ tokenRepo });
 
-  const companyService = createPortalCompanyService({ carrierRepo });
+  const companyService = createPortalCompanyService({ carrierRepo, derivedComplianceDeps });
 
   const equipmentService = createPortalEquipmentService({
     findCarrierById: async (carrierId: string) => {
