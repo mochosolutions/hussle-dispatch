@@ -5,6 +5,7 @@ import type { Logger } from '@/shared/utils/logger';
 import type { StorageProvider } from '@/shared/storage';
 import type { PortalAgreementQueryPort } from './types/portalAgreementQueryPort';
 import type { AddressSearchInput, AddressSearchResult } from '@/places/types/addressSearchTypes';
+import type { DocumentService } from '@/documents/types/documentServiceTypes';
 import { createPortalAgreementControllers } from './controllers/portalAgreementController';
 import { createPortalMockSignAgreementController } from './controllers/portalMockSignAgreementController';
 import { createPortalPlacesControllers } from './controllers/portalPlacesController';
@@ -33,8 +34,6 @@ import { createLanePreferencesControllers } from './controllers/lanePreferencesC
 import { createPortalLanePreferencesService } from './services/portalLanePreferencesService';
 import { createDocumentsControllers } from './controllers/documentsController';
 import { createPortalDocumentsService } from './services/portalDocumentsService';
-import { generatePresignedPutUrl, buildCarrierDocumentKey } from '@/shared/s3Presign';
-import { env } from '@/config/env';
 
 interface CarrierPortalModuleDeps {
   prismaClient: PrismaClient | PrismaTransaction;
@@ -45,6 +44,7 @@ interface CarrierPortalModuleDeps {
   addressSearchService: {
     search(input: AddressSearchInput): Promise<AddressSearchResult[]>;
   };
+  documentService: DocumentService;
 }
 
 export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
@@ -115,24 +115,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
 
   const documentsService = createPortalDocumentsService({
     documentRepo,
-    carrierCompliance: {
-      updateComplianceFlags: (carrierId, flags) => {
-        // Documents service already receives organizationId from controller
-        // and uses findByIdAndCarrier for document verification.
-        // Compliance flag updates use carrierId which is token-scoped.
-        return deps.prismaClient.carrier
-          .update({
-            where: { id: carrierId },
-            data: flags,
-          })
-          .then(() => undefined);
-      },
-    },
-    presignPort: {
-      generatePresignedPutUrl,
-      buildCarrierDocumentKey,
-    },
-    s3Bucket: env.S3_BUCKET,
+    documentService: deps.documentService,
   });
 
   const controllers = {

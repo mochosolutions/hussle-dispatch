@@ -6,6 +6,7 @@ import { createStorageProvider, type StorageProvider } from '@/shared/storage';
 import { logger } from '@/shared/utils/logger';
 import { agreementsQueries } from '@/agreements';
 import { placeServices } from '@/places';
+import { documentService } from '@/documents';
 import { createCarrierPortalModule } from './compositionRoot';
 import { createCarrierPortalRouter } from './routes';
 
@@ -39,6 +40,7 @@ const carrierPortalModule = createCarrierPortalModule({
   agreementQueries: agreementsQueries,
   storage: buildStorage(),
   addressSearchService: placeServices.addressSearchService,
+  documentService,
 });
 
 export const carrierPortalRouter = createCarrierPortalRouter(

@@ -23,13 +23,19 @@ interface DocumentsService {
   presignDocument(
     carrierId: string,
     organizationId: string,
-    input: { fileName: string; contentType: string; documentType: string },
+    input: {
+      fileName: string;
+      contentType: string;
+      documentType: string;
+      expiresAt?: string;
+      metadata?: Record<string, unknown>;
+    },
   ): Promise<PresignResult>;
   confirmDocument(
     documentId: string,
     carrierId: string,
     organizationId: string,
-    input: { documentType: string; insuranceExpiry?: string; coverageConfirmed?: boolean },
+    input: { expiresAt?: string; metadata?: Record<string, unknown> },
   ): Promise<PortalDocument>;
 }
 
@@ -46,25 +52,27 @@ export const createDocumentsControllers = (deps: DocumentsControllerDeps) => ({
   },
 
   presignDocument: async (req: Request, res: Response) => {
-    const { carrierId, organizationId, fileName, contentType, documentType } =
+    const { carrierId, organizationId, fileName, contentType, documentType, expiresAt, metadata } =
       presignDocumentMapper(req);
     const result = await deps.documentsService.presignDocument(carrierId, organizationId, {
       fileName,
       contentType,
       documentType,
+      expiresAt,
+      metadata,
     });
     const response = presignDocumentTransformer(result);
     sendSingle(res, response);
   },
 
   confirmDocument: async (req: Request, res: Response) => {
-    const { documentId, carrierId, organizationId, documentType, insuranceExpiry, coverageConfirmed } =
+    const { documentId, carrierId, organizationId, expiresAt, metadata } =
       confirmDocumentMapper(req);
     const updated = await deps.documentsService.confirmDocument(
       documentId,
       carrierId,
       organizationId,
-      { documentType, insuranceExpiry, coverageConfirmed },
+      { expiresAt, metadata },
     );
     const response = portalDocumentTransformer(updated);
     sendSingle(res, response);

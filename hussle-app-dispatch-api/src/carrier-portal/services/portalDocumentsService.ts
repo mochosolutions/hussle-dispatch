@@ -1,22 +1,26 @@
 import type {
   PortalDocument,
   PortalDocumentRepoPort,
-  CarrierCompliancePort,
-  PresignPort,
 } from '../types/portalDocumentsTypes';
+import type { DocumentService } from '@/documents/types/documentServiceTypes';
+import type {
+  DocumentType,
+  DocumentMetadata,
+  DocumentWithUploader,
+} from '@/documents/types/documentTypes';
 import { NotFoundError } from '@/shared/errors/commonErrors';
 
 interface PortalDocumentsServiceDeps {
   documentRepo: PortalDocumentRepoPort;
-  carrierCompliance: CarrierCompliancePort;
-  presignPort: PresignPort;
-  s3Bucket: string;
+  documentService: DocumentService;
 }
 
 interface PresignInput {
   fileName: string;
   contentType: string;
   documentType: string;
+  expiresAt?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface PresignResult {
@@ -26,32 +30,25 @@ interface PresignResult {
 }
 
 interface ConfirmInput {
-  documentType: string;
-  insuranceExpiry?: string;
-  coverageConfirmed?: boolean;
+  expiresAt?: string;
+  metadata?: Record<string, unknown>;
 }
 
-const COMPLIANCE_FLAG_MAP: Record<string, (input: ConfirmInput) => Record<string, unknown>> = {
-  DISPATCH_AGREEMENT: () => ({ dispatchAgreementOnFile: true }),
-  INSURANCE_CERT: (input) => ({
-    insuranceCertOnFile: true,
-    ...(input.insuranceExpiry ? { insuranceExpiry: input.insuranceExpiry } : {}),
-  }),
-  W9: () => ({}),
-};
-
-// `maxSize` passed to generatePresignedPutUrl is the client-asserted upload
-// size to compare against the content-type-specific limit in s3Presign.ts:
-//   application/pdf    → 5 MB
-//   image/png/jpg/jpeg → 10 MB
-// We don't know the actual file size at presign time (the UI doesn't send
-// it), so pick the lower of the two so the upper bound is never exceeded.
-const MAX_UPLOAD_SIZE_BY_CONTENT_TYPE: Record<string, number> = {
-  'application/pdf': 5 * 1024 * 1024,
-  'image/png': 10 * 1024 * 1024,
-  'image/jpg': 10 * 1024 * 1024,
-  'image/jpeg': 10 * 1024 * 1024,
-};
+/**
+ * Re-shape a confirmed dispatcher document into the portal document wire shape.
+ * The portal transformer only needs a subset of fields; signature data is N/A
+ * for portal uploads.
+ */
+const toPortalDocument = (doc: DocumentWithUploader): PortalDocument => ({
+  id: doc.id,
+  documentType: doc.type,
+  fileName: doc.fileName,
+  fileUrl: doc.url ?? '',
+  reviewStatus: doc.reviewStatus ?? null,
+  signatureData: null,
+  signedAt: null,
+  createdAt: doc.createdAt,
+});
 
 export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) => ({
   listDocuments: async (
@@ -64,35 +61,24 @@ export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) =
     organizationId: string,
     input: PresignInput,
   ): Promise<PresignResult> => {
-    const s3Key = deps.presignPort.buildCarrierDocumentKey({
-      orgId: organizationId,
-      carrierId,
-      type: input.documentType,
-      filename: input.fileName,
-    });
-
-    const maxSize = MAX_UPLOAD_SIZE_BY_CONTENT_TYPE[input.contentType] ?? 5 * 1024 * 1024;
-    const { url } = await deps.presignPort.generatePresignedPutUrl({
-      bucket: deps.s3Bucket,
-      key: s3Key,
-      contentType: input.contentType,
-      maxSize,
-    });
-
-    const doc = await deps.documentRepo.create({
+    const result = await deps.documentService.presign({
       organizationId,
       entityType: 'carrier',
       entityId: carrierId,
-      type: input.documentType,
       fileName: input.fileName,
-      s3Key,
-      url,
-      uploadStatus: 'pending',
+      mimeType: input.contentType,
+      type: input.documentType as DocumentType,
+      // Portals authenticate via invite token — no User row to attribute to.
+      uploadedByUserId: undefined,
+      ...(input.expiresAt !== undefined && { expiresAt: input.expiresAt }),
+      ...(input.metadata !== undefined && {
+        metadata: input.metadata as DocumentMetadata,
+      }),
     });
 
     return {
-      documentId: doc.id,
-      uploadUrl: url,
+      documentId: result.documentId,
+      uploadUrl: result.presignedUrl,
       fields: {},
     };
   },
@@ -103,21 +89,26 @@ export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) =
     organizationId: string,
     input: ConfirmInput,
   ): Promise<PortalDocument> => {
-    const doc = await deps.documentRepo.findByIdAndCarrier(documentId, carrierId, organizationId);
-    if (!doc) {
+    // Verify the document belongs to this carrier (token scope) before
+    // delegating the confirm flow to the dispatcher service.
+    const ownership = await deps.documentRepo.findByIdAndCarrier(
+      documentId,
+      carrierId,
+      organizationId,
+    );
+    if (!ownership) {
       throw new NotFoundError(`Document with id ${documentId} not found`);
     }
 
-    const updated = await deps.documentRepo.updateStatus(documentId, {
-      uploadStatus: 'confirmed',
-      reviewStatus: 'pending_review',
+    const confirmed = await deps.documentService.confirm({
+      documentId,
+      organizationId,
+      ...(input.expiresAt !== undefined && { expiresAt: input.expiresAt }),
+      ...(input.metadata !== undefined && {
+        metadata: input.metadata as DocumentMetadata,
+      }),
     });
 
-    const flagBuilder = COMPLIANCE_FLAG_MAP[input.documentType];
-    if (flagBuilder) {
-      await deps.carrierCompliance.updateComplianceFlags(carrierId, flagBuilder(input));
-    }
-
-    return updated;
+    return toPortalDocument(confirmed);
   },
 });
