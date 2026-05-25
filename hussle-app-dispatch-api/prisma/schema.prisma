@@ -839,6 +839,7 @@ model Load {
   dispatcherCommissionRate  Decimal?                   @db.Decimal(7, 4)
   feeIncludesAccessorials   Boolean?
   payFromNet                Boolean?
+  carrierType               CarrierType?
 
   @@unique([organizationId, loadNumber])
   @@index([organizationId])
