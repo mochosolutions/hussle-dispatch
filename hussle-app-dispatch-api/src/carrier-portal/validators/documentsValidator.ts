@@ -9,6 +9,14 @@ const PORTAL_DOCUMENT_TYPES = [
 
 const ENTITY_TYPES = ['load', 'carrier', 'driver', 'vehicle'] as const;
 
+// Yup.object() with no .shape() + stripUnknown:true would strip every inner field.
+// Yup.mixed() lets the arbitrary key/value record pass through to the service.
+const metadataSchema = Yup.mixed<Record<string, unknown>>()
+  .optional()
+  .test('is-plain-object', 'metadata must be an object', (v) =>
+    v === undefined || (typeof v === 'object' && v !== null && !Array.isArray(v)),
+  );
+
 export const presignDocumentValidator = Yup.object({
   body: Yup.object({
     fileName: Yup.string().required('fileName is required'),
@@ -21,7 +29,7 @@ export const presignDocumentValidator = Yup.object({
       .required('entityType is required'),
     entityId: Yup.string().uuid('entityId must be a valid UUID').required('entityId is required'),
     expiresAt: Yup.string().optional(),
-    metadata: Yup.object().optional(),
+    metadata: metadataSchema,
   }),
 });
 
@@ -31,6 +39,6 @@ export const confirmDocumentValidator = Yup.object({
   }),
   body: Yup.object({
     expiresAt: Yup.string().optional(),
-    metadata: Yup.object().optional(),
+    metadata: metadataSchema,
   }),
 });
