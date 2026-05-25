@@ -1,17 +1,26 @@
-import { call, put, type SagaReturnType } from 'redux-saga/effects';
+import { call, put } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
+
 import { notify } from 'features/ui/store/reducers/notificationSlice';
 import {
   presignDocument,
   uploadDocumentToS3,
   confirmDocument,
 } from 'utils/api/documents/documentApi';
+
 import { documentActions } from '../reducers/documentEntitySlice';
 import {
   uploadDocumentSuccess,
   uploadDocumentFailure,
 } from '../reducers/documentPageSlice';
-import type { DocumentEntityType, DocumentType } from '../../types';
+import type { Document, DocumentEntityType, DocumentType } from '../../types';
+import {
+  uploadFileViaPresign,
+  type ConfirmFnInput,
+  type NormalizedPresign,
+  type PresignFnInput,
+  type UploadFileViaPresignDeps,
+} from './uploadFileViaPresign';
 
 interface UploadDocumentPayload {
   file: File;
@@ -23,6 +32,30 @@ interface UploadDocumentPayload {
   metadata?: Record<string, string>;
 }
 
+// Adapters bridge the dispatcher API client (presign returns `{ presign }`,
+// confirm returns `{ document }`) to the helper's normalized shapes.
+const presignFn = async (input: PresignFnInput): Promise<NormalizedPresign> => {
+  const result = await presignDocument(input);
+  return {
+    documentId: result.presign.documentId,
+    presignedUrl: result.presign.presignedUrl,
+  };
+};
+
+const confirmFn = async (
+  documentId: string,
+  confirmInput?: ConfirmFnInput,
+): Promise<Document> => {
+  const result = await confirmDocument(documentId, confirmInput);
+  return result.document;
+};
+
+const deps: UploadFileViaPresignDeps<Document> = {
+  presignFn,
+  confirmFn,
+  uploadFn: uploadDocumentToS3,
+};
+
 export function* uploadDocumentSaga(
   action: PayloadAction<UploadDocumentPayload>,
 ): Generator {
@@ -30,40 +63,14 @@ export function* uploadDocumentSaga(
     action.payload;
 
   try {
-    // 1. Get presigned URL. fileSize is sent as a UX hint — the backend
-    // re-validates against S3's authoritative size during confirm.
-    const presignResult = (yield call(presignDocument, {
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type,
-      type: documentType,
-      entityType,
-      entityId,
-      ...(expiresAt ? { expiresAt } : {}),
-      ...(metadata && Object.keys(metadata).length > 0 ? { metadata } : {}),
-    })) as SagaReturnType<typeof presignDocument>;
+    const result = (yield call(
+      uploadFileViaPresign<Document>,
+      { file, documentType, entityType, entityId, expiresAt, metadata },
+      deps,
+    )) as { documentId: string; confirmResult: Document };
 
-    // 2. Upload file to S3
-    yield call(uploadDocumentToS3, presignResult.presign.presignedUrl, file);
-
-    // 3. Confirm upload
-    const confirmInput =
-      expiresAt || (metadata && Object.keys(metadata).length > 0)
-        ? { ...(expiresAt ? { expiresAt } : {}), ...(metadata ? { metadata } : {}) }
-        : undefined;
-
-    const confirmResult = (yield call(
-      confirmDocument,
-      presignResult.presign.documentId,
-      confirmInput,
-    )) as SagaReturnType<typeof confirmDocument>;
-
-    // 4. Add to entity store
-    yield put(documentActions.addOne(confirmResult.document));
-
-    // 5. Update page state
+    yield put(documentActions.addOne(result.confirmResult));
     yield put(uploadDocumentSuccess({ clientId }));
-
     yield put(notify({ message: 'Document uploaded', variant: 'success' }));
   } catch (error: unknown) {
     const errorMessage =
