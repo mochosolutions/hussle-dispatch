@@ -21,6 +21,9 @@ import type {
 } from '../types/carrierTypes';
 import type { CarrierAuditPort } from '../types/carrierAuditPort';
 import type { CarrierInviteTokenRepoPort } from '@/carrier-portal/types/carrierInviteTokenRepoPort';
+import type { DerivedComplianceDeps } from './derivedCompliance';
+import { computeCompliancesForCarriers } from './derivedComplianceBatch';
+import type { ComplianceForCarrier } from './derivedComplianceBatch';
 import type {
   CarrierService,
   CreateCarrierNoteServiceInput,
@@ -34,7 +37,7 @@ import type {
   UpdateCarrierServiceInput,
 } from '../types/carrierServiceTypes';
 
-const listSortableFields = ['createdAt', 'updatedAt', 'name', 'insuranceExpiry'] as const;
+const listSortableFields = ['createdAt', 'updatedAt', 'name'] as const;
 
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
@@ -79,36 +82,21 @@ const getSafeSortField = (field: string): (typeof listSortableFields)[number] =>
 
 const isAdminRole = (role: string): boolean => role === 'admin';
 
-const daysUntil = (date: Date): number => {
-  const now = new Date();
-  const millis = date.getTime() - now.getTime();
-  return Math.ceil(millis / (1000 * 60 * 60 * 24));
-};
+const toInsuranceWarningEnum = (
+  warning: ComplianceForCarrier['insurance']['warning'],
+): InsuranceWarning | null =>
+  warning === '30_DAY' || warning === '7_DAY' || warning === 'EXPIRED' ? warning : null;
 
-const getInsuranceWarning = (insuranceExpiry: Date | null): InsuranceWarning | null => {
-  if (insuranceExpiry === null) {
-    return null;
-  }
-
-  const daysRemaining = daysUntil(insuranceExpiry);
-  if (daysRemaining < 0) {
-    return 'EXPIRED';
-  }
-  if (daysRemaining <= 7) {
-    return '7_DAY';
-  }
-  if (daysRemaining <= 30) {
-    return '30_DAY';
-  }
-  return null;
-};
-
-const enrichCarrier = (carrier: CarrierWithCounts, role: string): CarrierServiceOutput => {
+const enrichCarrierFromCompliance = (
+  carrier: CarrierWithCounts,
+  role: string,
+  compliance: ComplianceForCarrier,
+): CarrierServiceOutput => {
   const onboarding = checkCarrierOnboarding({
     carrierType: carrier.type,
-    dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-    insuranceCertOnFile: carrier.insuranceCertOnFile,
-    insuranceExpiry: carrier.insuranceExpiry,
+    dispatchAgreementOnFile: compliance.agreement.onFile,
+    insuranceCertOnFile: compliance.insurance.onFile,
+    insuranceExpiry: compliance.insurance.expiresAt,
     tinOnFile: carrier.tin != null,
   });
 
@@ -123,7 +111,7 @@ const enrichCarrier = (carrier: CarrierWithCounts, role: string): CarrierService
       ready: onboarding.allowed,
       missing: onboarding.missingDocuments,
     },
-    insuranceWarning: getInsuranceWarning(carrier.insuranceExpiry),
+    insuranceWarning: toInsuranceWarningEnum(compliance.insurance.warning),
   };
 
   if (!isAdminRole(role)) {
@@ -136,14 +124,46 @@ const enrichCarrier = (carrier: CarrierWithCounts, role: string): CarrierService
   };
 };
 
-const enrichCarrierWithAssets = (
+const computeComplianceForOne = async (
+  carrierId: string,
+  deps: DerivedComplianceDeps,
+): Promise<ComplianceForCarrier> => {
+  const byId = await computeCompliancesForCarriers([carrierId], deps);
+  const compliance = byId.get(carrierId);
+  if (compliance === undefined) {
+    // computeCompliancesForCarriers seeds every input id with a default — this is
+    // defensive only and should be unreachable.
+    return {
+      insurance: { onFile: false, expiresAt: null, warning: null },
+      w9: { onFile: false },
+      carrierPacket: { onFile: false },
+      agreement: { onFile: false, signedAgreementId: null, signedAt: null },
+    };
+  }
+  return compliance;
+};
+
+const enrichCarrier = async (
+  carrier: CarrierWithCounts,
+  role: string,
+  deps: DerivedComplianceDeps,
+): Promise<CarrierServiceOutput> => {
+  const compliance = await computeComplianceForOne(carrier.id, deps);
+  return enrichCarrierFromCompliance(carrier, role, compliance);
+};
+
+const enrichCarrierWithAssets = async (
   carrier: CarrierWithAssets,
   role: string,
-): CarrierWithAssetsServiceOutput => ({
-  ...enrichCarrier(carrier, role),
-  drivers: carrier.drivers,
-  vehicles: carrier.vehicles,
-});
+  deps: DerivedComplianceDeps,
+): Promise<CarrierWithAssetsServiceOutput> => {
+  const enriched = await enrichCarrier(carrier, role, deps);
+  return {
+    ...enriched,
+    drivers: carrier.drivers,
+    vehicles: carrier.vehicles,
+  };
+};
 
 interface CarrierServiceDeps {
   carrierRepository: CarrierRepositoryPort;
@@ -151,6 +171,7 @@ interface CarrierServiceDeps {
   noteRepository: CarrierNoteRepositoryPort;
   auditLog: CarrierAuditPort;
   inviteTokenRepo: CarrierInviteTokenRepoPort;
+  derivedComplianceDeps: DerivedComplianceDeps;
 }
 
 const auditCarrierCreated = async (
@@ -210,7 +231,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       source: 'manual',
     });
 
-    return enrichCarrier(carrier, role);
+    return enrichCarrier(carrier, role, deps.derivedComplianceDeps);
   },
 
   createCarrierWithAssets: async ({
@@ -243,7 +264,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       source: 'manual_with_assets',
     });
 
-    return enrichCarrierWithAssets(carrier, role);
+    return enrichCarrierWithAssets(carrier, role, deps.derivedComplianceDeps);
   },
 
   listCarriers: async ({ query, organizationId, filters, role }: ListCarriersServiceInput) => {
@@ -271,8 +292,26 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
       },
     );
 
+    // Batch-compute compliance once for the whole page (exactly 2 queries) and
+    // pair each carrier with its derived projection before enriching.
+    const complianceById = await computeCompliancesForCarriers(
+      result.data.map((carrier) => carrier.id),
+      deps.derivedComplianceDeps,
+    );
+
     return {
-      data: result.data.map((carrier) => enrichCarrier(carrier, role)),
+      data: result.data.map((carrier) =>
+        enrichCarrierFromCompliance(
+          carrier,
+          role,
+          complianceById.get(carrier.id) ?? {
+            insurance: { onFile: false, expiresAt: null, warning: null },
+            w9: { onFile: false },
+            carrierPacket: { onFile: false },
+            agreement: { onFile: false, signedAgreementId: null, signedAt: null },
+          },
+        ),
+      ),
       meta: result.meta,
     };
   },
@@ -280,7 +319,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
   getCarrierById: async ({ id, organizationId, role }: GetCarrierByIdServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
     const carrier = await findCarrierOrThrow(id, organizationId, deps);
-    return enrichCarrier(carrier, role);
+    return enrichCarrier(carrier, role, deps.derivedComplianceDeps);
   },
 
   updateCarrier: async ({ id, organizationId, input, role }: UpdateCarrierServiceInput) => {
@@ -311,7 +350,7 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
     }
 
     const carrier = await deps.carrierRepository.update(id, organizationId, input);
-    return enrichCarrier(carrier, role);
+    return enrichCarrier(carrier, role, deps.derivedComplianceDeps);
   },
 
   deleteCarrier: async ({ id, organizationId, role }: DeleteCarrierServiceInput) => {
@@ -343,12 +382,13 @@ export const createCarrierService = (deps: CarrierServiceDeps): CarrierService =
   }: GetCarrierOnboardingServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
     const carrier = await findCarrierOrThrow(id, organizationId, deps);
+    const compliance = await computeComplianceForOne(carrier.id, deps.derivedComplianceDeps);
 
     return checkCarrierOnboarding({
       carrierType: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
+      dispatchAgreementOnFile: compliance.agreement.onFile,
+      insuranceCertOnFile: compliance.insurance.onFile,
+      insuranceExpiry: compliance.insurance.expiresAt,
       tinOnFile: carrier.tin != null,
     });
   },

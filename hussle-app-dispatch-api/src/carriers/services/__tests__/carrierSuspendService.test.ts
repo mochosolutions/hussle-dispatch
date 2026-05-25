@@ -16,14 +16,18 @@ const buildCarrier = (overrides: Partial<CarrierForSuspend> = {}): CarrierForSus
   managedByOrgId: ORG,
   status: CarrierStatus.ACTIVE,
   type: CarrierType.EXTERNAL_CARRIER,
-  dispatchAgreementOnFile: true,
-  insuranceCertOnFile: true,
-  insuranceExpiry: futureDate,
   tinOnFile: true,
   ...overrides,
 });
 
-const makeDeps = () => {
+interface ComplianceFixture {
+  insuranceExpiresAt: Date | null;
+  agreementSigned: boolean;
+}
+
+const makeDeps = (
+  fixture: ComplianceFixture = { insuranceExpiresAt: futureDate, agreementSigned: true },
+) => {
   const port: jest.Mocked<CarrierSuspendPort> = {
     findById: jest.fn(),
     setStatus: jest.fn().mockImplementation((id, status) =>
@@ -33,7 +37,56 @@ const makeDeps = () => {
   const auditLog = {
     create: jest.fn().mockResolvedValue(undefined),
   };
-  return { suspendPort: port, auditLog };
+  // Compute-on-read: feed the gate via mocked document/agreement repos.
+  const insuranceDocs = [
+    {
+      id: 'doc-insurance-1',
+      organizationId: ORG,
+      entityType: 'carrier',
+      entityId: CARRIER,
+      type: 'INSURANCE_CERT',
+      fileName: 'coi.pdf',
+      fileSize: null,
+      mimeType: 'application/pdf',
+      s3Key: 's3://test/coi.pdf',
+      url: 'https://test/coi.pdf',
+      uploadStatus: 'confirmed',
+      isArchived: false,
+      uploadedByUserId: null,
+      notes: null,
+      expiresAt: fixture.insuranceExpiresAt,
+      metadata: null,
+      reviewStatus: 'approved',
+      reviewedAt: null,
+      reviewedByUserId: null,
+      rejectionReason: null,
+      signatureData: null,
+      signedAt: null,
+      createdAt: new Date('2026-03-01T00:00:00.000Z'),
+      uploadedByUser: null,
+    },
+  ];
+  const documentRepo = {
+    findManyForCompliance: jest.fn().mockResolvedValue(insuranceDocs),
+  };
+  const agreementRepo = {
+    findManySigned: jest.fn().mockResolvedValue(
+      fixture.agreementSigned
+        ? [
+            {
+              id: 'agreement-1',
+              carrierId: CARRIER,
+              signedAt: new Date('2026-03-01T00:00:00.000Z'),
+            },
+          ]
+        : [],
+    ),
+  };
+  return {
+    suspendPort: port,
+    auditLog,
+    derivedComplianceDeps: { documentRepo, agreementRepo },
+  };
 };
 
 describe('carrierSuspendService.suspend', () => {
@@ -106,12 +159,12 @@ describe('carrierSuspendService.unsuspend', () => {
   });
 
   it('transitions SUSPENDED -> ACTION_REQUIRED when insurance expired', async () => {
-    const deps = makeDeps();
+    const deps = makeDeps({
+      insuranceExpiresAt: new Date('2020-01-01'),
+      agreementSigned: true,
+    });
     deps.suspendPort.findById.mockResolvedValue(
-      buildCarrier({
-        status: CarrierStatus.SUSPENDED,
-        insuranceExpiry: new Date('2020-01-01'),
-      }),
+      buildCarrier({ status: CarrierStatus.SUSPENDED }),
     );
 
     const service = createCarrierSuspendService(deps);

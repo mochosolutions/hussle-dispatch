@@ -88,6 +88,7 @@ export const createCarriersModule = ({
     noteRepository: repositories,
     auditLog,
     inviteTokenRepo,
+    derivedComplianceDeps,
   });
 
   const carrierInviteService = createCarrierInviteService({
@@ -112,9 +113,6 @@ export const createCarriersModule = ({
           managedByOrgId: true,
           status: true,
           type: true,
-          dispatchAgreementOnFile: true,
-          insuranceCertOnFile: true,
-          insuranceExpiry: true,
           tin: true,
         },
       });
@@ -129,9 +127,6 @@ export const createCarriersModule = ({
         managedByOrgId: carrier.managedByOrgId,
         status: carrier.status,
         type: carrier.type,
-        dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-        insuranceCertOnFile: carrier.insuranceCertOnFile,
-        insuranceExpiry: carrier.insuranceExpiry,
         tinOnFile: carrier.tin != null,
       };
     },
@@ -146,6 +141,7 @@ export const createCarriersModule = ({
   const carrierSuspendService = createCarrierSuspendService({
     suspendPort,
     auditLog,
+    derivedComplianceDeps,
   });
 
   const onboardingDetailPort: OnboardingDetailPort = {
@@ -235,9 +231,6 @@ export const createCarriersModule = ({
             id: true,
             name: true,
             type: true,
-            dispatchAgreementOnFile: true,
-            insuranceCertOnFile: true,
-            insuranceExpiry: true,
             tin: true,
           },
         });
@@ -250,9 +243,6 @@ export const createCarriersModule = ({
           id: carrier.id,
           name: carrier.name,
           type: carrier.type,
-          dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-          insuranceCertOnFile: carrier.insuranceCertOnFile,
-          insuranceExpiry: carrier.insuranceExpiry,
           tinOnFile: carrier.tin != null,
         };
       },
@@ -284,6 +274,7 @@ export const createCarriersModule = ({
         }),
     },
     auditLog,
+    derivedComplianceDeps,
   });
 
   const dispatchOverrideControllers = createDispatchOverrideControllers({
