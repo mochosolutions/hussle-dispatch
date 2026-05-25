@@ -890,9 +890,30 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         onboardingOverride: existing.onboardingOverride,
       });
 
+      // Re-snapshot rate inputs when carrier or driver changes.
+      const carrierChanged = resolvedAssignment.carrierId !== existing.carrierId;
+      const driverChanged = resolvedAssignment.driverId !== existing.driverId;
+      const reSnapshot =
+        carrierChanged || driverChanged
+          ? await buildRateSnapshot(
+              {
+                dispatchFeeType: input.dispatchFeeType,
+                dispatchFeeAmount: input.dispatchFeeAmount,
+              },
+              {
+                organizationId,
+                carrierId: carrierChanged ? resolvedAssignment.carrierId : null,
+                driverId: driverChanged ? resolvedAssignment.driverId : null,
+                dispatcherUserId: null,
+              },
+              deps,
+            )
+          : {};
+
       load = await deps.loadRepository.update(id, {
         ...mergedInput,
         ...resolvedAssignment,
+        ...reSnapshot,
       });
     }
 
@@ -957,8 +978,26 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         ? existing.loadedMiles + deadheadMiles
         : undefined;
 
+    // Re-snapshot rate inputs when carrier or driver changes via assignLoad.
+    const carrierChanged = resolvedAssignment.carrierId !== existing.carrierId;
+    const driverChanged = resolvedAssignment.driverId !== existing.driverId;
+    const reSnapshot =
+      carrierChanged || driverChanged
+        ? await buildRateSnapshot(
+            { dispatchFeeType: null, dispatchFeeAmount: null },
+            {
+              organizationId,
+              carrierId: carrierChanged ? resolvedAssignment.carrierId : null,
+              driverId: driverChanged ? resolvedAssignment.driverId : null,
+              dispatcherUserId: null,
+            },
+            deps,
+          )
+        : {};
+
     const load = await deps.loadRepository.update(id, {
       ...resolvedAssignment,
+      ...reSnapshot,
       ...(deadheadMiles !== undefined ? { deadheadMiles } : {}),
       ...(totalMiles !== undefined ? { totalMiles } : {}),
     });
