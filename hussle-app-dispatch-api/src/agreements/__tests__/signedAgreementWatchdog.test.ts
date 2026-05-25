@@ -58,6 +58,7 @@ const makeRepo = (): jest.Mocked<AgreementRepoPort> => ({
   update: jest.fn().mockImplementation(async (_id: string, _patch) => makeAgreement()),
   findStaleInProgress: jest.fn().mockResolvedValue([]),
   countActivePending: jest.fn(),
+  findManySigned: jest.fn(),
 });
 
 const makeSignatureService = (): jest.Mocked<SignatureService> => ({

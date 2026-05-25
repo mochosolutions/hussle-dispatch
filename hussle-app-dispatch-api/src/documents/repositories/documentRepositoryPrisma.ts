@@ -76,6 +76,23 @@ export const documentRepositoryPrisma = (
     return candidates.map((doc) => ({ ...doc, isArchived: true }));
   },
 
+  findManyForCompliance: (carrierIds: string[], types: DocumentType[]) => {
+    if (carrierIds.length === 0 || types.length === 0) {
+      return Promise.resolve([]);
+    }
+    return prisma.document.findMany({
+      where: {
+        entityType: 'carrier',
+        entityId: { in: carrierIds },
+        type: { in: types },
+        isArchived: false,
+        uploadStatus: 'confirmed',
+      },
+      include: DOCUMENT_INCLUDES,
+      orderBy: { createdAt: 'desc' },
+    });
+  },
+
   findMany: (filters: ListDocumentsInput) => {
     const where: Record<string, unknown> = {
       organizationId: filters.organizationId,

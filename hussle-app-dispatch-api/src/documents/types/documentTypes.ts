@@ -235,6 +235,15 @@ export interface DocumentRepoPort {
   ): Promise<DocumentWithUploader[]>;
   archive(id: string): Promise<DocumentWithUploader>;
   findMany(filters: ListDocumentsInput): Promise<DocumentWithUploader[]>;
+  /**
+   * Batch lookup of non-archived, confirmed documents for compliance derivation.
+   * Filters by `entityType='carrier'`, `entityId IN carrierIds`, `type IN types`,
+   * `isArchived=false`, `uploadStatus='confirmed'`. Ordered by `createdAt DESC`.
+   */
+  findManyForCompliance(
+    carrierIds: string[],
+    types: DocumentType[],
+  ): Promise<DocumentWithUploader[]>;
 }
 
 // ---------------------------------------------------------------------------

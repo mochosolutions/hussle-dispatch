@@ -99,4 +99,18 @@ export const agreementRepositoryPrisma = (
         status: 'PENDING',
       },
     }),
+
+  findManySigned: (carrierIds: string[]) => {
+    if (carrierIds.length === 0) {
+      return Promise.resolve([]);
+    }
+    return prisma.agreement.findMany({
+      where: {
+        carrierId: { in: carrierIds },
+        status: 'SIGNED',
+        voidedAt: null,
+      },
+      orderBy: { signedAt: 'desc' },
+    });
+  },
 });

@@ -51,6 +51,7 @@ const makeDeps = () => {
     update: jest.fn(),
     findStaleInProgress: jest.fn(),
     countActivePending: jest.fn(),
+    findManySigned: jest.fn(),
   };
   const markSigned = jest.fn<(providerSubmissionId: string) => void>();
   const carrierWritePort = {

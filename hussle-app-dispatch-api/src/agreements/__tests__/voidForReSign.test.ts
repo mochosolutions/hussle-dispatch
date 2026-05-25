@@ -46,6 +46,7 @@ const makeDeps = () => {
     update: jest.fn(),
     findStaleInProgress: jest.fn(),
     countActivePending: jest.fn(),
+    findManySigned: jest.fn(),
   };
   const carrierWritePort: jest.Mocked<CarrierAgreementWritePort> = {
     setSignedAgreementId: jest.fn(),

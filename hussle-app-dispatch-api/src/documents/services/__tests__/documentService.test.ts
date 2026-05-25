@@ -54,6 +54,7 @@ const buildMockDeps = () => {
     archiveByEntityAndType: jest.fn(),
     archive: jest.fn(),
     findMany: jest.fn(),
+    findManyForCompliance: jest.fn(),
   };
 
   const storageProvider: jest.Mocked<Pick<
