@@ -35,10 +35,6 @@ export interface CreateCarrierInput {
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
-  dispatchAgreementOnFile?: boolean;
-  dispatchAgreementSignedAt?: Date;
-  insuranceCertOnFile?: boolean;
-  insuranceExpiry?: Date;
   authorityStatus?: string;
   status?: CarrierStatus;
   description?: string;
@@ -79,10 +75,6 @@ export interface UpdateCarrierInput {
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
-  dispatchAgreementOnFile?: boolean;
-  dispatchAgreementSignedAt?: Date;
-  insuranceCertOnFile?: boolean;
-  insuranceExpiry?: Date;
   authorityStatus?: string;
   status?: CarrierStatus;
   description?: string;
