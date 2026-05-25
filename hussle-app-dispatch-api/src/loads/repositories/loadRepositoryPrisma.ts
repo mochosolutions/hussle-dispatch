@@ -502,9 +502,6 @@ export const carrierAssignmentQueryPrisma = (
         id: true,
         name: true,
         type: true,
-        dispatchAgreementOnFile: true,
-        insuranceCertOnFile: true,
-        insuranceExpiry: true,
         tin: true,
       },
     });
@@ -517,9 +514,6 @@ export const carrierAssignmentQueryPrisma = (
       id: carrier.id,
       name: carrier.name,
       type: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
       tinOnFile: carrier.tin != null,
     };
   },

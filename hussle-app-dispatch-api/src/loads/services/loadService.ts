@@ -10,6 +10,11 @@ import {
 } from '@/shared/errors';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
+import {
+  computeAgreementStatus,
+  computeInsuranceStatus,
+  type DerivedComplianceDeps,
+} from '@/carriers/services/derivedCompliance';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import { generateSequenceNumber } from '@/shared/sequenceGenerator';
 import { calculateRoadDistance } from '@/shared/utils/distanceCalculator';
@@ -221,6 +226,7 @@ interface LoadServiceDeps {
   dispatcherProfileQuery?: DispatcherProfileQueryPort;
   settlementFreezeQuery?: SettlementFreezeQueryPort;
   resolveStopToPlace?: ResolveStopToPlace;
+  derivedComplianceDeps: DerivedComplianceDeps;
   eventBus?: EventBus;
   logger?: Logger;
 }
@@ -359,9 +365,6 @@ const validateAssignmentState = async (
     id: string;
     name: string;
     type: CarrierType;
-    dispatchAgreementOnFile: boolean;
-    insuranceCertOnFile: boolean;
-    insuranceExpiry: Date | null;
     tinOnFile: boolean;
   } | null = null;
 
@@ -438,11 +441,15 @@ const validateAssignmentState = async (
   }
 
   if (carrier !== null && options?.onboardingOverride !== true) {
+    const [insurance, agreement] = await Promise.all([
+      computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
+      computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
+    ]);
     const onboardingResult = checkCarrierOnboarding({
       carrierType: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
+      dispatchAgreementOnFile: agreement.onFile,
+      insuranceCertOnFile: insurance.onFile,
+      insuranceExpiry: insurance.expiresAt,
       tinOnFile: carrier.tinOnFile,
     });
 

@@ -339,9 +339,6 @@ export interface CarrierAssignmentQueryPort {
     id: string;
     name: string;
     type: CarrierType;
-    dispatchAgreementOnFile: boolean;
-    insuranceCertOnFile: boolean;
-    insuranceExpiry: Date | null;
     tinOnFile: boolean;
   } | null>;
 }

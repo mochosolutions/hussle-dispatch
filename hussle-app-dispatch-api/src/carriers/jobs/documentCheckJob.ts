@@ -1,16 +1,36 @@
-import { CarrierStatus } from '@prisma/client';
+import { CarrierStatus, type CarrierType } from '@prisma/client';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import type { Logger } from '@/shared/utils/logger';
 import { assertTransition } from '../services/carrierStateMachine';
 import type { CarrierAuditPort } from '../types/carrierAuditPort';
-import type { CarrierForSuspend, CarrierSuspendPort } from '../types/suspendTypes';
+import type { CarrierSuspendPort } from '../types/suspendTypes';
+import {
+  computeAgreementStatus,
+  computeInsuranceStatus,
+  type DerivedComplianceDeps,
+} from '../services/derivedCompliance';
+
+/**
+ * Slim carrier projection the document-check job needs from the query port.
+ * `tinOnFile` stays cached because TIN is stored on the Carrier row directly
+ * (not a Document row). Insurance + agreement status are derived on read.
+ */
+export interface CarrierForDocumentCheck {
+  id: string;
+  name: string;
+  managedByOrgId: string;
+  status: CarrierStatus;
+  type: CarrierType;
+  tinOnFile: boolean;
+}
 
 export interface DocumentCheckJobDeps {
   carrierQuery: {
-    findEligible(): Promise<CarrierForSuspend[]>;
+    findEligible(): Promise<CarrierForDocumentCheck[]>;
   };
   carrierWriter: Pick<CarrierSuspendPort, 'setStatus'>;
   auditLog: CarrierAuditPort;
+  derivedComplianceDeps: DerivedComplianceDeps;
   logger: Logger;
 }
 
@@ -37,11 +57,17 @@ export const runDocumentCheckJob = async (
   let unchanged = 0;
 
   for (const carrier of carriers) {
+    // Derive insurance + agreement state on read instead of trusting the legacy
+    // Carrier projection columns. TIN remains on the Carrier row directly.
+    const [insurance, agreement] = await Promise.all([
+      computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
+      computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
+    ]);
     const gate = checkCarrierOnboarding({
       carrierType: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
+      dispatchAgreementOnFile: agreement.onFile,
+      insuranceCertOnFile: insurance.onFile,
+      insuranceExpiry: insurance.expiresAt,
       tinOnFile: carrier.tinOnFile,
     });
 

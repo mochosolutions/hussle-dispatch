@@ -12,10 +12,44 @@ import type {
 } from '../../types/loadTypes';
 import type { LoadStatusRepoPort } from '../../types/loadStatusTypes';
 import type { Logger } from '../../../shared/utils/logger';
+import type { DerivedComplianceDeps } from '../../../carriers/services/derivedCompliance';
+import type { DocumentRepoPort } from '../../../documents/types/documentTypes';
+import type { AgreementRepoPort } from '../../../agreements/types/agreementRepoPort';
+
+// Default stub: insurance + agreement both on-file so the onboarding gate passes.
+// Tests can override `mockResolvedValueOnce([])` to simulate missing docs/agreements.
+const buildDerivedComplianceDeps = (): DerivedComplianceDeps => {
+  const documentRepo: jest.Mocked<Pick<DocumentRepoPort, 'findManyForCompliance'>> = {
+    findManyForCompliance: jest.fn(),
+  };
+  const agreementRepo: jest.Mocked<Pick<AgreementRepoPort, 'findManySigned'>> = {
+    findManySigned: jest.fn(),
+  };
+  // Default: every requested carrier has a doc + agreement on file.
+  documentRepo.findManyForCompliance.mockImplementation(async (carrierIds, _types) =>
+    carrierIds.map((entityId) => ({
+      id: `doc-${entityId}`,
+      entityId,
+      type: 'INSURANCE_CERT',
+      createdAt: new Date(),
+      expiresAt: null,
+    }) as Awaited<ReturnType<DocumentRepoPort['findManyForCompliance']>>[number]),
+  );
+  agreementRepo.findManySigned.mockImplementation(async (carrierIds) =>
+    carrierIds.map((carrierId) => ({
+      id: `agreement-${carrierId}`,
+      carrierId,
+      signedAt: new Date(),
+      status: 'SIGNED',
+    }) as Awaited<ReturnType<AgreementRepoPort['findManySigned']>>[number]),
+  );
+  return { documentRepo, agreementRepo };
+};
 
 jest.mock('@/shared/sequenceGenerator', () => ({
   generateSequenceNumber: jest.fn<() => Promise<string>>().mockResolvedValue('L-0001'),
 }));
+
 
 const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
   const baseLoad = {
@@ -120,6 +154,7 @@ describe('loadService assignment validation', () => {
     carrierAssignmentQuery: mockCarrierAssignmentQuery,
     driverAssignmentQuery: mockDriverAssignmentQuery,
     vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+    derivedComplianceDeps: buildDerivedComplianceDeps(),
   });
 
   beforeEach(() => {
@@ -134,9 +169,6 @@ describe('loadService assignment validation', () => {
       id: 'carrier-1',
       name: 'Fleet Carrier',
       type: 'COMPANY_ASSET',
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      insuranceExpiry: null,
       tinOnFile: true,
     });
     mockDriverAssignmentQuery.findAssignableById.mockResolvedValue({
@@ -226,18 +258,29 @@ describe('loadService assignment validation', () => {
   });
 
   it('rejects onboarding-blocked external carriers', async () => {
+    // Drive onboarding gate failure via the derived-compliance stub (no signed
+    // agreement) rather than the legacy port fields, which no longer exist.
     mockCarrierAssignmentQuery.findDispatchableById.mockResolvedValue({
       id: 'carrier-2',
       name: 'External Carrier',
       type: 'EXTERNAL_CARRIER',
-      dispatchAgreementOnFile: false,
-      insuranceCertOnFile: true,
-      insuranceExpiry: null,
       tinOnFile: true,
+    });
+    const noAgreementDeps = buildDerivedComplianceDeps();
+    (noAgreementDeps.agreementRepo.findManySigned as jest.Mock).mockResolvedValue([]);
+    // Override the service used by this single test with one that sees no
+    // agreements on file (forces onboarding gate to block).
+    const blockedService = createLoadService({
+      loadRepository: mockLoadRepository,
+      orgSettingsQuery: mockOrgSettingsQuery,
+      carrierAssignmentQuery: mockCarrierAssignmentQuery,
+      driverAssignmentQuery: mockDriverAssignmentQuery,
+      vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+      derivedComplianceDeps: noAgreementDeps,
     });
 
     await expect(
-      loadService.assignLoad({
+      blockedService.assignLoad({
         id: 'load-1',
         organizationId: 'org-1',
         role: 'dispatcher',
@@ -420,6 +463,7 @@ describe('updateLoad financial recalculation', () => {
     vehicleAssignmentQuery: mockVehicleAssignmentQuery,
     loadStatusRepo: mockLoadStatusRepo,
     logger: mockLogger,
+    derivedComplianceDeps: buildDerivedComplianceDeps(),
   });
 
   beforeEach(() => {
@@ -562,9 +606,6 @@ describe('updateLoad financial recalculation', () => {
       id: 'carrier-2',
       name: 'New Carrier',
       type: 'COMPANY_ASSET',
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      insuranceExpiry: null,
       tinOnFile: true,
     });
     mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
@@ -740,6 +781,7 @@ describe('updateLoad financial recalculation', () => {
       vehicleAssignmentQuery: mockVehicleAssignmentQuery,
       loadStatusRepo: mockLoadStatusRepo,
       settlementFreezeQuery,
+      derivedComplianceDeps: buildDerivedComplianceDeps(),
     });
 
     await expect(

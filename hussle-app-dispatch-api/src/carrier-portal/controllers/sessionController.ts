@@ -2,6 +2,10 @@ import type { Request, Response } from 'express';
 import type { OnboardingSession, Carrier, Prisma } from '@prisma/client';
 import { sendSingle } from '@/shared/responseEnvelope';
 import { UnauthorizedError } from '@/shared/errors/commonErrors';
+import {
+  computeAgreementStatus,
+  type DerivedComplianceDeps,
+} from '@/carriers/services/derivedCompliance';
 import type { VehiclePrefillRow } from '../repositories/portalVehicleRepoPrisma';
 import type { DriverPrefillRow } from '../repositories/portalDriverRepoPrisma';
 import type { PortalDocument } from '../types/portalDocumentsTypes';
@@ -49,6 +53,7 @@ interface SessionControllerDeps {
   vehiclePrefillQuery: VehiclePrefillPort;
   driverPrefillQuery: DriverPrefillPort;
   documentsQuery: PortalDocumentsQueryPort;
+  derivedComplianceDeps: DerivedComplianceDeps;
 }
 
 const getCarrierId = (req: Request): string => {
@@ -118,7 +123,10 @@ export const createSessionControllers = (deps: SessionControllerDeps) => ({
         }
       : null;
 
-    const signedFieldsLocked = carrier ? carrier.dispatchAgreementSignedAt !== null : false;
+    // Source the lock decision from the derived agreement status (computed on
+    // read) rather than the legacy Carrier.dispatchAgreementSignedAt projection.
+    const agreementStatus = await computeAgreementStatus(carrierId, deps.derivedComplianceDeps);
+    const signedFieldsLocked = carrier ? agreementStatus.signedAt !== null : false;
 
     // `costAnalysis` mirrors the cost ledger written by
     // `portalCostAnalysisWriteAdapter` into `answers.costAnalysis`. Project it

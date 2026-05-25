@@ -6,6 +6,8 @@ import type { CityCoords } from '@/shared/geoLookup';
 import type { DriverModuleQueries } from '@/drivers/compositionRoot';
 import type { PlaceModuleQueries, PlaceModuleServices } from '@/places/compositionRoot';
 import { customerRepositoryPrisma } from '@/customers/repositories/customerRepositoryPrisma';
+import { documentRepositoryPrisma } from '@/documents/repositories/documentRepositoryPrisma';
+import { agreementRepositoryPrisma } from '@/agreements/repositories/agreementRepositoryPrisma';
 import type { SettlementFreezeQueryPort } from './types/loadTypes';
 import { createAccessorialControllers } from './controllers/accessorialController';
 import { createLoadControllers } from './controllers/loadController';
@@ -83,6 +85,8 @@ export const createLoadsModule = ({
   const stopRepository = stopRepositoryPrisma(prismaClient);
   const customerRepository = customerRepositoryPrisma(prismaClient);
   const settingsQuery = settingsRepositoryPrisma(prismaClient as PrismaClient);
+  const documentRepoForCompliance = documentRepositoryPrisma(prismaClient);
+  const agreementRepoForCompliance = agreementRepositoryPrisma(prismaClient);
 
   const loadService = createLoadService({
     loadRepository,
@@ -96,6 +100,10 @@ export const createLoadsModule = ({
     dispatcherProfileQuery,
     settlementFreezeQuery,
     resolveStopToPlace: placeServices.resolveStopToPlace,
+    derivedComplianceDeps: {
+      documentRepo: documentRepoForCompliance,
+      agreementRepo: agreementRepoForCompliance,
+    },
     eventBus,
     logger,
   });
