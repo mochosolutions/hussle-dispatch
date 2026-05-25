@@ -45,6 +45,14 @@ export const toCarrierResponse = (
   return {
     ...enriched,
     organizationId: enriched.managedByOrgId,
+    // Preserve legacy response field names for the 5 dropped Carrier columns
+    // (US-02 truth: "list endpoint response keeps identical field names but
+    // values come from compute*"). Source from derived compliance result.
+    insuranceCertOnFile: compliance?.insurance.onFile ?? false,
+    insuranceExpiry: compliance?.insurance.expiresAt ?? null,
+    dispatchAgreementOnFile: compliance?.agreement.onFile ?? false,
+    dispatchAgreementSignedAt: compliance?.agreement.signedAt ?? null,
+    signedAgreementId: compliance?.agreement.signedAgreementId ?? null,
   };
 };
 

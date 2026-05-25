@@ -158,6 +158,11 @@ export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   insuranceWarning: InsuranceWarning | null;
   onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
+  insuranceCertOnFile: boolean;
+  insuranceExpiry: Date | null;
+  dispatchAgreementOnFile: boolean;
+  dispatchAgreementSignedAt: Date | null;
+  signedAgreementId: string | null;
 }
 
 export interface CarrierWithAssetsResponse extends CarrierResponse {
