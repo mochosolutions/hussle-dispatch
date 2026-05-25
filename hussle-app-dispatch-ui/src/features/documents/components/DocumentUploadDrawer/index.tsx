@@ -12,12 +12,13 @@ import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { CancelButton } from '@mocho/ui/components/form-fields';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { ComplianceForm } from 'components/ComplianceForm';
 import { EditDrawer } from 'components/EditDrawer';
 import { DocumentPicker } from 'components/DocumentPicker';
 import type { QueuedDocument } from 'components/DocumentPicker';
 import { useDispatch, useSelector } from 'store';
 import { validateUpload } from 'utils/documents/validateUpload';
-import { DOC_TYPE_CONFIG, DOC_CARD_CONFIGS, METADATA_FIELD_LABELS } from '../../constants';
+import { DOC_TYPE_CONFIG, DOC_CARD_CONFIGS } from '../../constants';
 import type { DocumentContext } from '../../constants';
 import { uploadDocumentRequest } from '../../store/reducers/documentPageSlice';
 import { selectUploadStatus, selectUploadError } from '../../store/selectors/documentSelectors';
@@ -87,76 +88,6 @@ const UploadStatusRow: React.FC<{ item: UploadItem }> = ({ item }) => {
         </ErrorText>
       )}
     </Stack>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Compliance metadata form
-// ---------------------------------------------------------------------------
-
-interface ComplianceFormProps {
-  documentType: DocumentType;
-  onSubmit: (expiresAt: string, metadata: Record<string, string>) => void;
-  onCancel: () => void;
-}
-
-const ComplianceForm: React.FC<ComplianceFormProps> = ({
-  documentType,
-  onSubmit,
-  onCancel,
-}) => {
-  const config = DOC_TYPE_CONFIG[documentType];
-  const metadataFields = 'metadataFields' in config ? config.metadataFields : [];
-  const [expiresAt, setExpiresAt] = useState('');
-  const [metadata, setMetadata] = useState<Record<string, string>>({});
-
-  const handleSubmit = useCallback(() => {
-    onSubmit(expiresAt, metadata);
-  }, [expiresAt, metadata, onSubmit]);
-
-  return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        p: 2.5,
-      }}
-    >
-      <MetaStrong sx={{ mb: 2 }}>
-        Complete details before uploading
-      </MetaStrong>
-
-      <Stack spacing={2}>
-        <TextField
-          label="Expiration Date"
-          type="date"
-          value={expiresAt}
-          onChange={(e) => setExpiresAt(e.target.value)}
-          size="small"
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-        />
-
-        {metadataFields?.map((field) => (
-          <TextField
-            key={field}
-            label={METADATA_FIELD_LABELS[field] ?? field}
-            value={metadata[field] ?? ''}
-            onChange={(e) => setMetadata((prev) => ({ ...prev, [field]: e.target.value }))}
-            size="small"
-            fullWidth
-          />
-        ))}
-
-        <Stack direction="row" spacing={1}>
-          <Button variant="contained" size="small" onClick={handleSubmit}>
-            Add to Queue
-          </Button>
-          <CancelButton onClick={onCancel} size="small" />
-        </Stack>
-      </Stack>
-    </Box>
   );
 };
 
