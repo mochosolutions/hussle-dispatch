@@ -433,6 +433,8 @@ export interface PresignBodyV2 {
   type: DocumentType;
   entityType: DocumentEntityType;
   entityId: string;
+  expiresAt?: string;
+  metadata?: Record<string, string>;
 }
 
 export const presignDocumentV2 = async (
@@ -450,11 +452,11 @@ export const presignDocumentV2 = async (
 export const confirmDocumentV2 = async (
   token: string,
   id: string,
-  body: { key: string },
+  body?: { expiresAt?: string; metadata?: Record<string, string> },
 ): Promise<PortalDocumentV2> => {
   const response = await axiosInstance.post<DataEnvelope<PortalDocumentV2>>(
     `/carrier-portal/documents/${id}/confirm`,
-    body,
+    body ?? {},
     portalHeaders(token),
   );
   return response.data.data;
