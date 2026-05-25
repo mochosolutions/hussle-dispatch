@@ -32,6 +32,8 @@ export interface PresignDocumentInput {
   fileName: string;
   contentType: string;
   documentType: string;
+  expiresAt?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export const presignDocumentMapper = (req: Request): PresignDocumentInput => {
@@ -44,6 +46,8 @@ export const presignDocumentMapper = (req: Request): PresignDocumentInput => {
     // input keeps the older field names; bridge them here.
     contentType: req.body.mimeType,
     documentType: req.body.type,
+    expiresAt: req.body.expiresAt,
+    metadata: req.body.metadata,
   };
 };
 
@@ -51,9 +55,8 @@ export interface ConfirmDocumentInput {
   documentId: string;
   carrierId: string;
   organizationId: string;
-  documentType: string;
-  insuranceExpiry?: string;
-  coverageConfirmed?: boolean;
+  expiresAt?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export const confirmDocumentMapper = (req: Request): ConfirmDocumentInput => {
@@ -62,9 +65,7 @@ export const confirmDocumentMapper = (req: Request): ConfirmDocumentInput => {
     documentId: req.params.id ?? '',
     carrierId,
     organizationId,
-    documentType: req.body.type,
-    insuranceExpiry: req.body.insuranceExpiry,
-    coverageConfirmed: req.body.coverageConfirmed,
+    expiresAt: req.body.expiresAt,
+    metadata: req.body.metadata,
   };
 };
-
