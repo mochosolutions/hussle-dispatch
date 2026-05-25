@@ -144,29 +144,43 @@ describe('AgreementListView', () => {
     it('renders document row BEFORE agreement row in the DOM', () => {
       renderListView(buildSession({ DISPATCH_AGREEMENT: pendingAgreement }), stepWithCOI);
 
-      const uploadButton = screen.getByRole('button', {
-        name: /upload certificate of insurance/i,
-      });
-      const signButton = screen.getByRole('button', { name: /sign dispatch services agreement/i });
+      const coiRow = screen.getByText('Certificate of Insurance').closest('article');
+      const agreementRow = screen
+        .getByText('Dispatch Services Agreement')
+        .closest('article');
 
-      const relation = uploadButton.compareDocumentPosition(signButton);
+      expect(coiRow).not.toBeNull();
+      expect(agreementRow).not.toBeNull();
+      if (coiRow === null || agreementRow === null) return;
+
+      const relation = coiRow.compareDocumentPosition(agreementRow);
       expect(relation & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('shows COI as next when no docs uploaded yet', () => {
       renderListView(buildSession({ DISPATCH_AGREEMENT: pendingAgreement }), stepWithCOI);
-      // Upload button for COI
-      expect(
-        screen.getByRole('button', { name: /upload certificate of insurance/i }),
-      ).toBeInTheDocument();
+
+      const coiRow = screen.getByText('Certificate of Insurance').closest('article');
+      expect(coiRow).not.toBeNull();
+      if (coiRow === null) return;
+
+      // Idle SingleDocumentUpload renders an Upload button + a hidden file input.
+      expect(within(coiRow).getByRole('button', { name: /upload/i })).toBeInTheDocument();
+      expect(within(coiRow).getByTestId('file-input')).toBeInTheDocument();
     });
 
-    it('shows uploaded badge when COI is in session.documents', () => {
+    it('shows uploaded file name when COI is in session.documents', () => {
       renderListView(
         buildSession({ DISPATCH_AGREEMENT: pendingAgreement }, [uploadedCOI]),
         stepWithCOI,
       );
-      expect(screen.getByLabelText('Uploaded')).toBeInTheDocument();
+
+      const coiRow = screen.getByText('Certificate of Insurance').closest('article');
+      expect(coiRow).not.toBeNull();
+      if (coiRow === null) return;
+
+      // Success state of SingleDocumentUpload renders the uploaded fileName.
+      expect(within(coiRow).getByText('coi.pdf')).toBeInTheDocument();
     });
 
     it('blocks Continue when docs incomplete (agreements signed)', async () => {
