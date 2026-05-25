@@ -132,15 +132,55 @@ export const dashboardQueryPrisma = (
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + withinDays);
 
-    return prisma.carrier.findMany({
+    // Insurance state lives on Document rows (type=INSURANCE_CERT) now that
+    // the cached Carrier.insuranceExpiry column has been retired. Document
+    // is associated to Carrier via the (entityType='carrier', entityId)
+    // polymorphic shape — there is no direct FK — so we query in two steps.
+    const activeCarriers = await prisma.carrier.findMany({
       where: {
         managedByOrgId: organizationId,
-        insuranceExpiry: { lte: cutoff },
         status: 'ACTIVE',
         deletedAt: null,
       },
-      select: { id: true, name: true, insuranceExpiry: true },
-    }) as Promise<{ id: string; name: string; insuranceExpiry: Date }[]>;
+      select: { id: true, name: true },
+    });
+    if (activeCarriers.length === 0) {
+      return [];
+    }
+
+    const carriersById = new Map(activeCarriers.map((c) => [c.id, c]));
+    const documents = await prisma.document.findMany({
+      where: {
+        organizationId,
+        type: 'INSURANCE_CERT',
+        isArchived: false,
+        uploadStatus: 'confirmed',
+        expiresAt: { lte: cutoff, not: null },
+        entityType: 'carrier',
+        entityId: { in: Array.from(carriersById.keys()) },
+      },
+      select: { entityId: true, expiresAt: true },
+      orderBy: { expiresAt: 'asc' },
+    });
+
+    // Dedupe by carrierId — orderBy `expiresAt ASC` guarantees the first row
+    // per carrier is the soonest-to-expire confirmed cert.
+    const byCarrier = new Map<string, { id: string; name: string; insuranceExpiry: Date }>();
+    for (const doc of documents) {
+      if (doc.expiresAt === null) {
+        continue;
+      }
+      const carrier = carriersById.get(doc.entityId);
+      if (carrier === undefined || byCarrier.has(carrier.id)) {
+        continue;
+      }
+      byCarrier.set(carrier.id, {
+        id: carrier.id,
+        name: carrier.name,
+        insuranceExpiry: doc.expiresAt,
+      });
+    }
+    return Array.from(byCarrier.values());
   },
 
   getBookedLoadsWithPickupToday: async (organizationId, today) => {
