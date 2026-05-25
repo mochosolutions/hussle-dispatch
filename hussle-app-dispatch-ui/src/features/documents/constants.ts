@@ -10,7 +10,13 @@ export type DocumentContext =
 
 export const DOC_TYPE_CONFIG: Record<
   DocumentType,
-  { label: string; onePer: boolean; compliance: boolean; metadataFields?: readonly string[] }
+  {
+    label: string;
+    onePer: boolean;
+    compliance: boolean;
+    metadataFields?: readonly string[];
+    requiresExpiry?: boolean;
+  }
 > = {
   [DocumentType.BROKER_RATE_CON]: { label: 'Rate Confirmation', onePer: true, compliance: false },
   [DocumentType.BOL_UNSIGNED]: { label: 'BOL (Unsigned)', onePer: true, compliance: false },
@@ -31,6 +37,7 @@ export const DOC_TYPE_CONFIG: Record<
     onePer: false,
     compliance: true,
     metadataFields: ['policyNumber'] as const,
+    requiresExpiry: true,
   },
   [DocumentType.W9]: { label: 'W-9', onePer: true, compliance: false },
   [DocumentType.CARRIER_PACKET]: { label: 'Carrier Packet', onePer: true, compliance: false },
