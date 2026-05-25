@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { Formik, Form } from 'formik';
 import type { FormikProps } from 'formik';
+import * as Yup from 'yup';
 
 import { useDispatch, useSelector } from 'store';
 import { BodyMuted, PageTitle } from 'components/Typography';
@@ -184,6 +185,32 @@ const parseMoney = (value: string): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+// Mirrors `costAnalysisValidator` on the API
+// (`hussle-app-dispatch-api/src/carrier-portal/validators/
+// costAnalysisValidator.ts`). The form holds numeric fields as strings (for
+// `parseMoney`-style input UX), so the schema parses each on validation.
+const numericStringInRange = (min: number, max: number, label: string) =>
+  Yup.string().test(
+    `${label}-range`,
+    `${label} must be between ${min} and ${max}`,
+    (value) => {
+      const parsed = parseMoney(typeof value === 'string' ? value : '');
+      return parsed >= min && parsed <= max;
+    },
+  );
+
+const costAnalysisValidationSchema = Yup.object({
+  fuel: Yup.object({
+    dieselPrice: numericStringInRange(0, 20, 'Diesel price'),
+    mpg: numericStringInRange(1, 30, 'MPG'),
+  }),
+  operating: Yup.object({
+    loadedMilesPerMonth: numericStringInRange(0, Number.MAX_SAFE_INTEGER, 'Loaded miles/month'),
+    deadheadPct: numericStringInRange(0, 100, 'Deadhead %'),
+    marginPct: numericStringInRange(0, 100, 'Margin %'),
+  }),
+});
+
 const generateId = (prefix: string): string =>
   `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
@@ -269,9 +296,14 @@ const buildInitialValues = (vehicles: VehicleEntry[], existing: CostAnalysisAnsw
       payBasis: existing.ownerPay?.payBasis ?? 'net',
     },
     fuel: {
+      // Defaults match what the cost calculator needs to produce a sensible
+      // RateCard out of the box AND satisfy the API validator (dieselPrice
+      // 0..20, mpg 1..30). Without these, parseMoney('') returns 0 and
+      // the server rejects with `body.fuel.mpg must be greater than or
+      // equal to 1`.
       dieselPrice:
-        existing.fuel?.dieselPrice !== undefined ? String(existing.fuel.dieselPrice) : '',
-      mpg: existing.fuel?.mpg !== undefined ? String(existing.fuel.mpg) : '',
+        existing.fuel?.dieselPrice !== undefined ? String(existing.fuel.dieselPrice) : '3.75',
+      mpg: existing.fuel?.mpg !== undefined ? String(existing.fuel.mpg) : '6.5',
     },
     wearOps: {
       maintenance:
@@ -408,7 +440,12 @@ const CostAnalysisStep: React.FC<CostAnalysisStepProps> = ({ step }) => {
       {step.title ? <PageTitle sx={{ mb: 1 }}>{step.title}</PageTitle> : null}
       {step.subtitle ? <BodyMuted sx={{ mb: 3 }}>{step.subtitle}</BodyMuted> : null}
 
-      <Formik initialValues={initialValues} enableReinitialize onSubmit={handleSubmit}>
+      <Formik
+        initialValues={initialValues}
+        enableReinitialize
+        validationSchema={costAnalysisValidationSchema}
+        onSubmit={handleSubmit}
+      >
         {(formik: FormikLike) => {
           const derived = computeDerivedValues(valuesToCostInputs(formik.values));
           const hasData = hasAnyCostData(derived) && hasVehicles;
@@ -773,9 +810,9 @@ const CostAnalysisNavRegister: React.FC<CostAnalysisNavRegisterProps> = ({
   hasVehicles,
   isPending,
 }) => {
-  const { submitForm } = formik;
+  const { submitForm, isValid } = formik;
   useStepNavigation({
-    canContinue: hasVehicles && !isPending,
+    canContinue: hasVehicles && !isPending && isValid,
     onContinue: submitForm,
     isPending,
   });

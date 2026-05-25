@@ -16,6 +16,7 @@ export interface AgreementRepoPort {
     carrierId: string,
     templateKey: AgreementTemplateKey,
   ): Promise<Agreement | null>;
+  findAllSignedForCarrier(carrierId: string, organizationId: string): Promise<Agreement[]>;
   update(id: string, patch: UpdateAgreementInput): Promise<Agreement>;
   findStaleInProgress(updatedBefore: Date): Promise<Agreement[]>;
   countActivePending(args: CountActivePendingArgs): Promise<number>;

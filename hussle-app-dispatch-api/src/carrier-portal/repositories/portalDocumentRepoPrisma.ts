@@ -77,17 +77,4 @@ export const portalDocumentRepoPrisma = (
     });
     return mapDocumentRow(row);
   },
-
-  updateSignature: async (id, data) => {
-    const row = await prisma.document.update({
-      where: { id },
-      data: {
-        signatureData: data.signatureData,
-        signedAt: data.signedAt,
-        uploadStatus: data.uploadStatus,
-        ...(data.reviewStatus ? { reviewStatus: data.reviewStatus } : {}),
-      },
-    });
-    return mapDocumentRow(row);
-  },
 });

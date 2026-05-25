@@ -67,12 +67,6 @@ const SignAgreementPreview = lazy(
       'features/carrier-portal/dev/OnboardingPreview/previews/SignAgreementPreview'
     ),
 );
-const DocumentsUploadPreview = lazy(
-  () =>
-    import(
-      'features/carrier-portal/dev/OnboardingPreview/previews/DocumentsUploadPreview'
-    ),
-);
 const LockedStatePreview = lazy(
   () =>
     import(
@@ -182,10 +176,6 @@ const DevRoutes: RouteObject[] = [
   {
     path: '/dev/onboarding-preview/sign-agreement',
     element: <SignAgreementPreview />,
-  },
-  {
-    path: '/dev/onboarding-preview/documents-upload',
-    element: <DocumentsUploadPreview />,
   },
   {
     path: '/dev/onboarding-preview/locked-state',

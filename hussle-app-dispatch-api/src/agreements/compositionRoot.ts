@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 
 import type { EventBus } from '@/shared/messaging/eventBus';
+import type { SignatureProviderPort } from '@/shared/signatures/signatureProviderPort';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { StorageProvider } from '@/shared/storage';
 import type { Logger } from '@/shared/utils/logger';
@@ -19,10 +20,14 @@ import type { EnsureAgreementForCarrierInput } from './services/ensureAgreementF
 import { ensureAgreementForCarrier } from './services/ensureAgreementForCarrier';
 import type { FinalizeAgreementInput } from './services/finalizeAgreement';
 import { finalizeAgreement } from './services/finalizeAgreement';
+import type { MockSignAgreementInput } from './services/mockSignAgreement';
+import { mockSignAgreement } from './services/mockSignAgreement';
 import type { RequestAgreementInput } from './services/requestAgreement';
 import { requestAgreement } from './services/requestAgreement';
 import type { VoidAgreementInput } from './services/voidAgreement';
 import { voidAgreement } from './services/voidAgreement';
+import type { VoidForReSignInput } from './services/voidForReSign';
+import { voidForReSign } from './services/voidForReSign';
 import { initializeAgreementSignedSubscriber } from './subscribers/agreementSignedSubscriber';
 import type { AgreementServiceResult } from './types/agreementServiceResult';
 import type { Agreement } from './types/agreementTypes';
@@ -43,6 +48,7 @@ export interface AgreementsModuleDeps {
   logger: Logger;
   storage: StorageProvider;
   signatureService: SignatureService;
+  signatureProvider: SignatureProviderPort;
   env: AgreementsModuleEnv;
 }
 
@@ -57,6 +63,20 @@ export interface AgreementsModuleQueries {
    */
   ensureForCarrier: (
     input: EnsureAgreementForCarrierInput,
+  ) => Promise<AgreementServiceResult<Agreement>>;
+  /**
+   * Void every signed agreement for the carrier when an identity field
+   * (legalName / mcNumber / dotNumber) is about to change. Clears the
+   * Carrier.dispatchAgreementSignedAt projection so saveCompany succeeds and
+   * the carrier returns to the signing step.
+   */
+  voidForReSign: (input: VoidForReSignInput) => Promise<{ voidedAgreementIds: string[] }>;
+  /**
+   * Dev-only mock-sign. Undefined when SIGNATURE_PROVIDER !== 'mock' so the
+   * carrier-portal route stays unmounted in production (404 by default).
+   */
+  mockSignAgreement?: (
+    input: MockSignAgreementInput,
   ) => Promise<AgreementServiceResult<Agreement>>;
 }
 
@@ -84,6 +104,14 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
 
   const providerName: 'MOCK' | 'DOCUSEAL' =
     deps.env.SIGNATURE_PROVIDER === 'docuseal' ? 'DOCUSEAL' : 'MOCK';
+
+  // The mock provider exposes a `__testHelpers.markSigned` namespace so dev
+  // mode can flip submission state without DocuSeal. The docuseal provider
+  // does not — narrowing here keeps the production port surface clean.
+  const providerWithTestHelpers = deps.signatureProvider as SignatureProviderPort & {
+    __testHelpers?: { markSigned(providerSubmissionId: string): void };
+  };
+  const markSigned = providerWithTestHelpers.__testHelpers?.markSigned;
 
   const requestAgreementBound = (
     input: RequestAgreementInput,
@@ -190,6 +218,22 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
         requestAgreement: requestAgreementBound,
         logger: deps.logger,
       }),
+    voidForReSign: (input) =>
+      voidForReSign(input, {
+        agreementRepo,
+        carrierWritePort: carrierAgreementWritePort,
+        eventBus: deps.eventBus,
+        logger: deps.logger,
+      }),
+    mockSignAgreement: markSigned
+      ? (input) =>
+          mockSignAgreement(input, {
+            agreementRepo,
+            markSigned,
+            carrierWritePort: carrierAgreementWritePort,
+            logger: deps.logger,
+          })
+      : undefined,
   };
 
   return {

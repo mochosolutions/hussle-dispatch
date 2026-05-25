@@ -27,6 +27,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Box, Button, CircularProgress, Stack } from '@mui/material';
 import { CheckCircleOutline, CheckOutlined } from '@mui/icons-material';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { useDispatch, useSelector } from 'store';
 import { Body, BodyMuted, KpiLabel, PageTitle } from 'components/Typography';
@@ -35,10 +36,12 @@ import type { Step } from 'features/carrier-portal/engine';
 import { findStep } from 'features/carrier-portal/engine';
 import { onboardingSchema } from 'features/carrier-portal/schema/onboardingSchema';
 import Callout from 'features/carrier-portal/components/Callout';
+import { useStepChromeOverride } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
   selectAgreement,
+  selectLoading,
   selectSession,
 } from '../../../store/selectors/carrierPortalSelectors';
 
@@ -65,23 +68,57 @@ const firstNameOf = (fullName: string | undefined): string => {
 const CompleteStep: React.FC<CompleteStepProps> = ({ step }) => {
   void step;
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { token } = useParams<{ token?: string }>();
   const session = useSelector(selectSession);
-  const agreement = useSelector(selectAgreement);
+  const agreement = useSelector(selectAgreement('DISPATCH_AGREEMENT'));
+  const completeStatus = useSelector(selectLoading('completeSession'));
   const completeDispatched = useRef(false);
 
   const isComplete = Boolean(session?.completedAt);
+
+  // Terminal state — hide the stepper + footer chrome (no Back/Continue, no
+  // phase navigation). The carrier is done; the wizard frame is gone.
+  useStepChromeOverride({ stepperSlot: null, footerSlot: null });
 
   // BUG-12 — fire completeSession exactly once on mount (ref-guarded). The
   // server-side endpoint flips Carrier.status to ACTIVE and stamps
   // OnboardingSession.completedAt. Until that round-trip lands, the UI shows
   // a quieter "Wrapping up..." state (see below).
+  //
+  // Bypass guard: only fire when the cursor has actually reached the terminal
+  // step. Without this, a URL-hacker (or back-nav glitch) lands on /complete
+  // briefly, dispatches completeSession before CarrierPortalPage's URL/cursor
+  // sync redirects them, the API gate rejects, and the user sees an error
+  // toast on the wrong page.
+  //
+  // Pre-dispatch reset: clear any stale loading/error from a prior mount so
+  // the failure-recovery effect below doesn't immediately redirect based on
+  // a previous attempt's status.
   useEffect(() => {
     if (!session || isComplete || completeDispatched.current) {
       return;
     }
+    if (session.currentStepId !== 'complete') {
+      return;
+    }
     completeDispatched.current = true;
+    dispatch(carrierPortalV2Actions.completeSessionReset());
     dispatch(carrierPortalV2Actions.completeSession());
   }, [dispatch, session, isComplete]);
+
+  // Failure recovery — if completeSession rejects (e.g., OnboardingBlockError
+  // because the carrier landed at /complete with missing requirements), bounce
+  // them back to /sign-agreement. The unified list there shows exactly what's
+  // missing (unsigned agreement, un-uploaded COI). Guarded on
+  // completeDispatched so we only redirect on THIS mount's dispatch failing,
+  // not a stale status from a prior mount.
+  useEffect(() => {
+    if (!completeDispatched.current) return;
+    if (completeStatus !== 'failure') return;
+    if (!token) return;
+    navigate(`/carrier-portal/${token}/sign-agreement`, { replace: true });
+  }, [completeStatus, navigate, token]);
 
   const summaryRows = useMemo<SummaryRow[]>(() => {
     if (!session) {

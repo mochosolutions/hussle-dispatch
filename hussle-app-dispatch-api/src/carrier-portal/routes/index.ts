@@ -2,7 +2,7 @@ import express from 'express';
 import { publicRateLimiter, geocodingRateLimiter } from '@/shared/middleware/rateLimiter';
 import { validateRequest } from '@/shared/middleware/validateRequest';
 import { addressSearchValidator } from '@/places/validators/addressSearchValidator';
-import { saveAnswerValidator, submitStepValidator } from '../validators/sessionValidators';
+import { submitStepValidator } from '../validators/sessionValidators';
 import { companyValidator } from '../validators/companyValidator';
 import { equipmentValidator } from '../validators/equipmentValidator';
 import { driversValidator } from '../validators/driversValidator';
@@ -11,13 +11,11 @@ import { lanePreferencesValidator } from '../validators/lanePreferencesValidator
 import {
   presignDocumentValidator,
   confirmDocumentValidator,
-  signDocumentValidator,
 } from '../validators/documentsValidator';
 import { portalAgreementListValidator } from '../validators/portalAgreementListValidator';
 
 interface SessionControllers {
   getSession: express.RequestHandler;
-  saveAnswer: express.RequestHandler;
   submitStep: express.RequestHandler;
   completeSession: express.RequestHandler;
 }
@@ -46,11 +44,12 @@ interface DocumentsControllers {
   listDocuments: express.RequestHandler;
   presignDocument: express.RequestHandler;
   confirmDocument: express.RequestHandler;
-  signDocument: express.RequestHandler;
 }
 
 interface AgreementControllers {
   getLatestForCarrier: express.RequestHandler;
+  voidForReSign: express.RequestHandler;
+  mockSign?: express.RequestHandler;
 }
 
 interface PlacesControllers {
@@ -84,7 +83,6 @@ export const createCarrierPortalRouter = (
 
   // Session endpoints
   router.get('/session', controllers.session.getSession);
-  router.put('/session/answer', validateRequest(saveAnswerValidator), controllers.session.saveAnswer);
   router.post(
     '/session/submit-step',
     validateRequest(submitStepValidator),
@@ -127,11 +125,6 @@ export const createCarrierPortalRouter = (
     validateRequest(confirmDocumentValidator),
     controllers.documents.confirmDocument,
   );
-  router.post(
-    '/documents/:id/sign',
-    validateRequest(signDocumentValidator),
-    controllers.documents.signDocument,
-  );
 
   // Places — portal-authenticated address typeahead (BUG-06). Token auth
   // middleware is applied at the router level above; do not add requireAuth.
@@ -149,6 +142,19 @@ export const createCarrierPortalRouter = (
     validateRequest(portalAgreementListValidator),
     controllers.agreement.getLatestForCarrier,
   );
+
+  // Mid-signing edit guard: void all signed agreements when the carrier
+  // changes an identity field (legalName / mcNumber / dotNumber) that's
+  // embedded in the signed PDF. Body validation handled inline.
+  router.post('/agreements/void-for-resign', controllers.agreement.voidForReSign);
+
+  // Dev-only: mock-sign endpoint. Mounted only when env.SIGNATURE_PROVIDER === 'mock';
+  // the agreements module returns mockSignAgreement: undefined in production, which
+  // makes controllers.agreement.mockSign undefined, which skips this mount → 404
+  // by Express default.
+  if (controllers.agreement.mockSign) {
+    router.post('/agreements/:id/mock-sign', controllers.agreement.mockSign);
+  }
 
   return router;
 };

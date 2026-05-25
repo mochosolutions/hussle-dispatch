@@ -612,8 +612,6 @@ model Carrier {
   maxDaysOut                        Int?
   inviteSentAt                      DateTime?
   entryMethod                       String?              @default("INVITE")
-  dispatchAgreementConsentIp        String?
-  dispatchAgreementConsentUserAgent String?
   costProfileVersion                Int                  @default(0)
   costProfileSource                 String?
   howFoundUs                        String?
@@ -1242,11 +1240,8 @@ model NotificationLog {
 model OnboardingSession {
   id                   String    @id @default(uuid())
   carrierId            String    @unique
-  currentPhase         Int       @default(1)
-  currentQuestionIndex Int       @default(0)
   currentStepId        String?
   answers              Json?
-  completedPhases      Int[]     @default([])
   completedStepIds     String[]  @default([])
   lastActiveAt         DateTime  @default(now())
   completedAt          DateTime?

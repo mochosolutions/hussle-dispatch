@@ -144,7 +144,7 @@ describe('DriversListStep (connected)', () => {
       firstName: 'Isaiah',
       lastName: 'Williams',
       email: 'isaiah@example.com',
-      payType: 'percentage',
+      payType: 'PERCENTAGE',
       payRate: 70,
     });
 

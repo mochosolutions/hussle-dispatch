@@ -1,7 +1,6 @@
 import type { Session } from '../../engine';
-import { getVisibleSteps } from '../../engine';
+import { getVisibleSteps, isQuestionLocked } from '../../engine';
 import { onboardingSchema } from '../onboardingSchema';
-import { locksFields, signingPhase } from '../signingPhase';
 
 const emptySession: Session = {
   id: 'test',
@@ -13,8 +12,8 @@ const emptySession: Session = {
 };
 
 describe('onboardingSchema', () => {
-  it('composes 9 phases in order', () => {
-    expect(onboardingSchema.phases).toHaveLength(9);
+  it('composes 8 phases in order — sign+upload consolidated into signing phase', () => {
+    expect(onboardingSchema.phases).toHaveLength(8);
     expect(onboardingSchema.phases.map((p) => p.id)).toEqual([
       'welcome',
       'company',
@@ -23,9 +22,20 @@ describe('onboardingSchema', () => {
       'costAnalysis',
       'lanePreferences',
       'signing',
-      'documents',
       'complete',
     ]);
+  });
+
+  it('declares both templates and documents on the sign-agreement step', () => {
+    const signing = onboardingSchema.phases.find((p) => p.id === 'signing');
+    const step = signing?.steps.find((s) => s.id === 'sign-agreement');
+    expect(step?.templates).toEqual([{ key: 'DISPATCH_AGREEMENT' }]);
+    expect(step?.documents).toHaveLength(1);
+    expect(step?.documents?.[0]).toMatchObject({
+      id: 'coi',
+      required: true,
+      documentType: 'INSURANCE_CERT',
+    });
   });
 
   it('declares carrier-onboarding-v2 metadata with 15 estimated minutes', () => {
@@ -43,28 +53,13 @@ describe('onboardingSchema', () => {
     expect(visible[0].id).toBe('welcome-segmentation');
   });
 
-  it('exports locksFields named export from signingPhase with 8 dot-paths', () => {
-    expect(locksFields).toHaveLength(8);
-    expect(locksFields).toEqual([
-      'company.legalName',
-      'company.mcNumber',
-      'company.dotNumber',
-      'company.signatoryName',
-      'company.signatoryTitle',
-      'company.taxClassification',
-      'company.tinType',
-      'company.tin',
-    ]);
-  });
-
-  it('exposes locksFields on the sign-agreement step inside the composed schema', () => {
-    const signing = onboardingSchema.phases.find((p) => p.id === 'signing');
-    const step = signing?.steps.find((s) => s.id === 'sign-agreement');
-    expect(step?.locksFields).toHaveLength(8);
-  });
-
-  it('wires the same locksFields onto the signing step', () => {
-    const step = signingPhase.steps.find((s) => s.id === 'sign-agreement');
-    expect(step?.locksFields).toHaveLength(8);
+  it('declares zero locked questions across all phases (lock primitive dormant)', () => {
+    for (const phase of onboardingSchema.phases) {
+      for (const step of phase.steps) {
+        for (const q of step.questions ?? []) {
+          expect(isQuestionLocked(q, emptySession)).toBe(false);
+        }
+      }
+    }
   });
 });

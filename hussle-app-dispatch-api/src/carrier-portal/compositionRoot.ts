@@ -6,7 +6,9 @@ import type { StorageProvider } from '@/shared/storage';
 import type { PortalAgreementQueryPort } from './types/portalAgreementQueryPort';
 import type { AddressSearchInput, AddressSearchResult } from '@/places/types/addressSearchTypes';
 import { createPortalAgreementControllers } from './controllers/portalAgreementController';
+import { createPortalMockSignAgreementController } from './controllers/portalMockSignAgreementController';
 import { createPortalPlacesControllers } from './controllers/portalPlacesController';
+import { createPortalVoidForReSignController } from './controllers/portalVoidForReSignController';
 import { carrierInviteTokenRepoPrisma } from './repositories/carrierInviteTokenRepoPrisma';
 import { carrierAuditPortPrisma } from '@/carriers/repositories/carrierAuditPortPrisma';
 import { onboardingSessionRepoPrisma } from './repositories/onboardingSessionRepoPrisma';
@@ -159,6 +161,10 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
       driverPrefillQuery: {
         findPrefillByCarrierId: (carrierId: string) => driverRepo.findPrefillByCarrierId(carrierId),
       },
+      documentsQuery: {
+        listByCarrier: (carrierId: string, organizationId: string) =>
+          documentRepo.listByCarrier(carrierId, organizationId),
+      },
       agreementQuery: {
         findLatestForCarrier: async (carrierId: string) => {
           const agreement = await deps.prismaClient.agreement.findFirst({
@@ -183,11 +189,22 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     costAnalysis: createCostAnalysisControllers({ costAnalysisService }),
     lanePreferences: createLanePreferencesControllers({ lanePreferencesService }),
     documents: createDocumentsControllers({ documentsService }),
-    agreement: createPortalAgreementControllers({
-      agreementQueries: deps.agreementQueries,
-      sessionRepo,
-      storage: deps.storage,
-    }),
+    agreement: {
+      ...createPortalAgreementControllers({
+        agreementQueries: deps.agreementQueries,
+        sessionRepo,
+        storage: deps.storage,
+      }),
+      voidForReSign: createPortalVoidForReSignController({
+        voidForReSign: deps.agreementQueries.voidForReSign,
+      }),
+      mockSign: deps.agreementQueries.mockSignAgreement
+        ? createPortalMockSignAgreementController({
+            mockSignAgreement: deps.agreementQueries.mockSignAgreement,
+            storage: deps.storage,
+          })
+        : undefined,
+    },
     places: createPortalPlacesControllers({
       addressSearchService: deps.addressSearchService,
     }),

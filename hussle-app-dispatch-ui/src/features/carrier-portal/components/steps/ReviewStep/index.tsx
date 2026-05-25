@@ -1,21 +1,19 @@
 // ---------------------------------------------------------------------------
 // ReviewStep — read-only summary of every completed step's answers.
 //
-// Behavior (US-20):
+// Behavior:
 //   - Iterates `getVisibleSteps(onboardingSchema, session)` filtered to
 //     steps that are in `session.completedStepIds` and aren't this step.
 //   - For each, renders a card with the step title + key/value rows.
-//   - Each row has an "Edit" link that dispatches `navigateToStep({ stepId })`.
-//   - When the session is locked AND the target step is in the company phase,
-//     the Edit action is disabled with a lock icon + tooltip.
+//   - Each row has an "Edit" button that dispatches `navigateToStep({ stepId })`.
 //
-// NOTE: `navigateToStep` is a client-only reducer in this story. The matching
-// saga side-effect (persist server-side currentStepId) is deferred.
+// All edits are allowed — the mid-signing edit guard (ConfirmReSignDialog +
+// voidAndReSignSaga, fired inside InputStep) handles identity-field edits
+// that would invalidate a signed agreement.
 // ---------------------------------------------------------------------------
 
 import { useCallback, useMemo } from 'react';
-import { Box, Button, Stack, Tooltip } from '@mui/material';
-import { LockOutlined } from '@mui/icons-material';
+import { Box, Button, Stack } from '@mui/material';
 
 import { useDispatch, useSelector } from 'store';
 import { Body, BodyMuted, BodyStrong, SectionTitle } from 'components/Typography';
@@ -27,7 +25,6 @@ import { useStepNavigation } from 'features/carrier-portal/components/StepNavCon
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
-  selectIsLocked,
   selectLoading,
   selectSession,
 } from '../../../store/selectors/carrierPortalSelectors';
@@ -52,7 +49,6 @@ const formatValue = (value: unknown): string => {
 const ReviewStep: React.FC<ReviewStepProps> = ({ step }) => {
   const dispatch = useDispatch();
   const session = useSelector(selectSession);
-  const sessionLocked = useSelector(selectIsLocked);
   const submitStatus = useSelector(selectLoading('submitStep'));
 
   const summarySteps = useMemo<VisibleStep[]>(() => {
@@ -96,8 +92,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ step }) => {
       <Stack spacing={2.5}>
         {summarySteps.map((s) => {
           const answers = (session.answers[s.id] ?? {}) as Record<string, unknown>;
-          const isCompanyPhaseStep = s.phaseId === 'company';
-          const editDisabled = sessionLocked && isCompanyPhaseStep;
 
           return (
             <Box
@@ -118,24 +112,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ step }) => {
                 }}
               >
                 <BodyStrong>{s.title ?? s.id}</BodyStrong>
-                {editDisabled ? (
-                  <Tooltip title="Locked after agreement signed. Contact your dispatcher to amend.">
-                    <span>
-                      <Button
-                        size="small"
-                        disabled
-                        startIcon={<LockOutlined sx={{ fontSize: 14 }} />}
-                        aria-label="Edit locked"
-                      >
-                        Edit
-                      </Button>
-                    </span>
-                  </Tooltip>
-                ) : (
-                  <Button size="small" onClick={() => handleEdit(s.id)}>
-                    Edit
-                  </Button>
-                )}
+                <Button size="small" onClick={() => handleEdit(s.id)}>
+                  Edit
+                </Button>
               </Box>
               <Stack spacing={0.75}>
                 {Object.keys(answers).length === 0 ? (

@@ -1,6 +1,5 @@
 import type { Carrier } from '@prisma/client';
 import { FieldLockedError } from '@/shared/errors';
-import { companyFieldLockedPath } from '../constants/locksFields';
 
 export interface SaveCompanyRequest {
   // Display name remains accepted for backward compatibility with the old payload shape.
@@ -82,18 +81,13 @@ const computeDisplayName = (
   return incoming.name?.trim() || existing.name;
 };
 
-const LOCKABLE_REQUEST_FIELDS = [
-  'legalName',
-  'mcNumber',
-  'dotNumber',
-  'signatoryName',
-  'signatoryTitle',
-  'taxClassification',
-  'tinType',
-  'tin',
-] as const;
+// Identity fields embedded in the DISPATCH_AGREEMENT signed PDF. Mutating any
+// of these post-sign requires voiding the prior agreement first (see the
+// /agreements/void-for-resign endpoint). All other Carrier columns are freely
+// editable — they're not contract-bound.
+const IDENTITY_FIELDS = ['legalName', 'mcNumber', 'dotNumber'] as const;
 
-const assertLockedFieldsUnchanged = (
+const assertIdentityFieldsUnchanged = (
   fields: SaveCompanyRequest,
   existing: Carrier,
 ): void => {
@@ -101,7 +95,7 @@ const assertLockedFieldsUnchanged = (
     return;
   }
 
-  for (const field of LOCKABLE_REQUEST_FIELDS) {
+  for (const field of IDENTITY_FIELDS) {
     const incoming = fields[field];
     if (incoming === undefined) {
       continue;
@@ -110,8 +104,7 @@ const assertLockedFieldsUnchanged = (
     const incomingNormalized = incoming === null ? null : String(incoming);
     const currentNormalized = current === null || current === undefined ? null : String(current);
     if (incomingNormalized !== currentNormalized) {
-      const dotPath = companyFieldLockedPath(field);
-      throw new FieldLockedError(dotPath ?? `company.${field}`);
+      throw new FieldLockedError(`company.${field}`);
     }
   }
 };
@@ -124,7 +117,7 @@ export const createPortalCompanyService = (deps: PortalCompanyServiceDeps) => ({
   ): Promise<CarrierSummary> => {
     const existing = await deps.carrierRepo.findByIdScoped(carrierId, organizationId);
 
-    assertLockedFieldsUnchanged(fields, existing);
+    assertIdentityFieldsUnchanged(fields, existing);
 
     const writeData: Record<string, unknown> = { ...fields };
     // `name` is a derived display column — never write the request's raw `name` field through.

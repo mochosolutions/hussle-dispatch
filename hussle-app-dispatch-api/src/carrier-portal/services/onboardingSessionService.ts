@@ -21,9 +21,7 @@ import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
 import { assertTransition } from '@/carriers/services/carrierStateMachine';
 import type { CarrierAuditPort } from '@/carriers/types/carrierAuditPort';
-import { LOCKS_FIELDS, companyFieldLockedPath } from '../constants/locksFields';
-
-const TOTAL_PHASES = 6;
+const IDENTITY_QUESTION_IDS = new Set(['legalName', 'mcNumber', 'dotNumber']);
 
 interface CarrierRepoPort {
   findById(id: string): Promise<Carrier | null>;
@@ -113,12 +111,6 @@ const writeStatusAudit = async (
     .catch(() => undefined);
 };
 
-export interface SaveAnswerInput {
-  questionId: string;
-  value: Prisma.InputJsonValue;
-  phase?: number;
-}
-
 export interface SubmitStepInput {
   stepId: string;
   answers: Record<string, Prisma.InputJsonValue>;
@@ -149,19 +141,15 @@ const assertNoLockedFieldChange = ({
 
   const existingStepAnswers = (existingAnswers[stepId] ?? {}) as Record<string, unknown>;
   for (const [questionId, incomingValue] of Object.entries(incomingAnswers)) {
-    const dotPath = companyFieldLockedPath(questionId);
-    if (!dotPath) continue;
+    if (!IDENTITY_QUESTION_IDS.has(questionId)) continue;
     const existing = existingStepAnswers[questionId];
     const a = incomingValue === null ? null : String(incomingValue);
     const b = existing === null || existing === undefined ? null : String(existing);
     if (a !== b) {
-      throw new FieldLockedError(dotPath);
+      throw new FieldLockedError(`company.${questionId}`);
     }
   }
 };
-
-// LOCKS_FIELDS is iterated by the parity test (see tests/locksFieldsParity.test.ts).
-void LOCKS_FIELDS;
 
 export const createOnboardingSessionService = (deps: OnboardingSessionServiceDeps) => ({
   getOrCreate: async (carrierId: string): Promise<OnboardingSession> => {
@@ -200,43 +188,6 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     return session;
   },
 
-  saveAnswer: async (carrierId: string, input: SaveAnswerInput): Promise<OnboardingSession> => {
-    const session = await deps.sessionRepo.findByCarrierId(carrierId);
-
-    if (!session) {
-      throw new NotFoundError(`Onboarding session for carrier ${carrierId} not found`);
-    }
-
-    const currentAnswers = (session.answers ?? {}) as Record<string, Prisma.InputJsonValue>;
-    const mergedAnswers: Record<string, Prisma.InputJsonValue> = {
-      ...currentAnswers,
-      [input.questionId]: input.value,
-    };
-
-    const updateData: OnboardingSessionUpdateData = {
-      answers: mergedAnswers,
-      lastActiveAt: new Date(),
-    };
-
-    if (input.phase !== undefined) {
-      updateData.currentPhase = input.phase;
-
-      const completedPhases = session.completedPhases ?? [];
-      if (!completedPhases.includes(input.phase)) {
-        updateData.completedPhases = [...completedPhases, input.phase];
-      }
-    }
-
-    const updated = await deps.sessionRepo.update(session.id, updateData);
-    deps.logger.info('Onboarding answer saved', {
-      carrierId,
-      questionId: input.questionId,
-      phase: input.phase,
-    });
-
-    return updated;
-  },
-
   complete: async (carrierId: string): Promise<OnboardingSession> => {
     const session = await deps.sessionRepo.findByCarrierId(carrierId);
 
@@ -244,14 +195,24 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
       throw new NotFoundError(`Onboarding session for carrier ${carrierId} not found`);
     }
 
-    const completedPhases = session.completedPhases ?? [];
-    const allPhases = Array.from({ length: TOTAL_PHASES }, (_, i) => i + 1);
-    const missingPhases = allPhases.filter((phase) => !completedPhases.includes(phase));
+    // Idempotent — if the session is already complete, return as-is. Prevents
+    // re-running the status transition (PENDING_APPROVAL → PENDING_APPROVAL
+    // throws InvalidTransitionError) when the frontend re-dispatches or a
+    // saga races.
+    if (session.completedAt !== null) {
+      return session;
+    }
 
-    if (missingPhases.length > 0) {
+    // The wizard's linear progression is the gate: the carrier reaches
+    // `/complete` only after submitStep on `sign-agreement` succeeds, which
+    // requires every prior required step's Continue gate to have passed.
+    // `completedStepIds` is the durable signal — it's written by every
+    // submitStep call. The legacy numeric `completedPhases` gate is no
+    // longer authoritative (the modern saga flow never writes it).
+    if (!(session.completedStepIds ?? []).includes('sign-agreement')) {
       throw new ValidationError(
-        'Cannot complete onboarding: not all phases are finished',
-        missingPhases.map((phase) => `Phase ${phase} is incomplete`),
+        'Cannot complete onboarding: sign-agreement step has not been submitted',
+        ['sign-agreement step is incomplete'],
       );
     }
 
@@ -363,28 +324,33 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     }
 
     // ------------------------------------------------------------------
-    // Route drivers-list through portalDriversService for the same
-    // reason. The UI ships drivers under `entries`; the persisted
-    // entities (with real UUIDs) overlay back into `entries`.
+    // Route drivers-list through portalDriversService. UI ships the list
+    // under `drivers` (canonical, mirrors Prisma + the dedicated POST
+    // /carrier-portal/drivers contract). Legacy sessions may carry the
+    // list under `entries`; accept either on read, always write `drivers`.
     // ------------------------------------------------------------------
     if (input.stepId === 'drivers-list' && deps.driversService) {
       const incoming = input.answers as Record<string, unknown>;
-      const incomingEntries = Array.isArray(incoming.entries)
-        ? (incoming.entries as DriverEntry[])
-        : null;
+      let rawList: unknown[] | null = null;
+      if (Array.isArray(incoming.drivers)) {
+        rawList = incoming.drivers;
+      } else if (Array.isArray(incoming.entries)) {
+        rawList = incoming.entries;
+      }
+      const incomingDrivers = rawList as DriverEntry[] | null;
       const hasAdditionalDrivers =
         typeof incoming.hasAdditionalDrivers === 'boolean'
           ? incoming.hasAdditionalDrivers
-          : Array.isArray(incomingEntries) && incomingEntries.length > 0;
+          : Array.isArray(incomingDrivers) && incomingDrivers.length > 0;
 
-      if (incomingEntries) {
+      if (incomingDrivers) {
         const persisted = await deps.driversService.saveDrivers({
           carrierId,
           hasAdditionalDrivers,
-          drivers: incomingEntries,
+          drivers: incomingDrivers,
         });
 
-        const mergedEntries = incomingEntries.map((incomingDriver, index) => {
+        const mergedDrivers = incomingDrivers.map((incomingDriver, index) => {
           const persistedDriver = persisted[index];
           return {
             ...incomingDriver,
@@ -392,9 +358,15 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
           };
         });
 
+        // Strip the legacy `entries` key so we don't double-store; future
+        // hydrations should always read from `drivers`.
+        const { entries: _drop, ...rest } = input.answers as Record<
+          string,
+          Prisma.InputJsonValue
+        >;
         normalizedAnswers = {
-          ...(input.answers as Record<string, Prisma.InputJsonValue>),
-          entries: mergedEntries as unknown as Prisma.InputJsonValue,
+          ...rest,
+          drivers: mergedDrivers as unknown as Prisma.InputJsonValue,
         };
       }
     }

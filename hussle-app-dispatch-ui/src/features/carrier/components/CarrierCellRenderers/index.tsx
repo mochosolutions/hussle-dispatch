@@ -21,7 +21,7 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
     .join('');
   return (
     <Stack direction="row" gap={1.5} alignItems="center" sx={{ py: 0.5 }}>
-      <Box
+      {/* <Box
         sx={{
           width: 36,
           height: 36,
@@ -37,7 +37,7 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
         }}
       >
         {initials}
-      </Box>
+      </Box> */}
       <Box
         sx={{
           display: 'flex',

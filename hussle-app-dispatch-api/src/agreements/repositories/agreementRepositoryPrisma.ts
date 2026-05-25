@@ -76,6 +76,12 @@ export const agreementRepositoryPrisma = (
       orderBy: { createdAt: 'desc' },
     }),
 
+  findAllSignedForCarrier: (carrierId: string, organizationId: string) =>
+    prisma.agreement.findMany({
+      where: { carrierId, organizationId, status: 'SIGNED' },
+      orderBy: { signedAt: 'desc' },
+    }),
+
   update: (id: string, patch: UpdateAgreementInput) =>
     prisma.agreement.update({ where: { id }, data: patch }),
 

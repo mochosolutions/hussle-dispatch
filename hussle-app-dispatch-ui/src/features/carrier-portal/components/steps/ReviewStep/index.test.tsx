@@ -42,7 +42,17 @@ interface BuildStoreOptions {
 
 const buildStore = ({ session = buildSession(), isLocked = false }: BuildStoreOptions = {}) => {
   const sessionWithLock: Session = isLocked
-    ? { ...session, agreement: { id: 'agr-1', status: 'SIGNED', signedFieldsLocked: true } }
+    ? {
+        ...session,
+        agreements: {
+          DISPATCH_AGREEMENT: {
+            id: 'agr-1',
+            templateKey: 'DISPATCH_AGREEMENT',
+            status: 'SIGNED',
+            signedFieldsLocked: true,
+          },
+        },
+      }
     : session;
 
   const carrierPortalV2 = createReducer(
@@ -102,7 +112,10 @@ describe('ReviewStep', () => {
     expect(typeof action.payload.stepId).toBe('string');
   });
 
-  it('disables Edit for company-phase steps when the session is locked', () => {
+  it('keeps Edit enabled for every completed step even when an agreement is signed', () => {
+    // Under the schema-driven lock model, ReviewStep no longer gates Edit on
+    // signedFieldsLocked — every Edit is enabled; the mid-signing identity
+    // guard (in InputStep) intercepts at save-time instead.
     const store = buildStore({ isLocked: true });
 
     render(
@@ -111,14 +124,10 @@ describe('ReviewStep', () => {
       </Provider>,
     );
 
-    // The company-confirm row's Edit button should be disabled (aria-label = "Edit locked").
-    const lockedButton = screen.getByRole('button', { name: /edit locked/i });
-    expect(lockedButton).toBeDisabled();
-
-    // Non-company-phase step (equipment) still has an enabled Edit.
-    const enabledEdits = screen
-      .getAllByRole('button', { name: /^edit$/i })
-      .filter((b) => !(b as HTMLButtonElement).disabled);
-    expect(enabledEdits.length).toBeGreaterThanOrEqual(1);
+    const editButtons = screen.getAllByRole('button', { name: /^edit$/i });
+    expect(editButtons.length).toBeGreaterThan(0);
+    for (const btn of editButtons) {
+      expect(btn).not.toBeDisabled();
+    }
   });
 });

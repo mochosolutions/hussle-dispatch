@@ -22,6 +22,9 @@ import FocusHeader from '../../../components/FocusHeader';
 import DocuSealStage from '../../../components/DocuSealStage';
 import FocusFooter from '../../../components/FocusFooter';
 import { type DotTrailItem } from '../../../components/DotTrail';
+import AgreementSignedInterstitial from '../../../components/AgreementSignedInterstitial';
+import MockSigningPlaceholder from '../../../components/MockSigningPlaceholder';
+import AgreementPrefillSummary from '../../../components/AgreementPrefillSummary';
 
 const PHASE_LABELS = ['Company', 'Equipment', 'Drivers', 'Costs', 'Preferences', 'Documents'];
 
@@ -691,6 +694,94 @@ const StateC: React.FC = () => (
 // ---------------------------------------------------------------------------
 // Preview index
 // ---------------------------------------------------------------------------
+// State D — Success interstitial (just-signed handoff to next agreement)
+// ---------------------------------------------------------------------------
+
+const StateD: React.FC = () => (
+  <PortalShell
+    headerActions={<PortalNavActions onSaveExit={noop} />}
+    stepper={
+      <FocusHeader
+        onBack={noop}
+        eyebrow="Document 2 of 4 · Signed"
+        title="Dispatch Services Agreement"
+        trail={[
+          { id: 'drug-alcohol', state: 'done', tooltip: 'Drug & Alcohol — signed' },
+          { id: 'dispatch', state: 'done', tooltip: 'Dispatch Services Agreement — signed' },
+          { id: 'broker', state: 'current', tooltip: 'Broker-Carrier — up next' },
+          { id: 'factoring', state: 'pending', tooltip: 'Factoring NOA — pending' },
+        ]}
+      />
+    }
+  >
+    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 4 }}>
+      <AgreementSignedInterstitial
+        signedAt="2026-05-16T15:08:00Z"
+        signedAgreementName="Dispatch Services Agreement"
+        nextAgreementName="Broker-Carrier Master Agreement"
+        onAutoAdvance={noop}
+        onBackToList={noop}
+        // Disable auto-advance inside the dev preview so reviewers can
+        // actually look at the frame without it disappearing.
+        autoAdvanceMs={0}
+      />
+    </Box>
+  </PortalShell>
+);
+
+// ---------------------------------------------------------------------------
+// State E — Focus mode with mock placeholder + prefill summary (dev-only)
+// ---------------------------------------------------------------------------
+
+const StateE: React.FC = () => (
+  <PortalShell
+    headerActions={<PortalNavActions onSaveExit={noop} />}
+    stepper={
+      <FocusHeader
+        onBack={noop}
+        eyebrow="Document 2 of 4 · Mock mode"
+        title="Dispatch Services Agreement"
+        trail={FOCUS_TRAIL}
+      />
+    }
+    footer={
+      <FocusFooter
+        lockNote="Signing locks your business identity"
+        onSaveClose={noop}
+        onSignComplete={noop}
+      />
+    }
+  >
+    <Box
+      sx={{
+        width: '100%',
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '1fr 280px' },
+        gap: 2,
+        alignItems: 'start',
+      }}
+    >
+      <DocuSealStage pageLabel="Mock mode" onDownload={noop} onZoom={noop} onHelp={noop}>
+        <MockSigningPlaceholder onMarkSigned={noop} />
+      </DocuSealStage>
+      <Box sx={{ position: { md: 'sticky' }, top: { md: 16 } }}>
+        <AgreementPrefillSummary
+          variables={{
+            carrier_legal_name: 'Mocho Solutions Apps LLC',
+            mc_number: 'MC-1234567',
+            dot_number: 'DOT-9876543',
+            dispatcher_org_name: 'FleetCommand Inc.',
+            effective_date: '2026-05-16',
+          }}
+        />
+      </Box>
+    </Box>
+  </PortalShell>
+);
+
+// ---------------------------------------------------------------------------
+// Preview index
+// ---------------------------------------------------------------------------
 
 interface StateFrameProps {
   label: string;
@@ -737,6 +828,14 @@ const SignAgreementPreview: React.FC = () => {
 
       <StateFrame label="State C · all required signed · downloads available">
         <StateC />
+      </StateFrame>
+
+      <StateFrame label="State D · success interstitial · just-signed handoff to next agreement">
+        <StateD />
+      </StateFrame>
+
+      <StateFrame label="State E · focus mode + mock placeholder · dev-only signing escape hatch">
+        <StateE />
       </StateFrame>
     </Box>
   );

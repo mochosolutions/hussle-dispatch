@@ -1,26 +1,27 @@
 // ---------------------------------------------------------------------------
 // InputStep — generic Formik+Yup renderer for any engine `input` step.
 //
-// Behavior (US-17 AC-7):
+// Behavior:
 //   - Renders each `step.questions[]` using the right mocho form field by
 //     `question.fieldType`.
-//   - Builds the Yup schema inline via `buildYupFromQuestions` (no reuse of
-//     the legacy `buildPhaseSchema`).
+//   - Builds the Yup schema inline via `buildYupFromQuestions`.
 //   - Resolves `prefillFrom` dot-paths via the engine `resolveContext` helper
 //     when no existing answer is present.
 //   - Skips invisible questions (visibility predicate evaluated against the
 //     trial session with current Formik values stitched in).
-//   - When the session is locked AND the question id maps to a path in
-//     `LOCKS_FIELDS`, the field is wrapped in `<LockableField>` so it renders
-//     as a read-only display instead of an editable input.
+//   - When a question declares `locked: predicate` AND the predicate evaluates
+//     to true against the live session, the field is wrapped in
+//     `<LockableField>` so it renders as a read-only display. Today's shipping
+//     schema declares no `locked` predicates — the lock primitive is dormant.
 //
 // Step submission dispatches `carrierPortalV2Actions.submitStep` with only
 // the visible-field answers — hidden fields are filtered out so they don't
 // pollute the persisted answer tree.
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
-import { Box, Stack } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { Box, Stack, Tooltip } from '@mui/material';
+import { LockOutlined } from '@mui/icons-material';
 import { Formik, Form } from 'formik';
 import type { FormikProps } from 'formik';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -36,13 +37,21 @@ import {
 } from 'mocho/components/form-fields';
 import { PageTitle, BodyMuted } from 'components/Typography';
 
-import type { Question, Session, Step } from 'features/carrier-portal/engine';
+import type {
+  AgreementContext,
+  IdentityField,
+  Question,
+  Session,
+  Step,
+} from 'features/carrier-portal/engine';
 import {
-  LOCKS_FIELDS,
+  IDENTITY_FIELDS,
   evaluatePredicate,
+  isQuestionLocked,
   resolveContext,
 } from 'features/carrier-portal/engine';
 import AddressTypeaheadField from 'features/carrier-portal/components/AddressTypeaheadField';
+import ConfirmReSignDialog from 'features/carrier-portal/components/ConfirmReSignDialog';
 import LockableField from 'features/carrier-portal/components/LockableField';
 import TinField from 'features/carrier-portal/components/TinField';
 import FieldHint from 'features/carrier-portal/components/FieldHint';
@@ -56,7 +65,8 @@ import type { SaveCompanyRequest } from 'utils/api/carrierPortal/v2';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import {
-  selectIsLocked,
+  selectAgreements,
+  selectAnyAgreementSigned,
   selectLoading,
   selectSession,
 } from '../../../store/selectors/carrierPortalSelectors';
@@ -253,6 +263,13 @@ interface AddressFormValue {
 const asString = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined;
 
+// Address contract — UI form holds a nested `address: { line1, city, state,
+// zip, lat, lng }` object (managed by AddressTypeaheadField for autocomplete
+// UX). The API expects FLAT fields: `address` is the line1 string, with
+// `city/state/zip/lat/lng` siblings. `SaveCompanyRequest` enforces the flat
+// shape at compile time, and `companyValidator` (API) types each as a string
+// — passing a nested object as `address` will be rejected. This mapper is
+// the boundary: form-nested in, wire-flat out.
 const buildCompanyRequest = (values: FormValues): SaveCompanyRequest => {
   const hasDba = values.hasDba === 'yes';
   const address = (values.address ?? {}) as AddressFormValue;
@@ -289,11 +306,47 @@ const formatLockedValue = (value: unknown): string => {
   return JSON.stringify(value);
 };
 
+// Walks the company-form values + persisted carrier identity to find which of
+// the 3 contract-bound identity fields the carrier is attempting to change.
+// Returns an empty list when no identity field is being mutated (or when not
+// editing the company step).
+const detectChangedIdentityFields = (
+  values: FormValues,
+  session: Session | null,
+): IdentityField[] => {
+  if (!session?.company) return [];
+  const changed: IdentityField[] = [];
+  for (const field of IDENTITY_FIELDS) {
+    if (!(field in values)) continue;
+    const incoming = values[field];
+    const incomingNormalized =
+      incoming === null || incoming === undefined ? null : String(incoming);
+    const persisted = session.company[field];
+    const persistedNormalized =
+      persisted === null || persisted === undefined ? null : String(persisted);
+    if (incomingNormalized !== persistedNormalized) {
+      changed.push(field);
+    }
+  }
+  return changed;
+};
+
 const InputStep: React.FC<InputStepProps> = ({ step }) => {
   const dispatch = useDispatch();
   const session = useSelector(selectSession);
-  const sessionLocked = useSelector(selectIsLocked);
+  const agreementsRecord = useSelector(selectAgreements);
+  const anyAgreementSigned = useSelector(selectAnyAgreementSigned);
   const submitStatus = useSelector(selectLoading('submitStep'));
+
+  // Mid-signing edit guard — when the carrier confirms via the dialog, the
+  // pending company payload is dispatched with voidPriorAgreements=true.
+  // Until confirmation, the payload sits here so cancel = no-op.
+  const [pendingReSign, setPendingReSign] = useState<{
+    fields: ReturnType<typeof buildCompanyRequest>;
+    hasMcAuthority?: string;
+    hasDba?: string;
+    changedFields: IdentityField[];
+  } | null>(null);
 
   const questions = useMemo<Question[]>(() => step.questions ?? [], [step.questions]);
 
@@ -334,11 +387,28 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
       }
     }
     if (step.id === 'company-authority-question') {
+      const fields = buildCompanyRequest(values);
+      const hasMcAuthority = asString(values.hasMcAuthority);
+      const hasDba = asString(values.hasDba);
+      const changedIdentity = detectChangedIdentityFields(values, session);
+
+      // Mid-signing edit guard — intercept identity edits when any agreement
+      // is already signed. The dialog confirms before the void+save fires.
+      if (anyAgreementSigned && changedIdentity.length > 0) {
+        setPendingReSign({
+          fields,
+          hasMcAuthority,
+          hasDba,
+          changedFields: changedIdentity,
+        });
+        return;
+      }
+
       dispatch(
         carrierPortalV2Actions.saveCompany({
-          fields: buildCompanyRequest(values),
-          hasMcAuthority: asString(values.hasMcAuthority),
-          hasDba: asString(values.hasDba),
+          fields,
+          hasMcAuthority,
+          hasDba,
         }),
       );
       return;
@@ -352,12 +422,37 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
   };
 
   const isPending = submitStatus === 'pending';
-  const isCompanyPhaseStep = step.id.startsWith('company');
+
+  const affectedAgreements: AgreementContext[] = Object.values(agreementsRecord).filter(
+    (a) => a.status === 'SIGNED',
+  );
+
+  const handleConfirmReSign = (): void => {
+    if (!pendingReSign) return;
+    dispatch(
+      carrierPortalV2Actions.saveCompany({
+        fields: pendingReSign.fields,
+        hasMcAuthority: pendingReSign.hasMcAuthority,
+        hasDba: pendingReSign.hasDba,
+        voidPriorAgreements: true,
+        changedIdentityFields: pendingReSign.changedFields,
+      }),
+    );
+    setPendingReSign(null);
+  };
 
   return (
     <Box sx={{ width: '100%', maxWidth: 640 }}>
       {step.title ? <PageTitle sx={{ mb: 1 }}>{step.title}</PageTitle> : null}
       {step.subtitle ? <BodyMuted sx={{ mb: 3 }}>{step.subtitle}</BodyMuted> : null}
+
+      <ConfirmReSignDialog
+        open={pendingReSign !== null}
+        changedFields={pendingReSign?.changedFields ?? []}
+        affectedAgreements={affectedAgreements}
+        onCancel={() => setPendingReSign(null)}
+        onConfirm={handleConfirmReSign}
+      />
 
       <Formik
         initialValues={initialValues}
@@ -378,11 +473,12 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
                     if (!visible) {
                       return null;
                     }
-                    const lockKey = isCompanyPhaseStep ? `company.${q.id}` : null;
-                    const isLockableField =
-                      lockKey !== null && (LOCKS_FIELDS as readonly string[]).includes(lockKey);
-                    const isLocked = sessionLocked && isLockableField;
+                    const isLocked = isQuestionLocked(q, trialSession);
                     const fieldNode = renderField(q, formik, isLocked);
+                    const showIdentityAffordance =
+                      !isLocked &&
+                      anyAgreementSigned &&
+                      (IDENTITY_FIELDS as readonly string[]).includes(q.id);
                     return (
                       <motion.div
                         key={q.id}
@@ -402,6 +498,39 @@ const InputStep: React.FC<InputStepProps> = ({ step }) => {
                           >
                             {fieldNode}
                           </LockableField>
+                          {showIdentityAffordance ? (
+                            <Box
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                mt: 0.5,
+                                fontSize: 11.5,
+                                color: 'text.secondary',
+                              }}
+                            >
+                              <Tooltip
+                                title="This field is in your signed dispatch agreement. Changing it requires re-signing."
+                                placement="top-start"
+                                arrow
+                              >
+                                <Box
+                                  component="span"
+                                  tabIndex={0}
+                                  aria-label="In signed agreement"
+                                  sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                    cursor: 'help',
+                                  }}
+                                >
+                                  <LockOutlined sx={{ fontSize: 13 }} />
+                                  In your signed agreement
+                                </Box>
+                              </Tooltip>
+                            </Box>
+                          ) : null}
                           {q.helpText ? <FieldHint>{q.helpText}</FieldHint> : null}
                         </Box>
                       </motion.div>

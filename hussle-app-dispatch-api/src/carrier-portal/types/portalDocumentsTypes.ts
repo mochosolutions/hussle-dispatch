@@ -31,10 +31,6 @@ export interface PortalDocumentRepoPort {
     id: string,
     data: { uploadStatus: string; reviewStatus?: string },
   ): Promise<PortalDocument>;
-  updateSignature(
-    id: string,
-    data: { signatureData: string; signedAt: Date; uploadStatus: string; reviewStatus?: string },
-  ): Promise<PortalDocument>;
 }
 
 export interface CarrierCompliancePort {

@@ -1,5 +1,6 @@
 import { combineReducers, configureStore, createReducer } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 
 import type { Session, Step } from '../../../engine';
@@ -55,7 +56,15 @@ describe('CompleteStep', () => {
 
     render(
       <Provider store={store}>
-        <CompleteStep step={completeStep} />
+        <MemoryRouter initialEntries={['/carrier-portal/tok-1/complete']}>
+          <Routes>
+            <Route
+              path="/carrier-portal/:token/complete"
+              element={<CompleteStep step={completeStep} />}
+            />
+            <Route path="/carrier-portal/:token/sign-agreement" element={<div>SIGN PAGE</div>} />
+          </Routes>
+        </MemoryRouter>
       </Provider>,
     );
 
@@ -67,7 +76,15 @@ describe('CompleteStep', () => {
 
     render(
       <Provider store={store}>
-        <CompleteStep step={completeStep} />
+        <MemoryRouter initialEntries={['/carrier-portal/tok-1/complete']}>
+          <Routes>
+            <Route
+              path="/carrier-portal/:token/complete"
+              element={<CompleteStep step={completeStep} />}
+            />
+            <Route path="/carrier-portal/:token/sign-agreement" element={<div>SIGN PAGE</div>} />
+          </Routes>
+        </MemoryRouter>
       </Provider>,
     );
 
@@ -79,7 +96,15 @@ describe('CompleteStep', () => {
 
     render(
       <Provider store={store}>
-        <CompleteStep step={completeStep} />
+        <MemoryRouter initialEntries={['/carrier-portal/tok-1/complete']}>
+          <Routes>
+            <Route
+              path="/carrier-portal/:token/complete"
+              element={<CompleteStep step={completeStep} />}
+            />
+            <Route path="/carrier-portal/:token/sign-agreement" element={<div>SIGN PAGE</div>} />
+          </Routes>
+        </MemoryRouter>
       </Provider>,
     );
 
@@ -88,6 +113,40 @@ describe('CompleteStep', () => {
     expect(screen.getByText('Confirm your company details')).toBeInTheDocument();
     // equipment-entry title: "Tell us about your vehicles"
     expect(screen.getByText('Tell us about your vehicles')).toBeInTheDocument();
+  });
+
+  it('redirects to /sign-agreement when completeSession fails (recovery path)', async () => {
+    // Session NOT yet complete, completeSession status pre-seeded to 'failure'
+    // simulating the API returning 422 because a required item is missing.
+    const session = buildSession({ completedAt: null, currentStepId: 'complete' });
+    const carrierPortalV2 = createReducer(
+      {
+        token: 'tok-1' as string | null,
+        session,
+        loading: { completeSession: 'failure' } as Record<string, LoadingStatus>,
+        errors: { completeSession: 'Missing COI' },
+        lastSavedAt: null as string | null,
+      },
+      () => undefined,
+    );
+    const pages = combineReducers({ carrierPortalV2 });
+    const store = configureStore({ reducer: { pages } });
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/carrier-portal/tok-1/complete']}>
+          <Routes>
+            <Route
+              path="/carrier-portal/:token/complete"
+              element={<CompleteStep step={completeStep} />}
+            />
+            <Route path="/carrier-portal/:token/sign-agreement" element={<div>SIGN PAGE</div>} />
+          </Routes>
+        </MemoryRouter>
+      </Provider>,
+    );
+
+    expect(await screen.findByText('SIGN PAGE')).toBeInTheDocument();
   });
 
   it('falls back to "there" when no signatoryName and "Your dispatcher" when no dispatcher', () => {
@@ -100,7 +159,15 @@ describe('CompleteStep', () => {
 
     render(
       <Provider store={store}>
-        <CompleteStep step={completeStep} />
+        <MemoryRouter initialEntries={['/carrier-portal/tok-1/complete']}>
+          <Routes>
+            <Route
+              path="/carrier-portal/:token/complete"
+              element={<CompleteStep step={completeStep} />}
+            />
+            <Route path="/carrier-portal/:token/sign-agreement" element={<div>SIGN PAGE</div>} />
+          </Routes>
+        </MemoryRouter>
       </Provider>,
     );
 

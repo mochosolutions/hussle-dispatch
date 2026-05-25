@@ -75,6 +75,17 @@ export type FieldType =
 // that step renderers may evaluate. Typed as `unknown` keeps the engine portable.
 export type YupSchemaFragment = unknown;
 
+/**
+ * Schema-declared lock predicate for a question. When evaluated against the
+ * live session, returning `true` renders the field read-only (via
+ * `<LockableField>`) and contributes to step-level locked mode.
+ *
+ * Today's shipping schema declares no `locked` predicates — the lock primitive
+ * is dormant. Future schema variants can opt-in (e.g. lock signatory fields
+ * after a particular agreement is signed) without touching engine code.
+ */
+export type LockPredicate = boolean | ((ctx: { session: Session }) => boolean);
+
 export interface Question {
   id: string;
   label: string;
@@ -85,6 +96,12 @@ export interface Question {
   optional?: boolean;
   helpText?: string;
   options?: { value: string; label: string; description?: string; disabled?: boolean }[];
+  /**
+   * When set and evaluates to `true` against the current session, the field
+   * renders as read-only and contributes to step-level `locked` mode.
+   * Omitted ⇒ never locked.
+   */
+  locked?: LockPredicate;
 }
 
 export interface DocumentSlot {
@@ -101,6 +118,18 @@ export interface SideEffect {
   type: string;
 }
 
+/**
+ * Schema-declared entry for an agreement template the signing step should
+ * surface. `visibility` (optional) is a Predicate evaluated against the live
+ * Session — entries whose predicate evaluates to false are hidden from
+ * selectVisibleAgreementKeys. Today: one entry for DISPATCH_AGREEMENT with
+ * no visibility predicate.
+ */
+export interface TemplateEntry {
+  key: string;
+  visibility?: Predicate;
+}
+
 export interface Step {
   id: string;
   type: StepType;
@@ -110,10 +139,9 @@ export interface Step {
   documents?: DocumentSlot[];
   sideEffects?: SideEffect[];
   visibility?: Predicate;
-  // Signing step only — declarative list of dot-paths locked after this step completes.
-  locksFields?: string[];
-  // Signing step only.
-  template?: 'dispatch_v1';
+  // Signing step only — schema-declared list of agreement templates this step surfaces.
+  // Empty / undefined → step has no agreements to sign (degenerate).
+  templates?: TemplateEntry[];
   // Verification step only — name of the session field the step waits on (e.g. 'fmcsaSnapshot').
   waitingFor?: string;
   // CompleteStep optional summary line generator.
@@ -152,9 +180,13 @@ export type AgreementStatus = 'PENDING' | 'SIGNED' | 'VOIDED' | 'EXPIRED' | 'DEC
 
 export interface AgreementContext {
   id: string;
+  templateKey: string;
   status: AgreementStatus;
   embedUrl?: string | null;
+  signedAt?: string | null;
   signedFieldsLocked?: boolean;
+  mock?: boolean;
+  variables?: Record<string, string>;
 }
 
 export interface InvitationContext {
@@ -243,6 +275,16 @@ export interface FmcsaSnapshot {
 // Answers are namespaced by stepId so step renderers carry isolated answer trees.
 export type Answers = Record<string, Record<string, unknown>>;
 
+export interface DocumentContext {
+  id: string;
+  // Prisma DocumentType enum value (e.g., 'INSURANCE_CERT'). Matches the
+  // `documentType` declared on schema DocumentSlots.
+  documentType: string;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
 export interface Session {
   id: string;
   carrierId: string;
@@ -258,24 +300,23 @@ export interface Session {
   drivers?: DriverContext[];
   costAnalysis?: CostAnalysisContext;
   lanePreferences?: LanePreferencesContext;
-  agreement?: AgreementContext;
+  agreements?: Record<string, AgreementContext>;
+  // Documents the carrier has uploaded via the portal (INSURANCE_CERT, W9, etc).
+  // Projected by GET /carrier-portal/session so the signing+upload step can
+  // render upload state on cold load.
+  documents?: DocumentContext[];
   invitation: InvitationContext;
 }
 
 // ---------- engine-level constants ----------
 
-// Dot-paths (relative to the company step's answers) that lock after the signing step completes.
-// Mirrors `hussle-app-dispatch-api/src/carrier-portal/constants/locksFields.ts`. A CI test
-// asserts the two lists carry identical paths.
-export const LOCKS_FIELDS = [
-  'company.legalName',
-  'company.mcNumber',
-  'company.dotNumber',
-  'company.signatoryName',
-  'company.signatoryTitle',
-  'company.taxClassification',
-  'company.tinType',
-  'company.tin',
-] as const;
+// Identity fields that are embedded in the signed dispatch agreement PDF.
+// Source of truth: `hussle-app-dispatch-api/src/agreements/templates/templateRegistry.ts`
+// (DISPATCH_AGREEMENT entry). Editing any of these post-sign triggers the
+// mid-signing re-sign confirmation flow (ConfirmReSignDialog + voidAndReSignSaga).
+//
+// Not a `locked` declaration — this is a runtime guard, not a schema lock. The
+// schema-level `Question.locked` predicate is a separate, dormant mechanism.
+export const IDENTITY_FIELDS = ['legalName', 'mcNumber', 'dotNumber'] as const;
 
-export type LockedFieldPath = (typeof LOCKS_FIELDS)[number];
+export type IdentityField = (typeof IDENTITY_FIELDS)[number];

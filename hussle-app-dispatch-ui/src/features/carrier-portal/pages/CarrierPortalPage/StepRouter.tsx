@@ -13,7 +13,6 @@ import EquipmentListStep from '../../components/steps/EquipmentListStep';
 import InputStep from '../../components/steps/InputStep';
 import LanePreferencesStep from '../../components/steps/LanePreferencesStep';
 import SegmentationStep from '../../components/steps/SegmentationStep';
-import UploadStep from '../../components/steps/UploadStep';
 import StepDispatcher from './StepDispatcher';
 
 interface StepRouteParams extends Record<string, string | undefined> {
@@ -75,17 +74,11 @@ const StepRouter: React.FC = () => {
     return <LanePreferencesStep step={step} />;
   }
 
-  // B7 — sign-agreement has no Continue submit; it fetches the agreement and
-  // auto-advances on SIGNED. Routed explicitly to keep the routing surface
-  // declarative.
+  // B7/B8 — sign-agreement is the consolidated upload+sign step. Surfaces both
+  // required document uploads (e.g. COI) and agreements to sign in a unified
+  // list. AgreementSigningStep reads step.documents AND step.templates.
   if (step.id === 'sign-agreement') {
     return <AgreementSigningStep step={step} />;
-  }
-
-  // B8 — documents-upload dispatches uploadDocument per file. Routed
-  // explicitly to keep the routing surface declarative.
-  if (step.id === 'documents-upload') {
-    return <UploadStep step={step} />;
   }
 
   // B9 — complete is the terminal step. CompleteStep dispatches

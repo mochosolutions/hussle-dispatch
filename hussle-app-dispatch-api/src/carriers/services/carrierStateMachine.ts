@@ -5,7 +5,10 @@ const ALLOWED_TRANSITIONS: Record<CarrierStatus, readonly CarrierStatus[]> = {
   DRAFT: [CarrierStatus.INVITED],
   INVITED: [CarrierStatus.ONBOARDING, CarrierStatus.REJECTED, CarrierStatus.ACTIVE],
   ONBOARDING: [CarrierStatus.PENDING_APPROVAL, CarrierStatus.REJECTED, CarrierStatus.ACTIVE],
-  PENDING_APPROVAL: [CarrierStatus.ACTIVE, CarrierStatus.REJECTED],
+  // PENDING_APPROVAL → ONBOARDING when the carrier voids their dispatch
+  // agreement to re-sign after changing an identity field (legalName / MC /
+  // DOT). The portal puts them back into the editable wizard.
+  PENDING_APPROVAL: [CarrierStatus.ACTIVE, CarrierStatus.REJECTED, CarrierStatus.ONBOARDING],
   REJECTED: [CarrierStatus.INVITED, CarrierStatus.ACTIVE],
   ACTIVE: [CarrierStatus.ACTION_REQUIRED, CarrierStatus.SUSPENDED],
   ACTION_REQUIRED: [CarrierStatus.ACTIVE, CarrierStatus.SUSPENDED],

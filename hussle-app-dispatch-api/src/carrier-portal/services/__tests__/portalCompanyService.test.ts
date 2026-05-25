@@ -121,22 +121,34 @@ describe('portalCompanyService.saveCompany', () => {
     ).rejects.toBeInstanceOf(FieldLockedError);
   });
 
-  it('FieldLockedError carries the dot-path of the offending field', async () => {
+  it('FieldLockedError carries the dot-path of the offending identity field', async () => {
     const { service } = setup(
+      baseCarrier({
+        dispatchAgreementSignedAt: new Date('2026-01-01'),
+        legalName: 'Acme Logistics LLC',
+      }),
+    );
+
+    const error = await service
+      .saveCompany('carrier-1', 'org-1', { legalName: 'Acme Trucking LLC' })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(FieldLockedError);
+    expect((error as FieldLockedError).field).toBe('company.legalName');
+    expect((error as FieldLockedError).code).toBe('FIELD_LOCKED');
+    expect((error as FieldLockedError).statusCode).toBe(422);
+  });
+
+  it('allows changes to non-identity fields (e.g. tin) post-signing', async () => {
+    const { service, carrierRepo } = setup(
       baseCarrier({
         dispatchAgreementSignedAt: new Date('2026-01-01'),
         tin: '12-3456789',
       }),
     );
 
-    const error = await service
-      .saveCompany('carrier-1', 'org-1', { tin: '99-9999999' })
-      .catch((e: unknown) => e);
-
-    expect(error).toBeInstanceOf(FieldLockedError);
-    expect((error as FieldLockedError).field).toBe('company.tin');
-    expect((error as FieldLockedError).code).toBe('FIELD_LOCKED');
-    expect((error as FieldLockedError).statusCode).toBe(422);
+    await service.saveCompany('carrier-1', 'org-1', { tin: '99-9999999' });
+    expect(carrierRepo.update).toHaveBeenCalled();
   });
 
   it('allows unchanged values for locked fields after signing (idempotent re-save)', async () => {

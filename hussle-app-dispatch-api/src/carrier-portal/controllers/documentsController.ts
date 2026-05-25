@@ -5,7 +5,6 @@ import {
   listDocumentsMapper,
   presignDocumentMapper,
   confirmDocumentMapper,
-  signDocumentMapper,
 } from './mappers/documentsMapper';
 import {
   portalDocumentListTransformer,
@@ -31,18 +30,6 @@ interface DocumentsService {
     carrierId: string,
     organizationId: string,
     input: { documentType: string; insuranceExpiry?: string; coverageConfirmed?: boolean },
-  ): Promise<PortalDocument>;
-  signDocument(
-    documentId: string,
-    carrierId: string,
-    organizationId: string,
-    input: {
-      signatureData: string;
-      consentGiven: boolean;
-      signerName?: string;
-      signerTitle?: string;
-    },
-    requestMeta: { ip: string; userAgent: string },
   ): Promise<PortalDocument>;
 }
 
@@ -78,28 +65,6 @@ export const createDocumentsControllers = (deps: DocumentsControllerDeps) => ({
       carrierId,
       organizationId,
       { documentType, insuranceExpiry, coverageConfirmed },
-    );
-    const response = portalDocumentTransformer(updated);
-    sendSingle(res, response);
-  },
-
-  signDocument: async (req: Request, res: Response) => {
-    const {
-      documentId,
-      carrierId,
-      organizationId,
-      signatureData,
-      consentGiven,
-      signerName,
-      signerTitle,
-      requestMeta,
-    } = signDocumentMapper(req);
-    const updated = await deps.documentsService.signDocument(
-      documentId,
-      carrierId,
-      organizationId,
-      { signatureData, consentGiven, signerName, signerTitle },
-      requestMeta,
     );
     const response = portalDocumentTransformer(updated);
     sendSingle(res, response);

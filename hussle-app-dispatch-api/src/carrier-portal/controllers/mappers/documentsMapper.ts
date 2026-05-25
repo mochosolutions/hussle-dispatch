@@ -68,33 +68,3 @@ export const confirmDocumentMapper = (req: Request): ConfirmDocumentInput => {
   };
 };
 
-export interface SignDocumentInput {
-  documentId: string;
-  carrierId: string;
-  organizationId: string;
-  signatureData: string;
-  consentGiven: boolean;
-  signerName?: string;
-  signerTitle?: string;
-  requestMeta: {
-    ip: string;
-    userAgent: string;
-  };
-}
-
-export const signDocumentMapper = (req: Request): SignDocumentInput => {
-  const { carrierId, organizationId } = getCarrierContext(req);
-  return {
-    documentId: req.params.id ?? '',
-    carrierId,
-    organizationId,
-    signatureData: req.body.signatureData,
-    consentGiven: req.body.consentGiven,
-    signerName: req.body.signerName,
-    signerTitle: req.body.signerTitle,
-    requestMeta: {
-      ip: req.ip ?? '',
-      userAgent: req.headers['user-agent'] ?? '',
-    },
-  };
-};

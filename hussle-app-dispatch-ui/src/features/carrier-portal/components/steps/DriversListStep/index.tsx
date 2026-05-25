@@ -10,6 +10,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Box } from '@mui/material';
 import { Formik } from 'formik';
 import type { FormikProps } from 'formik';
+import * as Yup from 'yup';
 import { PeopleAltOutlined } from '@mui/icons-material';
 
 import { useDispatch, useSelector } from 'store';
@@ -32,7 +33,11 @@ import { selectLoading, selectSession } from '../../../store/selectors/carrierPo
 // Types
 // ---------------------------------------------------------------------------
 
-type PayType = 'percentage' | 'per_mile' | 'flat_rate';
+// Mirrors `DriverPayType` in the Prisma schema and the API validator's
+// `oneOf` set (`hussle-app-dispatch-api/src/carrier-portal/validators/
+// driversValidator.ts`). Uppercase enum is the canonical wire format; the
+// UI used to emit lowercase variants which the API validator rejected.
+type PayType = 'PERCENTAGE' | 'PER_MILE' | 'PER_HOUR' | 'FLAT_RATE';
 
 interface DriverEntry {
   // Local-only React key, never submitted to the server (US-30).
@@ -65,7 +70,12 @@ interface PersistedDriverEntry extends Omit<DriverEntry, '_tempKey'> {
   _tempKey?: string;
 }
 
+// Canonical key for the persisted drivers list inside session.answers is
+// `drivers` (matches the Prisma model and the dedicated /carrier-portal/
+// drivers endpoint). Legacy sessions may carry `entries` from before the
+// shape was aligned; we read both on hydration and always write `drivers`.
 interface DriversAnswers {
+  drivers?: PersistedDriverEntry[];
   entries?: PersistedDriverEntry[];
 }
 
@@ -79,21 +89,56 @@ interface DriverDraftState {
 // ---------------------------------------------------------------------------
 
 const PAY_TYPE_OPTIONS = [
-  { value: 'percentage', label: 'Percentage' },
-  { value: 'per_mile', label: 'Per mile' },
-  { value: 'flat_rate', label: 'Flat rate' },
+  { value: 'PERCENTAGE', label: 'Percentage' },
+  { value: 'PER_MILE', label: 'Per mile' },
+  { value: 'PER_HOUR', label: 'Per hour' },
+  { value: 'FLAT_RATE', label: 'Flat rate' },
 ];
 
 const PAY_SUFFIX: Record<PayType, string> = {
-  percentage: '% of gross',
-  per_mile: '/mi',
-  flat_rate: '$ per load',
+  PERCENTAGE: '% of gross',
+  PER_MILE: '/mi',
+  PER_HOUR: '/hr',
+  FLAT_RATE: '$ per load',
 };
 
 const PAY_LABEL: Record<PayType, string> = {
-  percentage: 'Percentage',
-  per_mile: 'Per mile',
-  flat_rate: 'Flat rate',
+  PERCENTAGE: 'Percentage',
+  PER_MILE: 'Per mile',
+  PER_HOUR: 'Per hour',
+  FLAT_RATE: 'Flat rate',
+};
+
+// Hand-rolled normaliser for legacy lowercase values that may exist in
+// stored answers JSON from before the contract aligned. Server projection
+// emits uppercase; this is a safety net for old session data only.
+const LEGACY_PAY_TYPE_MAP: Record<string, PayType> = {
+  percentage: 'PERCENTAGE',
+  per_mile: 'PER_MILE',
+  per_hour: 'PER_HOUR',
+  flat_rate: 'FLAT_RATE',
+};
+
+const readDriversAnswers = (answers: DriversAnswers): PersistedDriverEntry[] => {
+  if (Array.isArray(answers.drivers)) return answers.drivers;
+  if (Array.isArray(answers.entries)) return answers.entries;
+  return [];
+};
+
+const payRateToString = (raw: string | number | null | undefined): string => {
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'number') return String(raw);
+  return '';
+};
+
+const normalizePayType = (raw: string | null | undefined): PayType => {
+  if (raw === 'PERCENTAGE' || raw === 'PER_MILE' || raw === 'PER_HOUR' || raw === 'FLAT_RATE') {
+    return raw;
+  }
+  if (raw && raw in LEGACY_PAY_TYPE_MAP) {
+    return LEGACY_PAY_TYPE_MAP[raw] ?? 'PERCENTAGE';
+  }
+  return 'PERCENTAGE';
 };
 
 const EMPTY_DRIVER_FORM: DriverFormValues = {
@@ -101,7 +146,7 @@ const EMPTY_DRIVER_FORM: DriverFormValues = {
   lastName: '',
   phone: '',
   email: '',
-  payType: 'percentage',
+  payType: 'PERCENTAGE',
   payRate: '',
 };
 
@@ -145,6 +190,26 @@ const isDriverFormComplete = (v: DriverFormValues): boolean =>
   v.email.trim().length > 0 &&
   v.payRate.trim().length > 0;
 
+// Mirrors `driversValidator.payRate` on the API
+// (`hussle-app-dispatch-api/src/carrier-portal/validators/driversValidator.ts`).
+// Range is 0..100 inclusive; the UI string is parsed before submit and we
+// surface an inline error before the request goes out.
+const driverFormValidationSchema = Yup.object({
+  payRate: Yup.string()
+    .test(
+      'payRate-range',
+      'Pay rate must be between 0 and 100',
+      (value) => {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+          // Empty values are handled by `isDriverFormComplete` (saveDisabled).
+          return true;
+        }
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100;
+      },
+    ),
+});
+
 // ---------------------------------------------------------------------------
 // DriverAvatar
 // ---------------------------------------------------------------------------
@@ -176,6 +241,8 @@ const DriverAvatar: React.FC<{ initials: string }> = ({ initials }) => (
 interface DriverFormProps {
   formNumber: number;
   initialValues: DriverFormValues;
+  title?: string;
+  saveLabel?: string;
   onCancel: () => void;
   onSave: (values: DriverFormValues) => void;
   onSaveAndAddAnother?: (values: DriverFormValues) => void;
@@ -186,13 +253,15 @@ const toDriverFormValues = (record: Record<string, unknown>): DriverFormValues =
   lastName: String(record.lastName ?? ''),
   phone: String(record.phone ?? ''),
   email: String(record.email ?? ''),
-  payType: (record.payType as PayType | undefined) ?? 'percentage',
+  payType: normalizePayType(typeof record.payType === 'string' ? record.payType : null),
   payRate: String(record.payRate ?? ''),
 });
 
 const DriverForm: React.FC<DriverFormProps> = ({
   formNumber,
   initialValues,
+  title = 'Add a driver',
+  saveLabel = 'Save driver',
   onCancel,
   onSave,
   onSaveAndAddAnother,
@@ -202,19 +271,21 @@ const DriverForm: React.FC<DriverFormProps> = ({
     <Formik<Record<string, unknown>>
       initialValues={formikInitial}
       onSubmit={(values) => onSave(toDriverFormValues(values))}
+      validationSchema={driverFormValidationSchema}
       enableReinitialize
     >
       {(formik: FormikProps<Record<string, unknown>>) => {
         const current = toDriverFormValues(formik.values);
         const suffix = PAY_SUFFIX[current.payType];
-        const saveDisabled = !isDriverFormComplete(current);
+        const hasValidationErrors = Object.keys(formik.errors).length > 0;
+        const saveDisabled = !isDriverFormComplete(current) || hasValidationErrors;
         return (
           <ListBuilderInlineForm
             number={formNumber}
-            title="Add a driver"
+            title={title}
             onCancel={onCancel}
             onSave={() => onSave(toDriverFormValues(formik.values))}
-            saveLabel="Save driver"
+            saveLabel={saveLabel}
             onSaveAndAddAnother={
               onSaveAndAddAnother
                 ? () => onSaveAndAddAnother(toDriverFormValues(formik.values))
@@ -297,12 +368,12 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
       return '';
     }
     const answers = (session.answers[step.id] ?? {}) as DriversAnswers;
-    return JSON.stringify(answers.entries ?? []);
+    return JSON.stringify(readDriversAnswers(answers));
   }, [session, step.id]);
 
   // Two sources, in priority order:
-  //  1. `session.answers[step.id].entries` — last-submitted draft (carries
-  //     mid-edit state and is the primary source within a session).
+  //  1. `session.answers[step.id].drivers` (or legacy `.entries`) — last-
+  //     submitted draft, primary source within a session.
   //  2. `session.drivers` — typed Driver table projection (durable across
   //     sessions; primary source on fresh page load when answers is empty).
   const initialDrivers = useMemo<DriverEntry[]>(() => {
@@ -310,27 +381,17 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
       return [];
     }
     const answers = (session.answers[step.id] ?? {}) as DriversAnswers;
-    const sourceEntries = Array.isArray(answers.entries) ? answers.entries : [];
+    const sourceEntries = readDriversAnswers(answers);
     if (sourceEntries.length > 0) {
       return sourceEntries.map((d) => ({
         ...d,
         _tempKey: d._tempKey ?? generateTempKey(),
+        payType: normalizePayType(d.payType),
       }));
     }
     const projected = session.drivers ?? [];
     return projected.map((d) => {
-      const payTypeRaw = d.payType;
-      const payType: PayType =
-        payTypeRaw === 'percentage' || payTypeRaw === 'per_mile' || payTypeRaw === 'flat_rate'
-          ? payTypeRaw
-          : 'percentage';
-      const payRateRaw = d.payRate;
-      const payRate =
-        typeof payRateRaw === 'string'
-          ? payRateRaw
-          : typeof payRateRaw === 'number'
-            ? String(payRateRaw)
-            : '';
+      const payRate = payRateToString(d.payRate);
       return {
         _tempKey: generateTempKey(),
         id: d.id,
@@ -338,7 +399,7 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
         lastName: d.lastName,
         phone: d.phone ?? '',
         email: d.email ?? '',
-        payType,
+        payType: normalizePayType(d.payType),
         payRate,
       };
     });
@@ -348,7 +409,10 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
     sourceFingerprint: persistedFingerprint,
     items: initialDrivers,
   }));
-  const [formOpen, setFormOpen] = useState<boolean>(false);
+  // `closed` — no form rendered. `add` — blank form for a new driver.
+  // `edit:<_tempKey>` — form pre-filled with that driver's current values.
+  type FormMode = { kind: 'closed' } | { kind: 'add' } | { kind: 'edit'; tempKey: string };
+  const [formMode, setFormMode] = useState<FormMode>({ kind: 'closed' });
 
   // After a successful submit, session.answers[stepId].entries is replaced
   // with the server response containing Prisma UUIDs. When that fingerprint
@@ -356,42 +420,62 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
   const drivers =
     driverDraft.sourceFingerprint === persistedFingerprint ? driverDraft.items : initialDrivers;
 
+  const buildNewDriver = (values: DriverFormValues): DriverEntry => ({
+    _tempKey: generateTempKey(),
+    // `id` deliberately omitted — server assigns after submit.
+    firstName: values.firstName,
+    lastName: values.lastName,
+    phone: values.phone,
+    email: values.email,
+    payType: values.payType,
+    payRate: values.payRate,
+  });
+
   const handleAddSaved = (values: DriverFormValues): void => {
-    const next: DriverEntry = {
-      _tempKey: generateTempKey(),
-      // `id` deliberately omitted — server assigns after submit.
-      firstName: values.firstName,
-      lastName: values.lastName,
-      phone: values.phone,
-      email: values.email,
-      payType: values.payType,
-      payRate: values.payRate,
-    };
+    const next = buildNewDriver(values);
     setDriverDraft((prev) => {
       const baseItems =
         prev.sourceFingerprint === persistedFingerprint ? prev.items : initialDrivers;
       return { sourceFingerprint: persistedFingerprint, items: [...baseItems, next] };
     });
-    setFormOpen(false);
+    setFormMode({ kind: 'closed' });
   };
 
   const handleAddSavedAndAddAnother = (values: DriverFormValues): void => {
-    const next: DriverEntry = {
-      _tempKey: generateTempKey(),
-      // `id` deliberately omitted — server assigns after submit.
-      firstName: values.firstName,
-      lastName: values.lastName,
-      phone: values.phone,
-      email: values.email,
-      payType: values.payType,
-      payRate: values.payRate,
-    };
+    const next = buildNewDriver(values);
     setDriverDraft((prev) => {
       const baseItems =
         prev.sourceFingerprint === persistedFingerprint ? prev.items : initialDrivers;
       return { sourceFingerprint: persistedFingerprint, items: [...baseItems, next] };
     });
-    setFormOpen(true);
+    setFormMode({ kind: 'add' });
+  };
+
+  // Replace an existing driver row in place. Preserves `_tempKey` and the
+  // server-assigned `id` (when present) so the saga's upsert path can match
+  // the edited row to an existing Driver record.
+  const handleEditSaved = (tempKey: string, values: DriverFormValues): void => {
+    setDriverDraft((prev) => {
+      const baseItems =
+        prev.sourceFingerprint === persistedFingerprint ? prev.items : initialDrivers;
+      return {
+        sourceFingerprint: persistedFingerprint,
+        items: baseItems.map((d) =>
+          d._tempKey === tempKey
+            ? {
+                ...d,
+                firstName: values.firstName,
+                lastName: values.lastName,
+                phone: values.phone,
+                email: values.email,
+                payType: values.payType,
+                payRate: values.payRate,
+              }
+            : d,
+        ),
+      };
+    });
+    setFormMode({ kind: 'closed' });
   };
 
   const handleRemove = (tempKey: string): void => {
@@ -403,7 +487,24 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
         items: baseItems.filter((d) => d._tempKey !== tempKey),
       };
     });
+    if (formMode.kind === 'edit' && formMode.tempKey === tempKey) {
+      setFormMode({ kind: 'closed' });
+    }
   };
+
+  const editingDriver =
+    formMode.kind === 'edit'
+      ? drivers.find((d) => d._tempKey === formMode.tempKey) ?? null
+      : null;
+
+  const driverToFormValues = (d: DriverEntry): DriverFormValues => ({
+    firstName: d.firstName,
+    lastName: d.lastName,
+    phone: d.phone,
+    email: d.email,
+    payType: d.payType,
+    payRate: d.payRate,
+  });
 
   const handleContinue = useCallback((): void => {
     if (drivers.length === 0) {
@@ -450,13 +551,13 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
       width="lg"
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        {drivers.length === 0 && !formOpen ? (
+        {drivers.length === 0 && formMode.kind === 'closed' ? (
           <ListBuilderEmptyState
             icon={<PeopleAltOutlined />}
             title="No drivers added"
             subtitle="Start with yourself if you drive, then add anyone else who runs your trucks."
             ctaLabel="Add your first driver"
-            onCtaClick={() => setFormOpen(true)}
+            onCtaClick={() => setFormMode({ kind: 'add' })}
           />
         ) : null}
 
@@ -472,22 +573,37 @@ const DriversListStep: React.FC<DriversListStepProps> = ({ step }) => {
             thumbnail={<DriverAvatar initials={driverInitialsOf(d)} />}
             name={driverNameOf(d)}
             meta={driverMetaOf(d)}
+            onEdit={() => setFormMode({ kind: 'edit', tempKey: d._tempKey })}
             onRemove={() => handleRemove(d._tempKey)}
           />
         ))}
 
-        {formOpen ? (
+        {formMode.kind === 'add' ? (
           <DriverForm
             formNumber={drivers.length + 1}
             initialValues={EMPTY_DRIVER_FORM}
-            onCancel={() => setFormOpen(false)}
+            onCancel={() => setFormMode({ kind: 'closed' })}
             onSave={handleAddSaved}
             onSaveAndAddAnother={handleAddSavedAndAddAnother}
           />
         ) : null}
 
-        {!formOpen && drivers.length > 0 ? (
-          <ListBuilderAddMoreButton label="Add another driver" onClick={() => setFormOpen(true)} />
+        {formMode.kind === 'edit' && editingDriver ? (
+          <DriverForm
+            formNumber={drivers.findIndex((d) => d._tempKey === editingDriver._tempKey) + 1}
+            initialValues={driverToFormValues(editingDriver)}
+            title="Edit driver"
+            saveLabel="Save changes"
+            onCancel={() => setFormMode({ kind: 'closed' })}
+            onSave={(values) => handleEditSaved(editingDriver._tempKey, values)}
+          />
+        ) : null}
+
+        {formMode.kind === 'closed' && drivers.length > 0 ? (
+          <ListBuilderAddMoreButton
+            label="Add another driver"
+            onClick={() => setFormMode({ kind: 'add' })}
+          />
         ) : null}
       </Box>
     </OnboardingCard>

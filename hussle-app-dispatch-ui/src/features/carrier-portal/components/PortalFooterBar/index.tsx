@@ -67,13 +67,13 @@ const PortalFooterBar: React.FC<PortalFooterBarProps> = ({
           alignItems="center"
           sx={{ flexShrink: 0, flexWrap: { xs: 'wrap', md: 'nowrap' }, rowGap: 1 }}
         >
-          {helperText ? (
+          {/* {helperText ? (
             <Meta sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 500 }}>
               {helperText}
             </Meta>
-          ) : null}
+          ) : null} */}
 
-          {secondaryAction ? (
+          {/* {secondaryAction ? (
             <Button
               variant="text"
               color="inherit"
@@ -93,7 +93,7 @@ const PortalFooterBar: React.FC<PortalFooterBarProps> = ({
             >
               {secondaryAction.label}
             </Button>
-          ) : null}
+          ) : null} */}
 
           {onBack ? (
             <Button

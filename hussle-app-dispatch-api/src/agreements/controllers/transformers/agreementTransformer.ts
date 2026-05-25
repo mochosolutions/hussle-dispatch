@@ -33,6 +33,9 @@ export interface AgreementResponseData {
   expiredAt: string | null;
   voidedAt: string | null;
   artifacts: AgreementArtifactsResponse | null;
+  mock: boolean;
+  variables: Record<string, string>;
+  signedFieldsLocked: boolean;
 }
 
 export interface AgreementTransformerDeps {
@@ -46,7 +49,7 @@ const toIso = (date: Date | null): string | null => (date === null ? null : date
  *  - Date fields become ISO strings.
  *  - When status === 'SIGNED' and both S3 keys are present, presign the
  *    signedPdf + audit certificate URLs (15-minute TTL) into `artifacts`.
- *  - `variables` is stripped — internal-only field.
+ *  - `variables` carries the prefilled DocuSeal field values; consumed by the carrier-portal UI's AgreementPrefillSummary.
  */
 export const agreementTransformer = async (
   agreement: Agreement,
@@ -95,5 +98,13 @@ export const agreementTransformer = async (
     expiredAt: toIso(agreement.expiredAt),
     voidedAt: toIso(agreement.voidedAt),
     artifacts,
+    mock: agreement.providerName === 'MOCK',
+    variables: (agreement.variables as Record<string, string> | null) ?? {},
+    // Derived: an agreement locks the company-phase fields once it's SIGNED.
+    // The frontend engine (computeStepMode + computeInvalidations) consumes
+    // this same predicate; computing it server-side keeps the multi-key endpoint
+    // and the cold-load /session endpoint consistent so polling cycles don't
+    // erase the lock state.
+    signedFieldsLocked: agreement.status === 'SIGNED',
   };
 };

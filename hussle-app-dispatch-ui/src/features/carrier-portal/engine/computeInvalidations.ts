@@ -1,35 +1,38 @@
 import type { Schema, Session } from './types';
-import { LOCKS_FIELDS } from './types';
 import { evaluatePredicate } from './evaluatePredicate';
+import { isQuestionLocked } from './isQuestionLocked';
 import { LockViolationError } from './errors';
 import { findStep, getVisibleSteps } from './getVisibleSteps';
 
-// Given a trial state where `changedStepId`'s answers receive a partial patch (`newAnswers`),
-// compute which previously-completed steps would become hidden (and therefore invalidated).
+// Given a trial state where `changedStepId`'s answers receive a partial patch
+// (`newAnswers`), compute which previously-completed steps would become hidden
+// (and therefore invalidated).
 //
-// Lock enforcement: if `changedStepId` is in the company phase AND the carrier's agreement
-// is SIGNED AND the patch touches any path in LOCKS_FIELDS that ALSO differs from the
-// existing value, throws LockViolationError. Back-edits to non-locked fields proceed
-// normally even after signing.
+// Lock enforcement: schema-driven. If any question in `newAnswers` declares
+// `locked: true` against the current session AND the incoming value differs
+// from the persisted value, throws `LockViolationError`.
 //
-// Returns the list of completed step ids that flip from visible → hidden under the trial.
+// Under today's shipping schema no questions declare `locked`, so this gate is
+// dormant. The mid-signing identity-edit guard (frontend `ConfirmReSignDialog`
+// + backend void-for-resign endpoint) is the actual mechanism for the 3
+// identity fields embedded in the dispatch agreement.
 export const computeInvalidations = (
   schema: Schema,
   session: Session,
   changedStepId: string,
   newAnswers: Record<string, unknown>,
 ): string[] => {
-  // Lock check — only fires when the agreement is signed and the change touches a locked path.
-  const isLocked = session.agreement?.status === 'SIGNED';
-  if (isLocked && isCompanyStep(schema, changedStepId)) {
-    const existing = session.answers[changedStepId] ?? {};
+  const step = findStep(schema, changedStepId);
+  if (step?.questions) {
+    const existing = (session.answers[changedStepId] ?? {}) as Record<string, unknown>;
     const violated: string[] = [];
-    for (const [questionId, incomingValue] of Object.entries(newAnswers)) {
-      const dotPath = `company.${questionId}` as (typeof LOCKS_FIELDS)[number];
-      if (!(LOCKS_FIELDS as readonly string[]).includes(dotPath)) continue;
-      const currentValue = (existing as Record<string, unknown>)[questionId];
+    for (const question of step.questions) {
+      if (!(question.id in newAnswers)) continue;
+      if (!isQuestionLocked(question, session)) continue;
+      const incomingValue = newAnswers[question.id];
+      const currentValue = existing[question.id];
       if (incomingValue !== currentValue) {
-        violated.push(dotPath);
+        violated.push(`${changedStepId}.${question.id}`);
       }
     }
     if (violated.length > 0) {
@@ -57,17 +60,6 @@ export const computeInvalidations = (
     }
   }
   return invalidated;
-};
-
-const isCompanyStep = (schema: Schema, stepId: string): boolean => {
-  const step = findStep(schema, stepId);
-  if (!step) return false;
-  // A step lives in the company phase iff one of those phases contains it. The company
-  // phase id is conventionally 'company' in onboardingSchema.ts; we additionally guard
-  // against arbitrary external schemas by name-prefix matching the stepId.
-  if (stepId.startsWith('company-')) return true;
-  const phase = schema.phases.find((p) => p.steps.some((s) => s.id === stepId));
-  return phase?.id === 'company';
 };
 
 // Re-evaluate visibility against the live session (no trial answers) — handy when callers

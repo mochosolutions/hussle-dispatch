@@ -22,11 +22,23 @@ const getCarrierId = (req: Request): string => {
   return req.carrierPortal.carrierId;
 };
 
-const parseTemplateKey = (raw: unknown): AgreementTemplateKey => {
-  if (raw === 'DISPATCH_AGREEMENT') {
-    return AgreementTemplateKey.DISPATCH_AGREEMENT;
+const parseTemplateKeys = (raw: unknown): AgreementTemplateKey[] => {
+  if (typeof raw !== 'string' || raw.length === 0) {
+    throw new BadRequestError('templateKeys is required');
   }
-  throw new BadRequestError('templateKey must be DISPATCH_AGREEMENT');
+  const tokens = raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (tokens.length === 0) {
+    throw new BadRequestError('templateKeys must contain at least one key');
+  }
+  for (const t of tokens) {
+    if (t !== 'DISPATCH_AGREEMENT') {
+      throw new BadRequestError(`Unknown templateKey: ${t}`);
+    }
+  }
+  return tokens as AgreementTemplateKey[];
 };
 
 const pickString = (value: unknown): string | undefined =>
@@ -67,44 +79,43 @@ const resolveSignerFromSession = async (
 };
 
 /**
- * GET /api/v1/carrier-portal/agreements
+ * GET /api/v1/carrier-portal/agreements?templateKeys=KEY1,KEY2
  *
- * Returns the most-recent agreement matching the carrier (from invite-token
- * context) + templateKey query, wrapped as a single-item list to match the
- * dispatcher endpoint shape: { data: [...], pagination: { ... } }.
+ * Returns `{ data: Record<templateKey, AgreementContext> }` for the carrier
+ * derived from the invite-token context. Each requested key is lazily
+ * ensured via `ensureForCarrier` so the carrier never sees a dead-end when
+ * the dispatcher hasn't pre-generated the envelope.
  *
- * Safety net: if the dispatcher never pre-generated the agreement, this lazily
- * creates one via `ensureForCarrier` so the carrier never sees a dead-end
- * "Contact dispatcher" message on the Sign Agreement step. The dispatcher's
- * "send agreement" UX (to be added) is the primary trigger; this is the
- * fallback for missed events / unsent envelopes.
+ * Pagination metadata is omitted — the response is a keyed object, not a
+ * list. Adding new template keys (W-9, Broker-Carrier Master) is purely a
+ * matter of extending the Prisma enum + the registry; no controller changes.
  */
 export const createPortalAgreementControllers = (deps: PortalAgreementControllerDeps) => ({
   getLatestForCarrier: async (req: Request, res: Response): Promise<void> => {
     const carrierId = getCarrierId(req);
     const organizationId = req.carrierPortal?.organizationId ?? '';
-    const templateKey = parseTemplateKey(req.query['templateKey']);
+    const templateKeys = parseTemplateKeys(req.query['templateKeys']);
 
     const signer = await resolveSignerFromSession(deps.sessionRepo, carrierId);
 
-    const ensured = await deps.agreementQueries.ensureForCarrier({
-      carrierId,
-      organizationId,
-      templateKey,
-      ...signer,
-    });
+    const entries = await Promise.all(
+      templateKeys.map(async (templateKey) => {
+        const ensured = await deps.agreementQueries.ensureForCarrier({
+          carrierId,
+          organizationId,
+          templateKey,
+          ...signer,
+        });
+        const response = await agreementTransformer(ensured.data, { storage: deps.storage });
+        return [templateKey, response] as const;
+      }),
+    );
 
-    const items = [await agreementTransformer(ensured.data, { storage: deps.storage })];
+    const data: Record<string, Awaited<ReturnType<typeof agreementTransformer>>> = {};
+    for (const [key, value] of entries) {
+      data[key] = value;
+    }
 
-    res.status(200).json({
-      data: items,
-      pagination: {
-        page: 1,
-        limit: 1,
-        total: items.length,
-        totalPages: 1,
-        hasMore: false,
-      },
-    });
+    res.status(200).json({ data });
   },
 });

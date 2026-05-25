@@ -38,7 +38,7 @@ const RateCard: React.FC<RateCardProps> = ({
     <Box
       sx={{
         position: 'sticky',
-        bottom: 0,
+        bottom: { xs: 80, md: 72 },
         mx: { xs: -2.5, md: -4 },
         mb: { xs: -2.5, md: -4 },
         mt: 3.5,

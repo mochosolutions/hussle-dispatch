@@ -75,14 +75,6 @@ const PREVIEW_ENTRIES: PreviewEntry[] = [
       'Two modes: list (overview) and focus (signing). Focus mode replaces the stepper with a FocusHeader (back + title + dot trail) and collapses the queue. Introduces ProgressStrip / DocumentRow / DotTrail / FocusHeader / DocuSealStage / FocusFooter.',
   },
   {
-    slug: 'documents-upload',
-    title: 'Documents · upload (COI + W-9)',
-    source: 'docs/screenshots/mockups/onboarding/documents-upload.html',
-    status: 'built',
-    notes:
-      'Four zone states (empty / uploading / uploaded / error) via a single UploadZone primitive. Introduces UploadZone / UploadDropArea / UploadFileRow / FileThumb.',
-  },
-  {
     slug: 'locked-state',
     title: 'Post-signature · locked Company phase',
     source: 'docs/screenshots/mockups/onboarding/locked-state-demo.html',

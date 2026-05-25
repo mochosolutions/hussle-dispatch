@@ -4,13 +4,10 @@ import { sendSingle } from '@/shared/responseEnvelope';
 import { UnauthorizedError } from '@/shared/errors/commonErrors';
 import type { VehiclePrefillRow } from '../repositories/portalVehicleRepoPrisma';
 import type { DriverPrefillRow } from '../repositories/portalDriverRepoPrisma';
+import type { PortalDocument } from '../types/portalDocumentsTypes';
 
 interface SessionService {
   getOrCreate(carrierId: string): Promise<OnboardingSession>;
-  saveAnswer(
-    carrierId: string,
-    input: { questionId: string; value: Prisma.InputJsonValue; phase?: number },
-  ): Promise<OnboardingSession>;
   submitStep(
     carrierId: string,
     input: { stepId: string; answers: Record<string, Prisma.InputJsonValue> },
@@ -40,6 +37,10 @@ interface DriverPrefillPort {
   findPrefillByCarrierId(carrierId: string): Promise<DriverPrefillRow[]>;
 }
 
+interface PortalDocumentsQueryPort {
+  listByCarrier(carrierId: string, organizationId: string): Promise<PortalDocument[]>;
+}
+
 interface SessionControllerDeps {
   sessionService: SessionService;
   carrierQuery: CarrierQueryPort;
@@ -47,6 +48,7 @@ interface SessionControllerDeps {
   agreementQuery: AgreementSnapshotPort;
   vehiclePrefillQuery: VehiclePrefillPort;
   driverPrefillQuery: DriverPrefillPort;
+  documentsQuery: PortalDocumentsQueryPort;
 }
 
 const getCarrierId = (req: Request): string => {
@@ -56,17 +58,27 @@ const getCarrierId = (req: Request): string => {
   return req.carrierPortal.carrierId;
 };
 
+const getOrganizationId = (req: Request): string => {
+  if (!req.carrierPortal) {
+    throw new UnauthorizedError('Carrier portal context is required');
+  }
+  return req.carrierPortal.organizationId;
+};
+
 export const createSessionControllers = (deps: SessionControllerDeps) => ({
   getSession: async (req: Request, res: Response) => {
     const carrierId = getCarrierId(req);
-    const [session, carrier, organizationName, agreement, vehicles, drivers] = await Promise.all([
-      deps.sessionService.getOrCreate(carrierId),
-      deps.carrierQuery.findById(carrierId),
-      deps.invitationQuery.findActiveOrganizationNameByCarrierId(carrierId),
-      deps.agreementQuery.findLatestForCarrier(carrierId),
-      deps.vehiclePrefillQuery.findPrefillByCarrierId(carrierId),
-      deps.driverPrefillQuery.findPrefillByCarrierId(carrierId),
-    ]);
+    const organizationId = getOrganizationId(req);
+    const [session, carrier, organizationName, agreement, vehicles, drivers, documents] =
+      await Promise.all([
+        deps.sessionService.getOrCreate(carrierId),
+        deps.carrierQuery.findById(carrierId),
+        deps.invitationQuery.findActiveOrganizationNameByCarrierId(carrierId),
+        deps.agreementQuery.findLatestForCarrier(carrierId),
+        deps.vehiclePrefillQuery.findPrefillByCarrierId(carrierId),
+        deps.driverPrefillQuery.findPrefillByCarrierId(carrierId),
+        deps.documentsQuery.listByCarrier(carrierId, organizationId),
+      ]);
 
     const carrierSummary = carrier
       ? {
@@ -140,6 +152,18 @@ export const createSessionControllers = (deps: SessionControllerDeps) => ({
         }
       : null;
 
+    // `documents` projects the carrier's uploaded portal documents (currently
+    // limited to types like INSURANCE_CERT, W9). Surfaces upload state to the
+    // signing+upload step's unified row list so re-renders on cold load show
+    // which document slots are already filled.
+    const documentsContext = documents.map((doc) => ({
+      id: doc.id,
+      documentType: doc.documentType,
+      fileName: doc.fileName,
+      fileUrl: doc.fileUrl,
+      uploadedAt: doc.createdAt.toISOString(),
+    }));
+
     sendSingle(res, {
       session,
       carrier: carrierSummary,
@@ -148,6 +172,7 @@ export const createSessionControllers = (deps: SessionControllerDeps) => ({
       drivers,
       costAnalysis: costAnalysisContext,
       lanePreferences: lanePreferencesContext,
+      documents: documentsContext,
       agreement: agreement ? { ...agreement, signedFieldsLocked } : null,
       invitation: {
         email: carrier?.email ?? null,
@@ -155,17 +180,6 @@ export const createSessionControllers = (deps: SessionControllerDeps) => ({
         organizationName,
       },
     });
-  },
-
-  saveAnswer: async (req: Request, res: Response) => {
-    const carrierId = getCarrierId(req);
-    const { questionId, value, phase } = req.body;
-    const session = await deps.sessionService.saveAnswer(carrierId, {
-      questionId,
-      value,
-      phase,
-    });
-    sendSingle(res, session);
   },
 
   submitStep: async (req: Request, res: Response) => {

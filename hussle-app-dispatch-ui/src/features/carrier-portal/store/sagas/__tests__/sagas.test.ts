@@ -3,7 +3,7 @@
 //
 // Coverage:
 //   - submitStepSaga       — happy, 422 FIELD_LOCKED (warning toast), generic error
-//   - fetchAgreementSaga   — happy, error
+//   - fetchAgreementsSaga  — happy, error
 //   - saveCostAnalysisSaga — happy, error
 //   - saveLanePreferencesSaga — happy, error
 // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import type { Session } from 'features/carrier-portal/engine';
 
-import { fetchAgreementSaga } from '../fetchAgreementSaga';
+import { fetchAgreementsSaga } from '../fetchAgreementsSaga';
 import { saveCostAnalysisSaga } from '../saveCostAnalysisSaga';
 import { saveLanePreferencesSaga } from '../saveLanePreferencesSaga';
 import { submitStepSaga } from '../submitStepSaga';
@@ -39,11 +39,17 @@ const existingSession: Session = {
   completedStepIds: [],
   answers: {},
   invitation: { email: 'driver@example.com' },
-  agreement: {
-    id: 'agreement-1',
-    status: 'PENDING',
-    embedUrl: null,
-    signedFieldsLocked: false,
+  agreements: {
+    DISPATCH_AGREEMENT: {
+      id: 'agreement-1',
+      templateKey: 'DISPATCH_AGREEMENT',
+      status: 'PENDING',
+      embedUrl: null,
+      signedAt: null,
+      signedFieldsLocked: false,
+      mock: false,
+      variables: {},
+    },
   },
 };
 
@@ -175,53 +181,70 @@ describe('submitStepSaga', () => {
 });
 
 // ---------------------------------------------------------------------------
-// fetchAgreementSaga
+// fetchAgreementsSaga
 // ---------------------------------------------------------------------------
 
-describe('fetchAgreementSaga', () => {
+describe('fetchAgreementsSaga', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('dispatches fetchAgreementSuccess with projected agreement on API success', () => {
+  it('dispatches fetchAgreementsSuccess with projected agreements record on API success', () => {
     const snapshot = {
       id: 'agreement-2',
+      templateKey: 'DISPATCH_AGREEMENT',
       status: 'SIGNED',
       embedUrl: 'https://docu/embed/abc',
+      signedAt: '2026-05-23T00:00:00.000Z',
       signedFieldsLocked: true,
+      mock: false,
+      variables: { carrier_name: 'Acme' },
     };
-    return expectSaga(fetchAgreementSaga)
+    return expectSaga(fetchAgreementsSaga)
       .withState(buildState())
-      .provide([[call(api.getAgreementV2, 'tok-123', 'DISPATCH_AGREEMENT'), snapshot]])
+      .provide([
+        [
+          call(api.getAgreementsV2, 'tok-123', ['DISPATCH_AGREEMENT']),
+          { DISPATCH_AGREEMENT: snapshot },
+        ],
+      ])
       .put(
-        carrierPortalV2Actions.fetchAgreementSuccess({
-          id: 'agreement-2',
-          status: 'SIGNED',
-          embedUrl: 'https://docu/embed/abc',
-          signedFieldsLocked: true,
+        carrierPortalV2Actions.fetchAgreementsSuccess({
+          agreements: {
+            DISPATCH_AGREEMENT: {
+              id: 'agreement-2',
+              templateKey: 'DISPATCH_AGREEMENT',
+              status: 'SIGNED',
+              embedUrl: 'https://docu/embed/abc',
+              signedAt: '2026-05-23T00:00:00.000Z',
+              signedFieldsLocked: true,
+              mock: false,
+              variables: { carrier_name: 'Acme' },
+            },
+          },
         }),
       )
       .dispatch(
-        carrierPortalV2Actions.fetchAgreement({ templateKey: 'DISPATCH_AGREEMENT' }),
+        carrierPortalV2Actions.fetchAgreements({ templateKeys: ['DISPATCH_AGREEMENT'] }),
       )
       .silentRun();
   });
 
-  it('dispatches fetchAgreementFailure + error toast on API error', () =>
-    expectSaga(fetchAgreementSaga)
+  it('dispatches fetchAgreementsFailure + error toast on API error', () =>
+    expectSaga(fetchAgreementsSaga)
       .withState(buildState())
       .provide({
         call: (effect, next) => {
-          if (effect.fn === api.getAgreementV2) {
+          if (effect.fn === api.getAgreementsV2) {
             throw new Error('network down');
           }
           return next();
         },
       })
-      .put(carrierPortalV2Actions.fetchAgreementFailure('network down'))
+      .put(carrierPortalV2Actions.fetchAgreementsFailure('network down'))
       .call(enqueueSnackbar, 'network down', { variant: 'error' })
       .dispatch(
-        carrierPortalV2Actions.fetchAgreement({ templateKey: 'DISPATCH_AGREEMENT' }),
+        carrierPortalV2Actions.fetchAgreements({ templateKeys: ['DISPATCH_AGREEMENT'] }),
       )
       .silentRun());
 });

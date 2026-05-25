@@ -6,4 +6,10 @@
  */
 export interface CarrierAgreementWritePort {
   setSignedAgreementId(carrierId: string, agreementId: string): Promise<void>;
+  /**
+   * Clear the agreement-signed projection. Used by the void-for-resign flow
+   * when a carrier changes an identity field bound to a signed agreement —
+   * the agreement is voided and the carrier returns to the signing step.
+   */
+  clearSignedAgreement(carrierId: string): Promise<void>;
 }

@@ -6,7 +6,6 @@ import { driversPhase } from './driversPhase';
 import { costAnalysisPhase } from './costAnalysisPhase';
 import { lanePreferencesPhase } from './lanePreferencesPhase';
 import { signingPhase } from './signingPhase';
-import { documentsPhase } from './documentsPhase';
 import { completePhase } from './completePhase';
 
 export const onboardingSchema: Schema = {
@@ -20,7 +19,6 @@ export const onboardingSchema: Schema = {
     costAnalysisPhase,
     lanePreferencesPhase,
     signingPhase,
-    documentsPhase,
     completePhase,
   ],
 };

@@ -26,7 +26,10 @@ const carrierPortalV2Routes = {
   ),
   children: [
     {
-      path: ':stepId',
+      // ':stepId/*' wildcard captures trailing segments — only AgreementSigningStep
+      // currently interprets them (for /sign-agreement/:agreementKey + /signed).
+      // Other steps ignore the splat and render normally.
+      path: ':stepId/*',
       element: (
         <Suspense fallback={<PageFallback />}>
           <StepRouter />

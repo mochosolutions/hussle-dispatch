@@ -2,21 +2,21 @@ import type { Session } from './types';
 
 // Resolves a dot-path against the session's named context sources.
 //
-// Supported roots: 'answers', 'fmcsa', 'invitation', 'agreement', 'session',
+// Supported roots: 'answers', 'fmcsa', 'invitation', 'agreements', 'session',
 // 'company'. Unknown root → undefined. Missing intermediate key → undefined.
 // Never throws.
 //
 //   resolveContext(session, 'answers.company.legalName')
 //   resolveContext(session, 'fmcsa.legalName')
 //   resolveContext(session, 'invitation.organizationName')
-//   resolveContext(session, 'agreement.status')
+//   resolveContext(session, 'agreements.DISPATCH_AGREEMENT.status')
 //   resolveContext(session, 'company.legalName')
 
 const CONTEXT_ROOTS = [
   'answers',
   'fmcsa',
   'invitation',
-  'agreement',
+  'agreements',
   'session',
   'company',
   'vehicles',
@@ -37,8 +37,8 @@ const pickRoot = (session: Session, root: ContextRoot): unknown => {
       return session.fmcsaSnapshot ?? {};
     case 'invitation':
       return session.invitation;
-    case 'agreement':
-      return session.agreement ?? null;
+    case 'agreements':
+      return session.agreements ?? {};
     case 'session':
       return session;
     case 'company':

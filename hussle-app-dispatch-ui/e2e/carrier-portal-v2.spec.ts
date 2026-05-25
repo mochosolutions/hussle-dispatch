@@ -59,7 +59,6 @@ const STEP_SEQUENCE = [
   'cost-analysis',
   'lane-preferences',
   'sign-agreement',
-  'documents-upload',
   'complete',
 ] as const;
 
@@ -197,19 +196,13 @@ test.describe('Carrier portal v2', () => {
     ).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: /continue|next/i }).first().click();
 
-    // Step 7: sign-agreement
+    // Step 7: sign-agreement (consolidated: agreements + documents in one list)
     await expect(
-      page.getByText(/agreement|sign|dispatch/i).first(),
+      page.getByText(/agreement|sign|dispatch|document|upload|insurance/i).first(),
     ).toBeVisible({ timeout: 10000 });
     await page.getByRole('button', { name: /continue|next|sign/i }).first().click();
 
-    // Step 8: documents-upload
-    await expect(
-      page.getByText(/document|upload|insurance|packet/i).first(),
-    ).toBeVisible({ timeout: 10000 });
-    await page.getByRole('button', { name: /continue|next|submit/i }).first().click();
-
-    // Step 9: complete
+    // Step 8: complete
     await expect(page.getByText(/you.?re submitted|submitted|complete/i)).toBeVisible({
       timeout: 10000,
     });
@@ -224,7 +217,7 @@ test.describe('Carrier portal v2', () => {
   // -------------------------------------------------------------------------
   // Test 2: Resume-after-close — SIGNED agreement auto-advance
   // -------------------------------------------------------------------------
-  test('resume: SIGNED agreement auto-dispatches submitStep and advances to documents-upload', async ({
+  test('resume: SIGNED agreement auto-dispatches submitStep and advances to complete', async ({
     page,
   }) => {
     const signedAgreement = {
@@ -257,7 +250,7 @@ test.describe('Carrier portal v2', () => {
         json: {
           data: {
             ...mockSession,
-            currentStepId: 'documents-upload',
+            currentStepId: 'complete',
             completedStepIds: ['sign-agreement'],
             agreement: signedAgreement,
           },

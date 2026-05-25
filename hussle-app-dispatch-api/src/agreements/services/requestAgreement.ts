@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import {
-  DISPATCH_AGREEMENT_FIELDS,
-  type DispatchAgreementFieldName,
-} from '@/agreements/templates/dispatchAgreementFields';
+import { BadRequestError } from '@mocho/common';
+import { AgreementTemplateKey } from '@prisma/client';
+
+import { TEMPLATE_REGISTRY } from '@/agreements/templates/templateRegistry';
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import type { SignatureService } from '@/shared/signatures/types';
 import type { Logger } from '@/shared/utils/logger';
@@ -15,7 +15,7 @@ import type { Agreement } from '../types/agreementTypes';
 
 export interface RequestAgreementInput {
   carrierId: string;
-  templateKey: 'DISPATCH_AGREEMENT';
+  templateKey: AgreementTemplateKey;
   signerName?: string;
   signerEmail?: string;
   correlationId?: string;
@@ -86,13 +86,19 @@ export const requestAgreement = async (
 
   const effectiveDate = now.toISOString().slice(0, 10);
 
-  const variables: Record<DispatchAgreementFieldName, string> = {
-    [DISPATCH_AGREEMENT_FIELDS.CARRIER_LEGAL_NAME]: carrier.legalName,
-    [DISPATCH_AGREEMENT_FIELDS.CARRIER_MC_NUMBER]: carrier.mcNumber,
-    [DISPATCH_AGREEMENT_FIELDS.CARRIER_DOT_NUMBER]: carrier.dotNumber ?? '',
-    [DISPATCH_AGREEMENT_FIELDS.DISPATCHER_ORG_NAME]: input.orgName,
-    [DISPATCH_AGREEMENT_FIELDS.EFFECTIVE_DATE]: effectiveDate,
-  };
+  const registryEntry = TEMPLATE_REGISTRY[input.templateKey];
+  if (!registryEntry) {
+    throw new BadRequestError(`Unknown agreement templateKey: ${input.templateKey}`);
+  }
+  const variables = registryEntry.buildVariables({
+    carrier: {
+      legalName: carrier.legalName,
+      mcNumber: carrier.mcNumber,
+      dotNumber: carrier.dotNumber,
+    },
+    orgName: input.orgName,
+    effectiveDate,
+  });
 
   const signerName = input.signerName ?? carrier.primaryContactName ?? carrier.legalName;
   const signerEmail = input.signerEmail ?? carrier.primaryContactEmail;
@@ -150,7 +156,7 @@ export const requestAgreement = async (
           agreementId: agreement.id,
           organizationId: agreement.organizationId,
           carrierId: agreement.carrierId,
-          templateKey: 'DISPATCH_AGREEMENT',
+          templateKey: input.templateKey,
           providerSubmissionId: ref.providerSubmissionId,
           correlationId,
         },

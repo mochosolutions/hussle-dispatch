@@ -330,9 +330,74 @@ describe('onboardingSessionService.submitStep', () => {
     ];
     const persistedAnswers = updateCall[1].answers as Record<string, unknown>;
     const driversAnswers = persistedAnswers['drivers-list'] as Record<string, unknown>;
-    const persistedEntries = driversAnswers.entries as Record<string, unknown>[];
-    expect(persistedEntries[0]?.id).toBe('server-uuid-driver-1');
-    expect(persistedEntries[0]?.firstName).toBe('Isaiah');
+    const persistedDrivers = driversAnswers.drivers as Record<string, unknown>[];
+    expect(persistedDrivers[0]?.id).toBe('server-uuid-driver-1');
+    expect(persistedDrivers[0]?.firstName).toBe('Isaiah');
+    expect(driversAnswers.entries).toBeUndefined();
+  });
+
+  it('accepts the canonical `drivers` key in submit-step input and routes through driversService', async () => {
+    const deps = makeDeps();
+    const driversService = {
+      saveDrivers: jest.fn().mockResolvedValue([
+        {
+          id: 'server-uuid-driver-2',
+          firstName: 'Marcus',
+          lastName: 'Lee',
+        },
+      ]),
+    };
+    const session = makeSession();
+    deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
+    deps.carrierRepo.findById.mockResolvedValue(makeCarrier());
+    deps.sessionRepo.update.mockImplementation(
+      async (_id: string, data: Record<string, unknown>) =>
+        ({
+          ...session,
+          ...data,
+        }) as OnboardingSession,
+    );
+
+    const service = createOnboardingSessionService({
+      ...deps,
+      driversService,
+    });
+
+    await service.submitStep('carrier-1', {
+      stepId: 'drivers-list',
+      answers: {
+        hasAdditionalDrivers: true,
+        drivers: [
+          {
+            firstName: 'Marcus',
+            lastName: 'Lee',
+            phone: '+17045550000',
+            email: 'marcus@example.com',
+            payType: 'PER_MILE',
+            payRate: 0.55,
+          },
+        ],
+      },
+    });
+
+    expect(driversService.saveDrivers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carrierId: 'carrier-1',
+        hasAdditionalDrivers: true,
+        drivers: expect.arrayContaining([
+          expect.objectContaining({ firstName: 'Marcus', lastName: 'Lee' }),
+        ]),
+      }),
+    );
+
+    const updateCall = deps.sessionRepo.update.mock.calls[0] as unknown as [
+      string,
+      Record<string, unknown>,
+    ];
+    const persistedAnswers = updateCall[1].answers as Record<string, unknown>;
+    const driversAnswers = persistedAnswers['drivers-list'] as Record<string, unknown>;
+    const persistedDrivers = driversAnswers.drivers as Record<string, unknown>[];
+    expect(persistedDrivers[0]?.id).toBe('server-uuid-driver-2');
   });
 
   it('propagates errors from equipmentService.saveEquipment without writing to the session', async () => {

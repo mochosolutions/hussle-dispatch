@@ -41,17 +41,24 @@ const toAgreementStatus = (raw: unknown): AgreementStatus => {
   return match ?? 'PENDING';
 };
 
-const toAgreementContext = (
+const toAgreementsRecord = (
   raw: PortalSessionResponseV2['agreement'],
-): AgreementContext | undefined => {
+): Record<string, AgreementContext> | undefined => {
   if (!raw) {
     return undefined;
   }
+  const templateKey = raw.templateKey ?? 'DISPATCH_AGREEMENT';
   return {
-    id: raw.id,
-    status: toAgreementStatus(raw.status),
-    embedUrl: raw.embedUrl,
-    signedFieldsLocked: raw.signedFieldsLocked,
+    [templateKey]: {
+      id: raw.id,
+      templateKey,
+      status: toAgreementStatus(raw.status),
+      embedUrl: raw.embedUrl,
+      signedAt: raw.signedAt ?? null,
+      signedFieldsLocked: raw.signedFieldsLocked,
+      mock: raw.mock ?? false,
+      variables: raw.variables ?? {},
+    },
   };
 };
 
@@ -74,6 +81,11 @@ export const advanceCurrentStep = (session: Session): Session => {
     return session;
   }
   const nextStepId = getNextStepId(onboardingSchema, session, currentStepId);
+  // No next step (already on the terminal step). Leave the cursor where it
+  // is — nulling it out would break the page (gates Outlet rendering).
+  if (!nextStepId) {
+    return session;
+  }
   return { ...session, currentStepId: nextStepId };
 };
 
@@ -90,22 +102,31 @@ const toIsoOrNull = (value: unknown): string | null => {
   return null;
 };
 
-export const toEngineSession = (response: PortalSessionResponseV2): Session => ({
-  id: response.session.id,
-  carrierId: response.session.carrierId,
-  currentStepId: response.session.currentStepId,
-  completedStepIds: response.session.completedStepIds ?? [],
-  completedAt: toIsoOrNull(response.session.completedAt),
-  answers: response.session.answers ?? {},
-  fmcsaSnapshot: undefined,
-  company: response.company ?? undefined,
-  vehicles: response.vehicles ?? [],
-  drivers: response.drivers ?? [],
-  costAnalysis: response.costAnalysis ?? undefined,
-  lanePreferences: response.lanePreferences ?? undefined,
-  agreement: toAgreementContext(response.agreement),
-  invitation: toInvitationContext(response.invitation),
-});
+export const toEngineSession = (response: PortalSessionResponseV2): Session => {
+  // The API's submitStep persists `currentStepId` AS the just-submitted step,
+  // not the next one. Saga success paths bump it client-side via
+  // advanceCurrentStep. On cold load we apply the same bump so a refresh
+  // after submit lands on the right URL (otherwise the cursor is stale by
+  // one step and the carrier would re-see the step they just completed).
+  const raw: Session = {
+    id: response.session.id,
+    carrierId: response.session.carrierId,
+    currentStepId: response.session.currentStepId,
+    completedStepIds: response.session.completedStepIds ?? [],
+    completedAt: toIsoOrNull(response.session.completedAt),
+    answers: response.session.answers ?? {},
+    fmcsaSnapshot: undefined,
+    company: response.company ?? undefined,
+    vehicles: response.vehicles ?? [],
+    drivers: response.drivers ?? [],
+    costAnalysis: response.costAnalysis ?? undefined,
+    lanePreferences: response.lanePreferences ?? undefined,
+    agreements: toAgreementsRecord(response.agreement),
+    documents: response.documents ?? [],
+    invitation: toInvitationContext(response.invitation),
+  };
+  return advanceCurrentStep(raw);
+};
 
 interface PrismaSessionRow {
   id: string;

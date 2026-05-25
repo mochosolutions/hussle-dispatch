@@ -1,3 +1,16 @@
+// ---------------------------------------------------------------------------
+// LockableField — dormant capability.
+//
+// Today's shipping schema declares zero `locked` predicates on any question,
+// so this wrapper is a no-op pass-through in practice. It remains in the
+// codebase as the rendering primitive that lights up when a future schema
+// variant opts a question into the locked treatment via `Question.locked`.
+//
+// To re-activate: set `locked: true` (or a predicate) on a question in the
+// schema. `InputStep` resolves `isQuestionLocked` against the live session
+// and threads the boolean here.
+// ---------------------------------------------------------------------------
+
 import { useState, type ReactNode } from 'react';
 import { Box, Tooltip } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';

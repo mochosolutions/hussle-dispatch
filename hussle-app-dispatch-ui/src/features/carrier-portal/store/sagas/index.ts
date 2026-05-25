@@ -3,8 +3,9 @@
 import { all, fork } from 'redux-saga/effects';
 
 import { completeSessionSaga } from './completeSessionSaga';
-import { fetchAgreementSaga } from './fetchAgreementSaga';
+import { fetchAgreementsSaga } from './fetchAgreementsSaga';
 import { loadSessionSaga } from './loadSessionSaga';
+import { markAgreementSignedMockSaga } from './markAgreementSignedMockSaga';
 import { saveAndExitSaga } from './saveAndExitSaga';
 import { saveCompanySaga } from './saveCompanySaga';
 import { saveCostAnalysisSaga } from './saveCostAnalysisSaga';
@@ -18,7 +19,8 @@ export function* carrierPortalV2RootSaga(): Generator {
   yield all([
     fork(loadSessionSaga),
     fork(submitStepSaga),
-    fork(fetchAgreementSaga),
+    fork(fetchAgreementsSaga),
+    fork(markAgreementSignedMockSaga),
     fork(uploadDocumentSaga),
     fork(saveCompanySaga),
     fork(saveEquipmentSaga),

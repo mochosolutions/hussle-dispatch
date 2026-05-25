@@ -100,10 +100,21 @@ export interface PortalSessionResponseV2 {
   } | null;
   agreement: {
     id: string;
+    templateKey?: string;
     status: string;
     embedUrl: string | null;
     signedFieldsLocked: boolean;
+    signedAt?: string | null;
+    mock?: boolean;
+    variables?: Record<string, string>;
   } | null;
+  documents?: {
+    id: string;
+    documentType: string;
+    fileName: string;
+    fileUrl: string;
+    uploadedAt: string;
+  }[];
   invitation: {
     email: string | null;
     phone: string | null;
@@ -113,9 +124,13 @@ export interface PortalSessionResponseV2 {
 
 export interface AgreementSnapshotV2 {
   id: string;
+  templateKey: string;
   status: string;
   embedUrl: string | null;
+  signedAt: string | null;
   signedFieldsLocked: boolean;
+  mock: boolean;
+  variables: Record<string, string>;
 }
 
 export interface PresignResponseV2 {
@@ -168,25 +183,61 @@ export const submitStepV2 = async (
 // Agreement
 // ---------------------------------------------------------------------------
 
-export const getAgreementV2 = async (
+/**
+ * Multi-key GET. Server returns `{ data: Record<templateKey, AgreementSnapshotV2> }`.
+ * Lazily ensures each requested key on the server side via ensureForCarrier.
+ */
+export const getAgreementsV2 = async (
   token: string,
-  templateKey: string,
-): Promise<AgreementSnapshotV2 | null> => {
-  // Backend is a paginated list endpoint: `{ data: AgreementSnapshotV2[],
-  // pagination: {...} }`. Unwrap and return the most recent agreement (or null
-  // when the dispatcher hasn't generated one yet).
-  const response = await axiosInstance.get<DataEnvelope<AgreementSnapshotV2[]>>(
+  templateKeys: string[],
+): Promise<Record<string, AgreementSnapshotV2>> => {
+  const response = await axiosInstance.get<DataEnvelope<Record<string, AgreementSnapshotV2>>>(
     '/carrier-portal/agreements',
     {
       ...portalHeaders(token),
-      params: { templateKey },
+      params: { templateKeys: templateKeys.join(',') },
     },
   );
-  const list = response.data.data;
-  if (!Array.isArray(list) || list.length === 0) {
-    return null;
-  }
-  return list[0] ?? null;
+  return response.data.data;
+};
+
+/**
+ * Dev-only. Server returns 404 when SIGNATURE_PROVIDER !== 'mock'.
+ * Response shape: `{ data: AgreementSnapshotV2 }` (the now-SIGNED agreement).
+ */
+export const mockSignAgreementV2 = async (
+  token: string,
+  agreementId: string,
+): Promise<AgreementSnapshotV2> => {
+  const response = await axiosInstance.post<DataEnvelope<AgreementSnapshotV2>>(
+    `/carrier-portal/agreements/${agreementId}/mock-sign`,
+    {},
+    portalHeaders(token),
+  );
+  return response.data.data;
+};
+
+export interface VoidForReSignResponseV2 {
+  voidedAgreementIds: string[];
+}
+
+/**
+ * Voids ALL signed agreements that embed any of `changedFields`. Used by the
+ * mid-signing edit guard: when the carrier edits an identity field
+ * (legalName / mcNumber / dotNumber) on a signed onboarding, the saga calls
+ * this BEFORE persisting the change so the prior agreement record is
+ * invalidated atomically.
+ */
+export const voidForReSignV2 = async (
+  token: string,
+  body: { changedFields: ('legalName' | 'mcNumber' | 'dotNumber')[] },
+): Promise<VoidForReSignResponseV2> => {
+  const response = await axiosInstance.post<DataEnvelope<VoidForReSignResponseV2>>(
+    '/carrier-portal/agreements/void-for-resign',
+    body,
+    portalHeaders(token),
+  );
+  return response.data.data;
 };
 
 // ---------------------------------------------------------------------------

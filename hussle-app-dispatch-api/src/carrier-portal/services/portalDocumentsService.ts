@@ -4,7 +4,7 @@ import type {
   CarrierCompliancePort,
   PresignPort,
 } from '../types/portalDocumentsTypes';
-import { NotFoundError, ValidationError } from '@/shared/errors/commonErrors';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 
 interface PortalDocumentsServiceDeps {
   documentRepo: PortalDocumentRepoPort;
@@ -29,18 +29,6 @@ interface ConfirmInput {
   documentType: string;
   insuranceExpiry?: string;
   coverageConfirmed?: boolean;
-}
-
-interface SignInput {
-  signatureData: string;
-  consentGiven: boolean;
-  signerName?: string;
-  signerTitle?: string;
-}
-
-interface SignRequestMeta {
-  ip: string;
-  userAgent: string;
 }
 
 const COMPLIANCE_FLAG_MAP: Record<string, (input: ConfirmInput) => Record<string, unknown>> = {
@@ -129,41 +117,6 @@ export const createPortalDocumentsService = (deps: PortalDocumentsServiceDeps) =
     if (flagBuilder) {
       await deps.carrierCompliance.updateComplianceFlags(carrierId, flagBuilder(input));
     }
-
-    return updated;
-  },
-
-  signDocument: async (
-    documentId: string,
-    carrierId: string,
-    organizationId: string,
-    input: SignInput,
-    requestMeta: SignRequestMeta,
-  ): Promise<PortalDocument> => {
-    if (!input.consentGiven) {
-      throw new ValidationError('Consent is required to sign this document');
-    }
-
-    const doc = await deps.documentRepo.findByIdAndCarrier(documentId, carrierId, organizationId);
-    if (!doc) {
-      throw new NotFoundError(`Document with id ${documentId} not found`);
-    }
-
-    const now = new Date();
-
-    const updated = await deps.documentRepo.updateSignature(documentId, {
-      signatureData: input.signatureData,
-      signedAt: now,
-      uploadStatus: 'signed',
-      reviewStatus: 'pending_review',
-    });
-
-    await deps.carrierCompliance.updateComplianceFlags(carrierId, {
-      dispatchAgreementConsentIp: requestMeta.ip,
-      dispatchAgreementConsentUserAgent: requestMeta.userAgent,
-      dispatchAgreementSignedAt: now,
-      dispatchAgreementOnFile: true,
-    });
 
     return updated;
   },

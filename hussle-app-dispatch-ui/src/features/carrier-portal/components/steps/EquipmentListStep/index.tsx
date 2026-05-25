@@ -16,6 +16,7 @@ import type { ReactNode } from 'react';
 import { Box } from '@mui/material';
 import { Formik } from 'formik';
 import type { FormikProps } from 'formik';
+import * as Yup from 'yup';
 import { LocalShipping, RvHookup, DirectionsCar } from '@mui/icons-material';
 
 import { useDispatch, useSelector } from 'store';
@@ -42,8 +43,10 @@ import { selectLoading, selectSession } from '../../../store/selectors/carrierPo
 // ---------------------------------------------------------------------------
 
 type VehicleCategory = 'SEMI_TRUCK' | 'BOX_TRUCK' | 'CARGO_VAN' | 'PERSONAL_VEHICLE';
+// Legacy lowercase values that may exist in old answers JSON. Normalised to
+// VehicleCategory once at the read boundary (initialVehicles); all in-memory
+// state and downstream consumers see only the canonical uppercase form.
 type LegacyVehicleCategory = 'semi' | 'box' | 'cargo_van' | 'personal';
-type VehicleCategoryInput = VehicleCategory | LegacyVehicleCategory;
 
 interface VehicleEntry {
   // Local-only key used for React list rendering and local list operations
@@ -53,7 +56,7 @@ interface VehicleEntry {
   // Server-assigned UUID — present only after a successful submit round-trip.
   // Undefined for newly-added vehicles that haven't been persisted yet.
   id?: string;
-  category: VehicleCategoryInput;
+  category: VehicleCategory;
   year: string;
   make: string;
   model: string;
@@ -67,7 +70,7 @@ interface VehicleEntry {
 }
 
 interface VehicleFormValues {
-  category: VehicleCategoryInput;
+  category: VehicleCategory;
   year: string;
   make: string;
   model: string;
@@ -81,10 +84,11 @@ interface EquipmentListStepProps {
 }
 
 // Shape stored in session.answers — server doesn't persist the local _tempKey.
-// We re-hydrate _tempKey on read in initialVehicles.
+// `category` is widened to `string` because legacy answers may still carry
+// lowercase values; `initialVehicles` normalises on read.
 interface PersistedVehicleEntry extends Omit<VehicleEntry, '_tempKey' | 'category'> {
   _tempKey?: string;
-  category: VehicleCategoryInput;
+  category: string;
 }
 
 interface EquipmentAnswers {
@@ -140,10 +144,22 @@ const LEGACY_CATEGORY_MAP: Record<LegacyVehicleCategory, VehicleCategory> = {
   personal: 'PERSONAL_VEHICLE',
 };
 
-const normalizeVehicleCategory = (category: VehicleCategoryInput): VehicleCategory =>
-  category in LEGACY_CATEGORY_MAP
-    ? LEGACY_CATEGORY_MAP[category as LegacyVehicleCategory]
-    : category;
+const isLegacyVehicleCategory = (c: string): c is LegacyVehicleCategory =>
+  Object.prototype.hasOwnProperty.call(LEGACY_CATEGORY_MAP, c);
+
+const isCanonicalVehicleCategory = (c: string): c is VehicleCategory =>
+  c === 'SEMI_TRUCK' || c === 'BOX_TRUCK' || c === 'CARGO_VAN' || c === 'PERSONAL_VEHICLE';
+
+// Read-boundary normaliser: accepts whatever string the server / legacy
+// stored data hands us and returns a canonical `VehicleCategory`. Unknown
+// values fall back to `SEMI_TRUCK`. Once values pass through this function,
+// downstream code can treat `category` as strictly typed.
+const normalizeVehicleCategory = (category: string | null | undefined): VehicleCategory => {
+  if (typeof category !== 'string') return 'SEMI_TRUCK';
+  if (isCanonicalVehicleCategory(category)) return category;
+  if (isLegacyVehicleCategory(category)) return LEGACY_CATEGORY_MAP[category];
+  return 'SEMI_TRUCK';
+};
 
 const optionalNumber = (value: string | number | null | undefined): number | undefined => {
   if (value === null || value === undefined) {
@@ -161,7 +177,7 @@ const optionalNumber = (value: string | number | null | undefined): number | und
 const vehicleNameOf = (v: VehicleEntry): string => {
   const parts = [v.year, v.make, v.model].filter((p) => p && p.length > 0);
   if (parts.length === 0) {
-    return CATEGORY_LABEL[normalizeVehicleCategory(v.category)];
+    return CATEGORY_LABEL[v.category];
   }
   return parts.join(' ');
 };
@@ -188,6 +204,24 @@ const isVehicleFormComplete = (v: VehicleFormValues): boolean =>
   v.licensePlate.trim().length > 0 &&
   v.gvwr.trim().length > 0;
 
+// Mirrors `equipmentValidator` on the API
+// (`hussle-app-dispatch-api/src/carrier-portal/validators/equipmentValidator.ts`).
+// 80,000 lbs is the federal highway weight cap; heavier units don't exist on
+// public roads legally.
+const vehicleFormValidationSchema = Yup.object({
+  vin: Yup.string().max(17, 'VIN must be at most 17 characters'),
+  licensePlate: Yup.string().max(20, 'License plate must be at most 20 characters'),
+  gvwr: Yup.string().test(
+    'gvwr-range',
+    'GVWR must be between 0 and 80,000 lbs',
+    (value) => {
+      if (typeof value !== 'string' || value.trim().length === 0) return true;
+      const parsed = gvwrNumberOf(value);
+      return parsed >= 0 && parsed <= 80000;
+    },
+  ),
+});
+
 // ---------------------------------------------------------------------------
 // VehicleThumb
 // ---------------------------------------------------------------------------
@@ -199,8 +233,8 @@ const ICON_BY_CATEGORY: Record<VehicleCategory, ReactNode> = {
   PERSONAL_VEHICLE: <DirectionsCar />,
 };
 
-const VehicleThumb: React.FC<{ category: VehicleCategoryInput }> = ({ category }) => {
-  const icon = ICON_BY_CATEGORY[normalizeVehicleCategory(category)];
+const VehicleThumb: React.FC<{ category: VehicleCategory }> = ({ category }) => {
+  const icon = ICON_BY_CATEGORY[category];
   return (
     <Box
       sx={{
@@ -227,13 +261,15 @@ const VehicleThumb: React.FC<{ category: VehicleCategoryInput }> = ({ category }
 interface VehicleFormProps {
   formNumber: number;
   initialValues: VehicleFormValues;
+  title?: string;
+  saveLabel?: string;
   onCancel: () => void;
   onSave: (values: VehicleFormValues) => void;
   onSaveAndAddAnother?: (values: VehicleFormValues) => void;
 }
 
 const toVehicleFormValues = (record: Record<string, unknown>): VehicleFormValues => ({
-  category: (record.category as VehicleCategory | undefined) ?? 'semi',
+  category: normalizeVehicleCategory(typeof record.category === 'string' ? record.category : null),
   year: String(record.year ?? ''),
   make: String(record.make ?? ''),
   model: String(record.model ?? ''),
@@ -245,6 +281,8 @@ const toVehicleFormValues = (record: Record<string, unknown>): VehicleFormValues
 const VehicleForm: React.FC<VehicleFormProps> = ({
   formNumber,
   initialValues,
+  title = 'Add a vehicle',
+  saveLabel = 'Save vehicle',
   onCancel,
   onSave,
   onSaveAndAddAnother,
@@ -254,19 +292,21 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
     <Formik<Record<string, unknown>>
       initialValues={formikInitial}
       onSubmit={(values) => onSave(toVehicleFormValues(values))}
+      validationSchema={vehicleFormValidationSchema}
       enableReinitialize
     >
       {(formik: FormikProps<Record<string, unknown>>) => {
         const current = toVehicleFormValues(formik.values);
         const showDotCallout = gvwrNumberOf(current.gvwr) > 26000;
-        const saveDisabled = !isVehicleFormComplete(current);
+        const hasValidationErrors = Object.keys(formik.errors).length > 0;
+        const saveDisabled = !isVehicleFormComplete(current) || hasValidationErrors;
         return (
           <ListBuilderInlineForm
             number={formNumber}
-            title="Add a vehicle"
+            title={title}
             onCancel={onCancel}
             onSave={() => onSave(toVehicleFormValues(formik.values))}
-            saveLabel="Save vehicle"
+            saveLabel={saveLabel}
             onSaveAndAddAnother={
               onSaveAndAddAnother
                 ? () => onSaveAndAddAnother(toVehicleFormValues(formik.values))
@@ -388,7 +428,7 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
     return projected.map((v) => ({
       _tempKey: generateTempKey(),
       id: v.id,
-      category: normalizeVehicleCategory((v.category ?? 'SEMI_TRUCK') as VehicleCategoryInput),
+      category: normalizeVehicleCategory(v.category),
       year: v.year === null ? '' : String(v.year),
       make: v.make ?? '',
       model: v.model ?? '',
@@ -403,7 +443,10 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
     sourceFingerprint: persistedFingerprint,
     items: initialVehicles,
   }));
-  const [formOpen, setFormOpen] = useState<boolean>(false);
+  // `closed` — no form rendered. `add` — blank form for a new vehicle.
+  // `edit:<_tempKey>` — form pre-filled with that vehicle's current values.
+  type FormMode = { kind: 'closed' } | { kind: 'add' } | { kind: 'edit'; tempKey: string };
+  const [formMode, setFormMode] = useState<FormMode>({ kind: 'closed' });
 
   // After a successful submit, session.answers[stepId] is replaced with the
   // server response containing Prisma UUIDs. When that fingerprint changes,
@@ -411,46 +454,65 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
   const vehicles =
     vehicleDraft.sourceFingerprint === persistedFingerprint ? vehicleDraft.items : initialVehicles;
 
+  const buildNewVehicle = (values: VehicleFormValues): VehicleEntry => ({
+    _tempKey: generateTempKey(),
+    // `id` deliberately omitted — the server assigns it after submit.
+    category: values.category,
+    year: values.year,
+    make: values.make,
+    model: values.model,
+    vin: values.vin,
+    licensePlate: values.licensePlate,
+    gvwr: values.gvwr,
+    type: 'truck',
+  });
+
   const handleAddSaved = (values: VehicleFormValues): void => {
-    const next: VehicleEntry = {
-      _tempKey: generateTempKey(),
-      // `id` deliberately omitted — the server assigns it after submit.
-      category: values.category,
-      year: values.year,
-      make: values.make,
-      model: values.model,
-      vin: values.vin,
-      licensePlate: values.licensePlate,
-      gvwr: values.gvwr,
-      type: 'truck',
-    };
+    const next = buildNewVehicle(values);
     setVehicleDraft((prev) => {
       const baseItems =
         prev.sourceFingerprint === persistedFingerprint ? prev.items : initialVehicles;
       return { sourceFingerprint: persistedFingerprint, items: [...baseItems, next] };
     });
-    setFormOpen(false);
+    setFormMode({ kind: 'closed' });
   };
 
   const handleAddSavedAndAddAnother = (values: VehicleFormValues): void => {
-    const next: VehicleEntry = {
-      _tempKey: generateTempKey(),
-      // `id` deliberately omitted — the server assigns it after submit.
-      category: values.category,
-      year: values.year,
-      make: values.make,
-      model: values.model,
-      vin: values.vin,
-      licensePlate: values.licensePlate,
-      gvwr: values.gvwr,
-      type: 'truck',
-    };
+    const next = buildNewVehicle(values);
     setVehicleDraft((prev) => {
       const baseItems =
         prev.sourceFingerprint === persistedFingerprint ? prev.items : initialVehicles;
       return { sourceFingerprint: persistedFingerprint, items: [...baseItems, next] };
     });
-    setFormOpen(true);
+    setFormMode({ kind: 'add' });
+  };
+
+  // Replace an existing vehicle row in place. Preserves `_tempKey` and the
+  // server-assigned `id` (when present) so the saga's upsert path can match
+  // the edited row to an existing Vehicle record.
+  const handleEditSaved = (tempKey: string, values: VehicleFormValues): void => {
+    setVehicleDraft((prev) => {
+      const baseItems =
+        prev.sourceFingerprint === persistedFingerprint ? prev.items : initialVehicles;
+      return {
+        sourceFingerprint: persistedFingerprint,
+        items: baseItems.map((v) =>
+          v._tempKey === tempKey
+            ? {
+                ...v,
+                category: values.category,
+                year: values.year,
+                make: values.make,
+                model: values.model,
+                vin: values.vin,
+                licensePlate: values.licensePlate,
+                gvwr: values.gvwr,
+              }
+            : v,
+        ),
+      };
+    });
+    setFormMode({ kind: 'closed' });
   };
 
   const handleRemove = (tempKey: string): void => {
@@ -462,7 +524,26 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
         items: baseItems.filter((v) => v._tempKey !== tempKey),
       };
     });
+    // If the user was editing the row being removed, close the form.
+    if (formMode.kind === 'edit' && formMode.tempKey === tempKey) {
+      setFormMode({ kind: 'closed' });
+    }
   };
+
+  const editingVehicle =
+    formMode.kind === 'edit'
+      ? vehicles.find((v) => v._tempKey === formMode.tempKey) ?? null
+      : null;
+
+  const vehicleToFormValues = (v: VehicleEntry): VehicleFormValues => ({
+    category: v.category,
+    year: v.year,
+    make: v.make,
+    model: v.model,
+    vin: v.vin,
+    licensePlate: v.licensePlate,
+    gvwr: v.gvwr,
+  });
 
   const handleContinue = useCallback((): void => {
     if (vehicles.length === 0) {
@@ -470,9 +551,11 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
     }
     // Strip the local-only `_tempKey` from the payload. `id` is sent when the
     // server has already assigned one (edits), undefined for new rows.
+    // `category` is already canonical (`VehicleCategory`) by the time the
+    // vehicle lands in state — `initialVehicles` and the inline form both
+    // route through `normalizeVehicleCategory` on read.
     const payloadVehicles = vehicles.map(({ _tempKey: _omit, ...rest }) => ({
       ...rest,
-      category: normalizeVehicleCategory(rest.category),
       year: optionalNumber(rest.year),
       gvwr: optionalNumber(rest.gvwr),
     }));
@@ -506,13 +589,13 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
       width="lg"
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        {vehicles.length === 0 && !formOpen ? (
+        {vehicles.length === 0 && formMode.kind === 'closed' ? (
           <ListBuilderEmptyState
             icon={<LocalShipping />}
             title="No vehicles yet"
             subtitle="Start with the truck you drive most. Add trailers and other vehicles after."
             ctaLabel="Add your first vehicle"
-            onCtaClick={() => setFormOpen(true)}
+            onCtaClick={() => setFormMode({ kind: 'add' })}
           />
         ) : null}
 
@@ -527,24 +610,39 @@ const EquipmentListStep: React.FC<EquipmentListStepProps> = ({ step }) => {
             key={v._tempKey}
             thumbnail={<VehicleThumb category={v.category} />}
             name={vehicleNameOf(v)}
-            tags={[{ label: CATEGORY_LABEL[normalizeVehicleCategory(v.category)] }]}
+            tags={[{ label: CATEGORY_LABEL[v.category] }]}
             meta={vehicleMetaOf(v)}
+            onEdit={() => setFormMode({ kind: 'edit', tempKey: v._tempKey })}
             onRemove={() => handleRemove(v._tempKey)}
           />
         ))}
 
-        {formOpen ? (
+        {formMode.kind === 'add' ? (
           <VehicleForm
             formNumber={vehicles.length + 1}
             initialValues={EMPTY_VEHICLE_FORM}
-            onCancel={() => setFormOpen(false)}
+            onCancel={() => setFormMode({ kind: 'closed' })}
             onSave={handleAddSaved}
             onSaveAndAddAnother={handleAddSavedAndAddAnother}
           />
         ) : null}
 
-        {!formOpen && vehicles.length > 0 ? (
-          <ListBuilderAddMoreButton label="Add another vehicle" onClick={() => setFormOpen(true)} />
+        {formMode.kind === 'edit' && editingVehicle ? (
+          <VehicleForm
+            formNumber={vehicles.findIndex((v) => v._tempKey === editingVehicle._tempKey) + 1}
+            initialValues={vehicleToFormValues(editingVehicle)}
+            title="Edit vehicle"
+            saveLabel="Save changes"
+            onCancel={() => setFormMode({ kind: 'closed' })}
+            onSave={(values) => handleEditSaved(editingVehicle._tempKey, values)}
+          />
+        ) : null}
+
+        {formMode.kind === 'closed' && vehicles.length > 0 ? (
+          <ListBuilderAddMoreButton
+            label="Add another vehicle"
+            onClick={() => setFormMode({ kind: 'add' })}
+          />
         ) : null}
       </Box>
     </OnboardingCard>

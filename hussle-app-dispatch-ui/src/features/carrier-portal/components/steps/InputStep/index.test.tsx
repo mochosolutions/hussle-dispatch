@@ -69,23 +69,13 @@ const baseSession: Session = {
 
 interface BuildStoreOptions {
   session: Session | null;
-  isLocked?: boolean;
 }
 
-const buildStore = ({ session, isLocked = false }: BuildStoreOptions) => {
-  const sessionWithLock: Session | null = session
-    ? {
-        ...session,
-        agreement: isLocked
-          ? { id: 'agr-1', status: 'SIGNED', signedFieldsLocked: true }
-          : session.agreement,
-      }
-    : null;
-
+const buildStore = ({ session }: BuildStoreOptions) => {
   const carrierPortalV2 = createReducer(
     {
       token: null as string | null,
-      session: sessionWithLock,
+      session,
       loading: {} as Record<string, LoadingStatus>,
       errors: {} as Record<string, string>,
       lastSavedAt: null as string | null,
@@ -152,20 +142,62 @@ describe('InputStep', () => {
     expect(legalNameInput.value).toBe('Acme Trucking LLC');
   });
 
-  it('wraps a LOCKS_FIELDS company-phase question in the locked read-only display when the session is locked', () => {
-    const lockedSession: Session = {
+  it('shows the "in signed agreement" helper icon on identity fields when any agreement is signed', () => {
+    const sessionWithSigned: Session = {
       ...baseSession,
-      answers: {
-        'company-info': { legalName: 'Acme Trucking LLC', contactEmail: 'a@b.com' },
+      agreements: {
+        DISPATCH_AGREEMENT: {
+          id: 'agr-1',
+          templateKey: 'DISPATCH_AGREEMENT',
+          status: 'SIGNED',
+        },
       },
     };
-    const store = buildStore({ session: lockedSession, isLocked: true });
-
+    const store = buildStore({ session: sessionWithSigned });
     const handle: StepNavTestHandle = { current: null };
     render(
       <Provider store={store}>
         <TestStepNavProvider handle={handle}>
           <InputStep step={companyStep} />
+        </TestStepNavProvider>
+      </Provider>,
+    );
+    expect(screen.getByLabelText(/in signed agreement/i)).toBeInTheDocument();
+  });
+
+  it('does NOT show the identity affordance when no agreement is signed', () => {
+    const store = buildStore({ session: baseSession });
+    const handle: StepNavTestHandle = { current: null };
+    render(
+      <Provider store={store}>
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={companyStep} />
+        </TestStepNavProvider>
+      </Provider>,
+    );
+    expect(screen.queryByLabelText(/in signed agreement/i)).not.toBeInTheDocument();
+  });
+
+  it('wraps a question with locked: true in the locked read-only display', () => {
+    const stepWithLockedQuestion: Step = {
+      ...companyStep,
+      questions: companyStep.questions?.map((q) =>
+        q.id === 'legalName' ? { ...q, locked: true } : q,
+      ),
+    };
+    const session: Session = {
+      ...baseSession,
+      answers: {
+        'company-info': { legalName: 'Acme Trucking LLC', contactEmail: 'a@b.com' },
+      },
+    };
+    const store = buildStore({ session });
+
+    const handle: StepNavTestHandle = { current: null };
+    render(
+      <Provider store={store}>
+        <TestStepNavProvider handle={handle}>
+          <InputStep step={stepWithLockedQuestion} />
         </TestStepNavProvider>
       </Provider>,
     );
@@ -177,7 +209,7 @@ describe('InputStep', () => {
         /Locked after agreement signed. Contact your dispatcher to amend./i,
       ),
     ).toBeInTheDocument();
-    // The non-lockable contactEmail question still renders as an editable input.
+    // Non-locked questions still render as editable inputs.
     expect(screen.getByLabelText(/contact email/i)).toBeInTheDocument();
   });
 

@@ -290,8 +290,8 @@ const InvoiceListPage = () => {
         title="Invoices"
         primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
-            <Button variant="contained">Create</Button>
+            {/* <Button variant="outlined">Export</Button>
+            <Button variant="contained">Create</Button> */}
           </Stack>
         }
       >

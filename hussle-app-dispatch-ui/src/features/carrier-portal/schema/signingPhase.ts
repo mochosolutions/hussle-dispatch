@@ -1,18 +1,25 @@
-import { LOCKS_FIELDS, type Phase } from '../engine';
+import { DocumentType } from 'features/documents/types';
 
-export const locksFields: string[] = [...LOCKS_FIELDS];
+import type { Phase } from '../engine';
 
 export const signingPhase: Phase = {
   id: 'signing',
-  label: 'Sign Agreement',
+  label: 'Sign & upload',
   steps: [
     {
       id: 'sign-agreement',
       type: 'signing',
       title: 'Sign your dispatch agreement',
-      subtitle: 'Review and sign electronically to lock in your company details.',
-      template: 'dispatch_v1',
-      locksFields,
+      subtitle: 'Upload your supporting documents, then sign electronically to complete onboarding.',
+      templates: [{ key: 'DISPATCH_AGREEMENT' }],
+      documents: [
+        {
+          id: 'coi',
+          label: 'Certificate of Insurance',
+          required: true,
+          documentType: DocumentType.INSURANCE_CERT,
+        },
+      ],
     },
   ],
 };

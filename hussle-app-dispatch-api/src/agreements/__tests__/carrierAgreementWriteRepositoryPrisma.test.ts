@@ -75,4 +75,59 @@ describe('carrierAgreementWriteRepositoryPrisma.setSignedAgreementId', () => {
 
     expect(carrier.update).not.toHaveBeenCalled();
   });
+
+  it('writes dispatchAgreementOnFile=true alongside the timestamps (lockstep)', async () => {
+    const { prisma, carrier } = makePrismaMock();
+    carrier.findUnique.mockResolvedValue({
+      signedAgreementId: null,
+      dispatchAgreementSignedAt: null,
+    });
+    carrier.update.mockResolvedValue({});
+
+    const repo = carrierAgreementWriteRepositoryPrisma(prisma);
+    await repo.setSignedAgreementId('car-1', 'ag-1');
+
+    const updateArgs = carrier.update.mock.calls[0]?.[0];
+    expect(updateArgs.data.dispatchAgreementOnFile).toBe(true);
+  });
+});
+
+describe('carrierAgreementWriteRepositoryPrisma.clearSignedAgreement', () => {
+  it('clears all three projection fields atomically', async () => {
+    const { prisma, carrier } = makePrismaMock();
+    carrier.findUnique.mockResolvedValue({ status: 'ONBOARDING' });
+    carrier.update.mockResolvedValue({});
+
+    const repo = carrierAgreementWriteRepositoryPrisma(prisma);
+    await repo.clearSignedAgreement('car-1');
+
+    const updateArgs = carrier.update.mock.calls[0]?.[0];
+    expect(updateArgs.data.signedAgreementId).toBeNull();
+    expect(updateArgs.data.dispatchAgreementSignedAt).toBeNull();
+    expect(updateArgs.data.dispatchAgreementOnFile).toBe(false);
+  });
+
+  it('reverts PENDING_APPROVAL → ONBOARDING when the carrier had completed onboarding', async () => {
+    const { prisma, carrier } = makePrismaMock();
+    carrier.findUnique.mockResolvedValue({ status: 'PENDING_APPROVAL' });
+    carrier.update.mockResolvedValue({});
+
+    const repo = carrierAgreementWriteRepositoryPrisma(prisma);
+    await repo.clearSignedAgreement('car-1');
+
+    const updateArgs = carrier.update.mock.calls[0]?.[0];
+    expect(updateArgs.data.status).toBe('ONBOARDING');
+  });
+
+  it('does not touch status for ONBOARDING carriers (typical mid-flow case)', async () => {
+    const { prisma, carrier } = makePrismaMock();
+    carrier.findUnique.mockResolvedValue({ status: 'ONBOARDING' });
+    carrier.update.mockResolvedValue({});
+
+    const repo = carrierAgreementWriteRepositoryPrisma(prisma);
+    await repo.clearSignedAgreement('car-1');
+
+    const updateArgs = carrier.update.mock.calls[0]?.[0];
+    expect(updateArgs.data.status).toBeUndefined();
+  });
 });

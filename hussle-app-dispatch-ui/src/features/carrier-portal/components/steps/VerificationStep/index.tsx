@@ -27,6 +27,7 @@ import { BodyMuted } from 'components/Typography';
 import type { FmcsaSnapshot, Step } from 'features/carrier-portal/engine';
 import Callout from 'features/carrier-portal/components/Callout';
 import OnboardingCard from 'features/carrier-portal/components/OnboardingCard';
+import { useStepMode } from 'features/carrier-portal/components/StepNavContext';
 
 import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
 import { selectSession } from '../../../store/selectors/carrierPortalSelectors';
@@ -55,10 +56,16 @@ const VerificationStep: React.FC<VerificationStepProps> = ({ step }) => {
   const session = useSelector(selectSession);
   const snapshot = session?.fmcsaSnapshot;
   const state = detectState(snapshot);
+  const mode = useStepMode();
 
   // Auto-advance when FMCSA returns a hit. The advance is fire-and-forget;
-  // saga wiring (US-21/US-23) will refine the exact action shape.
+  // saga wiring (US-21/US-23) will refine the exact action shape. Suppressed
+  // in review/locked modes — the user navigated back to this step; the shell
+  // footer drives forward navigation instead.
   useEffect(() => {
+    if (mode !== 'active') {
+      return;
+    }
     if (state === 'found') {
       dispatch(
         carrierPortalV2Actions.submitStep({
@@ -67,7 +74,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({ step }) => {
         }),
       );
     }
-  }, [state, step.id, dispatch]);
+  }, [mode, state, step.id, dispatch]);
 
   // Placeholder dispatch: "advance past this step without an FMCSA hit".
   // US-23 will replace with a dedicated `skipFmcsaLookup` action.

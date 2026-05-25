@@ -27,6 +27,7 @@ export type LoadingKey =
   | 'session'
   | 'submitStep'
   | 'agreement'
+  | 'agreementMockSign'
   | 'upload'
   | 'costAnalysis'
   | 'lanePreferences'
@@ -34,12 +35,20 @@ export type LoadingKey =
   | 'company'
   | 'equipment'
   | 'drivers'
+  | 'voidAndReSign'
   | 'completeSession';
 
 export interface SaveCompanyPayload {
   fields: SaveCompanyRequest;
   hasMcAuthority?: string;
   hasDba?: string;
+  // Set by the mid-signing edit guard. When true, the saga first voids any
+  // signed agreements that embed the changed identity fields, then performs
+  // the save and navigates the carrier back to /sign-agreement.
+  voidPriorAgreements?: boolean;
+  // Field name(s) that triggered the void+re-sign. Used for both UX copy
+  // (which field the carrier just changed) and backend audit metadata.
+  changedIdentityFields?: ('legalName' | 'mcNumber' | 'dotNumber')[];
 }
 
 export interface SaveEquipmentPayload {
@@ -139,18 +148,43 @@ const carrierPortalV2Slice = createSlice({
       markFailure(state, 'submitStep', action.payload.error);
     },
 
-    // ── fetchAgreement ────────────────────────────────────────────────────
-    fetchAgreement(state, _action: PayloadAction<{ templateKey: string }>) {
+    // ── fetchAgreements (multi-key) ──────────────────────────────────────
+    fetchAgreements(state, _action: PayloadAction<{ templateKeys: string[] }>) {
       markPending(state, 'agreement');
     },
-    fetchAgreementSuccess(state, action: PayloadAction<AgreementContext | null>) {
+    fetchAgreementsSuccess(
+      state,
+      action: PayloadAction<{ agreements: Record<string, AgreementContext> }>,
+    ) {
       if (state.session) {
-        state.session.agreement = action.payload ?? undefined;
+        state.session.agreements = action.payload.agreements;
       }
       markSuccess(state, 'agreement');
     },
-    fetchAgreementFailure(state, action: PayloadAction<string>) {
+    fetchAgreementsFailure(state, action: PayloadAction<string>) {
       markFailure(state, 'agreement', action.payload);
+    },
+
+    // ── markAgreementSignedMock ──────────────────────────────────────────
+    markAgreementSignedMock(state, _action: PayloadAction<{ agreementId: string }>) {
+      markPending(state, 'agreementMockSign');
+    },
+    markAgreementSignedMockSuccess(
+      state,
+      action: PayloadAction<{ agreement: AgreementContext }>,
+    ) {
+      if (state.session) {
+        const { agreement } = action.payload;
+        state.session.agreements = {
+          ...(state.session.agreements ?? {}),
+          [agreement.templateKey]: agreement,
+        };
+      }
+      markSuccess(state, 'agreementMockSign');
+      touchSavedAt(state);
+    },
+    markAgreementSignedMockFailure(state, action: PayloadAction<string>) {
+      markFailure(state, 'agreementMockSign', action.payload);
     },
 
     // ── uploadDocument ────────────────────────────────────────────────────
@@ -289,6 +323,15 @@ const carrierPortalV2Slice = createSlice({
     },
     completeSessionFailure(state, action: PayloadAction<string>) {
       markFailure(state, 'completeSession', action.payload);
+    },
+    /**
+     * Clear stale `completeSession` loading/error state. CompleteStep fires
+     * this on mount so a prior-attempt failure doesn't immediately re-trigger
+     * the recovery redirect when the carrier returns from /sign-agreement.
+     */
+    completeSessionReset(state) {
+      state.loading.completeSession = 'idle';
+      state.errors.completeSession = '';
     },
 
     // ── saveAndExit ───────────────────────────────────────────────────────

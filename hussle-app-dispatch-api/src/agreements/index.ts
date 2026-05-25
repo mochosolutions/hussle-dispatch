@@ -2,7 +2,7 @@ import { env } from '@/config/env';
 import { s3Client } from '@/config/s3';
 import { sharedEventBus } from '@/shared/messaging';
 import { prisma } from '@/shared/prisma';
-import { getSignatureService } from '@/shared/signatures';
+import { getSignatureProvider, getSignatureService } from '@/shared/signatures';
 import { createStorageProvider, type StorageProvider } from '@/shared/storage';
 import { logger } from '@/shared/utils/logger';
 
@@ -42,6 +42,7 @@ const agreementsModule = createAgreementsModule({
   logger,
   storage: buildStorage(),
   signatureService: getSignatureService(),
+  signatureProvider: getSignatureProvider(),
   env: {
     SIGNATURE_PROVIDER: env.SIGNATURE_PROVIDER,
     AGREEMENT_WATCHDOG_INTERVAL_MIN: env.AGREEMENT_WATCHDOG_INTERVAL_MIN,

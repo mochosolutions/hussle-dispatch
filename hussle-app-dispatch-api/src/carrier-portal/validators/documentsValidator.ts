@@ -39,17 +39,3 @@ export const confirmDocumentValidator = Yup.object({
     coverageConfirmed: Yup.boolean().optional(),
   }),
 });
-
-export const signDocumentValidator = Yup.object({
-  params: Yup.object({
-    id: Yup.string().uuid('id must be a valid UUID').required('id is required'),
-  }),
-  body: Yup.object({
-    signatureData: Yup.string().required('signatureData is required'),
-    consentGiven: Yup.boolean()
-      .oneOf([true], 'Consent is required')
-      .required('consentGiven is required'),
-    signerName: Yup.string().optional(),
-    signerTitle: Yup.string().optional(),
-  }),
-});

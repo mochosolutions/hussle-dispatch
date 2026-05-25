@@ -699,6 +699,14 @@ const LanePreferencesStep: React.FC<LanePreferencesStepProps> = ({ step }) => {
   // ---------------------------------------------------------------------------
 
   const handleSubmit = useCallback((): void => {
+    // API contract — `hussle-app-dispatch-api/src/carrier-portal/validators/
+    // lanePreferencesValidator.ts`:
+    //   - `maxDaysOut` must be 1..60. UI uses a preset OptCard so this is
+    //     enforced by construction (values 2/3/5/7/14).
+    //   - `homeBaseState` must be exactly 2 chars when present. UI does NOT
+    //     collect homeBaseCity/State today; if a future revision adds a
+    //     free-text state input, it MUST add inline validation matching the
+    //     API rule.
     const payload: Record<string, unknown> = {
       fleet: {
         lanes: toBackendLanes(fleet.lanes),

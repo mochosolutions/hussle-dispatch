@@ -8,14 +8,16 @@ export type {
   Answers,
   CompanyContext,
   CostAnalysisContext,
+  DocumentContext,
   DocumentSlot,
   DriverContext,
   FieldType,
   FmcsaSnapshot,
+  IdentityField,
   InvitationContext,
   LanePreferencesContext,
+  LockPredicate,
   VehicleContext,
-  LockedFieldPath,
   Phase,
   PhaseCheckpoint,
   Predicate,
@@ -30,11 +32,12 @@ export type {
   Session,
   SideEffect,
   Step,
+  TemplateEntry,
   StepType,
   YupSchemaFragment,
 } from './types';
 
-export { LOCKS_FIELDS } from './types';
+export { IDENTITY_FIELDS } from './types';
 export { LockViolationError } from './errors';
 export { resolveContext } from './resolveContext';
 export { evaluatePredicate } from './evaluatePredicate';
@@ -43,3 +46,6 @@ export type { VisibleStep } from './getVisibleSteps';
 export { getNextStepId } from './getNextStepId';
 export { getPrevStepId } from './getPrevStepId';
 export { computeInvalidations, isStepVisible } from './computeInvalidations';
+export { computeStepMode } from './computeStepMode';
+export type { StepMode } from './computeStepMode';
+export { isQuestionLocked } from './isQuestionLocked';

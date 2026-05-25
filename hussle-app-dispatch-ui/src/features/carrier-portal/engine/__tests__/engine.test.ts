@@ -1,14 +1,16 @@
 import {
   computeInvalidations,
+  computeStepMode,
   evaluatePredicate,
   findPhaseOfStep,
   findStep,
   getNextStepId,
   getPrevStepId,
   getVisibleSteps,
+  IDENTITY_FIELDS,
+  isQuestionLocked,
   isStepVisible,
   LockViolationError,
-  LOCKS_FIELDS,
   resolveContext,
   type Predicate,
   type Schema,
@@ -92,16 +94,18 @@ describe('resolveContext', () => {
     expect(resolveContext(session, 'invitation.organizationName')).toBe('Acme Dispatch');
   });
 
-  it('resolves agreement context when present', () => {
+  it('resolves agreements record under a key', () => {
     const session = makeSession({
-      agreement: { id: 'agr-1', status: 'SIGNED' },
+      agreements: {
+        DISPATCH_AGREEMENT: { id: 'agr-1', templateKey: 'DISPATCH_AGREEMENT', status: 'SIGNED' },
+      },
     });
-    expect(resolveContext(session, 'agreement.status')).toBe('SIGNED');
+    expect(resolveContext(session, 'agreements.DISPATCH_AGREEMENT.status')).toBe('SIGNED');
   });
 
-  it('returns null root when agreement is absent', () => {
+  it('returns empty record when agreements is absent', () => {
     const session = makeSession();
-    expect(resolveContext(session, 'agreement.status')).toBeUndefined();
+    expect(resolveContext(session, 'agreements.DISPATCH_AGREEMENT.status')).toBeUndefined();
   });
 
   it('resolves session-level fields', () => {
@@ -374,25 +378,50 @@ describe('computeInvalidations', () => {
     expect(result).not.toContain('company-authority-question');
   });
 
-  it('throws LockViolationError when a locked path is mutated after signing', () => {
+  // ----- Schema-driven lock tests -----
+  // A test schema where the company-confirm step declares two locked questions.
+  // This mirrors how a future schema variant would opt fields into the locked
+  // treatment via `Question.locked`.
+
+  const schemaWithLocks: Schema = {
+    version: 1,
+    metadata: { name: 'with-locks', estimatedMinutes: 1 },
+    phases: [
+      {
+        id: 'company',
+        label: 'Company',
+        steps: [
+          {
+            id: 'company-confirm',
+            type: 'input',
+            questions: [
+              { id: 'legalName', label: 'Legal Name', fieldType: 'text', locked: true },
+              { id: 'tin', label: 'TIN', fieldType: 'tin', locked: true },
+              { id: 'dbaName', label: 'DBA', fieldType: 'text' },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('throws LockViolationError when a question with locked: true is mutated', () => {
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'ACME LLC' } },
-      agreement: { id: 'a-1', status: 'SIGNED' },
     });
     expect(() =>
-      computeInvalidations(minimalSchema, session, 'company-confirm', {
+      computeInvalidations(schemaWithLocks, session, 'company-confirm', {
         legalName: 'New Legal Name',
       }),
     ).toThrow(LockViolationError);
   });
 
-  it('LockViolationError carries the offending dot-paths', () => {
+  it('LockViolationError carries the offending step.question paths', () => {
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'ACME LLC', tin: '12-3456789' } },
-      agreement: { id: 'a-1', status: 'SIGNED' },
     });
     try {
-      computeInvalidations(minimalSchema, session, 'company-confirm', {
+      computeInvalidations(schemaWithLocks, session, 'company-confirm', {
         legalName: 'Changed',
         tin: '99-9999999',
       });
@@ -400,73 +429,285 @@ describe('computeInvalidations', () => {
     } catch (e: unknown) {
       expect(e).toBeInstanceOf(LockViolationError);
       const err = e as LockViolationError;
-      expect(err.lockedFields).toEqual(expect.arrayContaining(['company.legalName', 'company.tin']));
+      expect(err.lockedFields).toEqual(
+        expect.arrayContaining(['company-confirm.legalName', 'company-confirm.tin']),
+      );
       expect(err.stepId).toBe('company-confirm');
     }
   });
 
-  it('does not throw when an agreement is signed but the change is to a non-locked field', () => {
+  it('does not throw when changing a non-locked question on the same step', () => {
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'ACME LLC' } },
-      agreement: { id: 'a-1', status: 'SIGNED' },
     });
-    // dbaName is not in LOCKS_FIELDS — should be allowed.
+    // dbaName has no `locked` declaration — freely editable.
     expect(() =>
-      computeInvalidations(minimalSchema, session, 'company-confirm', { dbaName: 'Acme Express' }),
+      computeInvalidations(schemaWithLocks, session, 'company-confirm', { dbaName: 'Acme Express' }),
     ).not.toThrow();
   });
 
-  it('does not throw when the agreement is PENDING (only SIGNED locks)', () => {
+  it('does not throw when no question declares locked (lock primitive dormant)', () => {
+    // minimalSchema declares no questions with `locked` — even with a SIGNED
+    // agreement, changes flow through.
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'ACME LLC' } },
-      agreement: { id: 'a-1', status: 'PENDING' },
+      agreements: {
+        DISPATCH_AGREEMENT: { id: 'a-1', templateKey: 'DISPATCH_AGREEMENT', status: 'SIGNED' },
+      },
     });
     expect(() =>
       computeInvalidations(minimalSchema, session, 'company-confirm', { legalName: 'Changed' }),
     ).not.toThrow();
   });
 
-  it('does not throw when the changed step is outside the company phase', () => {
-    const session = makeSession({
-      answers: { 'equipment-entry': { vehicles: [] } },
-      agreement: { id: 'a-1', status: 'SIGNED' },
-    });
-    // equipment-entry isn't a company step → locks don't apply.
-    expect(() =>
-      computeInvalidations(minimalSchema, session, 'equipment-entry', { vehicles: ['x'] }),
-    ).not.toThrow();
-  });
-
   it('allows re-writing a locked field with its existing value (idempotent)', () => {
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'ACME LLC' } },
-      agreement: { id: 'a-1', status: 'SIGNED' },
     });
     expect(() =>
-      computeInvalidations(minimalSchema, session, 'company-confirm', { legalName: 'ACME LLC' }),
+      computeInvalidations(schemaWithLocks, session, 'company-confirm', { legalName: 'ACME LLC' }),
     ).not.toThrow();
+  });
+
+  it('respects predicate-based locked declarations', () => {
+    const schemaWithPredicate: Schema = {
+      version: 1,
+      metadata: { name: 'predicate-locks', estimatedMinutes: 1 },
+      phases: [
+        {
+          id: 'company',
+          label: 'Company',
+          steps: [
+            {
+              id: 'company-confirm',
+              type: 'input',
+              questions: [
+                {
+                  id: 'legalName',
+                  label: 'Legal Name',
+                  fieldType: 'text',
+                  locked: ({ session }) =>
+                    Object.values(session.agreements ?? {}).some((a) => a.status === 'SIGNED'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // No signed agreement → predicate false → edit allowed.
+    const unsigned = makeSession({ answers: { 'company-confirm': { legalName: 'A' } } });
+    expect(() =>
+      computeInvalidations(schemaWithPredicate, unsigned, 'company-confirm', { legalName: 'B' }),
+    ).not.toThrow();
+
+    // Signed agreement → predicate true → edit blocked.
+    const signed = makeSession({
+      answers: { 'company-confirm': { legalName: 'A' } },
+      agreements: {
+        DISPATCH_AGREEMENT: { id: 'a-1', templateKey: 'DISPATCH_AGREEMENT', status: 'SIGNED' },
+      },
+    });
+    expect(() =>
+      computeInvalidations(schemaWithPredicate, signed, 'company-confirm', { legalName: 'B' }),
+    ).toThrow(LockViolationError);
   });
 });
 
 // ============================================================
-// LOCKS_FIELDS parity / shape
+// IDENTITY_FIELDS / isQuestionLocked
 // ============================================================
 
-describe('LOCKS_FIELDS', () => {
-  it('contains exactly 8 entries', () => {
-    expect(LOCKS_FIELDS).toHaveLength(8);
+describe('IDENTITY_FIELDS', () => {
+  it('lists exactly the 3 carrier-editable fields embedded in DISPATCH_AGREEMENT', () => {
+    expect(IDENTITY_FIELDS).toEqual(['legalName', 'mcNumber', 'dotNumber']);
+  });
+});
+
+describe('isQuestionLocked', () => {
+  const session = makeSession();
+
+  it('returns false for a question with no locked declaration', () => {
+    expect(isQuestionLocked({ id: 'x', label: 'x', fieldType: 'text' }, session)).toBe(false);
   });
 
-  it('includes all expected locked paths', () => {
-    expect(LOCKS_FIELDS).toEqual([
-      'company.legalName',
-      'company.mcNumber',
-      'company.dotNumber',
-      'company.signatoryName',
-      'company.signatoryTitle',
-      'company.taxClassification',
-      'company.tinType',
-      'company.tin',
-    ]);
+  it('returns true for locked: true', () => {
+    expect(
+      isQuestionLocked({ id: 'x', label: 'x', fieldType: 'text', locked: true }, session),
+    ).toBe(true);
+  });
+
+  it('returns false for locked: false', () => {
+    expect(
+      isQuestionLocked({ id: 'x', label: 'x', fieldType: 'text', locked: false }, session),
+    ).toBe(false);
+  });
+
+  it('invokes function predicate with { session }', () => {
+    const predicate = jest.fn(() => true);
+    expect(
+      isQuestionLocked({ id: 'x', label: 'x', fieldType: 'text', locked: predicate }, session),
+    ).toBe(true);
+    expect(predicate).toHaveBeenCalledWith({ session });
+  });
+});
+
+// ============================================================
+// computeStepMode
+// ============================================================
+
+// Test schemas exercising the new schema-driven lock model.
+// `schemaNoLocks` declares no `locked` predicates → completed steps return
+// 'review'. `schemaWithLocks` declares `locked: true` on a question of
+// 'company-step' → that step returns 'locked' when completed.
+
+const schemaNoLocks: Schema = {
+  version: 1,
+  metadata: { name: 'no-locks', estimatedMinutes: 5 },
+  phases: [
+    {
+      id: 'company',
+      label: 'Company',
+      steps: [
+        {
+          id: 'company-step',
+          type: 'input',
+          questions: [{ id: 'legalName', label: 'Legal Name', fieldType: 'text' }],
+        },
+      ],
+    },
+    {
+      id: 'sign',
+      label: 'Sign',
+      steps: [{ id: 'sign-agreement', type: 'signing' }],
+    },
+    {
+      id: 'documents',
+      label: 'Documents',
+      steps: [{ id: 'documents-upload', type: 'upload' }],
+    },
+  ],
+};
+
+const schemaWithStepLock: Schema = {
+  ...schemaNoLocks,
+  phases: schemaNoLocks.phases.map((p) =>
+    p.id === 'company'
+      ? {
+          ...p,
+          steps: [
+            {
+              id: 'company-step',
+              type: 'input' as const,
+              questions: [
+                { id: 'legalName', label: 'Legal Name', fieldType: 'text' as const, locked: true },
+              ],
+            },
+          ],
+        }
+      : p,
+  ),
+};
+
+describe('computeStepMode', () => {
+  it('returns active when urlStepId is null', () => {
+    const session = makeSession({ currentStepId: 'company-step' });
+    expect(computeStepMode(schemaNoLocks, session, null)).toBe('active');
+  });
+
+  it('returns active when urlStepId is undefined', () => {
+    const session = makeSession({ currentStepId: 'company-step' });
+    expect(computeStepMode(schemaNoLocks, session, undefined)).toBe('active');
+  });
+
+  it('returns active when urlStepId matches the cursor', () => {
+    const session = makeSession({ currentStepId: 'company-step' });
+    expect(computeStepMode(schemaNoLocks, session, 'company-step')).toBe('active');
+  });
+
+  it('returns active when urlStepId is not in completedStepIds and not the cursor', () => {
+    const session = makeSession({
+      currentStepId: 'company-step',
+      completedStepIds: [],
+    });
+    expect(computeStepMode(schemaNoLocks, session, 'documents-upload')).toBe('active');
+  });
+
+  it('returns review when urlStepId is completed and no question declares locked', () => {
+    const session = makeSession({
+      currentStepId: 'documents-upload',
+      completedStepIds: ['company-step', 'sign-agreement'],
+    });
+    expect(computeStepMode(schemaNoLocks, session, 'company-step')).toBe('review');
+  });
+
+  it('returns locked when a visible question on the completed step has locked: true', () => {
+    const session = makeSession({
+      currentStepId: 'documents-upload',
+      completedStepIds: ['company-step', 'sign-agreement'],
+    });
+    expect(computeStepMode(schemaWithStepLock, session, 'company-step')).toBe('locked');
+  });
+
+  it('returns review (not locked) under the dormant default — no questions declare locked', () => {
+    // Today's shipping schema has no locked declarations. Even with a SIGNED
+    // agreement in the session, completed steps return 'review', not 'locked'.
+    const session = makeSession({
+      currentStepId: 'documents-upload',
+      completedStepIds: ['company-step', 'sign-agreement'],
+      agreements: {
+        DISPATCH_AGREEMENT: { id: 'a-1', templateKey: 'DISPATCH_AGREEMENT', status: 'SIGNED' },
+      },
+    });
+    expect(computeStepMode(schemaNoLocks, session, 'company-step')).toBe('review');
+  });
+
+  it('respects predicate-based locked declarations', () => {
+    const schemaPredicateLock: Schema = {
+      version: 1,
+      metadata: { name: 'predicate-lock', estimatedMinutes: 1 },
+      phases: [
+        {
+          id: 'company',
+          label: 'Company',
+          steps: [
+            {
+              id: 'company-step',
+              type: 'input',
+              questions: [
+                {
+                  id: 'legalName',
+                  label: 'Legal Name',
+                  fieldType: 'text',
+                  locked: ({ session: s }) =>
+                    Object.values(s.agreements ?? {}).some((a) => a.status === 'SIGNED'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const unsigned = makeSession({
+      currentStepId: 'company-step',
+      completedStepIds: ['company-step'],
+    });
+    expect(computeStepMode(schemaPredicateLock, unsigned, 'company-step')).toBe('active');
+
+    const reviewing = makeSession({
+      currentStepId: 'next',
+      completedStepIds: ['company-step'],
+    });
+    expect(computeStepMode(schemaPredicateLock, reviewing, 'company-step')).toBe('review');
+
+    const signed = makeSession({
+      currentStepId: 'next',
+      completedStepIds: ['company-step'],
+      agreements: {
+        DISPATCH_AGREEMENT: { id: 'a-1', templateKey: 'DISPATCH_AGREEMENT', status: 'SIGNED' },
+      },
+    });
+    expect(computeStepMode(schemaPredicateLock, signed, 'company-step')).toBe('locked');
   });
 });

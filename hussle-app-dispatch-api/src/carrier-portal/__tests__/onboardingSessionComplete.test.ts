@@ -17,7 +17,10 @@ const makeSession = (overrides: Partial<OnboardingSession> = {}): OnboardingSess
   currentQuestionIndex: 0,
   currentStepId: null,
   completedPhases: allPhasesCompleted,
-  completedStepIds: [],
+  // The complete() gate now keys off completedStepIds (the modern saga flow
+  // writes this on every submitStep). 'sign-agreement' presence is the
+  // authoritative signal that the wizard finished.
+  completedStepIds: ['sign-agreement'],
   answers: {} as Prisma.JsonValue,
   completedAt: null,
   lastActiveAt: new Date(),
@@ -69,6 +72,22 @@ const makeDeps = () => ({
 
 describe('onboardingSessionService.complete — document validation', () => {
   beforeEach(() => jest.clearAllMocks());
+
+  it('is idempotent — returns existing session as-is when completedAt is already set', async () => {
+    const deps = makeDeps();
+    const alreadyComplete = makeSession({ completedAt: new Date('2026-05-20T10:00:00Z') });
+
+    deps.sessionRepo.findByCarrierId.mockResolvedValue(alreadyComplete);
+
+    const service = createOnboardingSessionService(deps);
+    const result = await service.complete('carrier-1');
+
+    expect(result.completedAt).toEqual(new Date('2026-05-20T10:00:00Z'));
+    // No carrier read, no status transition, no audit write.
+    expect(deps.carrierRepo.findById).not.toHaveBeenCalled();
+    expect(deps.carrierRepo.update).not.toHaveBeenCalled();
+    expect(deps.sessionRepo.update).not.toHaveBeenCalled();
+  });
 
   it('completes session for EXTERNAL_CARRIER with all docs present and insurance valid', async () => {
     const deps = makeDeps();

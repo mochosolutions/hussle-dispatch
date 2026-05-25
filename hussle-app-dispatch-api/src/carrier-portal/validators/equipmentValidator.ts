@@ -14,7 +14,13 @@ const vehicleSchema = Yup.object({
   licensePlate: Yup.string()
     .required('License plate is required')
     .max(20, 'License plate must be at most 20 characters'),
-  gvwr: Yup.number().min(0, 'GVWR must be non-negative').optional(),
+  // Federal highway weight limit for combination vehicles is 80,000 lbs; the
+  // heaviest legal trucks operate at or below this. Cap matches the UI's
+  // form validation (`EquipmentListStep`).
+  gvwr: Yup.number()
+    .min(0, 'GVWR must be non-negative')
+    .max(80000, 'GVWR must be at most 80,000 lbs')
+    .optional(),
 });
 
 export const equipmentValidator = Yup.object({

@@ -20,6 +20,7 @@ describe('carrierStateMachine', () => {
       [CarrierStatus.ONBOARDING, CarrierStatus.ACTIVE],
       [CarrierStatus.PENDING_APPROVAL, CarrierStatus.ACTIVE],
       [CarrierStatus.PENDING_APPROVAL, CarrierStatus.REJECTED],
+      [CarrierStatus.PENDING_APPROVAL, CarrierStatus.ONBOARDING],
       [CarrierStatus.REJECTED, CarrierStatus.INVITED],
       [CarrierStatus.REJECTED, CarrierStatus.ACTIVE],
       [CarrierStatus.ACTIVE, CarrierStatus.ACTION_REQUIRED],
