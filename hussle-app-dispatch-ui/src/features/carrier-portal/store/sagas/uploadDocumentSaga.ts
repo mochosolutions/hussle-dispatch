@@ -6,32 +6,40 @@ import type { RootState } from 'store';
 import type { Session } from 'features/carrier-portal/engine';
 import { DocumentType } from 'features/documents/types';
 import {
+  uploadFileViaPresign,
+  type ConfirmFnInput,
+  type NormalizedPresign,
+  type PresignFnInput,
+  type UploadFileViaPresignDeps,
+} from 'features/documents/store/sagas/uploadFileViaPresign';
+import {
   confirmDocumentV2,
   presignDocumentV2,
   uploadToPresignedUrl,
 } from 'utils/api/carrierPortal/v2';
-import type { PresignResponseV2 } from 'utils/api/carrierPortal/v2';
 
 import { carrierPortalV2Actions } from '../reducers/carrierPortalSlice';
+import { selectToken } from '../selectors/carrierPortalSelectors';
 import { extractErrorMessage } from './sessionAdapters';
 
 interface UploadDocumentPayload {
   documentType: string;
   file: File;
+  expiresAt?: string;
+  metadata?: Record<string, string>;
 }
 
 const isDocumentType = (value: string): value is DocumentType =>
   (Object.values(DocumentType) as string[]).includes(value);
 
 // ---------------------------------------------------------------------------
-// Worker — 3-step flow: presign → PUT → confirm.
+// Worker — delegates the presign → PUT → confirm orchestration to the shared
+// `uploadFileViaPresign` helper. Token + carrier session guards stay here.
 // ---------------------------------------------------------------------------
 
 function* handleUploadDocument(action: PayloadAction<UploadDocumentPayload>): Generator {
   try {
-    const token: string | null = yield select(
-      (state: RootState) => state.pages.carrierPortalV2.token,
-    );
+    const token: string | null = yield select(selectToken);
     if (!token) {
       yield put(carrierPortalV2Actions.uploadDocumentFailure('No token available'));
       return;
@@ -48,7 +56,7 @@ function* handleUploadDocument(action: PayloadAction<UploadDocumentPayload>): Ge
       return;
     }
 
-    const { file, documentType } = action.payload;
+    const { file, documentType, expiresAt, metadata } = action.payload;
     if (!isDocumentType(documentType)) {
       const message = `Unknown document type: ${documentType}`;
       yield put(carrierPortalV2Actions.uploadDocumentFailure(message));
@@ -56,22 +64,39 @@ function* handleUploadDocument(action: PayloadAction<UploadDocumentPayload>): Ge
       return;
     }
 
-    const presign: PresignResponseV2 = yield call(presignDocumentV2, token, {
-      fileName: file.name,
-      mimeType: file.type,
-      type: documentType,
-      entityType: 'carrier',
-      entityId: carrierId,
-    });
+    const presignFn = async (input: PresignFnInput): Promise<NormalizedPresign> => {
+      const presign = await presignDocumentV2(token, {
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+        type: input.type,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}),
+        ...(input.metadata ? { metadata: input.metadata } : {}),
+      });
+      const documentId = presign.documentId ?? presign.id;
+      if (!documentId) {
+        throw new Error('Presign response missing document id');
+      }
+      return { documentId, presignedUrl: presign.uploadUrl };
+    };
 
-    yield call(uploadToPresignedUrl, presign.uploadUrl, file);
+    const confirmFn = async (
+      documentId: string,
+      confirmInput?: ConfirmFnInput,
+    ): Promise<unknown> => confirmDocumentV2(token, documentId, confirmInput);
 
-    const documentId = presign.documentId ?? presign.id;
-    if (!documentId) {
-      throw new Error('Presign response missing document id');
-    }
+    const deps: UploadFileViaPresignDeps<unknown> = {
+      presignFn,
+      confirmFn,
+      uploadFn: uploadToPresignedUrl,
+    };
 
-    yield call(confirmDocumentV2, token, documentId, { key: presign.key });
+    yield call(
+      uploadFileViaPresign,
+      { file, documentType, entityType: 'carrier', entityId: carrierId, expiresAt, metadata },
+      deps,
+    );
 
     yield put(carrierPortalV2Actions.uploadDocumentSuccess({ documentType }));
   } catch (error: unknown) {

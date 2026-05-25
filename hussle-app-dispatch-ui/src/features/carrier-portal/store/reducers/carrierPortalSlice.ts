@@ -188,7 +188,15 @@ const carrierPortalV2Slice = createSlice({
     },
 
     // ── uploadDocument ────────────────────────────────────────────────────
-    uploadDocument(state, _action: PayloadAction<{ documentType: string; file: File }>) {
+    uploadDocument(
+      state,
+      _action: PayloadAction<{
+        documentType: string;
+        file: File;
+        expiresAt?: string;
+        metadata?: Record<string, string>;
+      }>,
+    ) {
       markPending(state, 'upload');
     },
     uploadDocumentSuccess(state, _action: PayloadAction<{ documentType: string }>) {
