@@ -517,6 +517,37 @@ export const carrierAssignmentQueryPrisma = (
       tinOnFile: carrier.tin != null,
     };
   },
+
+  findRateSnapshot: async (carrierId, organizationId) => {
+    const carrier = await prisma.carrier.findFirst({
+      where: {
+        id: carrierId,
+        managedByOrgId: organizationId,
+        deletedAt: null,
+      },
+      select: {
+        dispatchFeeType: true,
+        dispatchFeePercent: true,
+        dispatchFeeAmount: true,
+        partnerSplitPercent: true,
+        feeIncludesAccessorials: true,
+        payFromNet: true,
+      },
+    });
+
+    if (!carrier) {
+      return null;
+    }
+
+    return {
+      dispatchFeeType: carrier.dispatchFeeType,
+      dispatchFeePercent: String(carrier.dispatchFeePercent),
+      dispatchFeeAmount: String(carrier.dispatchFeeAmount),
+      partnerSplitPercent: String(carrier.partnerSplitPercent),
+      feeIncludesAccessorials: carrier.feeIncludesAccessorials,
+      payFromNet: carrier.payFromNet,
+    };
+  },
 });
 
 export const driverAssignmentQueryPrisma = (
@@ -540,6 +571,32 @@ export const driverAssignmentQueryPrisma = (
         isAvailable: true,
       },
     });
+  },
+
+  findRateSnapshot: async (driverId, organizationId) => {
+    const driver = await prisma.driver.findFirst({
+      where: {
+        id: driverId,
+        deletedAt: null,
+        carrier: {
+          managedByOrgId: organizationId,
+          deletedAt: null,
+        },
+      },
+      select: {
+        payType: true,
+        payRate: true,
+      },
+    });
+
+    if (!driver) {
+      return null;
+    }
+
+    return {
+      payType: driver.payType,
+      payRate: String(driver.payRate),
+    };
   },
 });
 

@@ -12,6 +12,8 @@ import type {
   Customer,
   CarrierType,
   DispatchFeeType,
+  DispatcherCommType,
+  DriverPayType,
   EquipmentType,
   LoadStatus,
   SchedulingType,
@@ -95,6 +97,13 @@ export interface CreateLoadInput {
   accessorialCharges?: AccessorialChargeInput[];
   dispatchFeeType?: DispatchFeeType | null;
   dispatchFeeAmount?: number | string | null;
+  partnerSplitPercent?: number | string | null;
+  driverPayType?: DriverPayType | null;
+  driverPayRate?: number | string | null;
+  dispatcherCommissionType?: DispatcherCommType | null;
+  dispatcherCommissionRate?: number | string | null;
+  feeIncludesAccessorials?: boolean | null;
+  payFromNet?: boolean | null;
 }
 
 export interface UpdateLoadInput {
@@ -124,6 +133,13 @@ export interface UpdateLoadInput {
   accessorialCharges?: AccessorialChargeInput[];
   dispatchFeeType?: DispatchFeeType | null;
   dispatchFeeAmount?: number | string | null;
+  partnerSplitPercent?: number | string | null;
+  driverPayType?: DriverPayType | null;
+  driverPayRate?: number | string | null;
+  dispatcherCommissionType?: DispatcherCommType | null;
+  dispatcherCommissionRate?: number | string | null;
+  feeIncludesAccessorials?: boolean | null;
+  payFromNet?: boolean | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -331,6 +347,15 @@ export interface OrgSettingsQueryPort {
   getProhibitedCommodities(organizationId: string): Promise<string[]>;
 }
 
+export interface CarrierRateSnapshot {
+  dispatchFeeType: DispatchFeeType;
+  dispatchFeePercent: string;
+  dispatchFeeAmount: string;
+  partnerSplitPercent: string;
+  feeIncludesAccessorials: boolean;
+  payFromNet: boolean;
+}
+
 export interface CarrierAssignmentQueryPort {
   findDispatchableById(
     carrierId: string,
@@ -341,6 +366,15 @@ export interface CarrierAssignmentQueryPort {
     type: CarrierType;
     tinOnFile: boolean;
   } | null>;
+  findRateSnapshot(
+    carrierId: string,
+    organizationId: string,
+  ): Promise<CarrierRateSnapshot | null>;
+}
+
+export interface DriverRateSnapshot {
+  payType: DriverPayType;
+  payRate: string;
 }
 
 export interface DriverAssignmentQueryPort {
@@ -354,6 +388,10 @@ export interface DriverAssignmentQueryPort {
     lastName: string;
     isAvailable: boolean;
   } | null>;
+  findRateSnapshot(
+    driverId: string,
+    organizationId: string,
+  ): Promise<DriverRateSnapshot | null>;
 }
 
 export interface VehicleAssignmentQueryPort {
@@ -390,7 +428,7 @@ export interface DispatcherProfileQueryPort {
     userId: string,
     organizationId: string,
   ): Promise<{
-    commissionType: string;
+    commissionType: DispatcherCommType;
     commissionRate: string;
   } | null>;
 }

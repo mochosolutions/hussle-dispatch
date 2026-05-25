@@ -138,10 +138,12 @@ describe('loadService assignment validation', () => {
 
   const mockCarrierAssignmentQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
     findDispatchableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockDriverAssignmentQuery: jest.Mocked<DriverAssignmentQueryPort> = {
     findAssignableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockVehicleAssignmentQuery: jest.Mocked<VehicleAssignmentQueryPort> = {
@@ -426,10 +428,12 @@ describe('updateLoad financial recalculation', () => {
 
   const mockCarrierAssignmentQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
     findDispatchableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockDriverAssignmentQuery: jest.Mocked<DriverAssignmentQueryPort> = {
     findAssignableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockVehicleAssignmentQuery: jest.Mocked<VehicleAssignmentQueryPort> = {

@@ -607,6 +607,83 @@ const hasFinancialRelevantFieldChanged = (
   return false;
 };
 
+/**
+ * Build the rate-input snapshot fields to persist on Load at booking time.
+ * - Carrier-sourced: dispatchFeeType/Amount (with COALESCE — input wins),
+ *   partnerSplitPercent, feeIncludesAccessorials, payFromNet.
+ * - Driver-sourced: driverPayType, driverPayRate.
+ * - DispatcherProfile-sourced: dispatcherCommissionType, dispatcherCommissionRate
+ *   (via Membership 2-table join inside the query port).
+ *
+ * Any source returning null leaves its snapshot fields unset.
+ */
+const buildRateSnapshot = async (
+  input: Pick<
+    UpdateLoadInput,
+    'dispatchFeeType' | 'dispatchFeeAmount'
+  >,
+  context: {
+    organizationId: string;
+    carrierId: string | null;
+    driverId: string | null;
+    dispatcherUserId: string | null;
+  },
+  deps: Pick<
+    LoadServiceDeps,
+    'carrierAssignmentQuery' | 'driverAssignmentQuery' | 'dispatcherProfileQuery'
+  >,
+): Promise<Partial<UpdateLoadInput>> => {
+  const snapshot: Partial<UpdateLoadInput> = {};
+
+  if (context.carrierId !== null) {
+    const carrierRate = await deps.carrierAssignmentQuery.findRateSnapshot(
+      context.carrierId,
+      context.organizationId,
+    );
+    if (carrierRate !== null) {
+      // COALESCE: input override wins, otherwise snapshot from carrier.
+      const snapshotFeeType = input.dispatchFeeType ?? carrierRate.dispatchFeeType;
+      const carrierFallbackAmount =
+        snapshotFeeType === 'PERCENTAGE'
+          ? carrierRate.dispatchFeePercent
+          : carrierRate.dispatchFeeAmount;
+      const inputAmount = input.dispatchFeeAmount;
+      const snapshotFeeAmount =
+        inputAmount !== undefined && inputAmount !== null ? inputAmount : carrierFallbackAmount;
+
+      snapshot.dispatchFeeType = snapshotFeeType;
+      snapshot.dispatchFeeAmount = snapshotFeeAmount;
+      snapshot.partnerSplitPercent = carrierRate.partnerSplitPercent;
+      snapshot.feeIncludesAccessorials = carrierRate.feeIncludesAccessorials;
+      snapshot.payFromNet = carrierRate.payFromNet;
+    }
+  }
+
+  if (context.driverId !== null) {
+    const driverRate = await deps.driverAssignmentQuery.findRateSnapshot(
+      context.driverId,
+      context.organizationId,
+    );
+    if (driverRate !== null) {
+      snapshot.driverPayType = driverRate.payType;
+      snapshot.driverPayRate = driverRate.payRate;
+    }
+  }
+
+  if (context.dispatcherUserId !== null && deps.dispatcherProfileQuery !== undefined) {
+    const profile = await deps.dispatcherProfileQuery.findByUserId(
+      context.dispatcherUserId,
+      context.organizationId,
+    );
+    if (profile !== null) {
+      snapshot.dispatcherCommissionType = profile.commissionType;
+      snapshot.dispatcherCommissionRate = profile.commissionRate;
+    }
+  }
+
+  return snapshot;
+};
+
 export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
   createLoad: async ({ organizationId, input }: CreateLoadServiceInput) => {
     const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
@@ -652,10 +729,27 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     const loadNumber = await generateSequenceNumber('LOAD', organizationId);
 
+    const rateSnapshot = await buildRateSnapshot(
+      {
+        dispatchFeeType: input.dispatchFeeType,
+        dispatchFeeAmount: input.dispatchFeeAmount,
+      },
+      {
+        organizationId,
+        carrierId: resolvedAssignment.carrierId,
+        driverId: resolvedAssignment.driverId,
+        // dispatcherUserId is not part of CreateLoadInput today;
+        // it is assigned later and re-snapshotted by updateLoad/assignLoad.
+        dispatcherUserId: null,
+      },
+      deps,
+    );
+
     const load = await deps.loadRepository.create(organizationId, loadNumber, {
       ...input,
       stops: resolvedStops,
       ...resolvedAssignment,
+      ...rateSnapshot,
       ...(loadedMiles !== undefined ? { loadedMiles } : {}),
       ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
     });

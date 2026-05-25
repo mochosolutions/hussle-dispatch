@@ -140,10 +140,12 @@ const orgSettings: jest.Mocked<OrgSettingsQueryPort> = {
 
 const carrierQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
   findDispatchableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
 };
 
 const driverQuery: jest.Mocked<DriverAssignmentQueryPort> = {
   findAssignableById: jest.fn(),
+  findRateSnapshot: jest.fn().mockResolvedValue(null),
 };
 
 const vehicleQuery: jest.Mocked<VehicleAssignmentQueryPort> = {
