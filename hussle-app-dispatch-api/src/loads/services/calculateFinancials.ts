@@ -174,8 +174,16 @@ export const calculateAndPersistFinancials = async (
     payFromNet: snapshotPayFromNet,
   };
 
-  const result = computeLoadFinancials(loadForCalc, new Decimal(accessorialsTotal), {
+  // carrierType is read from load.carrierType inside computeLoadFinancials (US-09b).
+  // We still overlay the live carrier.type onto loadForCalc so that mid-flow
+  // recompute paths that pass a stale Load row see the current type. Snapshot
+  // rows produced by buildRateSnapshot already carry the correct value.
+  const loadForCalcWithCarrierType = {
+    ...loadForCalc,
     carrierType: carrier.type,
+  };
+
+  const result = computeLoadFinancials(loadForCalcWithCarrierType, new Decimal(accessorialsTotal), {
     vehicleCpm,
     estimatedHours: estimatedHoursForPerHour,
   });

@@ -65,6 +65,8 @@ const buildLoad = (overrides?: Partial<Load>): Load => {
     dispatcherCommissionRate: null,
     feeIncludesAccessorials: false,
     payFromNet: false,
+    // US-09b snapshot column
+    carrierType: 'EXTERNAL_CARRIER',
   };
 
   return { ...base, ...overrides };
@@ -80,9 +82,7 @@ describe('computeLoadFinancials', () => {
     const load = buildLoad();
 
     // Act
-    const result = computeLoadFinancials(load, new Decimal(0), {
-      carrierType: 'EXTERNAL_CARRIER',
-    });
+    const result = computeLoadFinancials(load, new Decimal(0));
 
     // Assert
     expect(result.dispatchFee).toBe('280.00');
@@ -92,9 +92,7 @@ describe('computeLoadFinancials', () => {
   it('returns driverPay null when load.driverPayType is null', () => {
     const load = buildLoad();
 
-    const result = computeLoadFinancials(load, new Decimal(0), {
-      carrierType: 'EXTERNAL_CARRIER',
-    });
+    const result = computeLoadFinancials(load, new Decimal(0));
 
     expect(result.driverPay).toBeNull();
   });
@@ -102,9 +100,7 @@ describe('computeLoadFinancials', () => {
   it('returns dispatcherComm null when load.dispatcherCommissionType is null', () => {
     const load = buildLoad();
 
-    const result = computeLoadFinancials(load, new Decimal(0), {
-      carrierType: 'EXTERNAL_CARRIER',
-    });
+    const result = computeLoadFinancials(load, new Decimal(0));
 
     expect(result.dispatcherComm).toBeNull();
   });
@@ -112,9 +108,16 @@ describe('computeLoadFinancials', () => {
   it('throws when load.customerRate is null', () => {
     const load = buildLoad({ customerRate: null });
 
-    expect(() =>
-      computeLoadFinancials(load, new Decimal(0), { carrierType: 'EXTERNAL_CARRIER' }),
-    ).toThrow();
+    expect(() => computeLoadFinancials(load, new Decimal(0))).toThrow();
+  });
+
+  it('defaults to EXTERNAL_CARRIER when load.carrierType is null', () => {
+    // Pre-US-09b rows / null safety: math still works.
+    const load = buildLoad({ carrierType: null });
+
+    const result = computeLoadFinancials(load, new Decimal(0));
+
+    expect(result.dispatchFee).toBe('280.00');
   });
 });
 

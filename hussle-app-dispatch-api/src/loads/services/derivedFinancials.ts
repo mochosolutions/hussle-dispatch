@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js';
 import type { Load, Document, InvoiceReadiness } from '@prisma/client';
-import type { CarrierType } from '@/shared/constants/carrierTypes';
+import { CARRIER_TYPES, type CarrierType } from '@/shared/constants/carrierTypes';
 import {
   calculateLoadFinancials,
   type LoadFinancialsInput,
@@ -9,14 +9,13 @@ import {
 
 /**
  * Thin wrapper that destructures the Load row's snapshot columns and forwards
- * them to the pure calculateLoadFinancials. carrierType is passed separately
- * because it's not yet snapshotted on the Load (US-09 scope).
+ * them to the pure calculateLoadFinancials. All rate inputs — including
+ * carrierType (US-09b) — are now snapshotted on Load.
  *
  * estimatedHours / vehicleCpm / carrierPayoutOverride are still callsite-derived
  * (stops timing, vehicle expenses, manual overrides) — not Load-snapshot values.
  */
 export interface ComputeLoadFinancialsExtras {
-  carrierType: CarrierType;
   vehicleCpm?: number;
   estimatedHours?: number;
   carrierPayoutOverride?: string;
@@ -25,11 +24,15 @@ export interface ComputeLoadFinancialsExtras {
 export const computeLoadFinancials = (
   load: Load,
   accessorialsSum: Decimal,
-  extras: ComputeLoadFinancialsExtras,
+  extras: ComputeLoadFinancialsExtras = {},
 ): LoadFinancialsResult => {
   if (load.customerRate === null) {
     throw new Error('computeLoadFinancials: load.customerRate is required');
   }
+
+  // Default to EXTERNAL_CARRIER for any pre-US-09b row that slipped through
+  // backfill — the most conservative branch for totalRevenue math.
+  const carrierType: CarrierType = load.carrierType ?? CARRIER_TYPES.EXTERNAL_CARRIER;
 
   const input: LoadFinancialsInput = {
     customerRate: load.customerRate.toString(),
@@ -48,7 +51,7 @@ export const computeLoadFinancials = (
         : null,
     feeIncludesAccessorials: load.feeIncludesAccessorials,
     payFromNet: load.payFromNet,
-    carrierType: extras.carrierType,
+    carrierType,
     vehicleCpm: extras.vehicleCpm,
     estimatedHours: extras.estimatedHours,
     carrierPayoutOverride: extras.carrierPayoutOverride,
