@@ -153,8 +153,8 @@ export interface InvoiceLoadQueryPort {
     customerRate: unknown | null; // Decimal
     carrierRate: unknown | null; // Decimal
     dispatchFee: unknown | null; // Decimal
-    dispatchFeeOverrideType: DispatchFeeType | null;
-    dispatchFeeOverrideAmount: unknown | null; // Decimal
+    dispatchFeeType: DispatchFeeType | null;
+    dispatchFeeAmount: unknown | null; // Decimal
     bolSignedAt: Date | null;
     status: string;
     contact: {

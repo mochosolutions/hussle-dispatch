@@ -29,8 +29,8 @@ export const createLoadMapper = (req: Request): CreateLoadServiceInput => {
     driverInstructions: body.driverInstructions,
     stops: body.stops,
     accessorialCharges: body.accessorialCharges,
-    dispatchFeeOverrideType: body.dispatchFeeOverrideType,
-    dispatchFeeOverrideAmount: body.dispatchFeeOverrideAmount,
+    dispatchFeeType: body.dispatchFeeType,
+    dispatchFeeAmount: body.dispatchFeeAmount,
   };
 
   return { ...context, input };

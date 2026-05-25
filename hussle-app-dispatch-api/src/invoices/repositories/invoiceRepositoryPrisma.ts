@@ -223,8 +223,8 @@ export const invoiceLoadQueryPrisma = (
         customerRate: true,
         carrierRate: true,
         dispatchFee: true,
-        dispatchFeeOverrideType: true,
-        dispatchFeeOverrideAmount: true,
+        dispatchFeeType: true,
+        dispatchFeeAmount: true,
         bolSignedAt: true,
         status: true,
         contact: {

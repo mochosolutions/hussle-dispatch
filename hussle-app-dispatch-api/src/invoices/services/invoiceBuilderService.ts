@@ -116,10 +116,10 @@ export const createInvoiceBuilderService = (
       const carrier = load.carrier;
       const resolved = resolveDispatchFee({
         load: {
-          dispatchFeeOverrideType: load.dispatchFeeOverrideType,
-          dispatchFeeOverrideAmount:
-            load.dispatchFeeOverrideAmount !== null && load.dispatchFeeOverrideAmount !== undefined
-              ? new Prisma.Decimal(String(load.dispatchFeeOverrideAmount))
+          dispatchFeeType: load.dispatchFeeType,
+          dispatchFeeAmount:
+            load.dispatchFeeAmount !== null && load.dispatchFeeAmount !== undefined
+              ? new Prisma.Decimal(String(load.dispatchFeeAmount))
               : null,
         },
         carrier: {

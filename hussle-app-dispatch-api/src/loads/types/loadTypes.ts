@@ -93,8 +93,8 @@ export interface CreateLoadInput {
   driverInstructions?: string;
   stops: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
-  dispatchFeeOverrideType?: DispatchFeeType | null;
-  dispatchFeeOverrideAmount?: number | string | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | string | null;
 }
 
 export interface UpdateLoadInput {
@@ -122,8 +122,8 @@ export interface UpdateLoadInput {
   driverInstructions?: string;
   stops?: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
-  dispatchFeeOverrideType?: DispatchFeeType | null;
-  dispatchFeeOverrideAmount?: number | string | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -533,8 +533,8 @@ export interface FinancialResponse {
   marginPercent: string | null;
   estimatedCost: string | null;
   estimatedNetEarnings: string | null;
-  dispatchFeeOverrideType: DispatchFeeType | null;
-  dispatchFeeOverrideAmount: string | null;
+  dispatchFeeType: DispatchFeeType | null;
+  dispatchFeeAmount: string | null;
 }
 
 export interface RouteResponse {

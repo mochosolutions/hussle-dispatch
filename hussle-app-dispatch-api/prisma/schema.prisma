@@ -830,8 +830,15 @@ model Load {
   smsPromptSchedules        SmsPromptSchedule[]
   onboardingOverride        Boolean                    @default(false)
   onboardingOverrideReason  String?
-  dispatchFeeOverrideType   DispatchFeeType?
-  dispatchFeeOverrideAmount Decimal?                   @db.Decimal(10, 2)
+  dispatchFeeType           DispatchFeeType?
+  dispatchFeeAmount         Decimal?                   @db.Decimal(10, 2)
+  partnerSplitPercent       Decimal?                   @db.Decimal(7, 4)
+  driverPayType             DriverPayType?
+  driverPayRate             Decimal?                   @db.Decimal(7, 4)
+  dispatcherCommissionType  DispatcherCommType?
+  dispatcherCommissionRate  Decimal?                   @db.Decimal(7, 4)
+  feeIncludesAccessorials   Boolean?
+  payFromNet                Boolean?
 
   @@unique([organizationId, loadNumber])
   @@index([organizationId])

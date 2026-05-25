@@ -209,8 +209,8 @@ export interface SettlementLoadQueryPort {
       customerRate: unknown | null; // Decimal
       carrierPayout: unknown | null; // Decimal
       dispatchFee: unknown; // Decimal
-      dispatchFeeOverrideType: DispatchFeeType | null;
-      dispatchFeeOverrideAmount: unknown | null; // Decimal
+      dispatchFeeType: DispatchFeeType | null;
+      dispatchFeeAmount: unknown | null; // Decimal
       totalMiles: number | null;
       loadedMiles: number | null;
       estimatedHours: unknown | null; // Decimal

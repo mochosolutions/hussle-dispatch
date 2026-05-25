@@ -235,11 +235,11 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
         // + load overrides, with fee base respecting feeIncludesAccessorials.
         const resolvedFee = resolveDispatchFee({
           load: {
-            dispatchFeeOverrideType: load.dispatchFeeOverrideType,
-            dispatchFeeOverrideAmount:
-              load.dispatchFeeOverrideAmount === null
+            dispatchFeeType: load.dispatchFeeType,
+            dispatchFeeAmount:
+              load.dispatchFeeAmount === null
                 ? null
-                : new Prisma.Decimal(String(load.dispatchFeeOverrideAmount)),
+                : new Prisma.Decimal(String(load.dispatchFeeAmount)),
           },
           carrier,
         });
