@@ -10,11 +10,13 @@ import type {
 
 /**
  * Source-of-truth compliance projection on the response. When a compute result
- * is provided, the seven legacy Carrier projection columns (and the
- * insuranceWarning bucket) are sourced from the derived state instead of the
- * cached row, preserving the existing response field names and types so
- * downstream UI does not change. When `compliance` is undefined the legacy
- * carrier-row values flow through unchanged (used during incremental rollout).
+ * is provided, the response's `insuranceWarning` tri-state is sourced from the
+ * derived state. When `compliance` is undefined the service-output value flows
+ * through unchanged (used during incremental rollout). The five legacy Carrier
+ * projection columns (insuranceCertOnFile, insuranceExpiry,
+ * dispatchAgreementOnFile, dispatchAgreementSignedAt, signedAgreementId) have
+ * been removed from the schema (US-06); consumers must derive them via the
+ * shared compliance helpers.
  */
 const overlayCompliance = (
   carrier: CarrierServiceOutput,
@@ -28,11 +30,6 @@ const overlayCompliance = (
   const warning: InsuranceWarning = compliance.insurance.warning;
   return {
     ...carrier,
-    insuranceCertOnFile: compliance.insurance.onFile,
-    insuranceExpiry: compliance.insurance.expiresAt,
-    dispatchAgreementOnFile: compliance.agreement.onFile,
-    dispatchAgreementSignedAt: compliance.agreement.signedAt,
-    signedAgreementId: compliance.agreement.signedAgreementId,
     // Existing UI consumes `insuranceWarning` as a tri-state — keep the bucket
     // semantics identical (EXPIRED / 7_DAY / 30_DAY / null).
     insuranceWarning:
