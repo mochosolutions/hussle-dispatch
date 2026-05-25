@@ -3,7 +3,6 @@ import type { Logger } from '@/shared/utils/logger';
 
 import { voidForReSign } from '../services/voidForReSign';
 import type { AgreementRepoPort } from '../types/agreementRepoPort';
-import type { CarrierAgreementWritePort } from '../types/carrierAgreementWritePort';
 import type { Agreement } from '../types/agreementTypes';
 
 const makeAgreement = (overrides: Partial<Agreement> = {}): Agreement =>
@@ -48,10 +47,6 @@ const makeDeps = () => {
     countActivePending: jest.fn(),
     findManySigned: jest.fn(),
   };
-  const carrierWritePort: jest.Mocked<CarrierAgreementWritePort> = {
-    setSignedAgreementId: jest.fn(),
-    clearSignedAgreement: jest.fn(),
-  };
   const eventBus = { publish: jest.fn() } as unknown as jest.Mocked<EventBus>;
   const logger: jest.Mocked<Logger> = {
     info: jest.fn(),
@@ -60,7 +55,7 @@ const makeDeps = () => {
     debug: jest.fn(),
   } as unknown as jest.Mocked<Logger>;
 
-  return { agreementRepo, carrierWritePort, eventBus, logger };
+  return { agreementRepo, eventBus, logger };
 };
 
 describe('voidForReSign', () => {
@@ -75,11 +70,10 @@ describe('voidForReSign', () => {
 
     expect(result.voidedAgreementIds).toEqual([]);
     expect(deps.agreementRepo.update).not.toHaveBeenCalled();
-    expect(deps.carrierWritePort.clearSignedAgreement).not.toHaveBeenCalled();
     expect(deps.eventBus.publish).not.toHaveBeenCalled();
   });
 
-  it('voids every signed agreement and clears the carrier projection', async () => {
+  it('voids every signed agreement for the carrier', async () => {
     const deps = makeDeps();
     const a1 = makeAgreement({ id: 'a-1' });
     const a2 = makeAgreement({ id: 'a-2' });
@@ -103,7 +97,6 @@ describe('voidForReSign', () => {
         voidReason: 'CARRIER_IDENTITY_CHANGED',
       }),
     );
-    expect(deps.carrierWritePort.clearSignedAgreement).toHaveBeenCalledWith('carrier-1');
   });
 
   it('emits one agreement.voided event per affected agreement', async () => {

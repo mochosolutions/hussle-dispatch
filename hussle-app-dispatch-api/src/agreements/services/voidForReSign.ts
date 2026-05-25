@@ -2,7 +2,6 @@ import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
 
 import type { AgreementRepoPort } from '../types/agreementRepoPort';
-import type { CarrierAgreementWritePort } from '../types/carrierAgreementWritePort';
 
 export type IdentityField = 'legalName' | 'mcNumber' | 'dotNumber';
 
@@ -14,7 +13,6 @@ export interface VoidForReSignInput {
 
 export interface VoidForReSignDeps {
   agreementRepo: AgreementRepoPort;
-  carrierWritePort: CarrierAgreementWritePort;
   eventBus: EventBus;
   logger: Logger;
   now?: () => Date;
@@ -72,8 +70,6 @@ export const voidForReSign = async (
       voidedByUserId: null,
     });
   }
-
-  await deps.carrierWritePort.clearSignedAgreement(input.carrierId);
 
   deps.logger.info('Voided agreements for carrier identity change', {
     carrierId: input.carrierId,

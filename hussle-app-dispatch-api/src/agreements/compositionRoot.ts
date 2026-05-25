@@ -14,7 +14,6 @@ import { createSignedAgreementWatchdog } from './jobs/signedAgreementWatchdog';
 import { createCarrierQueries } from './queries/carrierQueries';
 import { createOrganizationQueries } from './queries/organizationQueries';
 import { agreementRepositoryPrisma } from './repositories/agreementRepositoryPrisma';
-import { carrierAgreementWriteRepositoryPrisma } from './repositories/carrierAgreementWriteRepositoryPrisma';
 import { createAgreementsRouter } from './routes/agreementRoutes';
 import type { EnsureAgreementForCarrierInput } from './services/ensureAgreementForCarrier';
 import { ensureAgreementForCarrier } from './services/ensureAgreementForCarrier';
@@ -98,7 +97,6 @@ export interface AgreementsModule {
  */
 export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsModule => {
   const agreementRepo = agreementRepositoryPrisma(deps.prisma);
-  const carrierAgreementWritePort = carrierAgreementWriteRepositoryPrisma(deps.prisma);
   const carrierQueries = createCarrierQueries(deps.prisma);
   const orgQueries = createOrganizationQueries(deps.prisma);
 
@@ -199,7 +197,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     await initializeAgreementSignedSubscriber({
       eventBus: deps.eventBus,
       finalizeAgreement: finalizeAgreementBound,
-      carrierWritePort: carrierAgreementWritePort,
       logger: deps.logger,
     });
     watchdog.start();
@@ -221,7 +218,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     voidForReSign: (input) =>
       voidForReSign(input, {
         agreementRepo,
-        carrierWritePort: carrierAgreementWritePort,
         eventBus: deps.eventBus,
         logger: deps.logger,
       }),
@@ -230,7 +226,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
           mockSignAgreement(input, {
             agreementRepo,
             markSigned,
-            carrierWritePort: carrierAgreementWritePort,
             logger: deps.logger,
           })
       : undefined,
