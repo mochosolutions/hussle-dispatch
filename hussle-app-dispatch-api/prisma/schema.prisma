@@ -576,7 +576,6 @@ model Carrier {
   tinType                           String?
   signatoryName                     String?
   signatoryTitle                    String?
-  signedAgreementId                 String?
   type                              CarrierType          @default(EXTERNAL_CARRIER)
   mcNumber                          String?
   dotNumber                         String?
@@ -599,10 +598,6 @@ model Carrier {
   payFromNet                        Boolean              @default(false)
   includeExpensesOnSettlement       Boolean              @default(false)
   ownerOpPayPercent                 Decimal?             @db.Decimal(7, 4)
-  dispatchAgreementOnFile           Boolean              @default(false)
-  dispatchAgreementSignedAt         DateTime?
-  insuranceCertOnFile               Boolean              @default(false)
-  insuranceExpiry                   DateTime?
   minimumRatePerMile                Decimal?             @db.Decimal(10, 2)
   homeBaseCity                      String?
   homeBaseState                     String?
