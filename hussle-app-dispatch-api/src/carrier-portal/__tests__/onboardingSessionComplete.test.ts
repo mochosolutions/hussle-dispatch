@@ -51,9 +51,6 @@ const buildDerivedComplianceDeps = (state: ComplianceState = {}): DerivedComplia
 const TOTAL_PHASES = 6;
 const allPhasesCompleted = Array.from({ length: TOTAL_PHASES }, (_, i) => i + 1);
 
-const futureDate = new Date();
-futureDate.setFullYear(futureDate.getFullYear() + 1);
-
 const pastDate = new Date('2024-01-15');
 
 const makeSession = (overrides: Partial<OnboardingSession> = {}): OnboardingSession => ({
@@ -80,9 +77,6 @@ const makeCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
     id: 'carrier-1',
     name: 'Test Carrier',
     type: 'EXTERNAL_CARRIER',
-    dispatchAgreementOnFile: true,
-    insuranceCertOnFile: true,
-    insuranceExpiry: futureDate,
     tin: '12-3456789',
     status: 'ONBOARDING',
     managedByOrgId: 'org-1',

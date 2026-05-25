@@ -29,6 +29,10 @@ const buildCarrier = () => ({
   partnerSplitPercent: new Decimal('50.00'),
   feeIncludesAccessorials: true,
   ownerOpPayPercent: null,
+  // FIXME(US-05): These 4 fields are dropped Carrier compliance columns kept
+  // here only because enrichCarrier in carrierService.ts still reads them
+  // directly. US-06 must migrate enrichCarrier to read derived compliance,
+  // then these fields can be removed.
   dispatchAgreementOnFile: true,
   dispatchAgreementSignedAt: null,
   insuranceCertOnFile: true,

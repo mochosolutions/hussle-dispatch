@@ -60,10 +60,6 @@ const makeCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
     name: 'Acme Logistics LLC',
     legalName: 'Acme Logistics LLC',
     type: 'EXTERNAL_CARRIER',
-    dispatchAgreementOnFile: false,
-    dispatchAgreementSignedAt: null,
-    insuranceCertOnFile: true,
-    insuranceExpiry: futureDate,
     tin: null,
     status: 'ONBOARDING',
     managedByOrgId: 'org-1',
@@ -163,7 +159,7 @@ describe('onboardingSessionService.submitStep', () => {
     expect(updateArgs.completedStepIds).toEqual(['welcome-segmentation']);
   });
 
-  it('rejects locked-field mutation with FieldLockedError when dispatchAgreementSignedAt is set', async () => {
+  it('rejects locked-field mutation with FieldLockedError when agreement is signed', async () => {
     const deps = makeDeps({ agreementSignedAt: new Date('2026-01-01') });
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'Acme Logistics LLC' } } as Prisma.JsonValue,
