@@ -106,11 +106,6 @@ export const carrierEditSchema = Yup.object({
       },
     ),
   feeIncludesAccessorials: Yup.boolean(),
-  dispatchAgreementOnFile: Yup.boolean(),
-  insuranceCertOnFile: Yup.boolean(),
-  w9OnFile: Yup.boolean(),
-  carrierPacketOnFile: Yup.boolean(),
-  insuranceExpiry: Yup.date().nullable(),
   notes: Yup.string(),
 }).required();
 

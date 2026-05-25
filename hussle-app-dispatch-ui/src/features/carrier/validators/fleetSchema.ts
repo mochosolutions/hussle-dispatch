@@ -25,6 +25,4 @@ export const dispatchTermsSchema = Yup.object().shape({
     .default('PERCENTAGE'),
   dispatchFeeAmount: Yup.number().min(0, 'Min 0').default(0),
   feeIncludesAccessorials: Yup.boolean().default(true),
-  dispatchAgreementOnFile: Yup.boolean().default(false),
-  dispatchAgreementSignedAt: Yup.string().nullable().default(null),
 });

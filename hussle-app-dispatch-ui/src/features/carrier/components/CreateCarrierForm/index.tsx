@@ -4,7 +4,6 @@ import { Grid, Divider } from '@mui/material';
 import { SectionLabel } from 'components/Typography';
 import {
   CheckboxField,
-  DateField,
   LoadingButton,
   SelectField,
   TextField,
@@ -51,11 +50,6 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
       dispatchFeeType: carrier?.dispatchFeeType ?? 'PERCENTAGE',
       dispatchFeeAmount: carrier?.dispatchFeeAmount ?? 0,
       feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
-      dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
-      insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
-      w9OnFile: carrier?.w9OnFile ?? false,
-      carrierPacketOnFile: carrier?.carrierPacketOnFile ?? false,
-      insuranceExpiry: carrier?.insuranceExpiry ? new Date(carrier.insuranceExpiry) : null,
       notes: carrier?.notes ?? '',
     },
     validationSchema: carrierEditSchema,
@@ -146,46 +140,6 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
             label="Fee Includes Accessorials"
             formik={formik}
           />
-        </Grid>
-
-        {/* Onboarding */}
-        <Grid item xs={12} sx={{ mt: 1 }}>
-          <SectionLabel sx={{ mb: 1, display: 'block' }}>
-            Onboarding
-          </SectionLabel>
-          <Divider sx={{ mb: 2 }} />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <CheckboxField
-            name="dispatchAgreementOnFile"
-            label="Dispatch Agreement on File"
-            formik={formik}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <CheckboxField
-            name="insuranceCertOnFile"
-            label="Insurance Certificate on File"
-            formik={formik}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <CheckboxField name="w9OnFile" label="W-9 on File" formik={formik} />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <CheckboxField
-            name="carrierPacketOnFile"
-            label="Carrier Packet on File"
-            formik={formik}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <DateField name="insuranceExpiry" label="Insurance Expiry" formik={formik} />
         </Grid>
 
         {/* Notes */}

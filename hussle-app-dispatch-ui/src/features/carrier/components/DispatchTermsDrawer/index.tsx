@@ -37,8 +37,6 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({ carrie
     dispatchFeeType: (carrier.dispatchFeeType ?? 'PERCENTAGE') as DispatchFeeType,
     dispatchFeeAmount: carrier.dispatchFeeAmount ?? 0,
     feeIncludesAccessorials: carrier.feeIncludesAccessorials ?? true,
-    dispatchAgreementOnFile: carrier.dispatchAgreementOnFile ?? false,
-    dispatchAgreementSignedAt: null as string | null,
   };
 
   return (
@@ -81,12 +79,6 @@ export const DispatchTermsDrawer: React.FC<DispatchTermsDrawerProps> = ({ carrie
             <CheckboxField
               name="feeIncludesAccessorials"
               label="Fee includes accessorials"
-              formik={formikProps}
-            />
-
-            <CheckboxField
-              name="dispatchAgreementOnFile"
-              label="Dispatch agreement on file"
               formik={formikProps}
             />
           </Stack>

@@ -4,7 +4,6 @@ import { SectionLabel } from 'components/Typography';
 import {
   CheckboxField,
   CurrencyField,
-  DateField,
   EmailField,
   PercentField,
   PhoneField,
@@ -59,11 +58,6 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
     dispatchFeeType: (carrier?.dispatchFeeType ?? 'PERCENTAGE') as DispatchFeeType,
     dispatchFeeAmount: carrier?.dispatchFeeAmount ?? 0,
     feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? true,
-    dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
-    insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
-    w9OnFile: carrier?.w9OnFile ?? false,
-    carrierPacketOnFile: carrier?.carrierPacketOnFile ?? false,
-    insuranceExpiry: carrier?.insuranceExpiry ? new Date(carrier.insuranceExpiry) : null,
     notes: carrier?.notes ?? '',
   };
 
@@ -164,41 +158,6 @@ export const CarrierFormDrawer: React.FC<CarrierFormDrawerProps> = ({
             label="Fee Includes Accessorials"
             formik={formik}
           />
-
-          <Divider />
-
-          <SectionLabel sx={{ display: 'block' }}>
-            Onboarding
-          </SectionLabel>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <CheckboxField
-                name="dispatchAgreementOnFile"
-                label="Dispatch Agreement on File"
-                formik={formik}
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <CheckboxField
-                name="insuranceCertOnFile"
-                label="Insurance Certificate on File"
-                formik={formik}
-              />
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <CheckboxField name="w9OnFile" label="W-9 on File" formik={formik} />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <CheckboxField
-                name="carrierPacketOnFile"
-                label="Carrier Packet on File"
-                formik={formik}
-              />
-            </Box>
-          </Box>
-          <DateField name="insuranceExpiry" label="Insurance Expiry" formik={formik} />
 
           <Divider />
 
