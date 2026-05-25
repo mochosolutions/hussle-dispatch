@@ -10,12 +10,66 @@ const makeCarrier = (overrides = {}) => ({
   id: 'carrier-1',
   name: 'Test Carrier',
   type: 'EXTERNAL_CARRIER',
-  dispatchAgreementOnFile: false,
-  insuranceCertOnFile: false,
-  insuranceExpiry: null,
   tinOnFile: false,
   ...overrides,
 });
+
+interface ComplianceFixture {
+  insuranceOnFile: boolean;
+  insuranceExpiresAt: Date | null;
+  agreementSigned: boolean;
+}
+
+const makeComplianceDeps = (fixture: ComplianceFixture) => {
+  const insuranceDocs = fixture.insuranceOnFile
+    ? [
+        {
+          id: 'doc-insurance-1',
+          organizationId: 'org-1',
+          entityType: 'carrier',
+          entityId: 'carrier-1',
+          type: 'INSURANCE_CERT',
+          fileName: 'coi.pdf',
+          fileSize: null,
+          mimeType: 'application/pdf',
+          s3Key: 's3://test/coi.pdf',
+          url: 'https://test/coi.pdf',
+          uploadStatus: 'confirmed',
+          isArchived: false,
+          uploadedByUserId: null,
+          notes: null,
+          expiresAt: fixture.insuranceExpiresAt,
+          metadata: null,
+          reviewStatus: 'approved',
+          reviewedAt: null,
+          reviewedByUserId: null,
+          rejectionReason: null,
+          signatureData: null,
+          signedAt: null,
+          createdAt: new Date('2026-03-01T00:00:00.000Z'),
+          uploadedByUser: null,
+        },
+      ]
+    : [];
+  return {
+    documentRepo: {
+      findManyForCompliance: jest.fn().mockResolvedValue(insuranceDocs),
+    },
+    agreementRepo: {
+      findManySigned: jest.fn().mockResolvedValue(
+        fixture.agreementSigned
+          ? [
+              {
+                id: 'agreement-1',
+                carrierId: 'carrier-1',
+                signedAt: new Date('2026-03-01T00:00:00.000Z'),
+              },
+            ]
+          : [],
+      ),
+    },
+  };
+};
 
 const makeLoad = (overrides = {}) => ({
   id: 'load-1',
@@ -52,8 +106,19 @@ describe('dispatchOverrideService', () => {
     };
   });
 
-  const createService = () =>
-    createDispatchOverrideService({ carrierQuery, loadQuery, auditLog });
+  const createService = (
+    fixture: ComplianceFixture = {
+      insuranceOnFile: false,
+      insuranceExpiresAt: null,
+      agreementSigned: false,
+    },
+  ) =>
+    createDispatchOverrideService({
+      carrierQuery,
+      loadQuery,
+      auditLog,
+      derivedComplianceDeps: makeComplianceDeps(fixture),
+    });
 
   it('returns 200 and sets override fields when admin calls with valid loadId and reason', async () => {
     // Arrange
@@ -146,18 +211,18 @@ describe('dispatchOverrideService', () => {
   });
 
   it('includes missing documents from onboarding gate in audit metadata', async () => {
-    // Arrange — carrier with only dispatch agreement missing
-    const carrier = makeCarrier({
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      tinOnFile: false,
-    });
+    // Arrange — carrier has insurance + signed agreement on file, but no W-9.
+    const carrier = makeCarrier({ tinOnFile: false });
 
     carrierQuery.findById.mockResolvedValue(carrier);
     loadQuery.findById.mockResolvedValue(makeLoad());
     loadQuery.updateOverride.mockResolvedValue(makeLoad({ onboardingOverride: true }));
 
-    const service = createService();
+    const service = createService({
+      insuranceOnFile: true,
+      insuranceExpiresAt: null,
+      agreementSigned: true,
+    });
 
     // Act
     await service.override(makeInput());

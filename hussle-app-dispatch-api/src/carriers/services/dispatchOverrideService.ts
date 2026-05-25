@@ -1,6 +1,8 @@
 import { NotFoundError } from '@/shared/errors';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import type { CarrierOnboardingResult } from '@/shared/onboardingGate';
+import type { DerivedComplianceDeps } from './derivedCompliance';
+import { computeAgreementStatus, computeInsuranceStatus } from './derivedCompliance';
 
 interface DispatchOverrideInput {
   carrierId: string;
@@ -14,9 +16,6 @@ interface CarrierForOverride {
   id: string;
   name: string;
   type: string;
-  dispatchAgreementOnFile: boolean;
-  insuranceCertOnFile: boolean;
-  insuranceExpiry: Date | null;
   tinOnFile: boolean;
 }
 
@@ -57,6 +56,7 @@ interface DispatchOverrideServiceDeps {
   carrierQuery: DispatchOverrideCarrierQueryPort;
   loadQuery: DispatchOverrideLoadQueryPort;
   auditLog: DispatchOverrideAuditPort;
+  derivedComplianceDeps: DerivedComplianceDeps;
 }
 
 interface DispatchOverrideResult {
@@ -75,11 +75,15 @@ export const createDispatchOverrideService = (deps: DispatchOverrideServiceDeps)
       throw new NotFoundError('Load not found.');
     }
 
+    const [insurance, agreement] = await Promise.all([
+      computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
+      computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
+    ]);
     const onboardingResult: CarrierOnboardingResult = checkCarrierOnboarding({
       carrierType: carrier.type as 'COMPANY_ASSET' | 'EXTERNAL_CARRIER' | 'LEASED_CARRIER',
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
+      dispatchAgreementOnFile: agreement.onFile,
+      insuranceCertOnFile: insurance.onFile,
+      insuranceExpiry: insurance.expiresAt,
       tinOnFile: carrier.tinOnFile,
     });
 
