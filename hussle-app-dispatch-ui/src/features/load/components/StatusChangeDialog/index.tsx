@@ -1,27 +1,22 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
+  Alert,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Grid,
-  IconButton,
-  LinearProgress,
   Stack,
   TextField,
-  Alert,
 } from '@mui/material';
-import { ErrorText, FieldLabel, Meta, MetaStrong } from 'components/Typography';
+import { FieldLabel, Meta, MetaStrong } from 'components/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { StatusBadge } from 'components/Statusbadge';
+import { SingleDocumentUpload } from 'components/SingleDocumentUpload';
 import { SubmitButton } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
 import {
@@ -31,7 +26,10 @@ import {
   fetchLoadDetailsRequest,
 } from '../../store/reducers';
 import { closeModal, openModal } from 'features/ui/store/reducers/uiSlice';
-import { uploadDocumentRequest } from 'features/documents/store/reducers/documentPageSlice';
+import {
+  uploadDocumentRequest,
+  clearUploadStatus,
+} from 'features/documents/store/reducers/documentPageSlice';
 import {
   selectUploadStatus,
   selectUploadError,
@@ -74,6 +72,21 @@ const ASSIGNMENT_FIELD_TO_KEY: Record<string, 'carrierId' | 'driverId' | 'vehicl
   'assignment.vehicle.id': 'vehicleId',
 };
 
+type SingleUploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
+const toSingleUploadStatus = (status: string): SingleUploadStatus => {
+  if (status === 'Pending') {
+    return 'uploading';
+  }
+  if (status === 'Fulfilled') {
+    return 'success';
+  }
+  if (status === 'Rejected') {
+    return 'error';
+  }
+  return 'idle';
+};
+
 export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, targetStatus }) => {
   const dispatch = useDispatch();
   const isOpen = useSelector((state) => state.pages.ui?.modal?.modalType === 'statusChangeDialog');
@@ -111,31 +124,19 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
 
   const [notes, setNotes] = useState('');
 
-  // Inline rate con upload state
-  const [rateConUpload, setRateConUpload] = useState<{
-    clientId: string;
-    fileName: string;
-  } | null>(null);
-  const rateConInputRef = useRef<HTMLInputElement>(null);
-  const rateConUploadStatus = useSelector(
-    selectUploadStatus(rateConUpload?.clientId ?? ''),
-  );
-  const rateConUploadError = useSelector(
-    selectUploadError(rateConUpload?.clientId ?? ''),
-  );
-  const isRateConUploaded = rateConUploadStatus === 'Fulfilled';
+  // Independent clientIds for the rate-con and BOL upload slots
+  const rateConClientId = useMemo(() => crypto.randomUUID(), []);
+  const bolClientId = useMemo(() => crypto.randomUUID(), []);
 
-  // Optional BOL upload state (Mark Delivered flow). Does NOT gate submit —
-  // BOL is only required at invoice creation, enforced server-side by
-  // invoiceReadinessSubscriber. Lets dispatcher satisfy the invoice gate
-  // in one step when they have the file on hand.
-  const [bolUpload, setBolUpload] = useState<{
-    clientId: string;
-    fileName: string;
-  } | null>(null);
-  const bolInputRef = useRef<HTMLInputElement>(null);
-  const bolUploadStatus = useSelector(selectUploadStatus(bolUpload?.clientId ?? ''));
-  const bolUploadError = useSelector(selectUploadError(bolUpload?.clientId ?? ''));
+  const [rateConFileName, setRateConFileName] = useState<string | undefined>(undefined);
+  const [bolFileName, setBolFileName] = useState<string | undefined>(undefined);
+
+  const rateConUploadStatus = useSelector(selectUploadStatus(rateConClientId));
+  const rateConUploadError = useSelector(selectUploadError(rateConClientId));
+  const bolUploadStatus = useSelector(selectUploadStatus(bolClientId));
+  const bolUploadError = useSelector(selectUploadError(bolClientId));
+
+  const isRateConUploaded = rateConUploadStatus === 'Fulfilled';
   const isBolUploaded = bolUploadStatus === 'Fulfilled';
 
   // Refetch load detail once BOL upload settles so tracking.bolSignedAt
@@ -224,51 +225,52 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
     [assignmentValues],
   );
 
-  const handleRateConFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const clientId = crypto.randomUUID();
-      setRateConUpload({ clientId, fileName: file.name });
+  const handleRateConUpload = useCallback(
+    (file: File, expiresAt: string, metadata: Record<string, string>) => {
+      setRateConFileName(file.name);
       dispatch(
         uploadDocumentRequest({
           file,
           documentType: DocumentType.BROKER_RATE_CON,
           entityType: 'load',
           entityId: loadId,
-          clientId,
+          clientId: rateConClientId,
+          expiresAt: expiresAt || undefined,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         }),
       );
-      e.target.value = '';
     },
-    [dispatch, loadId],
+    [dispatch, loadId, rateConClientId],
   );
 
-  const handleBolFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        setBolUpload({ clientId: '', fileName: file.name });
-        e.target.value = '';
-        return;
-      }
-      const clientId = crypto.randomUUID();
+  const handleRateConReset = useCallback(() => {
+    setRateConFileName(undefined);
+    dispatch(clearUploadStatus({ clientId: rateConClientId }));
+  }, [dispatch, rateConClientId]);
+
+  const handleBolUpload = useCallback(
+    (file: File, expiresAt: string, metadata: Record<string, string>) => {
+      setBolFileName(file.name);
       bolRefetchedRef.current = false;
-      setBolUpload({ clientId, fileName: file.name });
       dispatch(
         uploadDocumentRequest({
           file,
           documentType: DocumentType.BOL_SIGNED,
           entityType: 'load',
           entityId: loadId,
-          clientId,
+          clientId: bolClientId,
+          expiresAt: expiresAt || undefined,
+          metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         }),
       );
-      e.target.value = '';
     },
-    [dispatch, loadId],
+    [dispatch, loadId, bolClientId],
   );
+
+  const handleBolReset = useCallback(() => {
+    setBolFileName(undefined);
+    dispatch(clearUploadStatus({ clientId: bolClientId }));
+  }, [dispatch, bolClientId]);
 
   const handleClose = (_event: object, reason?: 'backdropClick' | 'escapeKeyDown') => {
     if (reason === 'backdropClick') {
@@ -383,70 +385,14 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
               <FieldLabel sx={{ mb: 1, display: 'block' }}>
                 Upload Rate Confirmation
               </FieldLabel>
-              {!rateConUpload ? (
-                <>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<CloudUploadOutlinedIcon />}
-                    onClick={() => rateConInputRef.current?.click()}
-                  >
-                    Select Rate Con
-                  </Button>
-                  <input
-                    ref={rateConInputRef}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.webp"
-                    onChange={handleRateConFileChange}
-                    style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
-                  />
-                </>
-              ) : (
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1.5}
-                  sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: 'action.hover' }}
-                >
-                  {rateConUploadStatus === 'Pending' && (
-                    <LinearProgress
-                      sx={{ width: 24, height: 4, borderRadius: 1, flexShrink: 0 }}
-                    />
-                  )}
-                  {rateConUploadStatus === 'Fulfilled' && (
-                    <CheckCircleOutlineIcon sx={{ fontSize: 20, color: 'success.main' }} />
-                  )}
-                  {rateConUploadStatus === 'Rejected' && (
-                    <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
-                  )}
-                  <Chip label="Rate Con" size="small" variant="outlined" color="primary" />
-                  <Meta
-                    sx={{
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      color: 'text.primary',
-                    }}
-                  >
-                    {rateConUpload.fileName}
-                  </Meta>
-                  {rateConUploadStatus === 'Rejected' && rateConUploadError && (
-                    <ErrorText>
-                      {rateConUploadError}
-                    </ErrorText>
-                  )}
-                  {rateConUploadStatus === 'Rejected' && (
-                    <IconButton
-                      size="small"
-                      aria-label="Remove failed upload"
-                      onClick={() => setRateConUpload(null)}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </Stack>
-              )}
+              <SingleDocumentUpload
+                documentType={DocumentType.BROKER_RATE_CON}
+                status={toSingleUploadStatus(rateConUploadStatus)}
+                errorMessage={rateConUploadError ?? undefined}
+                fileName={rateConFileName}
+                onUpload={handleRateConUpload}
+                onReset={handleRateConReset}
+              />
             </Box>
           )}
 
@@ -463,75 +409,14 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
                 Upload now to start the invoice. You can mark delivered without it; the
                 invoice will be created automatically once the signed BOL is on file.
               </Meta>
-              {!bolUpload ? (
-                <>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<CloudUploadOutlinedIcon />}
-                    onClick={() => bolInputRef.current?.click()}
-                  >
-                    Select Signed BOL
-                  </Button>
-                  <input
-                    ref={bolInputRef}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.webp"
-                    onChange={handleBolFileChange}
-                    style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
-                  />
-                </>
-              ) : (
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1.5}
-                  sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: 'background.paper' }}
-                >
-                  {bolUploadStatus === 'Pending' && (
-                    <LinearProgress
-                      sx={{ width: 24, height: 4, borderRadius: 1, flexShrink: 0 }}
-                    />
-                  )}
-                  {bolUploadStatus === 'Fulfilled' && (
-                    <CheckCircleOutlineIcon sx={{ fontSize: 20, color: 'success.main' }} />
-                  )}
-                  {(bolUploadStatus === 'Rejected' || bolUpload.clientId === '') && (
-                    <ErrorOutlineIcon sx={{ fontSize: 20, color: 'error.main' }} />
-                  )}
-                  <Chip label="BOL" size="small" variant="outlined" color="primary" />
-                  <Meta
-                    sx={{
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      color: 'text.primary',
-                    }}
-                  >
-                    {bolUpload.fileName}
-                  </Meta>
-                  {bolUpload.clientId === '' && (
-                    <ErrorText>
-                      File exceeds 10 MB
-                    </ErrorText>
-                  )}
-                  {bolUploadStatus === 'Rejected' && bolUploadError && (
-                    <ErrorText>
-                      {bolUploadError}
-                    </ErrorText>
-                  )}
-                  {(bolUploadStatus === 'Rejected' || bolUpload.clientId === '') && (
-                    <IconButton
-                      size="small"
-                      aria-label="Remove failed upload"
-                      onClick={() => setBolUpload(null)}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </Stack>
-              )}
+              <SingleDocumentUpload
+                documentType={DocumentType.BOL_SIGNED}
+                status={toSingleUploadStatus(bolUploadStatus)}
+                errorMessage={bolUploadError ?? undefined}
+                fileName={bolFileName}
+                onUpload={handleBolUpload}
+                onReset={handleBolReset}
+              />
             </Alert>
           )}
 
