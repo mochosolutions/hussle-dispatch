@@ -104,6 +104,7 @@ export interface CreateLoadInput {
   dispatcherCommissionRate?: number | string | null;
   feeIncludesAccessorials?: boolean | null;
   payFromNet?: boolean | null;
+  carrierType?: CarrierType | null;
 }
 
 export interface UpdateLoadInput {
@@ -140,6 +141,7 @@ export interface UpdateLoadInput {
   dispatcherCommissionRate?: number | string | null;
   feeIncludesAccessorials?: boolean | null;
   payFromNet?: boolean | null;
+  carrierType?: CarrierType | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -354,6 +356,7 @@ export interface CarrierRateSnapshot {
   partnerSplitPercent: string;
   feeIncludesAccessorials: boolean;
   payFromNet: boolean;
+  carrierType: CarrierType;
 }
 
 export interface CarrierAssignmentQueryPort {

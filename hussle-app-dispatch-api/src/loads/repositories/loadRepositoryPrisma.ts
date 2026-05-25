@@ -532,6 +532,7 @@ export const carrierAssignmentQueryPrisma = (
         partnerSplitPercent: true,
         feeIncludesAccessorials: true,
         payFromNet: true,
+        type: true,
       },
     });
 
@@ -546,6 +547,7 @@ export const carrierAssignmentQueryPrisma = (
       partnerSplitPercent: String(carrier.partnerSplitPercent),
       feeIncludesAccessorials: carrier.feeIncludesAccessorials,
       payFromNet: carrier.payFromNet,
+      carrierType: carrier.type,
     };
   },
 });

@@ -656,6 +656,7 @@ const buildRateSnapshot = async (
       snapshot.partnerSplitPercent = carrierRate.partnerSplitPercent;
       snapshot.feeIncludesAccessorials = carrierRate.feeIncludesAccessorials;
       snapshot.payFromNet = carrierRate.payFromNet;
+      snapshot.carrierType = carrierRate.carrierType;
     }
   }
 
