@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box } from '@mui/material';
-import {
-  ArrowForwardOutlined,
-  CheckCircleOutline,
-  CloudUploadOutlined,
-  ErrorOutline,
-} from '@mui/icons-material';
+import { ArrowForwardOutlined, ErrorOutline } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 
 import { useDispatch, useSelector } from 'store';
 import { Body, BodyStrong } from 'components/Typography';
+import { SingleDocumentUpload } from 'components/SingleDocumentUpload';
+import { DocumentType } from 'features/documents/types';
 
 import type { DocumentSlot, Step } from 'features/carrier-portal/engine';
 import {
@@ -37,6 +34,11 @@ const AGREEMENT_TITLES: Record<string, string> = {
 const titleForKey = (key: string): string => AGREEMENT_TITLES[key] ?? key;
 
 const TERMINAL_FAILURE_STATUSES = new Set(['VOIDED', 'DECLINED', 'EXPIRED']);
+
+const DOCUMENT_TYPE_VALUES = new Set<string>(Object.values(DocumentType));
+
+const toDocumentType = (value: string): DocumentType =>
+  DOCUMENT_TYPE_VALUES.has(value) ? (value as DocumentType) : DocumentType.OTHER;
 
 const formatTs = (ts: string | null | undefined): string => {
   if (!ts) return '';
@@ -81,8 +83,10 @@ const AgreementListView: React.FC<AgreementListViewProps> = ({ step }) => {
   const [localUploadedTypes, setLocalUploadedTypes] = useState<Set<string>>(new Set());
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [uploadErrorType, setUploadErrorType] = useState<string | null>(null);
+  const [uploadingFileName, setUploadingFileName] = useState<Record<string, string | undefined>>(
+    {},
+  );
   const prevUploadStatus = useRef(uploadStatus);
-  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     if (prevUploadStatus.current === 'pending' && uploadStatus === 'success') {
@@ -92,10 +96,24 @@ const AgreementListView: React.FC<AgreementListViewProps> = ({ step }) => {
           next.add(uploadingType);
           return next;
         });
+        const clearedType = uploadingType;
+        setUploadingFileName((prev) => {
+          const next = { ...prev };
+          delete next[clearedType];
+          return next;
+        });
         setUploadingType(null);
         setUploadErrorType(null);
       }
     } else if (prevUploadStatus.current === 'pending' && uploadStatus === 'failure') {
+      if (uploadingType !== null) {
+        const clearedType = uploadingType;
+        setUploadingFileName((prev) => {
+          const next = { ...prev };
+          delete next[clearedType];
+          return next;
+        });
+      }
       setUploadErrorType(uploadingType);
       setUploadingType(null);
     }
@@ -181,28 +199,34 @@ const AgreementListView: React.FC<AgreementListViewProps> = ({ step }) => {
     continueLabel: 'Continue',
   });
 
-  const handleChooseFile = useCallback((docId: string): void => {
-    fileInputs.current[docId]?.click();
-  }, []);
-
-  const handleFileChange = useCallback(
+  const handleSlotUpload = useCallback(
     (slot: DocumentSlot) =>
-      (event: React.ChangeEvent<HTMLInputElement>): void => {
-        const file = event.target.files?.[0];
-        if (file) {
-          setUploadingType(slot.documentType);
-          setUploadErrorType(null);
-          dispatch(
-            carrierPortalV2Actions.uploadDocument({
-              documentType: slot.documentType,
-              file,
-            }),
-          );
-        }
-        // Reset so re-selecting the same file re-fires onChange.
-        event.target.value = '';
+      (file: File, expiresAt: string, metadata: Record<string, string>): void => {
+        setUploadingFileName((prev) => ({ ...prev, [slot.documentType]: file.name }));
+        setUploadingType(slot.documentType);
+        setUploadErrorType(null);
+        dispatch(
+          carrierPortalV2Actions.uploadDocument({
+            documentType: slot.documentType,
+            file,
+            expiresAt,
+            metadata,
+          }),
+        );
       },
     [dispatch],
+  );
+
+  const handleSlotReset = useCallback(
+    (slot: DocumentSlot) => (): void => {
+      setUploadErrorType((prev) => (prev === slot.documentType ? null : prev));
+      setUploadingFileName((prev) => {
+        const next = { ...prev };
+        delete next[slot.documentType];
+        return next;
+      });
+    },
+    [],
   );
 
   if (visibleKeys.length === 0 && documentSlots.length === 0) {
@@ -226,22 +250,25 @@ const AgreementListView: React.FC<AgreementListViewProps> = ({ step }) => {
       rowState = 'next';
     }
 
+    let slotStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
+    if (inFlight) {
+      slotStatus = 'uploading';
+    } else if (hasError) {
+      slotStatus = 'error';
+    } else if (uploaded) {
+      slotStatus = 'success';
+    }
+
+    const sessionDoc = sessionDocuments.find((d) => d.documentType === slot.documentType);
+    const displayFileName = uploadingFileName[slot.documentType] ?? sessionDoc?.fileName;
+
     const meta: React.ReactNode[] = [];
-    if (uploaded) {
-      const sessionDoc = sessionDocuments.find((d) => d.documentType === slot.documentType);
-      if (sessionDoc) {
-        meta.push(
-          <BodyStrong key="uploadedAt" sx={{ fontSize: 11.5 }}>
-            {formatTs(sessionDoc.uploadedAt)}
-          </BodyStrong>,
-        );
-      } else {
-        meta.push(
-          <BodyStrong key="justUploaded" sx={{ fontSize: 11.5 }}>
-            Uploaded
-          </BodyStrong>,
-        );
-      }
+    if (uploaded && sessionDoc) {
+      meta.push(
+        <BodyStrong key="uploadedAt" sx={{ fontSize: 11.5 }}>
+          {formatTs(sessionDoc.uploadedAt)}
+        </BodyStrong>,
+      );
     }
     if (hasError) {
       meta.push(
@@ -261,66 +288,16 @@ const AgreementListView: React.FC<AgreementListViewProps> = ({ step }) => {
       );
     }
 
-    let actions: React.ReactNode = null;
-    if (uploaded) {
-      actions = (
-        <Box
-          aria-label="Uploaded"
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.5,
-            color: 'success.main',
-            fontSize: 13,
-            fontWeight: 600,
-            px: 1,
-          }}
-        >
-          <CheckCircleOutline sx={{ fontSize: 16 }} />
-          Uploaded
-        </Box>
-      );
-    } else if (inFlight) {
-      actions = (
-        <Box
-          aria-label="Uploading"
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            color: 'text.secondary',
-            fontSize: 13,
-            fontWeight: 600,
-            px: 1,
-          }}
-        >
-          Uploading…
-        </Box>
-      );
-    } else {
-      actions = (
-        <button
-          type="button"
-          onClick={() => handleChooseFile(slot.id)}
-          aria-label={`Upload ${slot.label}`}
-          style={{
-            background: rowState === 'next' ? 'rgb(37, 99, 235)' : 'white',
-            color: rowState === 'next' ? 'white' : 'rgb(15, 23, 42)',
-            border: rowState === 'next' ? 'none' : '1px solid rgb(226, 232, 240)',
-            borderRadius: 6,
-            padding: '8px 14px',
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          <CloudUploadOutlined sx={{ fontSize: 14 }} />
-          Upload
-        </button>
-      );
-    }
+    const actions = (
+      <SingleDocumentUpload
+        documentType={toDocumentType(slot.documentType)}
+        status={slotStatus}
+        fileName={displayFileName}
+        errorMessage={hasError ? 'Upload failed' : undefined}
+        onUpload={handleSlotUpload(slot)}
+        onReset={handleSlotReset(slot)}
+      />
+    );
 
     const refProp = isFirstIncomplete
       ? { ref: firstIncompleteRef as React.RefObject<HTMLDivElement | null> }
@@ -328,16 +305,6 @@ const AgreementListView: React.FC<AgreementListViewProps> = ({ step }) => {
 
     return (
       <Box key={rowId} {...refProp}>
-        <input
-          ref={(node) => {
-            fileInputs.current[slot.id] = node;
-          }}
-          type="file"
-          accept="application/pdf,image/png,image/jpeg"
-          aria-label={`File picker for ${slot.label}`}
-          onChange={handleFileChange(slot)}
-          style={{ display: 'none' }}
-        />
         <DocumentRow
           state={rowState}
           number={rowNumber}
