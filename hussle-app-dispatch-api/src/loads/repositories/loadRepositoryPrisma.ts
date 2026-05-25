@@ -34,6 +34,12 @@ const LOAD_DETAIL_INCLUDE = {
   accessorialCharges: {
     orderBy: { createdAt: 'asc' as const },
   },
+  _count: {
+    // invoices count powers the INVOICE_CREATED short-circuit in
+    // computeInvoiceReadiness (US-11) — preserves the prior subscriber's
+    // post-creation override semantics now that invoiceReadiness is computed.
+    select: { invoices: true },
+  },
 } as const;
 
 const LOAD_LIST_INCLUDE = {
@@ -57,8 +63,14 @@ const LOAD_LIST_INCLUDE = {
   customer: {
     select: { id: true, companyName: true },
   },
+  accessorialCharges: {
+    // Only the amount is needed at the list site, to feed computeLoadFinancials
+    // (US-11). The transformer doesn't render individual charges in the list
+    // response — it only sums them.
+    select: { amount: true },
+  },
   _count: {
-    select: { accessorialCharges: true },
+    select: { accessorialCharges: true, invoices: true },
   },
 } as const;
 

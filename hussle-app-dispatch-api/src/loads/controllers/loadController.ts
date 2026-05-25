@@ -56,7 +56,13 @@ export const createLoadControllers = (deps: LoadControllerDeps): LoadControllers
       ...context,
       id,
     });
-    sendSingle(res, toLoadDetailResponse(load));
+    // Documents drive computeInvoiceReadiness (US-11). Fetched once per detail
+    // call — the listing endpoint deliberately skips this to avoid N+1.
+    const documents = await deps.loadService.listLoadDocuments({
+      loadId: id,
+      organizationId: context.organizationId,
+    });
+    sendSingle(res, toLoadDetailResponse(load, { documents }));
   },
 
   updateLoad: async (req: Request, res: Response): Promise<void> => {

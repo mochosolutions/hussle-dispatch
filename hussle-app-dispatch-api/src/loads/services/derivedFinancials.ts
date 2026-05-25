@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import type { Load, Document, InvoiceReadiness } from '@prisma/client';
+import type { Load, InvoiceReadiness } from '@prisma/client';
 import { CARRIER_TYPES, type CarrierType } from '@/shared/constants/carrierTypes';
 import {
   calculateLoadFinancials,
@@ -77,7 +77,7 @@ export const computeLoadFinancials = (
  */
 export const computeInvoiceReadiness = (
   load: Pick<Load, 'status'>,
-  documents: Pick<Document, 'type'>[],
+  documents: { type: string }[],
 ): InvoiceReadiness => {
   const evaluableStatuses = ['DELIVERED', 'INVOICE_PENDING'];
   if (!evaluableStatuses.includes(load.status)) {

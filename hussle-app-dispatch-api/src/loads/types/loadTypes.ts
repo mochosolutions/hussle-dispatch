@@ -191,6 +191,12 @@ export interface LoadWithRelations extends Load {
   statusHistory: LoadStatusHistoryWithUser[];
   checkCalls: CheckCallWithRelations[];
   accessorialCharges: AccessorialCharge[];
+  _count?: {
+    // Optional so existing test fixtures don't break. When absent, the
+    // INVOICE_CREATED short-circuit in computeInvoiceReadiness is skipped
+    // and readiness is computed solely from documents (US-11).
+    invoices: number;
+  };
 }
 
 export interface LoadListStop extends Stop {
@@ -203,8 +209,12 @@ export interface LoadListItem extends Load {
   driver: Pick<Driver, 'id' | 'firstName' | 'lastName'> | null;
   contact: Pick<Contact, 'id' | 'firstName' | 'lastName' | 'email' | 'phone'> | null;
   customer: Pick<Customer, 'id' | 'companyName'> | null;
+  // Slim accessorial rows — amount only — to feed computeLoadFinancials in
+  // the list transformer (US-11). Full rows are returned by the detail query.
+  accessorialCharges: Pick<AccessorialCharge, 'amount'>[];
   _count: {
     accessorialCharges: number;
+    invoices: number;
   };
 }
 
