@@ -4,10 +4,9 @@
 export interface OnboardingSession {
   id: string;
   carrierId: string;
-  currentPhase: number;
-  currentQuestionIndex: number;
+  currentStepId: string | null;
   answers?: Record<string, unknown>;
-  completedPhases: number[];
+  completedStepIds: string[];
   lastActiveAt: string;
   completedAt?: string | null;
   remindersSent?: number;

@@ -5,7 +5,6 @@ import { BodyStrong, Meta, TwoLineCell } from 'components/Typography';
 import type { CarrierListItem, CarrierType } from '../../types';
 import { CARRIER_STATUS_COLORS, CARRIER_STATUS_LABELS } from '../../constants';
 
-const TOTAL_PHASES = 6;
 
 export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
   COMPANY_ASSET: 'Company Asset',
@@ -112,12 +111,12 @@ export const LastActivityCellRenderer = ({ data }: { data: CarrierListItem }) =>
 };
 
 export const PhaseProgressCellRenderer = ({ data }: { data: CarrierListItem }) => {
-  const completed = data.onboardingSession?.completedPhases.length ?? 0;
-  const pct = Math.min(100, Math.round((completed / TOTAL_PHASES) * 100));
+  const completed = data.onboardingSession?.completedStepIds.length ?? 0;
+  const pct = data.onboardingComplete ? 100 : Math.min(95, completed * 5);
   return (
     <Box sx={{ width: '100%' }}>
       <Meta sx={{ display: 'block', mb: 0.5 }}>
-        {completed} / {TOTAL_PHASES}
+        {data.onboardingComplete ? 'Complete' : `${completed} steps`}
       </Meta>
       <LinearProgress variant="determinate" value={pct} sx={{ height: 4, borderRadius: 2 }} />
     </Box>

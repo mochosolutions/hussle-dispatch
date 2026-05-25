@@ -14,8 +14,8 @@ export type CarrierStatus =
 
 export interface CarrierOnboardingSessionSummary {
   lastActiveAt: string;
-  currentPhase: number;
-  completedPhases: number[];
+  currentStepId: string | null;
+  completedStepIds: string[];
   completedAt: string | null;
 }
 

@@ -68,8 +68,8 @@ const selectWithCounts = {
   onboardingSession: {
     select: {
       lastActiveAt: true,
-      currentPhase: true,
-      completedPhases: true,
+      currentStepId: true,
+      completedStepIds: true,
       completedAt: true,
     },
   },

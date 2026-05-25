@@ -118,8 +118,8 @@ export interface PrimaryContactInfo {
 
 export interface CarrierOnboardingSessionSummary {
   lastActiveAt: Date;
-  currentPhase: number;
-  completedPhases: number[];
+  currentStepId: string | null;
+  completedStepIds: string[];
   completedAt: Date | null;
 }
 
