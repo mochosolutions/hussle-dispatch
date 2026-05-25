@@ -593,6 +593,162 @@ describe('calculateAndPersistFinancials — estimatedHours derivation (T-17)', (
 });
 
 // ---------------------------------------------------------------------------
+// US-10: per-load snapshot columns take precedence over Carrier/Driver/Dispatcher
+// ---------------------------------------------------------------------------
+
+describe('calculateAndPersistFinancials — Load snapshot columns (US-10)', () => {
+  it('respects feeIncludesAccessorials=true on Load even when carrier.feeIncludesAccessorials=false', async () => {
+    // Arrange: snapshot column on Load is true; carrier base says false.
+    // dispatchFeePercent=10%, customerRate=2800, accessorials=200.
+    // If we read from Load snapshot (true): feeBase = 3000, dispatchFee = 300.00
+    // If we read from Carrier (false): feeBase = 2800, dispatchFee = 280.00
+    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('200.00');
+
+    const load = buildLoad({ feeIncludesAccessorials: true });
+
+    // Act
+    await calculateAndPersistFinancials('load-1', {
+      load,
+      loadStatusRepo: mockLoadStatusRepo,
+      logger: mockLogger,
+      organizationId: 'org-1',
+    });
+
+    // Assert
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
+      'load-1',
+      expect.objectContaining({ dispatchFee: '300.00' }),
+    );
+  });
+
+  it('respects payFromNet=true snapshot column on Load when computing PERCENTAGE driverPay', async () => {
+    // Arrange: payFromNet=true on Load; vehicle has expenses to give estimatedCost.
+    // customerRate=2800, dispatchFee=280, carrierPayout=2520.
+    // vehicleCpm=0.5, totalMiles=1000 → estimatedCost=500.
+    // PERCENTAGE driver @ 50%: payBase = 2520 - 500 = 2020 → driverPay = 1010.00
+    mockVehicleCpmQuery.getRecurringExpenses.mockResolvedValue([
+      { amount: 500, milesPerMonth: 1000 },
+    ]);
+
+    const load = buildLoad({
+      payFromNet: true,
+      vehicleId: 'vehicle-1',
+      totalMiles: 1000,
+      driver: buildDriver({ payType: 'PERCENTAGE', payRate: new Decimal('50') }),
+      driverId: 'driver-1',
+    });
+
+    // Act
+    await calculateAndPersistFinancials('load-1', {
+      load,
+      loadStatusRepo: mockLoadStatusRepo,
+      logger: mockLogger,
+      vehicleCpmQuery: mockVehicleCpmQuery,
+      organizationId: 'org-1',
+    });
+
+    // Assert
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
+      'load-1',
+      expect.objectContaining({ driverPay: '1010.00' }),
+    );
+  });
+
+  it('uses dispatchFeeAmount snapshot on Load over carrier.dispatchFeePercent', async () => {
+    // Arrange: Load.dispatchFeeAmount=15% (snapshot), carrier.dispatchFeePercent=10%.
+    // customerRate=2800 → dispatchFee = 2800 * 0.15 = 420.00 (using Load snapshot)
+    const load = buildLoad({
+      dispatchFeeType: 'PERCENTAGE',
+      dispatchFeeAmount: new Decimal('15.0000'),
+    });
+
+    // Act
+    await calculateAndPersistFinancials('load-1', {
+      load,
+      loadStatusRepo: mockLoadStatusRepo,
+      logger: mockLogger,
+      organizationId: 'org-1',
+    });
+
+    // Assert
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
+      'load-1',
+      expect.objectContaining({ dispatchFee: '420.00' }),
+    );
+  });
+
+  it('uses partnerSplitPercent snapshot on Load over carrier.partnerSplitPercent', async () => {
+    // Arrange: Load.partnerSplitPercent=25%, carrier.partnerSplitPercent=50%.
+    // customerRate=2800, accessorials=0 → partnerSplit = 2800 * 0.25 = 700.00
+    const load = buildLoad({ partnerSplitPercent: new Decimal('25.0000') });
+
+    // Act
+    await calculateAndPersistFinancials('load-1', {
+      load,
+      loadStatusRepo: mockLoadStatusRepo,
+      logger: mockLogger,
+      organizationId: 'org-1',
+    });
+
+    // Assert
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
+      'load-1',
+      expect.objectContaining({ partnerSplit: '700.00' }),
+    );
+  });
+
+  it('uses driverPayType/Rate snapshot on Load over driver.payType/payRate', async () => {
+    // Arrange: Load snapshots a FLAT_RATE @ $400; Driver row has PERCENTAGE @ 50%.
+    // Expected: driverPay = 400.00 (Load snapshot wins)
+    const load = buildLoad({
+      driverId: 'driver-1',
+      driver: buildDriver({ payType: 'PERCENTAGE', payRate: new Decimal('50') }),
+      driverPayType: 'FLAT_RATE',
+      driverPayRate: new Decimal('400.00'),
+    });
+
+    // Act
+    await calculateAndPersistFinancials('load-1', {
+      load,
+      loadStatusRepo: mockLoadStatusRepo,
+      logger: mockLogger,
+      organizationId: 'org-1',
+    });
+
+    // Assert
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
+      'load-1',
+      expect.objectContaining({ driverPay: '400.00' }),
+    );
+  });
+
+  it('uses dispatcherCommissionType/Rate snapshot on Load and skips dispatcherProfileQuery', async () => {
+    // Arrange: Load snapshots FLAT_PER_LOAD @ $100; verify query is NOT called.
+    const load = buildLoad({
+      dispatcherUserId: 'user-1',
+      dispatcherCommissionType: 'FLAT_PER_LOAD',
+      dispatcherCommissionRate: new Decimal('100.0000'),
+    });
+
+    // Act
+    await calculateAndPersistFinancials('load-1', {
+      load,
+      loadStatusRepo: mockLoadStatusRepo,
+      logger: mockLogger,
+      dispatcherProfileQuery: mockDispatcherProfileQuery,
+      organizationId: 'org-1',
+    });
+
+    // Assert — snapshot is sufficient; the query should NOT be consulted.
+    expect(mockDispatcherProfileQuery.findByUserId).not.toHaveBeenCalled();
+    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalledWith(
+      'load-1',
+      expect.objectContaining({ dispatcherComm: '100.00' }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // ratePerTotalMile (trip-miles)
 // ---------------------------------------------------------------------------
 
