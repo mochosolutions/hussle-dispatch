@@ -222,7 +222,6 @@ export interface CarrierDetail {
   dispatchFeePercent: string;
   partnerSplitPercent: string;
   feeIncludesAccessorials: boolean;
-  feeType: string | null;
   payFromNet: boolean;
 }
 

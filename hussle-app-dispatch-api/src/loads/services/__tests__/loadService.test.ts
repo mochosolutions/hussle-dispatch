@@ -349,7 +349,6 @@ describe('updateLoad financial field locking', () => {
     dispatchFeeAmount: new Decimal('0'),
     partnerSplitPercent: new Decimal('50.0000'),
     feeIncludesAccessorials: false,
-    feeType: 'PER_LOAD_PERCENT' as const,
     payFromNet: false,
     includeExpensesOnSettlement: false,
     ownerOpPayPercent: null,

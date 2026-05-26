@@ -339,7 +339,6 @@ export const toLoadDetailResponse = (
               dispatchFeePercent: String(load.carrier.dispatchFeePercent),
               partnerSplitPercent: String(load.carrier.partnerSplitPercent),
               feeIncludesAccessorials: load.carrier.feeIncludesAccessorials,
-              feeType: load.carrier.feeType,
               payFromNet: load.carrier.payFromNet,
             }
           : null,

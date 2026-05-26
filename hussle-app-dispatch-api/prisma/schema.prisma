@@ -483,12 +483,6 @@ enum DriverPayType {
   FLAT_RATE
 }
 
-enum FeeType {
-  PER_LOAD_PERCENT
-  FLAT_WEEKLY
-  FLAT_MONTHLY
-}
-
 enum DispatcherCommType {
   PERCENTAGE_OF_MARGIN
   PERCENTAGE_OF_GROSS
@@ -587,7 +581,6 @@ model Carrier {
   dispatchFeeAmount                 Decimal              @default(0) @db.Decimal(10, 2)
   partnerSplitPercent               Decimal              @default(50.0000) @db.Decimal(7, 4)
   feeIncludesAccessorials           Boolean              @default(true)
-  feeType                           FeeType              @default(PER_LOAD_PERCENT)
   payFromNet                        Boolean              @default(false)
   includeExpensesOnSettlement       Boolean              @default(false)
   ownerOpPayPercent                 Decimal?             @db.Decimal(7, 4)
