@@ -89,7 +89,6 @@ const makeLoad = (overrides: {
   vehicleId: null,
   customerRate: overrides.customerRate ?? '0',
   carrierRate: null,
-  dispatchFee: null,
   dispatchFeeType: null,
   dispatchFeeAmount: null,
   bolSignedAt: new Date(),

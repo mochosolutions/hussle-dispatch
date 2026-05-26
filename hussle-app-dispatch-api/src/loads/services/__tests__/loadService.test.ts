@@ -67,18 +67,10 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     totalMiles: null,
     customerRate: null,
     carrierRate: null,
-    dispatchFee: null,
+    // US-14: persisted financial output cache columns removed — derived on read.
     dispatchFeeType: null,
     dispatchFeeAmount: null,
-    partnerSplit: null,
-    ratePerMile: null,
-    ratePerTotalMile: null,
-    carrierPayout: null,
-    companyMargin: null,
-    driverPay: null,
     estimatedHours: null,
-    estimatedCost: null,
-    dispatcherComm: null,
     dispatcherUserId: null,
     version: 0,
     status: 'BOOKED',
@@ -106,7 +98,6 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     statusHistory: [],
     checkCalls: [],
     accessorialCharges: [],
-    invoiceReadiness: 'NOT_READY',
   } satisfies LoadWithRelations;
 
   return { ...baseLoad, ...overrides };

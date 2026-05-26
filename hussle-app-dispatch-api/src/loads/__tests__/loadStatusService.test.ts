@@ -28,18 +28,10 @@ const createMockLoad = (overrides: Partial<LoadWithRelations> = {}): LoadWithRel
   totalMiles: null,
   customerRate: null,
   carrierRate: null,
-  dispatchFee: null,
+  // US-14: persisted financial output cache columns removed — derived on read.
   dispatchFeeType: null,
   dispatchFeeAmount: null,
-  partnerSplit: null,
-  ratePerMile: null,
-  ratePerTotalMile: null,
-  carrierPayout: null,
-  companyMargin: null,
-  driverPay: null,
   estimatedHours: null,
-  estimatedCost: null,
-  dispatcherComm: null,
   dispatcherUserId: null,
   version: 0,
   rateConReceivedAt: null,
@@ -58,7 +50,6 @@ const createMockLoad = (overrides: Partial<LoadWithRelations> = {}): LoadWithRel
   statusHistory: [],
   checkCalls: [],
   accessorialCharges: [],
-  invoiceReadiness: 'NOT_READY',
   ...overrides,
 } as LoadWithRelations);
 

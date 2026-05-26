@@ -118,7 +118,6 @@ const makeDeliveredLoad = (overrides: Record<string, unknown> = {}) => ({
   vehicleId: null,
   customerRate: null,
   carrierRate: null,
-  dispatchFee: null,
   dispatchFeeType: null,
   dispatchFeeAmount: null,
   bolSignedAt: null,
