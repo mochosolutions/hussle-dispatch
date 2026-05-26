@@ -25,12 +25,10 @@ import {
 } from './repositories/loadRepositoryPrisma';
 import { loadStatusRepositoryPrisma } from './repositories/loadStatusRepositoryPrisma';
 import { loadPickupQueryPrisma } from './repositories/loadPickupQueryPrisma';
-import { vehicleCpmQueryPrisma } from './repositories/vehicleCpmQueryPrisma';
 import { dispatcherProfileQueryPrisma } from './repositories/dispatcherProfileQueryPrisma';
 import { accessorialRepositoryPrisma } from './repositories/accessorialRepositoryPrisma';
 import { stopRepositoryPrisma } from './repositories/stopRepositoryPrisma';
 import { weeklyGrossQueryPrisma } from './repositories/weeklyGrossQueryPrisma';
-import { initializeFinancialRecalcSubscriber } from './services/financialRecalcSubscriber';
 import { initializeDetentionSubscriber } from './services/detentionSubscriber';
 import { createLoadService } from './services/loadService';
 import type { LoadStatusService } from './services/loadStatusService';
@@ -78,7 +76,6 @@ export const createLoadsModule = ({
   const weeklyGrossQuery = weeklyGrossQueryPrisma(prismaClient);
   const loadPickupQuery = loadPickupQueryPrisma(prismaClient);
 
-  const vehicleCpmQuery = vehicleCpmQueryPrisma(prismaClient);
   const dispatcherProfileQuery = dispatcherProfileQueryPrisma(prismaClient);
 
   const accessorialRepository = accessorialRepositoryPrisma(prismaClient);
@@ -95,8 +92,6 @@ export const createLoadsModule = ({
     driverAssignmentQuery,
     vehicleAssignmentQuery,
     customerQuery: customerRepository,
-    loadStatusRepo,
-    vehicleCpmQuery,
     dispatcherProfileQuery,
     settlementFreezeQuery,
     resolveStopToPlace: placeServices.resolveStopToPlace,
@@ -111,8 +106,6 @@ export const createLoadsModule = ({
   const loadStatusService = createLoadStatusService({
     loadRepository,
     loadStatusRepo,
-    vehicleCpmQuery,
-    dispatcherProfileQuery,
     settingsQuery,
     eventBus,
     logger,
@@ -184,15 +177,6 @@ export const createLoadsModule = ({
   };
 
   const initializeSubscriber = async () => {
-    await initializeFinancialRecalcSubscriber({
-      eventBus,
-      loadFinder: loadRepository,
-      loadStatusRepo,
-      vehicleCpmQuery,
-      dispatcherProfileQuery,
-      logger,
-    });
-
     await initializeDetentionSubscriber({
       eventBus,
       logger,
