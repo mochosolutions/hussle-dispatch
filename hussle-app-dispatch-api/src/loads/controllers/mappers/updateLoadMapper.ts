@@ -15,6 +15,7 @@ export const updateLoadMapper = (req: Request): UpdateLoadServiceInput => {
     vehicleId: body.vehicleId,
     contactId: body.contactId,
     customerId: body.customerId,
+    dispatcherUserId: body.dispatcherUserId,
     externalRefNumber: body.externalRefNumber,
     equipmentType: body.equipmentType,
     isTeamDriver: body.isTeamDriver,

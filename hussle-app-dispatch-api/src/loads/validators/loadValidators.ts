@@ -82,6 +82,7 @@ const createBodySchema = Yup.object({
   vehicleId: optionalUuid,
   contactId: optionalUuid,
   customerId: optionalUuid,
+  dispatcherUserId: optionalUuid,
   externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
@@ -122,6 +123,7 @@ const updateBodySchema = Yup.object({
   vehicleId: optionalUuid,
   contactId: optionalUuid,
   customerId: optionalUuid,
+  dispatcherUserId: optionalUuid,
   externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
@@ -177,6 +179,7 @@ export const assignLoadValidator = Yup.object({
     carrierId: optionalUuid,
     driverId: optionalUuid,
     vehicleId: optionalUuid,
+    dispatcherUserId: optionalUuid,
   }).test('has-any-assignment-field', 'At least one assignment field must be provided', (value) => {
     if (value === undefined) {
       return false;

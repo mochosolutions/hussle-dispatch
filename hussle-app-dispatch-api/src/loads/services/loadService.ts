@@ -697,9 +697,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         organizationId,
         carrierId: resolvedAssignment.carrierId,
         driverId: resolvedAssignment.driverId,
-        // dispatcherUserId is not part of CreateLoadInput today;
-        // it is assigned later and re-snapshotted by updateLoad/assignLoad.
-        dispatcherUserId: null,
+        dispatcherUserId: input.dispatcherUserId ?? null,
       },
       deps,
     );
@@ -830,11 +828,14 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         onboardingOverride: existing.onboardingOverride,
       });
 
-      // Re-snapshot rate inputs when carrier or driver changes.
+      // Re-snapshot rate inputs when carrier, driver, or dispatcher changes.
       const carrierChanged = resolvedAssignment.carrierId !== existing.carrierId;
       const driverChanged = resolvedAssignment.driverId !== existing.driverId;
+      const dispatcherChanged =
+        input.dispatcherUserId !== undefined &&
+        input.dispatcherUserId !== existing.dispatcherUserId;
       const reSnapshot =
-        carrierChanged || driverChanged
+        carrierChanged || driverChanged || dispatcherChanged
           ? await buildRateSnapshot(
               {
                 dispatchFeeType: input.dispatchFeeType,
@@ -844,7 +845,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
                 organizationId,
                 carrierId: carrierChanged ? resolvedAssignment.carrierId : null,
                 driverId: driverChanged ? resolvedAssignment.driverId : null,
-                dispatcherUserId: null,
+                dispatcherUserId: dispatcherChanged ? input.dispatcherUserId ?? null : null,
               },
               deps,
             )
@@ -893,18 +894,21 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         ? existing.loadedMiles + deadheadMiles
         : undefined;
 
-    // Re-snapshot rate inputs when carrier or driver changes via assignLoad.
+    // Re-snapshot rate inputs when carrier, driver, or dispatcher changes via assignLoad.
     const carrierChanged = resolvedAssignment.carrierId !== existing.carrierId;
     const driverChanged = resolvedAssignment.driverId !== existing.driverId;
+    const dispatcherChanged =
+      input.dispatcherUserId !== undefined &&
+      input.dispatcherUserId !== existing.dispatcherUserId;
     const reSnapshot =
-      carrierChanged || driverChanged
+      carrierChanged || driverChanged || dispatcherChanged
         ? await buildRateSnapshot(
             { dispatchFeeType: null, dispatchFeeAmount: null },
             {
               organizationId,
               carrierId: carrierChanged ? resolvedAssignment.carrierId : null,
               driverId: driverChanged ? resolvedAssignment.driverId : null,
-              dispatcherUserId: null,
+              dispatcherUserId: dispatcherChanged ? input.dispatcherUserId ?? null : null,
             },
             deps,
           )
@@ -913,6 +917,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
     const load = await deps.loadRepository.update(id, {
       ...resolvedAssignment,
       ...reSnapshot,
+      ...(dispatcherChanged ? { dispatcherUserId: input.dispatcherUserId ?? null } : {}),
       ...(deadheadMiles !== undefined ? { deadheadMiles } : {}),
       ...(totalMiles !== undefined ? { totalMiles } : {}),
     });

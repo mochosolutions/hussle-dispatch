@@ -79,6 +79,7 @@ export interface CreateLoadInput {
   vehicleId?: string | null;
   contactId?: string | null;
   customerId?: string | null;
+  dispatcherUserId?: string | null;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isTeamDriver?: boolean;
@@ -113,6 +114,7 @@ export interface UpdateLoadInput {
   vehicleId?: string | null;
   contactId?: string | null;
   customerId?: string | null;
+  dispatcherUserId?: string | null;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isTeamDriver?: boolean;
@@ -294,6 +296,7 @@ export interface LoadAssignmentInput {
   carrierId?: string | null;
   driverId?: string | null;
   vehicleId?: string | null;
+  dispatcherUserId?: string | null;
 }
 
 export interface LoadAssignmentWarning {
@@ -542,7 +545,6 @@ export interface CarrierResponse {
   dispatchFeePercent: string;
   partnerSplitPercent: string;
   feeIncludesAccessorials: boolean;
-  feeType: string | null;
   payFromNet: boolean;
 }
 
