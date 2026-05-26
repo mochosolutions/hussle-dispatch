@@ -389,13 +389,6 @@ enum ApprovalStatus {
   DISPUTED
 }
 
-enum InvoiceReadiness {
-  NOT_READY
-  AWAITING_DOCUMENTS
-  READY
-  INVOICE_CREATED
-}
-
 enum CustomerType {
   BROKER
   DIRECT_SHIPPER
@@ -786,20 +779,10 @@ model Load {
   totalMiles                Int?
   customerRate              Decimal?                   @db.Decimal(10, 2)
   carrierRate               Decimal?                   @db.Decimal(10, 2)
-  dispatchFee               Decimal?                   @db.Decimal(10, 2)
-  partnerSplit              Decimal?                   @db.Decimal(10, 2)
-  ratePerMile               Decimal?                   @db.Decimal(6, 2)
-  ratePerTotalMile          Decimal?                   @db.Decimal(6, 2)
-  carrierPayout             Decimal?                   @db.Decimal(10, 2)
-  companyMargin             Decimal?                   @db.Decimal(10, 2)
-  driverPay                 Decimal?                   @db.Decimal(10, 2)
   estimatedHours            Decimal?                   @db.Decimal(5, 1)
-  estimatedCost             Decimal?                   @db.Decimal(10, 2)
-  dispatcherComm            Decimal?                   @db.Decimal(10, 2)
   dispatcherUserId          String?
   version                   Int                        @default(0)
   status                    LoadStatus                 @default(QUOTED)
-  invoiceReadiness          InvoiceReadiness           @default(NOT_READY)
   rateConReceivedAt         DateTime?
   bolUnsignedAt             DateTime?
   bolSignedAt               DateTime?

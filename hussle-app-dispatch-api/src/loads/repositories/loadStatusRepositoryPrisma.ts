@@ -92,20 +92,4 @@ export const loadStatusRepositoryPrisma = (
     return (result._sum.amount ?? 0).toString();
   },
 
-  updateFinancials: async (loadId, financials) => {
-    await prisma.load.update({
-      where: { id: loadId },
-      data: {
-        dispatchFee: financials.dispatchFee,
-        partnerSplit: financials.partnerSplit,
-        ratePerMile: financials.ratePerMile,
-        ratePerTotalMile: financials.ratePerTotalMile,
-        carrierPayout: financials.carrierPayout,
-        companyMargin: financials.companyMargin,
-        driverPay: financials.driverPay,
-        estimatedCost: financials.estimatedCost,
-        dispatcherComm: financials.dispatcherComm,
-      },
-    });
-  },
 });

@@ -77,7 +77,6 @@ const createMockDeps = () => {
     createStatusHistory: jest.fn(),
     createAccessorialCharge: jest.fn(),
     sumAccessorialCharges: jest.fn().mockResolvedValue('0'),
-    updateFinancials: jest.fn(),
   };
 
   const eventBus: jest.Mocked<EventBus> = {

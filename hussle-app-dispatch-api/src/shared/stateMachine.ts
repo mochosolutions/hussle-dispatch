@@ -36,7 +36,6 @@ export const TRANSITIONS: TransitionMap = Object.freeze({
 // ---------------------------------------------------------------------------
 
 export type SideEffectTag =
-  | 'CALCULATE_FINANCIALS'
   | 'FREEZE_FINANCIALS'
   | 'AUTO_GENERATE_INVOICE'
   | 'AUTO_CREATE_TONU_ACCESSORIAL'
@@ -45,7 +44,6 @@ export type SideEffectTag =
 export type SideEffectsMap = Readonly<Partial<Record<LoadStatus, readonly SideEffectTag[]>>>;
 
 export const TRANSITION_SIDE_EFFECTS: SideEffectsMap = Object.freeze({
-  BOOKED: Object.freeze(['CALCULATE_FINANCIALS'] as const),
   DISPATCHED: Object.freeze(['FREEZE_FINANCIALS'] as const),
   IN_TRANSIT: Object.freeze(['CHECK_DETENTION'] as const),
   DELIVERED: Object.freeze(['AUTO_GENERATE_INVOICE', 'CHECK_DETENTION'] as const),

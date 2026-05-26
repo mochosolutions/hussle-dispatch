@@ -54,16 +54,6 @@ const executeSideEffects = async (
 
   for (const effect of effects) {
     switch (effect) {
-      case 'CALCULATE_FINANCIALS':
-        // US-13: financials are computed on-read (US-11). No persistence side
-        // effect is required on status transitions. The side-effect token is
-        // retained in the state machine for now; US-15 will remove it.
-        deps.logger.info('Side effect: calculate financials (no-op — compute-on-read)', {
-          loadId,
-          targetStatus,
-        });
-        break;
-
       case 'FREEZE_FINANCIALS':
         deps.logger.info('Side effect: freeze financials', { loadId, targetStatus });
         // Financial freeze is enforced by the existing assertFinancialsNotChanged guard.

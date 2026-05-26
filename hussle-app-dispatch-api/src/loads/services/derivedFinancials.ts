@@ -1,5 +1,17 @@
 import Decimal from 'decimal.js';
-import type { Load, InvoiceReadiness } from '@prisma/client';
+import type { Load } from '@prisma/client';
+
+/**
+ * Invoice-readiness status — formerly a Prisma enum backing a cache column on
+ * Load. The column and enum were dropped in US-15 (compute-on-read), so the
+ * type is now declared locally and remains the return contract of
+ * `computeInvoiceReadiness`.
+ */
+export type InvoiceReadiness =
+  | 'NOT_READY'
+  | 'AWAITING_DOCUMENTS'
+  | 'READY'
+  | 'INVOICE_CREATED';
 import { CARRIER_TYPES, type CarrierType } from '@/shared/constants/carrierTypes';
 import {
   calculateLoadFinancials,

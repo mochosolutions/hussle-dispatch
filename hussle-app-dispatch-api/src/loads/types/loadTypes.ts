@@ -424,18 +424,6 @@ export interface CustomerQueryPort {
   findById(id: string, organizationId: string): Promise<{ id: string } | null>;
 }
 
-export interface VehicleCpmQueryPort {
-  getRecurringExpenses(vehicleId: string): Promise<{ amount: number; milesPerMonth: number }[]>;
-  getActualExpenseSummary(
-    vehicleId: string,
-    dateRange?: { from: Date; to: Date },
-  ): Promise<{
-    totalFixed: number;
-    totalVariable: number;
-    expenseCount: number;
-  }>;
-}
-
 export interface DispatcherProfileQueryPort {
   findByUserId(
     userId: string,
@@ -586,6 +574,13 @@ export interface FinancialResponse {
   estimatedNetEarnings: string | null;
   dispatchFeeType: DispatchFeeType | null;
   dispatchFeeAmount: string | null;
+  partnerSplitPercent: string | null;
+  driverPayType: DriverPayType | null;
+  driverPayRate: string | null;
+  dispatcherCommissionType: DispatcherCommType | null;
+  dispatcherCommissionRate: string | null;
+  feeIncludesAccessorials: boolean | null;
+  payFromNet: boolean | null;
 }
 
 export interface RouteResponse {

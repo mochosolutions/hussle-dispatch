@@ -1,5 +1,5 @@
 import { Decimal } from 'decimal.js';
-import type { InvoiceReadiness } from '@prisma/client';
+import type { InvoiceReadiness } from '../../services/derivedFinancials';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
 import {
