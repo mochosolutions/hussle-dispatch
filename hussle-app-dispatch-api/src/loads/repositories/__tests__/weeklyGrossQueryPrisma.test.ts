@@ -12,6 +12,7 @@ const mockPrisma = {
   load: {
     aggregate: jest.fn() as MockFn,
     count: jest.fn() as MockFn,
+    findMany: jest.fn() as MockFn,
   },
   orgSettings: {
     findUnique: jest.fn() as MockFn,
@@ -51,25 +52,39 @@ describe('getWeeklyRevenue', () => {
     );
   });
 
-  it('sums dispatchFee when vehicle carrier is EXTERNAL_CARRIER', async () => {
+  it('computes dispatchFee per load when vehicle carrier is EXTERNAL_CARRIER', async () => {
+    // US-11b: dispatchFee is derived on-read from each Load's snapshot inputs
+    // (dispatchFeeType + dispatchFeeAmount) instead of a Prisma _sum aggregate.
     // Arrange
     mockPrisma.vehicle.findUnique.mockResolvedValue({
       carrier: { type: 'EXTERNAL_CARRIER' },
     });
     mockPrisma.load.count.mockResolvedValue(3);
-    mockPrisma.load.aggregate.mockResolvedValue({
-      _sum: { dispatchFee: new Decimal('450.00') },
-    });
+    // 3 loads each with FLAT $150 dispatchFee → 450 total.
+    const flatFeeLoad = {
+      customerRate: new Decimal('1500'),
+      loadedMiles: 100,
+      totalMiles: 100,
+      dispatchFeeType: 'FLAT' as const,
+      dispatchFeeAmount: new Decimal('150'),
+      partnerSplitPercent: null,
+      driverPayType: null,
+      driverPayRate: null,
+      dispatcherCommissionType: null,
+      dispatcherCommissionRate: null,
+      feeIncludesAccessorials: false,
+      payFromNet: false,
+      carrierType: 'EXTERNAL_CARRIER' as const,
+      accessorialCharges: [],
+    };
+    mockPrisma.load.findMany.mockResolvedValue([flatFeeLoad, flatFeeLoad, flatFeeLoad]);
 
     // Act
     const result = await query.getWeeklyRevenue('vehicle-1', weekStart, weekEnd);
 
     // Assert
-    expect(result.revenue).toEqual(new Decimal('450.00'));
+    expect(result.revenue.toFixed(2)).toBe('450.00');
     expect(result.loadCount).toBe(3);
-    expect(mockPrisma.load.aggregate).toHaveBeenCalledWith(
-      expect.objectContaining({ _sum: { dispatchFee: true } }),
-    );
   });
 
   it('defaults to customerRate when vehicle has no carrier', async () => {

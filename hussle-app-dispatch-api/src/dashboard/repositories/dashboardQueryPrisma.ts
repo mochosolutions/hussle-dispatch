@@ -2,6 +2,11 @@ import type { PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import Decimal from 'decimal.js';
 import type { DashboardQueryPort } from '../types/dashboardTypes';
+import {
+  LOAD_FINANCIALS_SNAPSHOT_SELECT,
+  computeLoadFinancials,
+  sumAccessorials,
+} from '@/loads/services/derivedFinancials';
 
 export const dashboardQueryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
@@ -32,35 +37,48 @@ export const dashboardQueryPrisma = (
   },
 
   sumDispatchFeesInDateRange: async (organizationId, dateFrom, dateTo) => {
-    const result = await prisma.load.aggregate({
+    // US-11b: replace _sum: { dispatchFee } aggregate with findMany +
+    // per-row computeLoadFinancials + JS sum. Org × date range is bounded
+    // (~50-500 typical rows).
+    const loads = await prisma.load.findMany({
       where: {
         organizationId,
         status: { in: ['DELIVERED', 'INVOICE_PENDING', 'INVOICED', 'PAID'] },
         updatedAt: { gte: dateFrom, lte: dateTo },
         deletedAt: null,
       },
-      _sum: { dispatchFee: true },
+      select: {
+        ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
+        accessorialCharges: { select: { amount: true } },
+      },
     });
-    const sum = result._sum.dispatchFee;
-    return sum !== null && sum !== undefined
-      ? new Decimal(sum.toString())
-      : new Decimal(0);
+    return loads.reduce((sum, load) => {
+      if (load.customerRate === null) return sum;
+      const f = computeLoadFinancials(load, sumAccessorials(load.accessorialCharges));
+      return sum.plus(new Decimal(f.dispatchFee));
+    }, new Decimal(0));
   },
 
   sumPartnerSplitInDateRange: async (organizationId, dateFrom, dateTo) => {
-    const result = await prisma.load.aggregate({
+    // US-11b: replace _sum: { partnerSplit } aggregate with findMany +
+    // per-row computeLoadFinancials + JS sum.
+    const loads = await prisma.load.findMany({
       where: {
         organizationId,
         status: { in: ['DELIVERED', 'INVOICE_PENDING', 'INVOICED', 'PAID'] },
         updatedAt: { gte: dateFrom, lte: dateTo },
         deletedAt: null,
       },
-      _sum: { partnerSplit: true },
+      select: {
+        ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
+        accessorialCharges: { select: { amount: true } },
+      },
     });
-    const sum = result._sum.partnerSplit;
-    return sum !== null && sum !== undefined
-      ? new Decimal(sum.toString())
-      : new Decimal(0);
+    return loads.reduce((sum, load) => {
+      if (load.customerRate === null) return sum;
+      const f = computeLoadFinancials(load, sumAccessorials(load.accessorialCharges));
+      return sum.plus(new Decimal(f.partnerSplit));
+    }, new Decimal(0));
   },
 
   countOverdueInvoices: async (organizationId) =>

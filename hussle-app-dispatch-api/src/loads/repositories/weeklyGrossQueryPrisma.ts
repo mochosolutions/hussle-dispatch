@@ -2,6 +2,11 @@ import type { PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
 import Decimal from 'decimal.js';
 import type { WeeklyGrossQueryPort } from '../types/weeklyGrossTypes';
+import {
+  LOAD_FINANCIALS_SNAPSHOT_SELECT,
+  computeLoadFinancials,
+  sumAccessorials,
+} from '../services/derivedFinancials';
 
 const REVENUE_STATUSES = ['DELIVERED', 'INVOICE_PENDING', 'INVOICED', 'PAID'] as const;
 
@@ -46,11 +51,22 @@ export const weeklyGrossQueryPrisma = (
     const loadCount = await prisma.load.count({ where: whereClause });
 
     if (vehicle?.carrier?.type === 'EXTERNAL_CARRIER') {
-      const result = await prisma.load.aggregate({
+      // US-11b: replace _sum: { dispatchFee } aggregate with findMany +
+      // per-row computeLoadFinancials + JS sum. Scope is one vehicle × one
+      // week, so row count is bounded.
+      const loads = await prisma.load.findMany({
         where: whereClause,
-        _sum: { dispatchFee: true },
+        select: {
+          ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
+          accessorialCharges: { select: { amount: true } },
+        },
       });
-      return { revenue: toDecimal(result._sum.dispatchFee), loadCount };
+      const revenue = loads.reduce((sum, load) => {
+        if (load.customerRate === null) return sum;
+        const f = computeLoadFinancials(load, sumAccessorials(load.accessorialCharges));
+        return sum.plus(new Decimal(f.dispatchFee));
+      }, new Decimal(0));
+      return { revenue, loadCount };
     }
 
     const result = await prisma.load.aggregate({
