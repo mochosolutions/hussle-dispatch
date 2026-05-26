@@ -90,6 +90,10 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
     openDrawer('loadAccessorial', { loadId: load.id });
   }, [openDrawer, load.id]);
 
+  const handleEditDispatchTerms = useCallback(() => {
+    openDrawer('loadDispatchTerms', { loadId: load.id });
+  }, [openDrawer, load.id]);
+
   const handleEditClick = useCallback(
     (charge: AccessorialCharge) => {
       openDrawer('loadAccessorial', { loadId: load.id, accessorialId: charge.id });
@@ -109,7 +113,20 @@ export const FinancialsTab: React.FC<FinancialsTabProps> = ({ load }) => {
   return (
     <Grid container spacing={2}>
       <Grid item xs={12} lg={8}>
-        <SectionCard title="Financials" contentSX={{ p: 0 }}>
+        <SectionCard
+          title="Financials"
+          contentSX={{ p: 0 }}
+          actions={
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={handleEditDispatchTerms}
+            >
+              Edit Dispatch Terms
+            </Button>
+          }
+        >
           <SectionLabel sx={{ px: 2, pt: 1.5, pb: 0.5, display: 'block' }}>
             Rate Breakdown
           </SectionLabel>

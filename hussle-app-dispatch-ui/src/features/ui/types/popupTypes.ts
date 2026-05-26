@@ -41,7 +41,8 @@ export type DrawerType =
   | 'expenseQuickAdd'
   | 'paySettlement'
   | 'loadAccessorial'
-  | 'loadCheckCall';
+  | 'loadCheckCall'
+  | 'loadDispatchTerms';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
@@ -84,6 +85,7 @@ export interface DrawerTypeMap {
   paySettlement: { settlementId: string };
   loadAccessorial: { loadId: string; accessorialId?: string };
   loadCheckCall: { loadId: string };
+  loadDispatchTerms: { loadId: string };
 }
 
 // ---------------------------------------------------------------------------
