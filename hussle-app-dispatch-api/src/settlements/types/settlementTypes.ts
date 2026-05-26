@@ -1,6 +1,9 @@
+import type { Prisma } from '@prisma/client';
 import type {
   Carrier,
+  CarrierType,
   DispatchFeeType,
+  DispatcherCommType,
   Driver,
   DriverPayType,
   Settlement,
@@ -205,21 +208,28 @@ export interface SettlementLoadQueryPort {
     {
       id: string;
       loadNumber: string;
-      carrierRate: unknown; // Decimal
-      customerRate: unknown | null; // Decimal
-      carrierPayout: unknown | null; // Decimal
-      dispatchFee: unknown; // Decimal
+      carrierRate: Prisma.Decimal | null;
+      customerRate: Prisma.Decimal | null;
       dispatchFeeType: DispatchFeeType | null;
-      dispatchFeeAmount: unknown | null; // Decimal
+      dispatchFeeAmount: Prisma.Decimal | null;
       totalMiles: number | null;
       loadedMiles: number | null;
-      estimatedHours: unknown | null; // Decimal
+      estimatedHours: Prisma.Decimal | null;
+      // US-11b: snapshot inputs to derive carrierPayout on-read.
+      partnerSplitPercent: Prisma.Decimal | null;
+      driverPayType: DriverPayType | null;
+      driverPayRate: Prisma.Decimal | null;
+      dispatcherCommissionType: DispatcherCommType | null;
+      dispatcherCommissionRate: Prisma.Decimal | null;
+      feeIncludesAccessorials: boolean | null;
+      payFromNet: boolean | null;
+      carrierType: CarrierType | null;
       deliveredAt: Date | null;
       accessorialCharges: {
         id: string;
         type: string;
         description: string | null;
-        amount: unknown; // Decimal
+        amount: Prisma.Decimal;
         billTo: string;
       }[];
     }[]

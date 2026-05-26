@@ -8,6 +8,42 @@ import {
 } from '@/shared/financials';
 
 /**
+ * Prisma select clause projecting all Load columns required by
+ * computeLoadFinancials. Use via spread:
+ *   prisma.load.findMany({ select: { ...LOAD_FINANCIALS_SNAPSHOT_SELECT, ... } })
+ *
+ * Plus `accessorialCharges: { select: { amount: true } }` for the accessorials
+ * sum. Per the US-11b refactor, callers compute financials in JS on read.
+ */
+export const LOAD_FINANCIALS_SNAPSHOT_SELECT = {
+  customerRate: true,
+  loadedMiles: true,
+  totalMiles: true,
+  dispatchFeeType: true,
+  dispatchFeeAmount: true,
+  partnerSplitPercent: true,
+  driverPayType: true,
+  driverPayRate: true,
+  dispatcherCommissionType: true,
+  dispatcherCommissionRate: true,
+  feeIncludesAccessorials: true,
+  payFromNet: true,
+  carrierType: true,
+} as const;
+
+/**
+ * Sums accessorial-charge amounts into a single Decimal. Accepts the minimal
+ * `{ amount }` projection used across the load module's read paths.
+ */
+export const sumAccessorials = (
+  charges: { amount: { toString(): string } }[] | undefined | null,
+): Decimal =>
+  (charges ?? []).reduce(
+    (sum, charge) => sum.plus(new Decimal(String(charge.amount))),
+    new Decimal(0),
+  );
+
+/**
  * Thin wrapper that destructures the Load row's snapshot columns and forwards
  * them to the pure calculateLoadFinancials. All rate inputs — including
  * carrierType (US-09b) — are now snapshotted on Load.
@@ -21,8 +57,30 @@ export interface ComputeLoadFinancialsExtras {
   carrierPayoutOverride?: string;
 }
 
+/**
+ * Structural subset of Load needed by computeLoadFinancials — the snapshot
+ * inputs. Allows partial Prisma selects (e.g. dashboard / weeklyGross / metrics
+ * aggregates) to satisfy the compute contract without projecting full Load rows.
+ */
+export type LoadFinancialsSnapshot = Pick<
+  Load,
+  | 'customerRate'
+  | 'loadedMiles'
+  | 'totalMiles'
+  | 'dispatchFeeType'
+  | 'dispatchFeeAmount'
+  | 'partnerSplitPercent'
+  | 'driverPayType'
+  | 'driverPayRate'
+  | 'dispatcherCommissionType'
+  | 'dispatcherCommissionRate'
+  | 'feeIncludesAccessorials'
+  | 'payFromNet'
+  | 'carrierType'
+>;
+
 export const computeLoadFinancials = (
-  load: Load,
+  load: LoadFinancialsSnapshot,
   accessorialsSum: Decimal,
   extras: ComputeLoadFinancialsExtras = {},
 ): LoadFinancialsResult => {
@@ -39,18 +97,26 @@ export const computeLoadFinancials = (
     loadedMiles: load.loadedMiles,
     totalMiles: load.totalMiles ?? null,
     dispatchFeeType: load.dispatchFeeType,
-    dispatchFeeAmount: load.dispatchFeeAmount !== null ? load.dispatchFeeAmount.toString() : null,
+    dispatchFeeAmount:
+      load.dispatchFeeAmount !== null && load.dispatchFeeAmount !== undefined
+        ? load.dispatchFeeAmount.toString()
+        : null,
     partnerSplitPercent:
-      load.partnerSplitPercent !== null ? load.partnerSplitPercent.toString() : null,
-    driverPayType: load.driverPayType,
-    driverPayRate: load.driverPayRate !== null ? load.driverPayRate.toString() : null,
-    dispatcherCommissionType: load.dispatcherCommissionType,
+      load.partnerSplitPercent !== null && load.partnerSplitPercent !== undefined
+        ? load.partnerSplitPercent.toString()
+        : null,
+    driverPayType: load.driverPayType ?? null,
+    driverPayRate:
+      load.driverPayRate !== null && load.driverPayRate !== undefined
+        ? load.driverPayRate.toString()
+        : null,
+    dispatcherCommissionType: load.dispatcherCommissionType ?? null,
     dispatcherCommissionRate:
-      load.dispatcherCommissionRate !== null
+      load.dispatcherCommissionRate !== null && load.dispatcherCommissionRate !== undefined
         ? load.dispatcherCommissionRate.toString()
         : null,
-    feeIncludesAccessorials: load.feeIncludesAccessorials,
-    payFromNet: load.payFromNet,
+    feeIncludesAccessorials: load.feeIncludesAccessorials ?? null,
+    payFromNet: load.payFromNet ?? null,
     carrierType,
     vehicleCpm: extras.vehicleCpm,
     estimatedHours: extras.estimatedHours,

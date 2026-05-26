@@ -244,6 +244,7 @@ export const placeRepositoryPrisma = (
           stops: {
             orderBy: { sequence: 'asc' as const },
           },
+          accessorialCharges: { select: { amount: true } },
         },
       }),
       prisma.load.count({ where }),

@@ -5,6 +5,7 @@ import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary'
 import {
   computeLoadFinancials,
   computeInvoiceReadiness,
+  sumAccessorials,
 } from '../../services/derivedFinancials';
 import type { LoadFinancialsResult } from '@/shared/financials';
 import type {
@@ -28,14 +29,6 @@ const ROUNDING = Decimal.ROUND_HALF_EVEN;
 // dollars. When dispatchFeeType=FLAT, it holds dollars. The compute fn does
 // the right math; the response just echoes the persisted input.
 // ---------------------------------------------------------------------------
-
-const sumAccessorials = (
-  charges: { amount: { toString(): string } }[] | undefined,
-): Decimal =>
-  (charges ?? []).reduce(
-    (sum, charge) => sum.plus(new Decimal(String(charge.amount))),
-    new Decimal(0),
-  );
 
 interface NullFinancials {
   dispatchFee: string | null;

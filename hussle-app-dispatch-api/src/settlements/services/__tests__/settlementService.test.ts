@@ -382,7 +382,10 @@ describe('settlementService.generate', () => {
 
   it('generates DRIVER_PAY line as 85% of carrierPayout for PERCENTAGE driver', async () => {
     const carrier = buildCarrier({ type: CarrierType.COMPANY_ASSET });
+    // US-11b: carrierPayout is now computed from snapshot inputs on read.
+    // With dispatchFeeType=null + no accessorials, carrierPayout = customerRate.
     const load = buildLoad({
+      customerRate: new Decimal('2400.00'),
       carrierPayout: new Decimal('2400.00'),
     });
 

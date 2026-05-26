@@ -2,8 +2,15 @@ import type { Load, Stop } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
+import {
+  computeLoadFinancials,
+  sumAccessorials,
+} from '@/loads/services/derivedFinancials';
 
-type LoadWithStops = Load & { stops: Stop[] };
+type LoadWithStops = Load & {
+  stops: Stop[];
+  accessorialCharges: { amount: unknown }[];
+};
 
 const decimalToNumber = (value: Decimal | null): number | null => {
   if (value === null) {
@@ -37,6 +44,16 @@ export interface LoadAtFacilityResponse {
 export const toLoadAtFacilityResponse = (load: LoadWithStops): LoadAtFacilityResponse => {
   const cargo = computeCommoditySummary(load.stops);
 
+  // US-11b: derive ratePerMile from snapshot inputs on read.
+  let ratePerMile: number | null = null;
+  if (load.customerRate !== null) {
+    const accessorialsSum = sumAccessorials(
+      load.accessorialCharges as { amount: { toString(): string } }[],
+    );
+    const financials = computeLoadFinancials(load, accessorialsSum);
+    ratePerMile = financials.ratePerMile !== null ? Number(financials.ratePerMile) : null;
+  }
+
   return {
     id: load.id,
     organizationId: load.organizationId,
@@ -53,7 +70,7 @@ export const toLoadAtFacilityResponse = (load: LoadWithStops): LoadAtFacilityRes
     totalMiles: load.totalMiles,
     customerRate: decimalToNumber(load.customerRate),
     carrierRate: decimalToNumber(load.carrierRate),
-    ratePerMile: decimalToNumber(load.ratePerMile),
+    ratePerMile,
     status: load.status,
     createdAt: load.createdAt,
     updatedAt: load.updatedAt,

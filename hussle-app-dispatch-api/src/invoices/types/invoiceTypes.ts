@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type {
   Invoice,
   InvoiceType,
@@ -8,6 +9,9 @@ import type {
   AccessorialCharge,
   StopType,
   DispatchFeeType,
+  DriverPayType,
+  DispatcherCommType,
+  CarrierType,
 } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
@@ -150,11 +154,21 @@ export interface InvoiceLoadQueryPort {
     carrierId: string | null;
     customerId: string | null;
     vehicleId: string | null;
-    customerRate: unknown | null; // Decimal
-    carrierRate: unknown | null; // Decimal
-    dispatchFee: unknown | null; // Decimal
+    customerRate: Prisma.Decimal | null;
+    carrierRate: Prisma.Decimal | null;
     dispatchFeeType: DispatchFeeType | null;
-    dispatchFeeAmount: unknown | null; // Decimal
+    dispatchFeeAmount: Prisma.Decimal | null;
+    // US-11b: snapshot inputs required to compute dispatchFee on read.
+    loadedMiles: number | null;
+    totalMiles: number | null;
+    partnerSplitPercent: Prisma.Decimal | null;
+    driverPayType: DriverPayType | null;
+    driverPayRate: Prisma.Decimal | null;
+    dispatcherCommissionType: DispatcherCommType | null;
+    dispatcherCommissionRate: Prisma.Decimal | null;
+    feeIncludesAccessorials: boolean | null;
+    payFromNet: boolean | null;
+    carrierType: CarrierType | null;
     bolSignedAt: Date | null;
     status: string;
     contact: {

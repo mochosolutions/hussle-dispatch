@@ -10,6 +10,10 @@ import {
 } from '../../shared/errors/commonErrors';
 import { MissingEstimatedHoursError } from '../../shared/errors/missingEstimatedHoursError';
 import { round2 } from '../../shared/financials';
+import {
+  computeLoadFinancials,
+  sumAccessorials,
+} from '../../loads/services/derivedFinancials';
 import { buildPaginationMeta } from '../../shared/responseEnvelope';
 import {
   computeDispatchFeeAmount,
@@ -175,7 +179,8 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
       const deliveredAt = load.deliveredAt ?? new Date();
 
       // LOAD_REVENUE
-      const revenueAmount = new Decimal(String(load.carrierRate));
+      const revenueAmount =
+        load.carrierRate !== null ? new Decimal(String(load.carrierRate)) : new Decimal(0);
       grossRevenue = grossRevenue.plus(revenueAmount);
       lineItems.push({
         type: 'LOAD_REVENUE',
@@ -197,10 +202,16 @@ export const createSettlementService = (deps: SettlementServiceDeps) => ({
           driver.payRate !== undefined
         ) {
           const payRate = new Decimal(String(driver.payRate));
+          // US-11b: derive carrierPayout from snapshot inputs on-read instead of
+          // reading Load.carrierPayout cache column.
+          const carrierPayout =
+            load.customerRate !== null
+              ? computeLoadFinancials(load, sumAccessorials(load.accessorialCharges)).carrierPayout
+              : null;
           const driverPayAmount = computeDriverPay({
             payType: driver.payType,
             payRate,
-            carrierPayout: load.carrierPayout,
+            carrierPayout,
             loadedMiles: load.loadedMiles,
             estimatedHours: load.estimatedHours,
           });
