@@ -4,6 +4,12 @@ import type { PaginationMeta } from '@/shared/responseEnvelope';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type { ParsedQs } from 'qs';
 import Decimal from 'decimal.js';
+import {
+  LOAD_FINANCIALS_SNAPSHOT_SELECT,
+  computeLoadFinancials,
+  sumAccessorials,
+  type LoadFinancialsSnapshot,
+} from '@/loads/services/derivedFinancials';
 
 export interface LoadHistoryItem {
   id: string;
@@ -32,30 +38,66 @@ export interface LoadHistoryResult {
   metrics: LoadPerformanceMetrics;
 }
 
+// US-11b: include snapshot inputs + accessorialCharges so ratePerMile is
+// derived on read instead of pulled from the persisted cache column.
 const loadHistorySelect = {
   id: true,
   loadNumber: true,
   status: true,
-  customerRate: true,
   carrierRate: true,
-  ratePerMile: true,
-  totalMiles: true,
-  loadedMiles: true,
   createdAt: true,
   updatedAt: true,
+  ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
+  accessorialCharges: { select: { amount: true } },
 } as const;
+
+type LoadHistoryRow = LoadFinancialsSnapshot & {
+  id: string;
+  loadNumber: string;
+  status: string;
+  customerRate: Decimal | null;
+  carrierRate: Decimal | null;
+  totalMiles: number | null;
+  loadedMiles: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  accessorialCharges: { amount: unknown }[];
+};
+
+const toLoadHistoryItem = (row: LoadHistoryRow): LoadHistoryItem => {
+  let ratePerMile: Decimal | null = null;
+  if (row.customerRate !== null) {
+    const accessorialsSum = sumAccessorials(
+      row.accessorialCharges as { amount: { toString(): string } }[],
+    );
+    const f = computeLoadFinancials(row, accessorialsSum);
+    ratePerMile = f.ratePerMile !== null ? new Decimal(f.ratePerMile) : null;
+  }
+  return {
+    id: row.id,
+    loadNumber: row.loadNumber,
+    status: row.status,
+    customerRate: row.customerRate,
+    carrierRate: row.carrierRate,
+    ratePerMile,
+    totalMiles: row.totalMiles,
+    loadedMiles: row.loadedMiles,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+};
 
 const DELIVERED_STATUSES = ['DELIVERED', 'POD_RECEIVED', 'INVOICED', 'PAID'] as const;
 
-export const computeMetrics = (
-  allLoads: {
-    customerRate: Decimal | null;
-    dispatchFee: Decimal | null;
-    ratePerMile: Decimal | null;
-    status: string;
-    carrier: { type: string } | null;
-  }[],
-): LoadPerformanceMetrics => {
+// Metrics input: snapshot inputs + accessorials + carrier type. dispatchFee
+// and ratePerMile are computed per row via computeLoadFinancials (US-11b).
+export type MetricsLoad = LoadFinancialsSnapshot & {
+  status: string;
+  carrier: { type: string } | null;
+  accessorialCharges: { amount: unknown }[];
+};
+
+export const computeMetrics = (allLoads: MetricsLoad[]): LoadPerformanceMetrics => {
   const totalLoads = allLoads.length;
 
   let totalGross = new Decimal(0);
@@ -79,15 +121,23 @@ export const computeMetrics = (
       if (load.customerRate !== null) {
         totalRevenue = totalRevenue.plus(load.customerRate);
       }
-    } else if (load.carrier.type === 'EXTERNAL_CARRIER') {
-      if (load.dispatchFee !== null) {
-        totalRevenue = totalRevenue.plus(load.dispatchFee);
-      }
+    } else if (load.carrier.type === 'EXTERNAL_CARRIER' && load.customerRate !== null) {
+      const accSum = sumAccessorials(
+        load.accessorialCharges as { amount: { toString(): string } }[],
+      );
+      const f = computeLoadFinancials(load, accSum);
+      totalRevenue = totalRevenue.plus(new Decimal(f.dispatchFee));
     }
 
-    if (load.ratePerMile !== null) {
-      ratePerMileSum = ratePerMileSum.plus(load.ratePerMile);
-      ratePerMileCount += 1;
+    if (load.customerRate !== null) {
+      const accSum = sumAccessorials(
+        load.accessorialCharges as { amount: { toString(): string } }[],
+      );
+      const f = computeLoadFinancials(load, accSum);
+      if (f.ratePerMile !== null) {
+        ratePerMileSum = ratePerMileSum.plus(new Decimal(f.ratePerMile));
+        ratePerMileCount += 1;
+      }
     }
     if (DELIVERED_STATUSES.includes(load.status as (typeof DELIVERED_STATUSES)[number])) {
       deliveredCount += 1;
@@ -152,18 +202,17 @@ export const createLoadQueries = (
     const allLoadsForMetrics = await prisma.load.findMany({
       where: whereClause,
       select: {
-        customerRate: true,
-        dispatchFee: true,
-        ratePerMile: true,
+        ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
         status: true,
         carrier: { select: { type: true } },
+        accessorialCharges: { select: { amount: true } },
       },
     });
 
     const metrics = computeMetrics(allLoadsForMetrics);
 
     return {
-      data: paginated.data,
+      data: paginated.data.map((row) => toLoadHistoryItem(row)),
       meta: paginated.meta,
       metrics,
     };
@@ -196,18 +245,17 @@ export const createLoadQueries = (
     const allLoadsForMetrics = await prisma.load.findMany({
       where: whereClause,
       select: {
-        customerRate: true,
-        dispatchFee: true,
-        ratePerMile: true,
+        ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
         status: true,
         carrier: { select: { type: true } },
+        accessorialCharges: { select: { amount: true } },
       },
     });
 
     const metrics = computeMetrics(allLoadsForMetrics);
 
     return {
-      data: paginated.data,
+      data: paginated.data.map((row) => toLoadHistoryItem(row)),
       meta: paginated.meta,
       metrics,
     };
