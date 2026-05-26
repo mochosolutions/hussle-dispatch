@@ -14,6 +14,9 @@ import type {
   TransitionStatusInput,
   CreateCheckCallInput,
   Warning,
+  DispatchFeeType,
+  DriverPayType,
+  DispatcherCommType,
 } from 'features/load/types';
 import type { PaginationMeta } from 'features/carrier/types';
 
@@ -102,6 +105,29 @@ export const updateLoad = async (
     data: response.data.data,
     warnings: response.data.warnings ?? [],
   };
+};
+
+export interface UpdateDispatchTermsInput {
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | string | null;
+  partnerSplitPercent?: number | string | null;
+  driverPayType?: DriverPayType | null;
+  driverPayRate?: number | string | null;
+  dispatcherCommissionType?: DispatcherCommType | null;
+  dispatcherCommissionRate?: number | string | null;
+  feeIncludesAccessorials?: boolean | null;
+  payFromNet?: boolean | null;
+}
+
+export const updateDispatchTerms = async (
+  id: string,
+  data: UpdateDispatchTermsInput,
+): Promise<LoadDetail> => {
+  const response = await axiosInstance.patch<{ data: LoadDetail }>(
+    `/loads/${id}/dispatch-terms`,
+    data,
+  );
+  return response.data.data;
 };
 
 export const assignLoad = async (

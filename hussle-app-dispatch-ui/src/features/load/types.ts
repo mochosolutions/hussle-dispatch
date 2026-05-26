@@ -194,7 +194,26 @@ export interface FinancialResponse {
   marginPercent: string | null;
   estimatedCost: string | null;
   estimatedNetEarnings: string | null;
+  // Per-load dispatch terms snapshot (editable via DispatchTermsEditor — US-12).
+  // dispatchFeeAmount carries a dual semantic: percent (0-100) when
+  // dispatchFeeType=PERCENTAGE; dollars when dispatchFeeType=FLAT.
+  dispatchFeeType: DispatchFeeType | null;
+  dispatchFeeAmount: string | null;
+  partnerSplitPercent: string | null;
+  driverPayType: DriverPayType | null;
+  driverPayRate: string | null;
+  dispatcherCommissionType: DispatcherCommType | null;
+  dispatcherCommissionRate: string | null;
+  feeIncludesAccessorials: boolean | null;
+  payFromNet: boolean | null;
 }
+
+export type DispatchFeeType = 'PERCENTAGE' | 'FLAT';
+export type DriverPayType = 'PERCENTAGE' | 'PER_MILE' | 'PER_HOUR' | 'FLAT_RATE';
+export type DispatcherCommType =
+  | 'PERCENTAGE_OF_MARGIN'
+  | 'PERCENTAGE_OF_GROSS'
+  | 'FLAT_PER_LOAD';
 
 export interface CarrierDetail {
   id: string;

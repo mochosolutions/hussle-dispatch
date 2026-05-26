@@ -381,6 +381,27 @@ export const createCheckCallFailure = createAction<{
 }>('load/createCheckCallFailure');
 
 // ---------------------------------------------------------------------------
+// Dispatch terms (per-load) — US-12
+// ---------------------------------------------------------------------------
+
+export interface UpdateDispatchTermsActionPayload {
+  loadId: string;
+  data: import('utils/api/loads/loadApi').UpdateDispatchTermsInput;
+}
+
+export const updateDispatchTermsRequest = createAction<UpdateDispatchTermsActionPayload>(
+  'load/updateDispatchTermsRequest',
+);
+
+export const updateDispatchTermsSuccess = createAction<{ loadId: string }>(
+  'load/updateDispatchTermsSuccess',
+);
+
+export const updateDispatchTermsFailure = createAction<{ loadId: string; error: string }>(
+  'load/updateDispatchTermsFailure',
+);
+
+// ---------------------------------------------------------------------------
 // Stop CRUD actions
 // ---------------------------------------------------------------------------
 
