@@ -10,7 +10,6 @@ import type {
   OrgSettingsQueryPort,
   VehicleAssignmentQueryPort,
 } from '../../types/loadTypes';
-import type { LoadStatusRepoPort } from '../../types/loadStatusTypes';
 import type { Logger } from '../../../shared/utils/logger';
 import type { DerivedComplianceDeps } from '../../../carriers/services/derivedCompliance';
 import type { DocumentRepoPort } from '../../../documents/types/documentTypes';
@@ -337,7 +336,7 @@ describe('loadService assignment validation', () => {
   });
 });
 
-describe('updateLoad financial recalculation', () => {
+describe('updateLoad financial field locking', () => {
   const companyCarrier = {
     id: 'carrier-1',
     managedByOrgId: 'org-1',
@@ -440,13 +439,6 @@ describe('updateLoad financial recalculation', () => {
     findAssignableById: jest.fn(),
   };
 
-  const mockLoadStatusRepo: jest.Mocked<
-    Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>
-  > = {
-    sumAccessorialCharges: jest.fn<() => Promise<string>>(),
-    updateFinancials: jest.fn<() => Promise<void>>(),
-  };
-
   const mockLogger: jest.Mocked<Logger> = {
     info: jest.fn(),
     debug: jest.fn(),
@@ -460,7 +452,6 @@ describe('updateLoad financial recalculation', () => {
     carrierAssignmentQuery: mockCarrierAssignmentQuery,
     driverAssignmentQuery: mockDriverAssignmentQuery,
     vehicleAssignmentQuery: mockVehicleAssignmentQuery,
-    loadStatusRepo: mockLoadStatusRepo,
     logger: mockLogger,
     derivedComplianceDeps: buildDerivedComplianceDeps(),
   });
@@ -468,272 +459,6 @@ describe('updateLoad financial recalculation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockOrgSettingsQuery.getProhibitedCommodities.mockResolvedValue([]);
-  });
-
-  it('recalculates financials when customerRate changes on BOOKED load', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      customerRate: new Decimal('3000'),
-    });
-
-    mockLoadRepository.findById.mockResolvedValue(existing);
-    mockLoadRepository.update.mockResolvedValue(updated);
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    // After recalculation, findById is called again to re-fetch
-    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { customerRate: 3000 },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-  });
-
-  it('recalculates financials when loadedMiles changes on BOOKED load', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      loadedMiles: 600,
-    });
-
-    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-    mockLoadRepository.update.mockResolvedValue(updated);
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { loadedMiles: 600 },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-  });
-
-  it('does not recalculate when non-financial field changes', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      dispatcherNotes: 'updated notes',
-    });
-
-    mockLoadRepository.findById.mockResolvedValue(existing);
-    mockLoadRepository.update.mockResolvedValue(updated);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { dispatcherNotes: 'updated notes' },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).not.toHaveBeenCalled();
-  });
-
-  it('does not recalculate when carrier is null', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: null,
-      carrier: null,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      customerRate: new Decimal('3000'),
-    });
-
-    mockLoadRepository.findById.mockResolvedValue(existing);
-    mockLoadRepository.update.mockResolvedValue(updated);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { customerRate: 3000 },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).not.toHaveBeenCalled();
-  });
-
-  it('recalculates financials when carrierId changes on BOOKED load', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      driverId: null,
-      driver: null,
-      vehicleId: null,
-      vehicle: null,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      carrierId: 'carrier-2',
-      carrier: { ...companyCarrier, id: 'carrier-2' },
-    });
-
-    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-    mockLoadRepository.update.mockResolvedValue(updated);
-    mockCarrierAssignmentQuery.findDispatchableById.mockResolvedValue({
-      id: 'carrier-2',
-      name: 'New Carrier',
-      type: 'COMPANY_ASSET',
-      tinOnFile: true,
-    });
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { carrierId: 'carrier-2' },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-  });
-
-  it('re-fetches load after financial calculation on createLoad', async () => {
-    const staleLoad = buildLoad({
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      customerRate: new Decimal('2800'),
-      loadedMiles: 500,
-      companyMargin: null,
-      stops: [
-        {
-          id: 'stop-1',
-          loadId: 'load-1',
-          type: 'PICKUP',
-          sequence: 0,
-          contactId: null,
-          placeId: null,
-          resolutionStatus: 'UNRESOLVED',
-          place: null,
-          facilityName: null,
-          address: null,
-          city: 'Dallas',
-          state: 'TX',
-          zip: null,
-          schedulingType: 'FCFS',
-          appointmentStart: new Date(),
-          appointmentEnd: null,
-          notificationHours: null,
-          notifiedAt: null,
-          appointmentNumber: null,
-          arrivalTime: null,
-          departureTime: null,
-          contactName: null,
-          contactPhone: null,
-          commodity: 'Steel',
-          weight: 40000,
-          pieceCount: 1,
-          isHazmat: false,
-          isTarp: false,
-          isTempControlled: false,
-          notes: null,
-          callByTime: null,
-          trailerNumber: null,
-          yardLocation: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: 'stop-2',
-          loadId: 'load-1',
-          type: 'DELIVERY',
-          sequence: 1,
-          contactId: null,
-          placeId: null,
-          resolutionStatus: 'UNRESOLVED',
-          place: null,
-          facilityName: null,
-          address: null,
-          city: 'Houston',
-          state: 'TX',
-          zip: null,
-          schedulingType: 'FCFS',
-          appointmentStart: new Date(),
-          appointmentEnd: null,
-          notificationHours: null,
-          notifiedAt: null,
-          appointmentNumber: null,
-          arrivalTime: null,
-          departureTime: null,
-          contactName: null,
-          contactPhone: null,
-          commodity: null,
-          weight: null,
-          pieceCount: null,
-          isHazmat: false,
-          isTarp: false,
-          isTempControlled: false,
-          notes: null,
-          callByTime: null,
-          trailerNumber: null,
-          yardLocation: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ],
-    });
-
-    const freshLoad = buildLoad({
-      ...staleLoad,
-      companyMargin: new Decimal('500'),
-      dispatchFee: new Decimal('280'),
-    });
-
-    mockLoadRepository.create.mockResolvedValue(staleLoad);
-    mockLoadRepository.findById.mockResolvedValue(freshLoad);
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    const result = await loadService.createLoad({
-      organizationId: 'org-1',
-      role: 'admin',
-      input: {
-        carrierId: 'carrier-1',
-        customerRate: 2800,
-        loadedMiles: 500,
-        stops: [
-          { type: 'PICKUP', sequence: 0, appointmentStart: new Date(), city: 'Dallas', state: 'TX', commodity: 'Steel', weight: 40000, pieceCount: 1 },
-          { type: 'DELIVERY', sequence: 1, appointmentStart: new Date(), city: 'Houston', state: 'TX' },
-        ],
-      },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-    expect(mockLoadRepository.findById).toHaveBeenCalledWith('load-1', 'org-1');
-    expect(result.load.companyMargin).toEqual(new Decimal('500'));
-    expect(result.warnings).toEqual([]);
   });
 
   it('rejects financial field change on DISPATCHED load', async () => {
@@ -778,7 +503,6 @@ describe('updateLoad financial recalculation', () => {
       carrierAssignmentQuery: mockCarrierAssignmentQuery,
       driverAssignmentQuery: mockDriverAssignmentQuery,
       vehicleAssignmentQuery: mockVehicleAssignmentQuery,
-      loadStatusRepo: mockLoadStatusRepo,
       settlementFreezeQuery,
       derivedComplianceDeps: buildDerivedComplianceDeps(),
     });

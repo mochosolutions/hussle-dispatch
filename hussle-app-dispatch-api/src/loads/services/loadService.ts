@@ -19,8 +19,6 @@ import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import { generateSequenceNumber } from '@/shared/sequenceGenerator';
 import { calculateRoadDistance } from '@/shared/utils/distanceCalculator';
 import type { Logger } from '@/shared/utils/logger';
-import { calculateAndPersistFinancials } from './calculateFinancials';
-import type { LoadStatusRepoPort } from '../types/loadStatusTypes';
 import type {
   CarrierAssignmentQueryPort,
   CustomerQueryPort,
@@ -35,7 +33,6 @@ import type {
   StopInput,
   UpdateLoadInput,
   VehicleAssignmentQueryPort,
-  VehicleCpmQueryPort,
 } from '../types/loadTypes';
 import type {
   AssignLoadServiceInput,
@@ -221,8 +218,6 @@ interface LoadServiceDeps {
   driverAssignmentQuery: DriverAssignmentQueryPort;
   vehicleAssignmentQuery: VehicleAssignmentQueryPort;
   customerQuery?: CustomerQueryPort;
-  loadStatusRepo?: Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>;
-  vehicleCpmQuery?: VehicleCpmQueryPort;
   dispatcherProfileQuery?: DispatcherProfileQueryPort;
   settlementFreezeQuery?: SettlementFreezeQueryPort;
   resolveStopToPlace?: ResolveStopToPlace;
@@ -570,43 +565,6 @@ const findLoadOrThrow = async (
   return load;
 };
 
-const hasFinancialRelevantFieldChanged = (
-  input: UpdateLoadInput,
-  existing: LoadWithRelations,
-  resolvedAssignment: ResolvedAssignmentState | undefined,
-): boolean => {
-  if (
-    input.customerRate !== undefined &&
-    String(input.customerRate) !== String(existing.customerRate)
-  ) {
-    return true;
-  }
-
-  if (
-    input.loadedMiles !== undefined &&
-    input.loadedMiles !== (existing.loadedMiles ?? undefined)
-  ) {
-    return true;
-  }
-
-  if (
-    input.totalMiles !== undefined &&
-    input.loadedMiles === undefined &&
-    input.totalMiles !== (existing.loadedMiles ?? undefined)
-  ) {
-    return true;
-  }
-
-  if (
-    resolvedAssignment !== undefined &&
-    resolvedAssignment.carrierId !== existing.carrierId
-  ) {
-    return true;
-  }
-
-  return false;
-};
-
 /**
  * Build the rate-input snapshot fields to persist on Load at booking time.
  * - Carrier-sourced: dispatchFeeType/Amount (with COALESCE — input wins),
@@ -755,26 +713,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
     });
 
-    // Calculate financials when carrier and customer rate are present at creation
-    if (
-      load.carrierId !== null &&
-      load.customerRate !== null &&
-      deps.loadStatusRepo !== undefined &&
-      deps.logger !== undefined
-    ) {
-      await calculateAndPersistFinancials(load.id, {
-        load,
-        loadStatusRepo: deps.loadStatusRepo,
-        logger: deps.logger,
-        vehicleCpmQuery: deps.vehicleCpmQuery,
-        dispatcherProfileQuery: deps.dispatcherProfileQuery,
-        organizationId: load.organizationId,
-      });
-
-      const reloaded = await findLoadOrThrow(load.id, organizationId, deps);
-      return { load: reloaded, warnings };
-    }
-
+    // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings };
   },
 
@@ -918,32 +857,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       });
     }
 
-    const financialFieldChanged = hasFinancialRelevantFieldChanged(
-      input,
-      existing,
-      resolvedAssignment,
-    );
-
-    if (
-      financialFieldChanged &&
-      load.carrierId !== null &&
-      load.customerRate !== null &&
-      deps.loadStatusRepo !== undefined &&
-      deps.logger !== undefined
-    ) {
-      await calculateAndPersistFinancials(id, {
-        load,
-        loadStatusRepo: deps.loadStatusRepo,
-        logger: deps.logger,
-        vehicleCpmQuery: deps.vehicleCpmQuery,
-        dispatcherProfileQuery: deps.dispatcherProfileQuery,
-        organizationId: load.organizationId,
-      });
-
-      const reloaded = await findLoadOrThrow(id, organizationId, deps);
-      return { load: reloaded, warnings: stopWarnings };
-    }
-
+    // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings: stopWarnings };
   },
 
@@ -1003,22 +917,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       ...(totalMiles !== undefined ? { totalMiles } : {}),
     });
 
-    if (
-      load.carrierId !== null &&
-      load.customerRate !== null &&
-      deps.loadStatusRepo !== undefined &&
-      deps.logger !== undefined
-    ) {
-      await calculateAndPersistFinancials(id, {
-        load,
-        loadStatusRepo: deps.loadStatusRepo,
-        logger: deps.logger,
-        vehicleCpmQuery: deps.vehicleCpmQuery,
-        dispatcherProfileQuery: deps.dispatcherProfileQuery,
-        organizationId: load.organizationId,
-      });
-    }
-
+    // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings };
   },
 
