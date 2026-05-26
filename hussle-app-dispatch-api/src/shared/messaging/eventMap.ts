@@ -188,6 +188,13 @@ export interface EventMap {
     loadId: string;
     organizationId: string;
   };
+  'load.dispatch-terms.updated': {
+    loadId: string;
+    organizationId: string;
+    loadNumber: string;
+    requestingUserId: string;
+    changes: Record<string, { old: string | number | boolean | null; new: string | number | boolean | null }>;
+  };
   'load.detention.detected': {
     loadId: string;
     organizationId: string;

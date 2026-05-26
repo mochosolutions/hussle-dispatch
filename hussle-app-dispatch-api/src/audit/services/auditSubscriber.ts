@@ -116,5 +116,25 @@ export const initializeAuditSubscriber = async (
     }
   });
 
+  await deps.eventBus.subscribe('load.dispatch-terms.updated', 'audit-service', async (data) => {
+    try {
+      await deps.auditLogRepo.create(data.organizationId, {
+        userId: data.requestingUserId,
+        action: 'LOAD_DISPATCH_TERMS_UPDATED',
+        entityType: 'Load',
+        entityId: data.loadId,
+        changes: data.changes,
+        metadata: {
+          loadNumber: data.loadNumber,
+        },
+      });
+    } catch (error: unknown) {
+      deps.logger.error('Failed to create audit log for load.dispatch-terms.updated', {
+        loadId: data.loadId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   deps.logger.info('Audit subscriber initialized');
 };

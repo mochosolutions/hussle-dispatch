@@ -31,6 +31,7 @@ import { stopRepositoryPrisma } from './repositories/stopRepositoryPrisma';
 import { weeklyGrossQueryPrisma } from './repositories/weeklyGrossQueryPrisma';
 import { initializeDetentionSubscriber } from './services/detentionSubscriber';
 import { createLoadService } from './services/loadService';
+import { updateDispatchTerms } from './services/updateDispatchTermsService';
 import type { LoadStatusService } from './services/loadStatusService';
 import { createLoadStatusService } from './services/loadStatusService';
 import { rankDrivers } from './services/rankDriversService';
@@ -134,6 +135,13 @@ export const createLoadsModule = ({
 
   const crudControllers = createLoadControllers({
     loadService,
+    updateDispatchTerms: (input) =>
+      updateDispatchTerms(input, {
+        loadRepository,
+        eventBus,
+        logger,
+        settlementFreezeQuery,
+      }),
   });
 
   const transitionStatus = createTransitionStatusController({

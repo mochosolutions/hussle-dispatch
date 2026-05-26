@@ -317,6 +317,15 @@ export const toLoadDetailResponse = (
       dispatchFeeType: load.dispatchFeeType,
       dispatchFeeAmount:
         load.dispatchFeeAmount !== null ? String(load.dispatchFeeAmount) : null,
+      partnerSplitPercent:
+        load.partnerSplitPercent !== null ? String(load.partnerSplitPercent) : null,
+      driverPayType: load.driverPayType,
+      driverPayRate: load.driverPayRate !== null ? String(load.driverPayRate) : null,
+      dispatcherCommissionType: load.dispatcherCommissionType,
+      dispatcherCommissionRate:
+        load.dispatcherCommissionRate !== null ? String(load.dispatcherCommissionRate) : null,
+      feeIncludesAccessorials: load.feeIncludesAccessorials,
+      payFromNet: load.payFromNet,
       ...derived,
     },
 
