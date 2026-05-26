@@ -160,6 +160,8 @@ export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
   insuranceCertOnFile: boolean;
   insuranceExpiry: Date | null;
+  w9OnFile: boolean;
+  carrierPacketOnFile: boolean;
   dispatchAgreementOnFile: boolean;
   dispatchAgreementSignedAt: Date | null;
   signedAgreementId: string | null;

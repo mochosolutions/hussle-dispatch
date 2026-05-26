@@ -50,6 +50,8 @@ export const toCarrierResponse = (
     // values come from compute*"). Source from derived compliance result.
     insuranceCertOnFile: compliance?.insurance.onFile ?? false,
     insuranceExpiry: compliance?.insurance.expiresAt ?? null,
+    w9OnFile: compliance?.w9.onFile ?? false,
+    carrierPacketOnFile: compliance?.carrierPacket.onFile ?? false,
     dispatchAgreementOnFile: compliance?.agreement.onFile ?? false,
     dispatchAgreementSignedAt: compliance?.agreement.signedAt ?? null,
     signedAgreementId: compliance?.agreement.signedAgreementId ?? null,
