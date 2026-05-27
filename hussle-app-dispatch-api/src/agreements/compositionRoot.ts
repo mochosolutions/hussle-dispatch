@@ -6,6 +6,8 @@ import type { SignatureService } from '@/shared/signatures/types';
 import type { StorageProvider } from '@/shared/storage';
 import type { Logger } from '@/shared/utils/logger';
 
+import { createManualAgreementController } from './controllers/createManualAgreementController';
+import { downloadAgreementController } from './controllers/downloadAgreementController';
 import { getAgreementController } from './controllers/getAgreementController';
 import { listAgreementsController } from './controllers/listAgreementsController';
 import { requestAgreementController } from './controllers/requestAgreementController';
@@ -21,6 +23,8 @@ import type { FinalizeAgreementInput } from './services/finalizeAgreement';
 import { finalizeAgreement } from './services/finalizeAgreement';
 import type { MockSignAgreementInput } from './services/mockSignAgreement';
 import { mockSignAgreement } from './services/mockSignAgreement';
+import type { CreateManualAgreementInput } from './services/createManualAgreement';
+import { createManualAgreement } from './services/createManualAgreement';
 import type { RequestAgreementInput } from './services/requestAgreement';
 import { requestAgreement } from './services/requestAgreement';
 import type { VoidAgreementInput } from './services/voidAgreement';
@@ -131,6 +135,15 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
       logger: deps.logger,
     });
 
+  const createManualAgreementBound = (
+    input: CreateManualAgreementInput,
+  ): Promise<AgreementServiceResult<Agreement>> =>
+    createManualAgreement(input, {
+      agreementRepo,
+      carrierQueries,
+      logger: deps.logger,
+    });
+
   const finalizeAgreementBound = (
     input: FinalizeAgreementInput,
   ): Promise<AgreementServiceResult<Agreement>> =>
@@ -162,6 +175,16 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     void: voidAgreementController({
       voidAgreement: voidAgreementBound,
       eventBus: deps.eventBus,
+      storage: deps.storage,
+      logger: deps.logger,
+    }),
+    createManual: createManualAgreementController({
+      createManualAgreement: createManualAgreementBound,
+      storage: deps.storage,
+      logger: deps.logger,
+    }),
+    download: downloadAgreementController({
+      agreementRepo,
       storage: deps.storage,
       logger: deps.logger,
     }),

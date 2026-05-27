@@ -1000,6 +1000,10 @@ model Invoice {
   paidAmount         Decimal?       @db.Decimal(10, 2)
   paymentMethod      String?
   paymentReference   String?
+  /// Storage key (not a URL) for the persisted invoice PDF, shaped
+  /// `invoices/<invoiceNumber>.pdf`. URL resolution happens just-in-time inside
+  /// GET /invoices/:id/pdf-download (scope-checked by organizationId). See the
+  /// 20260527_pdfurl_to_storage_key migration that normalized legacy URL values.
   pdfUrl             String?
   billingMethod      BillingMethod?
   deliveryMethod     String?

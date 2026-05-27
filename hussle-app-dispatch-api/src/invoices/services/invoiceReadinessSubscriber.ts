@@ -68,6 +68,13 @@ const createDispatchFeeInvoice = async (
     notes: `Dispatch fee for load #${params.loadNumber}`,
   });
 
+  await deps.eventBus.publish('invoice.draft.created', {
+    invoiceId: invoice.id,
+    loadId: params.loadId,
+    organizationId: params.organizationId,
+    invoiceNumber,
+  });
+
   deps.logger.info('DISPATCH_FEE invoice created', {
     invoiceId: invoice.id,
     loadId: params.loadId,
@@ -319,6 +326,7 @@ export const initializeReadinessSubscriber = async (
       const tonuDeps = {
         invoiceRepo: deps.invoiceRepo,
         loadQuery: deps.loadQuery,
+        eventBus: deps.eventBus,
         logger: deps.logger,
       };
 

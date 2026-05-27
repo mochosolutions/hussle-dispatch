@@ -142,6 +142,7 @@ export interface PresignResult {
   documentId: string;
   presignedUrl: string;
   expiresIn: number;
+  s3Key: string;
 }
 
 export interface ConfirmInput {

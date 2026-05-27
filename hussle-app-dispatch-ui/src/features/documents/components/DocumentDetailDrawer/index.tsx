@@ -38,6 +38,7 @@ const ENTITY_TO_CONTEXT: Record<DocumentEntityType, DocumentContext> = {
   carrier: 'carrier-detail',
   driver: 'driver-detail',
   vehicle: 'vehicle-detail',
+  invoice: 'invoice-detail',
 };
 
 const isStringValue = (value: unknown): value is string =>

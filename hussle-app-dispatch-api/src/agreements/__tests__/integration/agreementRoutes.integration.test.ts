@@ -214,6 +214,15 @@ const startApp = async (
       storage: deps.storage,
       logger: deps.logger,
     }),
+    // The createManual + download endpoints are exercised by their own focused
+    // unit tests; integration tests here can use no-op stubs since they're not
+    // under test in this file.
+    createManual: (_req: express.Request, res: express.Response) => {
+      res.status(501).json({ errors: [{ message: 'not under test' }] });
+    },
+    download: (_req: express.Request, res: express.Response) => {
+      res.status(501).json({ errors: [{ message: 'not under test' }] });
+    },
   };
 
   app.use('/api/v1/agreements', createAgreementsRouter(controllers));

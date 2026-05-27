@@ -16,6 +16,7 @@ import { AdminActivateModal } from '../carrier/components/AdminActivateModal';
 import { ActivateCarrierModal } from '../carrier/components/ActivateCarrierModal';
 import { ConfirmDeleteDocumentModal } from '../documents/components/ConfirmDeleteDocumentModal';
 import UpgradePlanDialog from 'components/UpgradePlanDialog';
+import { VoidAgreementModal } from '../agreements/components/VoidAgreementModal';
 
 const modalRegistry: PopupComponentMap = {
   confirmDeleteLoadDialog: ConfirmDeleteLoadDialog,
@@ -34,6 +35,7 @@ const modalRegistry: PopupComponentMap = {
   activateCarrier: ActivateCarrierModal,
   confirmDeleteDocument: ConfirmDeleteDocumentModal,
   upgradePlan: UpgradePlanDialog,
+  voidAgreement: VoidAgreementModal,
 };
 
 export default modalRegistry;

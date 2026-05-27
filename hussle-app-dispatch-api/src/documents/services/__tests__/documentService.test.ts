@@ -141,6 +141,7 @@ describe('createDocumentService', () => {
         documentId: 'new-doc-id',
         presignedUrl: 'https://s3.example.com/presigned',
         expiresIn: PRESIGN_EXPIRATION_SECONDS,
+        s3Key: 'org-1/loads/load-1/bol_signed/bol.pdf',
       });
     });
   });

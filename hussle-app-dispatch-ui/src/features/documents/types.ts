@@ -55,7 +55,7 @@ export enum DocumentType {
   LOAD_PHOTO = 'LOAD_PHOTO',
 }
 
-export type DocumentEntityType = 'load' | 'carrier' | 'driver' | 'vehicle';
+export type DocumentEntityType = 'load' | 'carrier' | 'driver' | 'vehicle' | 'invoice';
 
 export type UploadStatus =
   | 'idle'
@@ -118,6 +118,12 @@ export interface PresignInput {
 export interface PresignResponse {
   presignedUrl: string;
   documentId: string;
+  /**
+   * Storage key the Document was created at. The dispatcher-side agreements
+   * flow needs this to reference the uploaded artifact when persisting an
+   * Agreement row via POST /agreements/manual.
+   */
+  s3Key: string;
 }
 
 export interface ConfirmDocumentInput {

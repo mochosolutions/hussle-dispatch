@@ -42,7 +42,8 @@ export type DrawerType =
   | 'paySettlement'
   | 'loadAccessorial'
   | 'loadCheckCall'
-  | 'loadDispatchTerms';
+  | 'loadDispatchTerms'
+  | 'uploadAgreement';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
@@ -86,6 +87,7 @@ export interface DrawerTypeMap {
   loadAccessorial: { loadId: string; accessorialId?: string };
   loadCheckCall: { loadId: string };
   loadDispatchTerms: { loadId: string };
+  uploadAgreement: { carrierId: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +110,8 @@ export type ModalType =
   | 'adminActivateCarrier'
   | 'activateCarrier'
   | 'confirmDeleteDocument'
-  | 'upgradePlan';
+  | 'upgradePlan'
+  | 'voidAgreement';
 
 export interface ModalTypeMap {
   dirtyFormConfirm: { onConfirm: () => void; onCancel: () => void };
@@ -146,4 +149,5 @@ export interface ModalTypeMap {
     resourceType: 'team members' | 'vehicles';
     limit: number;
   };
+  voidAgreement: { agreementId: string; templateLabel: string };
 }

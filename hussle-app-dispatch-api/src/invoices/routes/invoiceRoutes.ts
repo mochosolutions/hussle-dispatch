@@ -124,6 +124,16 @@ export const createInvoiceRouter = (controllers: InvoiceModuleControllers): Rout
     controllers.pdf.previewPdf,
   );
 
+  // GET /:id/pdf-download — auth + org-scoped redirect to a short-lived
+  // download URL for the persisted invoice PDF. 404s on cross-org or when
+  // the PDF hasn't been generated yet.
+  router.get(
+    '/:id/pdf-download',
+    requireAuth,
+    validateRequest(invoiceIdParamValidator),
+    controllers.pdf.downloadPdf,
+  );
+
   // --- Document packet ---
 
   // GET /:id/packet — download ZIP

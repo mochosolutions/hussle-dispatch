@@ -43,6 +43,13 @@ export const createInvoiceEmailService = (
     });
     const pdfBuffer = await deps.pdfService.generateInvoicePdf(pdfData);
 
+    // Persist the PDF to storage so it's available via /invoices/:id/pdf-download
+    // after this send completes (and overwrites any earlier draft PDF at the
+    // same key). Without this, sending an invoice would email the PDF but leave
+    // invoice.pdfUrl null — the Documents tab would never show it.
+    const pdfStorageKey = `invoices/${invoice.invoiceNumber}.pdf`;
+    await deps.storageProvider.put(pdfStorageKey, pdfBuffer, 'application/pdf');
+
     // Collect load document attachments
     const loadDocs = await deps.documentQuery.findConfirmedByEntity('load', invoice.loadId);
     const attachments: EmailAttachment[] = [
@@ -103,12 +110,15 @@ export const createInvoiceEmailService = (
       attachments,
     });
 
-    // Update invoice status
+    // Update invoice status — include pdfUrl so the just-generated PDF is what
+    // /invoices/:id/pdf-download resolves to (instead of any older draft PDF
+    // that was stored at the same key when the invoice was first created).
     await deps.invoiceRepo.updateStatus(invoice.id, input.organizationId, 'SENT', {
       sentAt: new Date(),
       sentTo: input.recipientEmail,
       sentToEmail: input.recipientEmail,
       deliveryMethod: 'PLATFORM_EMAIL',
+      pdfUrl: pdfStorageKey,
     });
 
     deps.logger.info('Invoice email sent', {

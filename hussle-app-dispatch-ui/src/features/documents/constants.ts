@@ -6,7 +6,8 @@ export type DocumentContext =
   | 'load-detail'
   | 'carrier-detail'
   | 'driver-detail'
-  | 'vehicle-detail';
+  | 'vehicle-detail'
+  | 'invoice-detail';
 
 export const DOC_TYPE_CONFIG: Record<
   DocumentType,
@@ -114,7 +115,8 @@ export const DOCUMENT_CONTEXTS: Record<DocumentContext, readonly DocumentType[]>
     DocumentType.OTHER,
   ],
   'carrier-detail': [
-    DocumentType.DISPATCH_AGREEMENT,
+    // DISPATCH_AGREEMENT removed — use the dedicated "Upload signed agreement"
+    // drawer (Scope A) which writes to the Agreement table instead of Document.
     DocumentType.INSURANCE_CERT,
     DocumentType.W9,
     DocumentType.CARRIER_PACKET,
@@ -150,6 +152,15 @@ export const DOCUMENT_CONTEXTS: Record<DocumentContext, readonly DocumentType[]>
     DocumentType.MAINTENANCE_RECORD,
     DocumentType.LEASE_AGREEMENT,
     DocumentType.BIT_INSPECTION,
+    DocumentType.OTHER,
+  ],
+  'invoice-detail': [
+    DocumentType.BROKER_RATE_CON,
+    DocumentType.BOL_SIGNED,
+    DocumentType.POD,
+    DocumentType.INVOICE,
+    DocumentType.LUMPER_RECEIPT,
+    DocumentType.DETENTION,
     DocumentType.OTHER,
   ],
 };

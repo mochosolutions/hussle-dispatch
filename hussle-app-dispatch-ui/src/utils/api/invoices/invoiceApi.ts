@@ -95,12 +95,17 @@ export const voidInvoice = async (invoiceId: string): Promise<InvoiceDetail> => 
   return response.data.data;
 };
 
-export const getInvoicePdf = async (invoiceId: string): Promise<{ data: { url: string } }> => {
-  const response = await axiosInstance.get<{ data: { url: string } }>(
+export const generateInvoicePdf = async (
+  invoiceId: string,
+): Promise<{ downloadUrl: string }> => {
+  const response = await axiosInstance.get<{ data: { downloadUrl: string } }>(
     `/invoices/${invoiceId}/pdf`,
   );
-  return response.data;
+  return response.data.data;
 };
+
+export const downloadInvoicePdfUrl = (invoiceId: string): string =>
+  `${axiosInstance.defaults.baseURL ?? ''}/invoices/${invoiceId}/pdf-download`;
 
 export const previewInvoicePdf = async (invoiceId: string): Promise<Blob> => {
   const response = await axiosInstance.get(`/invoices/${invoiceId}/preview`, {

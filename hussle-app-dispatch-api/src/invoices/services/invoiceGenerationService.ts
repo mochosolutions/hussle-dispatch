@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import type { Logger } from '../../shared/utils/logger';
+import type { EventBus } from '../../shared/messaging/eventBus';
 import { generateSequenceNumber } from '../../shared/sequenceGenerator';
 import {
   computeLoadFinancials,
@@ -11,6 +12,7 @@ import type { InvoiceRepoPort, InvoiceLoadQueryPort } from '../types/invoiceType
 interface InvoiceGenerationDeps {
   invoiceRepo: InvoiceRepoPort;
   loadQuery: InvoiceLoadQueryPort;
+  eventBus: EventBus;
   logger: Logger;
 }
 
@@ -162,7 +164,7 @@ export const generateTonuInvoice = async (
 
   const invoiceNumber = await generateSequenceNumber('INVOICE', load.organizationId);
 
-  await deps.invoiceRepo.create({
+  const invoice = await deps.invoiceRepo.create({
     loadId: load.id,
     carrierId: load.carrierId ?? undefined,
     customerId: load.customerId ?? undefined,
@@ -176,6 +178,13 @@ export const generateTonuInvoice = async (
     dueDate,
     missingSignedBol: false,
     notes: 'TONU invoice',
+  });
+
+  await deps.eventBus.publish('invoice.draft.created', {
+    invoiceId: invoice.id,
+    loadId: load.id,
+    organizationId: load.organizationId,
+    invoiceNumber,
   });
 
   deps.logger.info('TONU invoice generated', {

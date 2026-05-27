@@ -33,6 +33,7 @@ import { DisputeSettlementDrawer } from '../accounting/components/DisputeSettlem
 import { AddAdjustmentDrawer } from '../accounting/components/AddAdjustmentDrawer';
 import { ExpenseQuickAddDrawer } from '../accounting/components/ExpenseQuickAddDrawer';
 import { PaySettlementDrawer } from '../accounting/components/PaySettlementDrawer';
+import { UploadAgreementDrawer } from '../agreements/components/UploadAgreementDrawer';
 
 const drawerRegistry: PopupComponentMap = {
   carrierCompanyInfo: CompanyInfoDrawer,
@@ -72,6 +73,9 @@ const drawerRegistry: PopupComponentMap = {
   addAdjustment: AddAdjustmentDrawer,
   expenseQuickAdd: ExpenseQuickAddDrawer,
   paySettlement: PaySettlementDrawer,
+
+  // Agreements drawers
+  uploadAgreement: UploadAgreementDrawer,
 };
 
 export default drawerRegistry;

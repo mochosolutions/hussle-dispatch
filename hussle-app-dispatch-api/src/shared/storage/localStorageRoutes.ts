@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from 'express';
+import { appAuth } from '../middleware/authenticateUser';
 import type { StorageProvider } from './storageProvider';
 
 /**
@@ -7,13 +8,18 @@ import type { StorageProvider } from './storageProvider';
  * GET  /api/v1/storage/:key(*) -> streams the file from local storage.
  * PUT  /api/v1/storage/:key(*) -> writes the request body to local storage.
  *
+ * Both routes require a valid app session — without auth, every stored file
+ * (invoices, documents, agreements, expenses) would be readable by anyone who
+ * can reach the API and guess a key. The auth gate is defense-in-depth only;
+ * proper per-entity scope checks happen on each domain's download endpoint.
+ *
  * The key uses a wildcard param so nested paths (e.g. org/loads/doc.pdf) work.
  */
 export const mountLocalStorageRoutes = (
   router: Router,
   storageProvider: StorageProvider,
 ): Router => {
-  router.put('/api/v1/storage/*', async (req: Request, res: Response) => {
+  router.put('/api/v1/storage/*', appAuth, async (req: Request, res: Response) => {
     const key = req.params[0];
 
     if (!key) {
@@ -28,7 +34,7 @@ export const mountLocalStorageRoutes = (
     res.status(200).json({ message: 'Upload successful' });
   });
 
-  router.get('/api/v1/storage/*', async (req: Request, res: Response) => {
+  router.get('/api/v1/storage/*', appAuth, async (req: Request, res: Response) => {
     // Express puts the wildcard portion (everything after /api/v1/storage/) in params[0]
     const key = req.params[0];
 
