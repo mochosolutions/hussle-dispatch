@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import type { Response } from 'express';
+import { REFRESH_TTL_BASE_SECONDS } from '../../auth/constants';
 
 export const CSRF_COOKIE_NAME = 'csrfToken';
 export const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -42,7 +43,11 @@ export const setAccessTokenCookie = (res: Response, accessToken: string): void =
   });
 };
 
-export const setRefreshTokenCookie = (res: Response, refreshToken: string): void => {
+export const setRefreshTokenCookie = (
+  res: Response,
+  refreshToken: string,
+  maxAgeMs?: number
+): void => {
   setCookie(res, {
     name: 'refreshToken',
     value: refreshToken,
@@ -50,7 +55,7 @@ export const setRefreshTokenCookie = (res: Response, refreshToken: string): void
       httpOnly: true,
       secure: process.env['NODE_ENV'] === 'production',
       sameSite: process.env['NODE_ENV'] === 'production' ? 'strict' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: maxAgeMs ?? REFRESH_TTL_BASE_SECONDS * 1000,
     },
   });
 };

@@ -25,3 +25,11 @@ export const verifyToken = (token: string, hashed: string): boolean => {
   const expected = hashToken(token);
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(hashed));
 };
+
+export const extractAccessTokenExpAsIso = (token: string): string => {
+  const decoded = jwt.decode(token) as { exp?: number } | null;
+  if (!decoded?.exp) {
+    throw new Error('access token missing exp claim');
+  }
+  return new Date(decoded.exp * 1000).toISOString();
+};

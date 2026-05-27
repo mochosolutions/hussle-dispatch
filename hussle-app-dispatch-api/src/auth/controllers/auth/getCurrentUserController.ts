@@ -1,5 +1,6 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { NotFoundError, UnauthorizedError } from '@/shared/errors';
+import { extractAccessTokenExpAsIso } from '../../providers/jwtTokenProvider/tokenHelpers';
 import { currentUserService } from '../../services';
 import { mapCurrentUserRequest } from './mappers/mapCurrentUserRequest';
 import { toCurrentUserResponse } from './transformers/currentUserTransformer';
@@ -27,5 +28,12 @@ export const createGetCurrentUserController = ({
       throw new NotFoundError('User not found');
     }
 
-    return res.status(200).json(toCurrentUserResponse(result));
+    const accessToken =
+      typeof req.cookies?.accessToken === 'string' ? req.cookies.accessToken : null;
+    if (!accessToken) {
+      throw new UnauthorizedError('Authentication required');
+    }
+    const accessTokenExpiresAt = extractAccessTokenExpAsIso(accessToken);
+
+    return res.status(200).json(toCurrentUserResponse(result, accessTokenExpiresAt));
   };

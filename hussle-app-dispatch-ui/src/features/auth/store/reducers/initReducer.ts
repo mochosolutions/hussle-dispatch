@@ -19,6 +19,7 @@ export const initReducer = {
     state.orgs = orgs;
     state.errors.init = '';
     state.initAttempted = true;
+    state.portalSessionExpired = false;
   },
   initFailure: (state: AuthState) => {
     state.isInitializing = false;

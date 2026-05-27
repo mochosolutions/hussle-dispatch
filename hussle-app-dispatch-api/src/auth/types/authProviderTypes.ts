@@ -39,6 +39,7 @@ export interface AuthenticateUserInput {
   password: string;
   ipAddress?: string;
   userAgent?: string;
+  rememberMe?: boolean;
 }
 
 export interface PasswordChallengeInput {

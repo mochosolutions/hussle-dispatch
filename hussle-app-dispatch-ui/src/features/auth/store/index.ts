@@ -13,6 +13,7 @@ import {
   confirmPasswordResetRequest,
   switchOrgRequest,
   acceptInviteRequest,
+  sessionExpired,
 } from './authSlice';
 
 import {
@@ -27,6 +28,7 @@ import {
   confirmPasswordResetSaga,
   switchOrgSaga,
   handleAcceptInvite,
+  sessionExpiredSaga,
 } from './sagas';
 
 export function* authWatcher() {
@@ -41,6 +43,7 @@ export function* authWatcher() {
   yield takeLatest(confirmPasswordResetRequest.type, confirmPasswordResetSaga);
   yield takeLatest(switchOrgRequest.type, switchOrgSaga);
   yield takeLatest(acceptInviteRequest.type, handleAcceptInvite);
+  yield takeLatest(sessionExpired.type, sessionExpiredSaga);
 }
 
 export {authReducer};

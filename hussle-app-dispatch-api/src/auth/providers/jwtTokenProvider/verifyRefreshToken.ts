@@ -11,20 +11,64 @@ interface VerifyRefreshTokenDeps {
   redisClient: Redis;
 }
 
+interface GracePacket {
+  kind: 'grace';
+  newSessionKey: string;
+  newRefreshToken: string;
+}
+
+const isGracePacket = (value: unknown): value is GracePacket =>
+  typeof value === 'object' &&
+  value !== null &&
+  (value as { kind?: unknown }).kind === 'grace' &&
+  typeof (value as { newSessionKey?: unknown }).newSessionKey === 'string';
+
+const tryParseJson = (raw: string): unknown => {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 export const verifyRefreshToken = async (
   { refreshToken }: VerifyRefreshTokenInput,
   { redisClient }: VerifyRefreshTokenDeps
 ): Promise<SessionData | null> => {
   const refreshKey = `refresh:${refreshToken}`;
 
-  // Step 1: Resolve session key from refresh token
-  const sessionKey = await redisClient.get(refreshKey);
-  if (!sessionKey) {
+  // Step 1: Resolve refresh token key. Two possible shapes:
+  //   a) session-key pointer string ("session:refresh:<id>") — normal case
+  //   b) grace packet JSON ({ kind: 'grace', newSessionKey, newRefreshToken })
+  //      written by rotateSessionRedis when the OLD token gets rotated. The
+  //      grace branch means rotation already happened; treat the new session
+  //      as the verified target.
+  const raw = await redisClient.get(refreshKey);
+  if (!raw) {
     logger.warn('No session key found for refresh token');
     return null;
   }
 
-  // Step 2: Fetch session data
+  const parsed = tryParseJson(raw);
+  if (isGracePacket(parsed)) {
+    // Grace path: load the NEW session and skip the token-hash check (the new
+    // token is freshly minted; the OLD token's verifyToken hash wouldn't match
+    // anyway since the session blob now stores the new hash).
+    const rawNewSession = await redisClient.get(parsed.newSessionKey);
+    if (!rawNewSession) {
+      logger.warn('Grace packet references missing session');
+      return null;
+    }
+    const newSession: SessionData = JSON.parse(rawNewSession);
+    if (newSession.isRevoked) {
+      logger.warn('Grace-target session is revoked');
+      return null;
+    }
+    return newSession;
+  }
+
+  // Legacy path: raw is the session-key pointer string.
+  const sessionKey = raw;
   const rawSession = await redisClient.get(sessionKey);
   if (!rawSession) {
     logger.warn('No session found for session key');
@@ -33,7 +77,6 @@ export const verifyRefreshToken = async (
 
   const session: SessionData = JSON.parse(rawSession);
 
-  // Step 3: Check if session is revoked
   if (session.isRevoked) {
     logger.warn('Session is revoked');
     return null;

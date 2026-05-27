@@ -29,6 +29,7 @@ import DriverPortalRoutes from 'features/driver-portal/routes/driverPortalRoutes
 import CarrierPortalRoutes from 'features/carrier-portal/routes/CarrierPortalRoutes';
 import DevRoutes from 'features/dev/routes/devRoutes';
 import ErrorPage from 'components/ErrorPage';
+import PortalSessionGuard from 'features/auth/components/PortalSessionGuard';
 import App from '../App';
 
 const PortalShell = () => {
@@ -53,7 +54,9 @@ const PortalShell = () => {
     <ThemeCustomization>
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <NotificationShell>
-          <Outlet />
+          <PortalSessionGuard>
+            <Outlet />
+          </PortalSessionGuard>
           <DrawerManager
             activeDrawer={activeDrawer}
             componentLookup={drawerRegistry}

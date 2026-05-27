@@ -1,0 +1,656 @@
+openapi: 3.0.3
+info:
+  title: FleetCommand Authentication API — auth-login-fix contract
+  version: 1.0.0-auth-login-fix
+  description: |
+    Contract freeze for the auth-login-fix plan. Covers the SEVEN existing auth endpoints
+    that receive additive changes in this fix:
+      - New REQUEST field:  `rememberMe?: boolean` on `POST /auth/login`
+      - New RESPONSE field: `accessTokenExpiresAt: string` (ISO 8601, required) on
+        login, refresh, /auth/me, signup-org, accept-invite, switch-org, password-challenge
+    Tokens themselves are NEVER in JSON bodies — they are HttpOnly cookies set/cleared by
+    the server. The `accessToken` field on the login response is legacy and retained for
+    backward compatibility (frontend ignores it; cookies are authoritative). Marked
+    `deprecated: true` in this contract.
+
+    DEPLOY ORDER: backend must deploy before frontend. The frontend's `refreshScheduler`
+    consumes `accessTokenExpiresAt`; the scheduler MUST defensively no-op if the field is
+    missing (graceful degradation to reactive 401 path) so a frontend-first deploy is
+    survivable but suboptimal.
+
+    CSRF: all public auth endpoints in this contract (`login`, `logout`, `token/refresh`,
+    `signup-org`, `invite/accept`, `password-challenge`) are CSRF-exempt by design — they
+    are pre-session, so demanding a token the client cannot yet have would be circular.
+    Enforced server-side in `src/shared/middleware/csrfProtection.ts` EXEMPT_PREFIXES.
+    All OTHER mutating endpoints across the API require an `X-CSRF-Token` header mirroring
+    the JS-readable `csrfToken` cookie.
+
+    FOLLOWUPS (intentionally out of scope, documented for the next iteration):
+      - `switchOrg` should inherit `rememberMe` from the prior session. Skipped now because
+        org-switching is rare in practice. Trivial one-line thread-through if usage changes.
+      - `passwordChallenge` should inherit `rememberMe` from the original login request.
+        Skipped — once-per-account first-login edge case.
+      - Race-free rotation via Redis Lua `EVAL` if the residual sub-ms rotation race ever
+        surfaces in production telemetry.
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - cookieAuth: []
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+      description: |
+        HttpOnly cookie set by /auth/login and rotated by /auth/token/refresh.
+        Companion cookies: `refreshToken` (HttpOnly), `csrfToken` (readable by JS,
+        echoed back via `X-CSRF-Token` header on state-changing requests).
+
+  parameters: {}
+
+  schemas:
+    # =====================================================================
+    # Enums
+    # =====================================================================
+
+    AuthStatus:
+      type: string
+      enum:
+        - authenticated
+        - CHALLENGE_REQUIRED
+        - UNCONFIRMED
+      x-display-names:
+        authenticated: "Authenticated"
+        CHALLENGE_REQUIRED: "Password challenge required"
+        UNCONFIRMED: "Email not yet verified"
+
+    SessionExpiredContext:
+      type: string
+      enum:
+        - main
+        - portal
+      description: |
+        Frontend-only enum (not over the wire). Drives `sessionExpired({ context })`
+        Redux action. Included here so backend devs are aware of the routing
+        convention enforced by axios interceptor URL prefix matching:
+        `/carrier-portal/*` and `/driver-portal/*` → `portal`; everything else → `main`.
+      x-display-names:
+        main: "Main app (password-login users)"
+        portal: "Carrier/Driver portal (invite-token users)"
+
+    # =====================================================================
+    # Shared structural types
+    # =====================================================================
+
+    ErrorBody:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "Session expired or not found"
+              code:
+                type: string
+                description: "Optional machine-readable error code"
+                example: "ORG_SUSPENDED"
+
+    User:
+      type: object
+      description: "Authenticated user identity. Shape unchanged by this fix."
+      required: [id, email]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        organizationId:
+          type: string
+          format: uuid
+          nullable: true
+        # Additional fields present in actual implementation are passed through
+        # unchanged. This contract is concerned only with auth-relevant shape.
+      additionalProperties: true
+
+    AccessibleOrg:
+      type: object
+      description: "Organization the user has membership in. Shape unchanged."
+      additionalProperties: true
+
+    # =====================================================================
+    # Request bodies
+    # =====================================================================
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+        rememberMe:
+          type: boolean
+          default: false
+          description: |
+            NEW in auth-login-fix. When `true`, the issued session uses the extended
+            TTL (30d) instead of the base TTL (7d). The flag is persisted on the
+            Redis session blob so subsequent rotations preserve the extended TTL.
+            Omitted or `false` → 7d session.
+
+    # =====================================================================
+    # Response shapes — additive: every successful auth response now carries
+    # `accessTokenExpiresAt` (ISO 8601 timestamp, required).
+    # =====================================================================
+
+    AuthenticatedResponse:
+      type: object
+      required: [user, accessibleOrgs, accessToken, status, message, accessTokenExpiresAt]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        accessibleOrgs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessibleOrg'
+        accessToken:
+          type: string
+          deprecated: true
+          description: |
+            DEPRECATED. Legacy field — frontend ignores it; auth flows through the
+            HttpOnly `accessToken` cookie. Retained in the response for backward
+            compatibility. Will be removed in a future cleanup after confirming no
+            consumer reads it. Do NOT consume this in new code.
+        status:
+          type: string
+          enum: [authenticated]
+        message:
+          type: string
+          example: "User authenticated successfully"
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+          description: |
+            NEW in auth-login-fix. Absolute ISO-8601 timestamp at which the access
+            token expires. Used by the frontend `refreshScheduler` to schedule a
+            proactive refresh ~5 minutes before this time. Also consumed by the
+            visibility-change handler on app resume.
+          example: "2026-05-27T15:00:00.000Z"
+
+    ChallengeRequiredResponse:
+      type: object
+      required: [status, user, session, challengeName, message]
+      properties:
+        status:
+          type: string
+          enum: [CHALLENGE_REQUIRED]
+        user:
+          $ref: '#/components/schemas/User'
+        session:
+          type: string
+          description: "Cognito-issued session token for completing the challenge"
+        challengeName:
+          type: string
+          example: "NEW_PASSWORD_REQUIRED"
+        message:
+          type: string
+
+    UnconfirmedResponse:
+      type: object
+      required: [status, user, message, canResendCode]
+      properties:
+        status:
+          type: string
+          enum: [UNCONFIRMED]
+        user:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+        canResendCode:
+          type: boolean
+
+    RefreshTokenResponse:
+      type: object
+      required: [message, accessTokenExpiresAt]
+      properties:
+        message:
+          type: string
+          example: "Token refreshed successfully"
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+          description: |
+            NEW in auth-login-fix. Frontend MUST re-schedule the proactive refresh
+            timer from this value on every successful refresh.
+
+    CurrentUserResponse:
+      type: object
+      required: [user, accessibleOrgs, message, accessTokenExpiresAt]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        accessibleOrgs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessibleOrg'
+        message:
+          type: string
+          example: "Current user fetched successfully"
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+          description: |
+            NEW in auth-login-fix. Decoded from the `exp` claim of the access-token
+            JWT presented on this request. /auth/me does NOT mint a new token; this
+            field exposes the existing token's expiry for the frontend scheduler
+            to consume on bootstrap.
+
+paths:
+  # =====================================================================
+  # POST /auth/login
+  # =====================================================================
+  /auth/login:
+    post:
+      summary: "Sign in with email + password"
+      operationId: authLogin
+      security: []
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: |
+            Authenticated, OR a challenge is required, OR account not yet confirmed.
+            Discriminated by the `status` field.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: |
+                Sets `accessToken` (HttpOnly, 1h maxAge), `refreshToken` (HttpOnly,
+                7d or 30d maxAge based on `rememberMe`), and `csrfToken`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuthenticatedResponse'
+                  - $ref: '#/components/schemas/ChallengeRequiredResponse'
+                  - $ref: '#/components/schemas/UnconfirmedResponse'
+                discriminator:
+                  propertyName: status
+        '400':
+          description: "Invalid email format, missing password, or malformed body"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '401':
+          description: "Invalid credentials"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '429':
+          description: "Rate limit exceeded (authRateLimiter middleware)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # POST /auth/token/refresh
+  # =====================================================================
+  /auth/token/refresh:
+    post:
+      summary: "Rotate the access + refresh tokens"
+      operationId: authRefreshToken
+      security: []
+      description: |
+        Reads the `refreshToken` cookie. Server-side rotation behavior in this fix:
+          1. Validates refresh token against Redis (`refresh:<token>` → sessionKey).
+          2. If the lookup returns a **grace packet** (set within the last 10s by a
+             prior rotation), re-issues the SAME new refresh token + a freshly-signed
+             access token. No second rotation. Read-through grace.
+          3. Otherwise rotates: deletes old keys, writes new session + new refresh
+             token, rewrites `refresh:<OLD>` to a grace packet `{ newSessionKey,
+             newRefreshToken }` with `EX 10`.
+        TTL of the new session: 7d (base) or 30d (if `session.rememberMe === true`).
+      tags: [auth]
+      responses:
+        '200':
+          description: "Tokens rotated (or grace-window hit). New cookies set."
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: "Sets new accessToken, refreshToken, csrfToken cookies."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: |
+            Refresh token missing, malformed, expired (Redis TTL elapsed),
+            revoked, or context-mismatched (IP/userAgent fingerprint).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '429':
+          description: "Rate limit exceeded"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # GET /auth/me
+  # =====================================================================
+  /auth/me:
+    get:
+      summary: "Current authenticated user + access-token expiry"
+      operationId: authGetCurrentUser
+      tags: [auth]
+      responses:
+        '200':
+          description: "User fetched; accessTokenExpiresAt reflects the cookie's JWT exp."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+        '401':
+          description: "Missing access-token cookie, JWT invalid, or Redis session missing"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '404':
+          description: "User no longer exists (DB record removed since token issued)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # POST /auth/signup-org
+  # =====================================================================
+  /auth/signup-org:
+    post:
+      summary: "Create a new organization with an admin user"
+      operationId: authSignupOrg
+      security: []
+      description: |
+        Issues a session with `rememberMe: false` (7d TTL). No UI Remember Me at
+        signup; users opt in on next login if they want extended sessions.
+      tags: [auth]
+      responses:
+        '201':
+          description: "Org + user created; session issued."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResponse'
+        '400':
+          description: "Validation failure"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '409':
+          description: "Org slug or admin email already exists"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # POST /auth/invite/accept
+  # =====================================================================
+  /auth/invite/accept:
+    post:
+      summary: "Accept an invite and create the invited user account"
+      operationId: authAcceptInvite
+      security: []
+      description: |
+        Issues a session with `rememberMe: false` (7d TTL).
+      tags: [auth]
+      responses:
+        '201':
+          description: "User created; session issued."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResponse'
+        '400':
+          description: "Validation failure or password policy violation"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '404':
+          description: "Invite token not found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '410':
+          description: "Invite expired or already accepted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # POST /auth/switch-org
+  # =====================================================================
+  /auth/switch-org:
+    post:
+      summary: "Switch the active organization context"
+      operationId: authSwitchOrg
+      description: |
+        Issues a fresh session for the target org with `rememberMe: false` (7d TTL).
+        Inheriting Remember Me from the prior session is out of scope for this fix.
+      tags: [auth]
+      responses:
+        '200':
+          description: "New session issued for target org."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResponse'
+        '401':
+          description: "Not authenticated"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '403':
+          description: "User is not a member of the target organization"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # POST /auth/password-challenge
+  # =====================================================================
+  /auth/password-challenge:
+    post:
+      summary: "Respond to a CHALLENGE_REQUIRED login (e.g., new password required)"
+      operationId: authPasswordChallenge
+      security: []
+      description: |
+        Completes a Cognito challenge initiated by login. Issues a session with
+        `rememberMe: false` (7d TTL). Even if the original login set `rememberMe: true`,
+        the post-challenge session is 7d. Once-per-account first-login edge; trade-off
+        documented in plan.
+      tags: [auth]
+      responses:
+        '200':
+          description: "Challenge resolved; session issued."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResponse'
+        '400':
+          description: "Invalid challenge response or session token"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '401':
+          description: "Challenge session expired or invalid"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  # =====================================================================
+  # POST /auth/logout (UNCHANGED — included for completeness of auth surface)
+  # =====================================================================
+  /auth/logout:
+    post:
+      summary: "Revoke the current session"
+      operationId: authLogout
+      description: "Unchanged by this fix. Listed for surface completeness."
+      tags: [auth]
+      responses:
+        '200':
+          description: "Session revoked; cookies cleared."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+x-auth-matrix:
+  - endpoint: "POST /auth/login"
+    roles: [PUBLIC]
+    scoping: "Rate limit by IP (authRateLimiter)"
+  - endpoint: "POST /auth/token/refresh"
+    roles: [PUBLIC]
+    scoping: "Refresh-token cookie required; rate limited"
+  - endpoint: "GET /auth/me"
+    roles: [ANY_AUTHENTICATED]
+    scoping: "userId/sessionId from JWT; org membership not required"
+  - endpoint: "POST /auth/signup-org"
+    roles: [PUBLIC]
+    scoping: "None — creates new org"
+  - endpoint: "POST /auth/invite/accept"
+    roles: [PUBLIC]
+    scoping: "Invite token validates target org + role"
+  - endpoint: "POST /auth/switch-org"
+    roles: [ANY_AUTHENTICATED]
+    scoping: "Verifies membership in target organizationId"
+  - endpoint: "POST /auth/password-challenge"
+    roles: [PUBLIC]
+    scoping: "Cognito session token from prior /auth/login response"
+  - endpoint: "POST /auth/logout"
+    roles: [ANY_AUTHENTICATED]
+    scoping: "Revokes session bound to current accessToken cookie"
+
+x-data-flow:
+  "Login (no Remember Me)":
+    trigger: "User submits login form with Remember Me unchecked"
+    steps:
+      - "Frontend: POST /auth/login { email, password, rememberMe: false }"
+      - "Backend: authenticateUserService validates via Cognito"
+      - "Backend: createSessionRedis writes session with REFRESH_TTL_BASE (7d)"
+      - "Backend: setRefreshTokenCookie with maxAge = 7d"
+      - "Backend: returns 200 + AuthenticatedResponse { ..., accessTokenExpiresAt }"
+      - "Frontend: loginSaga dispatches loginSuccess; refreshScheduler.schedule(accessTokenExpiresAt)"
+      - "Frontend: visibilityListener registered on document"
+      - "Frontend: navigate to returnTo or /dashboard"
+    services: [hussle-app-dispatch-ui, hussle-app-dispatch-api]
+
+  "Login (with Remember Me)":
+    trigger: "User submits login form with Remember Me checked"
+    steps:
+      - "Frontend: POST /auth/login { email, password, rememberMe: true }"
+      - "Backend: createSessionRedis writes session with REFRESH_TTL_EXTENDED (30d), session.rememberMe = true"
+      - "Backend: setRefreshTokenCookie with maxAge = 30d"
+      - "Backend: returns AuthenticatedResponse"
+      - "Frontend: same as above"
+    services: [hussle-app-dispatch-ui, hussle-app-dispatch-api]
+
+  "Proactive scheduled refresh":
+    trigger: "refreshScheduler setTimeout fires 5 min before accessTokenExpiresAt"
+    steps:
+      - "Frontend: POST /auth/token/refresh (refreshToken cookie auto-attached)"
+      - "Backend: rotateSessionRedis reads refresh:OLD → session pointer (not grace packet)"
+      - "Backend: deletes old keys, writes new session + refresh + grace packet refresh:OLD → { newSessionKey, newRefreshToken } EX 10"
+      - "Backend: setAccessTokenCookie, setRefreshTokenCookie (maxAge from session.rememberMe)"
+      - "Backend: returns RefreshTokenResponse with new accessTokenExpiresAt"
+      - "Frontend: axios interceptor.onSuccess for refresh re-schedules from new accessTokenExpiresAt"
+    services: [hussle-app-dispatch-ui, hussle-app-dispatch-api]
+
+  "Read-through grace (concurrent tab race)":
+    trigger: "Two tabs fire scheduled refresh ~simultaneously; tab B arrives at server within grace window"
+    steps:
+      - "Tab A: POST /auth/token/refresh → completes rotation, writes grace packet"
+      - "Tab B: POST /auth/token/refresh (carrying same OLD refresh cookie)"
+      - "Backend: rotateSessionRedis reads refresh:OLD → grace packet shape detected"
+      - "Backend: signs fresh access token for grace.newSessionKey, returns grace.newRefreshToken in cookie"
+      - "Backend: returns RefreshTokenResponse with new accessTokenExpiresAt (no second rotation)"
+      - "Both tabs converge on the same session"
+    services: [hussle-app-dispatch-api]
+
+  "App resume after mobile backgrounding":
+    trigger: "Driver returns to app; visibilityState transitions to 'visible'"
+    steps:
+      - "Frontend: visibilitychange listener computes time-to-expiry from cached accessTokenExpiresAt"
+      - "Frontend: if expiry within 5 min, fire POST /auth/token/refresh BEFORE any other request"
+      - "Frontend: queue any other in-flight requests until refresh completes"
+      - "Backend: standard rotation flow"
+      - "Frontend: scheduler resumes proactive cycle from new accessTokenExpiresAt"
+    services: [hussle-app-dispatch-ui, hussle-app-dispatch-api]
+
+  "Transient network error on refresh":
+    trigger: "Scheduled refresh POST returns network error (no HTTP response) or HTTP 5xx"
+    steps:
+      - "Frontend: axios interceptor classifies error as transient"
+      - "Frontend: shows 'Reconnecting…' toast"
+      - "Frontend: retry with exponential backoff — 500ms, 1.5s, 4s (up to 3)"
+      - "Any retry succeeds → toast dismissed, user resumes"
+      - "All retries exhausted → dispatch sessionExpired({ context }), saga + guards take over"
+    services: [hussle-app-dispatch-ui]
+
+  "Session-expired routing (main app)":
+    trigger: "Refresh definitively fails (HTTP 401 OR exhausted retries) on a non-portal URL"
+    steps:
+      - "Frontend: axios interceptor dispatches sessionExpired({ context: 'main' })"
+      - "Frontend: sessionExpiredSaga calls navigate('/login', { state: { from: currentPath } })"
+      - "Frontend: if getNavigate throws (pre-mount), saga logs warning"
+      - "Frontend: AuthGuard rescues by emitting <Navigate to=/login /> on Redux state change"
+    services: [hussle-app-dispatch-ui]
+
+  "Session-expired routing (portal)":
+    trigger: "Refresh definitively fails on a /carrier-portal/* or /driver-portal/* URL"
+    steps:
+      - "Frontend: axios interceptor classifies URL as portal context"
+      - "Frontend: dispatches sessionExpired({ context: 'portal' })"
+      - "Frontend: PortalSessionGuard (wrapping PortalShell) renders 'Your session has expired' screen"
+      - "Frontend: user is NOT punted to /login (wrong destination for invite-token users)"
+    services: [hussle-app-dispatch-ui]

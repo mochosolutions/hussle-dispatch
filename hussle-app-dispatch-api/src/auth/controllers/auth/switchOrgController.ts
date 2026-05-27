@@ -8,6 +8,8 @@ import {
   setCsrfTokenCookie,
   setRefreshTokenCookie,
 } from '@/shared/utils/cookieUtils';
+import { REFRESH_TTL_BASE_SECONDS } from '../../constants';
+import { extractAccessTokenExpAsIso } from '../../providers/jwtTokenProvider/tokenHelpers';
 import type { CreateAuditLogInput } from '../../types/auditLogPort';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import type { userRepositoryPrisma } from '../../repositories/userRepositoryPrisma';
@@ -62,9 +64,10 @@ export const createSwitchOrgController = ({
     }
 
     setAccessTokenCookie(res, result.accessToken);
-    setRefreshTokenCookie(res, result.refreshToken);
+    setRefreshTokenCookie(res, result.refreshToken, REFRESH_TTL_BASE_SECONDS * 1000);
     setCsrfTokenCookie(res, generateCsrfToken());
 
-    return res.status(200).json(toSwitchOrgResponse(result));
+    const accessTokenExpiresAt = extractAccessTokenExpAsIso(result.accessToken);
+    return res.status(200).json(toSwitchOrgResponse(result, accessTokenExpiresAt));
   };
 

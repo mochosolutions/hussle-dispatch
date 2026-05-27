@@ -20,6 +20,10 @@ export interface CreateSessionInput {
   userAgent?: string;
   singleSession?: boolean;
   permissionsVersion?: number;
+  // When true, refresh-token TTL uses REFRESH_TTL_EXTENDED_SECONDS instead of base.
+  // Pre-rollout sessions that lack this field read back as undefined → falsy →
+  // graceful downgrade to base TTL on next rotation.
+  rememberMe?: boolean;
 }
 
 export interface CreateSessionResult {
@@ -56,6 +60,9 @@ export interface SessionData {
   isRevoked: boolean;
   refreshTokenHash: string;
   issuedAt: number;
+  // See CreateSessionInput.rememberMe — sessions issued pre-rollout will read
+  // this back as undefined; rotation treats that as base TTL.
+  rememberMe?: boolean;
 }
 
 export interface SwitchOrgInput {

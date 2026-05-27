@@ -25,6 +25,7 @@ export const loginReducer = {
     setFulfilled(state, {loadingKey: 'login', errorKey: 'login'});
     state.rememberMe = rememberMe;
     state.initAttempted = true;
+    state.portalSessionExpired = false;
   },
   loginFailure: (state: AuthState, action: PayloadAction<{ error: string }>) => {
     setRejected(state, {
