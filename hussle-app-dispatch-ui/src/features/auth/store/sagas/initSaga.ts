@@ -5,9 +5,13 @@ import {
 } from '../authSlice';
 import {initAttemptedSelector} from '../selectors/initSelector';
 import {selectIsLoggedIn} from '../selectors';
+import { schedule as scheduleRefresh } from '../../refreshScheduler';
+import { proactiveRefresh } from '../../refreshFn';
 import axiosPrivate from 'utils/axios';
 
-function isValidAuthResponse(data: unknown): data is { user: { id: string }; accessibleOrgs?: unknown[] } {
+function isValidAuthResponse(
+  data: unknown,
+): data is { user: { id: string }; accessibleOrgs?: unknown[]; accessTokenExpiresAt?: string } {
   if (typeof data !== 'object' || data === null) return false;
   const obj = data as Record<string, unknown>;
   if (typeof obj.user !== 'object' || obj.user === null) return false;
@@ -36,8 +40,13 @@ export function* initializeAuthSaga() {
 
     const user = userResponse.data.user;
     const orgs = userResponse.data.accessibleOrgs || [];
+    const accessTokenExpiresAt = userResponse.data.accessTokenExpiresAt;
 
     yield put(initSuccess({user, orgs}));
+
+    if (typeof accessTokenExpiresAt === 'string') {
+      yield call(scheduleRefresh, accessTokenExpiresAt, proactiveRefresh);
+    }
   } catch (_error: unknown) {
     // Clear rememberMe flag if present (but no tokens stored)
     localStorage.removeItem('rememberMe');

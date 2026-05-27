@@ -29,10 +29,6 @@ const buildCarrier = () => ({
   partnerSplitPercent: new Decimal('50.00'),
   feeIncludesAccessorials: true,
   ownerOpPayPercent: null,
-  dispatchAgreementOnFile: true,
-  dispatchAgreementSignedAt: null,
-  insuranceCertOnFile: true,
-  insuranceExpiry: null,
   tin: '12-3456789',
   onboardingStatus: null,
   authorityStatus: 'active',
@@ -88,12 +84,60 @@ describe('carrierService', () => {
     revokeByOrganizationId: jest.fn().mockResolvedValue(undefined),
   };
 
+  // Compute-on-read compliance: mock the document + agreement repos so a
+  // carrier with a confirmed, non-expired INSURANCE_CERT and a signed
+  // DISPATCH_AGREEMENT presents as fully compliant — matches the legacy
+  // fixture's cached column values (`*OnFile: true`, `*Expiry: null`).
+  const mockDocumentRepo = {
+    findManyForCompliance: jest.fn().mockResolvedValue([
+      {
+        id: 'doc-insurance-1',
+        organizationId: 'd73084dd-d6e7-4b79-af2b-63d17b4f4349',
+        entityType: 'carrier',
+        entityId: '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+        type: 'INSURANCE_CERT',
+        fileName: 'coi.pdf',
+        fileSize: 1024,
+        mimeType: 'application/pdf',
+        s3Key: 's3://test/coi.pdf',
+        url: 'https://test/coi.pdf',
+        uploadStatus: 'confirmed',
+        isArchived: false,
+        uploadedByUserId: null,
+        notes: null,
+        expiresAt: null,
+        metadata: null,
+        reviewStatus: 'approved',
+        reviewedAt: null,
+        reviewedByUserId: null,
+        rejectionReason: null,
+        signatureData: null,
+        signedAt: null,
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        uploadedByUser: null,
+      },
+    ]),
+  };
+  const mockAgreementRepo = {
+    findManySigned: jest.fn().mockResolvedValue([
+      {
+        id: 'agreement-1',
+        carrierId: '4b8f0dc8-6bb8-4d7f-b1ca-611e7f04f238',
+        signedAt: new Date('2026-03-01T00:00:00.000Z'),
+      },
+    ]),
+  };
+
   const carrierService = createCarrierService({
     carrierRepository: mockCarrierRepository,
     loadRepository: mockLoadRepository,
     noteRepository: mockNoteRepository,
     auditLog: mockAuditLog,
     inviteTokenRepo: mockInviteTokenRepo,
+    derivedComplianceDeps: {
+      documentRepo: mockDocumentRepo,
+      agreementRepo: mockAgreementRepo,
+    },
   });
 
   beforeEach(() => {

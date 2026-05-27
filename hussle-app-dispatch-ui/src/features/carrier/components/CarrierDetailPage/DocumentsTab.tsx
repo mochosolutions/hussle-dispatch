@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
-import { Button } from '@mui/material';
-import { CloudUploadOutlined } from '@ant-design/icons';
+import { Button, Stack } from '@mui/material';
+import { CloudUploadOutlined, FileProtectOutlined } from '@ant-design/icons';
 import SectionCard from 'components/SectionCard';
 import { DocumentTable } from '../../../documents/components/DocumentTable';
+import { AgreementsList } from '../../../agreements/components/AgreementsList';
 import { useDrawerActions } from '../../../ui/hooks/useDrawerActions';
 
 interface DocumentsTabProps {
@@ -12,7 +13,7 @@ interface DocumentsTabProps {
 export const DocumentsTab: React.FC<DocumentsTabProps> = ({ carrierId }) => {
   const { openDrawer } = useDrawerActions();
 
-  const handleUploadClick = useCallback(() => {
+  const handleUploadDocClick = useCallback(() => {
     openDrawer('documentUpload', {
       context: 'carrier-detail',
       entityType: 'carrier',
@@ -20,22 +21,49 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ carrierId }) => {
     });
   }, [openDrawer, carrierId]);
 
+  const handleUploadAgreementClick = useCallback(() => {
+    openDrawer('uploadAgreement', { carrierId });
+  }, [openDrawer, carrierId]);
+
   return (
-    <SectionCard
-      title="Documents"
-      contentSX={{ p: 0 }}
-      actions={
-        <Button
-          size="small"
-          startIcon={<CloudUploadOutlined />}
-          variant="outlined"
-          onClick={handleUploadClick}
-        >
-          Upload
-        </Button>
-      }
-    >
-      <DocumentTable entityType="carrier" entityId={carrierId} onUpload={handleUploadClick} />
-    </SectionCard>
+    <Stack spacing={2}>
+      <SectionCard
+        title="Agreements"
+        contentSX={{ p: 0 }}
+        actions={
+          <Button
+            size="small"
+            startIcon={<FileProtectOutlined />}
+            variant="outlined"
+            onClick={handleUploadAgreementClick}
+          >
+            Upload signed agreement
+          </Button>
+        }
+      >
+        <AgreementsList carrierId={carrierId} />
+      </SectionCard>
+
+      <SectionCard
+        title="Documents"
+        contentSX={{ p: 0 }}
+        actions={
+          <Button
+            size="small"
+            startIcon={<CloudUploadOutlined />}
+            variant="outlined"
+            onClick={handleUploadDocClick}
+          >
+            Upload document
+          </Button>
+        }
+      >
+        <DocumentTable
+          entityType="carrier"
+          entityId={carrierId}
+          onUpload={handleUploadDocClick}
+        />
+      </SectionCard>
+    </Stack>
   );
 };

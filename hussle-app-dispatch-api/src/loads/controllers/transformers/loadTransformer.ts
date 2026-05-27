@@ -1,6 +1,13 @@
 import { Decimal } from 'decimal.js';
+import type { InvoiceReadiness } from '../../services/derivedFinancials';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
+import {
+  computeLoadFinancials,
+  computeInvoiceReadiness,
+  sumAccessorials,
+} from '../../services/derivedFinancials';
+import type { LoadFinancialsResult } from '@/shared/financials';
 import type {
   LoadListItem,
   LoadWithRelations,
@@ -13,6 +20,53 @@ import type {
 } from '../../types/loadTypes';
 
 const ROUNDING = Decimal.ROUND_HALF_EVEN;
+
+// ---------------------------------------------------------------------------
+// Derived-financials helpers (US-11)
+//
+// Note on dispatchFeeAmount semantics: when load.dispatchFeeType=PERCENTAGE,
+// Load.dispatchFeeAmount holds a percent value (e.g. "10" for 10%) — NOT
+// dollars. When dispatchFeeType=FLAT, it holds dollars. The compute fn does
+// the right math; the response just echoes the persisted input.
+// ---------------------------------------------------------------------------
+
+interface NullFinancials {
+  dispatchFee: string | null;
+  partnerSplit: string | null;
+  ratePerMile: string | null;
+  ratePerTotalMile: string | null;
+  carrierPayout: string | null;
+  companyMargin: string | null;
+  driverPay: string | null;
+  estimatedCost: string | null;
+  dispatcherComm: string | null;
+}
+
+const NULL_FINANCIALS: NullFinancials = {
+  dispatchFee: null,
+  partnerSplit: null,
+  ratePerMile: null,
+  ratePerTotalMile: null,
+  carrierPayout: null,
+  companyMargin: null,
+  driverPay: null,
+  estimatedCost: null,
+  dispatcherComm: null,
+};
+
+/**
+ * Attempts to compute financials from the Load row's snapshot inputs. If
+ * customerRate is null the load isn't priced yet — return all-nulls (matches
+ * the pre-US-11 persisted-column behavior before calculateAndPersistFinancials
+ * ran).
+ */
+const tryComputeFinancials = (load: LoadWithRelations): LoadFinancialsResult | null => {
+  if (load.customerRate === null) {
+    return null;
+  }
+  const accessorialsSum = sumAccessorials(load.accessorialCharges);
+  return computeLoadFinancials(load, accessorialsSum);
+};
 
 const toCoord = (val: unknown): number | null => {
   if (val === null || val === undefined) return null;
@@ -102,32 +156,46 @@ const toStatusHistoryResponse = (
   createdAt: entry.createdAt.toISOString(),
 });
 
-const computeDerivedFinancials = (load: LoadWithRelations) => {
+/**
+ * Computes the read-time derived fields (carrierRpm, companyNet, marginPercent,
+ * estimatedNetEarnings) from a computed financials snapshot. These are second-
+ * order values that the API exposes for the UI but doesn't persist.
+ */
+const buildDerivedFinancials = (
+  financials: LoadFinancialsResult | null,
+  load: LoadWithRelations,
+) => {
+  if (financials === null) {
+    return {
+      carrierRpm: null,
+      companyNet: null,
+      marginPercent: null,
+      estimatedNetEarnings: null,
+    };
+  }
+
+  const carrierPayout = new Decimal(financials.carrierPayout);
+  const companyMargin = new Decimal(financials.companyMargin);
+
   const carrierRpm =
-    load.carrierPayout !== null && load.loadedMiles !== null && load.loadedMiles !== 0
-      ? new Decimal(String(load.carrierPayout))
-          .dividedBy(load.loadedMiles)
-          .toDecimalPlaces(2, ROUNDING)
-          .toFixed(2)
+    load.loadedMiles !== null && load.loadedMiles !== 0
+      ? carrierPayout.dividedBy(load.loadedMiles).toDecimalPlaces(2, ROUNDING).toFixed(2)
       : null;
 
   const companyNet =
-    load.companyMargin !== null && load.dispatcherComm !== null
-      ? new Decimal(String(load.companyMargin))
-          .minus(new Decimal(String(load.dispatcherComm)))
+    financials.dispatcherComm !== null
+      ? companyMargin
+          .minus(new Decimal(financials.dispatcherComm))
           .toDecimalPlaces(2, ROUNDING)
           .toFixed(2)
       : null;
 
   const marginPercent = (() => {
-    if (load.companyMargin === null || load.customerRate === null) return null;
-    const accessorialsSum = load.accessorialCharges.reduce(
-      (sum, charge) => sum.plus(new Decimal(String(charge.amount))),
-      new Decimal(0),
-    );
+    if (load.customerRate === null) return null;
+    const accessorialsSum = sumAccessorials(load.accessorialCharges);
     const gross = new Decimal(String(load.customerRate)).plus(accessorialsSum);
     if (gross.isZero()) return null;
-    return new Decimal(String(load.companyMargin))
+    return companyMargin
       .dividedBy(gross)
       .times(100)
       .toDecimalPlaces(2, ROUNDING)
@@ -135,9 +203,9 @@ const computeDerivedFinancials = (load: LoadWithRelations) => {
   })();
 
   const estimatedNetEarnings =
-    load.carrierPayout !== null && load.estimatedCost !== null
-      ? new Decimal(String(load.carrierPayout))
-          .minus(new Decimal(String(load.estimatedCost)))
+    financials.estimatedCost !== null
+      ? carrierPayout
+          .minus(new Decimal(financials.estimatedCost))
           .toDecimalPlaces(2, ROUNDING)
           .toFixed(2)
       : null;
@@ -145,9 +213,70 @@ const computeDerivedFinancials = (load: LoadWithRelations) => {
   return { carrierRpm, companyNet, marginPercent, estimatedNetEarnings };
 };
 
-export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailResponse => {
+/**
+ * Picks the 10 cache-equivalent fields off the computed financials, or returns
+ * all-nulls when financials couldn't be computed (e.g., customerRate missing).
+ */
+const pickPersistedShape = (financials: LoadFinancialsResult | null): NullFinancials => {
+  if (financials === null) return NULL_FINANCIALS;
+  return {
+    dispatchFee: financials.dispatchFee,
+    partnerSplit: financials.partnerSplit,
+    ratePerMile: financials.ratePerMile,
+    ratePerTotalMile: financials.ratePerTotalMile,
+    carrierPayout: financials.carrierPayout,
+    companyMargin: financials.companyMargin,
+    driverPay: financials.driverPay,
+    estimatedCost: financials.estimatedCost,
+    dispatcherComm: financials.dispatcherComm,
+  };
+};
+
+/**
+ * Derives invoiceReadiness on-read (US-11). Mirrors the prior subscriber
+ * semantics: an invoice's existence is the strongest signal, otherwise the
+ * pure rule in computeInvoiceReadiness runs against the load's documents.
+ */
+/**
+ * Wraps the pure computeInvoiceReadiness rule with the INVOICE_CREATED
+ * short-circuit (mirrors prior invoiceReadinessSubscriber semantics — once
+ * an invoice exists, readiness is INVOICE_CREATED regardless of doc state).
+ */
+const deriveInvoiceReadiness = (
+  load: LoadWithRelations | LoadListItem,
+  documents: { type: string }[],
+): InvoiceReadiness => {
+  const hasInvoice =
+    '_count' in load &&
+    load._count !== undefined &&
+    'invoices' in load._count &&
+    load._count.invoices > 0;
+  if (hasInvoice) {
+    return 'INVOICE_CREATED';
+  }
+  return computeInvoiceReadiness(load, documents);
+};
+
+export interface LoadDetailTransformerExtras {
+  // Optional documents per load — when provided, drives the
+  // computeInvoiceReadiness output. Detail callers that load documents (e.g.
+  // the load detail GET) should pass them in. Callers that don't will see
+  // NOT_READY for non-DELIVERED loads and AWAITING_DOCUMENTS for delivered.
+  // Accepts the slim shape used by repo.listDocuments (where `type` is widened
+  // to string) as well as full Document rows.
+  documents?: { type: string }[];
+}
+
+export const toLoadDetailResponse = (
+  load: LoadWithRelations,
+  extras: LoadDetailTransformerExtras = {},
+): LoadDetailResponse => {
   const cargo = computeCommoditySummary(load.stops);
-  const derived = computeDerivedFinancials(load);
+  const financials = tryComputeFinancials(load);
+  const derived = buildDerivedFinancials(financials, load);
+  const persistedShape = pickPersistedShape(financials);
+  const documents = extras.documents ?? [];
+  const invoiceReadiness = deriveInvoiceReadiness(load, documents);
 
   return {
     id: load.id,
@@ -182,18 +311,21 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
     financials: {
       customerRate: load.customerRate !== null ? String(load.customerRate) : null,
       carrierRate: load.carrierRate !== null ? String(load.carrierRate) : null,
-      dispatchFee: load.dispatchFee !== null ? String(load.dispatchFee) : null,
-      partnerSplit: load.partnerSplit !== null ? String(load.partnerSplit) : null,
-      ratePerMile: load.ratePerMile !== null ? String(load.ratePerMile) : null,
-      ratePerTotalMile: load.ratePerTotalMile !== null ? String(load.ratePerTotalMile) : null,
-      carrierPayout: load.carrierPayout !== null ? String(load.carrierPayout) : null,
-      companyMargin: load.companyMargin !== null ? String(load.companyMargin) : null,
-      driverPay: load.driverPay !== null ? String(load.driverPay) : null,
-      dispatcherComm: load.dispatcherComm !== null ? String(load.dispatcherComm) : null,
-      estimatedCost: load.estimatedCost !== null ? String(load.estimatedCost) : null,
-      dispatchFeeOverrideType: load.dispatchFeeOverrideType,
-      dispatchFeeOverrideAmount:
-        load.dispatchFeeOverrideAmount !== null ? String(load.dispatchFeeOverrideAmount) : null,
+      // The 10 cache-equivalent output fields are now derived per request via
+      // computeLoadFinancials (US-11). Field names are unchanged for UI parity.
+      ...persistedShape,
+      dispatchFeeType: load.dispatchFeeType,
+      dispatchFeeAmount:
+        load.dispatchFeeAmount !== null ? String(load.dispatchFeeAmount) : null,
+      partnerSplitPercent:
+        load.partnerSplitPercent !== null ? String(load.partnerSplitPercent) : null,
+      driverPayType: load.driverPayType,
+      driverPayRate: load.driverPayRate !== null ? String(load.driverPayRate) : null,
+      dispatcherCommissionType: load.dispatcherCommissionType,
+      dispatcherCommissionRate:
+        load.dispatcherCommissionRate !== null ? String(load.dispatcherCommissionRate) : null,
+      feeIncludesAccessorials: load.feeIncludesAccessorials,
+      payFromNet: load.payFromNet,
       ...derived,
     },
 
@@ -207,7 +339,6 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
               dispatchFeePercent: String(load.carrier.dispatchFeePercent),
               partnerSplitPercent: String(load.carrier.partnerSplitPercent),
               feeIncludesAccessorials: load.carrier.feeIncludesAccessorials,
-              feeType: load.carrier.feeType,
               payFromNet: load.carrier.payFromNet,
             }
           : null,
@@ -247,7 +378,9 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
         : null,
 
     tracking: {
-      invoiceReadiness: load.invoiceReadiness,
+      // invoiceReadiness is computed on-read (US-11). Persisted column was
+      // never populated in production (US-08 discovery).
+      invoiceReadiness,
       rateConReceivedAt: load.rateConReceivedAt?.toISOString() ?? null,
       bolUnsignedAt: load.bolUnsignedAt?.toISOString() ?? null,
       bolSignedAt: load.bolSignedAt?.toISOString() ?? null,
@@ -265,23 +398,51 @@ export const toLoadDetailResponse = (load: LoadWithRelations): LoadDetailRespons
 // List item response — structural subset of detail
 // ---------------------------------------------------------------------------
 
+/**
+ * List variant of tryComputeFinancials — LoadListItem includes only the slim
+ * accessorialCharges amount projection but otherwise has the same snapshot
+ * shape as a full Load row.
+ */
+const tryComputeListFinancials = (load: LoadListItem): LoadFinancialsResult | null => {
+  if (load.customerRate === null) {
+    return null;
+  }
+  // LoadListItem.accessorialCharges is the slim { amount } projection, which
+  // computeLoadFinancials only needs via sumAccessorials.
+  const accessorialsSum = sumAccessorials(load.accessorialCharges);
+  // LoadListItem extends Load — every snapshot input column is present on
+  // the row (customerRate, dispatchFeeType, carrierType, etc.). The compute
+  // fn never reads the 10 output cache columns.
+  return computeLoadFinancials(load, accessorialsSum);
+};
+
 export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse => {
   const cargo = computeCommoditySummary(load.stops);
+  const financials = tryComputeListFinancials(load);
+  const persisted = pickPersistedShape(financials);
+
+  const companyMargin = financials !== null ? new Decimal(financials.companyMargin) : null;
+  const dispatcherCommStr = financials?.dispatcherComm ?? null;
 
   const companyNet =
-    load.companyMargin !== null && load.dispatcherComm !== null
-      ? new Decimal(String(load.companyMargin))
-          .minus(new Decimal(String(load.dispatcherComm)))
+    companyMargin !== null && dispatcherCommStr !== null
+      ? companyMargin
+          .minus(new Decimal(dispatcherCommStr))
           .toDecimalPlaces(2, ROUNDING)
           .toFixed(2)
       : null;
+
+  // List endpoints don't currently fetch documents per load — readiness is
+  // computed from status + invoice presence only (DELIVERED/INVOICE_PENDING
+  // without docs → AWAITING_DOCUMENTS). Matches reality without an N+1 fetch.
+  const invoiceReadiness = deriveInvoiceReadiness(load, []);
 
   return {
     id: load.id,
     loadNumber: load.loadNumber,
     status: load.status,
     equipmentType: load.equipmentType,
-    invoiceReadiness: load.invoiceReadiness,
+    invoiceReadiness,
     accessorialChargeCount: load._count.accessorialCharges,
     createdAt: load.createdAt.toISOString(),
     updatedAt: load.updatedAt.toISOString(),
@@ -302,10 +463,10 @@ export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse
     financials: {
       customerRate: load.customerRate !== null ? String(load.customerRate) : null,
       carrierRate: load.carrierRate !== null ? String(load.carrierRate) : null,
-      ratePerMile: load.ratePerMile !== null ? String(load.ratePerMile) : null,
-      ratePerTotalMile: load.ratePerTotalMile !== null ? String(load.ratePerTotalMile) : null,
-      companyMargin: load.companyMargin !== null ? String(load.companyMargin) : null,
-      carrierPayout: load.carrierPayout !== null ? String(load.carrierPayout) : null,
+      ratePerMile: persisted.ratePerMile,
+      ratePerTotalMile: persisted.ratePerTotalMile,
+      companyMargin: persisted.companyMargin,
+      carrierPayout: persisted.carrierPayout,
       companyNet,
     },
 

@@ -12,6 +12,8 @@ import { createPortalPlacesControllers } from './controllers/portalPlacesControl
 import { createPortalVoidForReSignController } from './controllers/portalVoidForReSignController';
 import { carrierInviteTokenRepoPrisma } from './repositories/carrierInviteTokenRepoPrisma';
 import { carrierAuditPortPrisma } from '@/carriers/repositories/carrierAuditPortPrisma';
+import { documentRepositoryPrisma } from '@/documents/repositories/documentRepositoryPrisma';
+import { agreementRepositoryPrisma } from '@/agreements/repositories/agreementRepositoryPrisma';
 import { onboardingSessionRepoPrisma } from './repositories/onboardingSessionRepoPrisma';
 import { portalCarrierRepoPrisma } from './repositories/portalCarrierRepoPrisma';
 import { portalDocumentRepoPrisma } from './repositories/portalDocumentRepoPrisma';
@@ -56,10 +58,16 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
   const vehicleRepo = portalVehicleRepoPrisma(deps.prismaClient);
   const driverRepo = portalDriverRepoPrisma(deps.prismaClient);
   const lanePreferencesWritePort = portalLanePreferencesWriteAdapter(deps.prismaClient);
+  const documentRepoForCompliance = documentRepositoryPrisma(deps.prismaClient);
+  const agreementRepoForCompliance = agreementRepositoryPrisma(deps.prismaClient);
+  const derivedComplianceDeps = {
+    documentRepo: documentRepoForCompliance,
+    agreementRepo: agreementRepoForCompliance,
+  };
 
   const authenticateCarrierToken = createAuthenticateCarrierToken({ tokenRepo });
 
-  const companyService = createPortalCompanyService({ carrierRepo });
+  const companyService = createPortalCompanyService({ carrierRepo, derivedComplianceDeps });
 
   const equipmentService = createPortalEquipmentService({
     findCarrierById: async (carrierId: string) => {
@@ -97,6 +105,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
     eventBus: deps.eventBus,
     logger: deps.logger,
     auditLog,
+    derivedComplianceDeps,
     equipmentService,
     driversService,
   });
@@ -165,6 +174,7 @@ export const createCarrierPortalModule = (deps: CarrierPortalModuleDeps) => {
           };
         },
       },
+      derivedComplianceDeps,
     }),
     company: createCompanyControllers({ companyService }),
     equipment: createEquipmentControllers({ equipmentService }),

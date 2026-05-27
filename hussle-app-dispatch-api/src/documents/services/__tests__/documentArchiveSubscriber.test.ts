@@ -50,6 +50,7 @@ describe('createDocumentArchiveSubscriber', () => {
     archiveByEntityAndType: jest.fn(),
     archive: jest.fn(),
     findMany: jest.fn(),
+    findManyForCompliance: jest.fn(),
   };
 
   const mockLogger: jest.Mocked<Logger> = {

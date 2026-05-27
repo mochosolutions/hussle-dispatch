@@ -6,6 +6,8 @@ import type { CityCoords } from '@/shared/geoLookup';
 import type { DriverModuleQueries } from '@/drivers/compositionRoot';
 import type { PlaceModuleQueries, PlaceModuleServices } from '@/places/compositionRoot';
 import { customerRepositoryPrisma } from '@/customers/repositories/customerRepositoryPrisma';
+import { documentRepositoryPrisma } from '@/documents/repositories/documentRepositoryPrisma';
+import { agreementRepositoryPrisma } from '@/agreements/repositories/agreementRepositoryPrisma';
 import type { SettlementFreezeQueryPort } from './types/loadTypes';
 import { createAccessorialControllers } from './controllers/accessorialController';
 import { createLoadControllers } from './controllers/loadController';
@@ -23,14 +25,13 @@ import {
 } from './repositories/loadRepositoryPrisma';
 import { loadStatusRepositoryPrisma } from './repositories/loadStatusRepositoryPrisma';
 import { loadPickupQueryPrisma } from './repositories/loadPickupQueryPrisma';
-import { vehicleCpmQueryPrisma } from './repositories/vehicleCpmQueryPrisma';
 import { dispatcherProfileQueryPrisma } from './repositories/dispatcherProfileQueryPrisma';
 import { accessorialRepositoryPrisma } from './repositories/accessorialRepositoryPrisma';
 import { stopRepositoryPrisma } from './repositories/stopRepositoryPrisma';
 import { weeklyGrossQueryPrisma } from './repositories/weeklyGrossQueryPrisma';
-import { initializeFinancialRecalcSubscriber } from './services/financialRecalcSubscriber';
 import { initializeDetentionSubscriber } from './services/detentionSubscriber';
 import { createLoadService } from './services/loadService';
+import { updateDispatchTerms } from './services/updateDispatchTermsService';
 import type { LoadStatusService } from './services/loadStatusService';
 import { createLoadStatusService } from './services/loadStatusService';
 import { rankDrivers } from './services/rankDriversService';
@@ -76,13 +77,14 @@ export const createLoadsModule = ({
   const weeklyGrossQuery = weeklyGrossQueryPrisma(prismaClient);
   const loadPickupQuery = loadPickupQueryPrisma(prismaClient);
 
-  const vehicleCpmQuery = vehicleCpmQueryPrisma(prismaClient);
   const dispatcherProfileQuery = dispatcherProfileQueryPrisma(prismaClient);
 
   const accessorialRepository = accessorialRepositoryPrisma(prismaClient);
   const stopRepository = stopRepositoryPrisma(prismaClient);
   const customerRepository = customerRepositoryPrisma(prismaClient);
   const settingsQuery = settingsRepositoryPrisma(prismaClient as PrismaClient);
+  const documentRepoForCompliance = documentRepositoryPrisma(prismaClient);
+  const agreementRepoForCompliance = agreementRepositoryPrisma(prismaClient);
 
   const loadService = createLoadService({
     loadRepository,
@@ -91,11 +93,13 @@ export const createLoadsModule = ({
     driverAssignmentQuery,
     vehicleAssignmentQuery,
     customerQuery: customerRepository,
-    loadStatusRepo,
-    vehicleCpmQuery,
     dispatcherProfileQuery,
     settlementFreezeQuery,
     resolveStopToPlace: placeServices.resolveStopToPlace,
+    derivedComplianceDeps: {
+      documentRepo: documentRepoForCompliance,
+      agreementRepo: agreementRepoForCompliance,
+    },
     eventBus,
     logger,
   });
@@ -103,8 +107,6 @@ export const createLoadsModule = ({
   const loadStatusService = createLoadStatusService({
     loadRepository,
     loadStatusRepo,
-    vehicleCpmQuery,
-    dispatcherProfileQuery,
     settingsQuery,
     eventBus,
     logger,
@@ -133,6 +135,13 @@ export const createLoadsModule = ({
 
   const crudControllers = createLoadControllers({
     loadService,
+    updateDispatchTerms: (input) =>
+      updateDispatchTerms(input, {
+        loadRepository,
+        eventBus,
+        logger,
+        settlementFreezeQuery,
+      }),
   });
 
   const transitionStatus = createTransitionStatusController({
@@ -176,15 +185,6 @@ export const createLoadsModule = ({
   };
 
   const initializeSubscriber = async () => {
-    await initializeFinancialRecalcSubscriber({
-      eventBus,
-      loadFinder: loadRepository,
-      loadStatusRepo,
-      vehicleCpmQuery,
-      dispatcherProfileQuery,
-      logger,
-    });
-
     await initializeDetentionSubscriber({
       eventBus,
       logger,

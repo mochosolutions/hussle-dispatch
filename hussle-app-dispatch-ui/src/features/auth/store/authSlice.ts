@@ -1,4 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import { SessionExpiredContext } from '../types';
 import {
   signupReducer,
   codeConfirmationReducer,
@@ -49,6 +50,12 @@ export interface AuthState {
   session: string | null;
   forceChangePassword: boolean;
   initAttempted: boolean;
+  /**
+   * Portal-only flag set by sessionExpired({ context: 'portal' }). When true,
+   * PortalSessionGuard renders SessionExpiredPortalScreen instead of the route
+   * subtree. Reset on next successful auth (init/login/switch).
+   */
+  portalSessionExpired: boolean;
 }
 
 // export enum LoadingState {
@@ -124,6 +131,7 @@ const initialState: AuthState = {
   session: null,
   forceChangePassword: false,
   initAttempted: false,
+  portalSessionExpired: false,
 };
 
 export const loginSlice = createSlice({
@@ -141,6 +149,18 @@ export const loginSlice = createSlice({
     ...passwordResetReducer,
     ...switchOrgReducer,
     ...acceptInviteReducer,
+    sessionExpired: (
+      state: AuthState,
+      action: PayloadAction<{ context: SessionExpiredContext }>,
+    ) => {
+      if (action.payload.context === SessionExpiredContext.PORTAL) {
+        state.portalSessionExpired = true;
+        return;
+      }
+      state.isLoggedIn = false;
+      state.user = defaultUserProfileState;
+      state.rememberMe = false;
+    },
   },
 });
 
@@ -201,6 +221,7 @@ export const {
   acceptInviteRequest,
   acceptInviteSuccess,
   acceptInviteFailure,
+  sessionExpired,
 } = loginSlice.actions;
 
 export const authReducer = loginSlice.reducer;

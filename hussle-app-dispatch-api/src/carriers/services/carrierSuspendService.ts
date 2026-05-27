@@ -4,6 +4,8 @@ import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { assertTransition } from './carrierStateMachine';
 import type { CarrierAuditPort } from '../types/carrierAuditPort';
 import type { CarrierSuspendPort } from '../types/suspendTypes';
+import type { DerivedComplianceDeps } from './derivedCompliance';
+import { computeAgreementStatus, computeInsuranceStatus } from './derivedCompliance';
 
 interface SuspendInput {
   carrierId: string;
@@ -25,6 +27,7 @@ interface SuspendResult {
 interface CarrierSuspendServiceDeps {
   suspendPort: CarrierSuspendPort;
   auditLog: CarrierAuditPort;
+  derivedComplianceDeps: DerivedComplianceDeps;
 }
 
 const writeStatusAudit = async (
@@ -83,11 +86,16 @@ export const createCarrierSuspendService = (deps: CarrierSuspendServiceDeps) => 
 
     // Run the doc gate inline so unsuspending lands in the correct state immediately,
     // rather than reading ACTIVE for an hour until the doc-check job catches up.
+    // Compute compliance on read — the cached Carrier columns have been retired.
+    const [insurance, agreement] = await Promise.all([
+      computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
+      computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
+    ]);
     const gate = checkCarrierOnboarding({
       carrierType: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
+      dispatchAgreementOnFile: agreement.onFile,
+      insuranceCertOnFile: insurance.onFile,
+      insuranceExpiry: insurance.expiresAt,
       tinOnFile: carrier.tinOnFile,
     });
 

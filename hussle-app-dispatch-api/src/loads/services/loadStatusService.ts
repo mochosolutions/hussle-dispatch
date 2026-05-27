@@ -12,14 +12,13 @@ import {
   validateTransition,
   TRANSITION_SIDE_EFFECTS,
 } from '@/shared/stateMachine';
-import type { DispatcherProfileQueryPort, LoadRepoPort, LoadWithRelations, VehicleCpmQueryPort } from '../types/loadTypes';
+import type { LoadRepoPort, LoadWithRelations } from '../types/loadTypes';
 import type {
   TransitionStatusInput,
   StatusTransitionResponse,
   StatusTransitionWarning,
   LoadStatusRepoPort,
 } from '../types/loadStatusTypes';
-import { calculateAndPersistFinancials } from './calculateFinancials';
 import { checkDetentionForStop } from './detentionDetector';
 
 // ---------------------------------------------------------------------------
@@ -43,8 +42,6 @@ interface SideEffectDeps {
   eventBus: EventBus;
   logger: Logger;
   load: LoadWithRelations;
-  vehicleCpmQuery?: VehicleCpmQueryPort;
-  dispatcherProfileQuery?: DispatcherProfileQueryPort;
   settingsQuery?: DetentionSettingsQuery;
 }
 
@@ -57,11 +54,6 @@ const executeSideEffects = async (
 
   for (const effect of effects) {
     switch (effect) {
-      case 'CALCULATE_FINANCIALS':
-        deps.logger.info('Side effect: calculate financials', { loadId, targetStatus });
-        await calculateAndPersistFinancials(loadId, deps);
-        break;
-
       case 'FREEZE_FINANCIALS':
         deps.logger.info('Side effect: freeze financials', { loadId, targetStatus });
         // Financial freeze is enforced by the existing assertFinancialsNotChanged guard.
@@ -237,8 +229,6 @@ export interface LoadStatusService {
 interface LoadStatusServiceDeps {
   loadRepository: LoadRepoPort;
   loadStatusRepo: LoadStatusRepoPort;
-  vehicleCpmQuery?: VehicleCpmQueryPort;
-  dispatcherProfileQuery?: DispatcherProfileQueryPort;
   settingsQuery?: DetentionSettingsQuery;
   eventBus: EventBus;
   logger: Logger;
@@ -333,8 +323,6 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
       eventBus: deps.eventBus,
       logger: deps.logger,
       load,
-      vehicleCpmQuery: deps.vehicleCpmQuery,
-      dispatcherProfileQuery: deps.dispatcherProfileQuery,
       settingsQuery: deps.settingsQuery,
     });
 

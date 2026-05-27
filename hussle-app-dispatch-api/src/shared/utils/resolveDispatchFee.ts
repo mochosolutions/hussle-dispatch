@@ -5,7 +5,7 @@ export type ResolvedDispatchFee =
   | { type: 'PERCENTAGE'; percent: Prisma.Decimal }
   | { type: 'FLAT'; amount: Prisma.Decimal };
 
-type LoadFeeFields = Pick<Load, 'dispatchFeeOverrideType' | 'dispatchFeeOverrideAmount'>;
+type LoadFeeFields = Pick<Load, 'dispatchFeeType' | 'dispatchFeeAmount'>;
 type CarrierFeeFields = Pick<
   Carrier,
   'dispatchFeeType' | 'dispatchFeePercent' | 'dispatchFeeAmount'
@@ -19,22 +19,22 @@ export const resolveDispatchFee = ({
   carrier: CarrierFeeFields;
 }): ResolvedDispatchFee => {
   if (
-    load.dispatchFeeOverrideType === DispatchFeeType.FLAT &&
-    load.dispatchFeeOverrideAmount !== null
+    load.dispatchFeeType === DispatchFeeType.FLAT &&
+    load.dispatchFeeAmount !== null
   ) {
     return {
       type: 'FLAT',
-      amount: new Prisma.Decimal(load.dispatchFeeOverrideAmount.toString()),
+      amount: new Prisma.Decimal(load.dispatchFeeAmount.toString()),
     };
   }
 
   if (
-    load.dispatchFeeOverrideType === DispatchFeeType.PERCENTAGE &&
-    load.dispatchFeeOverrideAmount !== null
+    load.dispatchFeeType === DispatchFeeType.PERCENTAGE &&
+    load.dispatchFeeAmount !== null
   ) {
     return {
       type: 'PERCENTAGE',
-      percent: new Prisma.Decimal(load.dispatchFeeOverrideAmount.toString()),
+      percent: new Prisma.Decimal(load.dispatchFeeAmount.toString()),
     };
   }
 

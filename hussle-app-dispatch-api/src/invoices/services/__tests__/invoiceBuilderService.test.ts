@@ -7,6 +7,7 @@ import type {
   InvoiceWithRelations,
 } from '../../types/invoiceTypes';
 import type { Logger } from '../../../shared/utils/logger';
+import type { EventBus } from '../../../shared/messaging/eventBus';
 
 jest.mock('../../../shared/sequenceGenerator', () => ({
   generateSequenceNumber: jest.fn().mockResolvedValue('INV-0001'),
@@ -40,9 +41,14 @@ const buildMockDeps = () => {
     error: jest.fn(),
   };
 
+  const eventBus: jest.Mocked<Pick<EventBus, 'publish'>> = {
+    publish: jest.fn().mockResolvedValue(undefined),
+  };
+
   return {
     invoiceRepo: invoiceRepo as unknown as jest.Mocked<InvoiceRepoPort>,
     loadQuery: loadQuery as unknown as jest.Mocked<InvoiceLoadQueryPort>,
+    eventBus: eventBus as unknown as jest.Mocked<EventBus>,
     logger,
   };
 };
@@ -89,9 +95,8 @@ const makeLoad = (overrides: {
   vehicleId: null,
   customerRate: overrides.customerRate ?? '0',
   carrierRate: null,
-  dispatchFee: null,
-  dispatchFeeOverrideType: null,
-  dispatchFeeOverrideAmount: null,
+  dispatchFeeType: null,
+  dispatchFeeAmount: null,
   bolSignedAt: new Date(),
   status: 'DELIVERED',
   contact: null,
@@ -332,5 +337,25 @@ describe('invoiceBuilderService.createFromLoadWithFee', () => {
     });
 
     expect(result.dispatchFeeAmount).toBeNull();
+  });
+
+  it('emits invoice.draft.created after the invoice row is persisted', async () => {
+    deps.loadQuery.findLoadById.mockResolvedValue(
+      makeLoad({ carrierType: 'COMPANY_ASSET', customerRate: '1500' }),
+    );
+    const service = createInvoiceBuilderService(deps);
+
+    await service.createFromLoadWithFee({
+      loadId: 'load-1',
+      organizationId: 'org-1',
+      userId: 'system',
+    });
+
+    expect(deps.eventBus.publish).toHaveBeenCalledWith('invoice.draft.created', {
+      invoiceId: 'inv-1',
+      loadId: 'load-1',
+      organizationId: 'org-1',
+      invoiceNumber: 'INV-0001',
+    });
   });
 });

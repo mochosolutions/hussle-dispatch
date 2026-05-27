@@ -16,12 +16,12 @@ const buildCarrierFee = (
 
 const buildLoadFee = (
   overrides: Partial<{
-    dispatchFeeOverrideType: DispatchFeeType | null;
-    dispatchFeeOverrideAmount: Prisma.Decimal | null;
+    dispatchFeeType: DispatchFeeType | null;
+    dispatchFeeAmount: Prisma.Decimal | null;
   }> = {},
 ) => ({
-  dispatchFeeOverrideType: null,
-  dispatchFeeOverrideAmount: null,
+  dispatchFeeType: null,
+  dispatchFeeAmount: null,
   ...overrides,
 });
 
@@ -29,8 +29,8 @@ describe('resolveDispatchFee', () => {
   it('uses load PERCENTAGE override when override type and amount provided', () => {
     const result = resolveDispatchFee({
       load: buildLoadFee({
-        dispatchFeeOverrideType: DispatchFeeType.PERCENTAGE,
-        dispatchFeeOverrideAmount: new Prisma.Decimal('20'),
+        dispatchFeeType: DispatchFeeType.PERCENTAGE,
+        dispatchFeeAmount: new Prisma.Decimal('20'),
       }),
       carrier: buildCarrierFee({
         dispatchFeeType: DispatchFeeType.FLAT,
@@ -47,8 +47,8 @@ describe('resolveDispatchFee', () => {
   it('uses load FLAT override when override type and amount provided', () => {
     const result = resolveDispatchFee({
       load: buildLoadFee({
-        dispatchFeeOverrideType: DispatchFeeType.FLAT,
-        dispatchFeeOverrideAmount: new Prisma.Decimal('450'),
+        dispatchFeeType: DispatchFeeType.FLAT,
+        dispatchFeeAmount: new Prisma.Decimal('450'),
       }),
       carrier: buildCarrierFee({
         dispatchFeeType: DispatchFeeType.PERCENTAGE,

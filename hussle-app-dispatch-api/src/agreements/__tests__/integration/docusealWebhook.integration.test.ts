@@ -62,6 +62,7 @@ const buildRepo = (): jest.Mocked<AgreementRepoPort> => ({
   update: jest.fn(),
   findStaleInProgress: jest.fn(),
   countActivePending: jest.fn(),
+  findManySigned: jest.fn(),
 });
 
 const buildEventBus = (): jest.Mocked<EventBus> => ({

@@ -6,7 +6,9 @@ import {
   setCsrfTokenCookie,
   setRefreshTokenCookie,
 } from '@/shared/utils/cookieUtils';
+import { REFRESH_TTL_BASE_SECONDS } from '../../constants';
 import { cognitoProvider } from '../../providers/authProvider';
+import { extractAccessTokenExpAsIso } from '../../providers/jwtTokenProvider/tokenHelpers';
 import { passwordChallengeService } from '../../services';
 import { mapPasswordChallengeRequest } from './mappers/mapPasswordChallengeRequest';
 
@@ -36,12 +38,17 @@ export const createPasswordChallengeController = ({
       setCsrfTokenCookie(res, generateCsrfToken());
     }
     if (authResponse?.refreshToken) {
-      setRefreshTokenCookie(res, authResponse.refreshToken);
+      setRefreshTokenCookie(res, authResponse.refreshToken, REFRESH_TTL_BASE_SECONDS * 1000);
     }
+
+    const accessTokenExpiresAt = authResponse?.accessToken
+      ? extractAccessTokenExpAsIso(authResponse.accessToken)
+      : null;
 
     return res.status(200).json({
       status: 'authenticated',
       session: authResponse?.session,
+      accessTokenExpiresAt,
       message: 'User responded to new password challenge successfully',
     });
   };

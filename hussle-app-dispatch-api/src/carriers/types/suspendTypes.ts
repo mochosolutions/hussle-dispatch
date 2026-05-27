@@ -6,9 +6,6 @@ export interface CarrierForSuspend {
   managedByOrgId: string;
   status: CarrierStatus;
   type: CarrierType;
-  dispatchAgreementOnFile: boolean;
-  insuranceCertOnFile: boolean;
-  insuranceExpiry: Date | null;
   tinOnFile: boolean;
 }
 

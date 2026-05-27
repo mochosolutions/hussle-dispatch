@@ -1,12 +1,55 @@
 import type { Carrier, OnboardingSession, Prisma } from '@prisma/client';
 import { createOnboardingSessionService } from '../services/onboardingSessionService';
 import { OnboardingBlockError } from '@/shared/errors/commonErrors';
+import type { DerivedComplianceDeps } from '@/carriers/services/derivedCompliance';
+import type { DocumentRepoPort } from '@/documents/types/documentTypes';
+import type { AgreementRepoPort } from '@/agreements/types/agreementRepoPort';
+
+interface ComplianceState {
+  insuranceOnFile?: boolean;
+  insuranceExpiry?: Date | null;
+  agreementOnFile?: boolean;
+}
+
+const buildDerivedComplianceDeps = (state: ComplianceState = {}): DerivedComplianceDeps => {
+  const insuranceOnFile = state.insuranceOnFile ?? true;
+  const agreementOnFile = state.agreementOnFile ?? true;
+  const documentRepo: jest.Mocked<Pick<DocumentRepoPort, 'findManyForCompliance'>> = {
+    findManyForCompliance: jest.fn(async (carrierIds: string[]) =>
+      insuranceOnFile
+        ? carrierIds.map(
+            (entityId) =>
+              ({
+                id: `doc-${entityId}`,
+                entityId,
+                type: 'INSURANCE_CERT',
+                createdAt: new Date(),
+                expiresAt: state.insuranceExpiry ?? null,
+              }) as Awaited<ReturnType<DocumentRepoPort['findManyForCompliance']>>[number],
+          )
+        : [],
+    ),
+  };
+  const agreementRepo: jest.Mocked<Pick<AgreementRepoPort, 'findManySigned'>> = {
+    findManySigned: jest.fn(async (carrierIds: string[]) =>
+      agreementOnFile
+        ? carrierIds.map(
+            (carrierId) =>
+              ({
+                id: `agreement-${carrierId}`,
+                carrierId,
+                signedAt: new Date(),
+                status: 'SIGNED',
+              }) as Awaited<ReturnType<AgreementRepoPort['findManySigned']>>[number],
+          )
+        : [],
+    ),
+  };
+  return { documentRepo, agreementRepo };
+};
 
 const TOTAL_PHASES = 6;
 const allPhasesCompleted = Array.from({ length: TOTAL_PHASES }, (_, i) => i + 1);
-
-const futureDate = new Date();
-futureDate.setFullYear(futureDate.getFullYear() + 1);
 
 const pastDate = new Date('2024-01-15');
 
@@ -34,16 +77,13 @@ const makeCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
     id: 'carrier-1',
     name: 'Test Carrier',
     type: 'EXTERNAL_CARRIER',
-    dispatchAgreementOnFile: true,
-    insuranceCertOnFile: true,
-    insuranceExpiry: futureDate,
     tin: '12-3456789',
     status: 'ONBOARDING',
     managedByOrgId: 'org-1',
     ...overrides,
   }) as Carrier;
 
-const makeDeps = () => ({
+const makeDeps = (compliance: ComplianceState = {}) => ({
   sessionRepo: {
     findByCarrierId: jest.fn(),
     create: jest.fn(),
@@ -68,6 +108,7 @@ const makeDeps = () => ({
   auditLog: {
     create: jest.fn().mockResolvedValue(undefined),
   },
+  derivedComplianceDeps: buildDerivedComplianceDeps(compliance),
 });
 
 describe('onboardingSessionService.complete — document validation', () => {
@@ -113,12 +154,9 @@ describe('onboardingSessionService.complete — document validation', () => {
   });
 
   it('throws OnboardingBlockError for EXTERNAL_CARRIER missing insurance cert', async () => {
-    const deps = makeDeps();
+    const deps = makeDeps({ insuranceOnFile: false });
     const session = makeSession();
-    const carrier = makeCarrier({
-      insuranceCertOnFile: false,
-      insuranceExpiry: null,
-    });
+    const carrier = makeCarrier();
 
     deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
     deps.carrierRepo.findById.mockResolvedValue(carrier);
@@ -134,12 +172,9 @@ describe('onboardingSessionService.complete — document validation', () => {
   });
 
   it('throws OnboardingBlockError for EXTERNAL_CARRIER with expired insurance', async () => {
-    const deps = makeDeps();
+    const deps = makeDeps({ insuranceExpiry: pastDate });
     const session = makeSession();
-    const carrier = makeCarrier({
-      insuranceCertOnFile: true,
-      insuranceExpiry: pastDate,
-    });
+    const carrier = makeCarrier();
 
     deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
     deps.carrierRepo.findById.mockResolvedValue(carrier);
@@ -178,13 +213,12 @@ describe('onboardingSessionService.complete — document validation', () => {
   });
 
   it('completes session for COMPANY_ASSET with no docs on file', async () => {
-    const deps = makeDeps();
+    // COMPANY_ASSET skips the document gate entirely, so derived compliance
+    // state is irrelevant for this case.
+    const deps = makeDeps({ insuranceOnFile: false, agreementOnFile: false });
     const session = makeSession();
     const carrier = makeCarrier({
       type: 'COMPANY_ASSET',
-      dispatchAgreementOnFile: false,
-      insuranceCertOnFile: false,
-      insuranceExpiry: null,
       tin: null,
     });
     const updatedSession = makeSession({ completedAt: new Date() });

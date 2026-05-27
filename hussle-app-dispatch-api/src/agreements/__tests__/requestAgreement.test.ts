@@ -72,6 +72,7 @@ const makeDeps = () => {
     update: jest.fn(),
     findStaleInProgress: jest.fn(),
     countActivePending: jest.fn(),
+    findManySigned: jest.fn(),
   };
   const signatureService: jest.Mocked<SignatureService> = {
     createSubmission: jest.fn(),

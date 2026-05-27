@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import { Prisma } from '@prisma/client';
 import type { Logger } from '../../shared/utils/logger';
+import type { EventBus } from '../../shared/messaging/eventBus';
 import { generateSequenceNumber } from '../../shared/sequenceGenerator';
 import type { InvoiceRepoPort, InvoiceLoadQueryPort, InvoiceWithRelations } from '../types/invoiceTypes';
 import { NotFoundError, ValidationError } from '../../shared/errors';
@@ -10,6 +11,7 @@ import { isBilledToCustomer } from '../../shared/utils/accessorialBillTo';
 interface InvoiceBuilderDeps {
   invoiceRepo: InvoiceRepoPort;
   loadQuery: InvoiceLoadQueryPort;
+  eventBus: EventBus;
   logger: Logger;
 }
 
@@ -107,6 +109,15 @@ export const createInvoiceBuilderService = (
       missingSignedBol,
     });
 
+    // Emit so invoicePdfGenerationSubscriber can build + store the PDF
+    // asynchronously without blocking invoice creation.
+    await deps.eventBus.publish('invoice.draft.created', {
+      invoiceId: invoice.id,
+      loadId: load.id,
+      organizationId: input.organizationId,
+      invoiceNumber,
+    });
+
     // Transition load to INVOICE_PENDING
     await deps.loadQuery.updateLoadStatus(load.id, 'INVOICE_PENDING');
 
@@ -116,10 +127,10 @@ export const createInvoiceBuilderService = (
       const carrier = load.carrier;
       const resolved = resolveDispatchFee({
         load: {
-          dispatchFeeOverrideType: load.dispatchFeeOverrideType,
-          dispatchFeeOverrideAmount:
-            load.dispatchFeeOverrideAmount !== null && load.dispatchFeeOverrideAmount !== undefined
-              ? new Prisma.Decimal(String(load.dispatchFeeOverrideAmount))
+          dispatchFeeType: load.dispatchFeeType,
+          dispatchFeeAmount:
+            load.dispatchFeeAmount !== null && load.dispatchFeeAmount !== undefined
+              ? new Prisma.Decimal(String(load.dispatchFeeAmount))
               : null,
         },
         carrier: {

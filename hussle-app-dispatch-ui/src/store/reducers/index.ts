@@ -16,6 +16,7 @@ import { loadPageReducer } from 'features/load/store/reducers/loadPageSlice';
 import { smsPromptEntityReducer } from 'features/load/store/reducers/smsPromptEntitySlice';
 import { authReducer } from 'features/auth/store';
 import carrierNotesReducer from 'features/carrier/store/reducers/carrierNotesSlice';
+import agreementsReducer from 'features/agreements/store/reducers/agreementsSlice';
 import intelPageSlice from 'features/loadintelligence/store/reducers/intelPageSlice';
 import { invoicePageSlice } from 'features/invoices/store/reducers/invoicePageSlice';
 import { invoiceReducer } from 'features/invoices/store/reducers/invoiceEntitySlice';
@@ -42,6 +43,7 @@ const pages = combineReducers({
   notifications: notificationReducer,
   carriers: carrierPageReducer,
   carrierNotes: carrierNotesReducer,
+  agreements: agreementsReducer,
   vehicles: vehiclePageSlice.reducer,
   vehicleLoadHistory: vehicleLoadHistoryReducer,
   drivers: driverPageReducer,

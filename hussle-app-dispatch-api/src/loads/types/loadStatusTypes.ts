@@ -61,18 +61,4 @@ export interface LoadStatusRepoPort {
     stopId?: string;
   }): Promise<void>;
   sumAccessorialCharges(loadId: string): Promise<string>;
-  updateFinancials(
-    loadId: string,
-    financials: {
-      dispatchFee: string;
-      partnerSplit: string;
-      ratePerMile: string | null;
-      ratePerTotalMile: string | null;
-      carrierPayout: string;
-      companyMargin: string;
-      driverPay: string | null;
-      estimatedCost: string | null;
-      dispatcherComm: string | null;
-    },
-  ): Promise<void>;
 }

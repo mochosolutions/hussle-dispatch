@@ -6,10 +6,12 @@ import axios from 'axios';
 import { closeSnackbar } from 'notistack';
 import config from '../config';
 import { store } from 'store';
-import { logoutSuccess } from '../features/auth/store/authSlice';
+import { sessionExpired } from '../features/auth/store/authSlice';
 import { resetPopups } from '../features/ui/store/reducers/uiSlice';
 import { notify } from '../features/ui/store/reducers/notificationSlice';
-import { getNavigate } from 'utils/getNavigate';
+import { cancel as cancelRefresh } from '../features/auth/refreshScheduler';
+import { performTokenRefresh } from '../features/auth/refreshFn';
+import { classifyContext } from './authInterceptorHelpers';
 
 interface QueuedRequest {
   resolve: (value?: unknown) => void;
@@ -23,6 +25,7 @@ interface RetryableRequestConfig extends AxiosRequestConfig {
 let isRefreshing = false;
 let failedQueue: QueuedRequest[] = [];
 let loggingOut = false;
+let reconnectingToastId: string | number | null = null;
 
 export const setLoggingOut = (value: boolean) => {
   loggingOut = value;
@@ -48,23 +51,15 @@ const isAuthBypassRequest = (url: string | undefined): boolean => {
   return AUTH_BYPASS_PATHS.some((path) => url.includes(path));
 };
 
-const handleAuthFailure = () => {
-  localStorage.removeItem('rememberMe');
-  store.dispatch(logoutSuccess());
-
-  // Close any open drawers/modals so post-logout state is clean
-  store.dispatch(resetPopups());
-
-  // Dismiss any active notistack toasts (in-app notifications)
-  closeSnackbar();
-
+const dispatchSessionExpired = (originalRequestUrl: string | undefined): void => {
   try {
-    const navigate = getNavigate();
-    if (typeof navigate === 'function') {
-      navigate('/login');
-    }
-  } catch {
-    // Navigation not available (e.g., outside React tree) — state reset is sufficient
+    localStorage.removeItem('rememberMe');
+    cancelRefresh();
+    closeSnackbar();
+    store.dispatch(resetPopups());
+    store.dispatch(sessionExpired({ context: classifyContext(originalRequestUrl) }));
+  } catch (error: unknown) {
+    console.error('dispatchSessionExpired failed', error);
   }
 };
 
@@ -100,15 +95,43 @@ axiosInstance.interceptors.request.use((requestConfig) => {
 });
 
 const extractErrorMessage = (error: AxiosError): string => {
-  const data = error.response?.data as { errors?: Array<{ message: string; code?: string }> } | undefined;
+  const data = error.response?.data as { errors?: { message: string; code?: string }[] } | undefined;
   const firstError = data?.errors?.[0];
   return firstError?.message ?? 'Access denied';
 };
 
 const extractErrorCode = (error: AxiosError): string | undefined => {
-  const data = error.response?.data as { errors?: Array<{ message: string; code?: string }> } | undefined;
+  const data = error.response?.data as { errors?: { message: string; code?: string }[] } | undefined;
   return data?.errors?.[0]?.code;
 };
+
+const showReconnectingToast = (): void => {
+  if (reconnectingToastId !== null) {
+    return;
+  }
+  const action = store.dispatch(
+    notify({ message: 'Reconnecting…', variant: 'info', options: { persist: true } }),
+  );
+  reconnectingToastId = action.payload.id;
+};
+
+const dismissReconnectingToast = (): void => {
+  if (reconnectingToastId !== null) {
+    closeSnackbar(reconnectingToastId);
+    reconnectingToastId = null;
+  }
+};
+
+/**
+ * Posts /auth/token/refresh via the shared `performTokenRefresh` helper. The
+ * helper handles backoff + re-scheduling internally; this wrapper only adds
+ * the "Reconnecting…" toast lifecycle for the interceptor-triggered path.
+ */
+const tryRefreshWithRetry = (): Promise<void> =>
+  performTokenRefresh({
+    onTransientStart: showReconnectingToast,
+    onTransientEnd: dismissReconnectingToast,
+  });
 
 axiosInstance.interceptors.response.use(
   (response) => response,
@@ -116,17 +139,14 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config as RetryableRequestConfig | undefined;
     const requestUrl = originalRequest?.url;
 
-    // Skip auth-failure handling for login/logout/refresh endpoints to avoid redirect loops
     const isAuthRequest = isAuthBypassRequest(requestUrl);
 
     if (error.response?.status === 403) {
       const message = extractErrorMessage(error);
       const code = extractErrorCode(error);
       if (!isAuthRequest && code === 'ORG_SUSPENDED') {
-        // Org is suspended — user genuinely lost access, force logout
-        handleAuthFailure();
+        dispatchSessionExpired(requestUrl);
       } else if (!isAuthRequest) {
-        // RBAC violation — user is authenticated but lacks the required role
         store.dispatch(notify({ message, variant: 'error' }));
       }
       return Promise.reject(error);
@@ -150,16 +170,12 @@ axiosInstance.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      await axios.post(
-        `${config.apiUrl}/api/v1/auth/token/refresh`,
-        {},
-        { withCredentials: true },
-      );
+      await tryRefreshWithRetry();
       processQueue(null);
       return axiosInstance(originalRequest);
     } catch (refreshError: unknown) {
       processQueue(refreshError);
-      handleAuthFailure();
+      dispatchSessionExpired(requestUrl);
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

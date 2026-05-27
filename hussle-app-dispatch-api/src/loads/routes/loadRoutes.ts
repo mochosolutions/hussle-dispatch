@@ -15,6 +15,7 @@ import {
   updateLoadValidator,
   transitionStatusValidator,
 } from '../validators/loadValidators';
+import { dispatchTermsValidator } from '../validators/dispatchTermsValidator';
 import {
   createAccessorialSchema,
   deleteAccessorialSchema,
@@ -117,6 +118,14 @@ export const createLoadsRouter = (
     requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
     validateRequest(transitionStatusValidator),
     controllers.transitionStatus,
+  );
+
+  router.patch(
+    '/:id/dispatch-terms',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(dispatchTermsValidator),
+    controllers.updateDispatchTerms,
   );
 
   router.patch(

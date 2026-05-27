@@ -108,10 +108,6 @@ describe('TRANSITIONS map', () => {
 // ---------------------------------------------------------------------------
 
 describe('TRANSITION_SIDE_EFFECTS', () => {
-  it('BOOKED triggers CALCULATE_FINANCIALS', () => {
-    expect(TRANSITION_SIDE_EFFECTS.BOOKED).toContain('CALCULATE_FINANCIALS');
-  });
-
   it('DISPATCHED triggers FREEZE_FINANCIALS', () => {
     expect(TRANSITION_SIDE_EFFECTS.DISPATCHED).toContain('FREEZE_FINANCIALS');
   });

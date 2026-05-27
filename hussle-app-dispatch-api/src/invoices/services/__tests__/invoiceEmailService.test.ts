@@ -85,8 +85,9 @@ const buildMockDeps = () => {
     generateInvoicePdf: jest.fn(),
   };
 
-  const storageProvider: jest.Mocked<Pick<StorageProvider, 'getFile'>> = {
+  const storageProvider: jest.Mocked<Pick<StorageProvider, 'getFile' | 'put'>> = {
     getFile: jest.fn(),
+    put: jest.fn().mockResolvedValue('invoices/INV-001.pdf'),
   };
 
   const notificationService: jest.Mocked<NotificationService> = {
@@ -305,7 +306,16 @@ describe('invoiceEmailService.sendInvoiceEmail', () => {
         sentTo: 'billing@customer.com',
         sentToEmail: 'billing@customer.com',
         deliveryMethod: 'PLATFORM_EMAIL',
+        pdfUrl: 'invoices/INV-001.pdf',
       }),
+    );
+
+    // BUGFIX assertion: the generated PDF must be persisted to storage so the
+    // Documents tab can resolve it via /invoices/:id/pdf-download afterward.
+    expect(deps.storageProvider.put).toHaveBeenCalledWith(
+      'invoices/INV-001.pdf',
+      expect.any(Buffer),
+      'application/pdf',
     );
 
     // Verify sentAt is a recent Date

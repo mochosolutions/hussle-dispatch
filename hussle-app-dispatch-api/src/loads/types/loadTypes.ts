@@ -12,6 +12,8 @@ import type {
   Customer,
   CarrierType,
   DispatchFeeType,
+  DispatcherCommType,
+  DriverPayType,
   EquipmentType,
   LoadStatus,
   SchedulingType,
@@ -77,6 +79,7 @@ export interface CreateLoadInput {
   vehicleId?: string | null;
   contactId?: string | null;
   customerId?: string | null;
+  dispatcherUserId?: string | null;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isTeamDriver?: boolean;
@@ -93,8 +96,16 @@ export interface CreateLoadInput {
   driverInstructions?: string;
   stops: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
-  dispatchFeeOverrideType?: DispatchFeeType | null;
-  dispatchFeeOverrideAmount?: number | string | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | string | null;
+  partnerSplitPercent?: number | string | null;
+  driverPayType?: DriverPayType | null;
+  driverPayRate?: number | string | null;
+  dispatcherCommissionType?: DispatcherCommType | null;
+  dispatcherCommissionRate?: number | string | null;
+  feeIncludesAccessorials?: boolean | null;
+  payFromNet?: boolean | null;
+  carrierType?: CarrierType | null;
 }
 
 export interface UpdateLoadInput {
@@ -103,6 +114,7 @@ export interface UpdateLoadInput {
   vehicleId?: string | null;
   contactId?: string | null;
   customerId?: string | null;
+  dispatcherUserId?: string | null;
   externalRefNumber?: string;
   equipmentType?: EquipmentType;
   isTeamDriver?: boolean;
@@ -122,8 +134,16 @@ export interface UpdateLoadInput {
   driverInstructions?: string;
   stops?: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
-  dispatchFeeOverrideType?: DispatchFeeType | null;
-  dispatchFeeOverrideAmount?: number | string | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | string | null;
+  partnerSplitPercent?: number | string | null;
+  driverPayType?: DriverPayType | null;
+  driverPayRate?: number | string | null;
+  dispatcherCommissionType?: DispatcherCommType | null;
+  dispatcherCommissionRate?: number | string | null;
+  feeIncludesAccessorials?: boolean | null;
+  payFromNet?: boolean | null;
+  carrierType?: CarrierType | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +193,12 @@ export interface LoadWithRelations extends Load {
   statusHistory: LoadStatusHistoryWithUser[];
   checkCalls: CheckCallWithRelations[];
   accessorialCharges: AccessorialCharge[];
+  _count?: {
+    // Optional so existing test fixtures don't break. When absent, the
+    // INVOICE_CREATED short-circuit in computeInvoiceReadiness is skipped
+    // and readiness is computed solely from documents (US-11).
+    invoices: number;
+  };
 }
 
 export interface LoadListStop extends Stop {
@@ -185,8 +211,12 @@ export interface LoadListItem extends Load {
   driver: Pick<Driver, 'id' | 'firstName' | 'lastName'> | null;
   contact: Pick<Contact, 'id' | 'firstName' | 'lastName' | 'email' | 'phone'> | null;
   customer: Pick<Customer, 'id' | 'companyName'> | null;
+  // Slim accessorial rows — amount only — to feed computeLoadFinancials in
+  // the list transformer (US-11). Full rows are returned by the detail query.
+  accessorialCharges: Pick<AccessorialCharge, 'amount'>[];
   _count: {
     accessorialCharges: number;
+    invoices: number;
   };
 }
 
@@ -266,6 +296,7 @@ export interface LoadAssignmentInput {
   carrierId?: string | null;
   driverId?: string | null;
   vehicleId?: string | null;
+  dispatcherUserId?: string | null;
 }
 
 export interface LoadAssignmentWarning {
@@ -331,6 +362,16 @@ export interface OrgSettingsQueryPort {
   getProhibitedCommodities(organizationId: string): Promise<string[]>;
 }
 
+export interface CarrierRateSnapshot {
+  dispatchFeeType: DispatchFeeType;
+  dispatchFeePercent: string;
+  dispatchFeeAmount: string;
+  partnerSplitPercent: string;
+  feeIncludesAccessorials: boolean;
+  payFromNet: boolean;
+  carrierType: CarrierType;
+}
+
 export interface CarrierAssignmentQueryPort {
   findDispatchableById(
     carrierId: string,
@@ -339,11 +380,17 @@ export interface CarrierAssignmentQueryPort {
     id: string;
     name: string;
     type: CarrierType;
-    dispatchAgreementOnFile: boolean;
-    insuranceCertOnFile: boolean;
-    insuranceExpiry: Date | null;
     tinOnFile: boolean;
   } | null>;
+  findRateSnapshot(
+    carrierId: string,
+    organizationId: string,
+  ): Promise<CarrierRateSnapshot | null>;
+}
+
+export interface DriverRateSnapshot {
+  payType: DriverPayType;
+  payRate: string;
 }
 
 export interface DriverAssignmentQueryPort {
@@ -357,6 +404,10 @@ export interface DriverAssignmentQueryPort {
     lastName: string;
     isAvailable: boolean;
   } | null>;
+  findRateSnapshot(
+    driverId: string,
+    organizationId: string,
+  ): Promise<DriverRateSnapshot | null>;
 }
 
 export interface VehicleAssignmentQueryPort {
@@ -376,24 +427,12 @@ export interface CustomerQueryPort {
   findById(id: string, organizationId: string): Promise<{ id: string } | null>;
 }
 
-export interface VehicleCpmQueryPort {
-  getRecurringExpenses(vehicleId: string): Promise<{ amount: number; milesPerMonth: number }[]>;
-  getActualExpenseSummary(
-    vehicleId: string,
-    dateRange?: { from: Date; to: Date },
-  ): Promise<{
-    totalFixed: number;
-    totalVariable: number;
-    expenseCount: number;
-  }>;
-}
-
 export interface DispatcherProfileQueryPort {
   findByUserId(
     userId: string,
     organizationId: string,
   ): Promise<{
-    commissionType: string;
+    commissionType: DispatcherCommType;
     commissionRate: string;
   } | null>;
 }
@@ -506,7 +545,6 @@ export interface CarrierResponse {
   dispatchFeePercent: string;
   partnerSplitPercent: string;
   feeIncludesAccessorials: boolean;
-  feeType: string | null;
   payFromNet: boolean;
 }
 
@@ -536,8 +574,15 @@ export interface FinancialResponse {
   marginPercent: string | null;
   estimatedCost: string | null;
   estimatedNetEarnings: string | null;
-  dispatchFeeOverrideType: DispatchFeeType | null;
-  dispatchFeeOverrideAmount: string | null;
+  dispatchFeeType: DispatchFeeType | null;
+  dispatchFeeAmount: string | null;
+  partnerSplitPercent: string | null;
+  driverPayType: DriverPayType | null;
+  driverPayRate: string | null;
+  dispatcherCommissionType: DispatcherCommType | null;
+  dispatcherCommissionRate: string | null;
+  feeIncludesAccessorials: boolean | null;
+  payFromNet: boolean | null;
 }
 
 export interface RouteResponse {

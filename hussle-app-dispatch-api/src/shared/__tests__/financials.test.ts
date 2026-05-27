@@ -1,61 +1,53 @@
+import { describe, expect, it } from '@jest/globals';
+import Decimal from 'decimal.js';
 import { calculateLoadFinancials } from '../financials';
-import type { CarrierInput } from '../financials';
+import type { LoadFinancialsInput } from '../financials';
 import { CARRIER_TYPES } from '../constants/carrierTypes';
 
-describe('calculateLoadFinancials', () => {
-  const baseCarrier: Omit<CarrierInput, 'type'> = {
-    dispatchFeePercent: '10',
-    partnerSplitPercent: '50',
-    feeIncludesAccessorials: false,
-    feeType: 'PER_LOAD_PERCENT',
-    payFromNet: false,
-  };
+// ---------------------------------------------------------------------------
+// Base input — US-10 flat shape; only the snapshot columns + miles + customer
+// rate are required. carrierType is still required because totalRevenue branches
+// on it.
+// ---------------------------------------------------------------------------
 
+const baseInput = (overrides?: Partial<LoadFinancialsInput>): LoadFinancialsInput => ({
+  customerRate: '2800.00',
+  loadedMiles: 800,
+  totalMiles: 800,
+  dispatchFeeType: 'PERCENTAGE',
+  dispatchFeeAmount: '10',
+  partnerSplitPercent: '50',
+  driverPayType: null,
+  driverPayRate: null,
+  dispatcherCommissionType: null,
+  dispatcherCommissionRate: null,
+  feeIncludesAccessorials: false,
+  payFromNet: false,
+  carrierType: CARRIER_TYPES.COMPANY_ASSET,
+  ...overrides,
+});
+
+const ZERO = new Decimal(0);
+
+describe('calculateLoadFinancials', () => {
   describe('COMPANY_ASSET carrier — basic fee without accessorials', () => {
     it('calculates dispatchFee, partnerSplit, companyShare with feeIncludesAccessorials=false', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
+      const result = calculateLoadFinancials(baseInput(), ZERO);
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.dispatchFee).toBe('280.00');
       expect(result.partnerSplit).toBe('1400.00');
       expect(result.companyShare).toBe('-1120.00');
     });
 
     it('returns customerRate and accessorials passthrough', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
-
-      const result = calculateLoadFinancials(input);
+      const result = calculateLoadFinancials(baseInput(), ZERO);
 
       expect(result.customerRate).toBe('2800.00');
       expect(result.accessorials).toBe('0.00');
     });
 
     it('sets totalRevenue = customerRate + accessorials for COMPANY_ASSET', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '200.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
-
-      const result = calculateLoadFinancials(input);
+      const result = calculateLoadFinancials(baseInput(), new Decimal('200.00'));
 
       expect(result.totalRevenue).toBe('3000.00');
     });
@@ -63,23 +55,11 @@ describe('calculateLoadFinancials', () => {
 
   describe('COMPANY_ASSET carrier — fee includes accessorials', () => {
     it('calculates dispatchFee on (customerRate + accessorials) when feeIncludesAccessorials=true', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '200.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: {
-          ...baseCarrier,
-          type: CARRIER_TYPES.COMPANY_ASSET,
-          feeIncludesAccessorials: true,
-        },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ feeIncludesAccessorials: true }),
+        new Decimal('200.00'),
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.dispatchFee).toBe('300.00');
       expect(result.partnerSplit).toBe('1500.00');
       expect(result.companyShare).toBe('-1200.00');
@@ -88,36 +68,22 @@ describe('calculateLoadFinancials', () => {
 
   describe('EXTERNAL_CARRIER carrier — totalRevenue = dispatchFee', () => {
     it('sets totalRevenue = dispatchFee for EXTERNAL_CARRIER', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.EXTERNAL_CARRIER },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ carrierType: CARRIER_TYPES.EXTERNAL_CARRIER }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.totalRevenue).toBe('280.00');
     });
 
     it('sets totalRevenue = dispatchFee (fee on full base) for EXTERNAL_CARRIER with feeIncludesAccessorials=true', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '200.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: {
-          ...baseCarrier,
-          type: CARRIER_TYPES.EXTERNAL_CARRIER,
+      const result = calculateLoadFinancials(
+        baseInput({
+          carrierType: CARRIER_TYPES.EXTERNAL_CARRIER,
           feeIncludesAccessorials: true,
-        },
-      };
-
-      const result = calculateLoadFinancials(input);
+        }),
+        new Decimal('200.00'),
+      );
 
       expect(result.totalRevenue).toBe('300.00');
     });
@@ -125,86 +91,48 @@ describe('calculateLoadFinancials', () => {
 
   describe('ratePerMile', () => {
     it('calculates ratePerMile when loadedMiles is provided', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
-
-      const result = calculateLoadFinancials(input);
+      const result = calculateLoadFinancials(baseInput(), ZERO);
 
       expect(result.ratePerMile).toBe('3.50');
     });
 
     it('returns null when loadedMiles is null', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: null,
-        totalMiles: null,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
-
-      const result = calculateLoadFinancials(input);
+      const result = calculateLoadFinancials(
+        baseInput({ loadedMiles: null, totalMiles: null }),
+        ZERO,
+      );
 
       expect(result.ratePerMile).toBeNull();
     });
 
     it('returns null when loadedMiles is 0', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 0,
-        totalMiles: 0,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
-
-      const result = calculateLoadFinancials(input);
+      const result = calculateLoadFinancials(
+        baseInput({ loadedMiles: 0, totalMiles: 0 }),
+        ZERO,
+      );
 
       expect(result.ratePerMile).toBeNull();
     });
   });
 
   describe("banker's rounding (ROUND_HALF_EVEN)", () => {
-    it('rounds 2.225 to 2.22 (half-to-even rounds down when preceding digit is even)', () => {
-      // customerRate=2222.50, feePercent=10% => fee=222.25
-      // partnerSplit = (2222.50 + 0) x 0.50 = 1111.25 (exact, no rounding needed)
-      const input = {
-        customerRate: '2222.50',
-        accessorials: '0.00',
-        loadedMiles: null,
-        totalMiles: null,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
+    it('rounds correctly with exact partner split calculations (2222.50)', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ customerRate: '2222.50', loadedMiles: null, totalMiles: null }),
+        ZERO,
+      );
 
-      const result = calculateLoadFinancials(input);
-
-      // dispatchFee = 2222.50 * 0.10 = 222.25 (exact)
-      // partnerSplit = (2222.50 + 0) * 0.50 = 1111.25 (exact)
-      // companyShare = 222.25 - 1111.25 = -889.00
       expect(result.dispatchFee).toBe('222.25');
       expect(result.partnerSplit).toBe('1111.25');
       expect(result.companyShare).toBe('-889.00');
     });
 
-    it('rounds 2.235 to 2.24 (half-to-even rounds up when preceding digit is odd)', () => {
-      // customerRate=447.10, feePercent=10% => fee=44.71
-      // partnerSplit = (447.10 + 0) x 0.50 = 223.55 (exact, no rounding needed)
-      const input = {
-        customerRate: '447.10',
-        accessorials: '0.00',
-        loadedMiles: null,
-        totalMiles: null,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
+    it('rounds correctly with exact partner split calculations (447.10)', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ customerRate: '447.10', loadedMiles: null, totalMiles: null }),
+        ZERO,
+      );
 
-      const result = calculateLoadFinancials(input);
-
-      // dispatchFee = 447.10 * 0.10 = 44.71 (exact)
-      // partnerSplit = (447.10 + 0) * 0.50 = 223.55 (exact)
-      // companyShare = 44.71 - 223.55 = -178.84
       expect(result.dispatchFee).toBe('44.71');
       expect(result.partnerSplit).toBe('223.55');
       expect(result.companyShare).toBe('-178.84');
@@ -213,15 +141,7 @@ describe('calculateLoadFinancials', () => {
 
   describe('return shape', () => {
     it('returns all required fields as strings with 2 decimal places', () => {
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
-
-      const result = calculateLoadFinancials(input);
+      const result = calculateLoadFinancials(baseInput(), ZERO);
 
       expect(typeof result.customerRate).toBe('string');
       expect(typeof result.accessorials).toBe('string');
@@ -235,27 +155,14 @@ describe('calculateLoadFinancials', () => {
 
   describe('LEASED_CARRIER — totalRevenue = companyMargin', () => {
     it('sets totalRevenue = companyMargin (same as EXTERNAL_CARRIER)', () => {
-      // Arrange
-      // customerRate=2800, dispatchFeePercent=15%, feeIncludesAccessorials=false
-      // dispatchFee = 2800 * 0.15 = 420.00
-      // totalRevenue should = 420.00 (= companyMargin = dispatchFee)
-      // carrierPayout = 2800 - 420 = 2380.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: {
-          ...baseCarrier,
-          type: CARRIER_TYPES.LEASED_CARRIER,
-          dispatchFeePercent: '15',
-        },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          carrierType: CARRIER_TYPES.LEASED_CARRIER,
+          dispatchFeeAmount: '15',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.totalRevenue).toBe('420.00');
       expect(result.companyMargin).toBe('420.00');
       expect(result.carrierPayout).toBe('2380.00');
@@ -264,50 +171,27 @@ describe('calculateLoadFinancials', () => {
 
   describe('driverPay — PERCENTAGE', () => {
     it('calculates driverPay as percentage of carrierPayout', () => {
-      // Arrange
-      // dispatchFeePercent=10%, gross=2800, companyMargin=280
-      // carrierPayout = 2800 - 280 = 2520
-      // driverPay = 2520 * 50/100 = 1260.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        driverPay: { payType: 'PERCENTAGE', payRate: '50' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ driverPayType: 'PERCENTAGE', driverPayRate: '50' }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
+      // carrierPayout=2520, 50% → 1260
       expect(result.driverPay).toBe('1260.00');
     });
 
     it('uses payFromNet base when payFromNet=true and estimatedCost available', () => {
-      // Arrange
-      // carrierPayout=2520, vehicleCpm=1.85, totalMiles=800
-      // estimatedCost = 1.85 * 800 = 1480.00
-      // payBase = 2520 - 1480 = 1040
-      // driverPay = 1040 * 50/100 = 520.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: {
-          ...baseCarrier,
-          type: CARRIER_TYPES.COMPANY_ASSET,
+      const result = calculateLoadFinancials(
+        baseInput({
           payFromNet: true,
-        },
-        vehicleCpm: 1.85,
-        driverPay: { payType: 'PERCENTAGE', payRate: '50' },
-      };
+          vehicleCpm: 1.85,
+          driverPayType: 'PERCENTAGE',
+          driverPayRate: '50',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
+      // estimatedCost = 1.85 * 800 = 1480; payBase = 2520 - 1480 = 1040; 50% → 520
       expect(result.estimatedCost).toBe('1480.00');
       expect(result.driverPay).toBe('520.00');
     });
@@ -315,307 +199,275 @@ describe('calculateLoadFinancials', () => {
 
   describe('driverPay — PER_MILE', () => {
     it('calculates driverPay = payRate × loadedMiles', () => {
-      // Arrange
-      // payRate=0.60, loadedMiles=800 → driverPay=480.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        driverPay: { payType: 'PER_MILE', payRate: '0.60' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ driverPayType: 'PER_MILE', driverPayRate: '0.60' }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.driverPay).toBe('480.00');
     });
 
     it('returns null when loadedMiles is null', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: null,
-        totalMiles: null,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        driverPay: { payType: 'PER_MILE', payRate: '0.60' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          loadedMiles: null,
+          totalMiles: null,
+          driverPayType: 'PER_MILE',
+          driverPayRate: '0.60',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.driverPay).toBeNull();
     });
   });
 
   describe('driverPay — PER_HOUR', () => {
     it('calculates driverPay = payRate × estimatedHours', () => {
-      // Arrange
-      // payRate=25.00, estimatedHours=12 → driverPay=300.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        driverPay: { payType: 'PER_HOUR', payRate: '25.00', estimatedHours: 12 },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          driverPayType: 'PER_HOUR',
+          driverPayRate: '25.00',
+          estimatedHours: 12,
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.driverPay).toBe('300.00');
     });
 
     it('returns null when estimatedHours is not provided', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        driverPay: { payType: 'PER_HOUR', payRate: '25.00' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ driverPayType: 'PER_HOUR', driverPayRate: '25.00' }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.driverPay).toBeNull();
     });
   });
 
   describe('driverPay — FLAT_RATE', () => {
     it('returns payRate as driverPay', () => {
-      // Arrange
-      // payRate=500 → driverPay=500.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        driverPay: { payType: 'FLAT_RATE', payRate: '500' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ driverPayType: 'FLAT_RATE', driverPayRate: '500' }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.driverPay).toBe('500.00');
     });
   });
 
   describe('dispatcherComm — PERCENTAGE_OF_MARGIN', () => {
     it('calculates commission as percentage of companyMargin', () => {
-      // Arrange
-      // dispatchFeePercent=10%, gross=2800, companyMargin=280
-      // commissionRate=10% → dispatcherComm = 280 * 10/100 = 28.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        dispatcherComm: { commissionType: 'PERCENTAGE_OF_MARGIN', commissionRate: '10' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          dispatcherCommissionType: 'PERCENTAGE_OF_MARGIN',
+          dispatcherCommissionRate: '10',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.dispatcherComm).toBe('28.00');
     });
   });
 
   describe('dispatcherComm — PERCENTAGE_OF_GROSS', () => {
     it('calculates commission as percentage of gross revenue', () => {
-      // Arrange
-      // gross=2800, commissionRate=5% → dispatcherComm = 2800 * 5/100 = 140.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        dispatcherComm: { commissionType: 'PERCENTAGE_OF_GROSS', commissionRate: '5' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          dispatcherCommissionType: 'PERCENTAGE_OF_GROSS',
+          dispatcherCommissionRate: '5',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.dispatcherComm).toBe('140.00');
     });
   });
 
   describe('dispatcherComm — FLAT_PER_LOAD', () => {
     it('returns commissionRate as flat dollar amount', () => {
-      // Arrange
-      // commissionRate=50 → dispatcherComm=50.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        dispatcherComm: { commissionType: 'FLAT_PER_LOAD', commissionRate: '50' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          dispatcherCommissionType: 'FLAT_PER_LOAD',
+          dispatcherCommissionRate: '50',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.dispatcherComm).toBe('50.00');
     });
   });
 
   describe('companyNet', () => {
     it('calculates companyNet = companyMargin - dispatcherComm', () => {
-      // Arrange
-      // companyMargin=280 (10% of 2800), dispatcherComm=28 (10% of 280)
-      // companyNet = 280 - 28 = 252.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        dispatcherComm: { commissionType: 'PERCENTAGE_OF_MARGIN', commissionRate: '10' },
-      };
+      const result = calculateLoadFinancials(
+        baseInput({
+          dispatcherCommissionType: 'PERCENTAGE_OF_MARGIN',
+          dispatcherCommissionRate: '10',
+        }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.companyNet).toBe('252.00');
     });
 
     it('returns null when no dispatcher commission provided', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
+      const result = calculateLoadFinancials(baseInput(), ZERO);
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.companyNet).toBeNull();
     });
   });
 
   describe('estimatedCost', () => {
     it('calculates estimatedCost = vehicleCpm × totalMiles', () => {
-      // Arrange
-      // vehicleCpm=1.85, totalMiles=800 → estimatedCost=1480.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        vehicleCpm: 1.85,
-      };
+      const result = calculateLoadFinancials(baseInput({ vehicleCpm: 1.85 }), ZERO);
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.estimatedCost).toBe('1480.00');
     });
 
     it('returns null when vehicleCpm is not provided', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-      };
+      const result = calculateLoadFinancials(baseInput(), ZERO);
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.estimatedCost).toBeNull();
     });
 
     it('returns null when totalMiles is null', () => {
-      // Arrange
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: null,
-        totalMiles: null,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        vehicleCpm: 1.85,
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ loadedMiles: null, totalMiles: null, vehicleCpm: 1.85 }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.estimatedCost).toBeNull();
     });
   });
 
   describe('carrierPayoutOverride', () => {
     it('uses override value instead of computed carrierPayout', () => {
-      // Arrange
-      // Without override: carrierPayout = 2800 - 280 = 2520
-      // With override=2500.00 → carrierPayout=2500.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: { ...baseCarrier, type: CARRIER_TYPES.COMPANY_ASSET },
-        carrierPayoutOverride: '2500.00',
-      };
+      const result = calculateLoadFinancials(
+        baseInput({ carrierPayoutOverride: '2500.00' }),
+        ZERO,
+      );
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.carrierPayout).toBe('2500.00');
     });
   });
 
   describe('COMPANY_ASSET with 0% dispatch fee', () => {
     it('companyMargin = 0, carrierPayout = gross, totalRevenue = gross', () => {
-      // Arrange
-      // dispatchFeePercent=0 → companyMargin=0.00, carrierPayout=2800.00, totalRevenue=2800.00
-      const input = {
-        customerRate: '2800.00',
-        accessorials: '0.00',
-        loadedMiles: 800,
-        totalMiles: 800,
-        carrier: {
-          ...baseCarrier,
-          type: CARRIER_TYPES.COMPANY_ASSET,
-          dispatchFeePercent: '0',
-        },
-      };
+      const result = calculateLoadFinancials(baseInput({ dispatchFeeAmount: '0' }), ZERO);
 
-      // Act
-      const result = calculateLoadFinancials(input);
-
-      // Assert
       expect(result.companyMargin).toBe('0.00');
       expect(result.carrierPayout).toBe('2800.00');
       expect(result.totalRevenue).toBe('2800.00');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // US-10 null-input semantics (truths #2–#7)
+  // -------------------------------------------------------------------------
+
+  describe('US-10 null-input semantics', () => {
+    it('returns driverPay=null (zero conceptually) when driverPayRate is null', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ driverPayType: 'PERCENTAGE', driverPayRate: null }),
+        ZERO,
+      );
+
+      expect(result.driverPay).toBeNull();
+    });
+
+    it('returns dispatcherComm=null when dispatcherCommissionRate is null', () => {
+      const result = calculateLoadFinancials(
+        baseInput({
+          dispatcherCommissionType: 'PERCENTAGE_OF_MARGIN',
+          dispatcherCommissionRate: null,
+        }),
+        ZERO,
+      );
+
+      expect(result.dispatcherComm).toBeNull();
+    });
+
+    it('returns dispatchFee=0.00 when dispatchFeeType is null', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ dispatchFeeType: null, dispatchFeeAmount: null }),
+        ZERO,
+      );
+
+      expect(result.dispatchFee).toBe('0.00');
+      expect(result.companyMargin).toBe('0.00');
+    });
+
+    it('returns partnerSplit=0.00 when partnerSplitPercent is null', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ partnerSplitPercent: null }),
+        ZERO,
+      );
+
+      expect(result.partnerSplit).toBe('0.00');
+    });
+
+    it('treats feeIncludesAccessorials=null as false', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ feeIncludesAccessorials: null }),
+        new Decimal('200.00'),
+      );
+
+      // feeBase = customerRate only (false) → 2800 * 0.10 = 280
+      expect(result.dispatchFee).toBe('280.00');
+    });
+
+    it('treats payFromNet=null as false (driverPay PERCENTAGE base = carrierPayout)', () => {
+      const result = calculateLoadFinancials(
+        baseInput({
+          payFromNet: null,
+          driverPayType: 'PERCENTAGE',
+          driverPayRate: '50',
+          vehicleCpm: 1.85,
+        }),
+        ZERO,
+      );
+
+      // payFromNet null → false → payBase = carrierPayout (2520) → 50% → 1260
+      expect(result.driverPay).toBe('1260.00');
+    });
+
+    it('respects feeIncludesAccessorials=true on Load (not Carrier) — input drives the calc', () => {
+      // This is the pure-function equivalent of truth #6: input shape itself is
+      // the contract; the function reads only its inputs.
+      const result = calculateLoadFinancials(
+        baseInput({ feeIncludesAccessorials: true }),
+        new Decimal('200.00'),
+      );
+
+      // feeBase = 3000 → 300
+      expect(result.dispatchFee).toBe('300.00');
+    });
+
+    it('respects payFromNet=true on Load (not Carrier) — input drives the calc', () => {
+      // Truth #7 pure-function equivalent.
+      const result = calculateLoadFinancials(
+        baseInput({
+          payFromNet: true,
+          vehicleCpm: 1.85,
+          driverPayType: 'PERCENTAGE',
+          driverPayRate: '50',
+        }),
+        ZERO,
+      );
+
+      // estimatedCost = 1480; payBase = 2520 - 1480 = 1040; 50% → 520
+      expect(result.driverPay).toBe('520.00');
+    });
+
+    it('handles FLAT dispatchFeeType — uses dispatchFeeAmount directly', () => {
+      const result = calculateLoadFinancials(
+        baseInput({ dispatchFeeType: 'FLAT', dispatchFeeAmount: '350.00' }),
+        ZERO,
+      );
+
+      expect(result.dispatchFee).toBe('350.00');
     });
   });
 });

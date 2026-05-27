@@ -12,32 +12,45 @@ export const ROUNDING = Decimal.ROUND_HALF_EVEN;
 export const round2 = (value: Decimal): string =>
   value.toDecimalPlaces(2, ROUNDING).toFixed(2);
 
-export interface CarrierInput {
-  type: CarrierType;
-  dispatchFeePercent: string;
-  partnerSplitPercent: string;
-  feeIncludesAccessorials: boolean;
-  feeType: string; // Only PER_LOAD_PERCENT implemented for now
-  payFromNet: boolean;
-}
-
+/**
+ * LoadFinancialsInput — pure inputs to the load financial calc.
+ *
+ * Post-US-10, this only contains snapshot values that live on the Load row
+ * (US-09 columns) plus a few transient derived values (vehicleCpm, estimatedHours)
+ * that callers compute. NO references to Carrier / Driver / Dispatcher rows are
+ * accepted — historical loads keep their booking-time terms even when those
+ * rows change later.
+ *
+ * carrierType is still required because totalRevenue branches on it; US-09 did
+ * NOT snapshot carrierType. If carrierType ever needs to be historical, add a
+ * Load.carrierTypeSnapshot column in a future story.
+ */
 export interface LoadFinancialsInput {
+  // Money + miles from the load itself
   customerRate: string;
-  accessorials: string;
   loadedMiles: number | null;
   totalMiles: number | null;
-  carrier: CarrierInput;
+
+  // Snapshotted negotiation terms (US-09 Load columns)
+  dispatchFeeType: 'PERCENTAGE' | 'FLAT' | null;
+  dispatchFeeAmount: string | null;
+  partnerSplitPercent: string | null;
+  driverPayType: 'PERCENTAGE' | 'PER_MILE' | 'PER_HOUR' | 'FLAT_RATE' | null;
+  driverPayRate: string | null;
+  dispatcherCommissionType:
+    | 'PERCENTAGE_OF_MARGIN'
+    | 'PERCENTAGE_OF_GROSS'
+    | 'FLAT_PER_LOAD'
+    | null;
+  dispatcherCommissionRate: string | null;
+  feeIncludesAccessorials: boolean | null;
+  payFromNet: boolean | null;
+
+  // Non-snapshot inputs (still come from callers)
+  carrierType: CarrierType;
   carrierPayoutOverride?: string;
   vehicleCpm?: number;
-  driverPay?: {
-    payType: string; // DriverPayType values: PERCENTAGE, PER_MILE, PER_HOUR, FLAT_RATE
-    payRate: string;
-    estimatedHours?: number;
-  };
-  dispatcherComm?: {
-    commissionType: string; // DispatcherCommType: PERCENTAGE_OF_MARGIN, PERCENTAGE_OF_GROSS, FLAT_PER_LOAD
-    commissionRate: string;
-  };
+  estimatedHours?: number;
 }
 
 export interface LoadFinancialsResult {
@@ -57,15 +70,17 @@ export interface LoadFinancialsResult {
   companyNet: string | null;
 }
 
-const calculateDriverPay = (config: {
-  payType: string;
+interface DriverPayConfig {
+  payType: 'PERCENTAGE' | 'PER_MILE' | 'PER_HOUR' | 'FLAT_RATE';
   payRate: string;
   carrierPayout: Decimal;
   loadedMiles: number | null;
   estimatedHours?: number;
   payFromNet: boolean;
   estimatedCost: Decimal | null;
-}): string | null => {
+}
+
+const calculateDriverPay = (config: DriverPayConfig): string | null => {
   const rate = new Decimal(config.payRate);
 
   switch (config.payType) {
@@ -89,12 +104,14 @@ const calculateDriverPay = (config: {
   }
 };
 
-const calculateDispatcherCommission = (config: {
-  commissionType: string;
+interface DispatcherCommConfig {
+  commissionType: 'PERCENTAGE_OF_MARGIN' | 'PERCENTAGE_OF_GROSS' | 'FLAT_PER_LOAD';
   commissionRate: string;
   companyMargin: Decimal;
   gross: Decimal;
-}): string => {
+}
+
+const calculateDispatcherCommission = (config: DispatcherCommConfig): string => {
   const rate = new Decimal(config.commissionRate);
 
   switch (config.commissionType) {
@@ -110,28 +127,57 @@ const calculateDispatcherCommission = (config: {
 };
 
 /**
- * Calculates financial fields for a load given customer rate, accessorials,
- * and carrier configuration.
+ * Calculates financial fields for a load given the Load's snapshotted negotiation
+ * terms (US-09 columns) and the accessorials total.
  *
- * Uses Decimal.js with banker's rounding (ROUND_HALF_EVEN), 2 decimal places,
- * applied once at each final stored value (decision L-002).
+ * Pure function — no I/O, no Prisma. Decimal.js with banker's rounding applied
+ * once per stored value (decision L-002).
+ *
+ * NULL semantics (US-10):
+ *  - dispatchFeeType null → dispatchFee = 0
+ *  - partnerSplitPercent null → partnerSplit = 0
+ *  - driverPayRate / driverPayType null → driverPay = null
+ *  - dispatcherCommissionRate / dispatcherCommissionType null → dispatcherComm = null
+ *  - feeIncludesAccessorials null → treated as false
+ *  - payFromNet null → treated as false
  */
 export const calculateLoadFinancials = (
   input: LoadFinancialsInput,
+  accessorialsSum: Decimal,
 ): LoadFinancialsResult => {
-  const { customerRate, accessorials, loadedMiles, carrier } = input;
+  const rate = new Decimal(input.customerRate);
+  const acc = accessorialsSum;
 
-  const rate = new Decimal(customerRate);
-  const acc = new Decimal(accessorials);
-  const feePercent = new Decimal(carrier.dispatchFeePercent).dividedBy(100);
-  const splitPercent = new Decimal(carrier.partnerSplitPercent).dividedBy(100);
+  // --- dispatchFee (NULL → 0) -----------------------------------------------
+  const feeIncludesAccessorials = input.feeIncludesAccessorials ?? false;
+  const payFromNet = input.payFromNet ?? false;
+  const feeBase = feeIncludesAccessorials ? rate.plus(acc) : rate;
 
-  const feeBase = carrier.feeIncludesAccessorials ? rate.plus(acc) : rate;
-  const dispatchFee = feeBase.times(feePercent).toDecimalPlaces(2, ROUNDING);
-  const partnerSplit = rate.plus(acc).times(splitPercent).toDecimalPlaces(2, ROUNDING);
+  let dispatchFee: Decimal;
+  if (input.dispatchFeeType === null) {
+    dispatchFee = new Decimal(0);
+  } else if (input.dispatchFeeType === 'PERCENTAGE') {
+    // dispatchFeeAmount holds the percent value (e.g., "10.0000" for 10%)
+    const pct = input.dispatchFeeAmount !== null
+      ? new Decimal(input.dispatchFeeAmount).dividedBy(100)
+      : new Decimal(0);
+    dispatchFee = feeBase.times(pct).toDecimalPlaces(2, ROUNDING);
+  } else {
+    // FLAT
+    dispatchFee = input.dispatchFeeAmount !== null
+      ? new Decimal(input.dispatchFeeAmount).toDecimalPlaces(2, ROUNDING)
+      : new Decimal(0);
+  }
+
+  // --- partnerSplit (NULL → 0) ----------------------------------------------
+  const partnerSplit = input.partnerSplitPercent !== null
+    ? rate.plus(acc).times(new Decimal(input.partnerSplitPercent).dividedBy(100))
+        .toDecimalPlaces(2, ROUNDING)
+    : new Decimal(0);
+
   const companyShare = dispatchFee.minus(partnerSplit).toDecimalPlaces(2, ROUNDING);
 
-  // companyMargin is the new name for dispatchFee (same value)
+  // companyMargin is the same value as dispatchFee
   const companyMargin = dispatchFee;
 
   // gross = customerRate + accessorials
@@ -151,26 +197,26 @@ export const calculateLoadFinancials = (
       ? new Decimal(input.vehicleCpm).times(input.totalMiles).toDecimalPlaces(2, ROUNDING)
       : null;
 
-  // driverPay
+  // --- driverPay (NULL → null) ----------------------------------------------
   const driverPayResult =
-    input.driverPay !== undefined
+    input.driverPayType !== null && input.driverPayRate !== null
       ? calculateDriverPay({
-          payType: input.driverPay.payType,
-          payRate: input.driverPay.payRate,
+          payType: input.driverPayType,
+          payRate: input.driverPayRate,
           carrierPayout: carrierPayoutDecimal,
-          loadedMiles,
-          estimatedHours: input.driverPay.estimatedHours,
-          payFromNet: carrier.payFromNet,
+          loadedMiles: input.loadedMiles,
+          estimatedHours: input.estimatedHours,
+          payFromNet,
           estimatedCost: estimatedCostDecimal,
         })
       : null;
 
-  // dispatcherComm
+  // --- dispatcherComm (NULL → null) -----------------------------------------
   const dispatcherCommResult =
-    input.dispatcherComm !== undefined
+    input.dispatcherCommissionType !== null && input.dispatcherCommissionRate !== null
       ? calculateDispatcherCommission({
-          commissionType: input.dispatcherComm.commissionType,
-          commissionRate: input.dispatcherComm.commissionRate,
+          commissionType: input.dispatcherCommissionType,
+          commissionRate: input.dispatcherCommissionRate,
           companyMargin,
           gross,
         })
@@ -183,13 +229,13 @@ export const calculateLoadFinancials = (
       : null;
 
   const totalRevenue =
-    carrier.type === CARRIER_TYPES.COMPANY_ASSET
+    input.carrierType === CARRIER_TYPES.COMPANY_ASSET
       ? rate.plus(acc).toDecimalPlaces(2, ROUNDING)
       : companyMargin; // EXTERNAL_CARRIER and LEASED_CARRIER both use companyMargin
 
   const ratePerMile =
-    loadedMiles !== null && loadedMiles !== 0
-      ? round2(rate.dividedBy(loadedMiles))
+    input.loadedMiles !== null && input.loadedMiles !== 0
+      ? round2(rate.dividedBy(input.loadedMiles))
       : null;
 
   const ratePerTotalMile =

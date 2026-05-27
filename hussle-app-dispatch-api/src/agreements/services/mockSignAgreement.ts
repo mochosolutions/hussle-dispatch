@@ -4,7 +4,6 @@ import type { Logger } from '@/shared/utils/logger';
 import type { AgreementRepoPort } from '../types/agreementRepoPort';
 import type { AgreementServiceResult } from '../types/agreementServiceResult';
 import type { Agreement } from '../types/agreementTypes';
-import type { CarrierAgreementWritePort } from '../types/carrierAgreementWritePort';
 
 export interface MockSignAgreementInput {
   agreementId: string;
@@ -14,12 +13,6 @@ export interface MockSignAgreementInput {
 export interface MockSignAgreementDeps {
   agreementRepo: AgreementRepoPort;
   markSigned: (providerSubmissionId: string) => void;
-  // Projection write: stamps Carrier.dispatchAgreementSignedAt + signedAgreementId.
-  // Production goes through the agreement.signed → finalizeAgreement subscriber chain,
-  // which calls this same port. For mock signing we call it directly so the cold-load
-  // /session endpoint immediately sees signedFieldsLocked: true on the next request
-  // (without waiting for an async event hop that would also try to fetch real PDFs).
-  carrierWritePort: CarrierAgreementWritePort;
   logger: Logger;
   now?: () => Date;
 }
@@ -77,22 +70,6 @@ export const mockSignAgreement = async (
     status: 'SIGNED',
     signedAt: now,
   });
-
-  // Project the signed state onto the Carrier row so the cold-load /session
-  // endpoint's `signedFieldsLocked = carrier.dispatchAgreementSignedAt !== null`
-  // computation returns true on the next request. Without this, the carrier
-  // could sign via mock and then refresh / navigate to a company-phase step
-  // and see fully-editable fields with no lock indicator. Idempotent —
-  // setSignedAgreementId no-ops when both columns are already set.
-  try {
-    await deps.carrierWritePort.setSignedAgreementId(updated.carrierId, updated.id);
-  } catch (writeError: unknown) {
-    deps.logger.warn('Failed to project signedAgreementId onto carrier (mock-sign)', {
-      agreementId: updated.id,
-      carrierId: updated.carrierId,
-      error: writeError instanceof Error ? writeError.message : String(writeError),
-    });
-  }
 
   deps.logger.info('Mock-signed agreement', {
     agreementId: updated.id,

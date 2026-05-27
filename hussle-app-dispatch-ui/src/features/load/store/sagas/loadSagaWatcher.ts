@@ -18,6 +18,7 @@ import { reorderStopsSaga } from './reorderStopsSaga';
 import { createAccessorialSaga } from './createAccessorialSaga';
 import { updateAccessorialSaga } from './updateAccessorialSaga';
 import { deleteAccessorialSaga } from './deleteAccessorialSaga';
+import { updateDispatchTermsSaga } from './updateDispatchTermsSaga';
 import { loadPageSlice } from '../reducers/loadPageSlice';
 import {
   transitionLoadStatusRequest,
@@ -34,6 +35,7 @@ import {
   createAccessorialRequest,
   updateAccessorialRequest,
   deleteAccessorialRequest,
+  updateDispatchTermsRequest,
 } from '../reducers/loadPageSlice';
 
 export const { actions: loadPageActions } = loadPageSlice;
@@ -58,4 +60,5 @@ export function* loadSagaWatcher(): Generator {
   yield takeLatest(createAccessorialRequest.type, createAccessorialSaga);
   yield takeLatest(updateAccessorialRequest.type, updateAccessorialSaga);
   yield takeLatest(deleteAccessorialRequest.type, deleteAccessorialSaga);
+  yield takeLatest(updateDispatchTermsRequest.type, updateDispatchTermsSaga);
 }

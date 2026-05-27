@@ -16,6 +16,7 @@ import { documentSagaWatcher } from 'features/documents/store/sagas/documentSaga
 import { carrierPortalV2RootSaga } from 'features/carrier-portal/store/sagas';
 import { settlementSagaWatcher } from 'features/accounting/store/sagas/settlementSagaWatcher';
 import { loadBoardSagaWatcher } from 'features/load/store/sagas/loadBoardSagaWatcher';
+import { agreementsSagasWatcher } from 'features/agreements/store/sagas/agreementsSagas';
 
 export default function* rootSaga() {
   yield all([
@@ -36,5 +37,6 @@ export default function* rootSaga() {
     carrierPortalV2RootSaga(),
     settlementSagaWatcher(),
     loadBoardSagaWatcher(),
+    agreementsSagasWatcher(),
   ]);
 }

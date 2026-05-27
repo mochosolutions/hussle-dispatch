@@ -8,6 +8,8 @@ import {
 } from '@/shared/utils/cookieUtils';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
+import { REFRESH_TTL_BASE_SECONDS } from '../../constants';
+import { extractAccessTokenExpAsIso } from '../../providers/jwtTokenProvider/tokenHelpers';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import type { SignupOrgInput, SignupOrgResult } from '../../types/signupOrgTypes';
 import { mapSignupOrgRequest } from './mappers/mapSignupOrgRequest';
@@ -54,8 +56,11 @@ export const createSignupOrgController = ({
     });
 
     setAccessTokenCookie(res, accessToken);
-    setRefreshTokenCookie(res, refreshToken);
+    setRefreshTokenCookie(res, refreshToken, REFRESH_TTL_BASE_SECONDS * 1000);
     setCsrfTokenCookie(res, generateCsrfToken());
 
-    return res.status(201).json(toSignupOrgResponse(result));
+    const accessTokenExpiresAt = extractAccessTokenExpAsIso(accessToken);
+    return res
+      .status(201)
+      .json({ ...toSignupOrgResponse(result), accessTokenExpiresAt });
   };

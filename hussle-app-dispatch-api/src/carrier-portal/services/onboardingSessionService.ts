@@ -21,6 +21,11 @@ import { checkCarrierOnboarding } from '@/shared/onboardingGate';
 import { CARRIER_TYPES } from '@/shared/constants/carrierTypes';
 import { assertTransition } from '@/carriers/services/carrierStateMachine';
 import type { CarrierAuditPort } from '@/carriers/types/carrierAuditPort';
+import {
+  computeAgreementStatus,
+  computeInsuranceStatus,
+  type DerivedComplianceDeps,
+} from '@/carriers/services/derivedCompliance';
 const IDENTITY_QUESTION_IDS = new Set(['legalName', 'mcNumber', 'dotNumber']);
 
 interface CarrierRepoPort {
@@ -85,6 +90,7 @@ interface OnboardingSessionServiceDeps {
   eventBus: EventBus;
   logger: Logger;
   auditLog: CarrierAuditPort;
+  derivedComplianceDeps: DerivedComplianceDeps;
   equipmentService?: EquipmentServicePort;
   driversService?: DriversServicePort;
 }
@@ -124,6 +130,9 @@ interface AssertNoLockedFieldChangeInput {
   incomingAnswers: Record<string, Prisma.InputJsonValue>;
   existingAnswers: Record<string, unknown>;
   carrier: Carrier | null;
+  // Derived: signed agreement timestamp, computed via computeAgreementStatus.
+  // `null` means no signed agreement, so company-step identity fields are not locked.
+  agreementSignedAt: Date | null;
 }
 
 const assertNoLockedFieldChange = ({
@@ -131,8 +140,9 @@ const assertNoLockedFieldChange = ({
   incomingAnswers,
   existingAnswers,
   carrier,
+  agreementSignedAt,
 }: AssertNoLockedFieldChangeInput): void => {
-  if (!carrier || carrier.dispatchAgreementSignedAt === null) {
+  if (!carrier || agreementSignedAt === null) {
     return;
   }
   if (!isCompanyStep(stepId)) {
@@ -220,11 +230,15 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
     const carrierName = carrier?.name ?? 'Unknown';
 
     if (carrier && carrier.type !== CARRIER_TYPES.COMPANY_ASSET) {
+      const [insurance, agreement] = await Promise.all([
+        computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
+        computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
+      ]);
       const onboardingResult = checkCarrierOnboarding({
         carrierType: carrier.type,
-        dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-        insuranceCertOnFile: carrier.insuranceCertOnFile,
-        insuranceExpiry: carrier.insuranceExpiry,
+        dispatchAgreementOnFile: agreement.onFile,
+        insuranceCertOnFile: insurance.onFile,
+        insuranceExpiry: insurance.expiresAt,
         tinOnFile: carrier.tin !== null,
       });
 
@@ -277,12 +291,17 @@ export const createOnboardingSessionService = (deps: OnboardingSessionServiceDep
 
     const carrier = await deps.carrierRepo.findById(carrierId);
 
+    // Derive the signed-agreement timestamp on read instead of trusting the
+    // legacy Carrier.dispatchAgreementSignedAt projection column.
+    const agreementStatus = await computeAgreementStatus(carrierId, deps.derivedComplianceDeps);
+
     const existingAnswers = (session.answers ?? {}) as Record<string, unknown>;
     assertNoLockedFieldChange({
       stepId: input.stepId,
       incomingAnswers: input.answers,
       existingAnswers,
       carrier,
+      agreementSignedAt: agreementStatus.signedAt,
     });
 
     // ------------------------------------------------------------------

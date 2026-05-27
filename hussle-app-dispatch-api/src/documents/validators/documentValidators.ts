@@ -4,7 +4,7 @@ import { ALLOWED_MIME_TYPES } from '../types/documentTypes';
 
 const documentTypeValues = Object.values(DocumentType);
 
-const ENTITY_TYPES = ['load', 'carrier', 'driver', 'vehicle'] as const;
+const ENTITY_TYPES = ['load', 'carrier', 'driver', 'vehicle', 'invoice'] as const;
 
 // Yup.object() with no .shape() + stripUnknown:true would strip every inner field.
 // Yup.mixed() lets the arbitrary key/value record pass through to the service.
@@ -25,7 +25,7 @@ export const presignValidator = Yup.object({
       .oneOf(documentTypeValues, 'type must be a valid DocumentType')
       .required('type is required'),
     entityType: Yup.string()
-      .oneOf([...ENTITY_TYPES], 'entityType must be one of: load, carrier, driver, vehicle')
+      .oneOf([...ENTITY_TYPES], 'entityType must be one of: load, carrier, driver, vehicle, invoice')
       .required('entityType is required'),
     entityId: Yup.string().uuid('entityId must be a valid uuid').required('entityId is required'),
     expiresAt: Yup.string().optional(),
@@ -53,7 +53,7 @@ export const documentIdValidator = Yup.object({
 export const listDocumentsValidator = Yup.object({
   query: Yup.object({
     entityType: Yup.string()
-      .oneOf([...ENTITY_TYPES], 'entityType must be one of: load, carrier, driver, vehicle')
+      .oneOf([...ENTITY_TYPES], 'entityType must be one of: load, carrier, driver, vehicle, invoice')
       .optional(),
     entityId: Yup.string().uuid('entityId must be a valid uuid').optional(),
     type: Yup.string().optional(),

@@ -39,6 +39,29 @@ const baseCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
   } as unknown as Carrier);
 
 describe('portalCompanyService.saveCompany', () => {
+  // Helper to build mock derived-compliance deps. Lock enforcement now reads
+  // `agreement.signedAt` from `computeAgreementStatus`; previously it read
+  // `existing.dispatchAgreementSignedAt`. Preserve test semantics by sourcing
+  // the signed timestamp from the same fixture column.
+  const buildComplianceDeps = (carrier: Carrier) => ({
+    documentRepo: {
+      findManyForCompliance: jest.fn().mockResolvedValue([]),
+    },
+    agreementRepo: {
+      findManySigned: jest.fn().mockResolvedValue(
+        carrier.dispatchAgreementSignedAt
+          ? [
+              {
+                id: 'agreement-1',
+                carrierId: carrier.id,
+                signedAt: carrier.dispatchAgreementSignedAt,
+              },
+            ]
+          : [],
+      ),
+    },
+  });
+
   const setup = (carrier: Carrier) => {
     const updated = { ...carrier };
     const carrierRepo = {
@@ -48,7 +71,10 @@ describe('portalCompanyService.saveCompany', () => {
         return updated;
       }),
     };
-    const service = createPortalCompanyService({ carrierRepo });
+    const service = createPortalCompanyService({
+      carrierRepo,
+      derivedComplianceDeps: buildComplianceDeps(carrier),
+    });
     return { service, carrierRepo, updated };
   };
 

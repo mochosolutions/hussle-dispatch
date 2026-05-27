@@ -1,11 +1,18 @@
 import Decimal from 'decimal.js';
 import type { Logger } from '../../shared/utils/logger';
+import type { EventBus } from '../../shared/messaging/eventBus';
 import { generateSequenceNumber } from '../../shared/sequenceGenerator';
+import {
+  computeLoadFinancials,
+  sumAccessorials,
+  type LoadFinancialsSnapshot,
+} from '../../loads/services/derivedFinancials';
 import type { InvoiceRepoPort, InvoiceLoadQueryPort } from '../types/invoiceTypes';
 
 interface InvoiceGenerationDeps {
   invoiceRepo: InvoiceRepoPort;
   loadQuery: InvoiceLoadQueryPort;
+  eventBus: EventBus;
   logger: Logger;
 }
 
@@ -44,17 +51,30 @@ export const generateFromDelivery = async (
       ? String(load.customerRate)
       : '0',
   );
-  const dispatchFee = new Decimal(
-    load.dispatchFee !== null && load.dispatchFee !== undefined
-      ? String(load.dispatchFee)
-      : '0',
-  );
 
   // Sum accessorial charges
-  const accessorialsTotal = load.accessorialCharges.reduce(
-    (sum, charge) => sum.add(new Decimal(String(charge.amount))),
-    new Decimal(0),
-  );
+  const accessorialsTotal = sumAccessorials(load.accessorialCharges);
+
+  // US-11b: derive dispatchFee from the Load row's snapshot inputs on-read
+  // instead of reading the persisted Load.dispatchFee cache column.
+  const snapshot: LoadFinancialsSnapshot = {
+    customerRate: load.customerRate,
+    loadedMiles: load.loadedMiles,
+    totalMiles: load.totalMiles,
+    dispatchFeeType: load.dispatchFeeType,
+    dispatchFeeAmount: load.dispatchFeeAmount,
+    partnerSplitPercent: load.partnerSplitPercent,
+    driverPayType: load.driverPayType,
+    driverPayRate: load.driverPayRate,
+    dispatcherCommissionType: load.dispatcherCommissionType,
+    dispatcherCommissionRate: load.dispatcherCommissionRate,
+    feeIncludesAccessorials: load.feeIncludesAccessorials,
+    payFromNet: load.payFromNet,
+    carrierType: load.carrierType,
+  };
+  const dispatchFee = load.customerRate !== null
+    ? new Decimal(computeLoadFinancials(snapshot, accessorialsTotal).dispatchFee)
+    : new Decimal(0);
 
   // LEASED_CARRIER uses YOUR authority — you invoice the customer like COMPANY_ASSET.
   // Only EXTERNAL_CARRIER results in a DISPATCH_FEE invoice.
@@ -144,7 +164,7 @@ export const generateTonuInvoice = async (
 
   const invoiceNumber = await generateSequenceNumber('INVOICE', load.organizationId);
 
-  await deps.invoiceRepo.create({
+  const invoice = await deps.invoiceRepo.create({
     loadId: load.id,
     carrierId: load.carrierId ?? undefined,
     customerId: load.customerId ?? undefined,
@@ -158,6 +178,13 @@ export const generateTonuInvoice = async (
     dueDate,
     missingSignedBol: false,
     notes: 'TONU invoice',
+  });
+
+  await deps.eventBus.publish('invoice.draft.created', {
+    invoiceId: invoice.id,
+    loadId: load.id,
+    organizationId: load.organizationId,
+    invoiceNumber,
   });
 
   deps.logger.info('TONU invoice generated', {

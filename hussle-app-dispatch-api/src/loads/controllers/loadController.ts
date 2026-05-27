@@ -2,6 +2,11 @@ import type { Request, Response } from 'express';
 import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { LoadService } from '../types/loadServiceTypes';
+import type {
+  UpdateDispatchTermsInput,
+  UpdateDispatchTermsResult,
+} from '../services/updateDispatchTermsService';
+import { dispatchTermsMapper } from './mappers/dispatchTermsMapper';
 import { createLoadMapper } from './mappers/createLoadMapper';
 import { getRequiredLoadIdMapper } from './mappers/getRequiredLoadIdMapper';
 import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
@@ -17,6 +22,7 @@ import { toLoadDocumentListResponse } from './transformers/loadDocumentTransform
 
 interface LoadControllerDeps {
   loadService: LoadService;
+  updateDispatchTerms: (input: UpdateDispatchTermsInput) => Promise<UpdateDispatchTermsResult>;
 }
 
 export interface LoadControllers {
@@ -24,6 +30,7 @@ export interface LoadControllers {
   listLoads: RequestHandler;
   getLoadById: RequestHandler;
   updateLoad: RequestHandler;
+  updateDispatchTerms: RequestHandler;
   assignLoad: RequestHandler;
   deleteLoad: RequestHandler;
   createCheckCall: RequestHandler;
@@ -56,7 +63,13 @@ export const createLoadControllers = (deps: LoadControllerDeps): LoadControllers
       ...context,
       id,
     });
-    sendSingle(res, toLoadDetailResponse(load));
+    // Documents drive computeInvoiceReadiness (US-11). Fetched once per detail
+    // call — the listing endpoint deliberately skips this to avoid N+1.
+    const documents = await deps.loadService.listLoadDocuments({
+      loadId: id,
+      organizationId: context.organizationId,
+    });
+    sendSingle(res, toLoadDetailResponse(load, { documents }));
   },
 
   updateLoad: async (req: Request, res: Response): Promise<void> => {
@@ -66,6 +79,12 @@ export const createLoadControllers = (deps: LoadControllerDeps): LoadControllers
       data: toLoadDetailResponse(result.load),
       warnings: result.warnings,
     });
+  },
+
+  updateDispatchTerms: async (req: Request, res: Response): Promise<void> => {
+    const serviceInput = dispatchTermsMapper(req);
+    const result = await deps.updateDispatchTerms(serviceInput);
+    sendSingle(res, toLoadDetailResponse(result.load));
   },
 
   assignLoad: async (req: Request, res: Response): Promise<void> => {

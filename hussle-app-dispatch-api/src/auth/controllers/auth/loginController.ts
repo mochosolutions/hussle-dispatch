@@ -10,7 +10,9 @@ import {
   setCsrfTokenCookie,
   setRefreshTokenCookie,
 } from '@/shared/utils/cookieUtils';
+import { getRefreshTtlSeconds } from '../../constants';
 import { cognitoProvider } from '../../providers/authProvider';
+import { extractAccessTokenExpAsIso } from '../../providers/jwtTokenProvider/tokenHelpers';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import type { Membership } from '../../types/membershipTypes';
 import type { User } from '../../types/user';
@@ -44,7 +46,13 @@ export const createLoginController = ({
     const authProvider = await getAuthProvider();
 
     const authResponse = await authenticateUserService(
-      { username: loginInput.email, password: loginInput.password, ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      {
+        username: loginInput.email,
+        password: loginInput.password,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        rememberMe: loginInput.rememberMe,
+      },
       {
         decodeToken,
         authProvider,
@@ -57,9 +65,11 @@ export const createLoginController = ({
     const { status, user, token, session, challengeName, orgs } = authResponse;
 
     if (status === AuthStatus.AUTHENTICATED && token?.refreshToken) {
+      const refreshMaxAgeMs = getRefreshTtlSeconds(loginInput.rememberMe) * 1000;
       setAccessTokenCookie(res, token.accessToken);
-      setRefreshTokenCookie(res, token.refreshToken);
+      setRefreshTokenCookie(res, token.refreshToken, refreshMaxAgeMs);
       setCsrfTokenCookie(res, generateCsrfToken());
+      const accessTokenExpiresAt = extractAccessTokenExpAsIso(token.accessToken);
 
       if (user.organizationId && user.id) {
         auditLogRepo
@@ -83,6 +93,7 @@ export const createLoginController = ({
         user,
         accessibleOrgs: orgs,
         accessToken: token.accessToken,
+        accessTokenExpiresAt,
         status: 'authenticated',
         message: 'User authenticated successfully',
       });
@@ -93,10 +104,15 @@ export const createLoginController = ({
         setCsrfTokenCookie(res, generateCsrfToken());
       }
 
+      const accessTokenExpiresAt = token?.accessToken
+        ? extractAccessTokenExpAsIso(token.accessToken)
+        : null;
+
       return res.status(200).json({
         user,
         accessibleOrgs: orgs,
         accessToken: token?.accessToken ?? null,
+        accessTokenExpiresAt,
         status: 'authenticated',
         message: 'User authenticated successfully, but no refresh token available',
       });

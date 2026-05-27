@@ -29,10 +29,6 @@ const buildCarrier = (overrides: Record<string, unknown> = {}) => ({
   partnerSplitPercent: new Decimal('50.00'),
   feeIncludesAccessorials: false,
   ownerOpPayPercent: null,
-  dispatchAgreementOnFile: true,
-  dispatchAgreementSignedAt: null,
-  insuranceCertOnFile: true,
-  insuranceExpiry: null,
   tin: '12-3456789',
   onboardingStatus: null,
   authorityStatus: 'active',
@@ -59,10 +55,10 @@ const buildLoad = (overrides: Record<string, unknown> = {}) => ({
   loadNumber: 'L-001',
   carrierRate: new Decimal('2500.00'),
   customerRate: new Decimal('2500.00'),
-  carrierPayout: new Decimal('2250.00'),
-  dispatchFee: new Decimal('250.00'),
-  dispatchFeeOverrideType: null,
-  dispatchFeeOverrideAmount: null,
+  // US-14: persisted financial output cache columns (carrierPayout, dispatchFee)
+  // removed — settlement service derives them via computeLoadFinancials.
+  dispatchFeeType: null,
+  dispatchFeeAmount: null,
   totalMiles: 500,
   loadedMiles: 500,
   estimatedHours: new Decimal('8.0'),
@@ -147,7 +143,6 @@ describe('settlementService.generate', () => {
       id: 'load-1',
       loadNumber: 'L-001',
       carrierRate: new Decimal('2500.00'),
-      dispatchFee: new Decimal('250.00'),
       totalMiles: 500,
       accessorialCharges: [
         { id: 'acc-1', type: 'DETENTION', description: 'Detention fee', amount: new Decimal('100.00') },
@@ -157,7 +152,6 @@ describe('settlementService.generate', () => {
       id: 'load-2',
       loadNumber: 'L-002',
       carrierRate: new Decimal('3000.00'),
-      dispatchFee: new Decimal('300.00'),
       totalMiles: 600,
       accessorialCharges: [
         { id: 'acc-2', type: 'LUMPER', description: 'Lumper fee', amount: new Decimal('50.00') },
@@ -298,7 +292,6 @@ describe('settlementService.generate', () => {
       id: 'load-1',
       loadNumber: 'L-001',
       carrierRate: new Decimal('2500.00'),
-      dispatchFee: new Decimal('250.00'),
       totalMiles: 500,
       accessorialCharges: [
         { id: 'acc-1', type: 'DETENTION', description: 'Detention', amount: new Decimal('100.00') },
@@ -308,7 +301,6 @@ describe('settlementService.generate', () => {
       id: 'load-2',
       loadNumber: 'L-002',
       carrierRate: new Decimal('3000.00'),
-      dispatchFee: new Decimal('300.00'),
       totalMiles: 600,
       accessorialCharges: [
         { id: 'acc-2', type: 'LUMPER', description: 'Lumper', amount: new Decimal('50.00') },
@@ -349,21 +341,18 @@ describe('settlementService.generate', () => {
         id: 'load-1',
         loadNumber: 'L-001',
         carrierRate: new Decimal('100.334'),
-        dispatchFee: new Decimal('0'),
         accessorialCharges: [],
       }),
       buildLoad({
         id: 'load-2',
         loadNumber: 'L-002',
         carrierRate: new Decimal('100.334'),
-        dispatchFee: new Decimal('0'),
         accessorialCharges: [],
       }),
       buildLoad({
         id: 'load-3',
         loadNumber: 'L-003',
         carrierRate: new Decimal('100.334'),
-        dispatchFee: new Decimal('0'),
         accessorialCharges: [],
       }),
     ];
@@ -386,8 +375,10 @@ describe('settlementService.generate', () => {
 
   it('generates DRIVER_PAY line as 85% of carrierPayout for PERCENTAGE driver', async () => {
     const carrier = buildCarrier({ type: CarrierType.COMPANY_ASSET });
+    // US-11b: carrierPayout is now computed from snapshot inputs on read.
+    // With dispatchFeeType=null + no accessorials, carrierPayout = customerRate.
     const load = buildLoad({
-      carrierPayout: new Decimal('2400.00'),
+      customerRate: new Decimal('2400.00'),
     });
 
     mockCarrierQuery.findById.mockResolvedValue(carrier);

@@ -118,9 +118,8 @@ const makeDeliveredLoad = (overrides: Record<string, unknown> = {}) => ({
   vehicleId: null,
   customerRate: null,
   carrierRate: null,
-  dispatchFee: null,
-  dispatchFeeOverrideType: null,
-  dispatchFeeOverrideAmount: null,
+  dispatchFeeType: null,
+  dispatchFeeAmount: null,
   bolSignedAt: null,
   contact: null,
   carrier: null,
@@ -361,6 +360,7 @@ describe('initializeReadinessSubscriber', () => {
       expect(mockedGenerateTonuInvoice).toHaveBeenCalledWith('load-tonu-1', 'org-1', {
         invoiceRepo: deps.invoiceRepo,
         loadQuery: deps.loadQuery,
+        eventBus: deps.eventBus,
         logger: deps.logger,
       });
     });

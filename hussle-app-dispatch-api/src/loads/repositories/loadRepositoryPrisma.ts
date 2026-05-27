@@ -34,6 +34,12 @@ const LOAD_DETAIL_INCLUDE = {
   accessorialCharges: {
     orderBy: { createdAt: 'asc' as const },
   },
+  _count: {
+    // invoices count powers the INVOICE_CREATED short-circuit in
+    // computeInvoiceReadiness (US-11) — preserves the prior subscriber's
+    // post-creation override semantics now that invoiceReadiness is computed.
+    select: { invoices: true },
+  },
 } as const;
 
 const LOAD_LIST_INCLUDE = {
@@ -57,8 +63,14 @@ const LOAD_LIST_INCLUDE = {
   customer: {
     select: { id: true, companyName: true },
   },
+  accessorialCharges: {
+    // Only the amount is needed at the list site, to feed computeLoadFinancials
+    // (US-11). The transformer doesn't render individual charges in the list
+    // response — it only sums them.
+    select: { amount: true },
+  },
   _count: {
-    select: { accessorialCharges: true },
+    select: { accessorialCharges: true, invoices: true },
   },
 } as const;
 
@@ -502,9 +514,6 @@ export const carrierAssignmentQueryPrisma = (
         id: true,
         name: true,
         type: true,
-        dispatchAgreementOnFile: true,
-        insuranceCertOnFile: true,
-        insuranceExpiry: true,
         tin: true,
       },
     });
@@ -517,10 +526,40 @@ export const carrierAssignmentQueryPrisma = (
       id: carrier.id,
       name: carrier.name,
       type: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
       tinOnFile: carrier.tin != null,
+    };
+  },
+
+  findRateSnapshot: async (carrierId, organizationId) => {
+    const carrier = await prisma.carrier.findFirst({
+      where: {
+        id: carrierId,
+        managedByOrgId: organizationId,
+        deletedAt: null,
+      },
+      select: {
+        dispatchFeeType: true,
+        dispatchFeePercent: true,
+        dispatchFeeAmount: true,
+        partnerSplitPercent: true,
+        feeIncludesAccessorials: true,
+        payFromNet: true,
+        type: true,
+      },
+    });
+
+    if (!carrier) {
+      return null;
+    }
+
+    return {
+      dispatchFeeType: carrier.dispatchFeeType,
+      dispatchFeePercent: String(carrier.dispatchFeePercent),
+      dispatchFeeAmount: String(carrier.dispatchFeeAmount),
+      partnerSplitPercent: String(carrier.partnerSplitPercent),
+      feeIncludesAccessorials: carrier.feeIncludesAccessorials,
+      payFromNet: carrier.payFromNet,
+      carrierType: carrier.type,
     };
   },
 });
@@ -546,6 +585,32 @@ export const driverAssignmentQueryPrisma = (
         isAvailable: true,
       },
     });
+  },
+
+  findRateSnapshot: async (driverId, organizationId) => {
+    const driver = await prisma.driver.findFirst({
+      where: {
+        id: driverId,
+        deletedAt: null,
+        carrier: {
+          managedByOrgId: organizationId,
+          deletedAt: null,
+        },
+      },
+      select: {
+        payType: true,
+        payRate: true,
+      },
+    });
+
+    if (!driver) {
+      return null;
+    }
+
+    return {
+      payType: driver.payType,
+      payRate: String(driver.payRate),
+    };
   },
 });
 

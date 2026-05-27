@@ -6,10 +6,15 @@ export interface SwitchOrgResponse {
   message: string;
   user: SwitchOrgServiceResult['user'];
   accessibleOrgs: SwitchOrgServiceResult['orgs'];
+  accessTokenExpiresAt: string;
 }
 
-export const toSwitchOrgResponse = (result: SwitchOrgServiceResult): SwitchOrgResponse => ({
+export const toSwitchOrgResponse = (
+  result: SwitchOrgServiceResult,
+  accessTokenExpiresAt: string
+): SwitchOrgResponse => ({
   message: 'success',
   user: result.user,
   accessibleOrgs: result.orgs,
+  accessTokenExpiresAt,
 });

@@ -10,12 +10,45 @@ import type {
   OrgSettingsQueryPort,
   VehicleAssignmentQueryPort,
 } from '../../types/loadTypes';
-import type { LoadStatusRepoPort } from '../../types/loadStatusTypes';
 import type { Logger } from '../../../shared/utils/logger';
+import type { DerivedComplianceDeps } from '../../../carriers/services/derivedCompliance';
+import type { DocumentRepoPort } from '../../../documents/types/documentTypes';
+import type { AgreementRepoPort } from '../../../agreements/types/agreementRepoPort';
+
+// Default stub: insurance + agreement both on-file so the onboarding gate passes.
+// Tests can override `mockResolvedValueOnce([])` to simulate missing docs/agreements.
+const buildDerivedComplianceDeps = (): DerivedComplianceDeps => {
+  const documentRepo: jest.Mocked<Pick<DocumentRepoPort, 'findManyForCompliance'>> = {
+    findManyForCompliance: jest.fn(),
+  };
+  const agreementRepo: jest.Mocked<Pick<AgreementRepoPort, 'findManySigned'>> = {
+    findManySigned: jest.fn(),
+  };
+  // Default: every requested carrier has a doc + agreement on file.
+  documentRepo.findManyForCompliance.mockImplementation(async (carrierIds, _types) =>
+    carrierIds.map((entityId) => ({
+      id: `doc-${entityId}`,
+      entityId,
+      type: 'INSURANCE_CERT',
+      createdAt: new Date(),
+      expiresAt: null,
+    }) as Awaited<ReturnType<DocumentRepoPort['findManyForCompliance']>>[number]),
+  );
+  agreementRepo.findManySigned.mockImplementation(async (carrierIds) =>
+    carrierIds.map((carrierId) => ({
+      id: `agreement-${carrierId}`,
+      carrierId,
+      signedAt: new Date(),
+      status: 'SIGNED',
+    }) as Awaited<ReturnType<AgreementRepoPort['findManySigned']>>[number]),
+  );
+  return { documentRepo, agreementRepo };
+};
 
 jest.mock('@/shared/sequenceGenerator', () => ({
   generateSequenceNumber: jest.fn<() => Promise<string>>().mockResolvedValue('L-0001'),
 }));
+
 
 const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
   const baseLoad = {
@@ -34,18 +67,10 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     totalMiles: null,
     customerRate: null,
     carrierRate: null,
-    dispatchFee: null,
-    dispatchFeeOverrideType: null,
-    dispatchFeeOverrideAmount: null,
-    partnerSplit: null,
-    ratePerMile: null,
-    ratePerTotalMile: null,
-    carrierPayout: null,
-    companyMargin: null,
-    driverPay: null,
+    // US-14: persisted financial output cache columns removed — derived on read.
+    dispatchFeeType: null,
+    dispatchFeeAmount: null,
     estimatedHours: null,
-    estimatedCost: null,
-    dispatcherComm: null,
     dispatcherUserId: null,
     version: 0,
     status: 'BOOKED',
@@ -73,7 +98,6 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>) => {
     statusHistory: [],
     checkCalls: [],
     accessorialCharges: [],
-    invoiceReadiness: 'NOT_READY',
   } satisfies LoadWithRelations;
 
   return { ...baseLoad, ...overrides };
@@ -104,10 +128,12 @@ describe('loadService assignment validation', () => {
 
   const mockCarrierAssignmentQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
     findDispatchableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockDriverAssignmentQuery: jest.Mocked<DriverAssignmentQueryPort> = {
     findAssignableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockVehicleAssignmentQuery: jest.Mocked<VehicleAssignmentQueryPort> = {
@@ -120,6 +146,7 @@ describe('loadService assignment validation', () => {
     carrierAssignmentQuery: mockCarrierAssignmentQuery,
     driverAssignmentQuery: mockDriverAssignmentQuery,
     vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+    derivedComplianceDeps: buildDerivedComplianceDeps(),
   });
 
   beforeEach(() => {
@@ -134,9 +161,6 @@ describe('loadService assignment validation', () => {
       id: 'carrier-1',
       name: 'Fleet Carrier',
       type: 'COMPANY_ASSET',
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      insuranceExpiry: null,
       tinOnFile: true,
     });
     mockDriverAssignmentQuery.findAssignableById.mockResolvedValue({
@@ -226,18 +250,29 @@ describe('loadService assignment validation', () => {
   });
 
   it('rejects onboarding-blocked external carriers', async () => {
+    // Drive onboarding gate failure via the derived-compliance stub (no signed
+    // agreement) rather than the legacy port fields, which no longer exist.
     mockCarrierAssignmentQuery.findDispatchableById.mockResolvedValue({
       id: 'carrier-2',
       name: 'External Carrier',
       type: 'EXTERNAL_CARRIER',
-      dispatchAgreementOnFile: false,
-      insuranceCertOnFile: true,
-      insuranceExpiry: null,
       tinOnFile: true,
+    });
+    const noAgreementDeps = buildDerivedComplianceDeps();
+    (noAgreementDeps.agreementRepo.findManySigned as jest.Mock).mockResolvedValue([]);
+    // Override the service used by this single test with one that sees no
+    // agreements on file (forces onboarding gate to block).
+    const blockedService = createLoadService({
+      loadRepository: mockLoadRepository,
+      orgSettingsQuery: mockOrgSettingsQuery,
+      carrierAssignmentQuery: mockCarrierAssignmentQuery,
+      driverAssignmentQuery: mockDriverAssignmentQuery,
+      vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+      derivedComplianceDeps: noAgreementDeps,
     });
 
     await expect(
-      loadService.assignLoad({
+      blockedService.assignLoad({
         id: 'load-1',
         organizationId: 'org-1',
         role: 'dispatcher',
@@ -292,7 +327,7 @@ describe('loadService assignment validation', () => {
   });
 });
 
-describe('updateLoad financial recalculation', () => {
+describe('updateLoad financial field locking', () => {
   const companyCarrier = {
     id: 'carrier-1',
     managedByOrgId: 'org-1',
@@ -314,14 +349,9 @@ describe('updateLoad financial recalculation', () => {
     dispatchFeeAmount: new Decimal('0'),
     partnerSplitPercent: new Decimal('50.0000'),
     feeIncludesAccessorials: false,
-    feeType: 'PER_LOAD_PERCENT' as const,
     payFromNet: false,
     includeExpensesOnSettlement: false,
     ownerOpPayPercent: null,
-    dispatchAgreementOnFile: true,
-    dispatchAgreementSignedAt: null,
-    insuranceCertOnFile: true,
-    insuranceExpiry: null,
     tin: '12-3456789',
     minimumRatePerMile: null,
     inviteSentAt: null,
@@ -352,7 +382,6 @@ describe('updateLoad financial recalculation', () => {
     tinType: null,
     signatoryName: null,
     signatoryTitle: null,
-    signedAgreementId: null,
     homeBaseCity: null,
     homeBaseState: null,
     preferredLanes: null,
@@ -388,21 +417,16 @@ describe('updateLoad financial recalculation', () => {
 
   const mockCarrierAssignmentQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
     findDispatchableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockDriverAssignmentQuery: jest.Mocked<DriverAssignmentQueryPort> = {
     findAssignableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
   };
 
   const mockVehicleAssignmentQuery: jest.Mocked<VehicleAssignmentQueryPort> = {
     findAssignableById: jest.fn(),
-  };
-
-  const mockLoadStatusRepo: jest.Mocked<
-    Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>
-  > = {
-    sumAccessorialCharges: jest.fn<() => Promise<string>>(),
-    updateFinancials: jest.fn<() => Promise<void>>(),
   };
 
   const mockLogger: jest.Mocked<Logger> = {
@@ -418,282 +442,13 @@ describe('updateLoad financial recalculation', () => {
     carrierAssignmentQuery: mockCarrierAssignmentQuery,
     driverAssignmentQuery: mockDriverAssignmentQuery,
     vehicleAssignmentQuery: mockVehicleAssignmentQuery,
-    loadStatusRepo: mockLoadStatusRepo,
     logger: mockLogger,
+    derivedComplianceDeps: buildDerivedComplianceDeps(),
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockOrgSettingsQuery.getProhibitedCommodities.mockResolvedValue([]);
-  });
-
-  it('recalculates financials when customerRate changes on BOOKED load', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      customerRate: new Decimal('3000'),
-    });
-
-    mockLoadRepository.findById.mockResolvedValue(existing);
-    mockLoadRepository.update.mockResolvedValue(updated);
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    // After recalculation, findById is called again to re-fetch
-    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { customerRate: 3000 },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-  });
-
-  it('recalculates financials when loadedMiles changes on BOOKED load', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      loadedMiles: 600,
-    });
-
-    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-    mockLoadRepository.update.mockResolvedValue(updated);
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { loadedMiles: 600 },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-  });
-
-  it('does not recalculate when non-financial field changes', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      dispatcherNotes: 'updated notes',
-    });
-
-    mockLoadRepository.findById.mockResolvedValue(existing);
-    mockLoadRepository.update.mockResolvedValue(updated);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { dispatcherNotes: 'updated notes' },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).not.toHaveBeenCalled();
-  });
-
-  it('does not recalculate when carrier is null', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: null,
-      carrier: null,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      customerRate: new Decimal('3000'),
-    });
-
-    mockLoadRepository.findById.mockResolvedValue(existing);
-    mockLoadRepository.update.mockResolvedValue(updated);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { customerRate: 3000 },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).not.toHaveBeenCalled();
-  });
-
-  it('recalculates financials when carrierId changes on BOOKED load', async () => {
-    const existing = buildLoad({
-      customerRate: new Decimal('2800'),
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      driverId: null,
-      driver: null,
-      vehicleId: null,
-      vehicle: null,
-      loadedMiles: 500,
-      status: 'BOOKED',
-    });
-    const updated = buildLoad({
-      ...existing,
-      carrierId: 'carrier-2',
-      carrier: { ...companyCarrier, id: 'carrier-2' },
-    });
-
-    mockLoadRepository.findById.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-    mockLoadRepository.update.mockResolvedValue(updated);
-    mockCarrierAssignmentQuery.findDispatchableById.mockResolvedValue({
-      id: 'carrier-2',
-      name: 'New Carrier',
-      type: 'COMPANY_ASSET',
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      insuranceExpiry: null,
-      tinOnFile: true,
-    });
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    await loadService.updateLoad({
-      id: 'load-1',
-      organizationId: 'org-1',
-      role: 'admin',
-      input: { carrierId: 'carrier-2' },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-  });
-
-  it('re-fetches load after financial calculation on createLoad', async () => {
-    const staleLoad = buildLoad({
-      carrierId: 'carrier-1',
-      carrier: companyCarrier,
-      customerRate: new Decimal('2800'),
-      loadedMiles: 500,
-      companyMargin: null,
-      stops: [
-        {
-          id: 'stop-1',
-          loadId: 'load-1',
-          type: 'PICKUP',
-          sequence: 0,
-          contactId: null,
-          placeId: null,
-          resolutionStatus: 'UNRESOLVED',
-          place: null,
-          facilityName: null,
-          address: null,
-          city: 'Dallas',
-          state: 'TX',
-          zip: null,
-          schedulingType: 'FCFS',
-          appointmentStart: new Date(),
-          appointmentEnd: null,
-          notificationHours: null,
-          notifiedAt: null,
-          appointmentNumber: null,
-          arrivalTime: null,
-          departureTime: null,
-          contactName: null,
-          contactPhone: null,
-          commodity: 'Steel',
-          weight: 40000,
-          pieceCount: 1,
-          isHazmat: false,
-          isTarp: false,
-          isTempControlled: false,
-          notes: null,
-          callByTime: null,
-          trailerNumber: null,
-          yardLocation: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: 'stop-2',
-          loadId: 'load-1',
-          type: 'DELIVERY',
-          sequence: 1,
-          contactId: null,
-          placeId: null,
-          resolutionStatus: 'UNRESOLVED',
-          place: null,
-          facilityName: null,
-          address: null,
-          city: 'Houston',
-          state: 'TX',
-          zip: null,
-          schedulingType: 'FCFS',
-          appointmentStart: new Date(),
-          appointmentEnd: null,
-          notificationHours: null,
-          notifiedAt: null,
-          appointmentNumber: null,
-          arrivalTime: null,
-          departureTime: null,
-          contactName: null,
-          contactPhone: null,
-          commodity: null,
-          weight: null,
-          pieceCount: null,
-          isHazmat: false,
-          isTarp: false,
-          isTempControlled: false,
-          notes: null,
-          callByTime: null,
-          trailerNumber: null,
-          yardLocation: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ],
-    });
-
-    const freshLoad = buildLoad({
-      ...staleLoad,
-      companyMargin: new Decimal('500'),
-      dispatchFee: new Decimal('280'),
-    });
-
-    mockLoadRepository.create.mockResolvedValue(staleLoad);
-    mockLoadRepository.findById.mockResolvedValue(freshLoad);
-    mockLoadStatusRepo.sumAccessorialCharges.mockResolvedValue('0.00');
-    mockLoadStatusRepo.updateFinancials.mockResolvedValue(undefined);
-
-    const result = await loadService.createLoad({
-      organizationId: 'org-1',
-      role: 'admin',
-      input: {
-        carrierId: 'carrier-1',
-        customerRate: 2800,
-        loadedMiles: 500,
-        stops: [
-          { type: 'PICKUP', sequence: 0, appointmentStart: new Date(), city: 'Dallas', state: 'TX', commodity: 'Steel', weight: 40000, pieceCount: 1 },
-          { type: 'DELIVERY', sequence: 1, appointmentStart: new Date(), city: 'Houston', state: 'TX' },
-        ],
-      },
-    });
-
-    expect(mockLoadStatusRepo.updateFinancials).toHaveBeenCalled();
-    expect(mockLoadRepository.findById).toHaveBeenCalledWith('load-1', 'org-1');
-    expect(result.load.companyMargin).toEqual(new Decimal('500'));
-    expect(result.warnings).toEqual([]);
   });
 
   it('rejects financial field change on DISPATCHED load', async () => {
@@ -738,8 +493,8 @@ describe('updateLoad financial recalculation', () => {
       carrierAssignmentQuery: mockCarrierAssignmentQuery,
       driverAssignmentQuery: mockDriverAssignmentQuery,
       vehicleAssignmentQuery: mockVehicleAssignmentQuery,
-      loadStatusRepo: mockLoadStatusRepo,
       settlementFreezeQuery,
+      derivedComplianceDeps: buildDerivedComplianceDeps(),
     });
 
     await expect(

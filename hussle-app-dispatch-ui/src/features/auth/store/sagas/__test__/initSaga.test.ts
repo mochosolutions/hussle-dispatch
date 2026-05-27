@@ -8,6 +8,13 @@ import { initializeAuthSaga } from '../initSaga';
 import { initSuccess, initFailure } from '../../authSlice';
 import { initAttemptedSelector, selectIsLoggedIn } from '../../selectors';
 import axiosPrivate from 'utils/axios';
+import { schedule as scheduleRefresh } from '../../../refreshScheduler';
+import { proactiveRefresh } from '../../../refreshFn';
+
+jest.mock('../../../refreshScheduler', () => ({
+  schedule: jest.fn(),
+  cancel: jest.fn(),
+}));
 
 // Mock axios
 jest.mock('utils/axios', () => ({
@@ -97,6 +104,49 @@ describe('initializeAuthSaga', () => {
         })
       )
       .run();
+  });
+
+  it('schedules proactive refresh when accessTokenExpiresAt is present', async () => {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const fakeUserResponse = {
+      data: {
+        user: mockUser,
+        accessibleOrgs: mockOrgs,
+        accessTokenExpiresAt: expiresAt,
+      },
+    };
+
+    await expectSaga(initializeAuthSaga)
+      .provide([
+        [select(initAttemptedSelector), false],
+        [select(selectIsLoggedIn), false],
+        [call(axiosPrivate.get, '/auth/me'), fakeUserResponse],
+        [call(scheduleRefresh, expiresAt, proactiveRefresh), undefined],
+      ])
+      .call(scheduleRefresh, expiresAt, proactiveRefresh)
+      .run();
+  });
+
+  it('does not schedule refresh when accessTokenExpiresAt is absent', async () => {
+    const fakeUserResponse = {
+      data: {
+        user: mockUser,
+        accessibleOrgs: mockOrgs,
+      },
+    };
+
+    const result = await expectSaga(initializeAuthSaga)
+      .provide([
+        [select(initAttemptedSelector), false],
+        [select(selectIsLoggedIn), false],
+        [call(axiosPrivate.get, '/auth/me'), fakeUserResponse],
+      ])
+      .run();
+
+    const calls = result.effects.call ?? [];
+    expect(calls.some((c: { payload: { fn: unknown } }) => c.payload.fn === scheduleRefresh)).toBe(
+      false,
+    );
   });
 
   it('handles an error when authentication check fails', async () => {

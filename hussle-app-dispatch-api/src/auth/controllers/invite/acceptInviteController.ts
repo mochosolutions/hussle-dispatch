@@ -8,7 +8,9 @@ import {
   setCsrfTokenCookie,
   setRefreshTokenCookie,
 } from '@/shared/utils/cookieUtils';
+import { REFRESH_TTL_BASE_SECONDS } from '../../constants';
 import { cognitoProvider } from '../../providers/authProvider';
+import { extractAccessTokenExpAsIso } from '../../providers/jwtTokenProvider/tokenHelpers';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import { inviteRepositoryPrisma } from '../../repositories/inviteRepositoryPrisma';
 import { membershipRepositoryPrisma } from '../../repositories/membershipRepositoryPrisma';
@@ -82,8 +84,11 @@ export const createAcceptInviteController =
     });
 
     setAccessTokenCookie(res, accessToken);
-    setRefreshTokenCookie(res, refreshToken);
+    setRefreshTokenCookie(res, refreshToken, REFRESH_TTL_BASE_SECONDS * 1000);
     setCsrfTokenCookie(res, generateCsrfToken());
 
-    return res.status(201).json({ message: 'Signup successful', ...result });
+    const accessTokenExpiresAt = extractAccessTokenExpAsIso(accessToken);
+    return res
+      .status(201)
+      .json({ message: 'Signup successful', ...result, accessTokenExpiresAt });
   };

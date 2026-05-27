@@ -3,6 +3,8 @@ import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { RequestHandler } from 'express';
 import type { CarrierService } from '../types/carrierServiceTypes';
 import type { CarrierStatsQueryPort } from '../repositories/carrierStatsQueryPrisma';
+import type { DerivedComplianceDeps } from '../services/derivedCompliance';
+import { computeCompliancesForCarriers } from '../services/derivedComplianceBatch';
 import { createCarrierMapper } from './mappers/createCarrierMapper';
 import { createCarrierNoteMapper } from './mappers/createCarrierNoteMapper';
 import { createCarrierWithAssetsMapper } from './mappers/createCarrierWithAssetsMapper';
@@ -24,6 +26,10 @@ import {
 interface CarrierControllerDeps {
   carrierService: CarrierService;
   carrierStatsQuery: CarrierStatsQueryPort;
+  // Injected so the controller can batch-compute compliance once per list
+  // request and pass a per-carrier map to the transformer, rather than letting
+  // the transformer read from persisted Carrier projection columns.
+  derivedComplianceDeps: DerivedComplianceDeps;
 }
 
 export interface CarrierControllers {
@@ -44,19 +50,33 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
   createCarrier: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = createCarrierMapper(req);
     const carrier = await deps.carrierService.createCarrier(serviceInput);
-    sendSingle(res, toCarrierResponse(carrier), 201);
+    const complianceById = await computeCompliancesForCarriers(
+      [carrier.id],
+      deps.derivedComplianceDeps,
+    );
+    sendSingle(res, toCarrierResponse(carrier, complianceById.get(carrier.id)), 201);
   },
 
   createCarrierWithAssets: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = createCarrierWithAssetsMapper(req);
     const carrier = await deps.carrierService.createCarrierWithAssets(serviceInput);
-    sendSingle(res, toCarrierWithAssetsResponse(carrier), 201);
+    const complianceById = await computeCompliancesForCarriers(
+      [carrier.id],
+      deps.derivedComplianceDeps,
+    );
+    sendSingle(res, toCarrierWithAssetsResponse(carrier, complianceById.get(carrier.id)), 201);
   },
 
   listCarriers: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = listCarriersMapper(req);
     const result = await deps.carrierService.listCarriers(serviceInput);
-    const response = toCarrierListEnvelope(result.data, result.meta);
+    // Batch-compute compliance for every row in the page in exactly two
+    // queries (one document, one agreement) — never a per-row N+1.
+    const complianceById = await computeCompliancesForCarriers(
+      result.data.map((carrier) => carrier.id),
+      deps.derivedComplianceDeps,
+    );
+    const response = toCarrierListEnvelope(result.data, result.meta, complianceById);
     sendList(res, { data: response.data, meta: response.meta });
   },
 
@@ -67,13 +87,21 @@ export const createCarrierControllers = (deps: CarrierControllerDeps): CarrierCo
       ...context,
       id,
     });
-    sendSingle(res, toCarrierResponse(carrier));
+    const complianceById = await computeCompliancesForCarriers(
+      [carrier.id],
+      deps.derivedComplianceDeps,
+    );
+    sendSingle(res, toCarrierResponse(carrier, complianceById.get(carrier.id)));
   },
 
   updateCarrier: async (req: Request, res: Response): Promise<void> => {
     const serviceInput = updateCarrierMapper(req);
     const carrier = await deps.carrierService.updateCarrier(serviceInput);
-    sendSingle(res, toCarrierResponse(carrier));
+    const complianceById = await computeCompliancesForCarriers(
+      [carrier.id],
+      deps.derivedComplianceDeps,
+    );
+    sendSingle(res, toCarrierResponse(carrier, complianceById.get(carrier.id)));
   },
 
   deleteCarrier: async (req: Request, res: Response): Promise<void> => {

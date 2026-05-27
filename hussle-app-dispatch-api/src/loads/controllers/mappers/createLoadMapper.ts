@@ -13,6 +13,7 @@ export const createLoadMapper = (req: Request): CreateLoadServiceInput => {
     vehicleId: body.vehicleId,
     contactId: body.contactId,
     customerId: body.customerId,
+    dispatcherUserId: body.dispatcherUserId,
     externalRefNumber: body.externalRefNumber,
     equipmentType: body.equipmentType,
     isTeamDriver: body.isTeamDriver,
@@ -29,8 +30,8 @@ export const createLoadMapper = (req: Request): CreateLoadServiceInput => {
     driverInstructions: body.driverInstructions,
     stops: body.stops,
     accessorialCharges: body.accessorialCharges,
-    dispatchFeeOverrideType: body.dispatchFeeOverrideType,
-    dispatchFeeOverrideAmount: body.dispatchFeeOverrideAmount,
+    dispatchFeeType: body.dispatchFeeType,
+    dispatchFeeAmount: body.dispatchFeeAmount,
   };
 
   return { ...context, input };

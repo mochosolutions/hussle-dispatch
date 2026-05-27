@@ -82,6 +82,7 @@ const createBodySchema = Yup.object({
   vehicleId: optionalUuid,
   contactId: optionalUuid,
   customerId: optionalUuid,
+  dispatcherUserId: optionalUuid,
   externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
@@ -106,12 +107,12 @@ const createBodySchema = Yup.object({
     .required('stops are required')
     .test('delivery-after-pickup', DELIVERY_BEFORE_PICKUP_MESSAGE, isDeliveryAfterPickup),
   accessorialCharges: Yup.array().of(accessorialChargeSchema).notRequired(),
-  dispatchFeeOverrideType: Yup.mixed<DispatchFeeType>()
-    .oneOf(dispatchFeeTypeValues, 'dispatchFeeOverrideType must be PERCENTAGE or FLAT')
+  dispatchFeeType: Yup.mixed<DispatchFeeType>()
+    .oneOf(dispatchFeeTypeValues, 'dispatchFeeType must be PERCENTAGE or FLAT')
     .nullable()
     .notRequired(),
-  dispatchFeeOverrideAmount: Yup.number()
-    .min(0, 'dispatchFeeOverrideAmount must be non-negative')
+  dispatchFeeAmount: Yup.number()
+    .min(0, 'dispatchFeeAmount must be non-negative')
     .nullable()
     .notRequired(),
 });
@@ -122,6 +123,7 @@ const updateBodySchema = Yup.object({
   vehicleId: optionalUuid,
   contactId: optionalUuid,
   customerId: optionalUuid,
+  dispatcherUserId: optionalUuid,
   externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
@@ -146,12 +148,12 @@ const updateBodySchema = Yup.object({
     .notRequired()
     .test('delivery-after-pickup', DELIVERY_BEFORE_PICKUP_MESSAGE, isDeliveryAfterPickup),
   accessorialCharges: Yup.array().of(accessorialChargeSchema).notRequired(),
-  dispatchFeeOverrideType: Yup.mixed<DispatchFeeType>()
-    .oneOf(dispatchFeeTypeValues, 'dispatchFeeOverrideType must be PERCENTAGE or FLAT')
+  dispatchFeeType: Yup.mixed<DispatchFeeType>()
+    .oneOf(dispatchFeeTypeValues, 'dispatchFeeType must be PERCENTAGE or FLAT')
     .nullable()
     .notRequired(),
-  dispatchFeeOverrideAmount: Yup.number()
-    .min(0, 'dispatchFeeOverrideAmount must be non-negative')
+  dispatchFeeAmount: Yup.number()
+    .min(0, 'dispatchFeeAmount must be non-negative')
     .nullable()
     .notRequired(),
 }).test('has-any-field', 'At least one field must be provided', (value) => {
@@ -177,6 +179,7 @@ export const assignLoadValidator = Yup.object({
     carrierId: optionalUuid,
     driverId: optionalUuid,
     vehicleId: optionalUuid,
+    dispatcherUserId: optionalUuid,
   }).test('has-any-assignment-field', 'At least one assignment field must be provided', (value) => {
     if (value === undefined) {
       return false;

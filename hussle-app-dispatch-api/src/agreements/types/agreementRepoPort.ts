@@ -20,4 +20,10 @@ export interface AgreementRepoPort {
   update(id: string, patch: UpdateAgreementInput): Promise<Agreement>;
   findStaleInProgress(updatedBefore: Date): Promise<Agreement[]>;
   countActivePending(args: CountActivePendingArgs): Promise<number>;
+  /**
+   * Batch lookup of currently-in-force signed agreements for the given carriers.
+   * Filters: `status='SIGNED'`, `voidedAt IS NULL`, `carrierId IN carrierIds`.
+   * Ordered by `signedAt DESC` so callers can pick latest-per-carrier.
+   */
+  findManySigned(carrierIds: string[]): Promise<Agreement[]>;
 }

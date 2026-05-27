@@ -6,6 +6,7 @@ import type { OrgSettingsQueryPort } from '../types/readinessTypes';
 import type { StorageProvider } from '@/shared/storage/storageProvider';
 import type { Logger } from '@/shared/utils/logger';
 import { NotFoundError } from '@/shared/errors';
+import { streamFileResponse } from '@/shared/storage/streamFileResponse';
 import { buildInvoicePdfData } from '../services/invoicePdfDataBuilder';
 import { pdfMapper } from './mappers/pdfMapper';
 
@@ -21,7 +22,11 @@ interface PdfControllerDeps {
 export interface PdfControllers {
   generatePdf: RequestHandler;
   previewPdf: RequestHandler;
+  downloadPdf: RequestHandler;
 }
+
+const buildDownloadPath = (invoiceId: string): string =>
+  `/api/v1/invoices/${invoiceId}/pdf-download`;
 
 export const createPdfControllers = (deps: PdfControllerDeps): PdfControllers => ({
   generatePdf: async (req: Request, res: Response): Promise<void> => {
@@ -39,14 +44,47 @@ export const createPdfControllers = (deps: PdfControllerDeps): PdfControllers =>
     });
     const pdfBuffer = await deps.pdfService.generateInvoicePdf(pdfData);
 
-    // Store PDF and retrieve its URL
-    const s3Key = `invoices/${invoice.invoiceNumber}.pdf`;
-    const pdfUrl = await deps.storageProvider.put(s3Key, pdfBuffer, 'application/pdf');
+    const storageKey = `invoices/${invoice.invoiceNumber}.pdf`;
+    await deps.storageProvider.put(storageKey, pdfBuffer, 'application/pdf');
 
-    // Persist the pdfUrl on the invoice using updateStatus with current status
-    await deps.invoiceRepo.updateStatus(invoiceId, organizationId, invoice.status, { pdfUrl });
+    // Invoice.pdfUrl stores the storage KEY (not a URL). URL resolution happens
+    // inside the scoped /invoices/:id/pdf-download endpoint at request time.
+    await deps.invoiceRepo.updateStatus(invoiceId, organizationId, invoice.status, {
+      pdfUrl: storageKey,
+    });
 
-    sendSingle(res, { pdfUrl });
+    // Return a relative path the UI can use to download via the scoped endpoint.
+    // The storage key is intentionally NOT exposed in the response — clients
+    // never receive raw storage paths.
+    sendSingle(res, { downloadUrl: buildDownloadPath(invoiceId) });
+  },
+
+  downloadPdf: async (req: Request, res: Response): Promise<void> => {
+    const { invoiceId, organizationId } = pdfMapper(req);
+    const invoice = await deps.invoiceRepo.findById(invoiceId, organizationId);
+
+    // 404 (not 403) on cross-org / missing — don't leak existence.
+    if (invoice === null) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    if (invoice.pdfUrl === null || invoice.pdfUrl === undefined || invoice.pdfUrl === '') {
+      throw new NotFoundError('Invoice PDF has not been generated yet');
+    }
+
+    deps.logger.info('Invoice PDF download', {
+      invoiceId,
+      organizationId,
+      invoiceNumber: invoice.invoiceNumber,
+    });
+
+    await streamFileResponse({
+      res,
+      storageProvider: deps.storageProvider,
+      key: invoice.pdfUrl,
+      displayName: `Invoice_${invoice.invoiceNumber}.pdf`,
+      disposition: 'inline',
+    });
   },
 
   previewPdf: async (req: Request, res: Response): Promise<void> => {

@@ -3,7 +3,7 @@ import type Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/utils/logger';
-import { REFRESH_TTL_SECONDS, JWT_EXPIRES_IN, getJwtSecret } from '../../constants';
+import { getRefreshTtlSeconds, JWT_EXPIRES_IN, getJwtSecret } from '../../constants';
 import type {
   CreateSessionInput,
   CreateSessionResult,
@@ -37,7 +37,10 @@ export const createSessionRedis = async (
     ipAddress,
     userAgent,
     singleSession = false,
+    rememberMe = false,
   } = data;
+
+  const refreshTtlSeconds = getRefreshTtlSeconds(rememberMe);
 
   const sessionId = uuidv4(); // new session ID
   const refreshToken = uuidv4();
@@ -96,14 +99,15 @@ export const createSessionRedis = async (
     refreshTokenHash,
     isRevoked: false,
     issuedAt: Date.now(),
+    rememberMe,
   };
 
   // Store session + refresh mappings
 
-  await redisClient.set(refreshIndexKey, sessionKey, 'EX', REFRESH_TTL_SECONDS);
-  await redisClient.set(sessionIndexKey, refreshToken, 'EX', REFRESH_TTL_SECONDS);
-  await redisClient.set(activeSessionKey, sessionId, 'EX', REFRESH_TTL_SECONDS);
-  await redisClient.set(sessionKey, JSON.stringify(sessionData), 'EX', REFRESH_TTL_SECONDS);
+  await redisClient.set(refreshIndexKey, sessionKey, 'EX', refreshTtlSeconds);
+  await redisClient.set(sessionIndexKey, refreshToken, 'EX', refreshTtlSeconds);
+  await redisClient.set(activeSessionKey, sessionId, 'EX', refreshTtlSeconds);
+  await redisClient.set(sessionKey, JSON.stringify(sessionData), 'EX', refreshTtlSeconds);
 
   // Issue short-lived access token
   const accessToken = jwt.sign(

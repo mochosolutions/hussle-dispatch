@@ -14,6 +14,8 @@ import { carrierRepositoryPrisma } from './repositories/carrierRepositoryPrisma'
 import { carrierStatsQueryPrisma } from './repositories/carrierStatsQueryPrisma';
 import { carrierAuditPortPrisma } from './repositories/carrierAuditPortPrisma';
 import { carrierInviteTokenRepoPrisma } from '../carrier-portal/repositories/carrierInviteTokenRepoPrisma';
+import { documentRepositoryPrisma } from '@/documents/repositories/documentRepositoryPrisma';
+import { agreementRepositoryPrisma } from '@/agreements/repositories/agreementRepositoryPrisma';
 import { createCarrierApprovalService } from './services/carrierApprovalService';
 import { createCarrierOnboardingDetailService } from './services/carrierOnboardingDetailService';
 import { createCarrierService } from './services/carrierService';
@@ -21,7 +23,6 @@ import { createCarrierInviteService } from './services/carrierInviteService';
 import { createDispatchOverrideService } from './services/dispatchOverrideService';
 import { createCarrierSuspendService } from './services/carrierSuspendService';
 import { initializeCarrierSubscriber } from './services/carrierSubscriber';
-import { initializeCarrierComplianceSubscriber } from './services/carrierComplianceSubscriber';
 import { createDispatchOverrideControllers } from './controllers/dispatchOverrideController';
 import type { DispatchOverrideControllers } from './controllers/dispatchOverrideController';
 import { createSuspendControllers } from './controllers/suspendController';
@@ -43,12 +44,17 @@ export const createCarriersModule = ({
 }: CarrierModuleDeps): {
   controllers: CarrierControllers & InviteControllers & ApprovalControllers & OnboardingDetailControllers & DispatchOverrideControllers & SuspendControllers;
   initializeSubscriber: () => Promise<void>;
-  initializeComplianceSubscriber: () => Promise<void>;
 } => {
   const repositories = carrierRepositoryPrisma(prismaClient);
   const carrierStatsQuery = carrierStatsQueryPrisma(prismaClient);
   const inviteTokenRepo = carrierInviteTokenRepoPrisma(prismaClient);
   const auditLog = carrierAuditPortPrisma(prismaClient);
+  const documentRepoForCompliance = documentRepositoryPrisma(prismaClient);
+  const agreementRepoForCompliance = agreementRepositoryPrisma(prismaClient);
+  const derivedComplianceDeps = {
+    documentRepo: documentRepoForCompliance,
+    agreementRepo: agreementRepoForCompliance,
+  };
 
   const approvalPort: CarrierApprovalPort = {
     findById: (id, organizationId) =>
@@ -82,6 +88,7 @@ export const createCarriersModule = ({
     noteRepository: repositories,
     auditLog,
     inviteTokenRepo,
+    derivedComplianceDeps,
   });
 
   const carrierInviteService = createCarrierInviteService({
@@ -106,9 +113,6 @@ export const createCarriersModule = ({
           managedByOrgId: true,
           status: true,
           type: true,
-          dispatchAgreementOnFile: true,
-          insuranceCertOnFile: true,
-          insuranceExpiry: true,
           tin: true,
         },
       });
@@ -123,9 +127,6 @@ export const createCarriersModule = ({
         managedByOrgId: carrier.managedByOrgId,
         status: carrier.status,
         type: carrier.type,
-        dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-        insuranceCertOnFile: carrier.insuranceCertOnFile,
-        insuranceExpiry: carrier.insuranceExpiry,
         tinOnFile: carrier.tin != null,
       };
     },
@@ -140,6 +141,7 @@ export const createCarriersModule = ({
   const carrierSuspendService = createCarrierSuspendService({
     suspendPort,
     auditLog,
+    derivedComplianceDeps,
   });
 
   const onboardingDetailPort: OnboardingDetailPort = {
@@ -203,6 +205,7 @@ export const createCarriersModule = ({
   const carrierControllers = createCarrierControllers({
     carrierService,
     carrierStatsQuery,
+    derivedComplianceDeps,
   });
 
   const inviteControllers = createInviteControllers({
@@ -216,6 +219,7 @@ export const createCarriersModule = ({
 
   const onboardingDetailControllers = createOnboardingDetailControllers({
     carrierOnboardingDetailService,
+    derivedComplianceDeps,
   });
 
   const dispatchOverrideService = createDispatchOverrideService({
@@ -227,9 +231,6 @@ export const createCarriersModule = ({
             id: true,
             name: true,
             type: true,
-            dispatchAgreementOnFile: true,
-            insuranceCertOnFile: true,
-            insuranceExpiry: true,
             tin: true,
           },
         });
@@ -242,9 +243,6 @@ export const createCarriersModule = ({
           id: carrier.id,
           name: carrier.name,
           type: carrier.type,
-          dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-          insuranceCertOnFile: carrier.insuranceCertOnFile,
-          insuranceExpiry: carrier.insuranceExpiry,
           tinOnFile: carrier.tin != null,
         };
       },
@@ -276,6 +274,7 @@ export const createCarriersModule = ({
         }),
     },
     auditLog,
+    derivedComplianceDeps,
   });
 
   const dispatchOverrideControllers = createDispatchOverrideControllers({
@@ -303,19 +302,5 @@ export const createCarriersModule = ({
       auditLog,
     });
 
-  const initializeComplianceSubscriber = () =>
-    initializeCarrierComplianceSubscriber({
-      eventBus,
-      carrierCompliance: {
-        updateComplianceFlags: async (carrierId, organizationId, flags) => {
-          await prismaClient.carrier.update({
-            where: { id: carrierId, managedByOrgId: organizationId },
-            data: flags,
-          });
-        },
-      },
-      logger,
-    });
-
-  return { controllers, initializeSubscriber, initializeComplianceSubscriber };
+  return { controllers, initializeSubscriber };
 };

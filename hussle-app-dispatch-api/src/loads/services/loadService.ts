@@ -10,12 +10,15 @@ import {
 } from '@/shared/errors';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
+import {
+  computeAgreementStatus,
+  computeInsuranceStatus,
+  type DerivedComplianceDeps,
+} from '@/carriers/services/derivedCompliance';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import { generateSequenceNumber } from '@/shared/sequenceGenerator';
 import { calculateRoadDistance } from '@/shared/utils/distanceCalculator';
 import type { Logger } from '@/shared/utils/logger';
-import { calculateAndPersistFinancials } from './calculateFinancials';
-import type { LoadStatusRepoPort } from '../types/loadStatusTypes';
 import type {
   CarrierAssignmentQueryPort,
   CustomerQueryPort,
@@ -30,7 +33,6 @@ import type {
   StopInput,
   UpdateLoadInput,
   VehicleAssignmentQueryPort,
-  VehicleCpmQueryPort,
 } from '../types/loadTypes';
 import type {
   AssignLoadServiceInput,
@@ -216,11 +218,10 @@ interface LoadServiceDeps {
   driverAssignmentQuery: DriverAssignmentQueryPort;
   vehicleAssignmentQuery: VehicleAssignmentQueryPort;
   customerQuery?: CustomerQueryPort;
-  loadStatusRepo?: Pick<LoadStatusRepoPort, 'sumAccessorialCharges' | 'updateFinancials'>;
-  vehicleCpmQuery?: VehicleCpmQueryPort;
   dispatcherProfileQuery?: DispatcherProfileQueryPort;
   settlementFreezeQuery?: SettlementFreezeQueryPort;
   resolveStopToPlace?: ResolveStopToPlace;
+  derivedComplianceDeps: DerivedComplianceDeps;
   eventBus?: EventBus;
   logger?: Logger;
 }
@@ -359,9 +360,6 @@ const validateAssignmentState = async (
     id: string;
     name: string;
     type: CarrierType;
-    dispatchAgreementOnFile: boolean;
-    insuranceCertOnFile: boolean;
-    insuranceExpiry: Date | null;
     tinOnFile: boolean;
   } | null = null;
 
@@ -438,11 +436,15 @@ const validateAssignmentState = async (
   }
 
   if (carrier !== null && options?.onboardingOverride !== true) {
+    const [insurance, agreement] = await Promise.all([
+      computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
+      computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
+    ]);
     const onboardingResult = checkCarrierOnboarding({
       carrierType: carrier.type,
-      dispatchAgreementOnFile: carrier.dispatchAgreementOnFile,
-      insuranceCertOnFile: carrier.insuranceCertOnFile,
-      insuranceExpiry: carrier.insuranceExpiry,
+      dispatchAgreementOnFile: agreement.onFile,
+      insuranceCertOnFile: insurance.onFile,
+      insuranceExpiry: insurance.expiresAt,
       tinOnFile: carrier.tinOnFile,
     });
 
@@ -563,41 +565,82 @@ const findLoadOrThrow = async (
   return load;
 };
 
-const hasFinancialRelevantFieldChanged = (
-  input: UpdateLoadInput,
-  existing: LoadWithRelations,
-  resolvedAssignment: ResolvedAssignmentState | undefined,
-): boolean => {
-  if (
-    input.customerRate !== undefined &&
-    String(input.customerRate) !== String(existing.customerRate)
-  ) {
-    return true;
+/**
+ * Build the rate-input snapshot fields to persist on Load at booking time.
+ * - Carrier-sourced: dispatchFeeType/Amount (with COALESCE — input wins),
+ *   partnerSplitPercent, feeIncludesAccessorials, payFromNet.
+ * - Driver-sourced: driverPayType, driverPayRate.
+ * - DispatcherProfile-sourced: dispatcherCommissionType, dispatcherCommissionRate
+ *   (via Membership 2-table join inside the query port).
+ *
+ * Any source returning null leaves its snapshot fields unset.
+ */
+const buildRateSnapshot = async (
+  input: Pick<
+    UpdateLoadInput,
+    'dispatchFeeType' | 'dispatchFeeAmount'
+  >,
+  context: {
+    organizationId: string;
+    carrierId: string | null;
+    driverId: string | null;
+    dispatcherUserId: string | null;
+  },
+  deps: Pick<
+    LoadServiceDeps,
+    'carrierAssignmentQuery' | 'driverAssignmentQuery' | 'dispatcherProfileQuery'
+  >,
+): Promise<Partial<UpdateLoadInput>> => {
+  const snapshot: Partial<UpdateLoadInput> = {};
+
+  if (context.carrierId !== null) {
+    const carrierRate = await deps.carrierAssignmentQuery.findRateSnapshot(
+      context.carrierId,
+      context.organizationId,
+    );
+    if (carrierRate !== null) {
+      // COALESCE: input override wins, otherwise snapshot from carrier.
+      const snapshotFeeType = input.dispatchFeeType ?? carrierRate.dispatchFeeType;
+      const carrierFallbackAmount =
+        snapshotFeeType === 'PERCENTAGE'
+          ? carrierRate.dispatchFeePercent
+          : carrierRate.dispatchFeeAmount;
+      const inputAmount = input.dispatchFeeAmount;
+      const snapshotFeeAmount =
+        inputAmount !== undefined && inputAmount !== null ? inputAmount : carrierFallbackAmount;
+
+      snapshot.dispatchFeeType = snapshotFeeType;
+      snapshot.dispatchFeeAmount = snapshotFeeAmount;
+      snapshot.partnerSplitPercent = carrierRate.partnerSplitPercent;
+      snapshot.feeIncludesAccessorials = carrierRate.feeIncludesAccessorials;
+      snapshot.payFromNet = carrierRate.payFromNet;
+      snapshot.carrierType = carrierRate.carrierType;
+    }
   }
 
-  if (
-    input.loadedMiles !== undefined &&
-    input.loadedMiles !== (existing.loadedMiles ?? undefined)
-  ) {
-    return true;
+  if (context.driverId !== null) {
+    const driverRate = await deps.driverAssignmentQuery.findRateSnapshot(
+      context.driverId,
+      context.organizationId,
+    );
+    if (driverRate !== null) {
+      snapshot.driverPayType = driverRate.payType;
+      snapshot.driverPayRate = driverRate.payRate;
+    }
   }
 
-  if (
-    input.totalMiles !== undefined &&
-    input.loadedMiles === undefined &&
-    input.totalMiles !== (existing.loadedMiles ?? undefined)
-  ) {
-    return true;
+  if (context.dispatcherUserId !== null && deps.dispatcherProfileQuery !== undefined) {
+    const profile = await deps.dispatcherProfileQuery.findByUserId(
+      context.dispatcherUserId,
+      context.organizationId,
+    );
+    if (profile !== null) {
+      snapshot.dispatcherCommissionType = profile.commissionType;
+      snapshot.dispatcherCommissionRate = profile.commissionRate;
+    }
   }
 
-  if (
-    resolvedAssignment !== undefined &&
-    resolvedAssignment.carrierId !== existing.carrierId
-  ) {
-    return true;
-  }
-
-  return false;
+  return snapshot;
 };
 
 export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
@@ -645,34 +688,30 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     const loadNumber = await generateSequenceNumber('LOAD', organizationId);
 
+    const rateSnapshot = await buildRateSnapshot(
+      {
+        dispatchFeeType: input.dispatchFeeType,
+        dispatchFeeAmount: input.dispatchFeeAmount,
+      },
+      {
+        organizationId,
+        carrierId: resolvedAssignment.carrierId,
+        driverId: resolvedAssignment.driverId,
+        dispatcherUserId: input.dispatcherUserId ?? null,
+      },
+      deps,
+    );
+
     const load = await deps.loadRepository.create(organizationId, loadNumber, {
       ...input,
       stops: resolvedStops,
       ...resolvedAssignment,
+      ...rateSnapshot,
       ...(loadedMiles !== undefined ? { loadedMiles } : {}),
       ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
     });
 
-    // Calculate financials when carrier and customer rate are present at creation
-    if (
-      load.carrierId !== null &&
-      load.customerRate !== null &&
-      deps.loadStatusRepo !== undefined &&
-      deps.logger !== undefined
-    ) {
-      await calculateAndPersistFinancials(load.id, {
-        load,
-        loadStatusRepo: deps.loadStatusRepo,
-        logger: deps.logger,
-        vehicleCpmQuery: deps.vehicleCpmQuery,
-        dispatcherProfileQuery: deps.dispatcherProfileQuery,
-        organizationId: load.organizationId,
-      });
-
-      const reloaded = await findLoadOrThrow(load.id, organizationId, deps);
-      return { load: reloaded, warnings };
-    }
-
+    // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings };
   },
 
@@ -789,38 +828,37 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         onboardingOverride: existing.onboardingOverride,
       });
 
+      // Re-snapshot rate inputs when carrier, driver, or dispatcher changes.
+      const carrierChanged = resolvedAssignment.carrierId !== existing.carrierId;
+      const driverChanged = resolvedAssignment.driverId !== existing.driverId;
+      const dispatcherChanged =
+        input.dispatcherUserId !== undefined &&
+        input.dispatcherUserId !== existing.dispatcherUserId;
+      const reSnapshot =
+        carrierChanged || driverChanged || dispatcherChanged
+          ? await buildRateSnapshot(
+              {
+                dispatchFeeType: input.dispatchFeeType,
+                dispatchFeeAmount: input.dispatchFeeAmount,
+              },
+              {
+                organizationId,
+                carrierId: carrierChanged ? resolvedAssignment.carrierId : null,
+                driverId: driverChanged ? resolvedAssignment.driverId : null,
+                dispatcherUserId: dispatcherChanged ? input.dispatcherUserId ?? null : null,
+              },
+              deps,
+            )
+          : {};
+
       load = await deps.loadRepository.update(id, {
         ...mergedInput,
         ...resolvedAssignment,
+        ...reSnapshot,
       });
     }
 
-    const financialFieldChanged = hasFinancialRelevantFieldChanged(
-      input,
-      existing,
-      resolvedAssignment,
-    );
-
-    if (
-      financialFieldChanged &&
-      load.carrierId !== null &&
-      load.customerRate !== null &&
-      deps.loadStatusRepo !== undefined &&
-      deps.logger !== undefined
-    ) {
-      await calculateAndPersistFinancials(id, {
-        load,
-        loadStatusRepo: deps.loadStatusRepo,
-        logger: deps.logger,
-        vehicleCpmQuery: deps.vehicleCpmQuery,
-        dispatcherProfileQuery: deps.dispatcherProfileQuery,
-        organizationId: load.organizationId,
-      });
-
-      const reloaded = await findLoadOrThrow(id, organizationId, deps);
-      return { load: reloaded, warnings: stopWarnings };
-    }
-
+    // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings: stopWarnings };
   },
 
@@ -856,28 +894,35 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         ? existing.loadedMiles + deadheadMiles
         : undefined;
 
+    // Re-snapshot rate inputs when carrier, driver, or dispatcher changes via assignLoad.
+    const carrierChanged = resolvedAssignment.carrierId !== existing.carrierId;
+    const driverChanged = resolvedAssignment.driverId !== existing.driverId;
+    const dispatcherChanged =
+      input.dispatcherUserId !== undefined &&
+      input.dispatcherUserId !== existing.dispatcherUserId;
+    const reSnapshot =
+      carrierChanged || driverChanged || dispatcherChanged
+        ? await buildRateSnapshot(
+            { dispatchFeeType: null, dispatchFeeAmount: null },
+            {
+              organizationId,
+              carrierId: carrierChanged ? resolvedAssignment.carrierId : null,
+              driverId: driverChanged ? resolvedAssignment.driverId : null,
+              dispatcherUserId: dispatcherChanged ? input.dispatcherUserId ?? null : null,
+            },
+            deps,
+          )
+        : {};
+
     const load = await deps.loadRepository.update(id, {
       ...resolvedAssignment,
+      ...reSnapshot,
+      ...(dispatcherChanged ? { dispatcherUserId: input.dispatcherUserId ?? null } : {}),
       ...(deadheadMiles !== undefined ? { deadheadMiles } : {}),
       ...(totalMiles !== undefined ? { totalMiles } : {}),
     });
 
-    if (
-      load.carrierId !== null &&
-      load.customerRate !== null &&
-      deps.loadStatusRepo !== undefined &&
-      deps.logger !== undefined
-    ) {
-      await calculateAndPersistFinancials(id, {
-        load,
-        loadStatusRepo: deps.loadStatusRepo,
-        logger: deps.logger,
-        vehicleCpmQuery: deps.vehicleCpmQuery,
-        dispatcherProfileQuery: deps.dispatcherProfileQuery,
-        organizationId: load.organizationId,
-      });
-    }
-
+    // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings };
   },
 

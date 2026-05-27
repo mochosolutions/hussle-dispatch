@@ -35,10 +35,6 @@ export interface CreateCarrierInput {
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
-  dispatchAgreementOnFile?: boolean;
-  dispatchAgreementSignedAt?: Date;
-  insuranceCertOnFile?: boolean;
-  insuranceExpiry?: Date;
   authorityStatus?: string;
   status?: CarrierStatus;
   description?: string;
@@ -79,10 +75,6 @@ export interface UpdateCarrierInput {
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
-  dispatchAgreementOnFile?: boolean;
-  dispatchAgreementSignedAt?: Date;
-  insuranceCertOnFile?: boolean;
-  insuranceExpiry?: Date;
   authorityStatus?: string;
   status?: CarrierStatus;
   description?: string;
@@ -166,6 +158,13 @@ export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
   insuranceWarning: InsuranceWarning | null;
   onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
+  insuranceCertOnFile: boolean;
+  insuranceExpiry: Date | null;
+  w9OnFile: boolean;
+  carrierPacketOnFile: boolean;
+  dispatchAgreementOnFile: boolean;
+  dispatchAgreementSignedAt: Date | null;
+  signedAgreementId: string | null;
 }
 
 export interface CarrierWithAssetsResponse extends CarrierResponse {

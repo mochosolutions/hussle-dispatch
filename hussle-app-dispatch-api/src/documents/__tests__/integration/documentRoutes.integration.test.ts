@@ -261,12 +261,37 @@ describe('POST /documents/presign', () => {
         baseUrl: url,
         method: 'POST',
         path: '/documents/presign',
-        body: { ...validBody, entityType: 'invoice' },
+        body: { ...validBody, entityType: 'shipment' },
       });
 
       // Assert
       expect(res.status).toBe(400);
       expect(service.presign).not.toHaveBeenCalled();
+    } finally {
+      await close();
+    }
+  });
+
+  it('accepts entityType=invoice (whitelisted for invoice-detail document attachments)', async () => {
+    // Arrange
+    const service = buildService();
+    const { url, close } = await startApp(service);
+    currentUser = buildUser();
+
+    try {
+      // Act
+      const res = await sendRequest({
+        baseUrl: url,
+        method: 'POST',
+        path: '/documents/presign',
+        body: { ...validBody, entityType: 'invoice' },
+      });
+
+      // Assert
+      expect(res.status).toBe(201);
+      expect(service.presign).toHaveBeenCalledWith(
+        expect.objectContaining({ entityType: 'invoice' }),
+      );
     } finally {
       await close();
     }

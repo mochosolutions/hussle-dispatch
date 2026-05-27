@@ -11,10 +11,27 @@ import type {
   VehicleAssignmentQueryPort,
 } from '../../types/loadTypes';
 import type { StopRepoPort } from '../../types/stopTypes';
+import type { DerivedComplianceDeps } from '../../../carriers/services/derivedCompliance';
+import type { DocumentRepoPort } from '../../../documents/types/documentTypes';
+import type { AgreementRepoPort } from '../../../agreements/types/agreementRepoPort';
 
 jest.mock('@/shared/sequenceGenerator', () => ({
   generateSequenceNumber: jest.fn<() => Promise<string>>().mockResolvedValue('L-0001'),
 }));
+
+// Stop-resolution tests don't exercise the onboarding gate, but createLoadService
+// now requires `derivedComplianceDeps`. Provide a no-op stub.
+const stubDerivedComplianceDeps = (): DerivedComplianceDeps => {
+  const documentRepo: jest.Mocked<Pick<DocumentRepoPort, 'findManyForCompliance'>> = {
+    findManyForCompliance: jest.fn<DocumentRepoPort['findManyForCompliance']>(
+      async () => [],
+    ),
+  };
+  const agreementRepo: jest.Mocked<Pick<AgreementRepoPort, 'findManySigned'>> = {
+    findManySigned: jest.fn<AgreementRepoPort['findManySigned']>(async () => []),
+  };
+  return { documentRepo, agreementRepo };
+};
 
 const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
   ({
@@ -35,19 +52,10 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
     totalMiles: null,
     customerRate: null,
     carrierRate: null,
-    dispatchFee: null,
-    partnerSplit: null,
-    ratePerMile: null,
-    ratePerTotalMile: null,
-    carrierPayout: null,
-    companyMargin: null,
-    driverPay: null,
+    // US-14: persisted financial output cache columns removed — derived on read.
     estimatedHours: null,
-    estimatedCost: null,
-    dispatcherComm: null,
     version: 0,
     status: 'BOOKED',
-    invoiceReadiness: 'NOT_READY',
     rateConReceivedAt: null,
     bolUnsignedAt: null,
     bolSignedAt: null,
@@ -59,8 +67,8 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
     updatedByUserId: null,
     onboardingOverride: false,
     onboardingOverrideReason: null,
-    dispatchFeeOverrideType: null,
-    dispatchFeeOverrideAmount: null,
+    dispatchFeeType: null,
+    dispatchFeeAmount: null,
     createdAt: new Date('2026-04-01T00:00:00.000Z'),
     updatedAt: new Date('2026-04-01T00:00:00.000Z'),
     deletedAt: null,
@@ -123,10 +131,12 @@ const orgSettings: jest.Mocked<OrgSettingsQueryPort> = {
 
 const carrierQuery: jest.Mocked<CarrierAssignmentQueryPort> = {
   findDispatchableById: jest.fn(),
+    findRateSnapshot: jest.fn().mockResolvedValue(null),
 };
 
 const driverQuery: jest.Mocked<DriverAssignmentQueryPort> = {
   findAssignableById: jest.fn(),
+  findRateSnapshot: jest.fn().mockResolvedValue(null),
 };
 
 const vehicleQuery: jest.Mocked<VehicleAssignmentQueryPort> = {
@@ -160,6 +170,7 @@ describe('createLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 
@@ -208,6 +219,7 @@ describe('createLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 
@@ -246,6 +258,7 @@ describe('createLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 
@@ -278,6 +291,7 @@ describe('createLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 
@@ -315,6 +329,7 @@ describe('createLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 
@@ -355,6 +370,7 @@ describe('updateLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 
@@ -382,6 +398,7 @@ describe('updateLoad — resolveStopToPlace wiring', () => {
       carrierAssignmentQuery: carrierQuery,
       driverAssignmentQuery: driverQuery,
       vehicleAssignmentQuery: vehicleQuery,
+      derivedComplianceDeps: stubDerivedComplianceDeps(),
       resolveStopToPlace,
     });
 

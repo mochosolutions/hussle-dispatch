@@ -1,21 +1,37 @@
 import { describe, expect, it } from '@jest/globals';
 import Decimal from 'decimal.js';
-import { computeMetrics } from '../loadQueries';
+import { computeMetrics, type MetricsLoad } from '../loadQueries';
 
+// US-11b: computeMetrics consumes per-row compute. Fixtures must provide the
+// snapshot inputs (customerRate, loadedMiles, dispatchFeeType/Amount) plus
+// carrier type and accessorialCharges so dispatchFee / ratePerMile are derived
+// rather than read from the (removed) persisted cache columns.
 const buildMetricsLoad = (
   overrides: {
     customerRate?: Decimal | null;
-    dispatchFee?: Decimal | null;
-    ratePerMile?: Decimal | null;
+    loadedMiles?: number | null;
+    dispatchFeeType?: 'PERCENTAGE' | 'FLAT' | null;
+    dispatchFeeAmount?: Decimal | null;
     status?: string;
     carrier?: { type: string } | null;
   } = {},
-) => ({
-  customerRate: overrides.customerRate ?? null,
-  dispatchFee: overrides.dispatchFee ?? null,
-  ratePerMile: overrides.ratePerMile ?? null,
+): MetricsLoad => ({
+  customerRate: (overrides.customerRate ?? null) as MetricsLoad['customerRate'],
+  loadedMiles: overrides.loadedMiles ?? null,
+  totalMiles: null,
+  dispatchFeeType: overrides.dispatchFeeType ?? null,
+  dispatchFeeAmount: (overrides.dispatchFeeAmount ?? null) as MetricsLoad['dispatchFeeAmount'],
+  partnerSplitPercent: null,
+  driverPayType: null,
+  driverPayRate: null,
+  dispatcherCommissionType: null,
+  dispatcherCommissionRate: null,
+  feeIncludesAccessorials: null,
+  payFromNet: null,
+  carrierType: null,
   status: overrides.status ?? 'BOOKED',
   carrier: overrides.carrier === undefined ? null : overrides.carrier,
+  accessorialCharges: [],
 });
 
 describe('computeMetrics', () => {
@@ -27,7 +43,8 @@ describe('computeMetrics', () => {
       }),
       buildMetricsLoad({
         customerRate: new Decimal(1500),
-        dispatchFee: new Decimal(150),
+        dispatchFeeType: 'FLAT',
+        dispatchFeeAmount: new Decimal(150),
         carrier: { type: 'EXTERNAL_CARRIER' },
       }),
       buildMetricsLoad({
@@ -49,7 +66,8 @@ describe('computeMetrics', () => {
       }),
       buildMetricsLoad({
         customerRate: new Decimal(1500),
-        dispatchFee: new Decimal(150),
+        dispatchFeeType: 'FLAT',
+        dispatchFeeAmount: new Decimal(150),
         carrier: { type: 'EXTERNAL_CARRIER' },
       }),
       buildMetricsLoad({
@@ -60,6 +78,8 @@ describe('computeMetrics', () => {
 
     const result = computeMetrics(loads);
 
+    // 2800 (COMPANY_ASSET, customerRate) + 150 (EXTERNAL, FLAT dispatchFee)
+    // + 1000 (null carrier, customerRate) = 3950
     expect(result.totalRevenue).toBe('3950.00');
   });
 
@@ -67,7 +87,8 @@ describe('computeMetrics', () => {
     const loads = [
       buildMetricsLoad({
         customerRate: new Decimal(2000),
-        dispatchFee: new Decimal(200),
+        dispatchFeeType: 'FLAT',
+        dispatchFeeAmount: new Decimal(200),
         carrier: { type: 'LEASED_CARRIER' },
       }),
     ];
@@ -96,8 +117,6 @@ describe('computeMetrics', () => {
     const loads = [
       buildMetricsLoad({
         customerRate: null,
-        dispatchFee: null,
-        ratePerMile: null,
       }),
     ];
 
@@ -108,11 +127,16 @@ describe('computeMetrics', () => {
     expect(result.avgRatePerMile).toBe('0.00');
   });
 
-  it('calculates avgRatePerMile from non-null values only', () => {
+  it('calculates avgRatePerMile from per-row compute (customerRate / loadedMiles)', () => {
+    // ratePerMile is derived per row from customerRate / loadedMiles.
+    // Load 1: 3500 / 1000 = 3.50
+    // Load 2: no loadedMiles → contributes null (excluded)
+    // Load 3: 4000 / 1000 = 4.00
+    // Average of [3.50, 4.00] = 3.75
     const loads = [
-      buildMetricsLoad({ ratePerMile: new Decimal('3.50') }),
-      buildMetricsLoad({ ratePerMile: null }),
-      buildMetricsLoad({ ratePerMile: new Decimal('4.00') }),
+      buildMetricsLoad({ customerRate: new Decimal(3500), loadedMiles: 1000 }),
+      buildMetricsLoad({ customerRate: new Decimal(2000) }),
+      buildMetricsLoad({ customerRate: new Decimal(4000), loadedMiles: 1000 }),
     ];
 
     const result = computeMetrics(loads);

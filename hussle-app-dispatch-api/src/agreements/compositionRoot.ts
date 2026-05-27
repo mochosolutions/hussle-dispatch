@@ -6,6 +6,8 @@ import type { SignatureService } from '@/shared/signatures/types';
 import type { StorageProvider } from '@/shared/storage';
 import type { Logger } from '@/shared/utils/logger';
 
+import { createManualAgreementController } from './controllers/createManualAgreementController';
+import { downloadAgreementController } from './controllers/downloadAgreementController';
 import { getAgreementController } from './controllers/getAgreementController';
 import { listAgreementsController } from './controllers/listAgreementsController';
 import { requestAgreementController } from './controllers/requestAgreementController';
@@ -14,7 +16,6 @@ import { createSignedAgreementWatchdog } from './jobs/signedAgreementWatchdog';
 import { createCarrierQueries } from './queries/carrierQueries';
 import { createOrganizationQueries } from './queries/organizationQueries';
 import { agreementRepositoryPrisma } from './repositories/agreementRepositoryPrisma';
-import { carrierAgreementWriteRepositoryPrisma } from './repositories/carrierAgreementWriteRepositoryPrisma';
 import { createAgreementsRouter } from './routes/agreementRoutes';
 import type { EnsureAgreementForCarrierInput } from './services/ensureAgreementForCarrier';
 import { ensureAgreementForCarrier } from './services/ensureAgreementForCarrier';
@@ -22,6 +23,8 @@ import type { FinalizeAgreementInput } from './services/finalizeAgreement';
 import { finalizeAgreement } from './services/finalizeAgreement';
 import type { MockSignAgreementInput } from './services/mockSignAgreement';
 import { mockSignAgreement } from './services/mockSignAgreement';
+import type { CreateManualAgreementInput } from './services/createManualAgreement';
+import { createManualAgreement } from './services/createManualAgreement';
 import type { RequestAgreementInput } from './services/requestAgreement';
 import { requestAgreement } from './services/requestAgreement';
 import type { VoidAgreementInput } from './services/voidAgreement';
@@ -98,7 +101,6 @@ export interface AgreementsModule {
  */
 export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsModule => {
   const agreementRepo = agreementRepositoryPrisma(deps.prisma);
-  const carrierAgreementWritePort = carrierAgreementWriteRepositoryPrisma(deps.prisma);
   const carrierQueries = createCarrierQueries(deps.prisma);
   const orgQueries = createOrganizationQueries(deps.prisma);
 
@@ -130,6 +132,15 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     voidAgreement(input, {
       agreementRepo,
       signatureService: deps.signatureService,
+      logger: deps.logger,
+    });
+
+  const createManualAgreementBound = (
+    input: CreateManualAgreementInput,
+  ): Promise<AgreementServiceResult<Agreement>> =>
+    createManualAgreement(input, {
+      agreementRepo,
+      carrierQueries,
       logger: deps.logger,
     });
 
@@ -167,6 +178,16 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
       storage: deps.storage,
       logger: deps.logger,
     }),
+    createManual: createManualAgreementController({
+      createManualAgreement: createManualAgreementBound,
+      storage: deps.storage,
+      logger: deps.logger,
+    }),
+    download: downloadAgreementController({
+      agreementRepo,
+      storage: deps.storage,
+      logger: deps.logger,
+    }),
   };
 
   const webhookController = docusealWebhookController({
@@ -199,7 +220,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     await initializeAgreementSignedSubscriber({
       eventBus: deps.eventBus,
       finalizeAgreement: finalizeAgreementBound,
-      carrierWritePort: carrierAgreementWritePort,
       logger: deps.logger,
     });
     watchdog.start();
@@ -221,7 +241,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
     voidForReSign: (input) =>
       voidForReSign(input, {
         agreementRepo,
-        carrierWritePort: carrierAgreementWritePort,
         eventBus: deps.eventBus,
         logger: deps.logger,
       }),
@@ -230,7 +249,6 @@ export const createAgreementsModule = (deps: AgreementsModuleDeps): AgreementsMo
           mockSignAgreement(input, {
             agreementRepo,
             markSigned,
-            carrierWritePort: carrierAgreementWritePort,
             logger: deps.logger,
           })
       : undefined,

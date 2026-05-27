@@ -23,6 +23,7 @@ import { createInvoiceBuilderControllers } from './controllers/invoiceBuilderCon
 import { initializeCanceledLoadSubscriber } from './services/canceledLoadSubscriber';
 import { initializeAccessorialSyncSubscriber } from './services/accessorialSyncSubscriber';
 import { initializeReadinessSubscriber } from './services/invoiceReadinessSubscriber';
+import { initializeInvoicePdfGenerationSubscriber } from './services/invoicePdfGenerationSubscriber';
 import type { InvoiceControllers } from './controllers/invoiceController';
 import type { PdfControllers } from './controllers/pdfController';
 import type { DocumentPacketControllers } from './controllers/documentPacketController';
@@ -90,6 +91,7 @@ export const createInvoiceModule = ({
   const invoiceBuilderService = createInvoiceBuilderService({
     invoiceRepo,
     loadQuery,
+    eventBus,
     logger,
   });
 
@@ -144,6 +146,15 @@ export const createInvoiceModule = ({
       orgSettingsQuery,
       invoiceBuilderService,
       invoiceEmailService,
+      logger,
+    });
+    await initializeInvoicePdfGenerationSubscriber({
+      eventBus,
+      invoiceRepo,
+      loadQuery,
+      orgSettingsQuery,
+      pdfService,
+      storageProvider,
       logger,
     });
   };

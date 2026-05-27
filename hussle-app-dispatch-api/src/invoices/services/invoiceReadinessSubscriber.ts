@@ -68,6 +68,13 @@ const createDispatchFeeInvoice = async (
     notes: `Dispatch fee for load #${params.loadNumber}`,
   });
 
+  await deps.eventBus.publish('invoice.draft.created', {
+    invoiceId: invoice.id,
+    loadId: params.loadId,
+    organizationId: params.organizationId,
+    invoiceNumber,
+  });
+
   deps.logger.info('DISPATCH_FEE invoice created', {
     invoiceId: invoice.id,
     loadId: params.loadId,
@@ -156,8 +163,10 @@ const evaluateReadiness = async (
     readiness = 'READY';
   }
 
-  // Update load readiness field
-  await deps.loadQuery.updateLoadStatus(loadId, load.status);
+  // US-13: invoiceReadiness is now computed on-read (US-11). The previous
+  // updateLoadStatus(loadId, load.status) call here was a no-op (rewrote the
+  // same status); removed. The `readiness` variable below is still used to
+  // gate auto-invoice creation.
 
   // Check org settings for auto behavior
   if (readiness === 'READY') {
@@ -317,6 +326,7 @@ export const initializeReadinessSubscriber = async (
       const tonuDeps = {
         invoiceRepo: deps.invoiceRepo,
         loadQuery: deps.loadQuery,
+        eventBus: deps.eventBus,
         logger: deps.logger,
       };
 

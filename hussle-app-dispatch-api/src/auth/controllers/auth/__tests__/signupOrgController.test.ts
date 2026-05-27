@@ -1,4 +1,7 @@
+import jwt from 'jsonwebtoken';
 import { createSignupOrgController } from '../signupOrgController';
+
+process.env['JWT_SECRET'] = process.env['JWT_SECRET'] ?? 'test-jwt-secret';
 import type { SignupOrgInput, SignupOrgResult } from '../../../types/signupOrgTypes';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
@@ -65,9 +68,14 @@ const createMockLogger = (): { info: jest.Mock; debug: jest.Mock; warn: jest.Moc
   error: jest.fn(),
 });
 
+const buildSignedAccessToken = (): string =>
+  jwt.sign({ userId: 'user-1', sessionId: 'session-1' }, 'test-jwt-secret', {
+    expiresIn: '1h',
+  });
+
 const createMockTokenProvider = (): Partial<ITokenProvider> => ({
   createSession: jest.fn().mockResolvedValue({
-    accessToken: 'access-token-123',
+    accessToken: buildSignedAccessToken(),
     refreshToken: 'refresh-token-456',
   }),
 });
@@ -216,5 +224,16 @@ describe('createSignupOrgController', () => {
     expect(jsonArg.message).toBe('Signup successful');
     expect(jsonArg.user.email).toBe('owner@example.com');
     expect(jsonArg.tenant.slug).toBe('acme-logistics');
+  });
+
+  it('includes accessTokenExpiresAt (ISO 8601) matching the issued JWT exp', async () => {
+    await callController();
+
+    const accessToken = await (mockTokenProvider.createSession as jest.Mock).mock.results[0].value;
+    const decoded = jwt.decode(accessToken.accessToken) as { exp: number };
+    const expectedIso = new Date(decoded.exp * 1000).toISOString();
+
+    const jsonArg = (mockRes.json as jest.Mock).mock.calls[0][0];
+    expect(jsonArg.accessTokenExpiresAt).toBe(expectedIso);
   });
 });

@@ -149,11 +149,6 @@ export interface CreateCarrierInput {
   dispatchFeeType?: DispatchFeeType | null;
   dispatchFeeAmount?: number | null;
   feeIncludesAccessorials?: boolean | null;
-  dispatchAgreementOnFile?: boolean | null;
-  insuranceCertOnFile?: boolean | null;
-  w9OnFile?: boolean | null;
-  carrierPacketOnFile?: boolean | null;
-  insuranceExpiry?: string | null;
   notes?: string | null;
 }
 
@@ -174,11 +169,6 @@ export interface UpdateCarrierInput {
   dispatchFeeType?: DispatchFeeType | null;
   dispatchFeeAmount?: number | null;
   feeIncludesAccessorials?: boolean | null;
-  dispatchAgreementOnFile?: boolean | null;
-  insuranceCertOnFile?: boolean | null;
-  w9OnFile?: boolean | null;
-  carrierPacketOnFile?: boolean | null;
-  insuranceExpiry?: string | null;
   notes?: string | null;
 }
 

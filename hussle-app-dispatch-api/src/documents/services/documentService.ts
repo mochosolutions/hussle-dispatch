@@ -101,6 +101,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       documentId: document.id,
       presignedUrl,
       expiresIn: PRESIGN_EXPIRATION_SECONDS,
+      s3Key,
     };
   },
 

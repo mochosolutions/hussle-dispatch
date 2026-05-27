@@ -1,7 +1,6 @@
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { Logger } from '@/shared/utils/logger';
 
-import type { CarrierAgreementWritePort } from '../types/carrierAgreementWritePort';
 import type { AgreementServiceResult } from '../types/agreementServiceResult';
 import type { Agreement } from '../types/agreementTypes';
 
@@ -10,7 +9,6 @@ export interface AgreementSignedSubscriberDeps {
   finalizeAgreement: (input: {
     providerSubmissionId: string;
   }) => Promise<AgreementServiceResult<Agreement>>;
-  carrierWritePort: CarrierAgreementWritePort;
   logger: Logger;
 }
 
@@ -59,22 +57,6 @@ export const initializeAgreementSignedSubscriber = async (
         providerSubmissionId: payload.providerSubmissionId,
         republishedEvents: result.events.length,
       });
-
-      // Projection: stamp the signed agreement id on the carrier row.
-      // Subscriber idempotency: a failure here must not retry the whole
-      // finalize pipeline — the agreement is already signed and republished.
-      try {
-        await deps.carrierWritePort.setSignedAgreementId(
-          result.data.carrierId,
-          result.data.id,
-        );
-      } catch (writeError: unknown) {
-        deps.logger.warn('Failed to project signedAgreementId onto carrier', {
-          agreementId: result.data.id,
-          carrierId: result.data.carrierId,
-          error: writeError instanceof Error ? writeError.message : String(writeError),
-        });
-      }
     } catch (error: unknown) {
       deps.logger.error('agreementSignedSubscriber failed', {
         providerSubmissionId: payload.providerSubmissionId,

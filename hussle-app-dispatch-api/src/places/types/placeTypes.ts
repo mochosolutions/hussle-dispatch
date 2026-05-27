@@ -140,7 +140,10 @@ export interface FindLoadsAtFacilityInput {
 }
 
 export interface FindLoadsAtFacilityResult {
-  data: (Load & { stops: Stop[] })[];
+  data: (Load & {
+    stops: Stop[];
+    accessorialCharges: { amount: unknown }[];
+  })[];
   total: number;
 }
 

@@ -14,7 +14,6 @@ export interface DocumentResponse {
   fileName: string;
   fileSize: number | null;
   mimeType: string | null;
-  url: string | null;
   uploadStatus: string;
   isArchived: boolean;
   uploadedByUserId: string | null;
@@ -29,6 +28,14 @@ export interface PresignResponse {
   documentId: string;
   presignedUrl: string;
   expiresIn: number;
+  /**
+   * The storage key the document was created at. The FE needs this to pass
+   * to /agreements/manual (and similar) when the uploaded artifact will be
+   * referenced by another domain entity, not just the Document row itself.
+   * Safe to expose because the key is org-scoped (`<orgId>/...`) and the
+   * download endpoints still enforce per-entity access control.
+   */
+  s3Key: string;
 }
 
 export const toDocumentResponse = (item: DocumentListItem): DocumentResponse => ({
@@ -39,7 +46,6 @@ export const toDocumentResponse = (item: DocumentListItem): DocumentResponse => 
   fileName: item.fileName,
   fileSize: item.fileSize,
   mimeType: item.mimeType,
-  url: item.url ?? null,
   uploadStatus: item.uploadStatus,
   isArchived: item.isArchived,
   uploadedByUserId: item.uploadedByUserId,

@@ -20,6 +20,7 @@ import { LoadRateDrawer } from '../load/components/LoadRateDrawer';
 import { LoadContactDrawer } from '../load/components/LoadContactDrawer';
 import { AccessorialDrawer } from '../load/components/AccessorialDrawer';
 import { LoadCheckCallDrawer } from '../load/components/LoadCheckCallDrawer';
+import { DispatchTermsEditor } from '../load/components/DispatchTermsEditor';
 
 import { CustomerCompanyInfoDrawer } from '../customer/components/CustomerCompanyInfoDrawer';
 import { VehicleCreateDrawer } from '../vehicle/components/VehicleCreateDialog';
@@ -32,6 +33,7 @@ import { DisputeSettlementDrawer } from '../accounting/components/DisputeSettlem
 import { AddAdjustmentDrawer } from '../accounting/components/AddAdjustmentDrawer';
 import { ExpenseQuickAddDrawer } from '../accounting/components/ExpenseQuickAddDrawer';
 import { PaySettlementDrawer } from '../accounting/components/PaySettlementDrawer';
+import { UploadAgreementDrawer } from '../agreements/components/UploadAgreementDrawer';
 
 const drawerRegistry: PopupComponentMap = {
   carrierCompanyInfo: CompanyInfoDrawer,
@@ -64,12 +66,16 @@ const drawerRegistry: PopupComponentMap = {
   loadAssignment: LoadAssignmentDrawer,
   loadAccessorial: AccessorialDrawer,
   loadCheckCall: LoadCheckCallDrawer,
+  loadDispatchTerms: DispatchTermsEditor,
 
   // Accounting drawers
   disputeSettlement: DisputeSettlementDrawer,
   addAdjustment: AddAdjustmentDrawer,
   expenseQuickAdd: ExpenseQuickAddDrawer,
   paySettlement: PaySettlementDrawer,
+
+  // Agreements drawers
+  uploadAgreement: UploadAgreementDrawer,
 };
 
 export default drawerRegistry;

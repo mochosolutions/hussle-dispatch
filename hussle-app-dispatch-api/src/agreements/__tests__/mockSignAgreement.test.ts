@@ -51,11 +51,9 @@ const makeDeps = () => {
     update: jest.fn(),
     findStaleInProgress: jest.fn(),
     countActivePending: jest.fn(),
+    findManySigned: jest.fn(),
   };
   const markSigned = jest.fn<(providerSubmissionId: string) => void>();
-  const carrierWritePort = {
-    setSignedAgreementId: jest.fn<(carrierId: string, agreementId: string) => Promise<void>>(),
-  };
   const logger: jest.Mocked<Logger> = {
     info: jest.fn(),
     warn: jest.fn(),
@@ -65,11 +63,10 @@ const makeDeps = () => {
   const deps: MockSignAgreementDeps = {
     agreementRepo,
     markSigned,
-    carrierWritePort,
     logger,
     now: () => FIXED_NOW,
   };
-  return { agreementRepo, markSigned, carrierWritePort, logger, deps };
+  return { agreementRepo, markSigned, logger, deps };
 };
 
 const baseInput = (
@@ -81,7 +78,7 @@ const baseInput = (
 });
 
 describe('mockSignAgreement', () => {
-  it('flips status to SIGNED, calls markSigned, projects to carrier row, and returns updated row', async () => {
+  it('flips status to SIGNED, calls markSigned, and returns updated row', async () => {
     const fixtures = makeDeps();
     const existing = makeAgreement();
     fixtures.agreementRepo.findById.mockResolvedValue(existing);
@@ -90,7 +87,6 @@ describe('mockSignAgreement', () => {
       status: 'SIGNED',
       signedAt: FIXED_NOW,
     });
-    fixtures.carrierWritePort.setSignedAgreementId.mockResolvedValue(undefined);
 
     const result = await mockSignAgreement(baseInput(), fixtures.deps);
 
@@ -99,31 +95,8 @@ describe('mockSignAgreement', () => {
       status: 'SIGNED',
       signedAt: FIXED_NOW,
     });
-    // Projection: stamps dispatchAgreementSignedAt + signedAgreementId so the
-    // cold-load /session endpoint sees signedFieldsLocked: true on next request.
-    expect(fixtures.carrierWritePort.setSignedAgreementId).toHaveBeenCalledWith('car-1', 'ag-1');
     expect(result.data.status).toBe('SIGNED');
     expect(result.events).toEqual([]);
-  });
-
-  it('logs a warning but still returns success when carrierWritePort.setSignedAgreementId throws', async () => {
-    const fixtures = makeDeps();
-    const existing = makeAgreement();
-    fixtures.agreementRepo.findById.mockResolvedValue(existing);
-    fixtures.agreementRepo.update.mockResolvedValue({
-      ...existing,
-      status: 'SIGNED',
-      signedAt: FIXED_NOW,
-    });
-    fixtures.carrierWritePort.setSignedAgreementId.mockRejectedValue(new Error('PG down'));
-
-    const result = await mockSignAgreement(baseInput(), fixtures.deps);
-
-    expect(fixtures.logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to project signedAgreementId'),
-      expect.objectContaining({ agreementId: 'ag-1', carrierId: 'car-1' }),
-    );
-    expect(result.data.status).toBe('SIGNED');
   });
 
   it('throws NotFoundError when agreement does not exist', async () => {

@@ -389,13 +389,6 @@ enum ApprovalStatus {
   DISPUTED
 }
 
-enum InvoiceReadiness {
-  NOT_READY
-  AWAITING_DOCUMENTS
-  READY
-  INVOICE_CREATED
-}
-
 enum CustomerType {
   BROKER
   DIRECT_SHIPPER
@@ -490,12 +483,6 @@ enum DriverPayType {
   FLAT_RATE
 }
 
-enum FeeType {
-  PER_LOAD_PERCENT
-  FLAT_WEEKLY
-  FLAT_MONTHLY
-}
-
 enum DispatcherCommType {
   PERCENTAGE_OF_MARGIN
   PERCENTAGE_OF_GROSS
@@ -576,7 +563,6 @@ model Carrier {
   tinType                           String?
   signatoryName                     String?
   signatoryTitle                    String?
-  signedAgreementId                 String?
   type                              CarrierType          @default(EXTERNAL_CARRIER)
   mcNumber                          String?
   dotNumber                         String?
@@ -595,14 +581,9 @@ model Carrier {
   dispatchFeeAmount                 Decimal              @default(0) @db.Decimal(10, 2)
   partnerSplitPercent               Decimal              @default(50.0000) @db.Decimal(7, 4)
   feeIncludesAccessorials           Boolean              @default(true)
-  feeType                           FeeType              @default(PER_LOAD_PERCENT)
   payFromNet                        Boolean              @default(false)
   includeExpensesOnSettlement       Boolean              @default(false)
   ownerOpPayPercent                 Decimal?             @db.Decimal(7, 4)
-  dispatchAgreementOnFile           Boolean              @default(false)
-  dispatchAgreementSignedAt         DateTime?
-  insuranceCertOnFile               Boolean              @default(false)
-  insuranceExpiry                   DateTime?
   minimumRatePerMile                Decimal?             @db.Decimal(10, 2)
   homeBaseCity                      String?
   homeBaseState                     String?
@@ -791,20 +772,10 @@ model Load {
   totalMiles                Int?
   customerRate              Decimal?                   @db.Decimal(10, 2)
   carrierRate               Decimal?                   @db.Decimal(10, 2)
-  dispatchFee               Decimal?                   @db.Decimal(10, 2)
-  partnerSplit              Decimal?                   @db.Decimal(10, 2)
-  ratePerMile               Decimal?                   @db.Decimal(6, 2)
-  ratePerTotalMile          Decimal?                   @db.Decimal(6, 2)
-  carrierPayout             Decimal?                   @db.Decimal(10, 2)
-  companyMargin             Decimal?                   @db.Decimal(10, 2)
-  driverPay                 Decimal?                   @db.Decimal(10, 2)
   estimatedHours            Decimal?                   @db.Decimal(5, 1)
-  estimatedCost             Decimal?                   @db.Decimal(10, 2)
-  dispatcherComm            Decimal?                   @db.Decimal(10, 2)
   dispatcherUserId          String?
   version                   Int                        @default(0)
   status                    LoadStatus                 @default(QUOTED)
-  invoiceReadiness          InvoiceReadiness           @default(NOT_READY)
   rateConReceivedAt         DateTime?
   bolUnsignedAt             DateTime?
   bolSignedAt               DateTime?
@@ -835,8 +806,16 @@ model Load {
   smsPromptSchedules        SmsPromptSchedule[]
   onboardingOverride        Boolean                    @default(false)
   onboardingOverrideReason  String?
-  dispatchFeeOverrideType   DispatchFeeType?
-  dispatchFeeOverrideAmount Decimal?                   @db.Decimal(10, 2)
+  dispatchFeeType           DispatchFeeType?
+  dispatchFeeAmount         Decimal?                   @db.Decimal(10, 2)
+  partnerSplitPercent       Decimal?                   @db.Decimal(7, 4)
+  driverPayType             DriverPayType?
+  driverPayRate             Decimal?                   @db.Decimal(7, 4)
+  dispatcherCommissionType  DispatcherCommType?
+  dispatcherCommissionRate  Decimal?                   @db.Decimal(7, 4)
+  feeIncludesAccessorials   Boolean?
+  payFromNet                Boolean?
+  carrierType               CarrierType?
 
   @@unique([organizationId, loadNumber])
   @@index([organizationId])
@@ -1021,6 +1000,10 @@ model Invoice {
   paidAmount         Decimal?       @db.Decimal(10, 2)
   paymentMethod      String?
   paymentReference   String?
+  /// Storage key (not a URL) for the persisted invoice PDF, shaped
+  /// `invoices/<invoiceNumber>.pdf`. URL resolution happens just-in-time inside
+  /// GET /invoices/:id/pdf-download (scope-checked by organizationId). See the
+  /// 20260527_pdfurl_to_storage_key migration that normalized legacy URL values.
   pdfUrl             String?
   billingMethod      BillingMethod?
   deliveryMethod     String?

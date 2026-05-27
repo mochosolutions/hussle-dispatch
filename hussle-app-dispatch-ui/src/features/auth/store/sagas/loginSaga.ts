@@ -10,6 +10,8 @@ import {
 } from '../authSlice';
 import {getNavigate} from 'utils/getNavigate';
 import {getValidRedirectUrl, isExternalUrl} from 'utils/redirectUtils';
+import { schedule as scheduleRefresh } from '../../refreshScheduler';
+import { proactiveRefresh } from '../../refreshFn';
 
 export function* handleLogin(action: ReturnType<typeof loginRequest>) {
   try {
@@ -22,9 +24,10 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
     const loginResponse = yield call(axiosPrivate.post, '/auth/login', {
       email,
       password,
+      rememberMe: rememberMe ?? false,
     });
 
-    const {user, session, status, accessibleOrgs} = loginResponse?.data || {};
+    const {user, session, status, accessibleOrgs, accessTokenExpiresAt} = loginResponse?.data || {};
 
     if (status === 'CHALLENGE_REQUIRED') {
       yield put(
@@ -59,6 +62,10 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
         rememberMe,
       }),
     );
+
+    if (typeof accessTokenExpiresAt === 'string') {
+      yield call(scheduleRefresh, accessTokenExpiresAt, proactiveRefresh);
+    }
 
     // Handle post-login redirect
     const redirectUrl = getValidRedirectUrl(returnTo);

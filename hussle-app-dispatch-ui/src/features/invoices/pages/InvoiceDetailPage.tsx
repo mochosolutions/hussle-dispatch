@@ -20,6 +20,7 @@ import SectionCard from 'components/SectionCard';
 import { KpiCell, DetailRow, Body, BodyMuted } from 'components/Typography';
 import { useSelector, useDispatch } from 'store';
 import { useModalActions } from 'features/ui/hooks/useModalActions';
+import { DocumentsTab } from '../components/InvoiceDetailPage/DocumentsTab';
 import {
   fetchInvoiceDetailsRequest,
   approveInvoiceRequest,
@@ -551,25 +552,7 @@ const InvoiceDetailPage = () => {
             )}
 
             {/* Documents tab */}
-            {activeTab === 'documents' && (
-              <SectionCard title="Documents">
-                {inv.pdfUrl ? (
-                  <Stack spacing={1} sx={{ p: 2 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      href={inv.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View PDF
-                    </Button>
-                  </Stack>
-                ) : (
-                  <BodyMuted sx={{ p: 2 }}>No documents available.</BodyMuted>
-                )}
-              </SectionCard>
-            )}
+            {activeTab === 'documents' && <DocumentsTab invoice={inv} />}
 
             {/* Activity tab */}
             {activeTab === 'activity' && (

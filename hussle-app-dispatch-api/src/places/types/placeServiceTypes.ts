@@ -58,7 +58,10 @@ export interface LoadsAtFacilityServiceInput {
 }
 
 export interface LoadsAtFacilityResult {
-  data: (Load & { stops: Stop[] })[];
+  data: (Load & {
+    stops: Stop[];
+    accessorialCharges: { amount: unknown }[];
+  })[];
   meta: PaginationMeta;
 }
 

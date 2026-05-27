@@ -1,6 +1,39 @@
 import type { Carrier, OnboardingSession, Prisma } from '@prisma/client';
 import { createOnboardingSessionService } from '../onboardingSessionService';
 import { FieldLockedError, NotFoundError } from '@/shared/errors/commonErrors';
+import type { DerivedComplianceDeps } from '@/carriers/services/derivedCompliance';
+import type { DocumentRepoPort } from '@/documents/types/documentTypes';
+import type { AgreementRepoPort } from '@/agreements/types/agreementRepoPort';
+
+interface ComplianceState {
+  // When provided, the derived agreement timestamp returned from
+  // computeAgreementStatus. `null` means "no signed agreement", so the
+  // field-lock guard in submitStep stays unlocked.
+  agreementSignedAt?: Date | null;
+}
+
+const buildDerivedComplianceDeps = (state: ComplianceState = {}): DerivedComplianceDeps => {
+  const signedAt = state.agreementSignedAt ?? null;
+  const documentRepo: jest.Mocked<Pick<DocumentRepoPort, 'findManyForCompliance'>> = {
+    findManyForCompliance: jest.fn(async () => []),
+  };
+  const agreementRepo: jest.Mocked<Pick<AgreementRepoPort, 'findManySigned'>> = {
+    findManySigned: jest.fn(async (carrierIds: string[]) =>
+      signedAt === null
+        ? []
+        : carrierIds.map(
+            (carrierId) =>
+              ({
+                id: `agreement-${carrierId}`,
+                carrierId,
+                signedAt,
+                status: 'SIGNED',
+              }) as Awaited<ReturnType<AgreementRepoPort['findManySigned']>>[number],
+          ),
+    ),
+  };
+  return { documentRepo, agreementRepo };
+};
 
 const futureDate = new Date('2099-01-01');
 
@@ -27,17 +60,13 @@ const makeCarrier = (overrides: Partial<Carrier> = {}): Carrier =>
     name: 'Acme Logistics LLC',
     legalName: 'Acme Logistics LLC',
     type: 'EXTERNAL_CARRIER',
-    dispatchAgreementOnFile: false,
-    dispatchAgreementSignedAt: null,
-    insuranceCertOnFile: true,
-    insuranceExpiry: futureDate,
     tin: null,
     status: 'ONBOARDING',
     managedByOrgId: 'org-1',
     ...overrides,
   }) as Carrier;
 
-const makeDeps = () => ({
+const makeDeps = (compliance: ComplianceState = {}) => ({
   sessionRepo: {
     findByCarrierId: jest.fn(),
     create: jest.fn(),
@@ -62,6 +91,7 @@ const makeDeps = () => ({
   auditLog: {
     create: jest.fn().mockResolvedValue(undefined),
   },
+  derivedComplianceDeps: buildDerivedComplianceDeps(compliance),
 });
 
 describe('onboardingSessionService.submitStep', () => {
@@ -129,15 +159,13 @@ describe('onboardingSessionService.submitStep', () => {
     expect(updateArgs.completedStepIds).toEqual(['welcome-segmentation']);
   });
 
-  it('rejects locked-field mutation with FieldLockedError when dispatchAgreementSignedAt is set', async () => {
-    const deps = makeDeps();
+  it('rejects locked-field mutation with FieldLockedError when agreement is signed', async () => {
+    const deps = makeDeps({ agreementSignedAt: new Date('2026-01-01') });
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'Acme Logistics LLC' } } as Prisma.JsonValue,
     });
     deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
-    deps.carrierRepo.findById.mockResolvedValue(
-      makeCarrier({ dispatchAgreementSignedAt: new Date('2026-01-01') }),
-    );
+    deps.carrierRepo.findById.mockResolvedValue(makeCarrier());
 
     const service = createOnboardingSessionService(deps);
 
@@ -152,14 +180,12 @@ describe('onboardingSessionService.submitStep', () => {
   });
 
   it('allows unchanged locked-field values after signing (idempotent)', async () => {
-    const deps = makeDeps();
+    const deps = makeDeps({ agreementSignedAt: new Date('2026-01-01') });
     const session = makeSession({
       answers: { 'company-confirm': { legalName: 'Acme Logistics LLC' } } as Prisma.JsonValue,
     });
     deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
-    deps.carrierRepo.findById.mockResolvedValue(
-      makeCarrier({ dispatchAgreementSignedAt: new Date('2026-01-01') }),
-    );
+    deps.carrierRepo.findById.mockResolvedValue(makeCarrier());
     deps.sessionRepo.update.mockResolvedValue(session);
 
     const service = createOnboardingSessionService(deps);
@@ -173,12 +199,10 @@ describe('onboardingSessionService.submitStep', () => {
   });
 
   it('does not enforce locks for non-company steps', async () => {
-    const deps = makeDeps();
+    const deps = makeDeps({ agreementSignedAt: new Date('2026-01-01') });
     const session = makeSession();
     deps.sessionRepo.findByCarrierId.mockResolvedValue(session);
-    deps.carrierRepo.findById.mockResolvedValue(
-      makeCarrier({ dispatchAgreementSignedAt: new Date('2026-01-01') }),
-    );
+    deps.carrierRepo.findById.mockResolvedValue(makeCarrier());
     deps.sessionRepo.update.mockResolvedValue(session);
 
     const service = createOnboardingSessionService(deps);

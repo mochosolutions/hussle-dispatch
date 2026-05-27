@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { LOAD_FINANCIALS_SNAPSHOT_SELECT } from '../../loads/services/derivedFinancials';
 import type { SettlementLoadQueryPort } from '../types/settlementTypes';
 
 export const settlementLoadQueryPrisma = (prisma: PrismaClient): SettlementLoadQueryPort => ({
@@ -34,14 +35,8 @@ export const settlementLoadQueryPrisma = (prisma: PrismaClient): SettlementLoadQ
         id: true,
         loadNumber: true,
         carrierRate: true,
-        customerRate: true,
-        carrierPayout: true,
-        dispatchFee: true,
-        dispatchFeeOverrideType: true,
-        dispatchFeeOverrideAmount: true,
-        totalMiles: true,
-        loadedMiles: true,
         estimatedHours: true,
+        ...LOAD_FINANCIALS_SNAPSHOT_SELECT,
         accessorialCharges: {
           select: {
             id: true,
@@ -68,13 +63,19 @@ export const settlementLoadQueryPrisma = (prisma: PrismaClient): SettlementLoadQ
           loadNumber: load.loadNumber,
           carrierRate: load.carrierRate,
           customerRate: load.customerRate,
-          carrierPayout: load.carrierPayout,
-          dispatchFee: load.dispatchFee,
-          dispatchFeeOverrideType: load.dispatchFeeOverrideType,
-          dispatchFeeOverrideAmount: load.dispatchFeeOverrideAmount,
+          dispatchFeeType: load.dispatchFeeType,
+          dispatchFeeAmount: load.dispatchFeeAmount,
           totalMiles: load.totalMiles,
           loadedMiles: load.loadedMiles,
           estimatedHours: load.estimatedHours,
+          partnerSplitPercent: load.partnerSplitPercent,
+          driverPayType: load.driverPayType,
+          driverPayRate: load.driverPayRate,
+          dispatcherCommissionType: load.dispatcherCommissionType,
+          dispatcherCommissionRate: load.dispatcherCommissionRate,
+          feeIncludesAccessorials: load.feeIncludesAccessorials,
+          payFromNet: load.payFromNet,
+          carrierType: load.carrierType,
           deliveredAt,
           accessorialCharges: load.accessorialCharges,
         };
