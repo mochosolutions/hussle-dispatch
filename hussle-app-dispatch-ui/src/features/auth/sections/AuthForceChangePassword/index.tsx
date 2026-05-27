@@ -52,8 +52,8 @@ const AuthForceChangePassword = () => {
       try {
         const { password } = values;
         dispatch(forceChangePasswordRequest({ password }));
-      } catch (err) {
-        console.error(err);
+      } catch (_err: unknown) {
+        // Error handled by saga
       }
     },
   });
@@ -87,6 +87,7 @@ const AuthForceChangePassword = () => {
             name="password"
             label="Password"
             placeholder="Enter password"
+            autoComplete="new-password"
             required
             formik={formikProps}
           />
@@ -97,6 +98,7 @@ const AuthForceChangePassword = () => {
           <ConfirmPasswordField
             name="confirmPassword"
             label="Confirm Password"
+            autoComplete="new-password"
             required
             formik={formikProps}
           />

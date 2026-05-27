@@ -1,6 +1,9 @@
 import type { PrismaClient, Driver, Prisma } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
+  CarrierNoteInput,
+  CarrierNoteRepositoryPort,
   CarrierQueryInput,
   CarrierRepositoryPort,
   CarrierWithCounts,
@@ -62,6 +65,23 @@ const selectWithCounts = {
       },
     },
   },
+  onboardingSession: {
+    select: {
+      lastActiveAt: true,
+      currentStepId: true,
+      completedStepIds: true,
+      completedAt: true,
+    },
+  },
+  primaryContact: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      email: true,
+    },
+  },
 } as const;
 
 const buildListWhere = (
@@ -72,6 +92,7 @@ const buildListWhere = (
     managedByOrgId: string;
     deletedAt: null;
     type?: ListCarriersRepositoryInput['filters']['type'];
+    status?: { in: ListCarriersRepositoryInput['filters']['status'] };
     OR?: {
       name?: { contains: string; mode: 'insensitive' };
       mcNumber?: { contains: string; mode: 'insensitive' };
@@ -83,6 +104,10 @@ const buildListWhere = (
 
   if (filters.type !== undefined) {
     where.type = filters.type;
+  }
+
+  if (filters.status !== undefined && filters.status.length > 0) {
+    where.status = { in: filters.status };
   }
 
   if (filters.search !== undefined && filters.search.length > 0) {
@@ -105,7 +130,7 @@ const buildListWhere = (
   return where;
 };
 
-type CarrierPersistence = CarrierRepositoryPort & LoadRepositoryPort;
+type CarrierPersistence = CarrierRepositoryPort & LoadRepositoryPort & CarrierNoteRepositoryPort;
 
 export const carrierRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
@@ -115,7 +140,7 @@ export const carrierRepositoryPrisma = (
       data: {
         managedByOrgId: organizationId,
         ...input,
-      },
+      } as Prisma.CarrierUncheckedCreateInput,
       include: selectWithCounts,
     }),
 
@@ -135,7 +160,7 @@ export const carrierRepositoryPrisma = (
         data: {
           managedByOrgId: organizationId,
           ...payload.carrier,
-        },
+        } as Prisma.CarrierUncheckedCreateInput,
         include: selectWithCounts,
       });
 
@@ -216,31 +241,36 @@ export const carrierRepositoryPrisma = (
       where: buildListWhere(organizationId, filters),
     }),
 
-  update: (id: string, input: UpdateCarrierInput): Promise<CarrierWithCounts> =>
-    prisma.carrier.update({
-      where: {
-        id,
-      },
-      data: {
-        ...input,
-      },
+  update: async (id: string, organizationId: string, input: UpdateCarrierInput): Promise<CarrierWithCounts> => {
+    const carrier = await prisma.carrier.findFirst({
+      where: { id, managedByOrgId: organizationId, deletedAt: null },
+    });
+    if (!carrier) {
+      throw new NotFoundError(`Carrier with id ${id} not found`);
+    }
+    return prisma.carrier.update({
+      where: { id },
+      data: { ...input } as Prisma.CarrierUncheckedUpdateInput,
       include: selectWithCounts,
-    }),
+    });
+  },
 
-  softDelete: async (id: string, deletedAt: Date): Promise<void> => {
+  softDelete: async (id: string, organizationId: string, deletedAt: Date): Promise<void> => {
+    const carrier = await prisma.carrier.findFirst({
+      where: { id, managedByOrgId: organizationId, deletedAt: null },
+    });
+    if (!carrier) {
+      throw new NotFoundError(`Carrier with id ${id} not found`);
+    }
     await prisma.carrier.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt,
-      },
+      where: { id },
+      data: { deletedAt },
     });
   },
 
   findBlockingLoadIds: async (
     carrierId: string,
-    statuses: LoadStatus[],
+    statuses: readonly LoadStatus[],
     limit: number,
   ): Promise<string[]> => {
     const loads = await prisma.load.findMany({
@@ -248,7 +278,7 @@ export const carrierRepositoryPrisma = (
         carrierId,
         deletedAt: null,
         status: {
-          in: statuses,
+          in: [...statuses],
         },
       },
       select: {
@@ -259,4 +289,27 @@ export const carrierRepositoryPrisma = (
 
     return loads.map((load) => load.id);
   },
+
+  createNote: (carrierId: string, input: CarrierNoteInput) =>
+    prisma.carrierNote.create({
+      data: {
+        carrierId,
+        text: input.text,
+        authorId: input.authorId,
+        authorName: input.authorName,
+      },
+    }),
+
+  listNotes: (carrierId: string, skip: number, take: number) =>
+    prisma.carrierNote.findMany({
+      where: { carrierId },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+
+  countNotes: (carrierId: string) =>
+    prisma.carrierNote.count({
+      where: { carrierId },
+    }),
 });

@@ -1,5 +1,17 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'DISPATCHER', 'VIEWER');
+CREATE TYPE "OrganizationVertical" AS ENUM ('LOGISTICS', 'HEALTHCARE', 'STAFFING');
+
+-- CreateEnum
+CREATE TYPE "OrganizationRole" AS ENUM ('BROKER', 'CARRIER', 'SHIPPER');
+
+-- CreateEnum
+CREATE TYPE "OrganizationStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionTier" AS ENUM ('FREE', 'PRO', 'ENTERPRISE');
+
+-- CreateEnum
+CREATE TYPE "InvitationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED');
 
 -- CreateEnum
 CREATE TYPE "CarrierType" AS ENUM ('COMPANY_ASSET', 'OWNER_OPERATOR', 'EXTERNAL_CARRIER');
@@ -48,6 +60,20 @@ CREATE TABLE "Organization" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "description" TEXT,
+    "phoneNumber" TEXT,
+    "address" TEXT,
+    "website" TEXT,
+    "logo" TEXT,
+    "vertical" "OrganizationVertical" NOT NULL DEFAULT 'LOGISTICS',
+    "role" "OrganizationRole" NOT NULL DEFAULT 'BROKER',
+    "status" "OrganizationStatus" NOT NULL DEFAULT 'PENDING',
+    "subscriptionTier" "SubscriptionTier" NOT NULL DEFAULT 'FREE',
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
+    "customFields" JSONB,
+    "resources" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -57,14 +83,61 @@ CREATE TABLE "Organization" (
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
-    "organizationId" TEXT NOT NULL,
+    "externalId" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "role" "UserRole" NOT NULL DEFAULT 'DISPATCHER',
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Membership" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "role" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "invitedById" TEXT,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Membership_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Invitation" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "role" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "status" "InvitationStatus" NOT NULL DEFAULT 'PENDING',
+    "invitedById" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Invitation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuditLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "organizationId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "entityType" TEXT NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "changes" JSONB,
+    "metadata" JSONB,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -83,6 +156,9 @@ CREATE TABLE "Carrier" (
     "city" TEXT,
     "state" TEXT,
     "zip" TEXT,
+    "primaryContactName" TEXT,
+    "primaryContactPhone" TEXT,
+    "primaryContactEmail" TEXT,
     "dispatchFeePercent" DECIMAL(5,2) NOT NULL DEFAULT 10.00,
     "partnerSplitPercent" DECIMAL(5,2) NOT NULL DEFAULT 50.00,
     "feeIncludesAccessorials" BOOLEAN NOT NULL DEFAULT false,
@@ -135,7 +211,8 @@ CREATE TABLE "Contact" (
 CREATE TABLE "Driver" (
     "id" TEXT NOT NULL,
     "carrierId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
     "cdlNumber" TEXT,
@@ -163,6 +240,7 @@ CREATE TABLE "Driver" (
 CREATE TABLE "Vehicle" (
     "id" TEXT NOT NULL,
     "carrierId" TEXT NOT NULL,
+    "driverId" TEXT,
     "unitNumber" TEXT NOT NULL,
     "type" "EquipmentType" NOT NULL,
     "ownership" "VehicleOwnership" NOT NULL DEFAULT 'OWNED',
@@ -426,11 +504,65 @@ CREATE TABLE "OrgSettings" (
     CONSTRAINT "OrgSettings_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "CarrierNote" (
+    "id" TEXT NOT NULL,
+    "carrierId" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "authorId" TEXT,
+    "authorName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CarrierNote_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Organization_slug_key" ON "Organization"("slug");
 
 -- CreateIndex
+CREATE INDEX "Organization_slug_idx" ON "Organization"("slug");
+
+-- CreateIndex
+CREATE INDEX "Organization_deleted_status_idx" ON "Organization"("deleted", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_externalId_key" ON "User"("externalId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_externalId_idx" ON "User"("externalId");
+
+-- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "Membership_userId_status_idx" ON "Membership"("userId", "status");
+
+-- CreateIndex
+CREATE INDEX "Membership_organizationId_status_idx" ON "Membership"("organizationId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Membership_userId_organizationId_key" ON "Membership"("userId", "organizationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invitation_token_key" ON "Invitation"("token");
+
+-- CreateIndex
+CREATE INDEX "Invitation_token_idx" ON "Invitation"("token");
+
+-- CreateIndex
+CREATE INDEX "Invitation_status_expiresAt_idx" ON "Invitation"("status", "expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invitation_organizationId_email_key" ON "Invitation"("organizationId", "email");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_organizationId_timestamp_idx" ON "AuditLog"("organizationId", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_userId_idx" ON "AuditLog"("userId");
 
 -- CreateIndex
 CREATE INDEX "Carrier_managedByOrgId_idx" ON "Carrier"("managedByOrgId");
@@ -440,6 +572,9 @@ CREATE INDEX "Contact_organizationId_idx" ON "Contact"("organizationId");
 
 -- CreateIndex
 CREATE INDEX "Driver_carrierId_idx" ON "Driver"("carrierId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Vehicle_driverId_key" ON "Vehicle"("driverId");
 
 -- CreateIndex
 CREATE INDEX "Vehicle_carrierId_idx" ON "Vehicle"("carrierId");
@@ -504,6 +639,24 @@ CREATE INDEX "Document_organizationId_idx" ON "Document"("organizationId");
 -- CreateIndex
 CREATE UNIQUE INDEX "OrgSettings_organizationId_key" ON "OrgSettings"("organizationId");
 
+-- CreateIndex
+CREATE INDEX "CarrierNote_carrierId_idx" ON "CarrierNote"("carrierId");
+
+-- AddForeignKey
+ALTER TABLE "Membership" ADD CONSTRAINT "Membership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Membership" ADD CONSTRAINT "Membership_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Membership" ADD CONSTRAINT "Membership_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invitation" ADD CONSTRAINT "Invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invitation" ADD CONSTRAINT "Invitation_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 -- AddForeignKey
 ALTER TABLE "Carrier" ADD CONSTRAINT "Carrier_managedByOrgId_fkey" FOREIGN KEY ("managedByOrgId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -518,6 +671,9 @@ ALTER TABLE "Driver" ADD CONSTRAINT "Driver_carrierId_fkey" FOREIGN KEY ("carrie
 
 -- AddForeignKey
 ALTER TABLE "Vehicle" ADD CONSTRAINT "Vehicle_carrierId_fkey" FOREIGN KEY ("carrierId") REFERENCES "Carrier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Vehicle" ADD CONSTRAINT "Vehicle_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TruckExpense" ADD CONSTRAINT "TruckExpense_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "Vehicle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -590,3 +746,7 @@ ALTER TABLE "Document" ADD CONSTRAINT "Document_carrierId_fkey" FOREIGN KEY ("ca
 
 -- AddForeignKey
 ALTER TABLE "OrgSettings" ADD CONSTRAINT "OrgSettings_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CarrierNote" ADD CONSTRAINT "CarrierNote_carrierId_fkey" FOREIGN KEY ("carrierId") REFERENCES "Carrier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+

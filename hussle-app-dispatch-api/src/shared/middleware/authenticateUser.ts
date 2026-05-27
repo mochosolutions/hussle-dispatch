@@ -2,6 +2,8 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import type Redis from 'ioredis';
 import { logger } from '@/shared/utils/logger';
+import { OrganizationStatus } from '@/auth/constants/enums';
+import { OrgSuspendedError } from '@/shared/errors';
 
 export interface AuthPayload {
   userId: string;
@@ -24,15 +26,17 @@ const resolveJwtSecret = (): string => {
   return secret;
 };
 
-export const createAppAuthMiddleware = (options: {
-  redis: Redis;
-  jwtSecret?: string;
-}) => {
+export const createAppAuthMiddleware = (options: { redis: Redis; jwtSecret?: string }) => {
   const { redis: redisClient, jwtSecret = resolveJwtSecret() } = options;
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req.cookies?.accessToken as string | undefined;
+      // Support both cookie auth (dispatch-ui) and Bearer token auth (extension)
+      const bearerHeader = req.headers.authorization;
+      const bearerToken = bearerHeader?.startsWith('Bearer ')
+        ? bearerHeader.slice(7)
+        : undefined;
+      const token = (req.cookies?.accessToken as string | undefined) ?? bearerToken;
 
       logger.debug('Auth middleware: token received', {
         hasToken: Boolean(token),
@@ -40,7 +44,7 @@ export const createAppAuthMiddleware = (options: {
       });
 
       if (!token) {
-        res.status(401).json({ error: 'Missing authentication token' });
+        res.status(401).json({ errors: [{ message: 'Missing authentication token' }] });
         return;
       }
 
@@ -57,24 +61,39 @@ export const createAppAuthMiddleware = (options: {
       });
 
       if (!sessionRaw) {
-        res.status(401).json({ error: 'Session expired or not found' });
+        res.status(401).json({ errors: [{ message: 'Session expired or not found' }] });
         return;
       }
 
-      const session: { isRevoked?: boolean } = JSON.parse(sessionRaw);
+      const session: { isRevoked?: boolean; permissionsVersion?: number } = JSON.parse(sessionRaw);
       if (session.isRevoked) {
         logger.warn('Auth middleware: revoked session accessed', {
           userId,
           sessionId,
           correlationId: req.correlationId,
         });
-        res.status(401).json({ error: 'Session has been revoked' });
+        res.status(401).json({ errors: [{ message: 'Session has been revoked' }] });
         return;
       }
 
-      if (decoded.orgStatus !== 'active') {
-        res.status(403).json({ error: 'Organization is suspended or inactive' });
+      if (
+        decoded.permissionsVersion !== undefined &&
+        session.permissionsVersion !== undefined &&
+        decoded.permissionsVersion !== session.permissionsVersion
+      ) {
+        logger.warn('Auth middleware: permissionsVersion mismatch', {
+          userId,
+          sessionId,
+          tokenVersion: decoded.permissionsVersion,
+          sessionVersion: session.permissionsVersion,
+          correlationId: req.correlationId,
+        });
+        res.status(401).json({ errors: [{ message: 'Permissions changed, please re-authenticate' }] });
         return;
+      }
+
+      if (decoded.orgStatus !== OrganizationStatus.ACTIVE) {
+        throw new OrgSuspendedError();
       }
 
       req.user = decoded;
@@ -86,7 +105,7 @@ export const createAppAuthMiddleware = (options: {
         error: err instanceof Error ? err.message : 'Unknown error',
         correlationId: req.correlationId,
       });
-      res.status(401).json({ error: 'Invalid app token' });
+      res.status(401).json({ errors: [{ message: 'Invalid app token' }] });
     }
   };
 };

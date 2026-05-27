@@ -1,28 +1,47 @@
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
-import type { CreateAuditLogInput } from '../../../audit/types/auditTypes';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
+import type { EventBus } from '@/shared/messaging/eventBus';
+import type { Logger } from '@/shared/utils/logger';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import type { SignupOrgInput, SignupOrgResult } from '../../types/signupOrgTypes';
 import { mapSignupOrgRequest } from './mappers/mapSignupOrgRequest';
 import { toSignupOrgResponse } from './transformers/signupOrgTransformer';
 
 interface SignupOrgControllerDeps {
-  auditLogRepo: {
-    create: (organizationId: string, input: CreateAuditLogInput) => Promise<unknown>;
-  };
   tokenProviderInstance: ITokenProvider;
   signupOrganization: (data: SignupOrgInput) => Promise<SignupOrgResult>;
+  eventBus: EventBus;
+  logger: Logger;
+  config: { defaultOrgRole: string };
 }
 
 export const createSignupOrgController = ({
-  auditLogRepo,
   tokenProviderInstance,
   signupOrganization,
+  eventBus,
+  logger,
+  config,
 }: SignupOrgControllerDeps): RequestHandler =>
   async (req: Request, res: Response) => {
     const signupData = mapSignupOrgRequest(req);
     const result = await signupOrganization(signupData);
+
+    eventBus.publish('organization.created', {
+      orgId: result.tenant.tenantId,
+      orgName: result.tenant.name,
+      orgRole: signupData.orgRole ?? config.defaultOrgRole,
+      userId: result.user.userId,
+      userEmail: result.user.email,
+      customMetadata: signupData.customMetadata ?? {},
+    }).catch((error: unknown) => {
+      logger.error('Failed to publish organization.created event', { error });
+    });
 
     const { accessToken, refreshToken } = await tokenProviderInstance.createSession({
       userId: result.user.userId,
@@ -36,24 +55,7 @@ export const createSignupOrgController = ({
 
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, refreshToken);
-
-    auditLogRepo
-      .create(result.tenant.tenantId, {
-        userId: result.user.userId,
-        action: 'CREATE',
-        entityType: 'User',
-        entityId: result.user.userId,
-        changes: null,
-        metadata: {
-          email: result.user.email,
-          organizationName: result.tenant.name,
-          action: 'signup',
-        },
-      })
-      .catch(() => {
-        // Audit failure should not block user flow
-        // TODO: move to domain event
-      });
+    setCsrfTokenCookie(res, generateCsrfToken());
 
     return res.status(201).json(toSignupOrgResponse(result));
   };

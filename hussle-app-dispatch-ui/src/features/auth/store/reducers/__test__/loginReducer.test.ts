@@ -66,12 +66,16 @@ describe('loginReducer', () => {
   });
 
   describe('loginFailure', () => {
-    it('should call setRejected and reset user', () => {
-      loginReducer.loginFailure(mockState);
+    it('should call setRejected with error message and reset user', () => {
+      const action = {
+        payload: { error: 'Invalid credentials' },
+      } as PayloadAction<{ error: string }>;
+
+      loginReducer.loginFailure(mockState, action);
       expect(setRejected).toHaveBeenCalledWith(mockState, {
         loadingKey: 'login',
         errorKey: 'login',
-        failureMessage: 'Login failed',
+        failureMessage: 'Invalid credentials',
       });
       expect(mockState.isLoggedIn).toBe(false);
       expect(mockState.user).toEqual(defaultUserProfileState);

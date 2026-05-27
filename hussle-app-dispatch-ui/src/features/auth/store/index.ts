@@ -11,7 +11,8 @@ import {
   resendCodeRequest,
   initiatePasswordResetRequest,
   confirmPasswordResetRequest,
-  switchOrgRequest
+  switchOrgRequest,
+  acceptInviteRequest,
 } from './authSlice';
 
 import {
@@ -24,7 +25,8 @@ import {
   handleResendCode,
   initiatePasswordResetSaga,
   confirmPasswordResetSaga,
-  switchOrgSaga
+  switchOrgSaga,
+  handleAcceptInvite,
 } from './sagas';
 
 export function* authWatcher() {
@@ -38,6 +40,7 @@ export function* authWatcher() {
   yield takeLatest(initiatePasswordResetRequest.type, initiatePasswordResetSaga,);
   yield takeLatest(confirmPasswordResetRequest.type, confirmPasswordResetSaga);
   yield takeLatest(switchOrgRequest.type, switchOrgSaga);
+  yield takeLatest(acceptInviteRequest.type, handleAcceptInvite);
 }
 
 export {authReducer};

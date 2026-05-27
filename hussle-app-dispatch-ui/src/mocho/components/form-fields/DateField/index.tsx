@@ -1,5 +1,7 @@
-import React from 'react';
-import { OutlinedInput } from '@mui/material';
+import React, { useCallback } from 'react';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { parseISO, format, isValid } from 'date-fns';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { DateFieldProps } from '../types';
 
@@ -10,28 +12,39 @@ export const DateField: React.FC<DateFieldProps> = ({
   required = false,
   formik,
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
+  const rawValue = getIn(formik.values, name) as string | null;
+
+  const dateValue = rawValue ? parseISO(rawValue) : null;
+
+  const handleChange = useCallback(
+    (newValue: Date | null) => {
+      if (newValue && isValid(newValue)) {
+        formik.setFieldValue(name, format(newValue, 'yyyy-MM-dd'));
+      } else {
+        formik.setFieldValue(name, null);
+      }
+    },
+    [formik, name],
+  );
 
   return (
-    <BaseFieldWrapper
-      error={error}
-      label={label}
-      name={name}
-      required={required}
-      touched={touched}
-    >
-      <OutlinedInput
+    <BaseFieldWrapper name={name} label={label} required={required} error={error} touched={touched}>
+      <DatePicker
+        value={dateValue}
+        onChange={handleChange}
         disabled={disabled}
-        error={Boolean(touched && error)}
-        fullWidth
-        id={name}
-        name={name}
-        notched
-        onBlur={formik.handleBlur}
-        onChange={formik.handleChange}
-        type="date"
-        value={formik.values[name] || ''}
+        slotProps={{
+          textField: {
+            id: name,
+            name,
+            fullWidth: true,
+            error: Boolean(touched && error),
+            onBlur: formik.handleBlur,
+            placeholder: 'MM/DD/YYYY',
+          },
+        }}
       />
     </BaseFieldWrapper>
   );

@@ -15,8 +15,20 @@ export { OTPField } from './OTPField';
 export { CheckboxField } from './CheckboxField';
 export { SelectField } from './SelectField';
 export { TypeaheadField } from './TypeaheadField';
+export { AddressField } from './AddressField';
+export type { AddressFieldProps } from './AddressField';
 export { DateField } from './DateField';
 export { TimeField } from './TimeField';
+
+// Formatted input components
+export { PhoneField } from './PhoneField';
+export { CurrencyField } from './CurrencyField';
+export { NumericField } from './NumericField';
+export { PercentField } from './PercentField';
+export { StateField } from './StateField';
+export { ZipCodeField } from './ZipCodeField';
+export { EINField } from './EINField';
+export { ContentSelectorField } from './ContentSelectorField';
 
 // Extended input components
 export { CharCounterField } from './CharCounterField';
@@ -30,6 +42,7 @@ export { RichTextEditorField } from './RichTextEditorField';
 
 // Button components
 export { SubmitButton } from './SubmitButton';
+export { CancelButton } from './CancelButton';
 export { SecondaryButton } from './SecondaryButton';
 
 // Navigation components

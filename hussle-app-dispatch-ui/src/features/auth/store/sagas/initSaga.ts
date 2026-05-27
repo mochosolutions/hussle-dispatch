@@ -16,13 +16,11 @@ function isValidAuthResponse(data: unknown): data is { user: { id: string }; acc
 }
 
 export function* initializeAuthSaga() {
-  console.log('[initSaga] v1.0.1 - Response validation enabled');
   try {
     const initAttempted = yield select(initAttemptedSelector);
     const isLoggedIn = yield select(selectIsLoggedIn);
 
     if (initAttempted || isLoggedIn) {
-      console.log('Initialization already attempted, skipping...');
       return;
     }
 
@@ -32,20 +30,15 @@ export function* initializeAuthSaga() {
 
     // Validate response structure (guards against HTML fallback from misconfigured API URL)
     if (!isValidAuthResponse(userResponse.data)) {
-      console.error('Invalid auth response - expected JSON with user object, got:', typeof userResponse.data);
       yield put(initFailure());
       return;
     }
 
-    console.log("User response from /auth/me", userResponse.data);
     const user = userResponse.data.user;
     const orgs = userResponse.data.accessibleOrgs || [];
 
-    console.log('User Orgs data', orgs);
-
     yield put(initSuccess({user, orgs}));
-  } catch (error) {
-    console.error('Error reauthenticating user:', error);
+  } catch (_error: unknown) {
     // Clear rememberMe flag if present (but no tokens stored)
     localStorage.removeItem('rememberMe');
     yield put(initFailure());

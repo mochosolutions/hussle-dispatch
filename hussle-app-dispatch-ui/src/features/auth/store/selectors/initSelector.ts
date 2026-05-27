@@ -1,7 +1,5 @@
-import {createSelector} from '@reduxjs/toolkit';
-import {authSelector} from './authSelector';
+import type { RootState } from '../../../../store';
+import { authSelector } from './authSelector';
 
-export const initAttemptedSelector = createSelector(
-  authSelector,
-  (authState) => authState?.initAttempted,
-);
+export const initAttemptedSelector = (state: RootState) =>
+  authSelector(state)?.initAttempted;

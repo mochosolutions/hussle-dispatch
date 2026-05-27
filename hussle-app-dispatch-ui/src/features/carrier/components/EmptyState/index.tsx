@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { Timestamp } from 'components/Typography';
 
 interface EmptyStateProps {
   icon: ReactNode;
@@ -22,9 +23,7 @@ export const EmptyState = ({ icon, label, buttonLabel, onAdd }: EmptyStateProps)
     }}
   >
     <Box sx={{ mb: 1 }}>{icon}</Box>
-    <Typography variant="body2" color="text.disabled" sx={{ mb: 1.5 }}>
-      {label}
-    </Typography>
+    <Timestamp sx={{ mb: 1.5 }}>{label}</Timestamp>
     <Button
       size="small"
       startIcon={<AddIcon />}

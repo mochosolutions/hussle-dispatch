@@ -1,9 +1,9 @@
 import React from 'react';
-import { Formik, Form, useFormikContext } from 'formik';
-import { Box, Typography, Button, Divider, Grid, Stack, CircularProgress } from '@mui/material';
+import { Box, Divider, Stack } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
-import { TextField, EmailField } from '../../../../mocho/components';
-import { EditDrawer } from '../../components/EditDrawer';
+import { TextField, EmailField, PhoneField, AddressField } from '../../../../mocho/components';
+import { FormDrawer } from '../../../../mocho/components/FormDrawer';
+import { SectionLabel } from 'components/Typography';
 import { companyInfoSchema } from '../../validators/fleetSchema';
 import { selectCarrierById } from '../../store/selectors/carrierSelectors';
 import { updateCarrierRequest } from '../../store/reducers';
@@ -21,132 +21,96 @@ export const CompanyInfoDrawer: React.FC<CompanyInfoDrawerProps> = ({ carrierId,
     return null;
   }
 
-  return (
-    <Formik
-      initialValues={{
-        name: carrier.name,
-        mcNumber: carrier.mcNumber ?? '',
-        dotNumber: carrier.dotNumber ?? '',
-        phone: carrier.phone ?? '',
-        email: carrier.email ?? '',
-        address: carrier.address ?? '',
-        city: carrier.city ?? '',
-        state: carrier.state ?? '',
-        zip: carrier.zip ?? '',
-      }}
-      validationSchema={companyInfoSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        dispatch(updateCarrierRequest({ id: carrierId, data: values }));
-        setSubmitting(false);
-        onClose();
-      }}
-      enableReinitialize
-    >
-      <CompanyInfoDrawerContent carrierName={carrier.name} onClose={onClose} />
-    </Formik>
-  );
-};
-
-interface CompanyInfoDrawerContentProps {
-  carrierName: string;
-  onClose: () => void;
-}
-
-const CompanyInfoDrawerContent: React.FC<CompanyInfoDrawerContentProps> = ({
-  carrierName,
-  onClose,
-}) => {
-  const { values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting, isValid, dirty } =
-    useFormikContext<Record<string, unknown>>();
-
-  const formikProps = { values, errors, touched, handleChange, handleBlur, setFieldValue };
-
-  const footer = (
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form="edit-company-info"
-        variant="contained"
-        disabled={!isValid || !dirty || isSubmitting}
-        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
-      >
-        {isSubmitting ? 'Saving\u2026' : 'Save Changes'}
-      </Button>
-    </Box>
-  );
+  const initialValues = {
+    name: carrier.name,
+    mcNumber: carrier.mcNumber ?? '',
+    dotNumber: carrier.dotNumber ?? '',
+    ein: carrier.ein ?? '',
+    phone: carrier.phone ?? '',
+    email: carrier.email ?? '',
+    address: carrier.address ?? '',
+    city: carrier.city ?? '',
+    state: carrier.state ?? '',
+    zip: carrier.zip ?? '',
+    lat: carrier.lat ?? null,
+    lng: carrier.lng ?? null,
+  };
 
   return (
-    <EditDrawer
+    <FormDrawer
       open
-      title="Edit Company Information"
       onClose={onClose}
-      subtitle={carrierName}
-      isDirty={dirty}
-      footer={footer}
+      title="Edit Company Information"
+      subtitle={carrier.name}
+      initialValues={initialValues}
+      validationSchema={companyInfoSchema}
+      onSubmit={(values) => {
+        dispatch(updateCarrierRequest({ id: carrierId, data: values }));
+      }}
     >
-      <Form id="edit-company-info">
+      {(formik) => (
         <Stack spacing={2.5} sx={{ p: 3 }}>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              fontSize: '0.6875rem',
-              letterSpacing: 0.5,
+          <SectionLabel>Company Details</SectionLabel>
+          <TextField name="name" label="Legal Name" formik={formik} />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <TextField name="mcNumber" label="MC Number" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <TextField name="dotNumber" label="DOT Number" formik={formik} />
+            </Box>
+          </Box>
+          <TextField name="ein" label="EIN" formik={formik} />
+          <AddressField
+            name="address"
+            label="Address"
+            placeholder="Search a business address"
+            mode="address"
+            formik={formik}
+            getSelectionState={(v) => {
+              const head = [v.address, v.city, v.state].filter(Boolean).join(', ');
+              let display = head;
+              if (v.zip) {
+                display = head ? `${head} ${v.zip}` : v.zip;
+              }
+              return {
+                display,
+                hasSelection:
+                  (v.lat !== null && v.lat !== undefined && v.lng !== null && v.lng !== undefined) ||
+                  Boolean(v.city && v.state && v.zip),
+              };
             }}
-          >
-            Company Details
-          </Typography>
-          <TextField name="name" label="Legal Name" formik={formikProps} />
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="mcNumber" label="MC Number" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField name="dotNumber" label="DOT Number" formik={formikProps} />
-            </Grid>
-          </Grid>
-          <TextField name="address" label="Address" formik={formikProps} />
-          <Grid container spacing={2}>
-            <Grid item xs={5}>
-              <TextField name="city" label="City" formik={formikProps} />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField name="state" label="State" formik={formikProps} />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField name="zip" label="ZIP" formik={formikProps} />
-            </Grid>
-          </Grid>
+            onResolve={(r, f) => {
+              void f.setFieldValue('address', r.address);
+              void f.setFieldValue('city', r.city);
+              void f.setFieldValue('state', r.state);
+              void f.setFieldValue('zip', r.zip);
+              void f.setFieldValue('lat', r.lat);
+              void f.setFieldValue('lng', r.lng);
+            }}
+            onClear={(f) => {
+              void f.setFieldValue('address', '');
+              void f.setFieldValue('city', '');
+              void f.setFieldValue('state', '');
+              void f.setFieldValue('zip', '');
+              void f.setFieldValue('lat', null);
+              void f.setFieldValue('lng', null);
+            }}
+          />
 
           <Divider sx={{ my: 0.5 }} />
 
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              fontSize: '0.6875rem',
-              letterSpacing: 0.5,
-            }}
-          >
-            Contact
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField name="phone" label="Phone" formik={formikProps} />
-            </Grid>
-            <Grid item xs={6}>
-              <EmailField name="email" label="Email" formik={formikProps} />
-            </Grid>
-          </Grid>
+          <SectionLabel>Primary Contact</SectionLabel>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <PhoneField name="phone" label="Phone" formik={formik} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <EmailField name="email" label="Email" formik={formik} />
+            </Box>
+          </Box>
         </Stack>
-      </Form>
-    </EditDrawer>
+      )}
+    </FormDrawer>
   );
 };

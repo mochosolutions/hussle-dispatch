@@ -7,3 +7,4 @@ export * from './signupSaga';
 export * from './confirmUserSaga';
 export * from './resetPasswordSaga';
 export * from './switchOrgsSaga';
+export * from './acceptInviteSaga';

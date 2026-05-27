@@ -54,7 +54,7 @@ export default function Switch(theme: Theme) {
       styleOverrides: {
         track: {
           opacity: 1,
-          backgroundColor: theme.palette.secondary[400],
+          backgroundColor: theme.palette.grey[400],
           boxSizing: 'border-box',
         },
         thumb: {

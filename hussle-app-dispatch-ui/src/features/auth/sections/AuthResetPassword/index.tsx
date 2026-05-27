@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
 import { useFormik } from 'formik';
 import { Box, Grid } from '@mui/material';
+import { Meta } from 'components/Typography';
+import { useLocation, Navigate } from 'react-router-dom';
 
 import { useDispatch, useSelector } from 'store';
 import { confirmPasswordResetRequest } from '../../store/authSlice';
 import { isConfirmPasswordResetLoadingSelector } from '../../store/selectors';
+import { currentUserEmailSelector } from '../../store/selectors/authSelector';
 import { confirmationCodeValidation } from 'features/auth/validators/authValidators';
 
 import {
@@ -23,9 +26,18 @@ interface ResetPasswordFormValues {
   submit: string | null;
 }
 
+interface LocationState {
+  email?: string;
+}
+
 const AuthResetPassword = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
   const submitting = useSelector(isConfirmPasswordResetLoadingSelector);
+  const reduxEmail = useSelector(currentUserEmailSelector);
+
+  const locationState = location.state as LocationState | null;
+  const email = locationState?.email ?? reduxEmail ?? '';
 
   const formik = useFormik<ResetPasswordFormValues>({
     initialValues: {
@@ -35,17 +47,13 @@ const AuthResetPassword = () => {
       submit: null,
     },
     validationSchema: confirmationCodeValidation,
-    onSubmit: async (values) => {
-      try {
-        dispatch(
-          confirmPasswordResetRequest({
-            confirmationCode: values.confirmationCode,
-            newPassword: values.password,
-          }),
-        );
-      } catch (err) {
-        console.error(err);
-      }
+    onSubmit: (values) => {
+      dispatch(
+        confirmPasswordResetRequest({
+          confirmationCode: values.confirmationCode,
+          newPassword: values.password,
+        }),
+      );
     },
   });
 
@@ -59,18 +67,29 @@ const AuthResetPassword = () => {
       handleBlur: formik.handleBlur,
       setFieldValue: formik.setFieldValue,
     }),
-    [formik.values, formik.errors, formik.touched, formik.handleChange, formik.handleBlur, formik.setFieldValue]
+    [formik.values, formik.errors, formik.touched, formik.handleChange, formik.handleBlur, formik.setFieldValue],
   );
+
+  // Redirect to forgot-password if no email is available
+  if (!email) {
+    return <Navigate to="/forgot-password" replace />;
+  }
 
   return (
     <Box component="form" noValidate onSubmit={formik.handleSubmit}>
       <Grid container spacing={3}>
+        {/* Email Display */}
+        <Grid item xs={12}>
+          <Meta>Enter the code sent to <strong>{email}</strong></Meta>
+        </Grid>
+
         {/* Confirmation Code */}
         <Grid item xs={12}>
           <TextField
             name="confirmationCode"
             label="Code"
             placeholder="Enter code"
+            autoComplete="one-time-code"
             required
             formik={formikProps}
           />
@@ -82,6 +101,7 @@ const AuthResetPassword = () => {
             name="password"
             label="Password"
             placeholder="Enter password"
+            autoComplete="new-password"
             required
             formik={formikProps}
           />
@@ -92,6 +112,7 @@ const AuthResetPassword = () => {
           <ConfirmPasswordField
             name="confirmPassword"
             label="Confirm Password"
+            autoComplete="new-password"
             required
             enableToggle={false}
             formik={formikProps}

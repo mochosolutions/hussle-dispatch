@@ -3,37 +3,46 @@ import type { PrismaTransaction } from '@/config/database';
 import type {
   ContactQueryInput,
   ContactRepositoryPort,
+  CreateContactInput,
   ListContactsRepositoryInput,
+  UpdateContactInput,
 } from '../types/contactTypes';
 
 const buildListWhere = (organizationId: string, filters: ContactQueryInput['filters']) => {
   const where: {
     organizationId: string;
     deletedAt: null;
-    type?: ContactQueryInput['filters']['type'];
+    customerId?: string;
     OR?: {
-      companyName?: { contains: string; mode: 'insensitive' };
-      contactName?: { contains: string; mode: 'insensitive' };
+      firstName?: { contains: string; mode: 'insensitive' };
+      lastName?: { contains: string; mode: 'insensitive' };
+      email?: { contains: string; mode: 'insensitive' };
     }[];
   } = {
     organizationId,
     deletedAt: null,
   };
 
-  if (filters.type !== undefined) {
-    where.type = filters.type;
+  if (filters.customerId !== undefined) {
+    where.customerId = filters.customerId;
   }
 
   if (filters.search !== undefined && filters.search.length > 0) {
     where.OR = [
       {
-        companyName: {
+        firstName: {
           contains: filters.search,
           mode: 'insensitive',
         },
       },
       {
-        contactName: {
+        lastName: {
+          contains: filters.search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        email: {
           contains: filters.search,
           mode: 'insensitive',
         },
@@ -44,6 +53,10 @@ const buildListWhere = (organizationId: string, filters: ContactQueryInput['filt
   return where;
 };
 
+const CONTACT_INCLUDE = {
+  customer: true,
+} as const;
+
 export const contactRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
 ): ContactRepositoryPort => ({
@@ -53,6 +66,7 @@ export const contactRepositoryPrisma = (
         organizationId,
         ...input,
       },
+      include: CONTACT_INCLUDE,
     }),
 
   findById: (id, organizationId) =>
@@ -62,6 +76,7 @@ export const contactRepositoryPrisma = (
         organizationId,
         deletedAt: null,
       },
+      include: CONTACT_INCLUDE,
     }),
 
   list: ({ organizationId, filters, skip, take, orderBy }: ListContactsRepositoryInput) =>
@@ -70,6 +85,7 @@ export const contactRepositoryPrisma = (
       skip,
       take,
       orderBy,
+      include: CONTACT_INCLUDE,
     }),
 
   count: ({ organizationId, filters }: ContactQueryInput) =>
@@ -82,9 +98,8 @@ export const contactRepositoryPrisma = (
       where: {
         id,
       },
-      data: {
-        ...input,
-      },
+      data: input,
+      include: CONTACT_INCLUDE,
     }),
 
   softDelete: async (id, deletedAt) => {

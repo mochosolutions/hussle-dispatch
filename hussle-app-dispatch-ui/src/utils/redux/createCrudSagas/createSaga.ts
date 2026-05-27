@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import type {
   LifecycleHooks,
@@ -88,7 +88,7 @@ export function createCreateSaga<
       if (hooks?.beforeCreate) {
         const shouldContinue = (yield* hooks.beforeCreate(data)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} creation cancelled by beforeCreate hook`);
+          // Creation cancelled by beforeCreate hook
           return;
         }
       }
@@ -106,7 +106,7 @@ export function createCreateSaga<
 
       // Show success message
       const successMessage = messages?.createSuccess || `${entityName} created successfully`;
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterCreate hook
       if (hooks?.afterCreate) {
@@ -124,8 +124,6 @@ export function createCreateSaga<
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`create${entityName}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -143,7 +141,7 @@ export function createCreateSaga<
         yield put(actions.createFailure({ error: errorMessage }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

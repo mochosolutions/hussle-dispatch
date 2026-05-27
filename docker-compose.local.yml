@@ -1,0 +1,79 @@
+# Local Production Testing Override
+# Usage: docker compose -f docker-compose-prod.yml -f docker-compose.local.yml --env-file .env up
+#
+# Extends docker-compose-prod.yml to:
+# - Use a local bridge network instead of external dokploy-network
+# - Expose ports to host for browser and tool access
+# - Override Traefik labels (not used locally)
+# - Set localhost-appropriate env vars
+
+services:
+  api:
+    ports:
+      - "3001:3001"
+    environment:
+      - ALLOW_ORIGINS=http://localhost:8080
+      - FRONTEND_URL=http://localhost:8080
+      - TRACKING_BASE_URL=http://localhost:8080
+      - PUBLIC_SHORT_BASE_URL=http://localhost:3001
+      - SMS_BACKEND=console
+      - STORAGE_BACKEND=local
+    networks:
+      - dokploy-network
+    labels: []
+
+  ui:
+    ports:
+      - "8080:8080"
+    networks:
+      - dokploy-network
+    labels: []
+
+  fleet-rabbitmq:
+    build:
+      context: ./docker/rabbitmq
+      dockerfile: Dockerfile
+    image: fleet-local/fleet-rabbitmq:local
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - dokploy-network
+
+  fleet-postgres:
+    ports:
+      - "5432:5432"
+    networks:
+      - dokploy-network
+
+  fleet-redis:
+    ports:
+      - "6379:6379"
+    networks:
+      - dokploy-network
+
+  # DocuSeal (document signing) — optional service. Start with `--profile docuseal`.
+  # When SIGNATURE_PROVIDER=mock (default in local dev), this service is unused.
+  # When SIGNATURE_PROVIDER=docuseal, point DOCUSEAL_BASE_URL=http://localhost:3030.
+  # On first boot, log into the admin UI and generate API key + webhook secret,
+  # then copy them into hussle-app-dispatch-api/.env (DOCUSEAL_API_KEY, DOCUSEAL_WEBHOOK_SECRET).
+  docuseal:
+    image: docuseal/docuseal:latest
+    ports:
+      - "3030:3000"
+    environment:
+      FORCE_SSL: "false"
+      HOST: localhost:3030
+    volumes:
+      - docuseal_data:/data
+    networks:
+      - dokploy-network
+    profiles: ["docuseal"]
+
+networks:
+  dokploy-network:
+    external: false
+    driver: bridge
+
+volumes:
+  docuseal_data:

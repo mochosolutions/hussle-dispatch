@@ -1,27 +1,27 @@
-import {PayloadAction} from '@reduxjs/toolkit';
-import {LoadingState} from "types/loadingState";
-
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { AuthState, UserProfile, Tenant } from '../authSlice';
+import { LoadingState } from 'types/loadingState';
 
 interface SwitchOrgPayload {
-  user: any;
-  orgs: any[];
+  user: UserProfile;
+  orgs: Tenant[];
 }
 
-
 export const switchOrgReducer = {
-  switchOrgRequest: (state, action: PayloadAction<{organizationId: string}>) => {
+  switchOrgRequest: (state: AuthState, _action: PayloadAction<{ organizationId: string }>) => {
     state.loading.switchOrg = LoadingState.Pending;
   },
-  switchOrgSuccess: (state, action: PayloadAction<SwitchOrgPayload>,
+  switchOrgSuccess: (
+    state: AuthState,
+    action: PayloadAction<SwitchOrgPayload>,
   ) => {
-    console.log("switchOrgSuccess", state);
-    const {user, orgs} = action.payload;
+    const { user, orgs } = action.payload;
     state.user = user;
     state.orgs = orgs;
     state.errors.switchOrg = '';
     state.loading.switchOrg = LoadingState.Fulfilled;
   },
-  switchOrgFailure: (state) => {
+  switchOrgFailure: (state: AuthState) => {
     state.errors.switchOrg = 'Failed to switch organization';
     state.loading.switchOrg = LoadingState.Rejected;
   },

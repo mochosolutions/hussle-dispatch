@@ -1,86 +1,65 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import {
-  Stack,
-  TextField,
-  Box,
-  Typography,
-  Grid,
-  Tabs,
-  Tab,
-  Chip,
-  Button,
-} from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Box, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { ActionsCell, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
-import { useDispatch, useSelector } from 'store';
-import type { Vehicle } from 'features/carrier/types';
+import { ActionsCell, EmptyState, MainCard, PageWrapper, NewDataGrid } from '@mocho/ui/components';
 import type { ActionsCellConfig } from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
+import FilterBar from 'components/FilterBar';
+import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import ListKpiBar from 'components/ListKpiBar';
+import { useStore } from 'react-redux';
+import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
+import type { Vehicle } from 'features/carrier/types';
+import { carrierSelectors } from 'features/carrier/store/reducers/carrierEntitySlice';
+import { selectSubscriptionUsage } from 'features/settings/store/selectors/settingsSelectors';
 import { fetchVehiclesRequest } from '../../store/reducers';
-import {
-  selectAllVehicles,
-  selectVehicleListLoading,
-} from '../../store/selectors/vehicleSelectors';
+import { selectVehicleKpis, selectFilteredVehicles } from '../../store/selectors/vehicleSelectors';
+import type { VehicleTab } from '../../store/selectors/vehicleSelectors';
 import {
   VehicleUnitCellRenderer,
   VehicleTypeCellRenderer,
   VehicleOwnershipCellRenderer,
 } from '../../components/VehicleCellRenderers';
-import { VehicleCreateDialog } from '../../components/VehicleCreateDialog';
+import { VehicleStatusCellRenderer } from '../../components/VehicleListPage/VehicleStatusCellRenderer';
+import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
+import { useModalActions } from 'features/ui/hooks/useModalActions';
 
-type VehicleTab = 'all' | 'OWNED' | 'LEASED';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
+const OWNERSHIP_FILTER_OPTIONS = [
+  { value: 'all' as const, label: 'All Vehicles' },
+  { value: 'OWNED' as const, label: 'Owned' },
+  { value: 'LEASED' as const, label: 'Leased' },
+];
 
 const VehicleListPage = () => {
   const [activeTab, setActiveTab] = useState<VehicleTab>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openDrawer } = useDrawerActions();
+  const { openModal } = useModalActions();
 
-  const vehicles = useSelector(selectAllVehicles);
-  const isLoading = useSelector(selectVehicleListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.vehicles.hasLoadedOnce);
+  const subscriptionUsage = useSelector(selectSubscriptionUsage);
+  const store = useStore<RootState>();
 
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Initial fetch
   useEffect(() => {
-    dispatch(fetchVehiclesRequest({ page: 1, limit: 25 }));
-  }, [dispatch]);
+    const { lastFetchedAt } = store.getState().pages.vehicles;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchVehiclesRequest({ page: 1, limit: 25 }));
+    }
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const query = event.target.value;
-      setSearchQuery(query);
-
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-
-      searchDebounceRef.current = setTimeout(() => {
-        dispatch(
-          fetchVehiclesRequest({
-            page: 1,
-            limit: 25,
-            search: query,
-          }),
-        );
-      }, 300);
+    (value: string | number) => {
+      dispatch(fetchVehiclesRequest({ page: 1, limit: 25, search: String(value) }));
     },
     [dispatch],
   );
 
   const handleOpenCreate = useCallback(() => {
-    setCreateDialogOpen(true);
-  }, []);
-
-  const handleCloseCreate = useCallback(() => {
-    setCreateDialogOpen(false);
-  }, []);
+    openDrawer('vehicleCreate', { onClose: () => undefined });
+  }, [openDrawer]);
 
   const handleRowClicked = useCallback(
     (params: { data: Vehicle }) => {
@@ -90,6 +69,8 @@ const VehicleListPage = () => {
     },
     [navigate],
   );
+
+  const carrierEntities = useSelector(carrierSelectors.selectEntities);
 
   const actionsConfig = useMemo<ActionsCellConfig<Vehicle>>(
     () => ({
@@ -113,29 +94,51 @@ const VehicleListPage = () => {
       {
         headerName: 'Type',
         field: 'type',
-        minWidth: 140,
+        minWidth: 120,
         cellRenderer: VehicleTypeCellRenderer,
       },
       {
-        headerName: 'Make/Model',
-        field: 'make',
-        minWidth: 160,
+        headerName: 'Carrier',
+        field: 'carrierId',
+        minWidth: 120,
         valueGetter: (params: { data: Vehicle }) => {
-          const { make, model } = params.data;
-          return `${make ?? ''} ${model ?? ''}`.trim();
+          if (!params.data.carrierId) {
+            return '\u2014';
+          }
+          return carrierEntities[params.data.carrierId]?.name ?? '\u2014';
         },
       },
       {
         headerName: 'Ownership',
         field: 'ownership',
-        minWidth: 140,
+        minWidth: 120,
         cellRenderer: VehicleOwnershipCellRenderer,
       },
       {
-        headerName: 'Carrier',
-        field: 'carrierId',
+        headerName: 'Driver',
+        field: 'driverId',
         minWidth: 140,
-        valueGetter: () => '\u2014',
+        valueGetter: (params: { data: Vehicle }) => {
+          if (!params.data.driverId) {
+            return '\u2014';
+          }
+          return 'Assigned';
+        },
+      },
+      {
+        headerName: 'Year/Make/Model',
+        field: 'make',
+        minWidth: 180,
+        valueGetter: (params: { data: Vehicle }) => {
+          const { year, make, model } = params.data;
+          return [year, make, model].filter(Boolean).join(' ') || '\u2014';
+        },
+      },
+      {
+        headerName: 'Status',
+        field: 'isActive',
+        minWidth: 110,
+        cellRenderer: VehicleStatusCellRenderer,
       },
       {
         headerName: '',
@@ -147,64 +150,37 @@ const VehicleListPage = () => {
         cellRendererParams: { config: actionsConfig },
       },
     ],
-    [actionsConfig],
+    [actionsConfig, carrierEntities],
   );
 
-  const filteredVehicles = useMemo(() => {
-    if (activeTab === 'all') {
-      return vehicles;
-    }
-    return vehicles.filter((vehicle) => vehicle.ownership === activeTab);
-  }, [vehicles, activeTab]);
+  const filteredSelector = useMemo(() => selectFilteredVehicles(activeTab), [activeTab]);
+  const filteredVehicles = useSelector(filteredSelector);
 
-  const kpiData = useMemo(() => {
-    const activeCount = vehicles.filter((vehicle) => vehicle.isActive).length;
-    const carrierCount = 0;
-    const totalRevenue = 0;
+  const kpiSelector = useMemo(() => selectVehicleKpis(activeTab), [activeTab]);
+  const kpiData = useSelector(kpiSelector);
 
-    return [
-      {
-        label: 'Total Vehicles',
-        value: String(vehicles.length),
-        subtitle: `${activeCount} active`,
-      },
-      {
-        label: 'Active Vehicles',
-        value: String(activeCount),
-        subtitle: 'Currently in service',
-      },
-      {
-        label: 'Carrier Count',
-        value: String(carrierCount),
-        subtitle: 'Placeholder',
-      },
-      {
-        label: 'Revenue',
-        value: currencyFormatter.format(totalRevenue),
-        subtitle: 'Placeholder',
-      },
-    ];
-  }, [vehicles]);
-
-  const tabOptions = useMemo(
+  const filters = useMemo<FilterConfig[]>(
     () => [
       {
-        key: 'all',
-        label: 'All',
-        count: vehicles.length,
-      },
-      {
-        key: 'OWNED',
-        label: 'Owned',
-        count: vehicles.filter((vehicle) => vehicle.ownership === 'OWNED').length,
-      },
-      {
-        key: 'LEASED',
-        label: 'Leased',
-        count: vehicles.filter((vehicle) => vehicle.ownership === 'LEASED').length,
+        type: 'select',
+        name: 'tab',
+        label: 'Ownership',
+        options: OWNERSHIP_FILTER_OPTIONS,
+        value: activeTab,
+        onChange: (value) => setActiveTab(value as VehicleTab),
       },
     ],
-    [vehicles],
+    [activeTab],
+  );
+
+  const search = useMemo<SearchConfig>(
+    () => ({
+      placeholder: 'Search by unit#, make, model...',
+      value: '',
+      onChange: handleSearchChange,
+      debounce: 300,
+    }),
+    [handleSearchChange],
   );
 
   const defaultColDef = useMemo(
@@ -219,110 +195,68 @@ const VehicleListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="VehicleListPage" sx={{ gap: 2 }}>
-      <PageHeader
+    <PageWrapper errorContext="VehicleListPage" sx={{ gap: 2 }}>
+      <ListLayout
         title="Vehicles"
-        headerActions={
+        primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
               Add Vehicle
             </Button>
           </Stack>
         }
-      />
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {kpiData.map((kpiItem) => (
-          <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
-            <MainCard sx={{ height: '100%' }}>
-              <Typography variant="caption" color="text.secondary">
-                {kpiItem.label}
-              </Typography>
-              <Typography variant="h4" color="text.primary" sx={{ mt: 0.5 }}>
-                {kpiItem.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {kpiItem.subtitle}
-              </Typography>
-            </MainCard>
-          </Grid>
-        ))}
-      </Grid>
-
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
       >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
+        <ListKpiBar
+          items={kpiData}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
+
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: 3,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}
         >
-          <Tabs
-            value={activeTab}
-            onChange={(_event, value: VehicleTab) => setActiveTab(value)}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            sx={{ minHeight: 40 }}
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            {tabOptions.map((tabOption) => (
-              <Tab
-                key={tabOption.key}
-                value={tabOption.key}
-                label={
-                  <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
-                    <Chip label={tabOption.count} size="small" />
-                  </Stack>
-                }
-                sx={{ minHeight: 40 }}
-              />
-            ))}
-          </Tabs>
-          <Box>
-            <TextField
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search by unit#, make, model..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Box>
-        </Stack>
-
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box
-            sx={{
-              minHeight: { xs: 300, md: 420 },
-              flex: 1,
-            }}
-          >
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={filteredVehicles}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={filteredVehicles.length}
-              rowCountLabel="vehicles"
-              noDataMessage="No vehicles found"
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: false,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 62,
-                onRowClicked: handleRowClicked,
-              }}
-              loading={isLoading}
-            />
-          </Box>
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filters} search={search} />
+            </Box>
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box sx={{ minHeight: { xs: 300, md: 420 }, flex: 1 }}>
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={filteredVehicles}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={filteredVehicles.length}
+                  rowCountLabel="vehicles"
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="Vehicles" compact />
+                  }
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: true,
+                    paginationPageSize: 25,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 56,
+                    onRowClicked: handleRowClicked,
+                  }}
+                  loading={!hasLoadedOnce}
+                />
+              </Box>
+            </Box>
+          </MainCard>
         </Box>
-      </MainCard>
-
-      <VehicleCreateDialog open={createDialogOpen} onClose={handleCloseCreate} />
+      </ListLayout>
     </PageWrapper>
   );
 };

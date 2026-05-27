@@ -1,6 +1,8 @@
 import React from 'react';
-import { Autocomplete, Box, Chip, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, Chip, TextField } from '@mui/material';
 import { createFilterOptions } from '@mui/material/Autocomplete';
+
+import { HintText, Meta, MetaStrong, SectionTitle } from 'components/Typography';
 
 import type { Driver, Vehicle } from 'features/carrier/types';
 
@@ -57,18 +59,18 @@ const DriverVehicleDetail: React.FC<{ driver: Driver; vehicle: Vehicle | undefin
       gap: 0.5,
     }}
   >
-    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+    <MetaStrong sx={{ color: 'text.primary' }}>
       {driver.name}
-    </Typography>
-    <Typography variant="caption" color="text.secondary">
+    </MetaStrong>
+    <Meta>
       {driver.currentCity ?? '—'}, {driver.currentState ?? '—'}
       {driver.availableHours ? ` \u00B7 ${driver.availableHours} hrs available` : ''}
-    </Typography>
+    </Meta>
     {vehicle && (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-        <Typography variant="caption" sx={{ fontWeight: 500 }}>
+        <Meta sx={{ fontWeight: 500, color: 'text.primary' }}>
           {vehicle.unitNumber} \u00B7 {vehicle.year} {vehicle.make} {vehicle.model}
-        </Typography>
+        </Meta>
         <Chip
           label={VEHICLE_TYPE_LABELS[vehicle.type] ?? vehicle.type}
           size="small"
@@ -97,9 +99,9 @@ export const DriverVehicleAssignment: React.FC<DriverVehicleAssignmentProps> = (
 
   return (
     <Box>
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+      <SectionTitle sx={{ mb: 1 }}>
         Driver Assignment
-      </Typography>
+      </SectionTitle>
 
       <Autocomplete
         options={FLEET_DRIVERS}
@@ -115,9 +117,9 @@ export const DriverVehicleAssignment: React.FC<DriverVehicleAssignmentProps> = (
           <li {...props} key={option.id}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <StatusDot available={option.isAvailable} />
-              <Typography variant="body2">
+              <Meta sx={{ color: 'text.primary' }}>
                 {option.name} \u00B7 {option.currentCity ?? '—'}, {option.currentState ?? '—'}
-              </Typography>
+              </Meta>
             </Box>
           </li>
         )}
@@ -130,9 +132,9 @@ export const DriverVehicleAssignment: React.FC<DriverVehicleAssignmentProps> = (
       {selectedDriver ? (
         <DriverVehicleDetail driver={selectedDriver} vehicle={pairedVehicle} />
       ) : (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+        <HintText sx={{ mt: 1 }}>
           Select a driver to assign
-        </Typography>
+        </HintText>
       )}
     </Box>
   );

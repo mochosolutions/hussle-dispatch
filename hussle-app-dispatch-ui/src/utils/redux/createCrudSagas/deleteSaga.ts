@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createConfirmationHook } from './createConfirmationHook';
 import type {
@@ -90,13 +90,13 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook(id)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} deletion cancelled by user`);
+          // Deletion cancelled by user
           return;
         }
       } else if (hooks?.beforeDelete) {
         const shouldContinue = (yield* hooks.beforeDelete(id)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} deletion cancelled by beforeDelete hook`);
+          // Deletion cancelled by beforeDelete hook
           return;
         }
       }
@@ -137,7 +137,7 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         successMessage = parts.join('. ');
       }
 
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterDelete hook with deleteResult for cascade state synchronization
       if (hooks?.afterDelete) {
@@ -155,8 +155,6 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`delete${entityName}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -176,7 +174,7 @@ export function createDeleteSaga<TEntity extends { id: string }>(
         yield put(actions.deleteFailure({ error: errorMessage, id }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

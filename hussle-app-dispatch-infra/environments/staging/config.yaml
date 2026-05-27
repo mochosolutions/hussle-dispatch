@@ -1,0 +1,28 @@
+extends: "../base/config.yaml"
+
+dokploy:
+  base_url: "https://dokploy.staging.hussledispatch.com"
+
+project:
+  name: "fleet-staging"
+
+compose:
+  github:
+    branch: "staging"
+    provider_id: "REPLACE_ME"
+
+domains:
+  - host: "api.staging.hussledispatch.com"
+    service: "api"
+    port: 3001
+    ssl: true
+  - host: "staging.hussledispatch.com"
+    service: "ui"
+    port: 3000
+    ssl: true
+
+deployment:
+  wait_for_health: true
+  health_endpoints:
+    - url: "https://api.staging.hussledispatch.com/health"
+      expected_status: 200

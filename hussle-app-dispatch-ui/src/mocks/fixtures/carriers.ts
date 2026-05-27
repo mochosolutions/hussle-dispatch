@@ -1,10 +1,20 @@
-import type { CarrierListItem, CarrierOnboardingStatus } from 'features/carrier/types';
+import type { CarrierListItem, CarrierNote, CarrierOnboardingStatus } from 'features/carrier/types';
 
-export const mockCarriers: CarrierListItem[] = [
+// Wire-level fixture shape: the real API emits `dispatchFeePercent` (the Prisma
+// column name), not `companyMarginPercent`. The carrierApi client translates on
+// read so the UI domain keeps using `companyMarginPercent`. Fixtures stay
+// aligned with the API wire so mocks exercise the translation path.
+type MockCarrierWire = Omit<Partial<CarrierListItem>, 'companyMarginPercent'> & {
+  id: string;
+  dispatchFeePercent: string;
+};
+
+export const mockCarriers: MockCarrierWire[] = [
   {
     id: 'carrier-001',
     name: 'Acme Freight LLC',
     type: 'COMPANY_ASSET',
+    status: 'ACTIVE',
     mcNumber: 'MC-123456',
     dotNumber: '1234567',
     ein: '12-3456789',
@@ -15,7 +25,7 @@ export const mockCarriers: CarrierListItem[] = [
     state: 'TX',
     zip: '75201',
     dispatchFeePercent: '10.00',
-    partnerSplitPercent: null,
+
     feeIncludesAccessorials: true,
     dispatchAgreementOnFile: true,
     insuranceCertOnFile: true,
@@ -33,8 +43,9 @@ export const mockCarriers: CarrierListItem[] = [
   },
   {
     id: 'carrier-002',
-    name: "Mike's Owner Op",
-    type: 'OWNER_OPERATOR',
+    name: "Mike's Leased Carrier",
+    type: 'LEASED_CARRIER',
+    status: 'DRAFT',
     mcNumber: 'MC-654321',
     dotNumber: '7654321',
     ein: null,
@@ -45,7 +56,7 @@ export const mockCarriers: CarrierListItem[] = [
     state: 'TX',
     zip: '77001',
     dispatchFeePercent: '12.00',
-    partnerSplitPercent: '88.00',
+
     feeIncludesAccessorials: false,
     dispatchAgreementOnFile: true,
     insuranceCertOnFile: true,
@@ -65,6 +76,7 @@ export const mockCarriers: CarrierListItem[] = [
     id: 'carrier-003',
     name: 'FastFreight External',
     type: 'EXTERNAL_CARRIER',
+    status: 'DRAFT',
     mcNumber: null,
     dotNumber: null,
     ein: null,
@@ -75,7 +87,7 @@ export const mockCarriers: CarrierListItem[] = [
     state: 'AZ',
     zip: null,
     dispatchFeePercent: '8.00',
-    partnerSplitPercent: null,
+
     feeIncludesAccessorials: false,
     dispatchAgreementOnFile: false,
     insuranceCertOnFile: false,
@@ -124,4 +136,32 @@ export const mockOnboardingStatuses: Record<string, CarrierOnboardingStatus> = {
     insuranceExpiry: null,
     insuranceWarning: null,
   },
+};
+
+export const mockCarrierNotes: Record<string, CarrierNote[]> = {
+  'carrier-001': [
+    {
+      id: 'note-001',
+      carrierId: 'carrier-001',
+      content: 'Renewed insurance cert — new expiry 2027-01-15.',
+      authorName: 'Jane Doe',
+      createdAt: '2026-01-10T08:00:00.000Z',
+    },
+    {
+      id: 'note-002',
+      carrierId: 'carrier-001',
+      content: 'Completed onboarding and signed dispatch agreement.',
+      authorName: 'Jane Doe',
+      createdAt: '2025-06-01T10:00:00.000Z',
+    },
+  ],
+  'carrier-002': [
+    {
+      id: 'note-003',
+      carrierId: 'carrier-002',
+      content: 'Missing W-9 and carrier packet — follow up next week.',
+      authorName: 'Jane Doe',
+      createdAt: '2026-03-15T14:00:00.000Z',
+    },
+  ],
 };

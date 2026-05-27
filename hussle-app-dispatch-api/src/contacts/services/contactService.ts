@@ -13,9 +13,8 @@ import type {
 const listSortableFields = [
   'createdAt',
   'updatedAt',
-  'companyName',
-  'contactName',
-  'type',
+  'firstName',
+  'lastName',
 ] as const;
 
 const getSafeSortField = (field: string): (typeof listSortableFields)[number] => {

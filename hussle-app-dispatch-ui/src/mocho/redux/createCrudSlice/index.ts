@@ -7,6 +7,9 @@ import {
 import { setPending, setFulfilled, setRejected } from './sliceHelpers';
 import { LoadingState } from '../types/loadingState';
 
+// Local Date.now wrapper so tests can stay deterministic via jest.useFakeTimers if needed
+const now = (): number => Date.now();
+
 // =============================================================================
 // Payload Type Definitions
 // =============================================================================
@@ -27,6 +30,8 @@ export interface FetchByIdSuccessPayload {
 /** Payload for creating an entity */
 export interface CreateRequestPayload<TData> {
   data: TData;
+  redirectTo?: string;
+  onCreated?: (id: string) => void;
 }
 
 /** Payload for updating an entity */
@@ -87,6 +92,18 @@ export interface CrudPageState {
    * Examples: 'getAll', 'getById:123', 'delete:789'
    */
   loading: Record<string, string>;
+
+  /**
+   * Whether the list (getAll) has resolved at least once. Used by list pages
+   * to render KPI skeletons until first data arrives, avoiding a flash of `0`.
+   */
+  hasLoadedOnce: boolean;
+
+  /**
+   * Epoch ms timestamp of the last successful list fetch, or null if never.
+   * Used together with `isStale` to gate refetches on remount.
+   */
+  lastFetchedAt: number | null;
 }
 
 // =============================================================================
@@ -200,6 +217,18 @@ export function createCrudSelectors<TRootState>(
       (operation: CrudOperation, entityId: string) =>
       (state: TRootState): string =>
         sliceSelector(state).loading[`${operation}:${entityId}`] || '',
+
+    /**
+     * Select whether the list (getAll) has resolved at least once.
+     */
+    selectHasLoadedOnce: (state: TRootState): boolean =>
+      sliceSelector(state).hasLoadedOnce === true,
+
+    /**
+     * Select the epoch ms timestamp of the last successful list fetch (or null).
+     */
+    selectLastFetchedAt: (state: TRootState): number | null =>
+      sliceSelector(state).lastFetchedAt ?? null,
   };
 }
 
@@ -272,11 +301,14 @@ export function createCrudSlice(config: CrudSliceConfig) {
     entityNamePlural = 'entities',
   } = config;
 
-  // Default initial state (empty maps, no pre-seeded keys)
+  // Default initial state. `loading.getAll` starts as Pending so list pages
+  // can render skeletons immediately on mount instead of flashing empty/zero.
   const initialState: CrudPageState = {
     query: '',
     errors: {},
-    loading: {},
+    loading: { getAll: LoadingState.Pending },
+    hasLoadedOnce: false,
+    lastFetchedAt: null,
     ...customInitialState,
   };
 
@@ -293,6 +325,8 @@ export function createCrudSlice(config: CrudSliceConfig) {
 
     reducers.fetchAllSuccess = (state, _action: PayloadAction<unknown>) => {
       setFulfilled(state, { loadingKey: 'getAll', errorKey: 'getAll' });
+      state.hasLoadedOnce = true;
+      state.lastFetchedAt = now();
     };
 
     reducers.fetchAllFailure = (state, action: PayloadAction<FailurePayload>) => {

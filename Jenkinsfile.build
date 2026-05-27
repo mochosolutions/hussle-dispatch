@@ -1,0 +1,176 @@
+// Fleet Command — Build Pipeline
+// Builds Docker images and pushes to ECR
+// Tag format: sha-<7-char-commit>
+// Usage: Triggered by Jenkins on push to main or feature branches
+
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(name: 'BUILD_API', defaultValue: true, description: 'Build and push the Dispatch API image')
+        booleanParam(name: 'BUILD_UI', defaultValue: true, description: 'Build and push the Dispatch UI image')
+        booleanParam(name: 'BUILD_EMAILS', defaultValue: true, description: 'Build and push the Emails image')
+        booleanParam(name: 'BUILD_RABBITMQ', defaultValue: false, description: 'Build and push the RabbitMQ image (rarely needs rebuilding)')
+        string(name: 'VITE_API_URL', defaultValue: 'https://api.fleet.hussledispatch.com', description: 'API base URL baked into the UI build')
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = "${sh(script: 'aws sts get-caller-identity --query Account --output text', returnStdout: true).trim()}.dkr.ecr.us-east-1.amazonaws.com"
+        IMAGE_TAG = "sha-${GIT_COMMIT.take(7)}"
+    }
+
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    if (!params.BUILD_API && !params.BUILD_UI && !params.BUILD_EMAILS && !params.BUILD_RABBITMQ) {
+                        error('At least one service must be selected for build.')
+                    }
+                    echo "IMAGE_TAG:  ${IMAGE_TAG}"
+                    echo "GIT_COMMIT: ${GIT_COMMIT}"
+                    echo "BRANCH:     ${GIT_BRANCH}"
+                    echo "BUILD:      ${BUILD_NUMBER}"
+                    echo "Services:   API=${params.BUILD_API} UI=${params.BUILD_UI} EMAILS=${params.BUILD_EMAILS} RABBITMQ=${params.BUILD_RABBITMQ}"
+                }
+            }
+        }
+
+        stage('Validate API') {
+            when { expression { params.BUILD_API } }
+            steps {
+                sh '''
+                    cd hussle-app-dispatch-api
+                    npm ci
+                    npm run validate 2>&1 | tee /tmp/validate-api.log
+                    exit ${PIPESTATUS[0]}
+                '''
+            }
+            post {
+                failure {
+                    sh 'echo "--- API Validate Log ---"; cat /tmp/validate-api.log || true'
+                }
+            }
+        }
+
+        stage('Validate UI') {
+            when { expression { params.BUILD_UI } }
+            steps {
+                sh '''
+                    cd hussle-app-dispatch-ui
+                    npm ci
+                    npm run lint 2>&1 | tee /tmp/validate-ui.log
+                    exit ${PIPESTATUS[0]}
+                '''
+            }
+            post {
+                failure {
+                    sh 'echo "--- UI Validate Log ---"; cat /tmp/validate-ui.log || true'
+                }
+            }
+        }
+
+        stage('Audit') {
+            steps {
+                sh '''
+                    echo "--- Auditing hussle-app-dispatch-api ---"
+                    cd hussle-app-dispatch-api
+                    npm audit --audit-level=high
+                    cd ..
+
+                    echo "--- Auditing hussle-app-dispatch-ui ---"
+                    cd hussle-app-dispatch-ui
+                    npm audit --audit-level=high
+                '''
+            }
+        }
+
+        stage('ECR Login') {
+            steps {
+                sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}'
+            }
+        }
+
+        stage('Build API') {
+            when { expression { params.BUILD_API } }
+            steps {
+                sh '''
+                    IMAGE_TAG=${IMAGE_TAG} \
+                    ECR_REGISTRY=${ECR_REGISTRY} \
+                    docker compose -f docker-compose-build.yml --profile api build --push
+                '''
+                echo "Pushed: ${ECR_REGISTRY}/fleet-api:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Build UI') {
+            when { expression { params.BUILD_UI } }
+            steps {
+                sh '''
+                    IMAGE_TAG=${IMAGE_TAG} \
+                    ECR_REGISTRY=${ECR_REGISTRY} \
+                    VITE_API_URL=${params.VITE_API_URL} \
+                    docker compose -f docker-compose-build.yml --profile ui build --push
+                '''
+                echo "Pushed: ${ECR_REGISTRY}/fleet-ui:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Build Emails') {
+            when { expression { params.BUILD_EMAILS } }
+            steps {
+                sh '''
+                    IMAGE_TAG=${IMAGE_TAG} \
+                    ECR_REGISTRY=${ECR_REGISTRY} \
+                    docker compose -f docker-compose-build.yml --profile emails build --push
+                '''
+                echo "Pushed: ${ECR_REGISTRY}/fleet-emails:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Build RabbitMQ') {
+            when { expression { params.BUILD_RABBITMQ } }
+            steps {
+                sh '''
+                    IMAGE_TAG=${IMAGE_TAG} \
+                    ECR_REGISTRY=${ECR_REGISTRY} \
+                    docker compose -f docker-compose-build.yml --profile rabbitmq build --push
+                '''
+                echo "Pushed: ${ECR_REGISTRY}/fleet-rabbitmq:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Artifact') {
+            steps {
+                script {
+                    def lines = [
+                        "IMAGE_TAG=${IMAGE_TAG}",
+                        "GIT_COMMIT=${GIT_COMMIT}",
+                        "GIT_BRANCH=${GIT_BRANCH}",
+                        "BUILD_NUMBER=${BUILD_NUMBER}",
+                        "",
+                        "--- Per-Service Tags ---",
+                        "fleet-api:     ${params.BUILD_API     ? "${ECR_REGISTRY}/fleet-api:${IMAGE_TAG}"     : 'skipped'}",
+                        "fleet-ui:      ${params.BUILD_UI      ? "${ECR_REGISTRY}/fleet-ui:${IMAGE_TAG}"      : 'skipped'}",
+                        "fleet-emails:  ${params.BUILD_EMAILS  ? "${ECR_REGISTRY}/fleet-emails:${IMAGE_TAG}"  : 'skipped'}",
+                        "fleet-rabbitmq:${params.BUILD_RABBITMQ ? "${ECR_REGISTRY}/fleet-rabbitmq:${IMAGE_TAG}" : 'skipped'}",
+                    ]
+                    writeFile file: 'build-info.txt', text: lines.join('\n')
+                }
+                archiveArtifacts artifacts: 'build-info.txt', onlyIfSuccessful: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Images pushed with tag: ${IMAGE_TAG}"
+        }
+        failure {
+            echo "Build failed for ${IMAGE_TAG}"
+        }
+        cleanup {
+            sh 'docker system prune -f || true'
+        }
+    }
+}

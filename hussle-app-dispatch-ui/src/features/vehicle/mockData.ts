@@ -1,4 +1,5 @@
 import type { Vehicle, VehicleExpense, PaginationMeta } from 'features/carrier/types';
+import type { VehicleLoad } from 'utils/api/fleet/vehicleApi';
 
 const CARRIER_ID_1 = 'c1a2b3c4-d5e6-7f89-0a1b-2c3d4e5f6a7b';
 const CARRIER_ID_2 = 'd2b3c4d5-e6f7-8a90-1b2c-3d4e5f6a7b8c';
@@ -98,6 +99,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
   {
     id: VEHICLE_ID_1,
     carrierId: CARRIER_ID_1,
+    driverId: null,
     unitNumber: 'TRK-1001',
     make: 'Freightliner',
     model: 'Cascadia',
@@ -114,6 +116,9 @@ export const MOCK_VEHICLES: Vehicle[] = [
     monthlyGrossTarget: '18000.00',
     monthlyMilesTarget: 10000,
     workingDaysPerMonth: 22,
+    lenderName: null,
+    loanPayment: null,
+    insuranceMonthlyCost: null,
     expenses: detailExpenses,
     notes: 'Primary long-haul unit. DEF system serviced Feb 2026.',
     createdAt: '2026-01-10T00:00:00.000Z',
@@ -123,6 +128,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
   {
     id: VEHICLE_ID_2,
     carrierId: CARRIER_ID_1,
+    driverId: null,
     unitNumber: 'TRK-1002',
     make: 'Peterbilt',
     model: '579',
@@ -139,6 +145,9 @@ export const MOCK_VEHICLES: Vehicle[] = [
     monthlyGrossTarget: '22000.00',
     monthlyMilesTarget: 9500,
     workingDaysPerMonth: 22,
+    lenderName: null,
+    loanPayment: null,
+    insuranceMonthlyCost: null,
     expenses: [],
     notes: 'Reefer unit for temperature-sensitive freight. Lease expires Dec 2027.',
     createdAt: '2026-01-12T00:00:00.000Z',
@@ -148,6 +157,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
   {
     id: VEHICLE_ID_3,
     carrierId: CARRIER_ID_2,
+    driverId: null,
     unitNumber: 'TRK-2001',
     make: 'Kenworth',
     model: 'T680',
@@ -164,6 +174,9 @@ export const MOCK_VEHICLES: Vehicle[] = [
     monthlyGrossTarget: '15000.00',
     monthlyMilesTarget: 8500,
     workingDaysPerMonth: 20,
+    lenderName: null,
+    loanPayment: null,
+    insuranceMonthlyCost: null,
     expenses: [],
     notes: null,
     createdAt: '2026-02-01T00:00:00.000Z',
@@ -173,6 +186,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
   {
     id: VEHICLE_ID_4,
     carrierId: CARRIER_ID_2,
+    driverId: null,
     unitNumber: 'TRK-2002',
     make: 'Volvo',
     model: 'VNL 860',
@@ -189,6 +203,9 @@ export const MOCK_VEHICLES: Vehicle[] = [
     monthlyGrossTarget: '16500.00',
     monthlyMilesTarget: 9000,
     workingDaysPerMonth: 22,
+    lenderName: null,
+    loanPayment: null,
+    insuranceMonthlyCost: null,
     expenses: [],
     notes: 'Step deck for oversized loads. Tarps included.',
     createdAt: '2026-01-20T00:00:00.000Z',
@@ -198,6 +215,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
   {
     id: VEHICLE_ID_5,
     carrierId: CARRIER_ID_3,
+    driverId: null,
     unitNumber: 'BX-3001',
     make: 'Hino',
     model: 'L7',
@@ -214,6 +232,9 @@ export const MOCK_VEHICLES: Vehicle[] = [
     monthlyGrossTarget: '12000.00',
     monthlyMilesTarget: 6000,
     workingDaysPerMonth: 20,
+    lenderName: null,
+    loanPayment: null,
+    insuranceMonthlyCost: null,
     expenses: [],
     notes: 'Last-mile delivery unit. 26ft box.',
     createdAt: '2026-02-15T00:00:00.000Z',
@@ -223,6 +244,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
   {
     id: VEHICLE_ID_6,
     carrierId: CARRIER_ID_3,
+    driverId: null,
     unitNumber: 'HS-3002',
     make: 'Ford',
     model: 'F-350',
@@ -239,6 +261,9 @@ export const MOCK_VEHICLES: Vehicle[] = [
     monthlyGrossTarget: '10000.00',
     monthlyMilesTarget: 7000,
     workingDaysPerMonth: 22,
+    lenderName: null,
+    loanPayment: null,
+    insuranceMonthlyCost: null,
     expenses: [],
     notes: 'Hotshot with 40ft gooseneck trailer.',
     createdAt: '2026-02-18T00:00:00.000Z',
@@ -253,6 +278,72 @@ export const MOCK_VEHICLES_META: PaginationMeta = {
   page: 1,
   limit: 25,
   total: 6,
+  totalPages: 1,
+  hasMore: false,
+};
+
+export const MOCK_VEHICLE_LOADS: VehicleLoad[] = [
+  {
+    id: 'load-001',
+    referenceNumber: 'LD-2026-0451',
+    origin: 'Dallas, TX',
+    destination: 'Chicago, IL',
+    status: 'DELIVERED',
+    rate: '3200.00',
+    miles: 920,
+    pickupDate: '2026-02-20T08:00:00.000Z',
+    deliveryDate: '2026-02-22T14:00:00.000Z',
+  },
+  {
+    id: 'load-002',
+    referenceNumber: 'LD-2026-0389',
+    origin: 'Houston, TX',
+    destination: 'Atlanta, GA',
+    status: 'DELIVERED',
+    rate: '2800.00',
+    miles: 790,
+    pickupDate: '2026-02-15T06:00:00.000Z',
+    deliveryDate: '2026-02-17T10:00:00.000Z',
+  },
+  {
+    id: 'load-003',
+    referenceNumber: 'LD-2026-0512',
+    origin: 'Memphis, TN',
+    destination: 'Denver, CO',
+    status: 'IN_TRANSIT',
+    rate: '3600.00',
+    miles: 1040,
+    pickupDate: '2026-03-06T07:00:00.000Z',
+    deliveryDate: null,
+  },
+  {
+    id: 'load-004',
+    referenceNumber: 'LD-2026-0298',
+    origin: 'Phoenix, AZ',
+    destination: 'Los Angeles, CA',
+    status: 'DELIVERED',
+    rate: '1500.00',
+    miles: 370,
+    pickupDate: '2026-02-10T09:00:00.000Z',
+    deliveryDate: '2026-02-10T18:00:00.000Z',
+  },
+  {
+    id: 'load-005',
+    referenceNumber: 'LD-2026-0175',
+    origin: 'Nashville, TN',
+    destination: 'Miami, FL',
+    status: 'DELIVERED',
+    rate: '2950.00',
+    miles: 830,
+    pickupDate: '2026-02-05T06:00:00.000Z',
+    deliveryDate: '2026-02-07T12:00:00.000Z',
+  },
+];
+
+export const MOCK_VEHICLE_LOADS_META: PaginationMeta = {
+  page: 1,
+  limit: 25,
+  total: 5,
   totalPages: 1,
   hasMore: false,
 };

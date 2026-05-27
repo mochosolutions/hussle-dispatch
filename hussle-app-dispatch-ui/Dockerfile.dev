@@ -2,19 +2,10 @@ FROM node:22-alpine
 
 WORKDIR /usr/app
 
-COPY package*.json ./
-COPY prisma ./prisma/
-
 COPY package.json package-lock.json ./
 
 RUN npm ci
 RUN npm install --os=linux --cpu=arm64 @rollup/rollup-linux-arm64-musl || true
-
-
-# Generate Prisma client with platform-specific binaries for the container
-# This MUST happen after npm install (which installs @prisma/client)
-# and BEFORE copying source code (which imports from generated client)
-RUN npx prisma generate
 
 COPY . .
 # COPY mocho-ui/ ./mocho-ui/

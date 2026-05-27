@@ -9,8 +9,10 @@ import { registerValidation } from 'features/auth/validators/authValidators';
 
 import {
   TextField,
+  SelectField,
   EmailField,
-  PasswordFieldWithStrength,
+  PasswordFieldWithChecklist,
+  ConfirmPasswordField,
   SubmitButton,
   TermsNotice,
   FormError,
@@ -21,8 +23,12 @@ interface RegisterFormValues {
   firstName: string;
   lastName: string;
   email: string;
-  name: string;
+  orgName: string;
+  orgRole: string;
+  mcNumber: string;
+  dotNumber: string;
   password: string;
+  confirmPassword: string;
   submit: string | null;
 }
 
@@ -35,25 +41,32 @@ const AuthRegister = () => {
       firstName: '',
       lastName: '',
       email: '',
-      name: '',
+      orgName: '',
+      orgRole: '',
+      mcNumber: '',
+      dotNumber: '',
       password: '',
+      confirmPassword: '',
       submit: null,
     },
     validationSchema: registerValidation,
     onSubmit: async (values) => {
       try {
-        const { firstName, lastName, email, name, password } = values;
+        const { firstName, lastName, email, orgName, password, orgRole, mcNumber, dotNumber } = values;
         dispatch(
           signupRequest({
             email,
             password,
             firstName,
             lastName,
-            name,
+            orgName,
+            orgRole,
+            mcNumber,
+            dotNumber,
           }),
         );
-      } catch (err) {
-        console.error(err);
+      } catch (_err: unknown) {
+        // Error handled by saga
       }
     },
   });
@@ -80,6 +93,7 @@ const AuthRegister = () => {
             name="firstName"
             label="First Name"
             placeholder="John"
+            autoComplete="given-name"
             required
             formik={formikProps}
           />
@@ -91,17 +105,7 @@ const AuthRegister = () => {
             name="lastName"
             label="Last Name"
             placeholder="Doe"
-            required
-            formik={formikProps}
-          />
-        </Grid>
-
-        {/* Company Name */}
-        <Grid item xs={12}>
-          <TextField
-            name="name"
-            label="Company Name"
-            placeholder="Demo Inc."
+            autoComplete="family-name"
             required
             formik={formikProps}
           />
@@ -113,17 +117,83 @@ const AuthRegister = () => {
             name="email"
             label="Email Address"
             placeholder="demo@company.com"
+            autoComplete="email"
             required
             formik={formikProps}
           />
         </Grid>
 
-        {/* Password with Strength Meter */}
+        {/* Company Name */}
         <Grid item xs={12}>
-          <PasswordFieldWithStrength
+          <TextField
+            name="orgName"
+            label="Company Name"
+            placeholder="Demo Inc."
+            autoComplete="organization"
+            required
+            formik={formikProps}
+          />
+        </Grid>
+
+        {/* Organization Type */}
+        <Grid item xs={12}>
+          <SelectField
+            name="orgRole"
+            label="Organization Type"
+            placeholder="Select organization type"
+            required
+            data={[
+              { value: 'CARRIER', label: 'Carrier' },
+              { value: 'BROKER', label: 'Broker' },
+              { value: 'SHIPPER', label: 'Shipper' },
+              { value: 'DISPATCH_COMPANY', label: 'Dispatch Company' },
+            ]}
+            formik={formikProps}
+          />
+        </Grid>
+
+        {/* MC Number + DOT Number — shown only for CARRIER */}
+        {formik.values.orgRole === 'CARRIER' && (
+          <>
+            <Grid item xs={12} md={6}>
+              <TextField
+                name="mcNumber"
+                label="MC Number"
+                placeholder="MC-123456"
+                required
+                formik={formikProps}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                name="dotNumber"
+                label="DOT Number"
+                placeholder="1234567"
+                formik={formikProps}
+              />
+            </Grid>
+          </>
+        )}
+
+        {/* Password with Validation Checklist */}
+        <Grid item xs={12}>
+          <PasswordFieldWithChecklist
             name="password"
             label="Password"
             placeholder="******"
+            autoComplete="new-password"
+            required
+            formik={formikProps}
+          />
+        </Grid>
+
+        {/* Confirm Password */}
+        <Grid item xs={12}>
+          <ConfirmPasswordField
+            name="confirmPassword"
+            label="Confirm Password"
+            placeholder="Re-enter password"
+            autoComplete="new-password"
             required
             formik={formikProps}
           />
@@ -144,8 +214,8 @@ const AuthRegister = () => {
         {/* Terms Notice */}
         <Grid item xs={12}>
           <TermsNotice
-            termsLink="#"
-            privacyLink="#"
+            termsLink="/terms"
+            privacyLink="/privacy"
           />
         </Grid>
       </Grid>

@@ -1,48 +1,41 @@
 services:
-  # dispatch-ui:
-  #   build:
-  #     context: ./hussle-app-dispatch-ui
-  #     dockerfile: Dockerfile.dev
-  #   ports:
-  #     - "5173:5173"
-  #   volumes:
-  #     - ./hussle-app-dispatch-ui/src:/app/hussle-app-dispatch-ui/src
-  #     - ./hussle-app-dispatch-ui/public:/app/hussle-app-dispatch-ui/public
-  #     - ./hussle-app-dispatch-ui/index.html:/app/hussle-app-dispatch-ui/index.html
-  #     - ./hussle-app-dispatch-ui/vite.config.ts:/app/hussle-app-dispatch-ui/vite.config.ts
-  #     - ./hussle-app-dispatch-ui/tsconfig.json:/app/hussle-app-dispatch-ui/tsconfig.json
-  #     - ./hussle-app-dispatch-ui/tsconfig.app.json:/app/hussle-app-dispatch-ui/tsconfig.app.json
-  #     - ./hussle-app-dispatch-ui/tsconfig.node.json:/app/hussle-app-dispatch-ui/tsconfig.node.json
-  #     - ./mocho-ui/src:/app/mocho-ui/src
-  #   working_dir: /app/hussle-app-dispatch-ui
-  #   command: npx vite --host 0.0.0.0 --force
-  #   environment:
-  #     - CHOKIDAR_USEPOLLING=true
+  dispatch-ui:
+    build:
+      context: ./hussle-app-dispatch-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./hussle-app-dispatch-ui:/usr/app
+      - /usr/app/node_modules
+    command: npx vite --host 0.0.0.0 --force
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      # Vite dev proxy at /docuseal-embed/* forwards to this URL and strips
+      # x-frame-options so the AgreementSigningStep iframe can render the
+      # DocuSeal signing page. Resolves via the docker network.
+      - DOCUSEAL_PROXY_TARGET=http://hussle-app-docuseal:3000
   dispatch-api:
     build:
       context: ./hussle-app-dispatch-api
       dockerfile: Dockerfile.dev
     ports:
       - "3001:3001"
-    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev --db-name "$${DB_NAME}"'
+    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev'
     volumes:
       - ./hussle-app-dispatch-api:/usr/app
-      - api-node_modules:/usr/app/node_modules
+      - /usr/app/node_modules
+    env_file:
+      - ./hussle-app-dispatch-api/.env
     depends_on:
       hussle-app-redis:
         condition: service_healthy
       hussle-app-postgres:
         condition: service_healthy
-    environment:
-      - DB_NAME=hussle_dispatch
-      - DATABASE_URL=postgresql://postgres:postgres@hussle-app-postgres:5432/hussle_dispatch
-      - REDIS_URL=redis://hussle-app-redis:6379
-      - PORT=3001
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=300
+      hussle-app-rabbitmq:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -67,11 +60,11 @@ services:
       retries: 5
 
   hussle-app-redis:
-    image: redis:7-alpine
+    image: redis/redis-stack:7.4.0-v2
     container_name: hussle-app-redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
+      - "8001:8001"
     volumes:
       - redis-data:/data
     restart: unless-stopped
@@ -81,8 +74,64 @@ services:
       timeout: 5s
       retries: 5
 
+  hussle-app-rabbitmq:
+    image: fleet-command/rabbitmq:3.13-delayed
+    build:
+      context: ./docker/rabbitmq
+    container_name: hussle-app-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: hussle-app-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@local.dev
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      - hussle-app-postgres
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: hussle-app-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
+
+  # DocuSeal — optional. Start with `docker compose --profile docuseal up -d docuseal`.
+  # Default `docker compose up` skips it; the dispatch-api falls back to the deterministic
+  # mock signature provider unless SIGNATURE_PROVIDER=docuseal in .env.
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: hussle-app-docuseal
+    ports:
+      - "3030:3000"
+    environment:
+      FORCE_SSL: "false"
+      HOST: localhost:3030
+    volumes:
+      - docuseal-data:/data
+    restart: unless-stopped
+    profiles: ["docuseal"]
+
 volumes:
   postgres-data:
   redis-data:
-  api-node_modules:
+  rabbitmq-data:
+  docuseal-data:
   # redisinsight-data:

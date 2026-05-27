@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createConfirmationHook } from './createConfirmationHook';
 import type {
@@ -93,13 +93,13 @@ export function createUpdateSaga<
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook({ id, data })) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} update cancelled by user`);
+          // Update cancelled by user
           return;
         }
       } else if (hooks?.beforeUpdate) {
         const shouldContinue = (yield* hooks.beforeUpdate(id, data)) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityName} update cancelled by beforeUpdate hook`);
+          // Update cancelled by beforeUpdate hook
           return;
         }
       }
@@ -117,7 +117,7 @@ export function createUpdateSaga<
 
       // Show success message
       const successMessage = messages?.updateSuccess || `${entityName} updated successfully`;
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterUpdate hook
       if (hooks?.afterUpdate) {
@@ -135,8 +135,6 @@ export function createUpdateSaga<
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`update${entityName}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -156,7 +154,7 @@ export function createUpdateSaga<
         yield put(actions.updateFailure({ error: errorMessage, id }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

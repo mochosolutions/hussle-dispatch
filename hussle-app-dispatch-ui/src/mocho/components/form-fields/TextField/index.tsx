@@ -1,5 +1,6 @@
 import React from 'react';
-import { OutlinedInput } from '@mui/material';
+import { InputAdornment, OutlinedInput, Typography } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { TextFieldProps } from '../types';
 
@@ -18,30 +19,44 @@ export const TextField: React.FC<TextFieldProps> = ({
   disabled = false,
   required = false,
   type = 'text',
+  autoComplete,
+  multiline = false,
+  minRows,
+  startAdornment,
+  endAdornment,
   formik,
+  ...rest
 }) => {
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
+
+  const renderAdornment = (text: string, position: 'start' | 'end') => (
+    <InputAdornment position={position}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+        {text}
+      </Typography>
+    </InputAdornment>
+  );
 
   return (
-    <BaseFieldWrapper
-      name={name}
-      label={label}
-      required={required}
-      error={error}
-      touched={touched}
-    >
+    <BaseFieldWrapper name={name} label={label} required={required} error={error} touched={touched}>
       <OutlinedInput
         id={name}
         name={name}
         type={type}
-        value={formik.values[name] || ''}
+        value={getIn(formik.values, name) || ''}
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
         placeholder={placeholder}
         disabled={disabled}
+        autoComplete={autoComplete}
+        multiline={multiline}
+        minRows={minRows}
         fullWidth
         error={Boolean(touched && error)}
+        startAdornment={startAdornment ? renderAdornment(startAdornment, 'start') : undefined}
+        endAdornment={endAdornment ? renderAdornment(endAdornment, 'end') : undefined}
+        {...rest}
       />
     </BaseFieldWrapper>
   );

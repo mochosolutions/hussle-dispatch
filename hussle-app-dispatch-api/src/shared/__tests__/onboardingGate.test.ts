@@ -2,17 +2,20 @@ import { checkCarrierOnboarding } from '../onboardingGate';
 import type { CarrierOnboardingInput } from '../onboardingGate';
 
 // ---------------------------------------------------------------------------
-// COMPANY_ASSET — always allowed
+// COMPANY_ASSET — only insurance is required (no agreement / W-9 with self)
 // ---------------------------------------------------------------------------
 
 describe('checkCarrierOnboarding — COMPANY_ASSET', () => {
-  it('returns allowed:true with no missing documents regardless of doc status', () => {
+  it('returns allowed:true when insurance is on file and unexpired, even without agreement or W-9', () => {
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+
     const input: CarrierOnboardingInput = {
       carrierType: 'COMPANY_ASSET',
       dispatchAgreementOnFile: false,
-      insuranceCertOnFile: false,
-      insuranceExpiry: null,
-      w9OnFile: false,
+      insuranceCertOnFile: true,
+      insuranceExpiry: futureDate,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -21,19 +24,36 @@ describe('checkCarrierOnboarding — COMPANY_ASSET', () => {
     expect(result.missingDocuments).toEqual([]);
   });
 
-  it('returns allowed:true even when all documents missing', () => {
+  it('flags missing insurance for COMPANY_ASSET', () => {
     const input: CarrierOnboardingInput = {
       carrierType: 'COMPANY_ASSET',
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
 
-    expect(result.allowed).toBe(true);
-    expect(result.missingDocuments).toHaveLength(0);
+    expect(result.allowed).toBe(false);
+    expect(result.missingDocuments).toEqual(['Certificate of Insurance']);
+  });
+
+  it('flags expired insurance for COMPANY_ASSET but does not require agreement or W-9', () => {
+    const pastDate = new Date('2020-06-15');
+
+    const input: CarrierOnboardingInput = {
+      carrierType: 'COMPANY_ASSET',
+      dispatchAgreementOnFile: false,
+      insuranceCertOnFile: true,
+      insuranceExpiry: pastDate,
+      tinOnFile: false,
+    };
+
+    const result = checkCarrierOnboarding(input);
+
+    expect(result.allowed).toBe(false);
+    expect(result.missingDocuments).toEqual(['Insurance expired on 2020-06-15']);
   });
 });
 
@@ -51,7 +71,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with all docs valid', () =
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -75,7 +95,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing dispatch agreement
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -96,7 +116,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with insuranceCertOnFile=f
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -119,7 +139,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with expired insurance', (
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: pastDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -136,7 +156,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER with expired insurance', (
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: false,
       insuranceExpiry: pastDate,
-      w9OnFile: true,
+      tinOnFile: true,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -161,7 +181,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing W-9', () => {
       dispatchAgreementOnFile: true,
       insuranceCertOnFile: true,
       insuranceExpiry: futureDate,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -182,7 +202,7 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing all documents', ()
       dispatchAgreementOnFile: false,
       insuranceCertOnFile: false,
       insuranceExpiry: null,
-      w9OnFile: false,
+      tinOnFile: false,
     };
 
     const result = checkCarrierOnboarding(input);
@@ -195,39 +215,3 @@ describe('checkCarrierOnboarding — EXTERNAL_CARRIER missing all documents', ()
   });
 });
 
-// ---------------------------------------------------------------------------
-// OWNER_OPERATOR — always rejected
-// ---------------------------------------------------------------------------
-
-describe('checkCarrierOnboarding — OWNER_OPERATOR', () => {
-  it('returns allowed:false with "Owner-operator support coming soon" message', () => {
-    const input: CarrierOnboardingInput = {
-      carrierType: 'OWNER_OPERATOR',
-      dispatchAgreementOnFile: true,
-      insuranceCertOnFile: true,
-      insuranceExpiry: new Date(),
-      w9OnFile: true,
-    };
-
-    const result = checkCarrierOnboarding(input);
-
-    expect(result.allowed).toBe(false);
-    expect(result.missingDocuments).toEqual(['Owner-operator support coming soon']);
-  });
-
-  it('returns allowed:false regardless of document status', () => {
-    const input: CarrierOnboardingInput = {
-      carrierType: 'OWNER_OPERATOR',
-      dispatchAgreementOnFile: false,
-      insuranceCertOnFile: false,
-      insuranceExpiry: null,
-      w9OnFile: false,
-    };
-
-    const result = checkCarrierOnboarding(input);
-
-    expect(result.allowed).toBe(false);
-    expect(result.missingDocuments).toHaveLength(1);
-    expect(result.missingDocuments[0]).toBe('Owner-operator support coming soon');
-  });
-});

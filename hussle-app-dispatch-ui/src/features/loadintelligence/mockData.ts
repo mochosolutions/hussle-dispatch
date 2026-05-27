@@ -9,7 +9,7 @@ export const FLEET_DRIVERS: Driver[] = [...RAW_FLEET_DRIVERS].sort((a, b) => {
   if (a.isAvailable !== b.isAvailable) {
     return a.isAvailable ? -1 : 1;
   }
-  return a.name.localeCompare(b.name);
+  return a.lastName.localeCompare(b.lastName);
 });
 
 export const FLEET_VEHICLES: Vehicle[] = RAW_FLEET_VEHICLES;
@@ -27,7 +27,8 @@ export const MOCK_DRIVER_VEHICLE_MAP: Record<string, string> = {
 export const MOCK_DRIVERS: MockDriver[] = [
   {
     id: 'DRV-001',
-    name: 'Marcus Johnson',
+    firstName: 'Marcus',
+    lastName: 'Johnson',
     initials: 'MJ',
     avatarColor: 'primary.main',
     currentCity: 'Dallas',
@@ -35,7 +36,8 @@ export const MOCK_DRIVERS: MockDriver[] = [
   },
   {
     id: 'DRV-002',
-    name: 'James Davis',
+    firstName: 'James',
+    lastName: 'Davis',
     initials: 'JD',
     avatarColor: 'secondary.main',
     currentCity: 'Charlotte',
@@ -43,7 +45,8 @@ export const MOCK_DRIVERS: MockDriver[] = [
   },
   {
     id: 'DRV-003',
-    name: 'Ray Thompson',
+    firstName: 'Ray',
+    lastName: 'Thompson',
     initials: 'RT',
     avatarColor: 'info.main',
     currentCity: 'Atlanta',
@@ -51,7 +54,8 @@ export const MOCK_DRIVERS: MockDriver[] = [
   },
   {
     id: 'DRV-004',
-    name: 'Carlos Reyes',
+    firstName: 'Carlos',
+    lastName: 'Reyes',
     initials: 'CR',
     avatarColor: 'warning.main',
     currentCity: 'Phoenix',
@@ -59,7 +63,8 @@ export const MOCK_DRIVERS: MockDriver[] = [
   },
   {
     id: 'DRV-005',
-    name: 'Andre Hill',
+    firstName: 'Andre',
+    lastName: 'Hill',
     initials: 'AH',
     avatarColor: 'success.main',
     currentCity: 'Indianapolis',

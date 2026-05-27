@@ -32,24 +32,46 @@ export const getDrivers = async (
   return response.data;
 };
 
-export const getDriver = async (id: string): Promise<{ driver: Driver }> => {
+export const getDriver = async (id: string): Promise<Driver> => {
   const response = await axiosInstance.get<GetDriverResponse>(`/drivers/${id}`);
-  return { driver: response.data.data };
+  return response.data.data;
 };
 
-export const createDriver = async (data: CreateDriverInput): Promise<{ driver: Driver }> => {
+export const createDriver = async (data: CreateDriverInput): Promise<Driver> => {
   const response = await axiosInstance.post<GetDriverResponse>('/drivers', data);
-  return { driver: response.data.data };
+  return response.data.data;
 };
 
 export const updateDriver = async (
   id: string,
   data: UpdateDriverInput,
-): Promise<{ driver: Driver }> => {
+): Promise<Driver> => {
   const response = await axiosInstance.patch<GetDriverResponse>(`/drivers/${id}`, data);
-  return { driver: response.data.data };
+  return response.data.data;
 };
 
 export const deleteDriver = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/drivers/${id}`);
+};
+
+// ---------------------------------------------------------------------------
+// Deadhead distance
+// ---------------------------------------------------------------------------
+
+export interface DeadheadDistanceResult {
+  deadheadMiles: number | null;
+  isEstimated: boolean;
+  source: 'coordinates' | 'geocoded' | null;
+}
+
+export const getDeadheadDistance = async (
+  driverId: string,
+  lat: number,
+  lng: number,
+): Promise<DeadheadDistanceResult> => {
+  const response = await axiosInstance.get<{ data: DeadheadDistanceResult }>(
+    `/drivers/${driverId}/deadhead-to`,
+    { params: { lat, lng } },
+  );
+  return response.data.data;
 };

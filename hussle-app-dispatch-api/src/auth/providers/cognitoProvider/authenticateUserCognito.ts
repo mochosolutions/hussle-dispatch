@@ -21,6 +21,14 @@ export const authenticateUserCognito = async (
 
     const user = { email: username };
 
+    if ('challengeName' in authResponse && authResponse.challengeName === 'UNCONFIRMED') {
+      return {
+        status: AuthStatus.UNCONFIRMED,
+        user,
+        challengeName: authResponse.challengeName,
+      };
+    }
+
     if (!('accessToken' in authResponse)) {
       throw new AuthRequestError('Unexpected Cognito response format');
     }

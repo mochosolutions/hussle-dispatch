@@ -1,11 +1,12 @@
 import { prisma } from '../config/database';
 import { SequenceError } from './errors';
 
-export type SequenceType = 'LOAD' | 'INVOICE';
+export type SequenceType = 'LOAD' | 'INVOICE' | 'TRIP';
 
 const SEQUENCE_PREFIX: Record<SequenceType, string> = {
   LOAD: 'LD',
   INVOICE: 'INV',
+  TRIP: 'TRIP',
 };
 
 const MAX_RETRIES = 3;

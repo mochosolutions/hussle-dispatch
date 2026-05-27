@@ -1,23 +1,16 @@
 export enum OrganizationStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
 }
 
-export enum SubscriptionTier {
-  FREE = 'free',
-  PRO = 'pro',
-  ENTERPRISE = 'enterprise',
-}
-
-export enum OrganizationVertical {
-  LOGISTICS = 'logistics',
-  HEALTHCARE = 'healthcare',
-  STAFFING = 'staffing',
-}
-
-export enum OrganizationRole {
-  BROKER = 'broker',
-  CARRIER = 'carrier',
-  SHIPPER = 'shipper',
-}
+/**
+ * Membership status values.
+ * Note: Membership.status is a plain String field in Prisma (not an enum),
+ * so values are lowercase to match the DB default.
+ */
+export const MembershipStatus = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+  DELETED: 'deleted',
+} as const;

@@ -1,4 +1,4 @@
-// import { PayloadAction } from "@reduxjs/toolkit";
+import type { AuthState } from '../authSlice';
 import {
   setPending,
   setFulfilled,
@@ -6,18 +6,18 @@ import {
 } from '../../../../utils/authSliceHelpers';
 
 export const resendCodeReducer = {
-  resendCodeRequest: (state) => {
-    setPending(state, {key: 'confirmCode'});
+  resendCodeRequest: (state: AuthState) => {
+    setPending(state, { key: 'confirmCode' });
   },
 
-  resendCodeSuccess: (state) => {
+  resendCodeSuccess: (state: AuthState) => {
     setFulfilled(state, {
       loadingKey: 'confirmCode',
       errorKey: 'confirmCode',
     });
   },
 
-  resendCodeFailure: (state) => {
+  resendCodeFailure: (state: AuthState) => {
     setRejected(state, {
       loadingKey: 'confirmCode',
       errorKey: 'confirmCode',

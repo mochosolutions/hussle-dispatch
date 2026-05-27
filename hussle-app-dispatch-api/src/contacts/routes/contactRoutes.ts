@@ -15,6 +15,12 @@ export const createContactsRouter = (controllers: ContactControllers): express.R
   router.post('/', requireAuth, validateRequest(createContactValidator), controllers.createContact);
   router.get('/', requireAuth, validateRequest(listContactsValidator), controllers.listContacts);
   router.get(
+    '/:id/stats',
+    requireAuth,
+    validateRequest(contactIdParamValidator),
+    controllers.getContactStats,
+  );
+  router.get(
     '/:id',
     requireAuth,
     validateRequest(contactIdParamValidator),

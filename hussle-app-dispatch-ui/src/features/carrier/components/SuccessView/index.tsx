@@ -1,4 +1,5 @@
-import { Avatar, Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { Avatar, Box, Button, Chip, Stack } from '@mui/material';
+import { BodyMuted, SectionTitle, Timestamp } from 'components/Typography';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import type { CreateMode, SubmitStatus } from '../../types';
 
@@ -29,8 +30,8 @@ export const SuccessView = ({
 
   if (mode === 'quick') {
     statusLabel = 'Draft';
-  } else if (submitStatus === 'active') {
-    statusLabel = 'Approved';
+  } else if (submitStatus === 'ACTIVE') {
+    statusLabel = 'Active';
   }
 
   return (
@@ -41,10 +42,8 @@ export const SuccessView = ({
         <Avatar sx={{ width: 64, height: 64, bgcolor: 'success.light', mx: 'auto', mb: 2.5 }}>
           <CheckCircleOutlineIcon sx={{ fontSize: 32, color: 'success.main' }} />
         </Avatar>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-          Carrier Created
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
+        <SectionTitle sx={{ fontSize: '1.5rem', mb: 1 }}>Carrier Created</SectionTitle>
+        <BodyMuted sx={{ mb: 0.5 }}>
           <Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>
             {companyName}
           </Box>{' '}
@@ -56,21 +55,21 @@ export const SuccessView = ({
             variant="outlined"
             sx={{ fontWeight: 600 }}
           />
-        </Typography>
+        </BodyMuted>
 
         {mode === 'full' && (vehicleCount > 0 || driverCount > 0) && (
-          <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+          <Timestamp sx={{ mt: 0.5 }}>
             {vehicleCount > 0 && `${vehicleCount} vehicle${vehicleCount > 1 ? 's' : ''}`}
             {vehicleCount > 0 && driverCount > 0 && ' and '}
             {driverCount > 0 && `${driverCount} driver${driverCount > 1 ? 's' : ''}`}
             {' added to the roster.'}
-          </Typography>
+          </Timestamp>
         )}
 
         {mode === 'quick' && sendInvite && contactEmail && (
-          <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+          <Timestamp sx={{ mt: 0.5 }}>
             Onboarding invite sent to {contactEmail}
-          </Typography>
+          </Timestamp>
         )}
 
         <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mt: 3 }}>

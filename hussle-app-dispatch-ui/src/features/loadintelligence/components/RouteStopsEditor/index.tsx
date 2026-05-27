@@ -5,8 +5,9 @@ import {
   Grid,
   IconButton,
   OutlinedInput,
-  Typography,
 } from '@mui/material';
+
+import { Meta, MetaStrong, SectionTitle } from 'components/Typography';
 import {
   CheckOutlined,
   CloseOutlined,
@@ -199,13 +200,13 @@ const StopRow: React.FC<{
           }}
         />
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          <MetaStrong sx={{ fontWeight: 500, color: 'text.primary' }}>
             {formatStopLocation(stop.location)}
-          </Typography>
+          </MetaStrong>
           {subtitle && (
-            <Typography variant="caption" color="text.secondary">
+            <Meta>
               {subtitle}
-            </Typography>
+            </Meta>
           )}
         </Box>
       </Box>
@@ -338,9 +339,9 @@ export const RouteStopsEditor: React.FC<RouteStopsEditorProps> = ({ stops, onCha
   ) => (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant="subtitle2" color="text.secondary">
+        <SectionTitle sx={{ color: 'text.secondary' }}>
           {label}
-        </Typography>
+        </SectionTitle>
         <Button
           size="small"
           startIcon={<PlusOutlined />}
@@ -379,17 +380,17 @@ export const RouteStopsEditor: React.FC<RouteStopsEditorProps> = ({ stops, onCha
         bgcolor: 'grey.50',
       }}
     >
-      <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+      <SectionTitle sx={{ mb: 1.5 }}>
         Route
-      </Typography>
+      </SectionTitle>
 
       {renderStopList('PICKUPS', pickups, 'pickup')}
 
       {/* Visual connector */}
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Meta>
           ↓
-        </Typography>
+        </Meta>
       </Box>
 
       {renderStopList('DROPOFFS', dropoffs, 'dropoff')}

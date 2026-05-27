@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
-  Typography,
   TextField,
   Button,
   Card,
@@ -10,6 +9,8 @@ import {
   Tooltip,
   ClickAwayListener,
 } from '@mui/material';
+import { HintText, Meta, SectionTitle } from 'components/Typography';
+import { CancelButton } from '@mocho/ui/components';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 
@@ -55,12 +56,7 @@ export const InlineEditableNotes: React.FC<{
           borderColor: 'divider',
         }}
       >
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9375rem' }}
-        >
-          Notes
-        </Typography>
+        <SectionTitle sx={{ color: 'text.primary' }}>Notes</SectionTitle>
         {!editing && (
           <Tooltip title="Edit notes">
             <IconButton size="small" onClick={() => setEditing(true)}>
@@ -88,9 +84,7 @@ export const InlineEditableNotes: React.FC<{
                 sx={{ mb: 1.5 }}
               />
               <Stack direction="row" spacing={1} justifyContent="flex-end">
-                <Button size="small" variant="outlined" onClick={handleCancel}>
-                  Cancel
-                </Button>
+                <CancelButton onClick={handleCancel} size="small" />
                 <Button
                   size="small"
                   variant="contained"
@@ -116,20 +110,17 @@ export const InlineEditableNotes: React.FC<{
           >
             {value ? (
               <>
-                <Typography
-                  variant="body2"
+                <Meta
                   sx={{ color: 'text.primary', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
                 >
                   {value}
-                </Typography>
-                <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+                </Meta>
+                <Meta sx={{ mt: 1, display: 'block' }}>
                   {author} — {date}
-                </Typography>
+                </Meta>
               </>
             ) : (
-              <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                Click to add notes about this carrier…
-              </Typography>
+              <HintText>Click to add notes about this carrier…</HintText>
             )}
           </Box>
         )}

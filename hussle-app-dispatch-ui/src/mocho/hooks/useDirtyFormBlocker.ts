@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useBlocker, Blocker } from 'react-router-dom';
 
 interface UseDirtyFormBlockerOptions {
@@ -41,16 +41,33 @@ export function useDirtyFormBlocker({
   _window = window,
   _isDev = true,
 }: UseDirtyFormBlockerOptions) {
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && !isSubmitting && currentLocation.pathname !== nextLocation.pathname
+  const onBlockRef = useRef(onBlock);
+  onBlockRef.current = onBlock;
+
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
+
+  // Stable function reference — reads from refs, never changes identity.
+  // Avoids React Router 6.30.x bug where changing the blocker argument
+  // causes the router to update the URL without swapping components.
+  const shouldBlock = useCallback(
+    ({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }) =>
+      isDirtyRef.current &&
+      !isSubmittingRef.current &&
+      currentLocation.pathname !== nextLocation.pathname,
+    [],
   );
+
+  const blocker = useBlocker(shouldBlock);
 
   useEffect(() => {
     if (blocker.state === 'blocked') {
-      onBlock(blocker);
+      onBlockRef.current(blocker);
     }
-  }, [blocker.state, blocker, onBlock]);
+  }, [blocker.state, blocker]);
 
   useEffect(() => {
     if (_isDev) return;

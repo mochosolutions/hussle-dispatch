@@ -1,24 +1,19 @@
-import {createSelector} from '@reduxjs/toolkit';
-import {authSelector} from './authSelector';
+import { createSelector } from '@reduxjs/toolkit';
+import type { RootState } from '../../../../store';
+import { authSelector } from './authSelector';
 
-export const authLoadingObjSelector = createSelector(
-  authSelector,
-  (auth) => auth.loading,
-);
+export const authLoadingObjSelector = (state: RootState) =>
+  authSelector(state).loading;
 
-
-export const switchOrgLoadingStateSelector = createSelector(
-  authLoadingObjSelector,
-  (loadingObj) => loadingObj?.switchOrg,
-);
+export const switchOrgLoadingStateSelector = (state: RootState) =>
+  authLoadingObjSelector(state)?.switchOrg;
 
 export const switchOrgLoadingSelector = createSelector(
   switchOrgLoadingStateSelector,
   (loadingState) => loadingState === 'Pending',
 );
+
 export const switchOrgErrorSelector = createSelector(
   switchOrgLoadingStateSelector,
   (loadingState) => loadingState === 'Rejected',
 );
-
-

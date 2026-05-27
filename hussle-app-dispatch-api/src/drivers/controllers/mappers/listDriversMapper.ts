@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import type { DriverListFilters } from '../../types/driverTypes';
 import type { ListDriversServiceInput } from '../../types/driverServiceTypes';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
 export const listDriversMapper = (req: Request): ListDriversServiceInput => {
   const context = getRequestContextMapper(req);

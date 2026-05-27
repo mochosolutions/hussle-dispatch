@@ -21,12 +21,19 @@ const noGoZoneSchema = Yup.object({
 
 const createBodySchema = Yup.object({
   carrierId: Yup.string().uuid('carrierId must be a valid uuid').required('carrierId is required'),
-  name: Yup.string().trim().required('name is required'),
+  firstName: Yup.string().trim().required('firstName is required'),
+  lastName: Yup.string().trim().required('lastName is required'),
   phone: optionalTrimmed,
   email: Yup.string().trim().email('email must be valid').notRequired(),
-  cdlNumber: optionalTrimmed,
-  cdlState: stateCodeValidator.notRequired(),
-  cdlExpiry: Yup.date().notRequired(),
+  licenseType: Yup.string().oneOf(['CLASS_D', 'CLASS_M', 'CDL_A', 'CDL_B', 'CDL_C']).notRequired(),
+  licenseNumber: optionalTrimmed,
+  licenseState: stateCodeValidator.notRequired(),
+  licenseExpiry: Yup.date()
+    .transform((value, originalValue) =>
+      originalValue === '' || originalValue === null ? undefined : value
+    )
+    .notRequired(),
+  endorsements: Yup.array().of(Yup.string().oneOf(['H', 'N', 'X', 'T', 'P', 'S'])).notRequired(),
   availableHours: Yup.number().min(0).notRequired(),
   currentCity: optionalTrimmed,
   currentState: stateCodeValidator.notRequired(),
@@ -35,15 +42,25 @@ const createBodySchema = Yup.object({
   maxDaysOut: Yup.number().integer().min(1).notRequired(),
   preferredLanes: Yup.array().of(preferredLaneSchema).notRequired(),
   noGoZones: Yup.array().of(noGoZoneSchema).notRequired(),
+  payType: Yup.string()
+    .oneOf(['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE'])
+    .required('payType is required'),
+  payRate: Yup.number().min(0).required('payRate is required'),
   isAvailable: Yup.boolean().notRequired(),
   status: optionalTrimmed,
   notes: optionalTrimmed,
+  timezone: optionalTrimmed,
 });
 
 const updateBodySchema = createBodySchema
   .shape({
     carrierId: Yup.string().uuid('carrierId must be a valid uuid').notRequired(),
-    name: Yup.string().trim().notRequired(),
+    firstName: Yup.string().trim().notRequired(),
+    lastName: Yup.string().trim().notRequired(),
+    payType: Yup.string()
+      .oneOf(['PERCENTAGE', 'PER_MILE', 'PER_HOUR', 'FLAT_RATE'])
+      .notRequired(),
+    payRate: Yup.number().min(0).notRequired(),
   })
   .test('has-any-field', 'At least one field must be provided', (value) => {
     if (value === undefined) {
@@ -78,5 +95,15 @@ export const listDriversValidator = Yup.object({
 export const driverIdParamValidator = Yup.object({
   params: Yup.object({
     id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+});
+
+export const driverLoadHistoryValidator = Yup.object({
+  params: Yup.object({
+    id: Yup.string().uuid('id must be a valid uuid').required('id is required'),
+  }),
+  query: Yup.object({
+    page: Yup.number().integer().min(1).notRequired(),
+    limit: Yup.number().integer().min(1).max(100).notRequired(),
   }),
 });

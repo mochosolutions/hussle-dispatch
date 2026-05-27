@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
-import { SnackbarProvider } from 'notistack';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
 import ThemeCustomization from '@mocho/ui/theme';
 import { useSelector, useDispatch } from 'store';
 import { setNavigate } from 'store/middleware/createSagaMiddleware';
@@ -10,6 +11,7 @@ import modalRegistry from 'features/ui/modalRegistry';
 import { currentDrawerSelector } from 'features/ui/store/selectors/drawerSelectors';
 import { currentModalSelector } from 'features/ui/store/selectors/modalSelectors';
 import { closeDrawer, closeModal } from 'features/ui/store/reducers/uiSlice';
+import NotificationShell from 'features/ui/NotificationShell';
 
 const App = () => {
   const navigate = useNavigate();
@@ -31,19 +33,21 @@ const App = () => {
 
   return (
     <ThemeCustomization>
-      <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-        <Outlet />
-        <DrawerManager
-          activeDrawer={activeDrawer}
-          componentLookup={drawerRegistry}
-          onClose={handleCloseDrawer}
-        />
-        <ModalManager
-          activeModal={activeModal}
-          componentLookup={modalRegistry}
-          onClose={handleCloseModal}
-        />
-      </SnackbarProvider>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <NotificationShell>
+          <Outlet />
+          <DrawerManager
+            activeDrawer={activeDrawer}
+            componentLookup={drawerRegistry}
+            onClose={handleCloseDrawer}
+          />
+          <ModalManager
+            activeModal={activeModal}
+            componentLookup={modalRegistry}
+            onClose={handleCloseModal}
+          />
+        </NotificationShell>
+      </LocalizationProvider>
     </ThemeCustomization>
   );
 };

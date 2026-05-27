@@ -118,8 +118,8 @@ export const DocumentImageUploadField: React.FC<DocumentImageUploadFieldProps> =
       // Update preview to use processed image
       setPreviewUrl(uploadResult.variants.medium || uploadResult.variants.original);
     },
-    onError: (err) => {
-      console.error('Document upload error:', err);
+    onError: (_err) => {
+      // Error state is tracked by the useDocumentUpload hook
     },
   });
 

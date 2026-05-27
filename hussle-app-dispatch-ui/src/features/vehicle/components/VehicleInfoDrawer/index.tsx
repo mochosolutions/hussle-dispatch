@@ -1,309 +1,225 @@
 import React from 'react';
-import { Formik, Form } from 'formik';
+import { Box, Divider, Stack } from '@mui/material';
+import { FormDrawer } from 'mocho/components/FormDrawer';
 import {
-  Box,
-  Typography,
   TextField,
-  Button,
-  Divider,
-  Grid,
-  Stack,
-  CircularProgress,
-  MenuItem,
-} from '@mui/material';
-import { EditDrawer } from 'features/carrier/components/EditDrawer';
+  SelectField,
+  StateField,
+  CurrencyField,
+  NumericField,
+  PhoneField,
+} from '../../../../mocho/components';
+import { DrawerSection } from 'components/EditDrawer';
 import { vehicleInfoSchema } from '../../validators/vehicleInfoSchema';
-import type { Vehicle, UpdateVehicleInput } from 'features/carrier/types';
+import type { VehicleInfoFormValues } from '../../validators/vehicleInfoSchema';
+import type { UpdateVehicleInput } from 'features/carrier/types';
 import { VEHICLE_TYPE_LABELS, OWNERSHIP_LABELS } from '../../constants';
+import { useDispatch, useSelector } from 'store';
+import { selectVehicleById } from '../../store/selectors/vehicleSelectors';
+import { updateVehicleRequest } from '../../store/reducers';
 
 interface VehicleInfoDrawerProps {
-  open: boolean;
+  vehicleId: string;
   onClose: () => void;
-  data: Vehicle;
-  onSave: (values: UpdateVehicleInput) => void;
 }
 
-const sectionHeaderSx = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  fontSize: '0.6875rem',
-  letterSpacing: 0.5,
-} as const;
+export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({ vehicleId, onClose }) => {
+  const dispatch = useDispatch();
+  const vehicle = useSelector(selectVehicleById(vehicleId));
 
-export const VehicleInfoDrawer: React.FC<VehicleInfoDrawerProps> = ({
-  open,
-  onClose,
-  data,
-  onSave,
-}) => (
-  <EditDrawer
-    open={open}
-    onClose={onClose}
-    title="Edit Vehicle Information"
-    subtitle={data.unitNumber}
-  >
-    <Formik
-      initialValues={{
-        unitNumber: data.unitNumber,
-        make: data.make ?? '',
-        model: data.model ?? '',
-        year: data.year ?? '',
-        vin: data.vin ?? '',
-        licensePlate: data.licensePlate ?? '',
-        licensePlateState: data.licensePlateState ?? '',
-        type: data.type,
-        ownership: data.ownership,
-        emergencyContactName: data.emergencyContactName ?? '',
-        emergencyContactPhone: data.emergencyContactPhone ?? '',
-        warrantyInfo: data.warrantyInfo ?? '',
-        notes: data.notes ?? '',
-      }}
+  if (!vehicle) {
+    return null;
+  }
+
+  const initialValues: VehicleInfoFormValues = {
+    unitNumber: vehicle.unitNumber,
+    make: vehicle.make ?? '',
+    model: vehicle.model ?? '',
+    year: vehicle.year ?? '',
+    vin: vehicle.vin ?? '',
+    licensePlate: vehicle.licensePlate ?? '',
+    licensePlateState: vehicle.licensePlateState ?? '',
+    type: vehicle.type,
+    ownership: vehicle.ownership,
+    monthlyGrossTarget: vehicle.monthlyGrossTarget ?? '',
+    monthlyMilesTarget: vehicle.monthlyMilesTarget ?? '',
+    workingDaysPerMonth: vehicle.workingDaysPerMonth ?? '',
+    lenderName: vehicle.lenderName ?? '',
+    loanPayment: vehicle.loanPayment ?? '',
+    insuranceMonthlyCost: vehicle.insuranceMonthlyCost ?? '',
+    emergencyContactName: vehicle.emergencyContactName ?? '',
+    emergencyContactPhone: vehicle.emergencyContactPhone ?? '',
+    warrantyInfo: vehicle.warrantyInfo ?? '',
+    notes: vehicle.notes ?? '',
+    carrierId: '',
+  };
+
+  const vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  }));
+
+  const ownershipOptions = Object.entries(OWNERSHIP_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  }));
+
+  const handleSubmit = (values: typeof initialValues) => {
+    const transformed: UpdateVehicleInput = {
+      unitNumber: values.unitNumber,
+      make: values.make || null,
+      model: values.model || null,
+      year: values.year !== '' ? Number(values.year) : null,
+      vin: values.vin || null,
+      licensePlate: values.licensePlate || null,
+      licensePlateState: values.licensePlateState || null,
+      type: values.type,
+      ownership: values.ownership,
+      monthlyGrossTarget:
+        values.monthlyGrossTarget !== '' ? String(values.monthlyGrossTarget) : null,
+      monthlyMilesTarget:
+        values.monthlyMilesTarget !== '' ? Number(values.monthlyMilesTarget) : null,
+      workingDaysPerMonth:
+        values.workingDaysPerMonth !== '' ? Number(values.workingDaysPerMonth) : null,
+      lenderName: values.lenderName || null,
+      loanPayment: values.loanPayment !== '' ? String(values.loanPayment) : null,
+      insuranceMonthlyCost:
+        values.insuranceMonthlyCost !== '' ? String(values.insuranceMonthlyCost) : null,
+      emergencyContactName: values.emergencyContactName || null,
+      emergencyContactPhone: values.emergencyContactPhone || null,
+      warrantyInfo: values.warrantyInfo || null,
+      notes: values.notes || null,
+    };
+    dispatch(updateVehicleRequest({ id: vehicleId, data: transformed }));
+    onClose();
+  };
+
+  return (
+    <FormDrawer
+      open
+      onClose={onClose}
+      title="Edit Vehicle Information"
+      subtitle={vehicle.unitNumber}
+      initialValues={initialValues}
       validationSchema={vehicleInfoSchema}
-      onSubmit={(values, { setSubmitting }) => {
-        const transformed: UpdateVehicleInput = {
-          unitNumber: values.unitNumber,
-          make: values.make || null,
-          model: values.model || null,
-          year: values.year !== '' ? Number(values.year) : null,
-          vin: values.vin || null,
-          licensePlate: values.licensePlate || null,
-          licensePlateState: values.licensePlateState || null,
-          type: values.type,
-          ownership: values.ownership,
-          emergencyContactName: values.emergencyContactName || null,
-          emergencyContactPhone: values.emergencyContactPhone || null,
-          warrantyInfo: values.warrantyInfo || null,
-          notes: values.notes || null,
-        };
-        onSave(transformed);
-        setSubmitting(false);
-        onClose();
-      }}
-      enableReinitialize
+      onSubmit={handleSubmit}
     >
-      {({ values, errors, touched, handleChange, handleBlur, isSubmitting, isValid, dirty }) => (
-        <Form>
-          <Stack spacing={2.5}>
-            {/* Vehicle Details */}
-            <Typography variant="subtitle2" sx={sectionHeaderSx}>
-              Vehicle Details
-            </Typography>
-            <TextField
-              fullWidth
-              name="unitNumber"
-              label="Unit Number"
-              value={values.unitNumber}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.unitNumber && Boolean(errors.unitNumber)}
-              helperText={touched.unitNumber && errors.unitNumber}
-            />
-            <TextField
-              fullWidth
-              select
-              name="type"
-              label="Type"
-              value={values.type}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.type && Boolean(errors.type)}
-              helperText={touched.type && errors.type}
-            >
-              {Object.entries(VEHICLE_TYPE_LABELS).map(([value, label]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              select
+      {(formik) => (
+        <Stack spacing={2.5} sx={{ p: 3 }}>
+          {/* Vehicle Details */}
+          <DrawerSection label="Vehicle Details">
+            <TextField name="unitNumber" label="Unit Number" formik={formik} />
+            <SelectField name="type" label="Type" data={vehicleTypeOptions} formik={formik} />
+            <SelectField
               name="ownership"
               label="Ownership"
-              value={values.ownership}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.ownership && Boolean(errors.ownership)}
-              helperText={touched.ownership && errors.ownership}
-            >
-              {Object.entries(OWNERSHIP_LABELS).map(([value, label]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="make"
-                  label="Make"
-                  value={values.make}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.make && Boolean(errors.make)}
-                  helperText={touched.make && errors.make}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="model"
-                  label="Model"
-                  value={values.model}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.model && Boolean(errors.model)}
-                  helperText={touched.model && errors.model}
-                />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="year"
-                  label="Year"
-                  value={values.year}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.year && Boolean(errors.year)}
-                  helperText={touched.year && errors.year}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="vin"
-                  label="VIN"
-                  value={values.vin}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.vin && Boolean(errors.vin)}
-                  helperText={touched.vin && errors.vin}
-                />
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="licensePlate"
-                  label="License Plate"
-                  value={values.licensePlate}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.licensePlate && Boolean(errors.licensePlate)}
-                  helperText={touched.licensePlate && errors.licensePlate}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="licensePlateState"
-                  label="License Plate State"
-                  value={values.licensePlateState}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.licensePlateState && Boolean(errors.licensePlateState)}
-                  helperText={touched.licensePlateState && errors.licensePlateState}
-                />
-              </Grid>
-            </Grid>
+              data={ownershipOptions}
+              formik={formik}
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField name="make" label="Make" formik={formik} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <TextField name="model" label="Model" formik={formik} />
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField name="year" label="Year" formik={formik} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <TextField name="vin" label="VIN" formik={formik} />
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField name="licensePlate" label="License Plate" formik={formik} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <StateField name="licensePlateState" label="License Plate State" formik={formik} />
+              </Box>
+            </Box>
+          </DrawerSection>
 
-            <Divider sx={{ my: 0.5 }} />
+          <Divider sx={{ my: 0.5 }} />
 
-            {/* Emergency Contact */}
-            <Typography variant="subtitle2" sx={sectionHeaderSx}>
-              Emergency Contact
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  name="emergencyContactName"
-                  label="Contact Name"
-                  value={values.emergencyContactName}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.emergencyContactName && Boolean(errors.emergencyContactName)}
-                  helperText={touched.emergencyContactName && errors.emergencyContactName}
+          {/* Targets */}
+          <DrawerSection label="Targets">
+            <CurrencyField
+              name="monthlyGrossTarget"
+              label="Monthly Gross Target"
+              formik={formik}
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <NumericField
+                  name="monthlyMilesTarget"
+                  label="Miles Target / Month"
+                  suffix="mi"
+                  formik={formik}
                 />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <NumericField
+                  name="workingDaysPerMonth"
+                  label="Working Days / Month"
+                  formik={formik}
+                />
+              </Box>
+            </Box>
+          </DrawerSection>
+
+          <Divider sx={{ my: 0.5 }} />
+
+          {/* Finance */}
+          <DrawerSection label="Finance">
+            <TextField name="lenderName" label="Lender Name" formik={formik} />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <CurrencyField
+                  name="loanPayment"
+                  label="Monthly Loan Payment"
+                  formik={formik}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <CurrencyField
+                  name="insuranceMonthlyCost"
+                  label="Monthly Insurance Cost"
+                  formik={formik}
+                />
+              </Box>
+            </Box>
+          </DrawerSection>
+
+          <Divider sx={{ my: 0.5 }} />
+
+          {/* Emergency Contact */}
+          <DrawerSection label="Emergency Contact">
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField name="emergencyContactName" label="Contact Name" formik={formik} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <PhoneField
                   name="emergencyContactPhone"
                   label="Contact Phone"
-                  type="tel"
-                  value={values.emergencyContactPhone}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.emergencyContactPhone && Boolean(errors.emergencyContactPhone)}
-                  helperText={touched.emergencyContactPhone && errors.emergencyContactPhone}
+                  formik={formik}
                 />
-              </Grid>
-            </Grid>
-
-            <Divider sx={{ my: 0.5 }} />
-
-            {/* Other */}
-            <Typography variant="subtitle2" sx={sectionHeaderSx}>
-              Other
-            </Typography>
-            <TextField
-              fullWidth
-              name="warrantyInfo"
-              label="Warranty Info"
-              value={values.warrantyInfo}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.warrantyInfo && Boolean(errors.warrantyInfo)}
-              helperText={touched.warrantyInfo && errors.warrantyInfo}
-            />
-            <TextField
-              fullWidth
-              multiline
-              minRows={3}
-              name="notes"
-              label="Notes"
-              value={values.notes}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.notes && Boolean(errors.notes)}
-              helperText={touched.notes && errors.notes}
-            />
-
-            {/* Footer */}
-            <Box
-              sx={{
-                pt: 2,
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 1.5,
-                borderTop: 1,
-                borderColor: 'divider',
-                mt: 1,
-              }}
-            >
-              <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!isValid || !dirty || isSubmitting}
-                startIcon={
-                  isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined
-                }
-              >
-                {isSubmitting ? 'Saving\u2026' : 'Save Changes'}
-              </Button>
+              </Box>
             </Box>
-          </Stack>
-        </Form>
+          </DrawerSection>
+
+          <Divider sx={{ my: 0.5 }} />
+
+          {/* Other */}
+          <DrawerSection label="Other">
+            <TextField name="warrantyInfo" label="Warranty Info" formik={formik} />
+            <TextField name="notes" label="Notes" formik={formik} multiline minRows={3} />
+          </DrawerSection>
+        </Stack>
       )}
-    </Formik>
-  </EditDrawer>
-);
+    </FormDrawer>
+  );
+};

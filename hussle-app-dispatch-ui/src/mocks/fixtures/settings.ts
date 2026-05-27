@@ -1,0 +1,25 @@
+import type { Settings } from 'utils/api/fleet/settingsApi';
+
+export const mockSettings: Settings = {
+  id: 'settings-001',
+  organizationId: 'org-001',
+  defaultTonuFee: 250,
+  prohibitedCommodities: [],
+  weeklyGrossTarget: 5000,
+  defaultDetentionRate: 75,
+  detentionFreeHours: 2,
+  minBookRateProfitMargin: 0.15,
+  defaultMaxDaysOut: 14,
+  chainDepthThresholdMiles: 250,
+  backhaulSearchRadiusMiles: 150,
+  autoScrapingEnabled: true,
+  loadIntelEmailAddress: null,
+  sesFromEmail: null,
+  companyLogoUrl: null,
+  smsPrePickupLeadMinutes: 60,
+  smsTransitIntervalMinutes: 180,
+  smsPostPickupEscalationMinutes: 30,
+  smsCooldownMinutes: 15,
+  headquartersLatitude: null,
+  headquartersLongitude: null,
+};

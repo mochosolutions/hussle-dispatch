@@ -9,15 +9,23 @@
  * CPM = sum(monthlyCost) / sum(unique milesPerMonth values)
  */
 
-interface ExpenseItem {
+export interface ExpenseItem {
   monthlyCost: number;
   milesPerMonth: number;
 }
 
 export const calculateCpm = (expenses: ExpenseItem[]): number => {
+  if (expenses.length === 0) {
+    return 0;
+  }
+
   const totalCost = expenses.reduce((sum, e) => sum + e.monthlyCost, 0);
   const uniqueMiles = new Set(expenses.map((e) => e.milesPerMonth));
   const totalMiles = Array.from(uniqueMiles).reduce((sum, m) => sum + m, 0);
+
+  if (totalMiles <= 0) {
+    return 0;
+  }
 
   return totalCost / totalMiles;
 };

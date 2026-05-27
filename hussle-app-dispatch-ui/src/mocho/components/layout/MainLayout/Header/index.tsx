@@ -55,7 +55,7 @@ const Header = ({ children }: LayoutHeaderProps) => {
   // common header
   const mainHeader: ReactNode = (
     <Toolbar>
-      {disableMiniDrawer ? <Logo sx={{ height: 35, width: 'auto', mr: 1 }} /> : null}
+      {disableMiniDrawer && !downLG ? <Logo sx={{ height: 35, width: 'auto', mr: 1 }} /> : null}
       {!isHorizontal ? (
         <IconButton
           aria-label="open drawer"
@@ -64,14 +64,15 @@ const Header = ({ children }: LayoutHeaderProps) => {
           color="secondary"
           variant="light"
           sx={{
-            color: 'text.primary',
-            bgcolor: drawerOpen ? iconBackColorOpen : iconBackColor,
+            color: downLG ? 'common.white' : 'text.primary',
+            bgcolor: downLG ? 'transparent' : (drawerOpen ? iconBackColorOpen : iconBackColor),
             ml: { xs: 0, lg: -2 },
           }}
         >
           {!drawerOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
         </IconButton>
       ) : null}
+      {downLG ? <Logo text="Hussle Dispatch" reverse sx={{ ml: 1 }} /> : null}
       {headerContent}
     </Toolbar>
   );
@@ -94,6 +95,12 @@ const Header = ({ children }: LayoutHeaderProps) => {
       borderBottom: `1px solid ${theme.palette.divider}`,
       zIndex: downLG ? 1100 : 1200,
       width: appBarWidth,
+      ...(downLG && {
+        bgcolor: 'primary.dark',
+        color: 'common.white',
+        borderBottom: 'none',
+        '& .MuiIconButton-root': { color: 'common.white' },
+      }),
     },
   };
 

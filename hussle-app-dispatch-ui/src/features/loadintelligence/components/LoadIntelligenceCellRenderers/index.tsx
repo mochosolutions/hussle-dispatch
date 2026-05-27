@@ -1,8 +1,10 @@
-import { Box, Chip, Tooltip, Typography } from '@mui/material';
+import { Box, Chip, Tooltip } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 
 import type { ICellRendererParams } from 'ag-grid-community';
+
+import { Meta, MetaStrong } from 'components/Typography';
 
 import type { MockLoad } from '../../types';
 import type { ScoreTierResult } from '../../getScoreTier';
@@ -36,12 +38,12 @@ const MarketTooltipContent: React.FC<{ city: string; score: number; tier: ScoreT
   tier,
 }) => (
   <Box>
-    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+    <MetaStrong sx={{ color: 'inherit' }}>
       {city}
-    </Typography>
-    <Typography variant="caption" display="block">
+    </MetaStrong>
+    <Meta sx={{ display: 'block', color: 'inherit' }}>
       {`Score: ${score} · ${tier.label}`}
-    </Typography>
+    </Meta>
   </Box>
 );
 
@@ -65,9 +67,9 @@ export const SourceBadgeCellRenderer: React.FC<LoadCellRendererParams> = ({ data
         color={isManual ? 'primary' : 'default'}
         sx={{ width: 'fit-content' }}
       />
-      <Typography variant="caption" color="text.secondary">
+      <Meta>
         {relativeTime}
-      </Typography>
+      </Meta>
     </Box>
   );
 };
@@ -89,11 +91,11 @@ export const OriginCellRenderer: React.FC<LoadCellRendererParams> = ({ data }) =
       <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <MarketDot score={data.market.score} />
-          <Typography variant="body2">{`${data.origin.city}, ${data.origin.state}`}</Typography>
+          <Meta sx={{ color: 'text.primary' }}>{`${data.origin.city}, ${data.origin.state}`}</Meta>
         </Box>
-        <Typography variant="caption" color="text.secondary">
+        <Meta>
           {`${pickupDateFormatted}${stopsText}`}
-        </Typography>
+        </Meta>
       </Box>
     </Tooltip>
   );
@@ -121,14 +123,14 @@ export const DestinationCellRenderer: React.FC<LoadCellRendererParams> = ({ data
       <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <MarketDot score={data.destinationMarket.score} />
-          <Typography variant="body2">
+          <Meta sx={{ color: 'text.primary' }}>
             {`${data.destination.city}, ${data.destination.state}`}
-          </Typography>
+          </Meta>
         </Box>
         {stopsText !== '' && (
-          <Typography variant="caption" color="text.secondary">
+          <Meta>
             {stopsText}
-          </Typography>
+          </Meta>
         )}
       </Box>
     </Tooltip>
@@ -154,12 +156,12 @@ export const MilesRateCellRenderer: React.FC<LoadCellRendererParams> = ({ data }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
-      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+      <MetaStrong sx={{ fontWeight: 700, color: 'text.primary' }}>
         {milesFormatter.format(data.miles)}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
+      </MetaStrong>
+      <Meta>
         {perMile !== null ? `${perMile}/mi` : '—'}
-      </Typography>
+      </Meta>
     </Box>
   );
 };
@@ -173,17 +175,17 @@ export const RateCellRenderer: React.FC<LoadCellRendererParams> = ({ data }) => 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
       {data.rate !== null ? (
-        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+        <MetaStrong sx={{ fontWeight: 700, color: 'text.primary' }}>
           {currencyFormatter.format(data.rate)}
-        </Typography>
+        </MetaStrong>
       ) : (
-        <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700 }}>
+        <MetaStrong sx={{ fontWeight: 700, color: 'primary.main' }}>
           Call
-        </Typography>
+        </MetaStrong>
       )}
-      <Typography variant="caption" color="text.secondary">
+      <Meta>
         {data.minRate !== null ? `min ${currencyFormatter.format(data.minRate)}` : '—'}
-      </Typography>
+      </Meta>
     </Box>
   );
 };
@@ -218,12 +220,12 @@ export const CustomerCellRenderer: React.FC<LoadCellRendererParams> = ({ data })
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
-      <Typography variant="body2">{data.customer.name}</Typography>
+      <Meta sx={{ color: 'text.primary' }}>{data.customer.name}</Meta>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <PhoneIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-        <Typography variant="caption" color="text.secondary">
+        <Meta>
           {data.customer.phone}
-        </Typography>
+        </Meta>
       </Box>
     </Box>
   );

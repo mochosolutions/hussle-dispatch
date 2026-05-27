@@ -1,0 +1,148 @@
+# Production deployment configuration for Dokploy on Hetzner VPS
+# Usage: Managed by Dokploy — do not run directly
+#
+# Prerequisites:
+# - Images built and pushed to ECR via Jenkinsfile.build
+# - Dokploy external network: dokploy-network
+# - All secrets configured in Dokploy UI (see DEPLOYMENT.md)
+#
+# Required Dokploy secrets: DOMAIN, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
+#   RABBITMQ_DEFAULT_PASS, JWT_SECRET, REFRESH_SECRET,
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET,
+#   COGNITO_USER_POOL_ID, COGNITO_CLIENT_ID,
+#   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
+
+services:
+  api:
+    image: ${ECR_REGISTRY}/fleet-api:${IMAGE_TAG:-prod-latest}
+    restart: unless-stopped
+    depends_on:
+      fleet-postgres:
+        condition: service_healthy
+      fleet-redis:
+        condition: service_healthy
+      fleet-rabbitmq:
+        condition: service_healthy
+    expose:
+      - "3001"
+    networks:
+      - dokploy-network
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fleet-postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://fleet-redis:6379
+      - RABBITMQ_URL=amqp://guest:${RABBITMQ_DEFAULT_PASS}@fleet-rabbitmq:5672
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - TRACKING_BASE_URL=${TRACKING_BASE_URL}
+      - PUBLIC_SHORT_BASE_URL=${PUBLIC_SHORT_BASE_URL}
+      - AWS_REGION=${AWS_REGION}
+      - SMS_BACKEND=${SMS_BACKEND}
+      - STORAGE_BACKEND=${STORAGE_BACKEND}
+      # Secrets injected by Dokploy:
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.fleet-api.rule=Host(`${API_HOST}`)"
+      - "traefik.http.routers.fleet-api.entrypoints=websecure"
+      - "traefik.http.routers.fleet-api.tls=true"
+      - "traefik.http.routers.fleet-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fleet-api.loadbalancer.server.port=3001"
+
+  ui:
+    image: ${ECR_REGISTRY}/fleet-ui:${IMAGE_TAG:-prod-latest}
+    restart: unless-stopped
+    depends_on:
+      - api
+    expose:
+      - "8080"
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.fleet-ui.rule=Host(`${UI_HOST}`)"
+      - "traefik.http.routers.fleet-ui.entrypoints=websecure"
+      - "traefik.http.routers.fleet-ui.tls=true"
+      - "traefik.http.routers.fleet-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fleet-ui.loadbalancer.server.port=8080"
+
+  fleet-rabbitmq:
+    image: ${ECR_REGISTRY}/fleet-rabbitmq:${IMAGE_TAG:-prod-latest}
+    restart: unless-stopped
+    expose:
+      - "5672"
+      - "15672"
+    networks:
+      - dokploy-network
+    environment:
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  fleet-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    expose:
+      - "5432"
+    networks:
+      - dokploy-network
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  fleet-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    expose:
+      - "6379"
+    networks:
+      - dokploy-network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  dokploy-network:
+    external: true

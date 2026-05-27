@@ -2,6 +2,7 @@ import { AuthStatus } from '@/shared/constants/authConstants';
 import { AuthRequestError } from '@/shared/errors/authError';
 import { UnauthorizedError } from '@/shared/errors';
 import { logger } from '@/shared/utils/logger';
+import { MembershipStatus } from '../../constants/enums';
 import type { Membership } from '../../types/membershipTypes';
 import type { User } from '../../types/user';
 import type {
@@ -16,7 +17,7 @@ const isNewPasswordChallenge = (challengeName?: string): boolean =>
   challengeName === 'NEW_PASSWORD_REQUIRED';
 
 const getActiveMembership = (memberships: Membership[]): Membership => {
-  const membership = memberships.find((m) => m.status === 'active');
+  const membership = memberships.find((m) => m.status === MembershipStatus.ACTIVE);
 
   if (!membership) {
     throw new AuthRequestError('User does not have an active membership.');
@@ -50,7 +51,7 @@ const isInvalidCredentialsError = (error: unknown): boolean => {
 };
 
 export const authenticateUserService = async (
-  { username, password }: AuthenticateUserInput,
+  { username, password, ipAddress, userAgent }: AuthenticateUserInput,
   {
     authProvider,
     tokenProvider,
@@ -128,6 +129,9 @@ export const authenticateUserService = async (
     orgStatus: membership.orgStatus,
     membershipId: membership.membershipId,
     role: membership.role,
+    permissionsVersion: membership.permissionsVersion,
+    ipAddress,
+    userAgent,
   };
 
   const { accessToken, refreshToken } = await tokenProvider.createSession(sessionPayload);

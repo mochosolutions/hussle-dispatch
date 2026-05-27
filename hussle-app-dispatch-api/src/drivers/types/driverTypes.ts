@@ -1,4 +1,4 @@
-import type { Driver, LoadStatus, Prisma } from '@prisma/client';
+import type { Driver, DriverLicenseType, DriverPayType, DriverStatus, LoadStatus, Prisma } from '@prisma/client';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 
 export interface PreferredLaneInput {
@@ -15,12 +15,15 @@ export interface NoGoZoneInput {
 
 export interface CreateDriverInput {
   carrierId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
   email?: string;
-  cdlNumber?: string;
-  cdlState?: string;
-  cdlExpiry?: Date;
+  licenseType?: DriverLicenseType;
+  licenseNumber?: string;
+  licenseState?: string;
+  licenseExpiry?: Date;
+  endorsements?: string[];
   availableHours?: string | number;
   currentCity?: string;
   currentState?: string;
@@ -30,28 +33,39 @@ export interface CreateDriverInput {
   preferredLanes?: PreferredLaneInput[];
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
-  status?: string;
+  status?: DriverStatus;
+  timezone?: string;
+  payType: DriverPayType;
+  payRate: number;
   notes?: string;
 }
 
 export interface UpdateDriverInput {
   carrierId?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   email?: string;
-  cdlNumber?: string;
-  cdlState?: string;
-  cdlExpiry?: Date;
+  licenseType?: DriverLicenseType;
+  licenseNumber?: string;
+  licenseState?: string;
+  licenseExpiry?: Date;
+  endorsements?: string[];
   availableHours?: string | number;
-  currentCity?: string;
-  currentState?: string;
+  currentCity?: string | null;
+  currentState?: string | null;
   homeBaseCity?: string;
   homeBaseState?: string;
   maxDaysOut?: number;
   preferredLanes?: PreferredLaneInput[];
   noGoZones?: NoGoZoneInput[];
   isAvailable?: boolean;
-  status?: string;
+  status?: DriverStatus;
+  currentLatitude?: number | null;
+  currentLongitude?: number | null;
+  payType?: DriverPayType;
+  payRate?: number;
+  timezone?: string;
   notes?: string;
 }
 
@@ -76,8 +90,8 @@ export interface DriverRepositoryPort {
   findById(id: string, organizationId: string): Promise<Driver | null>;
   list(input: ListDriversRepositoryInput): Promise<Driver[]>;
   count(input: DriverQueryInput): Promise<number>;
-  update(id: string, input: UpdateDriverInput): Promise<Driver>;
-  softDelete(id: string, deletedAt: Date): Promise<void>;
+  update(id: string, organizationId: string, input: UpdateDriverInput): Promise<Driver>;
+  softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
 }
 
 export interface CarrierRepositoryPort {
@@ -87,7 +101,7 @@ export interface CarrierRepositoryPort {
 export interface LoadRepositoryPort {
   findBlockingLoadIdsByDriver(
     driverId: string,
-    statuses: LoadStatus[],
+    statuses: readonly LoadStatus[],
     limit: number,
   ): Promise<string[]>;
 }
@@ -97,4 +111,20 @@ export interface ListDriversResult {
   meta: PaginationMeta;
 }
 
-export type DriverResponse = Driver;
+export interface ActiveLoadSummary {
+  id: string;
+  loadNumber: string;
+  status: string;
+  equipmentType: string | null;
+  commodity: string | null;
+  customerRate: string | null;
+  totalMiles: number | null;
+}
+
+export type DriverResponse = Driver & {
+  carrierName: string | null;
+};
+
+export type DriverDetailResponse = DriverResponse & {
+  activeLoads: ActiveLoadSummary[];
+};

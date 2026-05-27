@@ -23,7 +23,7 @@ export function setNavigate(navigate: NavigateFunction): void {
  */
 export function getNavigate(): NavigateFunction {
   if (!navigateRef) {
-    console.warn('Navigate function not set. Call setNavigate() in your app root.');
+    // Navigate function not set — call setNavigate() in your app root
     return (_path: string, _options?: { replace?: boolean }) => { return; };
   }
   return navigateRef;

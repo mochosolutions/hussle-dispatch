@@ -194,9 +194,8 @@ export function safeReplaceImageUrls(
 ): ReplaceImagesResult {
   try {
     return replaceImageUrls(htmlContent, urlMapping);
-  } catch (error) {
-    console.error('Error replacing image URLs:', error);
-
+  } catch (_error) {
+    // Replacement failed — return original content unchanged
     return {
       content: htmlContent,
       replacedCount: 0,

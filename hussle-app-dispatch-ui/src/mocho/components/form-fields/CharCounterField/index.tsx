@@ -1,5 +1,6 @@
 import React from 'react';
 import { TextField, FormHelperText } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { CharCounterFieldProps } from '../types';
 
@@ -22,9 +23,9 @@ export const CharCounterField: React.FC<CharCounterFieldProps> = ({
   required = false,
   formik,
 }) => {
-  const value = (formik.values[name] as string) || '';
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const value = (getIn(formik.values, name) as string) || '';
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
   const charCount = value.length;
 
   return (

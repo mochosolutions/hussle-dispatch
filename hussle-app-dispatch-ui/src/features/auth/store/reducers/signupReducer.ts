@@ -8,7 +8,6 @@ import {SignupParams} from '../authSlice';
 
 export const signupReducer = {
   signupRequest: (state: any, action: PayloadAction<SignupParams>) => {
-    console.log('signupRequest', action);
     setPending(state, {key: 'signup'});
   },
 

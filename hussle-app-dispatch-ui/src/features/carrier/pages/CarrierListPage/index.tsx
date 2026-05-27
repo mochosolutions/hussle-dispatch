@@ -1,117 +1,108 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import {
-  Stack,
-  TextField,
-  Box,
-  Typography,
-  Grid,
-  Tabs,
-  Tab,
-  Chip,
-  Button,
-} from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ColDef, RowClickedEvent } from 'ag-grid-community';
+import { Stack, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import type { SelectChangeEvent } from '@mui/material';
-import { ActionsCell, ActionsCellConfig, MainCard, NewDataGrid, PageHeader, PageWrapper } from '@mocho/ui/components';
-import { useDispatch, useSelector } from 'store';
-import type { CarrierListItem } from '../../types';
-import { fetchCarriersRequest } from '../../store/reducers/carrierNewPageSlice';
 import {
-  selectAllCarriers,
-  selectCarrierListLoading,
+  ActionsCell,
+  ActionsCellConfig,
+  MainCard,
+  NewDataGrid,
+  PageWrapper,
+} from '@mocho/ui/components';
+import { ListLayout } from 'components/ListLayout';
+import { FilterBar } from 'components/FilterBar';
+import type { FilterConfig, SearchConfig } from 'components/FilterBar';
+import ListKpiBar from 'components/ListKpiBar';
+import { EmptyState } from 'mocho/components/EmptyState/EmptyState';
+import { useStore } from 'react-redux';
+import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
+import { isStale } from 'utils/redux/staleness';
+import type { CarrierListItem } from '../../types';
+import { CARRIER_TAB_TO_STATUSES, type CarrierTab } from '../../constants';
+import {
+  fetchCarriersRequest,
+  fetchCarrierTabCountsRequest,
+} from '../../store/reducers/carrierNewPageSlice';
+import {
+  selectCarrierKpis,
+  selectFilteredCarriers,
+  selectCarrierTabCounts,
 } from '../../store/selectors/carrierSelectors';
 import {
   CarrierNameCellRenderer,
-  CarrierOnboardingTypeCellRenderer,
   CarrierTypeCellRenderer,
   CarrierContactCellRenderer,
   CarrierStatusCellRenderer,
+  InvitedAtCellRenderer,
+  LastActivityCellRenderer,
+  PhaseProgressCellRenderer,
 } from '../../components/CarrierCellRenderers';
-
-// OWNER_OPERATOR excluded per decision L-010
-const TYPE_OPTIONS = [
-  { value: 'all', label: 'All Types' },
-  { value: 'COMPANY_ASSET', label: 'Company Asset' },
-  { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
-];
-
-type CarrierTab = 'all' | 'company' | 'external';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
 
 const CarrierListPage = () => {
   const [activeTab, setActiveTab] = useState<CarrierTab>('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const carriers = useSelector(selectAllCarriers);
-  const isLoading = useSelector(selectCarrierListLoading);
+  const hasLoadedOnce = useSelector((state: RootState) => state.pages.carriers.hasLoadedOnce);
+  const kpiSelector = useMemo(() => selectCarrierKpis(activeTab), [activeTab]);
+  const kpiData = useSelector(kpiSelector);
+  const tabCounts = useSelector(selectCarrierTabCounts);
+  const filteredSelector = useMemo(() => selectFilteredCarriers(activeTab), [activeTab]);
+  const filteredCarriers = useSelector(filteredSelector);
+  const store = useStore<RootState>();
 
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Initial fetch
   useEffect(() => {
-    // dispatch(({ page: 1, limit: 25 }));
-    // console.log('Dispatching fetchCarriersRequest for initial load');
-    dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
-  }, []);
+    const { lastFetchedAt } = store.getState().pages.carriers;
+    if (isStale(lastFetchedAt)) {
+      dispatch(fetchCarriersRequest({ page: 1, limit: 25 }));
+    }
+    dispatch(fetchCarrierTabCountsRequest());
+  }, [dispatch, store]);
 
   const handleSearchChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const query = event.target.value;
-      setSearchQuery(query);
-
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-
-      searchDebounceRef.current = setTimeout(() => {
-        dispatch(
-          fetchCarriersRequest({
-            page: 1,
-            limit: 25,
-            search: query,
-            type: typeFilter,
-          }),
-        );
-      }, 300);
-    },
-    [dispatch, typeFilter],
-  );
-
-  const handleTypeFilterChange = useCallback(
-    (event: SelectChangeEvent<string>) => {
-      const newFilter = event.target.value;
-      setTypeFilter(newFilter);
+    (value: string | number) => {
+      const statuses = CARRIER_TAB_TO_STATUSES[activeTab];
       dispatch(
         fetchCarriersRequest({
           page: 1,
           limit: 25,
-          search: searchQuery,
-          type: newFilter,
+          search: String(value),
+          ...(statuses !== undefined && { status: statuses }),
         }),
       );
     },
-    [dispatch, searchQuery],
+    [dispatch, activeTab],
+  );
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      const nextTab = value as CarrierTab;
+      setActiveTab(nextTab);
+      const statuses = CARRIER_TAB_TO_STATUSES[nextTab];
+      dispatch(
+        fetchCarriersRequest({
+          page: 1,
+          limit: 25,
+          ...(statuses !== undefined && { status: statuses }),
+        }),
+      );
+    },
+    [dispatch],
   );
 
   const handleOpenCreate = useCallback(() => {
     navigate('/carriers/create');
   }, [navigate]);
 
-  const handleOpenCreateCompanyAsset = useCallback(() => {
-    navigate('/carriers/create?type=COMPANY_ASSET');
-  }, [navigate]);
-
-  const handleOpenCreateExternalCarrier = useCallback(() => {
-    navigate('/carriers/create?type=EXTERNAL_CARRIER');
-  }, [navigate]);
+  const handleRowClicked = useCallback(
+    (event: RowClickedEvent<CarrierListItem>) => {
+      if (event.data) {
+        navigate(`/carriers/${event.data.id}`);
+      }
+    },
+    [navigate],
+  );
 
   const actionsConfig = useMemo<ActionsCellConfig<CarrierListItem>>(
     () => ({
@@ -123,7 +114,7 @@ const CarrierListPage = () => {
     [],
   );
 
-  const columnDefs = useMemo(
+  const standardColumns = useMemo<ColDef<CarrierListItem>[]>(
     () => [
       {
         headerName: 'Carrier',
@@ -135,7 +126,7 @@ const CarrierListPage = () => {
       {
         headerName: 'Type',
         field: 'type',
-        minWidth: 160,
+        minWidth: 180,
         cellRenderer: CarrierTypeCellRenderer,
       },
       {
@@ -166,7 +157,7 @@ const CarrierListPage = () => {
       },
       {
         headerName: '',
-        field: 'actions',
+        colId: 'actions',
         minWidth: 130,
         maxWidth: 150,
         sortable: false,
@@ -177,60 +168,94 @@ const CarrierListPage = () => {
     [actionsConfig],
   );
 
-  const kpiData = useMemo(() => {
-    const activeCount = carriers.filter((carrier) => carrier.onboardingComplete).length;
-    const totalDrivers = carriers.reduce((sum, carrier) => sum + carrier.driverCount, 0);
-    const totalVehicles = carriers.reduce((sum, carrier) => sum + carrier.vehicleCount, 0);
-    const totalRevenue = carriers.reduce((sum, carrier) => sum + 0, 0);
+  const onboardingColumns = useMemo<ColDef<CarrierListItem>[]>(
+    () => [
+      {
+        headerName: 'Carrier',
+        field: 'name',
+        minWidth: 120,
+        flex: 1,
+        cellRenderer: CarrierNameCellRenderer,
+      },
+      {
+        headerName: 'Type',
+        field: 'type',
+        minWidth: 160,
+        cellRenderer: CarrierTypeCellRenderer,
+      },
+      {
+        headerName: 'Status',
+        field: 'status',
+        minWidth: 160,
+        cellRenderer: CarrierStatusCellRenderer,
+      },
+      {
+        headerName: 'Invited',
+        field: 'inviteSentAt',
+        minWidth: 130,
+        cellRenderer: InvitedAtCellRenderer,
+      },
+      {
+        headerName: 'Last Activity',
+        colId: 'lastActivity',
+        minWidth: 150,
+        cellRenderer: LastActivityCellRenderer,
+      },
+      {
+        headerName: 'Phase Progress',
+        colId: 'phaseProgress',
+        minWidth: 160,
+        cellRenderer: PhaseProgressCellRenderer,
+      },
+      {
+        headerName: '',
+        colId: 'actions',
+        minWidth: 130,
+        maxWidth: 150,
+        sortable: false,
+        cellRenderer: ActionsCell,
+        cellRendererParams: { config: actionsConfig },
+      },
+    ],
+    [actionsConfig],
+  );
 
-    return [
-      {
-        label: 'Total Carriers',
-        value: String(carriers.length),
-        subtitle: `${activeCount} active`,
-      },
-      {
-        label: 'Total Drivers',
-        value: String(totalDrivers),
-        subtitle: 'Across all carriers',
-      },
-      {
-        label: 'Total Vehicles',
-        value: String(totalVehicles),
-        subtitle: 'Across all carriers',
-      },
-      {
-        label: 'Lifetime Revenue',
-        value: currencyFormatter.format(totalRevenue),
-        subtitle: 'All carriers combined',
-      },
-    ];
-  }, [carriers]);
+  const columnDefs = activeTab === 'onboarding' ? onboardingColumns : standardColumns;
 
   const tabOptions = useMemo(
     () => [
+      { value: 'all', label: `All (${tabCounts.all})` },
+      { value: 'onboarding', label: `Onboarding (${tabCounts.onboarding})` },
+      { value: 'active', label: `Active (${tabCounts.active})` },
+      { value: 'actionRequired', label: `Action Required (${tabCounts.actionRequired})` },
+      { value: 'suspended', label: `Suspended (${tabCounts.suspended})` },
+      { value: 'rejected', label: `Rejected (${tabCounts.rejected})` },
+    ],
+    [tabCounts],
+  );
+
+  const filters = useMemo<FilterConfig[]>(
+    () => [
       {
-        key: 'all',
-        label: 'All',
-        count: carriers.length,
-      },
-      {
-        key: 'active',
-        label: 'Active',
-        count: carriers.filter((carrier) => carrier.type === 'COMPANY_ASSET').length,
-      },
-      {
-        key: 'inactive',
-        label: 'Inactive',
-        count: carriers.filter((carrier) => carrier.type === 'COMPANY_ASSET').length,
-      },
-      {
-        key: 'onboarding',
-        label: 'Onboarding Pending',
-        count: carriers.filter((carrier) => carrier.type === 'EXTERNAL_CARRIER').length,
+        type: 'select',
+        name: 'status',
+        label: 'Status',
+        options: tabOptions,
+        value: activeTab,
+        onChange: handleStatusChange,
       },
     ],
-    [carriers],
+    [tabOptions, activeTab, handleStatusChange],
+  );
+
+  const searchConfig = useMemo<SearchConfig>(
+    () => ({
+      placeholder: 'Search by name, MC#, email...',
+      value: '',
+      onChange: handleSearchChange,
+      debounce: 300,
+    }),
+    [handleSearchChange],
   );
 
   const defaultColDef = useMemo(
@@ -245,108 +270,74 @@ const CarrierListPage = () => {
   );
 
   return (
-    <PageWrapper isLoading={false} errorContext="CarrierListPage" sx={{ gap: 2 }}>
-      <PageHeader
+    <PageWrapper errorContext="CarrierListPage" sx={{ gap: 2 }}>
+      <ListLayout
         title="Carriers"
-        headerActions={
+        primaryAction={
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined">Export</Button>
             <Button onClick={handleOpenCreate} variant="contained">
               Add Carrier
             </Button>
           </Stack>
         }
-      />
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {kpiData.map((kpiItem) => (
-          <Grid key={kpiItem.label} item xs={12} md={6} xl={3}>
-            <MainCard sx={{ height: '100%' }}>
-              <Typography variant="caption" color="text.secondary">
-                {kpiItem.label}
-              </Typography>
-              <Typography variant="h4" color="text.primary" sx={{ mt: 0.5 }}>
-                {kpiItem.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {kpiItem.subtitle}
-              </Typography>
-            </MainCard>
-          </Grid>
-        ))}
-      </Grid>
-
-      <MainCard
-        content={false}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
       >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={(_event, value: CarrierTab) => setActiveTab(value)}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            sx={{ minHeight: 40 }}
-          >
-            {tabOptions.map((tabOption) => (
-              <Tab
-                key={tabOption.key}
-                value={tabOption.key}
-                label={
-                  <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Typography variant="body2">{tabOption.label}</Typography>
-                    <Chip label={tabOption.count} size="small" />
-                  </Stack>
-                }
-                sx={{ minHeight: 40 }}
-              />
-            ))}
-          </Tabs>
-          <Box>
-            <TextField
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search by name, MC#, email..."
-              size="small"
-              sx={{ width: { xs: '100%', lg: 320 } }}
-            />
-          </Box>
-        </Stack>
+        <ListKpiBar
+          items={kpiData}
+          loading={!hasLoadedOnce}
+          sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }}
+        />
 
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <Box
-            sx={{
-              minHeight: { xs: 300, md: 420 },
-              flex: 1,
-            }}
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: 3,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}
+        >
+          <MainCard
+            content={false}
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
           >
-            <NewDataGrid
-              columnDefs={columnDefs}
-              rowData={carriers}
-              defaultColDef={defaultColDef}
-              showRowCountFooter
-              totalRowCount={carriers.length}
-              rowCountLabel="carriers"
-              noDataMessage="No carriers found"
-              gridOptions={{
-                domLayout: 'normal',
-                pagination: false,
-                // paginationPageSize: pagination.limit,
-                suppressCellFocus: true,
-                headerHeight: 44,
-                rowHeight: 62,
-              }}
-              loading={isLoading}
-            />
-          </Box>
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <FilterBar filters={filters} search={searchConfig} />
+            </Box>
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+              <Box
+                sx={{
+                  minHeight: { xs: 300, md: 420 },
+                  flex: 1,
+                }}
+              >
+                <NewDataGrid
+                  columnDefs={columnDefs}
+                  rowData={filteredCarriers}
+                  defaultColDef={defaultColDef}
+                  showRowCountFooter
+                  totalRowCount={filteredCarriers.length}
+                  rowCountLabel="carriers"
+                  noDataMessage="No carriers found"
+                  noDataComponent={
+                    <EmptyState variant="no-results" entityName="Carriers" compact />
+                  }
+                  gridOptions={{
+                    domLayout: 'normal',
+                    pagination: true,
+                    paginationPageSize: 25,
+                    suppressCellFocus: true,
+                    headerHeight: 44,
+                    rowHeight: 56,
+                    onRowClicked: handleRowClicked,
+                  }}
+                  loading={!hasLoadedOnce}
+                />
+              </Box>
+            </Box>
+          </MainCard>
         </Box>
-      </MainCard>
+      </ListLayout>
     </PageWrapper>
   );
 };

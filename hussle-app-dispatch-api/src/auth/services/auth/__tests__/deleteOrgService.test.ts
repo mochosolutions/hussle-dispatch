@@ -72,7 +72,7 @@ describe('deleteOrganizationUseCase', () => {
           userId: 'user-1',
           organizationId: 'org-1',
           orgSlug: 'org-1',
-          orgStatus: 'active',
+          orgStatus: 'ACTIVE',
           orgSubscriptionTier: 'starter',
           membershipId: 'mem-1',
           role: 'admin',

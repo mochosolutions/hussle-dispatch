@@ -14,6 +14,10 @@ import {
   updateMembershipValidator,
   deleteMembershipValidator,
 } from '../validators/tenantValidator';
+import {
+  changeRoleValidator,
+  removeMemberValidator,
+} from '../validators/memberManagementValidator';
 
 export const createOrganizationRouter = (controllers: AuthControllers): express.Router => {
   const router = express.Router();
@@ -90,6 +94,39 @@ export const createOrganizationRouter = (controllers: AuthControllers): express.
     authorizeUserMiddleware(adminOnly),
     validateRequest(deleteMembershipValidator),
     controllers.deleteMembershipController,
+  );
+
+  // Member management routes (tenant admin)
+  const tenantAdmin = { role: 'admin' };
+
+  router.get(
+    '/organizations/:organizationId/subscription/usage',
+    appAuth,
+    authorizeUserMiddleware(tenantAdmin),
+    controllers.getSubscriptionUsageController,
+  );
+
+  router.get(
+    '/organizations/:organizationId/members',
+    appAuth,
+    authorizeUserMiddleware(tenantAdmin),
+    controllers.listMembersController,
+  );
+
+  router.patch(
+    '/organizations/:organizationId/members/:membershipId/role',
+    appAuth,
+    authorizeUserMiddleware(tenantAdmin),
+    validateRequest(changeRoleValidator),
+    controllers.changeMemberRoleController,
+  );
+
+  router.delete(
+    '/organizations/:organizationId/members/:membershipId',
+    appAuth,
+    authorizeUserMiddleware(tenantAdmin),
+    validateRequest(removeMemberValidator),
+    controllers.removeMemberController,
   );
 
   return router;

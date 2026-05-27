@@ -1,15 +1,12 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
-  CarrierRepositoryPort,
   ListVehiclesRepositoryInput,
-  LoadRepositoryPort,
   VehicleExpenseInput,
   VehicleQueryInput,
   VehicleRepositoryPort,
 } from '../types/vehicleTypes';
-
-type VehiclePersistence = VehicleRepositoryPort & CarrierRepositoryPort & LoadRepositoryPort;
 
 const includeExpenses = {
   expenses: true,
@@ -68,7 +65,7 @@ const buildListWhere = (
 
 export const vehicleRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
-): VehiclePersistence => ({
+): VehicleRepositoryPort => ({
   create: (input) =>
     prisma.vehicle.create({
       data: input,
@@ -102,13 +99,35 @@ export const vehicleRepositoryPrisma = (
       where: buildListWhere(organizationId, filters),
     }),
 
-  update: (id, input) =>
-    prisma.vehicle.update({
-      where: {
-        id,
-      },
+  update: async (id, organizationId, input) => {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id, deletedAt: null, carrier: { managedByOrgId: organizationId, deletedAt: null } },
+    });
+    if (!vehicle) {
+      throw new NotFoundError(`Vehicle with id ${id} not found`);
+    }
+    return prisma.vehicle.update({
+      where: { id },
       data: input,
       include: includeExpenses,
+    });
+  },
+
+  createExpense: (vehicleId, expense) =>
+    prisma.truckExpense.create({
+      data: {
+        vehicleId,
+        category: expense.category,
+        expenseKey: expense.expenseKey,
+        label: expense.label,
+        monthlyAmount: expense.monthlyAmount ?? 0,
+      },
+    }),
+
+  findExpensesByVehicleId: (vehicleId) =>
+    prisma.truckExpense.findMany({
+      where: { vehicleId },
+      orderBy: { createdAt: 'desc' },
     }),
 
   replaceExpenses: async (vehicleId, expenses) => {
@@ -125,48 +144,48 @@ export const vehicleRepositoryPrisma = (
     }
   },
 
-  softDelete: async (id, deletedAt) => {
+  softDelete: async (id, organizationId, deletedAt) => {
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id, deletedAt: null, carrier: { managedByOrgId: organizationId, deletedAt: null } },
+    });
+    if (!vehicle) {
+      throw new NotFoundError(`Vehicle with id ${id} not found`);
+    }
     await prisma.vehicle.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt,
-      },
+      where: { id },
+      data: { deletedAt },
     });
   },
 
-  findActiveByIdForOrg: async (carrierId, organizationId) => {
-    const carrier = await prisma.carrier.findFirst({
+  assignDriver: (vehicleId, driverId) =>
+    prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { driverId },
+      include: includeExpenses,
+    }),
+
+  unassignDriver: (vehicleId) =>
+    prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { driverId: null },
+      include: includeExpenses,
+    }),
+
+  findByDriverId: (driverId) =>
+    prisma.vehicle.findFirst({
       where: {
-        id: carrierId,
-        managedByOrgId: organizationId,
-        status: 'active',
+        driverId,
         deletedAt: null,
       },
-      select: {
-        id: true,
-      },
-    });
+      include: includeExpenses,
+    }),
 
-    return carrier !== null;
-  },
-
-  findBlockingLoadIdsByVehicle: async (vehicleId, statuses, limit) => {
-    const loads = await prisma.load.findMany({
+  countActiveByOrganization: (organizationId) =>
+    prisma.vehicle.count({
       where: {
-        vehicleId,
+        carrier: { managedByOrgId: organizationId },
+        isActive: true,
         deletedAt: null,
-        status: {
-          in: statuses,
-        },
       },
-      select: {
-        id: true,
-      },
-      take: limit,
-    });
-
-    return loads.map((load) => load.id);
-  },
+    }),
 });

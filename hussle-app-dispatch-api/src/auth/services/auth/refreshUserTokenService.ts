@@ -8,10 +8,12 @@ export interface RefreshTokenServiceDeps {
 
 export interface RefreshTokenInput {
   refreshToken: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export const refreshUserTokenService = async (
-  { refreshToken }: RefreshTokenInput,
+  { refreshToken, ipAddress, userAgent }: RefreshTokenInput,
   { tokenProvider }: RefreshTokenServiceDeps
 ) => {
   try {
@@ -26,6 +28,8 @@ export const refreshUserTokenService = async (
     }
     const response = await tokenProvider.refreshToken({
       refreshToken,
+      ipAddress,
+      userAgent,
     });
 
     logger.info('Token refresh completed successfully');

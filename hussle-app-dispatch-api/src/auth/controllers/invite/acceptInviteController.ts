@@ -2,7 +2,12 @@ import type { Request, Response } from 'express';
 import type { PrismaTransaction } from '@/shared/prisma';
 import { getClientId } from '@/shared/utils/cognito';
 import { cognitoIdentityClient } from '@/shared/utils/cognito';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
 import { cognitoProvider } from '../../providers/authProvider';
 import type { ITokenProvider } from '../../types/tokenProvider';
 import { inviteRepositoryPrisma } from '../../repositories/inviteRepositoryPrisma';
@@ -78,6 +83,7 @@ export const createAcceptInviteController =
 
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, refreshToken);
+    setCsrfTokenCookie(res, generateCsrfToken());
 
     return res.status(201).json({ message: 'Signup successful', ...result });
   };

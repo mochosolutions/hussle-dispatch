@@ -178,12 +178,12 @@ describe('KANBAN_GROUPS', () => {
 
 const adminCtx: TransitionContext = {
   userRole: 'ADMIN',
-  load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1' },
+  load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1', rateConReceivedAt: new Date() },
 };
 
 const dispatcherCtx: TransitionContext = {
   userRole: 'DISPATCHER',
-  load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1' },
+  load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1', rateConReceivedAt: new Date() },
 };
 
 describe('validateTransition — happy paths', () => {
@@ -323,10 +323,33 @@ describe('validateTransition — BOOKED → DISPATCHED prerequisites: driverId +
     expect(result.valid).toBe(false);
   });
 
-  it('returns valid:true when all prerequisites met', () => {
+  it('returns valid:false when rateConReceivedAt is null', () => {
+    const result = validateTransition('BOOKED', 'DISPATCHED', {
+      userRole: 'DISPATCHER',
+      load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1', rateConReceivedAt: null },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/rate confirmation/i);
+  });
+
+  it('returns valid:false when rateConReceivedAt is undefined', () => {
     const result = validateTransition('BOOKED', 'DISPATCHED', {
       userRole: 'DISPATCHER',
       load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1' },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/rate confirmation/i);
+  });
+
+  it('returns valid:true when all prerequisites met including rateConReceivedAt', () => {
+    const result = validateTransition('BOOKED', 'DISPATCHED', {
+      userRole: 'DISPATCHER',
+      load: {
+        carrierId: 'c-1',
+        driverId: 'd-1',
+        vehicleId: 'v-1',
+        rateConReceivedAt: new Date(),
+      },
     });
     expect(result.valid).toBe(true);
   });
@@ -464,56 +487,6 @@ describe('validateTransition — notes required: CANCELED', () => {
 // ---------------------------------------------------------------------------
 
 describe('validateTransition — warnings', () => {
-  it('warns when transitioning to DISPATCHED and rateConReceivedAt is null', () => {
-    const result = validateTransition('BOOKED', 'DISPATCHED', {
-      userRole: 'DISPATCHER',
-      load: {
-        carrierId: 'c-1',
-        driverId: 'd-1',
-        vehicleId: 'v-1',
-        rateConReceivedAt: null,
-      },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings).toEqual(
-      expect.arrayContaining(['No broker rate con on file']),
-    );
-  });
-
-  it('does not warn when transitioning to DISPATCHED and rateConReceivedAt is set', () => {
-    const result = validateTransition('BOOKED', 'DISPATCHED', {
-      userRole: 'DISPATCHER',
-      load: {
-        carrierId: 'c-1',
-        driverId: 'd-1',
-        vehicleId: 'v-1',
-        rateConReceivedAt: new Date(),
-      },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings ?? []).not.toContain('No broker rate con on file');
-  });
-
-  it('warns when transitioning to DELIVERED and bolSignedAt is null', () => {
-    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
-      userRole: 'DISPATCHER',
-      load: { bolSignedAt: null },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings).toEqual(
-      expect.arrayContaining(['No signed BOL on file']),
-    );
-  });
-
-  it('does not warn when transitioning to DELIVERED and bolSignedAt is set', () => {
-    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
-      userRole: 'DISPATCHER',
-      load: { bolSignedAt: new Date() },
-    });
-    expect(result.valid).toBe(true);
-    expect(result.warnings ?? []).not.toContain('No signed BOL on file');
-  });
-
   it('does not include warnings key when there are no warnings', () => {
     const result = validateTransition('QUOTED', 'BOOKED', {
       userRole: 'DISPATCHER',
@@ -522,4 +495,98 @@ describe('validateTransition — warnings', () => {
     expect(result.valid).toBe(true);
     expect(result.warnings).toBeUndefined();
   });
+
+  it('does not warn when transitioning to DELIVERED without bolSignedAt (gate is invoiceReadinessSubscriber)', () => {
+    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
+      userRole: 'DISPATCHER',
+      load: { bolSignedAt: null },
+    });
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toBeUndefined();
+  });
 });
+
+// ---------------------------------------------------------------------------
+// validateTransition — DRIVER role restrictions
+// ---------------------------------------------------------------------------
+
+describe('validateTransition — DRIVER role restrictions', () => {
+  const driverCtx: TransitionContext = {
+    userRole: 'DRIVER',
+    load: { carrierId: 'c-1', driverId: 'd-1', vehicleId: 'v-1', rateConReceivedAt: new Date() },
+  };
+
+  it('allows DRIVER to transition DISPATCHED → EN_ROUTE_PICKUP', () => {
+    const result = validateTransition('DISPATCHED', 'EN_ROUTE_PICKUP', driverCtx);
+    expect(result.valid).toBe(true);
+  });
+
+  it('allows DRIVER to transition EN_ROUTE_PICKUP → AT_PICKUP', () => {
+    const result = validateTransition('EN_ROUTE_PICKUP', 'AT_PICKUP', driverCtx);
+    expect(result.valid).toBe(true);
+  });
+
+  it('allows DRIVER to transition AT_PICKUP → IN_TRANSIT', () => {
+    const result = validateTransition('AT_PICKUP', 'IN_TRANSIT', driverCtx);
+    expect(result.valid).toBe(true);
+  });
+
+  it('allows DRIVER to transition IN_TRANSIT → AT_DELIVERY', () => {
+    const result = validateTransition('IN_TRANSIT', 'AT_DELIVERY', driverCtx);
+    expect(result.valid).toBe(true);
+  });
+
+  it('allows DRIVER to transition AT_DELIVERY → DELIVERED', () => {
+    const result = validateTransition('AT_DELIVERY', 'DELIVERED', {
+      ...driverCtx,
+      load: { ...driverCtx.load, bolSignedAt: new Date() },
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('blocks DRIVER from transitioning to TONU', () => {
+    const result = validateTransition('DISPATCHED', 'TONU', driverCtx);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/Drivers can only advance/);
+  });
+
+  it('blocks DRIVER from transitioning to CANCELED', () => {
+    const result = validateTransition('BOOKED', 'CANCELED', {
+      ...driverCtx,
+      notes: 'reason',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/Drivers can only advance/);
+  });
+
+  it('blocks DRIVER from transitioning to EXCEPTION (caught by ADMIN-only check first)', () => {
+    const result = validateTransition('IN_TRANSIT', 'EXCEPTION', {
+      ...driverCtx,
+      notes: 'Something wrong',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/ADMIN role/);
+  });
+
+  it('does not affect DISPATCHER transitions', () => {
+    const result = validateTransition('DISPATCHED', 'TONU', {
+      userRole: 'DISPATCHER',
+      load: driverCtx.load,
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('does not affect ADMIN transitions', () => {
+    const result = validateTransition('IN_TRANSIT', 'EXCEPTION', {
+      userRole: 'ADMIN',
+      load: driverCtx.load,
+      notes: 'Something wrong',
+    });
+    expect(result.valid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// appointmentNumber is intentionally not enforced at the state-machine layer.
+// Removed warning intentionally — no downstream business logic depends on it.
+// ---------------------------------------------------------------------------

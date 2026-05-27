@@ -1,73 +1,164 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Chip, CircularProgress, Grid } from '@mui/material';
+import { differenceInCalendarDays, format, parse } from 'date-fns';
+import type { CarrierListItem } from '../../types';
+import type { CarrierStats } from 'utils/api/fleet/carrierApi';
+import { BodyMuted, BodyStrong, KpiLabel, LinkText } from 'components/Typography';
+import { getInsuranceExpiryStatus } from 'utils/getInsuranceExpiryStatus';
 
-export const CarrierKPI = (c) => {
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: 1,
-        bgcolor: 'grey.50',
+interface CarrierKPIProps {
+  /** CarrierListItem from selectFormattedCarrierById — dates are pre-formatted as MM/dd/yyyy */
+  c: CarrierListItem;
+  stats?: CarrierStats | null;
+  statsLoading?: boolean;
+}
+
+const SELECTOR_DATE_FORMAT = 'MM/dd/yyyy';
+const LABEL_SX = { minWidth: 80, flexShrink: 0 } as const;
+
+const formatInsuranceExpiry = (insuranceExpiry: string | null): { display: string; color?: string } => {
+  if (!insuranceExpiry) {
+    return { display: '\u2014' };
+  }
+
+  const expiryDate = parse(insuranceExpiry, SELECTOR_DATE_FORMAT, new Date());
+  const daysRemaining = differenceInCalendarDays(expiryDate, new Date());
+  const formattedDate = format(expiryDate, 'MMM d, yyyy');
+
+  if (daysRemaining < 0) {
+    return { display: formattedDate, color: 'error.main' };
+  }
+
+  return {
+    display: formattedDate,
+    color: daysRemaining > 30 ? 'success.main' : undefined,
+  };
+};
+
+const formatRevenue = (value: string): string => {
+  const num = Number(value);
+  if (num >= 1_000_000) {
+    return `$${(num / 1_000_000).toFixed(1)}M`;
+  }
+  if (num >= 1_000) {
+    return `$${(num / 1_000).toFixed(1)}K`;
+  }
+  return `$${num.toLocaleString()}`;
+};
+
+const formatAddress = (c: CarrierListItem): string => {
+  const parts = [c.city, c.state].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : '\u2014';
+};
+
+interface KpiRowProps {
+  label: string;
+  value: string;
+  color?: string;
+}
+
+const KpiRow: React.FC<KpiRowProps> = ({ label, value, color }) => (
+  <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+    <BodyMuted sx={LABEL_SX}>{label}</BodyMuted>
+    <BodyStrong sx={{ lineHeight: 1.3, color: color ?? 'text.primary' }}>{value}</BodyStrong>
+  </Box>
+);
+
+interface KpiRowLinkProps {
+  label: string;
+  value: string;
+  href: string;
+}
+
+const KpiRowLink: React.FC<KpiRowLinkProps> = ({ label, value, href }) => (
+  <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+    <BodyMuted sx={LABEL_SX}>{label}</BodyMuted>
+    <LinkText
+      sx={{ lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+      onClick={() => {
+        window.location.href = href;
       }}
     >
-      {[
-        { label: 'MC / DOT', primary: c.mcNumber, secondary: c.dotNumber },
-        { label: 'CONTACT', primary: c.phone ?? '—', secondary: c.email ?? '—' },
-        {
-          label: 'DISPATCH FEE',
-          primary: `${c.dispatchFeePercent}%`,
-          secondary: c.partnerSplitPercent ? `${c.partnerSplitPercent}% partner split` : '',
-        },
-        { label: 'DRIVERS', primary: '2', secondary: '1 available, 1 at delivery' },
-        {
-          label: 'LIFETIME REVENUE',
-          primary: '$12,800',
-          secondary: '8 loads',
-          highlight: true,
-        },
-        {
-          label: 'COI EXPIRES',
-          primary: 'Aug 30, 2026',
-          secondary: '152 days remaining',
-          highlightGreen: true,
-        },
-      ].map((kpi, i) => (
-        <Box
-          key={kpi.label}
-          sx={{
-            px: 2.5,
-            py: 1.5,
-            borderRight: i < 5 ? 1 : 0,
-            borderColor: 'divider',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-              color: 'text.disabled',
-              fontSize: '0.625rem',
-            }}
-          >
-            {kpi.label}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 700,
-              color: kpi.highlight || kpi.highlightGreen ? 'success.main' : 'text.primary',
-              mt: 0.5,
-            }}
-          >
-            {kpi.primary}
-          </Typography>
-          <Typography variant="caption">{kpi.secondary}</Typography>
+      {value}
+    </LinkText>
+  </Box>
+);
+
+export const CarrierKPI: React.FC<CarrierKPIProps> = ({ c, stats, statsLoading }) => {
+  const revenueDisplay = statsLoading
+    ? '\u2026'
+    : stats
+      ? formatRevenue(stats.lifetimeRevenue)
+      : '\u2014';
+
+  const revenueColor =
+    stats && Number(stats.lifetimeRevenue) > 0 ? 'success.main' : undefined;
+
+  const insuranceInfo = formatInsuranceExpiry(c.insuranceExpiry);
+  const insuranceExpiryStatus = getInsuranceExpiryStatus(c.insuranceExpiry);
+  const { driverCount, vehicleCount } = c;
+
+  return (
+    <Grid container spacing={2}>
+      {/* Column 1 — Company Info */}
+      <Grid item sm={6} md={3}>
+        <KpiLabel sx={{ mb: 0.5 }}>Company Info</KpiLabel>
+        <KpiRow label="MC#:" value={c.mcNumber ?? '\u2014'} />
+        <KpiRow label="DOT#:" value={c.dotNumber ?? '\u2014'} />
+        <KpiRow label="EIN:" value={c.ein ?? '\u2014'} />
+      </Grid>
+
+      {/* Column 2 — Contact */}
+      <Grid item sm={6} md={3}>
+        <KpiLabel sx={{ mb: 0.5 }}>Contact</KpiLabel>
+        <KpiRow label="Phone:" value={c.phone ?? '\u2014'} />
+        {c.email ? (
+          <KpiRowLink label="Email:" value={c.email} href={`mailto:${c.email}`} />
+        ) : (
+          <KpiRow label="Email:" value="\u2014" />
+        )}
+        <KpiRow label="Address:" value={formatAddress(c)} />
+      </Grid>
+
+      {/* Column 3 — Fleet */}
+      <Grid item sm={6} md={3}>
+        <KpiLabel sx={{ mb: 0.5 }}>Fleet</KpiLabel>
+        <KpiRow label="Drivers:" value={String(driverCount)} />
+        <KpiRow label="Vehicles:" value={String(vehicleCount)} />
+      </Grid>
+
+      {/* Column 4 — Financials */}
+      <Grid item sm={6} md={3}>
+        <KpiLabel sx={{ mb: 0.5 }}>Financials</KpiLabel>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+          <BodyMuted sx={LABEL_SX}>Revenue:</BodyMuted>
+          {statsLoading ? (
+            <CircularProgress size={12} />
+          ) : (
+            <BodyStrong sx={{ lineHeight: 1.3, color: revenueColor ?? 'text.primary' }}>
+              {revenueDisplay}
+            </BodyStrong>
+          )}
         </Box>
-      ))}
-    </Box>
+        <KpiRow
+          label="Margin:"
+          value={c.companyMarginPercent ? `${c.companyMarginPercent}%` : '\u2014'}
+        />
+        <KpiRow
+          label="COI Expires:"
+          value={insuranceInfo.display}
+          color={insuranceInfo.color}
+        />
+        {insuranceExpiryStatus && (
+          <Box sx={{ mt: 0.5 }}>
+            <Chip
+              label={insuranceExpiryStatus.label}
+              size="small"
+              color={insuranceExpiryStatus.color}
+              sx={{ height: 20, fontSize: '0.6875rem' }}
+            />
+          </Box>
+        )}
+      </Grid>
+    </Grid>
   );
 };

@@ -1,0 +1,268 @@
+interface MockAccessorialItem {
+  id: string;
+  type: string;
+  description: string;
+  amount: string;
+}
+
+interface MockInvoiceFixture {
+  id: string;
+  loadId: string;
+  carrierId: string;
+  customerId: string;
+  invoiceNumber: string;
+  type: string;
+  subtotal: string;
+  accessorials: string;
+  totalAmount: string;
+  paymentTerms: string;
+  paymentTermsDays: number;
+  dueDate: string;
+  missingSignedBol: boolean;
+  status: string;
+  sentAt: string | null;
+  sentTo: string | null;
+  paidAt: string | null;
+  paidAmount: string | null;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  approvedAt: string | null;
+  pdfUrl: string | null;
+  billingMethod: string;
+  deliveryMethod: string | null;
+  sentToEmail: string | null;
+  factoringAdvance: string | null;
+  factoringFeeAmount: string | null;
+  reserveAmount: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  accessorialItems: MockAccessorialItem[];
+  load: { id: string; loadNumber: string; status: string };
+  carrier: { id: string; name: string };
+  customer: { id: string; companyName: string };
+}
+
+const baseInvoice: MockInvoiceFixture = {
+  id: 'inv-001',
+  loadId: 'load-001',
+  carrierId: 'carrier-001',
+  customerId: 'customer-001',
+  invoiceNumber: 'INV-2026-0001',
+  type: 'CUSTOMER',
+  subtotal: '4500.00',
+  accessorials: '350.00',
+  totalAmount: '4850.00',
+  paymentTerms: 'net_30',
+  paymentTermsDays: 30,
+  dueDate: '2026-04-20T00:00:00.000Z',
+  missingSignedBol: false,
+  status: 'DRAFT',
+  sentAt: null,
+  sentTo: null,
+  paidAt: null,
+  paidAmount: null,
+  paymentMethod: null,
+  paymentReference: null,
+  approvedAt: null,
+  pdfUrl: null,
+  billingMethod: 'DIRECT',
+  deliveryMethod: null,
+  sentToEmail: null,
+  factoringAdvance: null,
+  factoringFeeAmount: null,
+  reserveAmount: null,
+  notes: 'Auto-generated invoice from delivery',
+  createdAt: '2026-03-21T10:00:00.000Z',
+  updatedAt: '2026-03-21T10:00:00.000Z',
+  accessorialItems: [
+    { id: 'acc-001', type: 'DETENTION', description: 'Detention at pickup — 3 hours', amount: '200.00' },
+    { id: 'acc-002', type: 'LUMPER', description: 'Lumper fee', amount: '150.00' },
+  ],
+  load: { id: 'load-001', loadNumber: 'LD-2026-0042', status: 'INVOICE_PENDING' },
+  carrier: { id: 'carrier-001', name: 'Swift Logistics LLC' },
+  customer: { id: 'customer-001', companyName: 'Acme Freight Brokerage' },
+};
+
+export const mockInvoice = { ...baseInvoice };
+
+export const mockInvoice2 = {
+  ...baseInvoice,
+  id: 'inv-002',
+  invoiceNumber: 'INV-2026-0002',
+  status: 'APPROVED',
+  subtotal: '3200.00',
+  accessorials: '0.00',
+  totalAmount: '3200.00',
+  approvedAt: '2026-03-21T12:00:00.000Z',
+  load: { id: 'load-002', loadNumber: 'LD-2026-0043', status: 'INVOICED' },
+  accessorialItems: [],
+  notes: null,
+};
+
+export const mockInvoice3 = {
+  ...baseInvoice,
+  id: 'inv-003',
+  invoiceNumber: 'INV-2026-0003',
+  status: 'SENT',
+  subtotal: '5800.00',
+  accessorials: '75.00',
+  totalAmount: '5875.00',
+  sentAt: '2026-03-20T14:00:00.000Z',
+  sentTo: 'billing@acmefreight.com',
+  sentToEmail: 'billing@acmefreight.com',
+  deliveryMethod: 'PLATFORM_EMAIL',
+  billingMethod: 'FACTORED',
+  factoringAdvance: '5287.50',
+  factoringFeeAmount: '176.25',
+  reserveAmount: '411.25',
+  load: { id: 'load-003', loadNumber: 'LD-2026-0044', status: 'INVOICED' },
+  carrier: { id: 'carrier-002', name: 'Midwest Express Carriers' },
+  accessorialItems: [
+    { id: 'acc-003', type: 'FUEL_SURCHARGE', description: 'Fuel surcharge', amount: '75.00' },
+  ],
+};
+
+export const mockInvoiceOverdue = {
+  ...baseInvoice,
+  id: 'inv-overdue',
+  invoiceNumber: 'INV-2026-0004',
+  status: 'SENT',
+  subtotal: '2800.00',
+  accessorials: '0.00',
+  totalAmount: '2800.00',
+  dueDate: '2026-02-15T00:00:00.000Z',
+  sentAt: '2026-02-01T10:00:00.000Z',
+  sentTo: 'billing@overduecompany.com',
+  sentToEmail: 'billing@overduecompany.com',
+  billingMethod: 'DIRECT',
+  deliveryMethod: 'PLATFORM_EMAIL',
+  load: { id: 'load-004', loadNumber: 'LD-2026-0045', status: 'INVOICED' },
+  carrier: { id: 'carrier-003', name: 'Overdue Trucking Inc' },
+  accessorialItems: [],
+  notes: 'Payment overdue — follow up required',
+};
+
+export const mockInvoiceMissingBol = {
+  ...baseInvoice,
+  id: 'inv-missing-bol',
+  invoiceNumber: 'INV-2026-0005',
+  status: 'DRAFT',
+  subtotal: '1500.00',
+  accessorials: '0.00',
+  totalAmount: '1500.00',
+  missingSignedBol: true,
+  load: { id: 'load-005', loadNumber: 'LD-2026-0046', status: 'INVOICE_PENDING' },
+  carrier: { id: 'carrier-004', name: 'BOL Missing Transport' },
+  accessorialItems: [],
+  notes: null,
+};
+
+export const mockInvoicePaid = {
+  ...baseInvoice,
+  id: 'inv-paid',
+  invoiceNumber: 'INV-2026-0006',
+  status: 'PAID',
+  subtotal: '6200.00',
+  accessorials: '100.00',
+  totalAmount: '6300.00',
+  paidAt: '2026-03-18T09:00:00.000Z',
+  paidAmount: '6300.00',
+  paymentMethod: 'ACH',
+  paymentReference: 'ACH-2026-0318',
+  approvedAt: '2026-03-10T08:00:00.000Z',
+  sentAt: '2026-03-10T09:00:00.000Z',
+  sentTo: 'ap@paidclient.com',
+  sentToEmail: 'ap@paidclient.com',
+  billingMethod: 'DIRECT',
+  deliveryMethod: 'PLATFORM_EMAIL',
+  load: { id: 'load-006', loadNumber: 'LD-2026-0047', status: 'INVOICED' },
+  carrier: { id: 'carrier-005', name: 'Paid Carrier LLC' },
+  accessorialItems: [
+    { id: 'acc-004', type: 'LUMPER', description: 'Lumper fee at delivery', amount: '100.00' },
+  ],
+  notes: 'Paid in full via ACH',
+};
+
+export const mockInvoiceVoid = {
+  ...baseInvoice,
+  id: 'inv-void',
+  invoiceNumber: 'INV-2026-0007',
+  status: 'VOID',
+  subtotal: '900.00',
+  accessorials: '0.00',
+  totalAmount: '900.00',
+  load: { id: 'load-007', loadNumber: 'LD-2026-0048', status: 'CANCELED' },
+  carrier: { id: 'carrier-006', name: 'Void Express LLC' },
+  accessorialItems: [],
+  notes: 'Voided — load was canceled',
+};
+
+export const mockInvoicePartial = {
+  ...baseInvoice,
+  id: 'inv-partial',
+  invoiceNumber: 'INV-2026-0008',
+  status: 'PARTIALLY_PAID',
+  subtotal: '8000.00',
+  accessorials: '200.00',
+  totalAmount: '8200.00',
+  paidAmount: '4000.00',
+  paymentMethod: 'CHECK',
+  paymentReference: 'CHK-9912',
+  approvedAt: '2026-03-12T08:00:00.000Z',
+  sentAt: '2026-03-12T09:00:00.000Z',
+  sentTo: 'ap@partialclient.com',
+  sentToEmail: 'ap@partialclient.com',
+  billingMethod: 'DIRECT',
+  deliveryMethod: 'PLATFORM_EMAIL',
+  load: { id: 'load-008', loadNumber: 'LD-2026-0049', status: 'INVOICED' },
+  carrier: { id: 'carrier-007', name: 'Partial Pay Freight' },
+  accessorialItems: [
+    { id: 'acc-005', type: 'DETENTION', description: 'Detention at delivery', amount: '200.00' },
+  ],
+  notes: 'Partial payment received — awaiting balance',
+};
+
+export const mockInvoiceWithPdf = {
+  ...baseInvoice,
+  id: 'inv-with-pdf',
+  invoiceNumber: 'INV-2026-0009',
+  status: 'SENT',
+  subtotal: '3500.00',
+  accessorials: '0.00',
+  totalAmount: '3500.00',
+  pdfUrl: 'https://example.com/invoices/inv-with-pdf.pdf',
+  sentAt: '2026-03-19T10:00:00.000Z',
+  sentTo: 'finance@pdfclient.com',
+  sentToEmail: 'finance@pdfclient.com',
+  billingMethod: 'DIRECT',
+  deliveryMethod: 'PLATFORM_EMAIL',
+  load: { id: 'load-009', loadNumber: 'LD-2026-0050', status: 'INVOICED' },
+  carrier: { id: 'carrier-008', name: 'PDF Logistics' },
+  accessorialItems: [],
+  notes: null,
+};
+
+export const allInvoices = [
+  mockInvoice,
+  mockInvoice2,
+  mockInvoice3,
+  mockInvoiceOverdue,
+  mockInvoiceMissingBol,
+  mockInvoicePaid,
+  mockInvoiceVoid,
+  mockInvoicePartial,
+  mockInvoiceWithPdf,
+];
+
+export const invoiceMap: Record<string, typeof mockInvoice> = {
+  'inv-001': mockInvoice,
+  'inv-002': mockInvoice2,
+  'inv-003': mockInvoice3,
+  'inv-overdue': mockInvoiceOverdue,
+  'inv-missing-bol': mockInvoiceMissingBol,
+  'inv-paid': mockInvoicePaid,
+  'inv-void': mockInvoiceVoid,
+  'inv-partial': mockInvoicePartial,
+  'inv-with-pdf': mockInvoiceWithPdf,
+};

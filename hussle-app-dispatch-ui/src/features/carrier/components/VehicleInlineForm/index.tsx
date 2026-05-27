@@ -1,4 +1,5 @@
 import { Box, Button, Grid } from '@mui/material';
+import { CancelButton } from '@mocho/ui/components';
 import { Formik } from 'formik';
 import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';
@@ -52,21 +53,20 @@ export const VehicleInlineForm = ({
         <Box
           sx={{
             p: 2.5,
-            bgcolor: 'primary.light',
+            bgcolor: 'background.paper',
             border: 1,
-            borderColor: 'primary.main',
+            borderColor: 'divider',
             borderRadius: 1,
-            opacity: 0.95,
           }}
         >
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={3}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={3}>
               <TextField name="unitNumber" label="Unit #" placeholder="TRK-001" formik={formikProps} />
             </Grid>
-            <Grid item xs={2}>
+            <Grid item xs={6} sm={2}>
               <TextField name="year" label="Year" placeholder="2022" formik={formikProps} />
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={6} sm={4}>
               <SelectField
                 name="make"
                 label="Make"
@@ -74,16 +74,14 @@ export const VehicleInlineForm = ({
                 formik={formikProps}
               />
             </Grid>
-            <Grid item xs={3}>
+            <Grid item xs={12} sm={3}>
               <TextField name="model" label="Model" placeholder="Cascadia" formik={formikProps} />
             </Grid>
-          </Grid>
 
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={4}>
+            <Grid item xs={12} sm={4}>
               <TextField name="vin" label="VIN" placeholder="1FUJGLDR..." formik={formikProps} />
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={12} sm={4}>
               <SelectField
                 name="type"
                 label="Equipment Type"
@@ -91,15 +89,13 @@ export const VehicleInlineForm = ({
                 formik={formikProps}
               />
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={12} sm={4}>
               <TextField name="licensePlate" label="License Plate" placeholder="ABC-1234" formik={formikProps} />
             </Grid>
           </Grid>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button variant="outlined" size="small" onClick={onCancel}>
-              Cancel
-            </Button>
+            <CancelButton onClick={onCancel} size="small" />
             <Button
               type="button"
               variant="contained"

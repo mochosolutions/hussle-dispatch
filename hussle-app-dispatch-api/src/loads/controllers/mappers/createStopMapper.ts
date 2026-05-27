@@ -1,0 +1,33 @@
+import type { Request } from 'express';
+import type { CreateStopInput } from '../../types/stopTypes';
+
+export const createStopMapper = (req: Request): CreateStopInput => ({
+  organizationId: req.organizationId ?? '',
+  loadId: req.params['loadId'] ?? '',
+  type: req.body.type,
+  sequence: req.body.sequence,
+  contactId: req.body.contactId,
+  placeId: req.body.placeId,
+  facilityName: req.body.facilityName,
+  address: req.body.address,
+  city: req.body.city,
+  state: req.body.state,
+  zip: req.body.zip,
+  schedulingType: req.body.schedulingType,
+  appointmentStart: req.body.appointmentStart,
+  appointmentEnd: req.body.appointmentEnd,
+  notificationHours: req.body.notificationHours,
+  appointmentNumber: req.body.appointmentNumber,
+  contactName: req.body.contactName,
+  contactPhone: req.body.contactPhone,
+  commodity: req.body.commodity,
+  weight: req.body.weight,
+  pieceCount: req.body.pieceCount,
+  isHazmat: req.body.isHazmat,
+  isTarp: req.body.isTarp,
+  isTempControlled: req.body.isTempControlled,
+  notes: req.body.notes,
+  callByTime: req.body.callByTime,
+  trailerNumber: req.body.trailerNumber,
+  yardLocation: req.body.yardLocation,
+});

@@ -62,8 +62,8 @@ export function createImageState(file: File): ImageState {
 export function revokeBlobUrl(blobUrl: string): void {
   try {
     URL.revokeObjectURL(blobUrl);
-  } catch (error) {
-    console.error('Failed to revoke blob URL:', error);
+  } catch (_error) {
+    // Blob URL revocation failed — non-critical, memory will be freed on page unload
   }
 }
 

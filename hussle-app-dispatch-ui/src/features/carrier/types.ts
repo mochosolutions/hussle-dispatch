@@ -1,11 +1,27 @@
 // Derived from fleet-management API contract (openapi spec)
-// Decimal fields are represented as string (API serializes Decimal as string)
 
-export type CarrierType = 'COMPANY_ASSET' | 'OWNER_OPERATOR' | 'EXTERNAL_CARRIER';
+export type CarrierType = 'COMPANY_ASSET' | 'EXTERNAL_CARRIER' | 'LEASED_CARRIER';
 
-export type CarrierStatus = 'approved' | 'pending' | 'suspended' | 'draft';
+export type CarrierStatus =
+  | 'DRAFT'
+  | 'INVITED'
+  | 'ONBOARDING'
+  | 'PENDING_APPROVAL'
+  | 'REJECTED'
+  | 'ACTIVE'
+  | 'ACTION_REQUIRED'
+  | 'SUSPENDED';
+
+export interface CarrierOnboardingSessionSummary {
+  lastActiveAt: string;
+  currentStepId: string | null;
+  completedStepIds: string[];
+  completedAt: string | null;
+}
 
 export type InsuranceWarning = '30_DAY' | '7_DAY' | 'EXPIRED' | null;
+
+export type DispatchFeeType = 'PERCENTAGE' | 'FLAT';
 
 export type VehicleType =
   | 'DRY_VAN'
@@ -38,8 +54,6 @@ export interface UpsertVehicleExpense {
   monthlyAmount?: number;
 }
 
-export type ContactType = 'BROKER' | 'SHIPPER' | 'CONSIGNEE' | 'FACTORING';
-
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -48,21 +62,33 @@ export interface PaginationMeta {
   hasMore: boolean;
 }
 
+export interface DispatchableStatus {
+  ready: boolean;
+  missing: string[];
+}
+
 export interface Carrier {
   id: string;
   name: string;
   type: CarrierType;
+  status: CarrierStatus;
   mcNumber: string | null;
   dotNumber: string | null;
   ein: string | null;
   phone: string | null;
   email: string | null;
+  primaryContactName: string | null;
+  primaryContactPhone: string | null;
+  primaryContactEmail: string | null;
   address: string | null;
   city: string | null;
   state: string | null;
   zip: string | null;
-  dispatchFeePercent: string;
-  partnerSplitPercent: string | null;
+  lat: number | null;
+  lng: number | null;
+  companyMarginPercent: number;
+  dispatchFeeType: DispatchFeeType;
+  dispatchFeeAmount: number;
   feeIncludesAccessorials: boolean;
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
@@ -70,7 +96,17 @@ export interface Carrier {
   insuranceWarning: InsuranceWarning;
   w9OnFile: boolean;
   carrierPacketOnFile: boolean;
+  billingMethod: string;
+  factoringCompanyName: string | null;
+  factoringCompanyEmail: string | null;
+  factoringSubmissionMethod: string | null;
+  factoringAdvanceRate: string | null;
+  factoringFeePercent: string | null;
+  factoringNoa: string | null;
+  outboundEmailMode: string;
+  replyToEmail: string | null;
   notes: string | null;
+  dispatchableStatus: DispatchableStatus;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -80,6 +116,8 @@ export interface CarrierListItem extends Carrier {
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
+  inviteSentAt: string | null;
 }
 
 export interface CarrierOnboardingStatus {
@@ -105,8 +143,11 @@ export interface CreateCarrierInput {
   city?: string | null;
   state?: string | null;
   zip?: string | null;
-  dispatchFeePercent?: string | null;
-  partnerSplitPercent?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  companyMarginPercent?: number | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | null;
   feeIncludesAccessorials?: boolean | null;
   dispatchAgreementOnFile?: boolean | null;
   insuranceCertOnFile?: boolean | null;
@@ -127,8 +168,11 @@ export interface UpdateCarrierInput {
   city?: string | null;
   state?: string | null;
   zip?: string | null;
-  dispatchFeePercent?: string | null;
-  partnerSplitPercent?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  companyMarginPercent?: number | null;
+  dispatchFeeType?: DispatchFeeType | null;
+  dispatchFeeAmount?: number | null;
   feeIncludesAccessorials?: boolean | null;
   dispatchAgreementOnFile?: boolean | null;
   insuranceCertOnFile?: boolean | null;
@@ -150,15 +194,46 @@ export interface DriverNoGoZone {
   city: string | null;
 }
 
+export type DriverLicenseType = 'CLASS_D' | 'CLASS_M' | 'CDL_A' | 'CDL_B' | 'CDL_C';
+
+export type DriverPayType = 'PERCENTAGE' | 'PER_MILE' | 'PER_HOUR' | 'FLAT_RATE';
+
+export const DRIVER_LICENSE_TYPE_OPTIONS: Array<{
+  value: DriverLicenseType;
+  label: string;
+  shortLabel: string;
+}> = [
+  { value: 'CLASS_D', label: 'Standard (Class D)', shortLabel: 'Class D' },
+  { value: 'CLASS_M', label: 'Motorcycle (Class M)', shortLabel: 'Class M' },
+  { value: 'CDL_A', label: 'CDL Class A', shortLabel: 'CDL-A' },
+  { value: 'CDL_B', label: 'CDL Class B', shortLabel: 'CDL-B' },
+  { value: 'CDL_C', label: 'CDL Class C', shortLabel: 'CDL-C' },
+];
+
+export type EndorsementCode = 'H' | 'N' | 'X' | 'T' | 'P' | 'S';
+
+export const ENDORSEMENT_OPTIONS: Array<{ value: EndorsementCode; label: string }> = [
+  { value: 'H', label: 'Hazmat' },
+  { value: 'N', label: 'Tanker' },
+  { value: 'X', label: 'Hazmat + Tanker' },
+  { value: 'T', label: 'Double/Triple Trailers' },
+  { value: 'P', label: 'Passenger' },
+  { value: 'S', label: 'School Bus' },
+];
+
 export interface Driver {
   id: string;
   carrierId: string | null;
-  name: string;
+  carrierName?: string | null;
+  firstName: string;
+  lastName: string;
   email: string | null;
   phone: string | null;
-  cdlNumber: string | null;
-  cdlState: string | null;
-  cdlExpiry: string | null;
+  licenseType: DriverLicenseType;
+  licenseNumber: string | null;
+  licenseState: string | null;
+  licenseExpiry: string | null;
+  endorsements: EndorsementCode[] | null;
   isAvailable: boolean;
   status: string;
   homeBaseCity: string | null;
@@ -166,9 +241,13 @@ export interface Driver {
   availableHours: string | null;
   currentCity: string | null;
   currentState: string | null;
+  currentLatitude: number | null;
+  currentLongitude: number | null;
   maxDaysOut: number | null;
   preferredLanes: DriverPreferredLane[];
   noGoZones: DriverNoGoZone[];
+  payType: DriverPayType | null;
+  payRate: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -177,12 +256,15 @@ export interface Driver {
 
 export interface CreateDriverInput {
   carrierId?: string | null;
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string | null;
   phone?: string | null;
-  cdlNumber?: string | null;
-  cdlState?: string | null;
-  cdlExpiry?: string | null;
+  licenseType?: DriverLicenseType;
+  licenseNumber?: string | null;
+  licenseState?: string | null;
+  licenseExpiry?: string | null;
+  endorsements?: EndorsementCode[] | null;
   isAvailable?: boolean;
   status?: string;
   homeBaseCity?: string | null;
@@ -193,17 +275,22 @@ export interface CreateDriverInput {
   maxDaysOut?: number | null;
   preferredLanes?: DriverPreferredLane[] | null;
   noGoZones?: DriverNoGoZone[] | null;
+  payType?: DriverPayType | null;
+  payRate?: number | null;
   notes?: string | null;
 }
 
 export interface UpdateDriverInput {
   carrierId?: string | null;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string | null;
   phone?: string | null;
-  cdlNumber?: string | null;
-  cdlState?: string | null;
-  cdlExpiry?: string | null;
+  licenseType?: DriverLicenseType;
+  licenseNumber?: string | null;
+  licenseState?: string | null;
+  licenseExpiry?: string | null;
+  endorsements?: EndorsementCode[] | null;
   isAvailable?: boolean;
   status?: string;
   homeBaseCity?: string | null;
@@ -214,12 +301,15 @@ export interface UpdateDriverInput {
   maxDaysOut?: number | null;
   preferredLanes?: DriverPreferredLane[] | null;
   noGoZones?: DriverNoGoZone[] | null;
+  payType?: DriverPayType | null;
+  payRate?: number | null;
   notes?: string | null;
 }
 
 export interface Vehicle {
   id: string;
   carrierId: string | null;
+  driverId: string | null;
   unitNumber: string;
   make: string | null;
   model: string | null;
@@ -236,6 +326,10 @@ export interface Vehicle {
   monthlyGrossTarget: string | null;
   monthlyMilesTarget: number | null;
   workingDaysPerMonth: number | null;
+  lenderName: string | null;
+  loanPayment: string | null;
+  insuranceMonthlyCost: string | null;
+  activeLoadCount?: number;
   expenses: VehicleExpense[];
   notes: string | null;
   createdAt: string;
@@ -261,10 +355,13 @@ export interface CreateVehicleInput {
   monthlyGrossTarget?: string | null;
   monthlyMilesTarget?: number | null;
   workingDaysPerMonth?: number | null;
+  lenderName?: string | null;
+  loanPayment?: string | null;
+  insuranceMonthlyCost?: string | null;
   notes?: string | null;
 }
 
-export interface UpdateVehicleInput {
+export type UpdateVehicleInput = {
   carrierId?: string | null;
   unitNumber?: string;
   make?: string | null;
@@ -282,26 +379,23 @@ export interface UpdateVehicleInput {
   monthlyGrossTarget?: string | null;
   monthlyMilesTarget?: number | null;
   workingDaysPerMonth?: number | null;
+  lenderName?: string | null;
+  loanPayment?: string | null;
+  insuranceMonthlyCost?: string | null;
   expenses?: UpsertVehicleExpense[];
   notes?: string | null;
-}
+};
 
 export interface Contact {
   id: string;
-  companyName: string;
-  contactName: string | null;
-  type: ContactType;
-  mcNumber: string | null;
-  email: string | null;
+  organizationId: string;
+  customerId: string | null;
+  role: string | null;
+  firstName: string;
+  lastName: string;
   phone: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  zip: string | null;
-  paymentTerms: string;
-  paymentTermsDays: number;
-  quickPayDiscount: string | null;
-  carrierPacketSentAt: string | null;
+  email: string | null;
+  ccEmails: string[];
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -309,46 +403,44 @@ export interface Contact {
 }
 
 export interface CreateContactInput {
-  companyName: string;
-  contactName?: string | null;
-  type: ContactType;
-  mcNumber?: string | null;
-  email?: string | null;
+  customerId?: string | null;
+  role?: string | null;
+  firstName: string;
+  lastName: string;
   phone?: string | null;
-  address?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip?: string | null;
-  paymentTerms?: string;
-  paymentTermsDays?: number;
-  quickPayDiscount?: string | null;
-  carrierPacketSentAt?: string | null;
+  email?: string | null;
+  ccEmails?: string[];
   notes?: string | null;
 }
 
 export interface UpdateContactInput {
-  companyName?: string;
-  contactName?: string | null;
-  type?: ContactType;
-  mcNumber?: string | null;
-  email?: string | null;
+  customerId?: string | null;
+  role?: string | null;
+  firstName?: string;
+  lastName?: string;
   phone?: string | null;
-  address?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip?: string | null;
-  paymentTerms?: string;
-  paymentTermsDays?: number;
-  quickPayDiscount?: string | null;
-  carrierPacketSentAt?: string | null;
+  email?: string | null;
+  ccEmails?: string[];
   notes?: string | null;
+}
+
+export interface CarrierNote {
+  id: string;
+  carrierId: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+}
+
+export interface CreateCarrierNoteInput {
+  content: string;
 }
 
 export type LookupStatus = 'idle' | 'searching' | 'found' | 'not_found';
 
 export type CreateMode = 'full' | 'quick';
 
-export type SubmitStatus = 'active' | 'pending';
+export type SubmitStatus = 'ACTIVE' | 'PENDING';
 
 /**
  * Temporary form-state representation of a vehicle during carrier creation.
@@ -372,9 +464,10 @@ export interface VehicleFormEntry {
  */
 export interface DriverFormEntry {
   localId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
-  cdlNumber: string;
-  cdlExpiry: string;
+  licenseNumber: string;
+  licenseExpiry: string;
   email: string;
 }

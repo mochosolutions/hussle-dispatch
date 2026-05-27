@@ -2,7 +2,6 @@ import { ReactNode, useMemo } from 'react';
 import { CssBaseline, StyledEngineProvider } from '@mui/material';
 import {
   createTheme,
-  responsiveFontSizes,
   ThemeOptions,
   ThemeProvider,
   Theme,
@@ -34,7 +33,7 @@ export default function ThemeCustomization({
   children,
   mode = ThemeMode.LIGHT,
   themeDirection = ThemeDirection.LTR,
-  fontFamily = `'Inter', sans-serif`,
+  fontFamily = `'Plus Jakarta Sans', sans-serif`,
 }: ThemeCustomizationProps) {
   const theme: Theme = useMemo<Theme>(() => Palette(mode), [mode]);
 
@@ -76,7 +75,7 @@ export default function ThemeCustomization({
     [themeDirection, theme, themeTypography, themeCustomShadows],
   );
 
-  const themes: Theme = responsiveFontSizes(createTheme(themeOptions));
+  const themes: Theme = createTheme(themeOptions);
   const themesWithComponents: Theme = createTheme({
     ...themes,
     components: componentsOverride(themes),

@@ -22,7 +22,7 @@ const AuthCard = ({children, ...other}: MainCardProps) => (
     shadow={(theme: Theme) => theme.customShadows.z1}
   >
     <Grid item xs={12} sx={{ml: 3, mt: 3}}>
-      <Logo />
+      <Logo text="Hussle Dispatch" />
     </Grid>
     <Box sx={{p: {xs: 2, sm: 3, md: 4, xl: 5}}} style={{paddingTop: '0px'}}>
       {children}

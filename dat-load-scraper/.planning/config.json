@@ -1,0 +1,19 @@
+{
+  "workflow": {
+    "pauseBetweenWaves": true,
+    "autoCreateBranch": true,
+    "ceremonyCommits": true,
+    "modelProfile": "balanced",
+    "fixLoopLimit": 3
+  },
+  "gates": {
+    "confirmStories": true,
+    "confirmContract": true,
+    "confirmDesign": true,
+    "pauseBetweenWaves": true,
+    "confirmReview": true,
+    "confirmClose": true,
+    "runValidation": true,
+    "securityReview": true
+  }
+}

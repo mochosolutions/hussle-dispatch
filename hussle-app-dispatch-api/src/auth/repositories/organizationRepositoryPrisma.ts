@@ -6,46 +6,20 @@
  */
 
 import { BadRequestError } from '@mocho/common';
-import type { PrismaClient, Organization as PrismaOrganization } from '@prisma/client';
-import {
+import type {
+  PrismaClient,
+  Organization as PrismaOrganization,
   OrganizationRole,
-  OrganizationStatus,
   OrganizationVertical,
   SubscriptionTier,
 } from '@prisma/client';
+import { OrganizationStatus } from '@prisma/client';
 import { logger } from '@/shared/utils/logger';
 import type { PrismaTransaction } from '@/config/database';
 // TODO: Refactor to use tenantRepositoryFactory or remove baseRepository dependency
 import { repositoryFactoryPrisma } from '@/shared/utils/repositoryFactoryPrisma';
 import type { CreateOrganizationInput, Organization } from '../types/organizationTypes';
-import type { CreateUserInput, User } from '../types/user';
-import type { CreateMembershipInput, Membership } from '../types/membershipTypes';
-import { formatMembership } from './membershipRepositoryPrisma';
-import { formatUser } from './userRepositoryPrisma';
-
-const toOrgRole = (role: string): OrganizationRole =>
-  Object.values(OrganizationRole).find((r) => r === role) ?? OrganizationRole.CARRIER;
-
-const toOrgVertical = (vertical: string | undefined): OrganizationVertical | undefined => {
-  if (vertical === undefined) {
-    return undefined;
-  }
-  return Object.values(OrganizationVertical).find((v) => v === vertical);
-};
-
-const toOrgStatus = (status: string | undefined): OrganizationStatus | undefined => {
-  if (status === undefined) {
-    return undefined;
-  }
-  return Object.values(OrganizationStatus).find((s) => s === status);
-};
-
-const toSubscriptionTier = (tier: string | undefined): SubscriptionTier | undefined => {
-  if (tier === undefined) {
-    return undefined;
-  }
-  return Object.values(SubscriptionTier).find((t) => t === tier);
-};
+import type { AuthEnumConfig } from '../types/authEnumConfig';
 
 /**
  * Format Prisma Organization to API Organization (dates to strings)
@@ -66,6 +40,8 @@ export const formatOrganization = (organization: PrismaOrganization): Organizati
   status: organization.status,
   customFields: organization.customFields,
   resources: organization.resources,
+  headquartersLatitude: organization.headquartersLatitude,
+  headquartersLongitude: organization.headquartersLongitude,
   deleted: organization.deleted,
   deletedAt: organization.deletedAt ? organization.deletedAt.toISOString() : '',
   createdAt: organization.createdAt.toISOString(),
@@ -75,92 +51,69 @@ export const formatOrganization = (organization: PrismaOrganization): Organizati
 export const organizationRepositoryPrisma = (
   prisma: PrismaClient | PrismaTransaction,
   _tenantId?: string,
+  enumConfig?: AuthEnumConfig,
 ) => {
-  const baseRepository = repositoryFactoryPrisma<PrismaOrganization>({ prisma, modelName: 'organization' });
-
-  const createOrganizationWithUserMembershipInternal = async (
-    tx: PrismaClient | PrismaTransaction,
-    payload: {
-      organization: CreateOrganizationInput;
-      user: CreateUserInput;
-      membership: Omit<CreateMembershipInput, 'userId' | 'organizationId'>;
-    },
-  ): Promise<{ organization: Organization; user: User; membership: Membership }> => {
-    const org = payload.organization;
-    const createdOrganization = await tx.organization.create({
-      data: {
-        name: org.name,
-        slug: org.slug,
-        email: org.email,
-        role: toOrgRole(org.role),
-        ...(org.vertical !== undefined && { vertical: toOrgVertical(org.vertical) }),
-        ...(org.status !== undefined && { status: toOrgStatus(org.status) }),
-        ...(org.subscriptionTier !== undefined && {
-          subscriptionTier: toSubscriptionTier(org.subscriptionTier),
-        }),
-        ...(org.description !== undefined && { description: org.description }),
-        ...(org.logo !== undefined && { logo: org.logo }),
-        ...(org.phoneNumber !== undefined && { phoneNumber: org.phoneNumber }),
-        ...(org.address !== undefined && { address: org.address }),
-        ...(org.website !== undefined && { website: org.website }),
-      },
-    });
-
-    const createdUser = await tx.user.create({
-      data: payload.user,
-    });
-
-    const createdMembership = await tx.membership.create({
-      data: {
-        ...payload.membership,
-        userId: createdUser.id,
-        organizationId: createdOrganization.id,
-      },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            subscriptionTier: true,
-            status: true,
-          },
-        },
-      },
-    });
-
-    return {
-      organization: formatOrganization(createdOrganization),
-      user: formatUser(createdUser),
-      membership: formatMembership(createdMembership),
-    };
+  const toOrgRole = (role: string): OrganizationRole => {
+    const values = enumConfig?.organizationRole.values ?? [];
+    const defaultRole = enumConfig?.organizationRole.default ?? role;
+    return (values.find((r) => r === role) ?? defaultRole) as OrganizationRole;
   };
 
+  const toOrgVertical = (vertical: string | undefined): OrganizationVertical | undefined => {
+    if (vertical === undefined) {
+      return undefined;
+    }
+    const values = enumConfig?.organizationVertical.values ?? [];
+    return values.find((v) => v === vertical) as OrganizationVertical | undefined;
+  };
+
+  const toOrgStatus = (status: string | undefined): OrganizationStatus => {
+    if (status === undefined) {
+      return OrganizationStatus.ACTIVE;
+    }
+    return (
+      Object.values(OrganizationStatus).find((s) => s === status) ?? OrganizationStatus.ACTIVE
+    );
+  };
+
+  const toSubscriptionTier = (tier: string | undefined): SubscriptionTier | undefined => {
+    if (tier === undefined) {
+      return undefined;
+    }
+    const values = enumConfig?.subscriptionTier.values ?? [];
+    return values.find((t) => t === tier) as SubscriptionTier | undefined;
+  };
+
+  const baseRepository = repositoryFactoryPrisma<PrismaOrganization>({
+    prisma,
+    modelName: 'organization',
+  });
+
   return {
-    createOrganization: async (
-      data: CreateOrganizationInput,
-    ): Promise<Organization> => {
+    createOrganization: async (data: CreateOrganizationInput): Promise<Organization> => {
       try {
-        const rawOrg = await baseRepository.create({ data });
+        const rawOrg = await prisma.organization.create({
+          data: {
+            name: data.name,
+            slug: data.slug,
+            email: data.email,
+            role: toOrgRole(data.role),
+            ...(data.vertical !== undefined && { vertical: toOrgVertical(data.vertical) }),
+            ...(data.status !== undefined && { status: toOrgStatus(data.status) }),
+            ...(data.subscriptionTier !== undefined && {
+              subscriptionTier: toSubscriptionTier(data.subscriptionTier),
+            }),
+            ...(data.description !== undefined && { description: data.description }),
+            ...(data.logo !== undefined && { logo: data.logo }),
+            ...(data.phoneNumber !== undefined && { phoneNumber: data.phoneNumber }),
+            ...(data.address !== undefined && { address: data.address }),
+            ...(data.website !== undefined && { website: data.website }),
+          },
+        });
         return formatOrganization(rawOrg);
       } catch (error) {
         logger.error('Error creating organization', { error });
         throw new BadRequestError(`Error creating organization`);
-      }
-    },
-
-    createOrganizationWithUserMembership: async (
-      payload: {
-        organization: CreateOrganizationInput;
-        user: CreateUserInput;
-        membership: Omit<CreateMembershipInput, 'userId' | 'organizationId'>;
-      },
-    ): Promise<{ organization: Organization; user: User; membership: Membership }> => {
-      try {
-        return createOrganizationWithUserMembershipInternal(prisma, payload);
-      } catch (error) {
-        logger.error('Error creating organization with user and membership', { error });
-        throw new BadRequestError('Error creating organization with user and membership');
       }
     },
 
@@ -187,7 +140,9 @@ export const organizationRepositoryPrisma = (
         const { createdAt: _createdAt, updatedAt: _updatedAt, ...mutableData } = data;
         const dataForUpdate: Record<string, unknown> = {
           ...mutableData,
-          ...(mutableData.deletedAt !== undefined && { deletedAt: new Date(mutableData.deletedAt) }),
+          ...(mutableData.deletedAt !== undefined && {
+            deletedAt: new Date(mutableData.deletedAt),
+          }),
         };
 
         const updated = await baseRepository.update({ id, data: dataForUpdate });
@@ -255,9 +210,15 @@ export const organizationRepositoryPrisma = (
       }
     },
 
-    findOneByFilter: async (
-      filter: Partial<Organization>,
-    ): Promise<Organization | null> => {
+    findSlugsWithPrefix: async (slugPrefix: string): Promise<string[]> => {
+      const orgs = await prisma.organization.findMany({
+        where: { slug: { startsWith: slugPrefix } },
+        select: { slug: true },
+      });
+      return orgs.map((o: { slug: string }) => o.slug);
+    },
+
+    findOneByFilter: async (filter: Partial<Organization>): Promise<Organization | null> => {
       try {
         logger.info('findOneByFilter', { filter });
         const org = await baseRepository.findOne({ filter });

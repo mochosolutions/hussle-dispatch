@@ -1,5 +1,9 @@
 import type { LoadStatus } from './constants/loadStatuses';
-import { ADMIN_ONLY_TRANSITIONS, NOTES_REQUIRED_TRANSITIONS } from './constants/stateMachine';
+import {
+  ADMIN_ONLY_TRANSITIONS,
+  DRIVER_ALLOWED_TRANSITIONS,
+  NOTES_REQUIRED_TRANSITIONS,
+} from './constants/stateMachine';
 import { KANBAN_GROUPS } from './constants/kanbanGroups';
 
 export { KANBAN_GROUPS };
@@ -35,14 +39,16 @@ export type SideEffectTag =
   | 'CALCULATE_FINANCIALS'
   | 'FREEZE_FINANCIALS'
   | 'AUTO_GENERATE_INVOICE'
-  | 'AUTO_CREATE_TONU_ACCESSORIAL';
+  | 'AUTO_CREATE_TONU_ACCESSORIAL'
+  | 'CHECK_DETENTION';
 
 export type SideEffectsMap = Readonly<Partial<Record<LoadStatus, readonly SideEffectTag[]>>>;
 
 export const TRANSITION_SIDE_EFFECTS: SideEffectsMap = Object.freeze({
   BOOKED: Object.freeze(['CALCULATE_FINANCIALS'] as const),
   DISPATCHED: Object.freeze(['FREEZE_FINANCIALS'] as const),
-  DELIVERED: Object.freeze(['AUTO_GENERATE_INVOICE'] as const),
+  IN_TRANSIT: Object.freeze(['CHECK_DETENTION'] as const),
+  DELIVERED: Object.freeze(['AUTO_GENERATE_INVOICE', 'CHECK_DETENTION'] as const),
   TONU: Object.freeze(['AUTO_CREATE_TONU_ACCESSORIAL', 'AUTO_GENERATE_INVOICE'] as const),
 });
 
@@ -56,6 +62,11 @@ export interface LoadSnapshot {
   vehicleId?: string | null;
   rateConReceivedAt?: Date | null;
   bolSignedAt?: Date | null;
+  stops?: readonly {
+    sequence: number;
+    schedulingType: string;
+    appointmentNumber: string | null;
+  }[];
 }
 
 export interface TransitionContext {
@@ -85,6 +96,9 @@ const checkPrerequisites = (toStatus: LoadStatus, load: LoadSnapshot): string | 
     }
     if (!load.vehicleId) {
       return 'Cannot dispatch load: a vehicle must be assigned before dispatching.';
+    }
+    if (load.rateConReceivedAt === null || load.rateConReceivedAt === undefined) {
+      return 'Cannot dispatch load: a broker rate confirmation must be on file before dispatching.';
     }
   }
 
@@ -122,6 +136,18 @@ export const validateTransition = (
     };
   }
 
+  // 2b. DRIVER-only check — drivers can only advance through the progress chain
+  if (
+    context.userRole === 'DRIVER' &&
+    !(DRIVER_ALLOWED_TRANSITIONS as readonly string[]).includes(toStatus)
+  ) {
+    return {
+      valid: false,
+      error:
+        'Drivers can only advance load status through: EN_ROUTE_PICKUP, AT_PICKUP, IN_TRANSIT, AT_DELIVERY, DELIVERED',
+    };
+  }
+
   // 3. Notes required check
   if ((NOTES_REQUIRED_TRANSITIONS as readonly string[]).includes(toStatus)) {
     const trimmed = context.notes?.trim() ?? '';
@@ -140,15 +166,10 @@ export const validateTransition = (
   }
 
   // 5. Soft warnings
+  // BOL_SIGNED on DELIVERED and APPOINTMENT-stop appointmentNumber on DISPATCHED are
+  // intentionally NOT enforced here. Invoice readiness is gated downstream by
+  // invoiceReadinessSubscriber (BOL); appointmentNumber has no downstream business logic.
   const warnings: string[] = [];
-
-  if (toStatus === 'DISPATCHED' && context.load.rateConReceivedAt === null) {
-    warnings.push('No broker rate con on file');
-  }
-
-  if (toStatus === 'DELIVERED' && context.load.bolSignedAt === null) {
-    warnings.push('No signed BOL on file');
-  }
 
   return {
     valid: true,

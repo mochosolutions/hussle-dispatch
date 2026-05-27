@@ -2,7 +2,7 @@ import type { Request } from 'express';
 import type { UpdateContactInput } from '../../types/contactTypes';
 import type { UpdateContactServiceInput } from '../../types/contactServiceTypes';
 import { getRequiredContactIdMapper } from './getRequiredContactIdMapper';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
 export const updateContactMapper = (req: Request): UpdateContactServiceInput => {
   const context = getRequestContextMapper(req);

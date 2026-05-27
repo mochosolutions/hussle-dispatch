@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import type { CreateCarrierWithAssetsInput } from '../../types/carrierTypes';
 import type { CreateCarrierWithAssetsServiceInput } from '../../types/carrierServiceTypes';
-import { getRequestContextMapper } from './getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 
 export const createCarrierWithAssetsMapper = (
   req: Request,
@@ -11,6 +11,7 @@ export const createCarrierWithAssetsMapper = (
 
   return {
     ...context,
+    userId: req.user?.userId ?? null,
     input,
   };
 };

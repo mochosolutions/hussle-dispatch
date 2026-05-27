@@ -7,6 +7,11 @@ export default function InputBase() {
         sizeSmall: {
           fontSize: '0.75rem',
         },
+        root: {
+          '&.Mui-disabled': {
+            cursor: 'not-allowed',
+          },
+        },
       },
     },
   };

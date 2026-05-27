@@ -3,6 +3,7 @@ import type { PrismaTransaction } from '@/config/database';
 import { createContactControllers } from './controllers/contactController';
 import type { ContactControllers } from './controllers/contactController';
 import { contactRepositoryPrisma } from './repositories/contactRepositoryPrisma';
+import { contactStatsQueryPrisma } from './repositories/contactStatsQueryPrisma';
 import { createContactService } from './services/contactService';
 
 interface ContactModuleDeps {
@@ -15,6 +16,7 @@ export const createContactsModule = ({
   controllers: ContactControllers;
 } => {
   const repositories = contactRepositoryPrisma(prismaClient);
+  const contactStatsQuery = contactStatsQueryPrisma(prismaClient);
 
   const contactService = createContactService({
     contactRepository: repositories,
@@ -22,6 +24,7 @@ export const createContactsModule = ({
 
   const controllers = createContactControllers({
     contactService,
+    contactStatsQuery,
   });
 
   return { controllers };

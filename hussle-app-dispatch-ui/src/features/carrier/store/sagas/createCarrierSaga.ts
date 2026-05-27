@@ -1,6 +1,6 @@
 import { call, put, type SagaReturnType } from 'redux-saga/effects';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createCarrierWithAssets } from 'utils/api/fleet/carrierApi';
 import type { CarrierListItem, DriverFormEntry, VehicleFormEntry } from '../../types';
@@ -24,12 +24,19 @@ export function* createCarrierSaga(
   try {
     const { drivers, vehicles, ...carrierFields } = action.payload.data;
 
+    console.log('createCarrierSaga payload', {
+      ...action.payload.data,
+      driversCount: drivers.length,
+      vehiclesCount: vehicles.length,
+    });
+
     const mappedDrivers = drivers.map((d) => ({
-      name: d.name,
+      firstName: d.firstName,
+      lastName: d.lastName,
       phone: d.phone,
       email: d.email || undefined,
-      cdlNumber: d.cdlNumber || undefined,
-      cdlExpiry: d.cdlExpiry || undefined,
+      licenseNumber: d.licenseNumber || undefined,
+      licenseExpiry: d.licenseExpiry || undefined,
     }));
 
     const mappedVehicles = vehicles.map((v) => ({
@@ -50,7 +57,7 @@ export function* createCarrierSaga(
 
     // Optimistically add with actual driver/vehicle counts — the refetch below will replace it
     const carrierListItem: CarrierListItem = {
-      ...response.carrier,
+      ...response,
       driverCount: mappedDrivers.length,
       vehicleCount: mappedVehicles.length,
       onboardingComplete: false,
@@ -59,7 +66,7 @@ export function* createCarrierSaga(
     yield put(carrierActions.addOne(carrierListItem));
     yield put(createCarrierSuccess({}));
 
-    yield call(enqueueSnackbar, 'Carrier created', { variant: 'success' });
+    yield put(notify({ message: 'Carrier created', variant: 'success' }));
 
     const navigate = (yield call(getNavigate)) as (path: string) => void;
     yield call(navigate, '/carriers');
@@ -68,6 +75,6 @@ export function* createCarrierSaga(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create carrier';
     yield put(createCarrierFailure({ error: errorMessage }));
-    yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+    yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

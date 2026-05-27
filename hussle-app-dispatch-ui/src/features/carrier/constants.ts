@@ -1,3 +1,4 @@
+import type { ChipColor } from 'types/chipColor';
 import type { VehicleType, CarrierStatus } from './types';
 
 export const EQUIPMENT_OPTIONS: readonly { value: VehicleType; label: string }[] = [
@@ -39,25 +40,68 @@ export const CONTACT_ROLES = [
 
 export const PAYMENT_TERMS_OPTIONS = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Quick Pay'];
 
-export const STATUS_OPTIONS: { value: CarrierStatus; label: string; color: string }[] = [
-  { value: 'approved', label: 'Approved', color: 'success.main' },
-  { value: 'pending', label: 'Pending Review', color: 'warning.main' },
-  { value: 'suspended', label: 'Suspended', color: 'error.main' },
-  { value: 'draft', label: 'Draft', color: 'text.disabled' },
-];
+export const CARRIER_STATUS_LABELS: Record<CarrierStatus, string> = {
+  DRAFT: 'Draft',
+  INVITED: 'Invited',
+  ONBOARDING: 'Onboarding',
+  PENDING_APPROVAL: 'Pending Approval',
+  REJECTED: 'Rejected',
+  ACTIVE: 'Active',
+  ACTION_REQUIRED: 'Action Required',
+  SUSPENDED: 'Suspended',
+};
 
+export const CARRIER_STATUS_COLORS: Record<CarrierStatus, ChipColor> = {
+  DRAFT: 'default',
+  INVITED: 'info',
+  ONBOARDING: 'info',
+  PENDING_APPROVAL: 'primary',
+  REJECTED: 'error',
+  ACTIVE: 'success',
+  ACTION_REQUIRED: 'warning',
+  SUSPENDED: 'warning',
+};
 
+export type CarrierTab =
+  | 'all'
+  | 'onboarding'
+  | 'active'
+  | 'actionRequired'
+  | 'suspended'
+  | 'rejected';
+
+export const CARRIER_TAB_TO_STATUSES: Record<CarrierTab, CarrierStatus[] | undefined> = {
+  all: undefined,
+  onboarding: ['DRAFT', 'INVITED', 'ONBOARDING', 'PENDING_APPROVAL'],
+  active: ['ACTIVE'],
+  actionRequired: ['ACTION_REQUIRED'],
+  suspended: ['SUSPENDED'],
+  rejected: ['REJECTED'],
+};
 
 export const CARRIER_TYPE_OPTIONS = [
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
-  { value: 'OWNER_OPERATOR', label: 'Owner Operator' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
+  { value: 'LEASED_CARRIER', label: 'Leased Carrier' },
 ];
 
-export const CARRIER_DETAIL_TAB_ITEMS: { key: string; label: string; count?: number }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'assets', label: 'Drivers & Vehicles' },
-  { key: 'loadHistory', label: 'Load History', count: 42 },
-  { key: 'documents', label: 'Documents', count: 3 },
-  // { key: 'billing', label: 'Billing', count: 3 },
+export const CARRIER_DETAIL_TAB_ITEMS: readonly { value: string; label: string }[] = [
+  { value: 'general', label: 'General' },
+  { value: 'drivers', label: 'Drivers' },
+  { value: 'vehicles', label: 'Vehicles' },
+  { value: 'loadHistory', label: 'Load History' },
+  { value: 'documents', label: 'Documents' },
+  { value: 'notes', label: 'Notes' },
+];
+
+export const ONBOARDING_ITEMS = [
+  { key: 'dispatchAgreementOnFile', label: 'Dispatch Agreement' },
+  { key: 'insuranceCertOnFile', label: 'Certificate of Insurance' },
+  { key: 'w9OnFile', label: 'W-9' },
+  { key: 'carrierPacketOnFile', label: 'Carrier Packet' },
+] as const;
+
+export const FEE_TYPE_OPTIONS = [
+  { value: 'PERCENTAGE', label: 'Percentage' },
+  { value: 'FLAT', label: 'Flat' },
 ];

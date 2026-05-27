@@ -1,7 +1,9 @@
 import { Box, Button, Grid } from '@mui/material';
+import { CancelButton } from '@mocho/ui/components';
 import { Formik } from 'formik';
 import { DateField } from '../../../../mocho/components/form-fields/DateField';
 import { EmailField } from '../../../../mocho/components/form-fields/EmailField';
+import { PhoneField } from '../../../../mocho/components/form-fields/PhoneField';
 import { TextField } from '../../../../mocho/components/form-fields/TextField';
 import type { DriverFormEntry } from '../../types';
 import { driverSchema } from '../../validators/driverSchema';
@@ -22,20 +24,22 @@ export const DriverInlineForm = ({
   return (
     <Formik
       initialValues={{
-        name: initial?.name ?? '',
+        firstName: initial?.firstName ?? '',
+        lastName: initial?.lastName ?? '',
         phone: initial?.phone ?? '',
-        cdlNumber: initial?.cdlNumber ?? '',
-        cdlExpiry: initial?.cdlExpiry ?? '',
+        licenseNumber: initial?.licenseNumber ?? '',
+        licenseExpiry: initial?.licenseExpiry ?? '',
         email: initial?.email ?? '',
       }}
       validationSchema={driverSchema}
       onSubmit={(values) => {
         onSave({
           localId: initial?.localId ?? `d-${Date.now()}`,
-          name: values.name,
+          firstName: values.firstName,
+          lastName: values.lastName,
           phone: values.phone,
-          cdlNumber: values.cdlNumber ?? '',
-          cdlExpiry: values.cdlExpiry ?? '',
+          licenseNumber: values.licenseNumber ?? '',
+          licenseExpiry: values.licenseExpiry ?? '',
           email: values.email ?? '',
         });
       }}
@@ -48,41 +52,35 @@ export const DriverInlineForm = ({
         <Box
           sx={{
             p: 2.5,
-            bgcolor: 'primary.light',
+            bgcolor: 'background.paper',
             border: 1,
-            borderColor: 'primary.main',
+            borderColor: 'divider',
             borderRadius: 1,
-            opacity: 0.95,
           }}
         >
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={12}>
-              <TextField name="name" label="Driver Name" placeholder="Full name" formik={formikProps} />
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField name="firstName" label="First Name" placeholder="First name" formik={formikProps} />
             </Grid>
-          </Grid>
-
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
-              <TextField name="phone" label="Phone" placeholder="(555) 123-4567" formik={formikProps} />
+            <Grid item xs={12} sm={6}>
+              <TextField name="lastName" label="Last Name" placeholder="Last name" formik={formikProps} />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} sm={6}>
+              <PhoneField name="phone" label="Phone" formik={formikProps} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <EmailField name="email" label="Email" placeholder="driver@email.com" formik={formikProps} />
             </Grid>
-          </Grid>
-
-          <Grid container spacing={1.5} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
-              <TextField name="cdlNumber" label="CDL Number" placeholder="A123456789" formik={formikProps} />
+            <Grid item xs={12} sm={6}>
+              <TextField name="licenseNumber" label="License Number" placeholder="A123456789" formik={formikProps} />
             </Grid>
-            <Grid item xs={6}>
-              <DateField name="cdlExpiry" label="CDL Expiry" formik={formikProps} />
+            <Grid item xs={12} sm={6}>
+              <DateField name="licenseExpiry" label="License Expiry" formik={formikProps} />
             </Grid>
           </Grid>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button variant="outlined" size="small" onClick={onCancel}>
-              Cancel
-            </Button>
+            <CancelButton onClick={onCancel} size="small" />
             <Button
               type="button"
               variant="contained"

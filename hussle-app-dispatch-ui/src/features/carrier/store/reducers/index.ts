@@ -23,3 +23,17 @@ export {
   carrierReducer,
   carrierSelectors,
 } from './carrierEntitySlice';
+
+export {
+  fetchCarrierNotesRequest,
+  fetchCarrierNotesSuccess,
+  fetchCarrierNotesFailure,
+  createCarrierNoteRequest,
+  createCarrierNoteSuccess,
+  createCarrierNoteFailure,
+} from './carrierNotesSlice';
+
+export {
+  fetchCarrierDriversRequest,
+  fetchCarrierVehiclesRequest,
+} from './carrierDetailActions';

@@ -8,7 +8,11 @@ import type {
 
 export const deleteOrganizationService = async (
   { organizationId }: DeleteOrganizationArgs,
-  { deleteOrganization, findOrganizationById }: DeleteOrganizationServiceDeps,
+  {
+    deleteOrganization,
+    findOrganizationById,
+    revokeCarrierInviteTokensForOrg,
+  }: DeleteOrganizationServiceDeps,
 ): Promise<Organization | null> => {
   try {
     logger.info('Deleting organization', { organizationId });
@@ -18,6 +22,7 @@ export const deleteOrganizationService = async (
       throw new BadRequestError('Organization not found');
     }
     const organization = await deleteOrganization(organizationId);
+    await revokeCarrierInviteTokensForOrg(organizationId);
     return organization;
   } catch (error) {
     logger.error('Error deleting organization service', { organizationId, error });

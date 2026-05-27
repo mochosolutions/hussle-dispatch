@@ -1,0 +1,572 @@
+// ---------------------------------------------------------------------------
+// InputStep — generic Formik+Yup renderer for any engine `input` step.
+//
+// Behavior:
+//   - Renders each `step.questions[]` using the right mocho form field by
+//     `question.fieldType`.
+//   - Builds the Yup schema inline via `buildYupFromQuestions`.
+//   - Resolves `prefillFrom` dot-paths via the engine `resolveContext` helper
+//     when no existing answer is present.
+//   - Skips invisible questions (visibility predicate evaluated against the
+//     trial session with current Formik values stitched in).
+//   - When a question declares `locked: predicate` AND the predicate evaluates
+//     to true against the live session, the field is wrapped in
+//     `<LockableField>` so it renders as a read-only display. Today's shipping
+//     schema declares no `locked` predicates — the lock primitive is dormant.
+//
+// Step submission dispatches `carrierPortalV2Actions.submitStep` with only
+// the visible-field answers — hidden fields are filtered out so they don't
+// pollute the persisted answer tree.
+// ---------------------------------------------------------------------------
+
+import { useMemo, useState } from 'react';
+import { Box, Stack, Tooltip } from '@mui/material';
+import { LockOutlined } from '@mui/icons-material';
+import { Formik, Form } from 'formik';
+import type { FormikProps } from 'formik';
+import { AnimatePresence, motion } from 'framer-motion';
+
+import { useDispatch, useSelector } from 'store';
+import {
+  CheckboxField,
+  DateField,
+  EmailField,
+  NumericField,
+  SelectField,
+  TextField,
+} from 'mocho/components/form-fields';
+import { PageTitle, BodyMuted } from 'components/Typography';
+
+import type {
+  AgreementContext,
+  IdentityField,
+  Question,
+  Session,
+  Step,
+} from 'features/carrier-portal/engine';
+import {
+  IDENTITY_FIELDS,
+  evaluatePredicate,
+  isQuestionLocked,
+  resolveContext,
+} from 'features/carrier-portal/engine';
+import AddressTypeaheadField from 'features/carrier-portal/components/AddressTypeaheadField';
+import ConfirmReSignDialog from 'features/carrier-portal/components/ConfirmReSignDialog';
+import LockableField from 'features/carrier-portal/components/LockableField';
+import TinField from 'features/carrier-portal/components/TinField';
+import FieldHint from 'features/carrier-portal/components/FieldHint';
+import SelectionCardGrid from 'features/carrier-portal/components/SelectionCardGrid';
+import type { SelectionCardOption } from 'features/carrier-portal/components/SelectionCardGrid';
+import ToggleCardGrid from 'features/carrier-portal/components/ToggleCardGrid';
+import type { ToggleCardOption } from 'features/carrier-portal/components/ToggleCardGrid';
+import { useStepNavigation } from 'features/carrier-portal/components/StepNavContext';
+
+import type { SaveCompanyRequest } from 'utils/api/carrierPortal/v2';
+
+import { carrierPortalV2Actions } from '../../../store/reducers/carrierPortalSlice';
+import {
+  selectAgreements,
+  selectAnyAgreementSigned,
+  selectLoading,
+  selectSession,
+} from '../../../store/selectors/carrierPortalSelectors';
+import * as Yup from 'yup';
+
+import { buildYupFromQuestions } from './buildYupFromQuestions';
+
+interface InputStepProps {
+  step: Step;
+}
+
+type FormikLike = FormikProps<Record<string, unknown>>;
+type FormValues = Record<string, unknown>;
+
+const defaultValueForFieldType = (q: Question): unknown => {
+  switch (q.fieldType) {
+    case 'checkbox':
+      return false;
+    case 'address':
+      return {};
+    case 'number':
+      return '';
+    default:
+      return '';
+  }
+};
+
+// Build an AddressFormValue from the flat Carrier columns projected onto
+// `session.company`. Returns undefined if no address fields are populated so
+// the caller can fall back to the empty-object default.
+const companyAddressInitialValue = (session: Session): AddressFormValue | undefined => {
+  const company = session.company;
+  if (!company) {
+    return undefined;
+  }
+  const { address, city, state, zip, lat, lng } = company;
+  if (
+    !address &&
+    !city &&
+    !state &&
+    !zip &&
+    lat === null &&
+    lng === null &&
+    lat === undefined &&
+    lng === undefined
+  ) {
+    return undefined;
+  }
+  const value: AddressFormValue = {};
+  if (address) value.line1 = address;
+  if (city) value.city = city;
+  if (state) value.state = state;
+  if (zip) value.zip = zip;
+  if (typeof lat === 'number') value.lat = lat;
+  if (typeof lng === 'number') value.lng = lng;
+  if (Object.keys(value).length === 0) {
+    return undefined;
+  }
+  // Carrier has no `country` column; the address typeahead always emits US.
+  // Default it here so the required-address Yup branch passes on re-submit
+  // after back-navigation.
+  value.country = 'US';
+  return value;
+};
+
+const buildInitialValues = (questions: Question[], session: Session, stepId: string): FormValues => {
+  const existing = (session.answers[stepId] ?? {}) as Record<string, unknown>;
+  const values: FormValues = {};
+  for (const q of questions) {
+    if (existing[q.id] !== undefined) {
+      values[q.id] = existing[q.id];
+    } else if (q.prefillFrom) {
+      const resolved = resolveContext(session, q.prefillFrom);
+      values[q.id] = resolved ?? defaultValueForFieldType(q);
+    } else if (q.fieldType === 'address') {
+      // Address shape adapter: company.address/city/state/zip/lat/lng are
+      // flat string columns on the Carrier table; the address field expects
+      // a nested AddressFormValue. Rehydrate from those columns when no
+      // explicit prefillFrom is configured.
+      const seeded = companyAddressInitialValue(session);
+      values[q.id] = seeded ?? defaultValueForFieldType(q);
+    } else {
+      values[q.id] = defaultValueForFieldType(q);
+    }
+  }
+  return values;
+};
+
+const buildTrialSession = (
+  session: Session,
+  stepId: string,
+  values: FormValues,
+): Session => ({
+  ...session,
+  answers: {
+    ...session.answers,
+    [stepId]: { ...(session.answers[stepId] ?? {}), ...values },
+  },
+});
+
+const renderField = (q: Question, formik: FormikLike, disabled: boolean) => {
+  const baseProps = {
+    name: q.id,
+    label: q.label,
+    required: !q.optional,
+    disabled,
+    formik,
+  };
+
+  switch (q.fieldType) {
+    case 'email':
+      return <EmailField {...baseProps} />;
+    case 'number':
+      return <NumericField {...baseProps} />;
+    case 'select':
+      return (
+        <SelectField
+          name={q.id}
+          label={q.label}
+          required={!q.optional}
+          data={q.options ?? []}
+          formik={formik}
+        />
+      );
+    case 'cards': {
+      const cardOptions: SelectionCardOption[] = (q.options ?? []).map((opt) => ({
+        id: opt.value,
+        title: opt.label,
+        subline: opt.description,
+        disabled: opt.disabled,
+      }));
+      const currentValue = (formik.values[q.id] as string | undefined) ?? null;
+      return (
+        <SelectionCardGrid
+          name={q.id}
+          options={cardOptions}
+          value={currentValue}
+          onChange={(id) => formik.setFieldValue(q.id, id)}
+          columns={cardOptions.length <= 3 ? 2 : 3}
+          locked={disabled}
+        />
+      );
+    }
+    case 'toggle': {
+      const toggleOptions: ToggleCardOption[] = (q.options ?? []).map((opt) => ({
+        id: opt.value,
+        label: opt.label,
+        subline: opt.description,
+      }));
+      const currentValue = (formik.values[q.id] as string | undefined) ?? null;
+      return (
+        <ToggleCardGrid
+          name={q.id}
+          options={toggleOptions}
+          value={currentValue}
+          onChange={(id) => formik.setFieldValue(q.id, id)}
+          size="sm"
+          locked={disabled}
+        />
+      );
+    }
+    case 'date':
+      return <DateField name={q.id} label={q.label} required={!q.optional} formik={formik} />;
+    case 'checkbox':
+      return <CheckboxField name={q.id} label={q.label} formik={formik} />;
+    case 'tin':
+      return <TinField name={q.id} label={q.label} required={!q.optional} disabled={disabled} />;
+    case 'address':
+      return (
+        <AddressTypeaheadField
+          name={q.id}
+          label={q.label}
+          required={!q.optional}
+          disabled={disabled}
+        />
+      );
+    case 'mc':
+    case 'text':
+    default:
+      return <TextField {...baseProps} />;
+  }
+};
+
+interface AddressFormValue {
+  line1?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  lat?: number;
+  lng?: number;
+}
+
+const asString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined;
+
+// Address contract — UI form holds a nested `address: { line1, city, state,
+// zip, lat, lng }` object (managed by AddressTypeaheadField for autocomplete
+// UX). The API expects FLAT fields: `address` is the line1 string, with
+// `city/state/zip/lat/lng` siblings. `SaveCompanyRequest` enforces the flat
+// shape at compile time, and `companyValidator` (API) types each as a string
+// — passing a nested object as `address` will be rejected. This mapper is
+// the boundary: form-nested in, wire-flat out.
+const buildCompanyRequest = (values: FormValues): SaveCompanyRequest => {
+  const hasDba = values.hasDba === 'yes';
+  const address = (values.address ?? {}) as AddressFormValue;
+  return {
+    legalName: asString(values.legalName) ?? null,
+    dbaName: hasDba ? (asString(values.dbaName) ?? null) : null,
+    taxClassification: asString(values.taxClassification) ?? null,
+    tinType: asString(values.tinType) ?? null,
+    tin: asString(values.tin) ?? null,
+    dotNumber: asString(values.dotNumber) ?? null,
+    signatoryName: asString(values.signatoryName) ?? null,
+    signatoryTitle: asString(values.signatoryTitle) ?? null,
+    phone: asString(values.phone) ?? null,
+    email: asString(values.email) ?? null,
+    address: asString(address.line1) ?? null,
+    city: asString(address.city) ?? null,
+    state: asString(address.state) ?? null,
+    zip: asString(address.zip) ?? null,
+    lat: typeof address.lat === 'number' ? address.lat : null,
+    lng: typeof address.lng === 'number' ? address.lng : null,
+  };
+};
+
+const formatLockedValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+  return JSON.stringify(value);
+};
+
+// Walks the company-form values + persisted carrier identity to find which of
+// the 3 contract-bound identity fields the carrier is attempting to change.
+// Returns an empty list when no identity field is being mutated (or when not
+// editing the company step).
+const detectChangedIdentityFields = (
+  values: FormValues,
+  session: Session | null,
+): IdentityField[] => {
+  if (!session?.company) return [];
+  const changed: IdentityField[] = [];
+  for (const field of IDENTITY_FIELDS) {
+    if (!(field in values)) continue;
+    const incoming = values[field];
+    const incomingNormalized =
+      incoming === null || incoming === undefined ? null : String(incoming);
+    const persisted = session.company[field];
+    const persistedNormalized =
+      persisted === null || persisted === undefined ? null : String(persisted);
+    if (incomingNormalized !== persistedNormalized) {
+      changed.push(field);
+    }
+  }
+  return changed;
+};
+
+const InputStep: React.FC<InputStepProps> = ({ step }) => {
+  const dispatch = useDispatch();
+  const session = useSelector(selectSession);
+  const agreementsRecord = useSelector(selectAgreements);
+  const anyAgreementSigned = useSelector(selectAnyAgreementSigned);
+  const submitStatus = useSelector(selectLoading('submitStep'));
+
+  // Mid-signing edit guard — when the carrier confirms via the dialog, the
+  // pending company payload is dispatched with voidPriorAgreements=true.
+  // Until confirmation, the payload sits here so cancel = no-op.
+  const [pendingReSign, setPendingReSign] = useState<{
+    fields: ReturnType<typeof buildCompanyRequest>;
+    hasMcAuthority?: string;
+    hasDba?: string;
+    changedFields: IdentityField[];
+  } | null>(null);
+
+  const questions = useMemo<Question[]>(() => step.questions ?? [], [step.questions]);
+
+  const initialValues = useMemo<FormValues>(() => {
+    if (!session) {
+      return {};
+    }
+    return buildInitialValues(questions, session, step.id);
+  }, [questions, session, step.id]);
+
+  const validationSchema = useMemo(() => {
+    if (!session) {
+      return undefined;
+    }
+    // Yup.lazy lets the schema recompute against the CURRENT formik values on
+    // every validation tick. Without it, visibility predicates evaluate
+    // against stale initialValues and conditionally-shown required fields
+    // (e.g. company No-authority fields revealed by hasMcAuthority='no') get
+    // marked notRequired().nullable(), letting empty submits slip through.
+    return Yup.lazy((values: unknown) => {
+      const formValues = (values ?? {}) as FormValues;
+      const trialSession = buildTrialSession(session, step.id, formValues);
+      return buildYupFromQuestions({ questions, session: trialSession });
+    });
+  }, [questions, session, step.id]);
+
+  if (!session) {
+    return null;
+  }
+
+  const handleSubmit = (values: FormValues): void => {
+    const trialSession = buildTrialSession(session, step.id, values);
+    const visibleAnswers: FormValues = {};
+    for (const q of questions) {
+      const visible = !q.visibility || evaluatePredicate(q.visibility, trialSession);
+      if (visible) {
+        visibleAnswers[q.id] = values[q.id];
+      }
+    }
+    if (step.id === 'company-authority-question') {
+      const fields = buildCompanyRequest(values);
+      const hasMcAuthority = asString(values.hasMcAuthority);
+      const hasDba = asString(values.hasDba);
+      const changedIdentity = detectChangedIdentityFields(values, session);
+
+      // Mid-signing edit guard — intercept identity edits when any agreement
+      // is already signed. The dialog confirms before the void+save fires.
+      if (anyAgreementSigned && changedIdentity.length > 0) {
+        setPendingReSign({
+          fields,
+          hasMcAuthority,
+          hasDba,
+          changedFields: changedIdentity,
+        });
+        return;
+      }
+
+      dispatch(
+        carrierPortalV2Actions.saveCompany({
+          fields,
+          hasMcAuthority,
+          hasDba,
+        }),
+      );
+      return;
+    }
+    dispatch(
+      carrierPortalV2Actions.submitStep({
+        stepId: step.id,
+        answers: visibleAnswers,
+      }),
+    );
+  };
+
+  const isPending = submitStatus === 'pending';
+
+  const affectedAgreements: AgreementContext[] = Object.values(agreementsRecord).filter(
+    (a) => a.status === 'SIGNED',
+  );
+
+  const handleConfirmReSign = (): void => {
+    if (!pendingReSign) return;
+    dispatch(
+      carrierPortalV2Actions.saveCompany({
+        fields: pendingReSign.fields,
+        hasMcAuthority: pendingReSign.hasMcAuthority,
+        hasDba: pendingReSign.hasDba,
+        voidPriorAgreements: true,
+        changedIdentityFields: pendingReSign.changedFields,
+      }),
+    );
+    setPendingReSign(null);
+  };
+
+  return (
+    <Box sx={{ width: '100%', maxWidth: 640 }}>
+      {step.title ? <PageTitle sx={{ mb: 1 }}>{step.title}</PageTitle> : null}
+      {step.subtitle ? <BodyMuted sx={{ mb: 3 }}>{step.subtitle}</BodyMuted> : null}
+
+      <ConfirmReSignDialog
+        open={pendingReSign !== null}
+        changedFields={pendingReSign?.changedFields ?? []}
+        affectedAgreements={affectedAgreements}
+        onCancel={() => setPendingReSign(null)}
+        onConfirm={handleConfirmReSign}
+      />
+
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        enableReinitialize
+        onSubmit={handleSubmit}
+      >
+        {(formik) => {
+          const trialSession = buildTrialSession(session, step.id, formik.values);
+          return (
+            <Form noValidate>
+              <InputStepNavRegister formik={formik} isPending={isPending} />
+              <Stack spacing={2.5}>
+                <AnimatePresence initial={false}>
+                  {questions.map((q) => {
+                    const visible =
+                      !q.visibility || evaluatePredicate(q.visibility, trialSession);
+                    if (!visible) {
+                      return null;
+                    }
+                    const isLocked = isQuestionLocked(q, trialSession);
+                    const fieldNode = renderField(q, formik, isLocked);
+                    const showIdentityAffordance =
+                      !isLocked &&
+                      anyAgreementSigned &&
+                      (IDENTITY_FIELDS as readonly string[]).includes(q.id);
+                    return (
+                      <motion.div
+                        key={q.id}
+                        layout
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          transition: { duration: 0.32, ease: 'easeOut' },
+                        }}
+                        exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
+                      >
+                        <Box>
+                          <LockableField
+                            locked={isLocked}
+                            value={formatLockedValue(formik.values[q.id])}
+                          >
+                            {fieldNode}
+                          </LockableField>
+                          {showIdentityAffordance ? (
+                            <Box
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                mt: 0.5,
+                                fontSize: 11.5,
+                                color: 'text.secondary',
+                              }}
+                            >
+                              <Tooltip
+                                title="This field is in your signed dispatch agreement. Changing it requires re-signing."
+                                placement="top-start"
+                                arrow
+                              >
+                                <Box
+                                  component="span"
+                                  tabIndex={0}
+                                  aria-label="In signed agreement"
+                                  sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                    cursor: 'help',
+                                  }}
+                                >
+                                  <LockOutlined sx={{ fontSize: 13 }} />
+                                  In your signed agreement
+                                </Box>
+                              </Tooltip>
+                            </Box>
+                          ) : null}
+                          {q.helpText ? <FieldHint>{q.helpText}</FieldHint> : null}
+                        </Box>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </Stack>
+            </Form>
+          );
+        }}
+      </Formik>
+    </Box>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// InputStepNavRegister — inner component lets us call `useStepNavigation`
+// with the current formik instance, since the hook must run inside Formik's
+// render-prop where `formik.submitForm` and validity flags are available.
+// ---------------------------------------------------------------------------
+
+interface InputStepNavRegisterProps {
+  formik: FormikLike;
+  isPending: boolean;
+}
+
+const InputStepNavRegister: React.FC<InputStepNavRegisterProps> = ({ formik, isPending }) => {
+  const { submitForm } = formik;
+  useStepNavigation({
+    // Continue is always clickable — submitForm() touches all fields and runs
+    // Yup validation, so inline errors surface only on click for an invalid form.
+    canContinue: !isPending,
+    onContinue: submitForm,
+    isPending,
+  });
+  return null;
+};
+
+export default InputStep;

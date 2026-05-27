@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useFormik } from 'formik';
-import { Grid, Typography, Divider } from '@mui/material';
+import { Grid, Divider } from '@mui/material';
+import { SectionLabel } from 'components/Typography';
 import {
   CheckboxField,
   DateField,
@@ -20,10 +21,10 @@ interface CarrierFormDialogProps {
   onSubmit: (values: CarrierEditFormValues) => void;
 }
 
-// OWNER_OPERATOR excluded per decision L-010
 const TYPE_OPTIONS = [
   { value: 'COMPANY_ASSET', label: 'Company Asset' },
   { value: 'EXTERNAL_CARRIER', label: 'External Carrier' },
+  { value: 'LEASED_CARRIER', label: 'Leased Carrier' },
 ];
 
 export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
@@ -46,8 +47,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
       city: carrier?.city ?? '',
       state: carrier?.state ?? '',
       zip: carrier?.zip ?? '',
-      dispatchFeePercent: carrier?.dispatchFeePercent ?? '10',
-      partnerSplitPercent: carrier?.partnerSplitPercent ?? '50',
+      companyMarginPercent: carrier?.companyMarginPercent ?? 10,
+      dispatchFeeType: carrier?.dispatchFeeType ?? 'PERCENTAGE',
+      dispatchFeeAmount: carrier?.dispatchFeeAmount ?? 0,
       feeIncludesAccessorials: carrier?.feeIncludesAccessorials ?? false,
       dispatchAgreementOnFile: carrier?.dispatchAgreementOnFile ?? false,
       insuranceCertOnFile: carrier?.insuranceCertOnFile ?? false,
@@ -72,9 +74,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
       <Grid container spacing={2}>
         {/* Basic Info */}
         <Grid item xs={12}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Basic Info
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -96,9 +98,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Contact */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Contact
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -128,18 +130,14 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Financial */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Financial
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <TextField name="dispatchFeePercent" label="Dispatch Fee %" formik={formik} />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <TextField name="partnerSplitPercent" label="Partner Split %" formik={formik} />
+          <TextField name="companyMarginPercent" label="Company Margin %" type="number" formik={formik} />
         </Grid>
 
         <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -152,9 +150,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Onboarding */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Onboarding
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 
@@ -192,9 +190,9 @@ export const CarrierFormDialog: React.FC<CarrierFormDialogProps> = ({
 
         {/* Notes */}
         <Grid item xs={12} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+          <SectionLabel sx={{ mb: 1, display: 'block' }}>
             Notes
-          </Typography>
+          </SectionLabel>
           <Divider sx={{ mb: 2 }} />
         </Grid>
 

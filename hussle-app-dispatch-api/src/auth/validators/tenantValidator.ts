@@ -128,6 +128,8 @@ export const inviteUserSchema = Yup.object({
     .of(
       Yup.object({
         email: Yup.string().email().required(),
+        firstName: Yup.string().min(1).max(50).required(),
+        lastName: Yup.string().min(1).max(50).required(),
         role: Yup.string().required(),
       })
     )

@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useCallback } from 'react';
 
 import type { DrawerState, PopupComponentMap } from '../../types/popup';
 
@@ -13,6 +13,13 @@ export const DrawerManager: React.FC<DrawerManagerProps> = ({
   componentLookup,
   onClose,
 }) => {
+  const propsOnClose = activeDrawer?.drawerProps?.onClose as (() => void) | undefined;
+
+  const composedOnClose = useCallback(() => {
+    onClose();
+    propsOnClose?.();
+  }, [onClose, propsOnClose]);
+
   if (!activeDrawer) {
     return null;
   }
@@ -23,5 +30,5 @@ export const DrawerManager: React.FC<DrawerManagerProps> = ({
     return null;
   }
 
-  return <Component onClose={onClose} {...activeDrawer.drawerProps} />;
+  return <Component {...activeDrawer.drawerProps} onClose={composedOnClose} />;
 };

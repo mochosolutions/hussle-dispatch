@@ -1,0 +1,28 @@
+extends: "../base/config.yaml"
+
+dokploy:
+  base_url: "https://dokploy.dev.hussledispatch.online"
+
+project:
+  name: "fleet-qa"
+
+compose:
+  github:
+    branch: "qa"
+    provider_id: "REPLACE_ME"
+
+domains:
+  - host: "api.qa.hussledispatch.online"
+    service: "api"
+    port: 3001
+    ssl: true
+  - host: "qa.hussledispatch.online"
+    service: "ui"
+    port: 3000
+    ssl: true
+
+deployment:
+  wait_for_health: true
+  health_endpoints:
+    - url: "https://api.qa.hussledispatch.online/health"
+      expected_status: 200

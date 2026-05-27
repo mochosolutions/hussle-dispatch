@@ -6,3 +6,5 @@ export { calculateCompositeScore } from './calculateCompositeScore';
 export type { CompositeScoreResult } from './calculateCompositeScore';
 export { calculateChainScore } from './calculateChainScore';
 export type { ChainScoreInput, ChainScoreResult } from './calculateChainScore';
+export { normalizeLanes, normalizeZones } from './normalizeDriverPreferences';
+export type { LanePreference, ZonePreference } from './normalizeDriverPreferences';

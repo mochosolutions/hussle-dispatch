@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-01T00:00:00.000Z",
+  "generatedAt": "2026-05-13T00:00:00Z",
   "ecosystem": "js",
   "monorepo": true,
   "rootCommands": {
@@ -9,20 +9,19 @@
   },
   "packages": [
     {
-      "serviceKey": "mocho-ui",
-      "name": "@mocho/ui",
-      "path": "mocho-ui/",
-      "type": "shared-ui",
-      "registryFile": "REGISTRY-mocho-ui.md",
-      "stack": ["react", "mui", "vite", "storybook", "jest"],
+      "serviceKey": "dispatch-api",
+      "name": "hussle-app-dispatch-api",
+      "path": "hussle-app-dispatch-api/",
+      "type": "api",
+      "stack": ["express", "prisma", "postgres", "redis", "rabbitmq", "typescript"],
       "manifest": "package.json",
       "commands": {
-        "test": "npm run test --workspace=mocho-ui",
-        "lint": "npm run lint --workspace=mocho-ui",
-        "lintFiles": "npx eslint",
-        "typecheck": "npm run type-check --workspace=mocho-ui",
-        "build": "npm run build --workspace=mocho-ui",
-        "testRelated": "npx jest --config mocho-ui/jest.config.ts --findRelatedTests"
+        "test": "(cd hussle-app-dispatch-api && npm test)",
+        "lint": "(cd hussle-app-dispatch-api && npm run lint)",
+        "typecheck": "(cd hussle-app-dispatch-api && npm run check-ts)",
+        "build": "(cd hussle-app-dispatch-api && npm run build)",
+        "testRelated": "(cd hussle-app-dispatch-api && npx jest --findRelatedTests)",
+        "validate": "(cd hussle-app-dispatch-api && npm run validate)"
       }
     },
     {
@@ -30,16 +29,32 @@
       "name": "hussle-app-dispatch-ui",
       "path": "hussle-app-dispatch-ui/",
       "type": "frontend",
-      "registryFile": "REGISTRY-dispatch-ui.md",
-      "stack": ["react", "mui", "redux", "vite", "jest"],
+      "stack": ["react", "vite", "mui", "redux-toolkit", "redux-saga", "formik", "yup", "typescript"],
       "manifest": "package.json",
       "commands": {
-        "test": "npm run test --workspace=hussle-app-dispatch-ui",
-        "lint": "npm run lint --workspace=hussle-app-dispatch-ui",
-        "lintFiles": "npx eslint",
-        "typecheck": "npm run check-ts --workspace=hussle-app-dispatch-ui",
-        "build": "npm run build --workspace=hussle-app-dispatch-ui",
-        "testRelated": "npx jest --config hussle-app-dispatch-ui/jest.config.ts --findRelatedTests"
+        "test": "(cd hussle-app-dispatch-ui && npm test)",
+        "lint": "(cd hussle-app-dispatch-ui && npm run lint)",
+        "typecheck": "(cd hussle-app-dispatch-ui && npm run check-ts)",
+        "build": "(cd hussle-app-dispatch-ui && npm run build)",
+        "testRelated": "(cd hussle-app-dispatch-ui && npx jest --findRelatedTests)",
+        "validate": "(cd hussle-app-dispatch-ui && npm run validate)",
+        "e2e": "(cd hussle-app-dispatch-ui && npm run test:e2e)"
+      }
+    },
+    {
+      "serviceKey": "dat-load-scraper",
+      "name": "dat-load-scraper",
+      "path": "dat-load-scraper/",
+      "type": "worker",
+      "stack": ["chrome-extension", "manifest-v3", "react", "webpack", "typescript"],
+      "manifest": "package.json",
+      "commands": {
+        "test": "(cd dat-load-scraper && npm test)",
+        "lint": null,
+        "typecheck": null,
+        "build": "(cd dat-load-scraper && npm run build)",
+        "testRelated": "(cd dat-load-scraper && npx jest --findRelatedTests)",
+        "validate": null
       }
     }
   ]

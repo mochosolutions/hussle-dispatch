@@ -73,7 +73,6 @@ export function createFetchAllSaga<TEntity extends { id: string }>(
       if (hooks?.beforeFetchAll) {
         const shouldContinue = (yield* hooks.beforeFetchAll()) as boolean;
         if (!shouldContinue) {
-          console.log(`${entityNamePlural} fetch cancelled by beforeFetchAll hook`);
           return;
         }
       }
@@ -128,8 +127,6 @@ export function createFetchAllSaga<TEntity extends { id: string }>(
         }
       }
     } catch (error: unknown) {
-      console.error(`fetch${entityNamePlural}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message

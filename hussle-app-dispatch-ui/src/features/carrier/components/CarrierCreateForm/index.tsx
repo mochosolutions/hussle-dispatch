@@ -3,44 +3,46 @@ import { useFormik } from 'formik';
 import {
   Box,
   Button,
-  Card,
   Grid,
   OutlinedInput,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
 } from '@mui/material';
+// import { Meta, MetaStrong, SectionTitle } from 'components/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PersonIcon from '@mui/icons-material/Person';
-import { BaseFieldWrapper } from '../../../../mocho/components/form-fields/BaseFieldWrapper';
-import { CharCounterField } from '../../../../mocho/components/form-fields/CharCounterField';
-import { SelectField } from '../../../../mocho/components/form-fields/SelectField';
-import { TextField } from '../../../../mocho/components/form-fields/TextField';
+import {
+  AddressField,
+  CurrencyField,
+  EINField,
+  PercentField,
+  PhoneField,
+  SelectField,
+  TextField,
+  EmailField,
+  BaseFieldWrapper,
+  CharCounterField,
+} from '../../../../mocho/components';
+import SectionCard from 'components/SectionCard';
+import type { AddressSearchResult } from 'features/place/types';
+import type { DispatchFeeType } from '../../types';
 import { CARRIER_TYPE_OPTIONS } from '../../constants';
-import type {
-  CreateMode,
-  DriverFormEntry,
-  LookupStatus,
-  SubmitStatus,
-  VehicleFormEntry,
-} from '../../types';
+import { DriverFormEntry, LookupStatus, SubmitStatus, VehicleFormEntry } from '../../types';
 import { DriverInlineForm } from '../DriverInlineForm';
 import { DriverSummaryCard } from '../DriverSummaryCard';
 import { EmptyState } from '../EmptyState';
-import { MCLookupIndicator } from '../MCLookupIndicator';
-import { SectionCard } from '../SectionCard';
+// import { MCLookupIndicator } from '../MCLookupIndicator';
+// import { SectionCard } from '../SectionCard';
 import { VehicleInlineForm } from '../VehicleInlineForm';
 import { VehicleSummaryCard } from '../VehicleSummaryCard';
 import type { CarrierFormValues } from '../../validators/carrierSchema';
 import { carrierSchema } from '../../validators/carrierSchema';
 import { useFormHandle } from '../../../../mocho/hooks/useFormHandle';
 import type { FormHandle, FormStateChangeCallback } from '../../../../mocho/types/form';
+import { FEE_TYPE_OPTIONS } from '../../constants';
 
-const isCreateMode = (value: string): value is CreateMode => value === 'full' || value === 'quick';
-const isSubmitStatus = (value: string): value is SubmitStatus =>
-  value === 'active' || value === 'pending';
+// const isSubmitStatus = (value: string): value is SubmitStatus =>
+//   value === 'ACTIVE' || value === 'PENDING';
 
 export interface CarrierCreateFormWithAssets extends CarrierFormValues {
   drivers: DriverFormEntry[];
@@ -52,10 +54,19 @@ const carrierInitialValues: CarrierFormValues = {
   type: 'EXTERNAL_CARRIER' as const,
   mcNumber: '',
   dotNumber: '',
+  ein: '',
   phone: '',
   email: '',
   address: '',
+  city: '',
+  state: '',
+  zip: '',
+  lat: null,
+  lng: null,
   notes: '',
+  dispatchFeeType: 'PERCENTAGE' as const,
+  companyMarginPercent: undefined,
+  dispatchFeeAmount: undefined,
 };
 
 interface CarrierCreateFormProps {
@@ -66,7 +77,7 @@ interface CarrierCreateFormProps {
 const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
   ({ onSubmit, onStateChange }, ref) => {
     const [mcLookup, setMcLookup] = useState<LookupStatus>('idle');
-    const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('active');
+    const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('ACTIVE');
     const [vehicles, setVehicles] = useState<VehicleFormEntry[]>([]);
     const [drivers, setDrivers] = useState<DriverFormEntry[]>([]);
     const [showVehicleForm, setShowVehicleForm] = useState(false);
@@ -85,31 +96,6 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
     });
 
     useFormHandle({ ref, formik, onStateChange });
-
-    const handleMcLookup = useCallback(
-      (mcNumber: string) => {
-        if (mcNumber.length < 5) {
-          return;
-        }
-
-        setMcLookup('searching');
-
-        setTimeout(() => {
-          const found = !mcNumber.includes('9');
-          setMcLookup(found ? 'found' : 'not_found');
-
-          if (found) {
-            void formik.setFieldValue(
-              'dotNumber',
-              `DOT-${Math.floor(Math.random() * 9000000 + 1000000).toString()}`,
-            );
-            void formik.setFieldValue('name', 'Auto-Filled Carrier LLC');
-            void formik.setFieldValue('address', '789 Carrier Way, Elizabeth, NJ 07201');
-          }
-        }, 1500);
-      },
-      [formik],
-    );
 
     const handleSaveVehicle = (vehicle: VehicleFormEntry) => {
       setVehicles((prev) =>
@@ -133,55 +119,48 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
 
     const { values, errors, touched, handleBlur, handleChange } = formik;
 
-    const assetCount = vehicles.length + drivers.length;
-    const hasAssets = assetCount > 0;
-    const assetLabel = hasAssets ? `${assetCount} Asset${assetCount > 1 ? 's' : ''}` : '';
+    const feeType: DispatchFeeType = formik.values.dispatchFeeType ?? 'PERCENTAGE';
 
-    const submitLabel = hasAssets ? `Create Carrier + ${assetLabel}` : 'Create Carrier';
+    // console.log('render CarrierCreateForm', { values, errors, touched });
 
     return (
       <form onSubmit={formik.handleSubmit}>
-        <Box sx={{ maxWidth: 720, mx: 'auto', px: 4, py: 3 }}>
-          {/* <ToggleButtonGroup
-            value={mode}
-            exclusive
-            onChange={(_, value: string | null) => {
-              if (value && isCreateMode(value)) {
-                setMode(value);
-              }
-            }}
-            fullWidth
-            sx={{
-              mb: 3,
-              bgcolor: 'grey.200',
-              borderRadius: 1,
-              p: 0.375,
-              '& .MuiToggleButton-root': {
-                border: 'none',
-                borderRadius: 1,
-                py: 1.25,
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-              },
-            }}
-          >
-            <ToggleButton value="full">
-              <Typography variant="body2" sx={{ fontWeight: mode === 'full' ? 600 : 500 }}>
-                Full Onboarding
-              </Typography>
-              <Typography variant="caption">Carrier + Vehicles + Drivers</Typography>
-            </ToggleButton>
-            <ToggleButton value="quick">
-              <Typography variant="body2" sx={{ fontWeight: mode === 'quick' ? 600 : 500 }}>
-                Quick Add + Invite
-              </Typography>
-              <Typography variant="caption">Carrier shell → send invite</Typography>
-            </ToggleButton>
-          </ToggleButtonGroup> */}
-
-          <SectionCard title="Company Information" subtitle="MC/DOT auto-lookups from FMCSA">
+        <Box
+          sx={{
+            mx: 'auto',
+            px: 4,
+            py: 3,
+          }}
+        >
+          <SectionCard title="Company Information">
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid item xs={12} sm={6}>
+                <SelectField
+                  required
+                  name="type"
+                  label="Carrier Type"
+                  data={CARRIER_TYPE_OPTIONS}
+                  formik={formik}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  name="name"
+                  label="Legal Name"
+                  placeholder="Legal business name"
+                  formik={formik}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <PhoneField required name="phone" label="Phone Number" formik={formik} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <EmailField required name="email" label="Email" formik={formik} />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
                 <BaseFieldWrapper
                   name="mcNumber"
                   label="MC Number"
@@ -193,51 +172,95 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                     name="mcNumber"
                     placeholder="MC-0000000"
                     value={values.mcNumber}
-                    onChange={(event) => {
-                      handleChange(event);
-                      setMcLookup('idle');
-                    }}
-                    onBlur={(event) => {
-                      handleBlur(event);
-                      handleMcLookup(event.target.value);
-                    }}
+                    onChange={handleChange}
                     error={Boolean(touched.mcNumber && errors.mcNumber)}
                     fullWidth
                   />
                 </BaseFieldWrapper>
-                <MCLookupIndicator status={mcLookup} />
               </Grid>
-              <Grid item xs={6}>
-                <TextField name="dotNumber" label="DOT Number" placeholder="Auto-filled or manual" formik={formik} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField name="name" label="Legal Name" placeholder="Legal business name" formik={formik} />
-              </Grid>
-              <Grid item xs={6}>
-                <SelectField
-                  name="type"
-                  label="Carrier Type"
-                  data={CARRIER_TYPE_OPTIONS}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="dotNumber"
+                  label="DOT Number"
+                  placeholder="Auto-filled or manual"
                   formik={formik}
                 />
               </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <EINField name="ein" label="EIN" formik={formik} />
+              </Grid>
+              <Grid item xs={12} sm={6} />
+
               <Grid item xs={12}>
-                <TextField name="address" label="Address" placeholder="789 Carrier Way, Elizabeth, NJ 07201" formik={formik} />
+                <AddressField
+                  required
+                  name="address"
+                  label="Address"
+                  placeholder="Search a business address"
+                  mode="address"
+                  formik={formik}
+                  getSelectionState={(v) => {
+                    const head = [v.address, v.city, v.state].filter(Boolean).join(', ');
+                    let display = head;
+                    if (v.zip) {
+                      display = head ? `${head} ${v.zip}` : v.zip;
+                    }
+                    return {
+                      display,
+                      hasSelection:
+                        (v.lat !== null && v.lat !== undefined && v.lng !== null && v.lng !== undefined) ||
+                        Boolean(v.city && v.state && v.zip),
+                    };
+                  }}
+                  onResolve={(r: AddressSearchResult, f) => {
+                    void f.setFieldValue('address', r.address);
+                    void f.setFieldValue('city', r.city);
+                    void f.setFieldValue('state', r.state);
+                    void f.setFieldValue('zip', r.zip);
+                    void f.setFieldValue('lat', r.lat);
+                    void f.setFieldValue('lng', r.lng);
+                  }}
+                  onClear={(f) => {
+                    void f.setFieldValue('address', '');
+                    void f.setFieldValue('city', '');
+                    void f.setFieldValue('state', '');
+                    void f.setFieldValue('zip', '');
+                    void f.setFieldValue('lat', null);
+                    void f.setFieldValue('lng', null);
+                  }}
+                />
               </Grid>
             </Grid>
           </SectionCard>
 
-          <SectionCard title="Notes" subtitle="Optional notes about this carrier">
+          <SectionCard title="Financial Terms">
             <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <CharCounterField
-                  name="notes"
-                  label="Notes"
-                  placeholder="e.g. Runs NJ→OH reefer lanes, has team drivers available…"
-                  maxLength={500}
-                  rows={3}
+              <Grid item xs={12} sm={6}>
+                <SelectField
+                  required
+                  name="dispatchFeeType"
+                  label="Dispatch Fee Type"
+                  data={FEE_TYPE_OPTIONS}
                   formik={formik}
                 />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                {feeType === 'PERCENTAGE' ? (
+                  <PercentField
+                    required
+                    name="companyMarginPercent"
+                    label="Company Margin"
+                    formik={formik}
+                  />
+                ) : (
+                  <CurrencyField
+                    required
+                    name="dispatchFeeAmount"
+                    label="Dispatch Fee Amount"
+                    formik={formik}
+                  />
+                )}
               </Grid>
             </Grid>
           </SectionCard>
@@ -245,7 +268,9 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
           <SectionCard
             title="Vehicles"
             subtitle={
-              vehicles.length > 0 ? `${vehicles.length} added` : "Add trucks to this carrier's roster"
+              vehicles.length > 0
+                ? `${vehicles.length} added`
+                : "Add trucks to this carrier's roster"
             }
             actions={
               !showVehicleForm && !editingVehicle ? (
@@ -282,9 +307,7 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                     setShowVehicleForm(false);
                   }}
                   onRemove={() =>
-                    setVehicles((prev) =>
-                      prev.filter((item) => item.localId !== vehicle.localId),
-                    )
+                    setVehicles((prev) => prev.filter((item) => item.localId !== vehicle.localId))
                   }
                 />
               ))}
@@ -355,9 +378,7 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
                     setShowDriverForm(false);
                   }}
                   onRemove={() =>
-                    setDrivers((prev) =>
-                      prev.filter((item) => item.localId !== driver.localId),
-                    )
+                    setDrivers((prev) => prev.filter((item) => item.localId !== driver.localId))
                   }
                 />
               ))}
@@ -388,72 +409,20 @@ const CarrierCreateForm = forwardRef<FormHandle, CarrierCreateFormProps>(
             </Stack>
           </SectionCard>
 
-          <Card sx={{ mb: 2 }}>
-            <Box
-              sx={{
-                px: 3,
-                py: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}
-                >
-                  Carrier status after creation
-                </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mt: 0.25 }}>
-                  Choose based on readiness
-                </Typography>
+          <SectionCard title="Notes" subtitle="Optional notes about this carrier">
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <CharCounterField
+                  name="notes"
+                  label="Notes"
+                  placeholder="e.g. Runs NJ→OH reefer lanes, has team drivers available…"
+                  maxLength={500}
+                  rows={3}
+                  formik={formik}
+                />
               </Box>
-              <ToggleButtonGroup
-                value={submitStatus}
-                exclusive
-                onChange={(_, value: string | null) => {
-                  if (value && isSubmitStatus(value)) {
-                    setSubmitStatus(value);
-                  }
-                }}
-                size="small"
-                sx={{
-                  bgcolor: 'grey.200',
-                  borderRadius: 1,
-                  p: 0.25,
-                  '& .MuiToggleButton-root': {
-                    border: 'none',
-                    borderRadius: 0.5,
-                    px: 2,
-                  },
-                }}
-              >
-                <ToggleButton value="active">
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      color: submitStatus === 'active' ? 'success.main' : 'text.disabled',
-                    }}
-                  >
-                    ● Approved
-                  </Typography>
-                </ToggleButton>
-                <ToggleButton value="pending">
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      color: submitStatus === 'pending' ? 'warning.main' : 'text.disabled',
-                    }}
-                  >
-                    ● Pending Review
-                  </Typography>
-                </ToggleButton>
-              </ToggleButtonGroup>
             </Box>
-          </Card>
+          </SectionCard>
         </Box>
       </form>
     );

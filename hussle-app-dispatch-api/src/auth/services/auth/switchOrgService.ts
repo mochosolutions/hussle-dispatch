@@ -1,4 +1,5 @@
 import { AuthRequestError } from '@/shared/errors/authError';
+import { MembershipStatus } from '../../constants/enums';
 import { logger } from '@/shared/utils/logger';
 import type { Membership } from '../../types/membershipTypes';
 import type { ITokenProvider } from '../../types/tokenProvider';
@@ -29,7 +30,7 @@ export interface SwitchOrgDeps {
 
 const getTargetMembership = (memberships: Membership[], organizationId: string): Membership => {
   const membership = memberships.find(
-    (item) => item.organizationId === organizationId && item.status === 'active',
+    (item) => item.organizationId === organizationId && item.status === MembershipStatus.ACTIVE,
   );
 
   if (!membership) {
@@ -79,6 +80,7 @@ export const switchOrgService = async (
     membershipId: membership.membershipId,
     orgStatus: membership.orgStatus,
     role: membership.role,
+    permissionsVersion: membership.permissionsVersion,
   });
 
   return {

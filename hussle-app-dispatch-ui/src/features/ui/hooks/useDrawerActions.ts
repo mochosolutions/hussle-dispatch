@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useDispatch } from 'store';
 import { openDrawer, closeDrawer } from '../store/reducers/uiSlice';
 import type { DrawerType, DrawerTypeMap } from '../types/popupTypes';
@@ -11,12 +12,15 @@ interface DrawerOptions {
 export const useDrawerActions = () => {
   const dispatch = useDispatch();
 
-  return {
-    openDrawer: <T extends DrawerType>(
-      drawerType: T,
-      drawerProps: DrawerTypeMap[T],
-      options?: DrawerOptions,
-    ) => dispatch(openDrawer({ drawerType, drawerProps, ...options })),
-    closeDrawer: () => dispatch(closeDrawer()),
-  };
+  return useMemo(
+    () => ({
+      openDrawer: <T extends DrawerType>(
+        drawerType: T,
+        drawerProps: DrawerTypeMap[T],
+        options?: DrawerOptions,
+      ) => dispatch(openDrawer({ drawerType, drawerProps, ...options })),
+      closeDrawer: () => dispatch(closeDrawer()),
+    }),
+    [dispatch],
+  );
 };

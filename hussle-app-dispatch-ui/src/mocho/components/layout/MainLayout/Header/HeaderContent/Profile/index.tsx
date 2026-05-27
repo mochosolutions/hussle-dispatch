@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import {
   Box,
@@ -12,7 +12,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { LogoutOutlined } from '@ant-design/icons';
+import { LogoutOutlined, SettingOutlined } from '@ant-design/icons';
 
 import Avatar from '../../../../../extended/Avatar';
 import MainCard from '../../../../../MainCard';
@@ -24,9 +24,10 @@ import { ThemeMode } from '../../../../../../types/config';
 export interface ProfileProps {
   user?: { name: string; organizationName?: string; avatar?: string };
   onLogout?: () => void;
+  onSettings?: () => void;
 }
 
-const Profile = ({ user, onLogout }: ProfileProps) => {
+const Profile = ({ user, onLogout, onSettings }: ProfileProps) => {
   const theme = useTheme();
 
   const userFullName = user?.name ?? 'User';
@@ -35,6 +36,13 @@ const Profile = ({ user, onLogout }: ProfileProps) => {
   const handleLogout = () => {
     if (onLogout) {
       onLogout();
+    }
+  };
+
+  const handleSettings = () => {
+    setOpen(false);
+    if (onSettings) {
+      onSettings();
     }
   };
 
@@ -161,15 +169,29 @@ const Profile = ({ user, onLogout }: ProfileProps) => {
                         </Stack>
                       </Grid>
                       <Grid item>
-                        <Tooltip title="Logout">
-                          <IconButton
-                            size="large"
-                            sx={{ color: 'text.primary' }}
-                            onClick={handleLogout}
-                          >
-                            <LogoutOutlined />
-                          </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" spacing={0.5}>
+                          {onSettings && (
+                            <Tooltip title="Settings">
+                              <IconButton
+                                size="large"
+                                sx={{ color: 'text.primary' }}
+                                onClick={handleSettings}
+                                aria-label="settings"
+                              >
+                                <SettingOutlined />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Logout">
+                            <IconButton
+                              size="large"
+                              sx={{ color: 'text.primary' }}
+                              onClick={handleLogout}
+                            >
+                              <LogoutOutlined />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </Grid>
                     </Grid>
 

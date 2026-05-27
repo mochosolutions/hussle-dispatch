@@ -31,6 +31,7 @@ interface EntityModule<
  * Creates an entity adapter with standard CRUD actions:
  * - addOne, addMany, setAll
  * - updateOne, updateMany
+ * - upsertOne, upsertMany
  * - removeOne, removeMany
  * - setLoading, setError
  *
@@ -74,6 +75,7 @@ export function createEntityModule<T extends { id: string }>(
       updateOne: (state, action) => adapter.updateOne(state, action),
       updateMany: (state, action) => adapter.updateMany(state, action),
       upsertOne: (state, action) => adapter.upsertOne(state, action),
+      upsertMany: (state, action) => adapter.upsertMany(state, action),
       removeOne: (state, action) => adapter.removeOne(state, action),
       removeMany: (state, action) => adapter.removeMany(state, action),
       setLoading(state, action: PayloadAction<boolean>) {

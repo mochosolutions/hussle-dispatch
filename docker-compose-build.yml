@@ -1,0 +1,33 @@
+# Build-only configuration for CI pipeline
+# Usage:
+#   Build all:     docker compose -f docker-compose-build.yml --profile api --profile ui --profile rabbitmq build --push
+#   Build one:     docker compose -f docker-compose-build.yml --profile api build --push
+# Required env vars: ECR_REGISTRY, IMAGE_TAG, VITE_API_URL (ui only)
+#
+# Platform note:
+#   make build-local  — builds for the native host platform (fast, no QEMU)
+#   make build-push   — sets DOCKER_DEFAULT_PLATFORM=linux/amd64 so ECR images are always amd64
+
+services:
+  api:
+    profiles: ["api"]
+    build:
+      context: ./hussle-app-dispatch-api
+      dockerfile: Dockerfile.prod
+    image: ${ECR_REGISTRY}/fleet-api:${IMAGE_TAG}
+
+  ui:
+    profiles: ["ui"]
+    build:
+      context: ./hussle-app-dispatch-ui
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    image: ${ECR_REGISTRY}/fleet-ui:${IMAGE_TAG}
+
+  rabbitmq:
+    profiles: ["rabbitmq"]
+    build:
+      context: ./docker/rabbitmq
+      dockerfile: Dockerfile
+    image: ${ECR_REGISTRY}/fleet-rabbitmq:${IMAGE_TAG}

@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import { MembershipStatus } from '../../../constants/enums';
 import type { CreateMembershipInput } from '../../../types/membershipTypes';
 
 export const createMembershipMapper = (req: Request): CreateMembershipInput => {
@@ -9,6 +10,6 @@ export const createMembershipMapper = (req: Request): CreateMembershipInput => {
     userId,
     role,
     organizationId,
-    status: 'active',
+    status: MembershipStatus.ACTIVE,
   };
 };

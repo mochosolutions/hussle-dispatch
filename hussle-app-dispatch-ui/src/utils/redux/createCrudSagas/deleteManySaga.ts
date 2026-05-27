@@ -1,6 +1,6 @@
 import { call, put, Effect } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { enqueueSnackbar } from 'notistack';
+import { notify } from 'features/ui/store/reducers/notificationSlice';
 import { getNavigate } from 'utils/getNavigate';
 import { createConfirmationHook } from './createConfirmationHook';
 import type {
@@ -94,7 +94,7 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
 
       // Validate input
       if (!ids || ids.length === 0) {
-        console.log(`No ${entityNamePlural.toLowerCase()} to delete`);
+        // No items to delete
         return;
       }
 
@@ -103,15 +103,13 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
         const confirmHook = createConfirmationHook(confirmation);
         const shouldContinue = (yield* confirmHook(ids)) as boolean;
         if (!shouldContinue) {
-          console.log(`Bulk ${entityName.toLowerCase()} deletion cancelled by user`);
+          // Bulk deletion cancelled by user
           return;
         }
       } else if (hooks?.beforeDeleteMany) {
         const shouldContinue = (yield* hooks.beforeDeleteMany(ids)) as boolean;
         if (!shouldContinue) {
-          console.log(
-            `Bulk ${entityName.toLowerCase()} deletion cancelled by beforeDeleteMany hook`
-          );
+          // Bulk deletion cancelled by beforeDeleteMany hook
           return;
         }
       }
@@ -133,7 +131,7 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
       const successMessage =
         messages?.deleteManySuccess ||
         `Successfully deleted ${result.deleted} ${result.deleted === 1 ? entityName.toLowerCase() : entityNamePlural.toLowerCase()}`;
-      yield call(enqueueSnackbar, successMessage, { variant: 'success' });
+      yield put(notify({ message: successMessage, variant: 'success' }));
 
       // Execute afterDeleteMany hook
       if (hooks?.afterDeleteMany) {
@@ -151,8 +149,6 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
         yield put(actions.fetchRequest());
       }
     } catch (error: unknown) {
-      console.error(`bulkDelete${entityNamePlural}Saga error:`, error);
-
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -172,7 +168,7 @@ export function createDeleteManySaga<TEntity extends { id: string }>(
         yield put(bulkActions.deleteManyFailure({ error: errorMessage }));
       }
 
-      yield call(enqueueSnackbar, errorMessage, { variant: 'error' });
+      yield put(notify({ message: errorMessage, variant: 'error' }));
     }
   };
 }

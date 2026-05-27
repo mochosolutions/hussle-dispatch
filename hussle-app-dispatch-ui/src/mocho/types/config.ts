@@ -1,4 +1,5 @@
 export type FontFamily =
+  | `'Plus Jakarta Sans', sans-serif`
   | `'Inter', sans-serif`
   | `'Poppins', sans-serif`
   | `'Roboto', sans-serif`

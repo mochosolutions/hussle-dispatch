@@ -1,4 +1,14 @@
-import type { Carrier, CarrierType, LoadStatus, Driver } from '@prisma/client';
+import type {
+  Carrier,
+  CarrierStatus,
+  CarrierType,
+  LoadStatus,
+  Driver,
+  BillingMethod,
+  FactoringSubmission,
+  EmailMode,
+  DispatchFeeType,
+} from '@prisma/client';
 import type { SortOrder } from '@/shared/pagination';
 import type { PaginationMeta } from '@/shared/responseEnvelope';
 import type { CreateDriverInput } from '@/drivers/types/driverTypes';
@@ -7,6 +17,7 @@ import type { CreateVehicleInput, VehicleWithExpenses } from '@/vehicles/types/v
 export interface CreateCarrierInput {
   name: string;
   type: CarrierType;
+  carrierOrgId?: string;
   mcNumber?: string;
   dotNumber?: string;
   ein?: string;
@@ -16,7 +27,11 @@ export interface CreateCarrierInput {
   city?: string;
   state?: string;
   zip?: string;
+  lat?: string | number | null;
+  lng?: string | number | null;
   dispatchFeePercent?: string | number;
+  dispatchFeeType?: DispatchFeeType;
+  dispatchFeeAmount?: string | number;
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
@@ -24,13 +39,19 @@ export interface CreateCarrierInput {
   dispatchAgreementSignedAt?: Date;
   insuranceCertOnFile?: boolean;
   insuranceExpiry?: Date;
-  w9OnFile?: boolean;
-  carrierPacketOnFile?: boolean;
-  onboardingFlowId?: string;
-  onboardingStatus?: string;
   authorityStatus?: string;
-  status?: string;
-  notes?: string;
+  status?: CarrierStatus;
+  description?: string;
+  primaryContactId?: string;
+  billingMethod?: BillingMethod;
+  factoringCompanyName?: string;
+  factoringCompanyEmail?: string;
+  factoringSubmissionMethod?: FactoringSubmission;
+  factoringAdvanceRate?: string | number;
+  factoringFeePercent?: string | number;
+  factoringNoa?: string;
+  outboundEmailMode?: EmailMode;
+  replyToEmail?: string;
 }
 
 export interface CreateCarrierWithAssetsInput extends CreateCarrierInput {
@@ -50,7 +71,11 @@ export interface UpdateCarrierInput {
   city?: string;
   state?: string;
   zip?: string;
+  lat?: string | number | null;
+  lng?: string | number | null;
   dispatchFeePercent?: string | number;
+  dispatchFeeType?: DispatchFeeType;
+  dispatchFeeAmount?: string | number;
   partnerSplitPercent?: string | number;
   feeIncludesAccessorials?: boolean;
   ownerOpPayPercent?: string | number;
@@ -58,27 +83,53 @@ export interface UpdateCarrierInput {
   dispatchAgreementSignedAt?: Date;
   insuranceCertOnFile?: boolean;
   insuranceExpiry?: Date;
-  w9OnFile?: boolean;
-  carrierPacketOnFile?: boolean;
-  onboardingFlowId?: string;
-  onboardingStatus?: string;
   authorityStatus?: string;
-  status?: string;
-  notes?: string;
+  status?: CarrierStatus;
+  description?: string;
+  primaryContactId?: string;
+  billingMethod?: BillingMethod;
+  factoringCompanyName?: string;
+  factoringCompanyEmail?: string;
+  factoringSubmissionMethod?: FactoringSubmission;
+  factoringAdvanceRate?: string | number;
+  factoringFeePercent?: string | number;
+  factoringNoa?: string;
+  outboundEmailMode?: EmailMode;
+  replyToEmail?: string;
+  inviteSentAt?: Date;
+  entryMethod?: string;
 }
 
 export interface CarrierListFilters {
   type?: CarrierType;
+  status?: CarrierStatus[];
   search?: string;
 }
 
 export type InsuranceWarning = '30_DAY' | '7_DAY' | 'EXPIRED';
+
+export interface PrimaryContactInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  email: string | null;
+}
+
+export interface CarrierOnboardingSessionSummary {
+  lastActiveAt: Date;
+  currentStepId: string | null;
+  completedStepIds: string[];
+  completedAt: Date | null;
+}
 
 export interface CarrierWithCounts extends Carrier {
   _count: {
     drivers: number;
     vehicles: number;
   };
+  primaryContact: PrimaryContactInfo | null;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
 }
 
 export interface CarrierWithAssets extends CarrierWithCounts {
@@ -86,11 +137,34 @@ export interface CarrierWithAssets extends CarrierWithCounts {
   vehicles: VehicleWithExpenses[];
 }
 
-export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
+export interface DispatchableStatus {
+  ready: boolean;
+  missing: string[];
+}
+
+export interface CarrierServiceOutput extends Omit<Carrier, 'partnerSplitPercent'> {
   driverCount: number;
   vehicleCount: number;
   onboardingComplete: boolean;
+  dispatchableStatus: DispatchableStatus;
   insuranceWarning: InsuranceWarning | null;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
+  partnerSplitPercent?: Carrier['partnerSplitPercent'];
+}
+
+export interface CarrierWithAssetsServiceOutput extends CarrierServiceOutput {
+  drivers: Driver[];
+  vehicles: VehicleWithExpenses[];
+}
+
+export interface CarrierResponse extends Omit<Carrier, 'partnerSplitPercent'> {
+  organizationId: string;
+  driverCount: number;
+  vehicleCount: number;
+  onboardingComplete: boolean;
+  dispatchableStatus: DispatchableStatus;
+  insuranceWarning: InsuranceWarning | null;
+  onboardingSession: CarrierOnboardingSessionSummary | null;
   partnerSplitPercent?: Carrier['partnerSplitPercent'];
 }
 
@@ -123,15 +197,41 @@ export interface CarrierRepositoryPort {
   findById(id: string, organizationId: string): Promise<CarrierWithCounts | null>;
   list(input: ListCarriersRepositoryInput): Promise<CarrierWithCounts[]>;
   count(input: CarrierQueryInput): Promise<number>;
-  update(id: string, input: UpdateCarrierInput): Promise<CarrierWithCounts>;
-  softDelete(id: string, deletedAt: Date): Promise<void>;
+  update(id: string, organizationId: string, input: UpdateCarrierInput): Promise<CarrierWithCounts>;
+  softDelete(id: string, organizationId: string, deletedAt: Date): Promise<void>;
 }
 
 export interface LoadRepositoryPort {
-  findBlockingLoadIds(carrierId: string, statuses: LoadStatus[], limit: number): Promise<string[]>;
+  findBlockingLoadIds(carrierId: string, statuses: readonly LoadStatus[], limit: number): Promise<string[]>;
 }
 
 export interface ListCarriersResult {
   data: CarrierWithCounts[];
   meta: PaginationMeta;
+}
+
+export interface ListCarriersServiceResult {
+  data: CarrierServiceOutput[];
+  meta: PaginationMeta;
+}
+
+export interface CarrierNoteInput {
+  text: string;
+  authorId?: string;
+  authorName?: string;
+}
+
+export interface CarrierNoteResponse {
+  id: string;
+  carrierId: string;
+  text: string;
+  authorId: string | null;
+  authorName: string | null;
+  createdAt: Date;
+}
+
+export interface CarrierNoteRepositoryPort {
+  createNote(carrierId: string, input: CarrierNoteInput): Promise<CarrierNoteResponse>;
+  listNotes(carrierId: string, skip: number, take: number): Promise<CarrierNoteResponse[]>;
+  countNotes(carrierId: string): Promise<number>;
 }

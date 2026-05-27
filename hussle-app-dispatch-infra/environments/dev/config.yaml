@@ -1,0 +1,31 @@
+extends: '../base/config.yaml'
+
+dokploy:
+  base_url: 'https://admin.mochosolutions.xyz'
+
+project:
+  name: 'fleet-dev'
+
+compose:
+  github:
+    owner: 'mochosolutions'
+    repo: 'hussle-dispatch'
+    branch: 'feature/v1'
+    compose_path: './docker-compose-prod.yml'
+    provider_id: 'hFTvZ-doumndPWZ7eiMb4'
+
+domains:
+  - host: 'api-dev.hussledispatch.online'
+    service: 'api'
+    port: 3001
+    ssl: true
+  - host: 'dev.hussledispatch.online'
+    service: 'ui'
+    port: 8080
+    ssl: true
+
+deployment:
+  wait_for_health: false
+  health_endpoints:
+    - url: 'https://api-dev.hussledispatch.online/health'
+      expected_status: 200

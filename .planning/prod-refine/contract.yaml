@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: FleetCommand — Production Refinement API Changes
+  version: 1.0.0
+  description: |
+    New stats endpoints and modified responses for the production refinement push.
+    All endpoints follow existing conventions: JWT cookie auth, org scoping via claims,
+    `{ data }` / `{ data, meta }` response envelope.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+x-auth-matrix:
+  - endpoint: "GET /api/v1/carriers/{id}/stats"
+    roles: [admin, dispatcher, viewer, driver]
+    scoping: "organizationId from JWT claims"
+  - endpoint: "GET /api/v1/contacts/{id}/stats"
+    roles: [admin, dispatcher, viewer, driver]
+    scoping: "organizationId from JWT claims"
+  - endpoint: "GET /api/v1/customers/{id}/stats"
+    roles: [admin, dispatcher, viewer, driver]
+    scoping: "organizationId from JWT claims"
+  - endpoint: "GET /api/v1/places/{id}/stats"
+    roles: [admin, dispatcher, viewer, driver]
+    scoping: "organizationId from JWT claims"
+
+x-data-flow:
+  "View Carrier KPI Stats":
+    trigger: "User opens carrier detail page"
+    steps:
+      - "Frontend: GET /api/v1/carriers/{id} for detail data (driverCount, vehicleCount already embedded)"
+      - "Frontend: GET /api/v1/carriers/{id}/stats for aggregate metrics"
+      - "Backend: carrierStatsQuery.getStats() runs SUM(customerRate) and COUNT on Load table by carrierId"
+      - "Backend: returns { data: { lifetimeRevenue, loadCount } }"
+      - "Frontend: CarrierKPI component renders all metrics"
+    services: [dispatch-ui, dispatch-api]
+
+  "View Contact Stats":
+    trigger: "User opens contact detail page"
+    steps:
+      - "Frontend: GET /api/v1/contacts/{id} for detail data"
+      - "Frontend: GET /api/v1/contacts/{id}/stats for load stats"
+      - "Backend: contactStatsQuery runs COUNT and findMany on Load via loadsAsContact relation"
+      - "Backend: returns { data: { loadCount, recentLoads } }"
+      - "Frontend: contact detail page renders load count and recent loads list"
+    services: [dispatch-ui, dispatch-api]
+
+  "View Customer Financial Stats":
+    trigger: "User opens customer detail page"
+    steps:
+      - "Frontend: GET /api/v1/customers/{id} for detail data"
+      - "Frontend: GET /api/v1/customers/{id}/stats for financial metrics"
+      - "Backend: customerStatsQuery runs aggregate queries on Invoice and Load tables by customerId"
+      - "Backend: computes totalRevenue (SUM customerRate on loads), avgDaysToPay (AVG paidAt - sentAt on paid invoices), outstandingAR (SUM totalAmount on unpaid invoices), loadCount (COUNT loads)"
+      - "Backend: returns { data: { totalRevenue, avgDaysToPay, outstandingAR, loadCount } }"
+      - "Frontend: customer detail page renders financial KPI cards"
+    services: [dispatch-ui, dispatch-api]
+
+  "View Place Visit Stats":
+    trigger: "User opens place detail page"
+    steps:
+      - "Frontend: GET /api/v1/places/{id} for detail data"
+      - "Frontend: GET /api/v1/places/{id}/stats for visit stats"
+      - "Backend: placeStatsQuery runs COUNT and MAX(appointmentDate) on Stop table by placeId"
+      - "Backend: returns { data: { visitCount, lastVisitDate } }"
+      - "Frontend: place detail page renders visit count and last visit date"
+    services: [dispatch-ui, dispatch-api]
+
+  "View Load Dispatch Board":
+    trigger: "User opens dispatch board page"
+    steps:
+      - "Frontend: GET /api/v1/loads for load list"
+      - "Backend: loadRepository fetches loads with stops included"
+      - "Backend: loadTransformer derives pickupDate from first PICKUP stop appointmentDate"
+      - "Backend: returns load list with pickupDate field"
+      - "Frontend: LoadTable renders Pickup column with pickupDate"
+    services: [dispatch-ui, dispatch-api]
+
+  "View Invoice Detail":
+    trigger: "User opens invoice detail page"
+    steps:
+      - "Frontend: GET /api/v1/invoices/{id} for invoice detail"
+      - "Backend: invoiceRepository fetches with expanded includes (load.stops, carrier details)"
+      - "Backend: invoiceTransformer includes stop origin/dest and carrier mcNumber/phone"
+      - "Backend: returns expanded invoice detail response"
+      - "Frontend: invoice detail page renders route info and carrier contact"
+    services: [dispatch-ui, dispatch-api]
+
+paths:
+  /carriers/{id}/stats:
+    get:
+      operationId: getCarrierStats
+      summary: Get aggregate stats for a carrier
+      tags: [Carriers]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: Carrier aggregate statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CarrierStats'
+        '401':
+          description: Not authenticated — missing or invalid JWT
+        '404':
+          description: Carrier not found or does not belong to user's organization
+
+  /contacts/{id}/stats:
+    get:
+      operationId: getContactStats
+      summary: Get aggregate stats for a contact
+      tags: [Contacts]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: Contact aggregate statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ContactStats'
+        '401':
+          description: Not authenticated — missing or invalid JWT
+        '404':
+          description: Contact not found or does not belong to user's organization
+
+  /customers/{id}/stats:
+    get:
+      operationId: getCustomerStats
+      summary: Get financial and load stats for a customer
+      tags: [Customers]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: Customer aggregate statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CustomerStats'
+        '401':
+          description: Not authenticated — missing or invalid JWT
+        '404':
+          description: Customer not found or does not belong to user's organization
+
+  /places/{id}/stats:
+    get:
+      operationId: getPlaceStats
+      summary: Get visit stats for a place/facility
+      tags: [Places]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: Place aggregate statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlaceStats'
+        '401':
+          description: Not authenticated — missing or invalid JWT
+        '404':
+          description: Place not found or does not belong to user's organization
+
+  /loads:
+    get:
+      operationId: listLoads
+      summary: List loads (modified response — adds pickupDate)
+      description: |
+        Existing endpoint. Response schema modified to include `pickupDate` field
+        on each load list item. Derived from first PICKUP stop's appointmentDate.
+      tags: [Loads]
+      x-modification: "Add pickupDate field to LoadListItemResponse"
+      responses:
+        '200':
+          description: Paginated load list with pickupDate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LoadListItemModification'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /invoices/{id}:
+    get:
+      operationId: getInvoiceDetail
+      summary: Get invoice detail (expanded includes)
+      description: |
+        Existing endpoint. Response schema expanded to include load stop data
+        (origin/destination) and carrier contact details (mcNumber, phone).
+      tags: [Invoices]
+      x-modification: "Expand load and carrier includes in response"
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: Invoice detail with expanded load stops and carrier info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/InvoiceDetailModification'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from HttpOnly cookie
+
+  parameters:
+    EntityId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Entity UUID
+
+  schemas:
+    # ── Stats Responses ──────────────────────────────────────────
+
+    CarrierStats:
+      type: object
+      required: [lifetimeRevenue, loadCount]
+      properties:
+        lifetimeRevenue:
+          type: string
+          description: Total customerRate across all completed loads for this carrier. Decimal serialized as string.
+          example: "145230.50"
+        loadCount:
+          type: integer
+          minimum: 0
+          description: Total number of loads assigned to this carrier
+          example: 87
+
+    ContactStats:
+      type: object
+      required: [loadCount, recentLoads]
+      properties:
+        loadCount:
+          type: integer
+          minimum: 0
+          description: Total loads where this contact is the load contact
+          example: 12
+        recentLoads:
+          type: array
+          maxItems: 5
+          description: Most recent 5 loads for this contact, ordered by createdAt desc
+          items:
+            $ref: '#/components/schemas/ContactRecentLoad'
+
+    ContactRecentLoad:
+      type: object
+      required: [id, loadNumber, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        loadNumber:
+          type: string
+          maxLength: 50
+          example: "LD-001234"
+        status:
+          type: string
+          description: Current load status
+          example: "DELIVERED"
+        pickupDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: First PICKUP stop appointmentDate
+
+    CustomerStats:
+      type: object
+      required: [totalRevenue, avgDaysToPay, outstandingAR, loadCount]
+      properties:
+        totalRevenue:
+          type: string
+          description: SUM of customerRate on all loads for this customer. Decimal as string.
+          example: "523400.00"
+        avgDaysToPay:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Average days between sentAt and paidAt on PAID invoices. Null if no paid invoices exist.
+          example: 28.5
+        outstandingAR:
+          type: string
+          description: SUM of totalAmount on invoices with status SENT, PARTIALLY_PAID, or OVERDUE. Decimal as string.
+          example: "34200.00"
+        loadCount:
+          type: integer
+          minimum: 0
+          description: Total loads for this customer
+          example: 156
+
+    PlaceStats:
+      type: object
+      required: [visitCount, lastVisitDate]
+      properties:
+        visitCount:
+          type: integer
+          minimum: 0
+          description: COUNT of stops at this facility (via Stop.placeId)
+          example: 24
+        lastVisitDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: MAX appointmentDate of stops at this facility. Null if no visits.
+          example: "2026-03-20T14:00:00.000Z"
+
+    # ── Modified Response Fields ─────────────────────────────────
+
+    LoadListItemModification:
+      description: |
+        Added field to existing LoadListItemResponse.
+        All existing fields remain unchanged — only `pickupDate` is added.
+      type: object
+      properties:
+        pickupDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Derived from first PICKUP stop's appointmentDate.
+            Null if no PICKUP stop exists or appointmentDate is not set.
+            Uses existing getOriginStop() pattern in loadTransformer.
+          example: "2026-03-22T08:00:00.000Z"
+
+    InvoiceDetailModification:
+      description: |
+        Expanded includes on existing invoice detail response.
+        All existing fields remain unchanged — these fields are added to nested objects.
+      type: object
+      properties:
+        load:
+          type: object
+          description: Expanded load object (existing fields plus stops)
+          properties:
+            stops:
+              type: array
+              description: Load stops ordered by sequence, for route display
+              items:
+                $ref: '#/components/schemas/InvoiceLoadStop'
+        carrier:
+          type: object
+          description: Expanded carrier object (existing fields plus contact details)
+          properties:
+            mcNumber:
+              type: string
+              nullable: true
+              maxLength: 20
+              description: Motor Carrier number
+              example: "MC-123456"
+            phone:
+              type: string
+              nullable: true
+              maxLength: 30
+              description: Carrier primary phone
+              example: "+1-555-123-4567"
+
+    InvoiceLoadStop:
+      type: object
+      required: [id, type, sequence]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/StopType'
+        sequence:
+          type: integer
+          minimum: 0
+        facilityName:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        appointmentDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ── Enums ────────────────────────────────────────────────────
+
+    StopType:
+      type: string
+      enum: [PICKUP, DELIVERY, STOP_OFF, DROP_HOOK, LIVE_UNLOAD]
+      x-display-names:
+        PICKUP: "Pickup"
+        DELIVERY: "Delivery"
+        STOP_OFF: "Stop Off"
+        DROP_HOOK: "Drop Hook"
+        LIVE_UNLOAD: "Live Unload"
+
+    InvoiceStatus:
+      type: string
+      enum: [DRAFT, APPROVED, SENT, PARTIALLY_PAID, PAID, OVERDUE, VOID]
+      x-display-names:
+        DRAFT: "Draft"
+        APPROVED: "Approved"
+        SENT: "Sent"
+        PARTIALLY_PAID: "Partially Paid"
+        PAID: "Paid"
+        OVERDUE: "Overdue"
+        VOID: "Void"
+
+    # ── Shared ───────────────────────────────────────────────────
+
+    PaginationMeta:
+      type: object
+      required: [page, limit, total, totalPages, hasMore]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
+
+    ErrorBody:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+              field:
+                type: string

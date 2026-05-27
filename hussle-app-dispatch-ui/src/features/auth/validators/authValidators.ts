@@ -33,7 +33,22 @@ export const registerValidation = Yup.object({
   password: passwordValidation,
   firstName: nameValidation('First Name'),
   lastName: nameValidation('Last Name'),
-  name: longerNameValidation('Company Name'),
+  orgName: longerNameValidation('Company Name'),
+  orgRole: Yup.string()
+    .required('Organization type is required')
+    .oneOf(['BROKER', 'CARRIER', 'DISPATCH_COMPANY', 'SHIPPER'], 'Invalid organization type'),
+  mcNumber: Yup.string().when('orgRole', {
+    is: 'CARRIER',
+    then: (schema) =>
+      schema
+        .required('MC Number is required for carriers')
+        .min(5, 'MC Number must be at least 5 characters'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  dotNumber: Yup.string().optional(),
+  confirmPassword: Yup.string()
+    .required('Please confirm your password')
+    .oneOf([Yup.ref('password')], 'Passwords must match'),
 });
 
 export const updateValidation = Yup.object({
@@ -41,7 +56,7 @@ export const updateValidation = Yup.object({
     .optional()
     .nullable()
     .notOneOf(['', null], 'Email cannot be empty or null'),
-  name: longerNameValidation('Company Name')
+  orgName: longerNameValidation('Company Name')
     .optional()
     .nullable()
     .notOneOf(['', null], 'Company Name cannot be empty or null'),
@@ -50,7 +65,7 @@ export const updateValidation = Yup.object({
 export const loginValidation = Yup.object().shape({
   email: emailValidation,
   password: passwordValidation,
-  rememeberMe: Yup.boolean().optional(),
+  rememberMe: Yup.boolean().optional(),
 });
 
 export const confirmationCodeValidation = Yup.object({

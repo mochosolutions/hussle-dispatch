@@ -1,6 +1,7 @@
 export interface FormHandle {
   submit: () => Promise<void>;
   reset: () => void;
+  getValues: () => Record<string, unknown>;
   isSubmitting: boolean;
   isValid: boolean;
   isDirty: boolean;

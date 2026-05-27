@@ -33,8 +33,8 @@ const AuthForgotPassword = () => {
     onSubmit: async (values) => {
       try {
         dispatch(initiatePasswordResetRequest({ email: values.email }));
-      } catch (err) {
-        console.error(err);
+      } catch (_err: unknown) {
+        // Error handled by saga
       }
     },
   });
@@ -60,6 +60,7 @@ const AuthForgotPassword = () => {
           <EmailField
             name="email"
             label="Email Address"
+            autoComplete="email"
             required
             formik={formikProps}
           />

@@ -1,34 +1,14 @@
-import {createSelector} from '@reduxjs/toolkit';
-import {authSelector} from './authSelector';
+import type { RootState } from '../../../../store';
+import { authSelector } from './authSelector';
 
-export const isInitatePassResetLoadingSelector = createSelector(
-  authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.initPasswordReset ?? '';
-    return loadingState === 'Pending';
-  },
-);
+export const isInitatePassResetLoadingSelector = (state: RootState) =>
+  (authSelector(state)?.loading.initPasswordReset ?? '') === 'Pending';
 
-export const isConfirmPasswordResetLoadingSelector = createSelector(
-  authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.confirmPasswordReset ?? '';
-    return loadingState === 'Pending';
-  },
-);
+export const isConfirmPasswordResetLoadingSelector = (state: RootState) =>
+  (authSelector(state)?.loading.confirmPasswordReset ?? '') === 'Pending';
 
-export const isInitatePassResetErrorSelector = createSelector(
-  authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.initPasswordReset ?? '';
-    return loadingState === 'Rejected';
-  },
-);
+export const isInitatePassResetErrorSelector = (state: RootState) =>
+  (authSelector(state)?.loading.initPasswordReset ?? '') === 'Rejected';
 
-export const isConfirmPasswordResetErrorSelector = createSelector(
-  authSelector,
-  (loginPageObj) => {
-    const loadingState = loginPageObj?.loading.confirmPasswordReset ?? '';
-    return loadingState === 'Rejected';
-  },
-);
+export const isConfirmPasswordResetErrorSelector = (state: RootState) =>
+  (authSelector(state)?.loading.confirmPasswordReset ?? '') === 'Rejected';

@@ -2,15 +2,17 @@ import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import { sendList, sendSingle } from '@/shared/responseEnvelope';
 import type { ContactService } from '../types/contactServiceTypes';
+import type { ContactStatsQueryPort } from '../repositories/contactStatsQueryPrisma';
 import { createContactMapper } from './mappers/createContactMapper';
 import { getRequiredContactIdMapper } from './mappers/getRequiredContactIdMapper';
-import { getRequestContextMapper } from './mappers/getRequestContextMapper';
+import { getRequestContextMapper } from '@/shared/mappers/getRequestContextMapper';
 import { listContactsMapper } from './mappers/listContactsMapper';
 import { updateContactMapper } from './mappers/updateContactMapper';
 import { toContactListEnvelope, toContactResponse } from './transformers/contactTransformer';
 
 interface ContactControllerDeps {
   contactService: ContactService;
+  contactStatsQuery: ContactStatsQueryPort;
 }
 
 export interface ContactControllers {
@@ -19,6 +21,7 @@ export interface ContactControllers {
   getContactById: RequestHandler;
   updateContact: RequestHandler;
   deleteContact: RequestHandler;
+  getContactStats: RequestHandler;
 }
 
 export const createContactControllers = (deps: ContactControllerDeps): ContactControllers => ({
@@ -60,5 +63,13 @@ export const createContactControllers = (deps: ContactControllerDeps): ContactCo
     });
 
     res.status(204).send();
+  },
+
+  getContactStats: async (req: Request, res: Response): Promise<void> => {
+    const id = getRequiredContactIdMapper(req);
+    const context = getRequestContextMapper(req);
+    await deps.contactService.getContactById({ ...context, id });
+    const stats = await deps.contactStatsQuery.getStats(id, context.organizationId);
+    sendSingle(res, stats);
   },
 });

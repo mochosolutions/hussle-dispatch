@@ -48,7 +48,7 @@ export const updateValidation = Yup.object({
 export const loginValidation = Yup.object().shape({
   email: emailValidation,
   password: passwordValidation,
-  rememeberMe: Yup.boolean().optional(),
+  rememberMe: Yup.boolean().optional(),
 });
 
 export const confirmationCodeValidation = Yup.object({

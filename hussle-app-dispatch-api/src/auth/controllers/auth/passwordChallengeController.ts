@@ -1,6 +1,11 @@
 import type { Request, RequestHandler, Response } from 'express';
 import { logger } from '@/shared/utils/logger';
-import { setAccessTokenCookie, setRefreshTokenCookie } from '@/shared/utils/cookieUtils';
+import {
+  generateCsrfToken,
+  setAccessTokenCookie,
+  setCsrfTokenCookie,
+  setRefreshTokenCookie,
+} from '@/shared/utils/cookieUtils';
 import { cognitoProvider } from '../../providers/authProvider';
 import { passwordChallengeService } from '../../services';
 import { mapPasswordChallengeRequest } from './mappers/mapPasswordChallengeRequest';
@@ -28,6 +33,7 @@ export const createPasswordChallengeController = ({
 
     if (authResponse?.accessToken) {
       setAccessTokenCookie(res, authResponse.accessToken);
+      setCsrfTokenCookie(res, generateCsrfToken());
     }
     if (authResponse?.refreshToken) {
       setRefreshTokenCookie(res, authResponse.refreshToken);

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +10,16 @@ import type {
   SessionData,
 } from '../../types/tokenProvider';
 import { hashToken } from './tokenHelpers';
+
+const computeContextHash = (ipAddress?: string, userAgent?: string): string | undefined => {
+  if (!ipAddress && !userAgent) {
+    return undefined;
+  }
+  return crypto
+    .createHash('sha256')
+    .update(`${ipAddress ?? ''}:${userAgent ?? ''}`)
+    .digest('hex');
+};
 
 export const createSessionRedis = async (
   data: CreateSessionInput & { ipAddress?: string; userAgent?: string; singleSession?: boolean },
@@ -22,8 +33,9 @@ export const createSessionRedis = async (
     orgSubscriptionTier,
     role,
     membershipId,
-    // ipAddress,
-    // userAgent,
+    permissionsVersion = 1,
+    ipAddress,
+    userAgent,
     singleSession = false,
   } = data;
 
@@ -79,11 +91,11 @@ export const createSessionRedis = async (
     orgSubscriptionTier,
     membershipId,
     role,
+    permissionsVersion,
+    contextHash: computeContextHash(ipAddress, userAgent),
     refreshTokenHash,
     isRevoked: false,
     issuedAt: Date.now(),
-    // ipAddress,
-    // userAgent
   };
 
   // Store session + refresh mappings
@@ -99,8 +111,10 @@ export const createSessionRedis = async (
       userId,
       organizationId,
       orgSlug,
+      orgStatus,
       membershipId,
       role,
+      permissionsVersion,
       sessionId,
     },
     getJwtSecret(),

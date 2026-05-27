@@ -67,6 +67,33 @@ export class ActiveLoadsConflictError extends CustomError {
   }
 }
 
+export interface AssignmentBlocker {
+  code: string;
+  message: string;
+  field?: string;
+  blockingLoadIds?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export class AssignmentValidationError extends CustomError {
+  statusCode = 422;
+  readonly code = 'ASSIGNMENT_BLOCKED';
+  readonly blockers: AssignmentBlocker[];
+
+  constructor(message: string, blockers: AssignmentBlocker[]) {
+    super(message);
+    this.blockers = blockers;
+    Object.setPrototypeOf(this, AssignmentValidationError.prototype);
+  }
+
+  serializeErrors() {
+    return this.blockers.map((blocker) => ({
+      message: blocker.message,
+      field: blocker.field,
+    }));
+  }
+}
+
 export class UnauthorizedError extends CustomError {
   statusCode = 401;
   readonly code = 'UNAUTHORIZED';
@@ -88,6 +115,20 @@ export class ForbiddenError extends CustomError {
   constructor(public message: string) {
     super(message ?? 'Forbidden');
     Object.setPrototypeOf(this, ForbiddenError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
+export class OrgSuspendedError extends CustomError {
+  statusCode = 403;
+  readonly code = 'ORG_SUSPENDED';
+
+  constructor() {
+    super('Organization is suspended or inactive');
+    Object.setPrototypeOf(this, OrgSuspendedError.prototype);
   }
 
   serializeErrors() {
@@ -121,9 +162,7 @@ export class OnboardingBlockError extends CustomError {
   readonly missingDocuments: string[];
 
   constructor(carrierName: string, missingDocuments: string[]) {
-    super(
-      `${carrierName} missing: ${missingDocuments.join(', ')}. Complete onboarding first.`,
-    );
+    super(`${carrierName} missing: ${missingDocuments.join(', ')}. Complete onboarding first.`);
     this.missingDocuments = missingDocuments;
     Object.setPrototypeOf(this, OnboardingBlockError.prototype);
   }
@@ -179,20 +218,6 @@ export class ConcurrentEditError extends CustomError {
   }
 }
 
-export class OwnerOperatorNotSupportedError extends CustomError {
-  statusCode = 422;
-  readonly code = 'OWNER_OPERATOR_NOT_SUPPORTED';
-
-  constructor() {
-    super('OWNER_OPERATOR carrier type is not supported in this release.');
-    Object.setPrototypeOf(this, OwnerOperatorNotSupportedError.prototype);
-  }
-
-  serializeErrors() {
-    return [{ message: this.message }];
-  }
-}
-
 export class SequenceError extends CustomError {
   statusCode = 500;
   readonly code = 'SEQUENCE_ERROR';
@@ -207,5 +232,53 @@ export class SequenceError extends CustomError {
   }
 }
 
-export const isCustomError = (error: unknown): error is CustomError =>
-  error instanceof CustomError;
+export class SeatLimitReachedError extends CustomError {
+  statusCode = 429;
+  readonly code = 'SEAT_LIMIT_REACHED';
+  readonly resourceType: 'users' | 'vehicles';
+  readonly limit: number;
+
+  constructor(resourceType: 'users' | 'vehicles', limit: number) {
+    const label = resourceType === 'users' ? 'team members' : 'vehicles';
+    super(`You've reached your plan limit of ${limit} ${label}. Upgrade your plan to add more.`);
+    this.resourceType = resourceType;
+    this.limit = limit;
+    Object.setPrototypeOf(this, SeatLimitReachedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
+export class LastAdminError extends CustomError {
+  statusCode = 409;
+  readonly code = 'LAST_ADMIN';
+
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, LastAdminError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message }];
+  }
+}
+
+export class FieldLockedError extends CustomError {
+  statusCode = 422;
+  readonly code = 'FIELD_LOCKED';
+  readonly field: string;
+
+  constructor(field: string) {
+    super(`Field ${field} is locked after dispatch agreement was signed`);
+    this.field = field;
+    Object.setPrototypeOf(this, FieldLockedError.prototype);
+  }
+
+  serializeErrors() {
+    return [{ message: this.message, field: this.field }];
+  }
+}
+
+export const isCustomError = (error: unknown): error is CustomError => error instanceof CustomError;

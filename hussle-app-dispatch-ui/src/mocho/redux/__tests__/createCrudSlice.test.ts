@@ -18,7 +18,7 @@ describe('createCrudSlice', () => {
       expect(slice.name).toBe('testPage');
     });
 
-    it('creates initial state with empty loading and errors', () => {
+    it('creates initial state with getAll pending and empty errors', () => {
       const slice = createCrudSlice({
         name: 'testPage',
         entityName: 'post',
@@ -27,8 +27,10 @@ describe('createCrudSlice', () => {
 
       expect(slice.getInitialState()).toEqual({
         query: '',
-        loading: {},
+        loading: { getAll: LoadingState.Pending },
         errors: {},
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       });
     });
 
@@ -109,6 +111,8 @@ describe('createCrudSlice', () => {
         query: '',
         loading: { getAll: LoadingState.Pending },
         errors: { getAll: 'previous error' },
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       };
 
       const state = reducer(initialState, slice.actions.fetchAllSuccess([]));
@@ -117,11 +121,24 @@ describe('createCrudSlice', () => {
       expect(state.errors['getAll']).toBe('');
     });
 
-    it('sets loading to Rejected and stores error on fetchAllFailure', () => {
+    it('marks hasLoadedOnce true and stamps lastFetchedAt on fetchAllSuccess', () => {
+      const before = Date.now();
+      const state = reducer(undefined, slice.actions.fetchAllSuccess([]));
+      const after = Date.now();
+
+      expect(state.hasLoadedOnce).toBe(true);
+      expect(state.lastFetchedAt).not.toBeNull();
+      expect(state.lastFetchedAt).toBeGreaterThanOrEqual(before);
+      expect(state.lastFetchedAt).toBeLessThanOrEqual(after);
+    });
+
+    it('does not change hasLoadedOnce on fetchAllFailure', () => {
       const initialState: CrudPageState = {
         query: '',
         loading: { getAll: LoadingState.Pending },
         errors: {},
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       };
 
       const state = reducer(
@@ -131,6 +148,8 @@ describe('createCrudSlice', () => {
 
       expect(state.loading['getAll']).toBe(LoadingState.Rejected);
       expect(state.errors['getAll']).toBe('Network error');
+      expect(state.hasLoadedOnce).toBe(false);
+      expect(state.lastFetchedAt).toBeNull();
     });
 
     it('uses default error message when none provided', () => {
@@ -166,6 +185,8 @@ describe('createCrudSlice', () => {
         query: '',
         loading: { 'getById:123': LoadingState.Pending },
         errors: {},
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       };
 
       const state = reducer(
@@ -219,6 +240,8 @@ describe('createCrudSlice', () => {
         query: '',
         loading: { create: LoadingState.Pending },
         errors: {},
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       };
 
       const state = reducer(
@@ -262,6 +285,8 @@ describe('createCrudSlice', () => {
         query: '',
         loading: { 'update:abc': LoadingState.Pending },
         errors: {},
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       };
 
       const state = reducer(
@@ -305,6 +330,8 @@ describe('createCrudSlice', () => {
         query: '',
         loading: { 'delete:xyz': LoadingState.Pending },
         errors: {},
+        hasLoadedOnce: false,
+        lastFetchedAt: null,
       };
 
       const state = reducer(
@@ -354,14 +381,19 @@ describe('createCrudSelectors', () => {
 
   const selectors = createCrudSelectors<RootState>((state) => state.page);
 
+  const baseState = (overrides: Partial<CrudPageState> = {}): CrudPageState => ({
+    query: '',
+    loading: {},
+    errors: {},
+    hasLoadedOnce: false,
+    lastFetchedAt: null,
+    ...overrides,
+  });
+
   describe('selectIsLoading', () => {
     it('returns true when operation is Pending', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: { getAll: LoadingState.Pending },
-          errors: {},
-        },
+        page: baseState({ loading: { getAll: LoadingState.Pending } }),
       };
 
       expect(selectors.selectIsLoading('getAll')(state)).toBe(true);
@@ -369,20 +401,14 @@ describe('createCrudSelectors', () => {
 
     it('returns false when operation is not Pending', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: { getAll: LoadingState.Fulfilled },
-          errors: {},
-        },
+        page: baseState({ loading: { getAll: LoadingState.Fulfilled } }),
       };
 
       expect(selectors.selectIsLoading('getAll')(state)).toBe(false);
     });
 
     it('returns false when operation has no state', () => {
-      const state: RootState = {
-        page: { query: '', loading: {}, errors: {} },
-      };
+      const state: RootState = { page: baseState() };
 
       expect(selectors.selectIsLoading('getAll')(state)).toBe(false);
     });
@@ -391,11 +417,7 @@ describe('createCrudSelectors', () => {
   describe('selectIsEntityLoading', () => {
     it('returns true when entity operation is Pending', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: { 'getById:123': LoadingState.Pending },
-          errors: {},
-        },
+        page: baseState({ loading: { 'getById:123': LoadingState.Pending } }),
       };
 
       expect(selectors.selectIsEntityLoading('getById', '123')(state)).toBe(true);
@@ -403,11 +425,7 @@ describe('createCrudSelectors', () => {
 
     it('returns false for different entity id', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: { 'getById:123': LoadingState.Pending },
-          errors: {},
-        },
+        page: baseState({ loading: { 'getById:123': LoadingState.Pending } }),
       };
 
       expect(selectors.selectIsEntityLoading('getById', '456')(state)).toBe(false);
@@ -417,20 +435,14 @@ describe('createCrudSelectors', () => {
   describe('selectError', () => {
     it('returns error message for operation', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: {},
-          errors: { getAll: 'Network error' },
-        },
+        page: baseState({ errors: { getAll: 'Network error' } }),
       };
 
       expect(selectors.selectError('getAll')(state)).toBe('Network error');
     });
 
     it('returns empty string when no error', () => {
-      const state: RootState = {
-        page: { query: '', loading: {}, errors: {} },
-      };
+      const state: RootState = { page: baseState() };
 
       expect(selectors.selectError('getAll')(state)).toBe('');
     });
@@ -439,11 +451,7 @@ describe('createCrudSelectors', () => {
   describe('selectEntityError', () => {
     it('returns error message for entity operation', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: {},
-          errors: { 'update:abc': 'Update failed' },
-        },
+        page: baseState({ errors: { 'update:abc': 'Update failed' } }),
       };
 
       expect(selectors.selectEntityError('update', 'abc')(state)).toBe('Update failed');
@@ -453,11 +461,7 @@ describe('createCrudSelectors', () => {
   describe('selectLoadingState', () => {
     it('returns the loading state value', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: { create: LoadingState.Fulfilled },
-          errors: {},
-        },
+        page: baseState({ loading: { create: LoadingState.Fulfilled } }),
       };
 
       expect(selectors.selectLoadingState('create')(state)).toBe(LoadingState.Fulfilled);
@@ -467,16 +471,37 @@ describe('createCrudSelectors', () => {
   describe('selectEntityLoadingState', () => {
     it('returns entity-specific loading state value', () => {
       const state: RootState = {
-        page: {
-          query: '',
-          loading: { 'delete:xyz': LoadingState.Rejected },
-          errors: {},
-        },
+        page: baseState({ loading: { 'delete:xyz': LoadingState.Rejected } }),
       };
 
       expect(selectors.selectEntityLoadingState('delete', 'xyz')(state)).toBe(
         LoadingState.Rejected
       );
+    });
+  });
+
+  describe('selectHasLoadedOnce', () => {
+    it('returns false when state.hasLoadedOnce is false', () => {
+      const state: RootState = { page: baseState() };
+      expect(selectors.selectHasLoadedOnce(state)).toBe(false);
+    });
+
+    it('returns true when state.hasLoadedOnce is true', () => {
+      const state: RootState = { page: baseState({ hasLoadedOnce: true }) };
+      expect(selectors.selectHasLoadedOnce(state)).toBe(true);
+    });
+  });
+
+  describe('selectLastFetchedAt', () => {
+    it('returns null when never fetched', () => {
+      const state: RootState = { page: baseState() };
+      expect(selectors.selectLastFetchedAt(state)).toBeNull();
+    });
+
+    it('returns the timestamp when set', () => {
+      const ts = 1_700_000_000_000;
+      const state: RootState = { page: baseState({ lastFetchedAt: ts }) };
+      expect(selectors.selectLastFetchedAt(state)).toBe(ts);
     });
   });
 });

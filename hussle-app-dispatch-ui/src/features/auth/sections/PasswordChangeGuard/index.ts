@@ -9,7 +9,6 @@ export const PasswordChangeGuard = ({children}: GuardProps) => {
 
   useEffect(() => {
     if (!forceChangePassword && !userSession) {
-      console.log('PasswordChangeGuard navigate:', '/login');
       navigate('/login');
     }
   }, [forceChangePassword, userSession, navigate]);

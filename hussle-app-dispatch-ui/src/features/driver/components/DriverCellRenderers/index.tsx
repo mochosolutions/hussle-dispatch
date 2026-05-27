@@ -1,22 +1,23 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 
 import type { Driver } from 'features/carrier/types';
-
-import { DRIVER_STATUS_LABELS } from '../../constants';
+import { StatusCell } from 'components/Statusbadge';
+import { Body, BodyStrong, Meta } from 'components/Typography';
+import getDriverDisplayName from 'utils/getDriverDisplayName';
 
 export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
-  const nameParts = data.name.split(' ');
-  const initials = [nameParts[0]?.charAt(0), nameParts[nameParts.length - 1]?.charAt(0)]
+  const displayName = getDriverDisplayName(data);
+  const initials = [data.firstName.charAt(0), data.lastName.charAt(0)]
     .filter(Boolean)
     .map((c) => c.toUpperCase())
     .join('');
 
   return (
-    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.5 }}>
+    <Stack direction="row" alignItems="center" sx={{ py: 0.5, gap: 1.5 }}>
       <Box
         sx={{
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
           borderRadius: '50%',
           backgroundColor: 'primary.lighter',
           color: 'primary.main',
@@ -38,16 +39,12 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
           height: '100%',
         }}
       >
-        <Typography
-          variant="subtitle2"
-          color="primary.main"
-          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-        >
-          {data.name}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {data.cdlNumber ? `CDL# ${data.cdlNumber}` : '\u2014'}
-        </Typography>
+        <BodyStrong sx={{ color: 'primary.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+          {displayName}
+        </BodyStrong>
+        <Meta>
+          {data.licenseNumber ? `${data.licenseType} · ${data.licenseNumber}` : '\u2014'}
+        </Meta>
       </Box>
     </Stack>
   );
@@ -55,30 +52,24 @@ export const DriverNameCellRenderer = ({ data }: { data: Driver }) => {
 
 export const DriverStatusCellRenderer = ({ data }: { data: Driver }) => {
   if (data.isAvailable) {
-    return <Chip label="Available" size="small" color="success" variant="filled" />;
+    return <StatusCell status="DRIVER_AVAILABLE" />;
   }
 
-  const label = DRIVER_STATUS_LABELS[data.status] ?? 'Unavailable';
+  const statusKey = data.status === 'on_load' ? 'DRIVER_ON_LOAD' : 'DRIVER_UNAVAILABLE';
 
-  return <Chip label={label} size="small" color="default" variant="filled" />;
+  return <StatusCell status={statusKey} />;
 };
 
 export const DriverLocationCellRenderer = ({ data }: { data: Driver }) => {
   if (!data.currentCity && !data.currentState) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        {'\u2014'}
-      </Typography>
-    );
+    return <Meta>{'\u2014'}</Meta>;
   }
 
   const parts = [data.currentCity, data.currentState].filter(Boolean).join(', ');
 
-  return <Typography variant="body2">{parts}</Typography>;
+  return <Body>{parts}</Body>;
 };
 
 export const DriverCarrierCellRenderer = ({ value }: { value: string | null }) => (
-  <Typography variant="body2" color={value ? 'text.primary' : 'text.secondary'}>
-    {value ?? '\u2014'}
-  </Typography>
+  value ? <Body sx={{ color: 'text.primary' }}>{value}</Body> : <Meta>{'\u2014'}</Meta>
 );

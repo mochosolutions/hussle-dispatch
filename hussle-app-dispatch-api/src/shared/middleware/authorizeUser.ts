@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { UnauthorizedError } from '@/shared/errors/authError';
+import { ForbiddenError } from '@/shared/errors';
 
 const claimMatches = (actual: unknown, expected: unknown): boolean => {
   if (Array.isArray(actual) && Array.isArray(expected)) {
@@ -20,7 +20,7 @@ export const authorizeUser =
     const { user } = req;
 
     if (!user) {
-      next(new UnauthorizedError('User is not authenticated'));
+      next(new ForbiddenError('User is not authenticated'));
       return;
     }
 
@@ -30,7 +30,7 @@ export const authorizeUser =
       const actualValue = userRecord[claim];
 
       if (actualValue === undefined) {
-        next(new UnauthorizedError(`Missing required claim: ${claim}`));
+        next(new ForbiddenError(`Missing required claim: ${claim}`));
         return;
       }
 
@@ -38,7 +38,7 @@ export const authorizeUser =
         const fmt = (v: unknown): string =>
           Array.isArray(v) ? v.join(',') : `${v as string | number}`;
         next(
-          new UnauthorizedError(
+          new ForbiddenError(
             `Claim ${claim}: expected ${fmt(expectedValue)}, got ${fmt(actualValue)}`,
           ),
         );

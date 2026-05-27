@@ -1,21 +1,43 @@
-import {call, put, select} from 'redux-saga/effects';
-import {logoutSuccess} from '../authSlice';
-import axiosPrivate from 'utils/axios';
-import {getNavigate} from 'utils/getNavigate';
+import { call, put, spawn } from 'redux-saga/effects';
+// notistack import allowed here only for closeSnackbar — sanctioned exception.
+// Notification dispatch flows through the Redux notification slice; closeSnackbar
+// dismisses already-rendered toasts on logout, which is a notistack-side concern.
+import { closeSnackbar } from 'notistack';
+import { logoutSuccess } from '../authSlice';
+import axiosPrivate, { setLoggingOut } from 'utils/axios';
+import { getNavigate } from 'utils/getNavigate';
+
+/**
+ * Fire-and-forget API call to invalidate the server session.
+ * Errors are swallowed — local state is already cleared.
+ */
+function* callLogoutEndpoint() {
+  try {
+    yield call(axiosPrivate.post, '/auth/logout');
+  } catch {
+    // Server-side cleanup failure is non-critical — local state already cleared
+  } finally {
+    setLoggingOut(false);
+  }
+}
 
 export function* handleLogout() {
-  let navigate;
+  // Set flag BEFORE any async work so the axios interceptor skips refresh/redirect
+  setLoggingOut(true);
+
+  // Clear local state immediately — root reducer resets entire store on logoutSuccess
+  localStorage.removeItem('rememberMe');
+  yield put(logoutSuccess());
+  yield call(closeSnackbar); // dismiss active toasts (notistack is not Redux)
+
+  // Navigate to login
   try {
-    console.log('Logging out saga...');
-    navigate = yield call(getNavigate);
-    // Call logout endpoint - cookies sent automatically via withCredentials
-    yield call(axiosPrivate.post, '/auth/logout');
-  } catch (error: any) {
-    console.error('Error during logout:', error.message);
-  } finally {
-    // Clear local storage (rememberMe flag)
-    localStorage.removeItem('rememberMe');
+    const navigate = yield call(getNavigate);
     yield call(navigate, '/login');
-    yield put(logoutSuccess());
+  } catch {
+    // Navigation not available — state reset is sufficient
   }
+
+  // Fire-and-forget: notify the server to invalidate the session cookie
+  yield spawn(callLogoutEndpoint);
 }

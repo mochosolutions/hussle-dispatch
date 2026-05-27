@@ -6,7 +6,7 @@ export interface CarrierOnboardingInput {
   dispatchAgreementOnFile: boolean;
   insuranceCertOnFile: boolean;
   insuranceExpiry: Date | null;
-  w9OnFile: boolean;
+  tinOnFile: boolean;
 }
 
 export interface CarrierOnboardingResult {
@@ -15,29 +15,16 @@ export interface CarrierOnboardingResult {
 }
 
 /**
- * Determines whether a carrier is allowed to be assigned to a load.
+ * Determines whether a carrier currently has valid documents to be assigned to a load.
  *
- * COMPANY_ASSET carriers always pass.
- * EXTERNAL_CARRIER carriers must have dispatch agreement, valid insurance, and W-9.
- * OWNER_OPERATOR is rejected with a clear message (decision X-001).
+ * COMPANY_ASSET — own fleet, no dispatch agreement or W-9 (org doesn't sign with itself);
+ *   only insurance must be on file and unexpired.
+ * EXTERNAL_CARRIER / LEASED_CARRIER — full document set required.
  */
 export const checkCarrierOnboarding = (
   input: CarrierOnboardingInput,
 ): CarrierOnboardingResult => {
-  if (input.carrierType === CARRIER_TYPES.COMPANY_ASSET) {
-    return { allowed: true, missingDocuments: [] };
-  }
-
-  if (input.carrierType === CARRIER_TYPES.OWNER_OPERATOR) {
-    return { allowed: false, missingDocuments: ['Owner-operator support coming soon'] };
-  }
-
-  // EXTERNAL_CARRIER — collect all missing documents
   const missingDocuments: string[] = [];
-
-  if (!input.dispatchAgreementOnFile) {
-    missingDocuments.push('Signed Dispatch Agreement');
-  }
 
   if (!input.insuranceCertOnFile) {
     missingDocuments.push('Certificate of Insurance');
@@ -46,8 +33,13 @@ export const checkCarrierOnboarding = (
     missingDocuments.push(`Insurance expired on ${expiryDateString}`);
   }
 
-  if (!input.w9OnFile) {
-    missingDocuments.push('W-9');
+  if (input.carrierType !== CARRIER_TYPES.COMPANY_ASSET) {
+    if (!input.dispatchAgreementOnFile) {
+      missingDocuments.push('Signed Dispatch Agreement');
+    }
+    if (!input.tinOnFile) {
+      missingDocuments.push('W-9');
+    }
   }
 
   return {

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/utils/logger';
@@ -5,9 +6,21 @@ import { REFRESH_TTL_SECONDS } from '../../constants';
 import type { CreateSessionResult } from '../../types/tokenProvider';
 import { generateAccessToken, hashToken, verifyToken } from './tokenHelpers';
 
+const computeContextHash = (ipAddress?: string, userAgent?: string): string | undefined => {
+  if (!ipAddress && !userAgent) {
+    return undefined;
+  }
+  return crypto
+    .createHash('sha256')
+    .update(`${ipAddress ?? ''}:${userAgent ?? ''}`)
+    .digest('hex');
+};
+
 interface RotateSessionInput {
   refreshToken: string;
   singleSession?: boolean;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export const rotateSessionRedis = async (
@@ -43,6 +56,17 @@ export const rotateSessionRedis = async (
   if (!isValid || session.isRevoked) {
     logger.error('Refresh token is invalid or session is revoked');
     return null;
+  }
+
+  if (session.contextHash && data.ipAddress) {
+    const currentHash = computeContextHash(data.ipAddress, data.userAgent);
+    if (currentHash && session.contextHash !== currentHash) {
+      logger.warn('Refresh token context mismatch — possible token theft', {
+        sessionId: session.sessionId,
+        userId: session.userId,
+      });
+      return null;
+    }
   }
 
   logger.info('Rotating session', { sessionId: session.sessionId });

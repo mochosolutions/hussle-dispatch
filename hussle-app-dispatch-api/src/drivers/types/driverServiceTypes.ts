@@ -1,4 +1,5 @@
 import type { ParsedQs } from 'qs';
+import type { LoadHistoryResult } from '@/shared/loadQueries';
 import type {
   CreateDriverInput,
   DriverListFilters,
@@ -39,10 +40,34 @@ export interface DeleteDriverServiceInput {
   role: string;
 }
 
+export interface GetDriverLoadHistoryServiceInput {
+  id: string;
+  organizationId: string;
+  role: string;
+  query: ParsedQs;
+}
+
+export interface GetDriverLocationServiceInput {
+  id: string;
+  organizationId: string;
+  role: string;
+}
+
+export interface DriverLocationResult {
+  driverId: string;
+  city: string | null;
+  state: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  updatedAt: Date;
+}
+
 export interface DriverService {
   createDriver(input: CreateDriverServiceInput): Promise<Driver>;
   listDrivers(input: ListDriversServiceInput): Promise<ListDriversResult>;
   getDriverById(input: GetDriverByIdServiceInput): Promise<Driver>;
   updateDriver(input: UpdateDriverServiceInput): Promise<Driver>;
   deleteDriver(input: DeleteDriverServiceInput): Promise<void>;
+  getLoadHistory(input: GetDriverLoadHistoryServiceInput): Promise<LoadHistoryResult>;
+  getDriverLocation(input: GetDriverLocationServiceInput): Promise<DriverLocationResult>;
 }

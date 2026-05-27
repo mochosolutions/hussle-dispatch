@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { PrismaTransaction } from '@/config/database';
+import { NotFoundError } from '@/shared/errors/commonErrors';
 import type {
   CarrierRepositoryPort,
   DriverQueryInput,
@@ -47,7 +48,7 @@ const buildCreateData = (
 });
 
 const buildUpdateData = (
-  input: Parameters<DriverRepositoryPort['update']>[1],
+  input: Parameters<DriverRepositoryPort['update']>[2],
 ): Prisma.DriverUncheckedUpdateInput => ({
   ...input,
   preferredLanes: toPreferredLanesJson(input.preferredLanes),
@@ -73,7 +74,13 @@ const buildListWhere = (
   if (filters.search !== undefined && filters.search.length > 0) {
     where.OR = [
       {
-        name: {
+        firstName: {
+          contains: filters.search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        lastName: {
           contains: filters.search,
           mode: 'insensitive',
         },
@@ -102,11 +109,34 @@ export const driverRepositoryPrisma = (
           deletedAt: null,
         },
       },
+      include: {
+        loads: {
+          where: {
+            deletedAt: null,
+            status: {
+              in: ['BOOKED', 'DISPATCHED', 'IN_TRANSIT', 'AT_PICKUP', 'AT_DELIVERY'],
+            },
+          },
+          include: {
+            stops: {
+              orderBy: { sequence: 'asc' as const },
+            },
+          },
+        },
+      },
     }),
 
   list: ({ organizationId, filters, skip, take, orderBy }: ListDriversRepositoryInput) =>
     prisma.driver.findMany({
       where: buildListWhere(organizationId, filters),
+      include: {
+        carrier: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       skip,
       take,
       orderBy,
@@ -117,22 +147,29 @@ export const driverRepositoryPrisma = (
       where: buildListWhere(organizationId, filters),
     }),
 
-  update: (id, input) =>
-    prisma.driver.update({
-      where: {
-        id,
-      },
+  update: async (id, organizationId, input) => {
+    const driver = await prisma.driver.findFirst({
+      where: { id, deletedAt: null, carrier: { managedByOrgId: organizationId, deletedAt: null } },
+    });
+    if (!driver) {
+      throw new NotFoundError(`Driver with id ${id} not found`);
+    }
+    return prisma.driver.update({
+      where: { id },
       data: buildUpdateData(input),
-    }),
+    });
+  },
 
-  softDelete: async (id, deletedAt) => {
+  softDelete: async (id, organizationId, deletedAt) => {
+    const driver = await prisma.driver.findFirst({
+      where: { id, deletedAt: null, carrier: { managedByOrgId: organizationId, deletedAt: null } },
+    });
+    if (!driver) {
+      throw new NotFoundError(`Driver with id ${id} not found`);
+    }
     await prisma.driver.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt,
-      },
+      where: { id },
+      data: { deletedAt },
     });
   },
 
@@ -157,7 +194,7 @@ export const driverRepositoryPrisma = (
         driverId,
         deletedAt: null,
         status: {
-          in: statuses,
+          in: [...statuses],
         },
       },
       select: {

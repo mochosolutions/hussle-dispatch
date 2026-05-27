@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 
 // header style
-const headerSX = {
+const defaultHeaderSX = {
   p: 2.5,
   '& .MuiCardHeader-action': { m: '0px auto', alignSelf: 'center' },
 };
@@ -36,6 +36,7 @@ export interface MainCardProps {
   title?: ReactNode | string;
   modal?: boolean;
   [key: string]: unknown;
+  headerSX?: CardHeaderProps['sx'];
 }
 
 /**
@@ -75,15 +76,16 @@ const MainCard = forwardRef(
       sx = {},
       title,
       modal = false,
+      headerSX = {},
       ...others
     }: MainCardProps,
-    ref: Ref<HTMLDivElement>
+    ref: Ref<HTMLDivElement>,
   ) => {
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
 
     // Default boxShadow to true in dark mode
-    const computedBoxShadow = isDarkMode ? boxShadow ?? true : boxShadow;
+    const computedBoxShadow = isDarkMode ? (boxShadow ?? true) : boxShadow;
 
     // Get custom shadow or fallback
     const customShadow = shadow || (theme.customShadows?.z1 ?? theme.shadows[1]);
@@ -102,8 +104,7 @@ const MainCard = forwardRef(
           border: border ? '1px solid' : 'none',
           borderRadius: 1,
           borderColor: isDarkMode ? theme.palette.divider : theme.palette.grey[300],
-          boxShadow:
-            computedBoxShadow && (!border || isDarkMode) ? customShadow : 'inherit',
+          boxShadow: computedBoxShadow && (!border || isDarkMode) ? customShadow : 'inherit',
           ':hover': {
             boxShadow: computedBoxShadow ? customShadow : 'inherit',
           },
@@ -125,7 +126,10 @@ const MainCard = forwardRef(
         {/* card header and action */}
         {!darkTitle && title && (
           <CardHeader
-            sx={headerSX}
+            sx={{
+              ...defaultHeaderSX,
+              ...headerSX,
+            }}
             titleTypographyProps={{ variant: 'subtitle1' }}
             title={title}
             action={secondary}
@@ -134,7 +138,10 @@ const MainCard = forwardRef(
         )}
         {darkTitle && title && (
           <CardHeader
-            sx={headerSX}
+            sx={{
+              ...defaultHeaderSX,
+              ...headerSX,
+            }}
             title={<Typography variant="h4">{title}</Typography>}
             action={secondary}
           />
@@ -148,7 +155,7 @@ const MainCard = forwardRef(
         {!content && children}
       </Card>
     );
-  }
+  },
 );
 
 MainCard.displayName = 'MainCard';

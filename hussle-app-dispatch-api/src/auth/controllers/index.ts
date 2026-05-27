@@ -15,6 +15,7 @@ import { createAcceptInviteController } from './invite/acceptInviteController';
 import { createGetInvitesController } from './invite/getInvitesController';
 import { createInviteUserController } from './invite/inviteUserController';
 import { createVerifyInviteController } from './invite/verifyInviteController';
+import { createVerifyInviteByTokenController } from './invite/verifyInviteByTokenController';
 import { createOrgMembershipController } from './membership/createMembershipController';
 import { deleteMembershipController } from './membership/deleteMembershipController';
 import { getMembershipController } from './membership/getMembershipsController';
@@ -24,6 +25,12 @@ import { deleteOrganizationController } from './orgs/deleteOrgController';
 import { getOrganizationsController } from './orgs/getAllOrgsController';
 import { getOrganizationsByIdController } from './orgs/getOrgByIdController';
 import { updateOrganizationController } from './orgs/updateOrgController';
+import {
+  createListMembersController,
+  createChangeMemberRoleController,
+  createRemoveMemberController,
+} from './membership/memberManagementController';
+import { createSubscriptionUsageController } from './subscription/subscriptionUsageController';
 import { getClientId } from '@/shared/utils/cognito';
 import { cognitoIdentityClient } from '@/shared/utils/cognito';
 import { cognitoProvider } from '../providers/authProvider';
@@ -36,7 +43,11 @@ import type {
 import type { CreateOrganizationInput, Organization } from '../types/organizationTypes';
 import type { SignupOrgInput, SignupOrgResult } from '../types/signupOrgTypes';
 import type { Invite } from '../types/invite';
-import type { CreateAuditLogInput } from '../../audit/types/auditTypes';
+import type { EventBus } from '@/shared/messaging/eventBus';
+import type { Logger } from '@/shared/utils/logger';
+import type { CreateAuditLogInput } from '../types/auditLogPort';
+import type { SubscriptionUsage } from '../services/subscription/subscriptionUsageService';
+import type { MemberManagementService } from '../services/membership/memberManagementService';
 
 interface OrgControllerRepoDeps {
   createOrganization: (data: CreateOrganizationInput) => Promise<Organization>;
@@ -82,6 +93,7 @@ interface AuthControllerFactoryDeps {
       filter: Record<string, unknown>,
     ) => Promise<MembershipWithUser[] | null>;
     findMembershipsByUserId: (userId: string) => Promise<Membership[] | null>;
+    countActive: (organizationId: string) => Promise<number>;
   };
   inviteRepo: {
     findAllInvites: (organizationId: string) => Promise<Invite[]>;
@@ -89,14 +101,7 @@ interface AuthControllerFactoryDeps {
       organizationId: string,
       filter: Record<string, unknown>,
     ) => Promise<Invite[] | null>;
-    create: (data: {
-      email: string;
-      role: string;
-      organizationId: string;
-      token: string;
-      status: string;
-      expiresAt: Date;
-    }) => Promise<{ email: string }>;
+    create: (data: Record<string, unknown>) => Promise<Invite>;
     findOneByFilter: (
       organizationId: string,
       filter: Record<string, unknown>,
@@ -106,6 +111,7 @@ interface AuthControllerFactoryDeps {
       id: string,
       data: Partial<Invite>,
     ) => Promise<Invite | null>;
+    countPending: (organizationId: string) => Promise<number>;
   };
   userRepo: {
     findUserByEmail: (email: string) => Promise<import('../types/user').User | null>;
@@ -120,6 +126,14 @@ interface AuthControllerFactoryDeps {
   };
   signupOrganization: (data: SignupOrgInput) => Promise<SignupOrgResult>;
   allowedRoles: string[];
+  eventBus: EventBus;
+  logger: Logger;
+  config: { defaultOrgRole: string };
+  subscriptionUsageService: {
+    getUsage: (input: { organizationId: string }) => Promise<SubscriptionUsage>;
+  };
+  memberManagementService: MemberManagementService;
+  revokeCarrierInviteTokensForOrg: (organizationId: string) => Promise<void>;
 }
 
 export interface AuthControllers {
@@ -145,8 +159,13 @@ export interface AuthControllers {
   deleteOrganizationController: RequestHandler;
   inviteUserController: RequestHandler;
   verifyInviteController: RequestHandler;
+  verifyInviteByTokenController: RequestHandler;
   acceptInviteController: RequestHandler;
   getInvitesController: RequestHandler;
+  getSubscriptionUsageController: RequestHandler;
+  listMembersController: RequestHandler;
+  changeMemberRoleController: RequestHandler;
+  removeMemberController: RequestHandler;
 }
 
 export const createAuthControllers = ({
@@ -162,6 +181,12 @@ export const createAuthControllers = ({
   transactionManager,
   signupOrganization,
   allowedRoles,
+  eventBus,
+  logger,
+  config,
+  subscriptionUsageService,
+  memberManagementService,
+  revokeCarrierInviteTokensForOrg,
 }: AuthControllerFactoryDeps): AuthControllers => {
   const getAuthProvider = async () => {
     const { clientId, userPoolId } = await getClientId();
@@ -170,9 +195,11 @@ export const createAuthControllers = ({
 
   return {
     signupOrgController: createSignupOrgController({
-      auditLogRepo,
       tokenProviderInstance: signupTokenProviderInstance,
       signupOrganization,
+      eventBus,
+      logger,
+      config,
     }),
     loginController: createLoginController({
       membershipRepo,
@@ -181,14 +208,14 @@ export const createAuthControllers = ({
       auditLogRepo,
       getAuthProvider,
     }),
-    logoutController: createLogoutController({ tokenProviderInstance }),
+    logoutController: createLogoutController({ tokenProviderInstance, auditLogRepo }),
     getCurrentUserController: createGetCurrentUserController({ userRepo }),
     refreshTokenController: createRefreshTokenController({ tokenProviderInstance: refreshTokenProviderInstance }),
     confirmForgotPasswordController: createConfirmForgotPasswordController({ getAuthProvider }),
     forgotPasswordController: createForgotPasswordController({ getAuthProvider }),
     passwordChallengeController: createPasswordChallengeController({ getAuthProvider }),
     confirmUserSignUpController: createConfirmUserSignUpController({ getAuthProvider }),
-    switchOrgController: createSwitchOrgController({ userRepo, tokenProviderInstance }),
+    switchOrgController: createSwitchOrgController({ userRepo, tokenProviderInstance, auditLogRepo }),
     resendConfirmationCodeController: createResendConfirmationCodeController({ getAuthProvider }),
     createOrganizationController: createOrganizationController({ orgRepo }),
     getOrganizationsController: getOrganizationsController({ orgRepo }),
@@ -198,12 +225,14 @@ export const createAuthControllers = ({
     getMembershipController: getMembershipController({ membershipRepo }),
     deleteMembershipController: deleteMembershipController({ membershipRepo }),
     updateMembershipController: updateMembershipController({ membershipRepo }),
-    deleteOrganizationController: deleteOrganizationController({ orgRepo }),
+    deleteOrganizationController: deleteOrganizationController({ orgRepo, revokeCarrierInviteTokensForOrg }),
     inviteUserController: createInviteUserController({
       inviteRepo,
       membershipRepo,
       userRepo,
       orgRepo,
+      eventBus,
+      logger,
       allowedRoles,
     }),
     verifyInviteController: createVerifyInviteController({
@@ -211,11 +240,23 @@ export const createAuthControllers = ({
       orgRepo,
       userRepo,
     }),
+    verifyInviteByTokenController: createVerifyInviteByTokenController({
+      inviteRepo: {
+        findByToken: (token: string) => inviteRepo.findOneByFilter('', { token }),
+      },
+      orgRepo,
+    }),
     acceptInviteController: createAcceptInviteController({
       transactionManager,
       getAuthProvider,
       tokenProviderInstance,
     }),
     getInvitesController: createGetInvitesController({ inviteRepo }),
+    getSubscriptionUsageController: createSubscriptionUsageController({
+      getUsage: subscriptionUsageService.getUsage,
+    }),
+    listMembersController: createListMembersController({ memberManagementService }),
+    changeMemberRoleController: createChangeMemberRoleController({ memberManagementService, auditLogRepo }),
+    removeMemberController: createRemoveMemberController({ memberManagementService }),
   };
 };

@@ -3,16 +3,19 @@ import { appAuth } from '@/shared/middleware/authenticateUser';
 import { authRateLimiter } from '@/shared/middleware/rateLimiter';
 import { validateRequest } from '@/shared/middleware/validateRequest';
 import type { AuthControllers } from '../controllers';
+import type { AuthModuleValidators } from '../compositionRoot';
 import { confirmForgotPasswordObjValidator } from '../validators/confirmForgotPasswordValidator';
 import { confirmUserObjValidator } from '../validators/confirmUserValidator';
 import { forgotPasswordObjValidator } from '../validators/forgotPasswordValidator';
 import { passwordChallengeObjValidator } from '../validators/passwordChallengeValidator';
 import { resendConfirmationCodeObjValidator } from '../validators/resendConfirmationCodeValidator';
 import { signinObjValidator } from '../validators/signinValidator';
-import { signupRequestObjValidator } from '../validators/signupOrgValidator';
 import { switchOrgValidator } from '../validators/switchOrgValidator';
 
-export const createUserAuthRouter = (controllers: AuthControllers): express.Router => {
+export const createUserAuthRouter = (
+  controllers: AuthControllers,
+  validators: AuthModuleValidators,
+): express.Router => {
   const router = express.Router();
 
   router.get('/auth/me', appAuth, controllers.getCurrentUserController);
@@ -26,7 +29,7 @@ export const createUserAuthRouter = (controllers: AuthControllers): express.Rout
   router.post(
     '/auth/signup',
     authRateLimiter,
-    validateRequest(signupRequestObjValidator),
+    validateRequest(validators.signupRequestObjValidator),
     controllers.signupOrgController,
   );
   router.post(

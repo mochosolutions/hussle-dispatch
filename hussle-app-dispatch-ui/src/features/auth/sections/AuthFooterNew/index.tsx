@@ -22,8 +22,7 @@ const AuthFooter = () => {
           <Typography
             component={Link}
             variant="subtitle2"
-            href="#"
-            target="_blank"
+            href="/privacy"
             underline="hover"
           >
             Privacy Policy
@@ -39,8 +38,7 @@ const AuthFooter = () => {
             variant="subtitle2"
             color="secondary"
             component={Link}
-            href="#"
-            target="_blank"
+            href="/terms"
             underline="hover"
           >
             Terms and Conditions
@@ -49,8 +47,7 @@ const AuthFooter = () => {
             variant="subtitle2"
             color="secondary"
             component={Link}
-            href="#"
-            target="_blank"
+            href="/privacy"
             underline="hover"
           >
             Privacy Policy
@@ -59,8 +56,7 @@ const AuthFooter = () => {
             variant="subtitle2"
             color="secondary"
             component={Link}
-            href="#"
-            target="_blank"
+            href="/privacy"
             underline="hover"
           >
             CA Privacy Notice

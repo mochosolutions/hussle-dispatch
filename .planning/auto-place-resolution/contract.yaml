@@ -1,0 +1,1207 @@
+openapi: 3.0.3
+info:
+  title: Auto-Place Resolution — API Contract
+  version: 1.0.0
+  description: |
+    Contract for the Phase 1 auto-place-resolution feature. Covers only the
+    additive surface introduced by the feature — endpoints that exist today
+    but whose request/response shapes are unchanged are NOT redefined here.
+
+    Scope:
+      - `warnings[]` envelope on load + stop write responses
+      - `Stop.resolutionStatus` field on every Stop response
+      - `Place.unit` and `Place.source` fields on Place create/read/update/list
+      - Optional `source` filter on `GET /places`
+      - Optional `biasLat`/`biasLng` on `GET /places/address-search`
+      - `headquartersLatitude` / `headquartersLongitude` on `GET`/`PUT /settings`
+
+    Phase 0 (AWS Location v2 SDK migration) is internal-only and intentionally
+    has no contract surface.
+
+servers:
+  - url: /api/v1
+    description: Versioned API base path
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: loads
+  - name: stops
+  - name: places
+  - name: settings
+
+paths:
+  /loads:
+    post:
+      tags: [loads]
+      summary: Create a load
+      description: |
+        Creates a load. Each stop is run through `resolveStopToPlace` server-side.
+        The response includes a `warnings[]` array describing any stops that
+        could not be confidently resolved to a Place.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLoadRequest'
+      responses:
+        '201':
+          description: Load created. May include warnings for unresolved stops.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadCreateResponse'
+        '400':
+          description: Invalid request body (validator failure, malformed input)
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN or DISPATCHER role
+        '404':
+          description: Referenced placeId, customerId, or contactId not found
+
+  /loads/{id}:
+    parameters:
+      - $ref: '#/components/parameters/LoadIdParam'
+    get:
+      tags: [loads]
+      summary: Get load by id
+      description: Returns a load with all stops. Each Stop includes `resolutionStatus`.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Load found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadResponse'
+        '401':
+          description: Not authenticated
+        '404':
+          description: Load not found in the requesting user's organization
+    patch:
+      tags: [loads]
+      summary: Update a load
+      description: |
+        Updates a load. Stops touched by the update are re-run through
+        `resolveStopToPlace`. Response includes `warnings[]`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLoadRequest'
+      responses:
+        '200':
+          description: Load updated. May include warnings for unresolved stops.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadUpdateResponse'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN or DISPATCHER role
+        '404':
+          description: Load not found in the requesting user's organization
+
+  /loads/{loadId}/stops:
+    parameters:
+      - $ref: '#/components/parameters/LoadIdPathParam'
+    post:
+      tags: [stops]
+      summary: Add a stop to an existing load
+      description: |
+        Creates a new stop on the given load. The stop is run through
+        `resolveStopToPlace`. Response includes `warnings[]` for symmetry with
+        the load create/update responses.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStopRequest'
+      responses:
+        '201':
+          description: Stop created. May include warnings if resolution failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StopWriteResponse'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN or DISPATCHER role
+        '404':
+          description: Load not found in the requesting user's organization
+
+  /loads/{loadId}/stops/{stopId}:
+    parameters:
+      - $ref: '#/components/parameters/LoadIdPathParam'
+      - $ref: '#/components/parameters/StopIdPathParam'
+    patch:
+      tags: [stops]
+      summary: Update a stop
+      description: |
+        Updates a stop. The stop is re-run through `resolveStopToPlace`.
+        Response includes `warnings[]` for symmetry with the load responses.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStopRequest'
+      responses:
+        '200':
+          description: Stop updated. May include warnings if resolution failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StopWriteResponse'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN or DISPATCHER role
+        '404':
+          description: Load or stop not found in the requesting user's organization
+
+  /places:
+    get:
+      tags: [places]
+      summary: List places
+      description: |
+        Lists places scoped to the requesting user's organization. Items now
+        include `unit` and `source`. A new optional `source` query param filters
+        by user-saved vs auto-generated places (admin-curation use case).
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: source
+          description: Filter by Place source. Omit to return both.
+          schema:
+            $ref: '#/components/schemas/PlaceSource'
+        - in: query
+          name: search
+          description: Free-text filter (existing behavior)
+          schema:
+            type: string
+            maxLength: 255
+      responses:
+        '200':
+          description: Place list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceListResponse'
+        '401':
+          description: Not authenticated
+    post:
+      tags: [places]
+      summary: Create a place (manual admin create)
+      description: |
+        Creates a place manually through the admin UI. Server forces
+        `source = 'USER'` regardless of any client-provided value — auto-creation
+        is the only path that yields `source = 'AUTO'`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlaceRequest'
+      responses:
+        '201':
+          description: Place created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN or DISPATCHER role
+        '409':
+          description: A place with the same canonical dedupe key already exists in this org
+
+  /places/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PlaceIdParam'
+    get:
+      tags: [places]
+      summary: Get place by id
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Place found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '401':
+          description: Not authenticated
+        '404':
+          description: Place not found in the requesting user's organization
+    patch:
+      tags: [places]
+      summary: Update a place
+      description: |
+        Updates a place. Any successful update against a place where
+        `source = 'AUTO'` flips the row's `source` to `'USER'` unconditionally —
+        the flip is observed (a human touched the row), not field-compared. This
+        applies only to user-initiated updates through this endpoint;
+        server-internal writes via `resolveStopToPlace` (soft-fill, dedupe-link)
+        do NOT flip the source.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlaceRequest'
+      responses:
+        '200':
+          description: Place updated. `source` may have flipped from AUTO→USER.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN or DISPATCHER role
+        '404':
+          description: Place not found in the requesting user's organization
+
+  /places/address-search:
+    get:
+      tags: [places]
+      summary: Typeahead address search
+      description: |
+        Returns a merged list of saved Places and external (AWS-geocoded)
+        suggestions. New optional `biasLat`/`biasLng` query params let callers
+        override the ranking bias. When omitted, the service reads
+        `Organization.headquartersLatitude/Longitude`; if those are also null,
+        falls back to US center `[-98.5, 39.5]`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 255
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+            default: 10
+        - in: query
+          name: biasLat
+          description: Bias latitude. Must be paired with `biasLng`.
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - in: query
+          name: biasLng
+          description: Bias longitude. Must be paired with `biasLat`.
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+      responses:
+        '200':
+          description: Search results (saved + external)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressSearchResponse'
+        '400':
+          description: Only one of `biasLat`/`biasLng` provided (must be paired)
+        '401':
+          description: Not authenticated
+        '429':
+          description: Rate-limited (geocodingRateLimiter)
+
+  /settings:
+    get:
+      tags: [settings]
+      summary: Get organization settings
+      description: |
+        Returns settings for the requesting user's organization. Response now
+        includes `headquartersLatitude` and `headquartersLongitude` — these
+        columns physically live on `Organization` but are surfaced through this
+        endpoint to keep a single settings page in the UI.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '401':
+          description: Not authenticated
+    put:
+      tags: [settings]
+      summary: Update organization settings
+      description: |
+        Upserts settings. Now accepts `headquartersLatitude` /
+        `headquartersLongitude`; either both must be set or both must be null.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSettingsRequest'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '400':
+          description: Invalid body, or HQ lat/lng provided in mismatched pair
+        '401':
+          description: Not authenticated
+        '403':
+          description: Authenticated user does not have ADMIN role
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    LoadIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LoadIdPathParam:
+      in: path
+      name: loadId
+      required: true
+      schema:
+        type: string
+        format: uuid
+    StopIdPathParam:
+      in: path
+      name: stopId
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlaceIdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # ---------------------------------------------------------------- Enums
+    PlaceSource:
+      type: string
+      description: |
+        Indicates whether this Place was manually created by a user or
+        auto-created by the geocoding pipeline. User-initiated updates against
+        an `AUTO` row flip it to `USER` unconditionally.
+      enum: [USER, AUTO]
+      x-display-names:
+        USER: User-saved
+        AUTO: Auto-generated
+
+    StopResolutionStatus:
+      type: string
+      description: |
+        Resolution outcome for the stop's address.
+          - RESOLVED: stop is linked to a Place with valid coordinates
+          - UNRESOLVED: stop has no Place (partial address, geocoder error,
+            or rejected result type)
+          - AMBIGUOUS: AWS returned a result but match score < 0.7
+      enum: [RESOLVED, UNRESOLVED, AMBIGUOUS]
+      x-display-names:
+        RESOLVED: Resolved
+        UNRESOLVED: Unresolved
+        AMBIGUOUS: Ambiguous
+
+    WarningCode:
+      type: string
+      description: |
+        Reason code for a per-stop warning attached to a load/stop write
+        response. Frontend maps these to user-facing copy.
+      enum:
+        - STOP_NOT_GEOCODED
+        - STOP_AMBIGUOUS_ADDRESS
+        - STOP_PARTIAL_ADDRESS
+        - GEOCODER_UNAVAILABLE
+      x-display-names:
+        STOP_NOT_GEOCODED: Stop could not be geocoded
+        STOP_AMBIGUOUS_ADDRESS: Address is ambiguous
+        STOP_PARTIAL_ADDRESS: Address is incomplete
+        GEOCODER_UNAVAILABLE: Geocoder is unavailable
+
+    AddressSearchResultSource:
+      type: string
+      enum: [SAVED, EXTERNAL]
+      x-display-names:
+        SAVED: Saved Place
+        EXTERNAL: AWS suggestion
+
+    # ------------------------------------------------------------- Envelopes
+    Warning:
+      type: object
+      required: [code, stopSequence, message]
+      properties:
+        code:
+          $ref: '#/components/schemas/WarningCode'
+        stopSequence:
+          type: integer
+          minimum: 0
+          description: Zero-based index of the stop the warning refers to.
+        message:
+          type: string
+          description: Human-readable explanation suitable for inline UI display.
+          maxLength: 500
+
+    PaginationMeta:
+      type: object
+      required: [page, limit, total]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+
+    # ------------------------------------------------------------ Load shapes
+    Load:
+      type: object
+      description: |
+        Subset of fields touched by this contract. The full Load shape is
+        defined elsewhere; only `stops` is reshaped here (each Stop gains
+        `resolutionStatus`).
+      required: [id, organizationId, stops]
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        stops:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stop'
+
+    Stop:
+      type: object
+      required:
+        - id
+        - loadId
+        - sequence
+        - resolutionStatus
+      properties:
+        id:
+          type: string
+          format: uuid
+        loadId:
+          type: string
+          format: uuid
+        sequence:
+          type: integer
+          minimum: 0
+        placeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set by `resolveStopToPlace` server-side; null when unresolved.
+        facilityName:
+          type: string
+          nullable: true
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        city:
+          type: string
+          nullable: true
+          maxLength: 120
+        state:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          maxLength: 10
+        resolutionStatus:
+          $ref: '#/components/schemas/StopResolutionStatus'
+
+    CreateLoadRequest:
+      type: object
+      description: |
+        Only the fields touched by this contract are listed. Existing required
+        fields (customerId, etc.) and validators continue to apply.
+      required: [stops]
+      properties:
+        stops:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreateStopRequest'
+
+    UpdateLoadRequest:
+      type: object
+      description: |
+        Only the fields touched by this contract are listed. `stops` is
+        optional — when present, every stop is re-run through
+        `resolveStopToPlace`.
+      properties:
+        stops:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpdateStopRequest'
+
+    CreateStopRequest:
+      type: object
+      required: [type, sequence, appointmentStart]
+      description: |
+        Subset of fields relevant to address resolution. Existing fields
+        (commodity, weight, etc.) continue to apply.
+      properties:
+        type:
+          type: string
+          enum: [PICKUP, DELIVERY]
+        sequence:
+          type: integer
+          minimum: 0
+        placeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Explicit placeId from a saved typeahead pick. Takes precedence over
+            auto-resolution when present.
+        facilityName:
+          type: string
+          nullable: true
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        city:
+          type: string
+          nullable: true
+          maxLength: 120
+        state:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{5}(-[0-9]{4})?$'
+        appointmentStart:
+          type: string
+          format: date-time
+        appointmentEnd:
+          type: string
+          format: date-time
+          nullable: true
+        contactName:
+          type: string
+          nullable: true
+          maxLength: 120
+        contactPhone:
+          type: string
+          nullable: true
+          maxLength: 30
+        notes:
+          type: string
+          nullable: true
+          maxLength: 2000
+
+    UpdateStopRequest:
+      type: object
+      description: |
+        All fields optional. `id` required when updating an existing stop on
+        a load update; omitted when creating a new stop in the same call.
+      properties:
+        id:
+          type: string
+          format: uuid
+        placeId:
+          type: string
+          format: uuid
+          nullable: true
+        facilityName:
+          type: string
+          nullable: true
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        city:
+          type: string
+          nullable: true
+          maxLength: 120
+        state:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{5}(-[0-9]{4})?$'
+        appointmentStart:
+          type: string
+          format: date-time
+        appointmentEnd:
+          type: string
+          format: date-time
+          nullable: true
+        contactName:
+          type: string
+          nullable: true
+          maxLength: 120
+        contactPhone:
+          type: string
+          nullable: true
+          maxLength: 30
+        notes:
+          type: string
+          nullable: true
+          maxLength: 2000
+
+    LoadCreateResponse:
+      type: object
+      required: [data, warnings]
+      properties:
+        data:
+          $ref: '#/components/schemas/Load'
+        warnings:
+          type: array
+          description: One entry per stop that failed to resolve. Empty array on full success.
+          items:
+            $ref: '#/components/schemas/Warning'
+
+    LoadUpdateResponse:
+      type: object
+      required: [data, warnings]
+      properties:
+        data:
+          $ref: '#/components/schemas/Load'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+
+    LoadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Load'
+
+    StopWriteResponse:
+      type: object
+      required: [data, warnings]
+      properties:
+        data:
+          $ref: '#/components/schemas/Stop'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+
+    # ----------------------------------------------------------- Place shapes
+    Place:
+      type: object
+      description: |
+        Subset of Place fields touched by this contract. Existing fields
+        (facilityType, facilityHours, contact*, etc.) continue to be returned
+        unchanged.
+      required:
+        - id
+        - organizationId
+        - name
+        - city
+        - state
+        - source
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        address2:
+          type: string
+          nullable: true
+          maxLength: 120
+        city:
+          type: string
+          maxLength: 120
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{5}$'
+          description: Always normalized to ZIP5 server-side.
+        unit:
+          type: string
+          nullable: true
+          maxLength: 60
+          description: |
+            Suite/apartment/room identifier from AWS `SecondaryAddressComponents`.
+            Stored lowercase-normalized. Part of the canonical Place dedupe key.
+        source:
+          $ref: '#/components/schemas/PlaceSource'
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePlaceRequest:
+      type: object
+      required: [name, city, state]
+      description: |
+        Manual admin-only create. Server forces `source = 'USER'` regardless of
+        any client-provided value.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        address2:
+          type: string
+          nullable: true
+          maxLength: 120
+        city:
+          type: string
+          minLength: 1
+          maxLength: 120
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{5}(-[0-9]{4})?$'
+        unit:
+          type: string
+          nullable: true
+          maxLength: 60
+        latitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -180
+          maximum: 180
+
+    UpdatePlaceRequest:
+      type: object
+      description: |
+        All fields optional. The mere act of submitting this request flips
+        `source` from AUTO → USER if the row was AUTO; this is observed, not
+        field-compared.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+        address2:
+          type: string
+          nullable: true
+          maxLength: 120
+        city:
+          type: string
+          minLength: 1
+          maxLength: 120
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{5}(-[0-9]{4})?$'
+        unit:
+          type: string
+          nullable: true
+          maxLength: 60
+        latitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -180
+          maximum: 180
+
+    PlaceListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Place'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    AddressSearchResult:
+      type: object
+      required:
+        - source
+        - id
+        - name
+        - city
+        - state
+      description: |
+        One typeahead result. `name` is `suggestion.name ?? suggestion.address`
+        — POI/business name when AWS recognizes one, falling back to the street
+        address. Never the bloated full label that v1 emitted.
+      properties:
+        source:
+          $ref: '#/components/schemas/AddressSearchResultSource'
+        id:
+          type: string
+          description: Place id for SAVED, AWS PlaceId for EXTERNAL.
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 120
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+        zip:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{5}$'
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+
+    AddressSearchResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddressSearchResult'
+
+    # --------------------------------------------------------- Settings shape
+    SettingsResponse:
+      type: object
+      description: |
+        Subset of OrgSettings touched by this contract. Existing fields
+        (defaultTonuFee, sms*, etc.) continue to be returned unchanged.
+      required:
+        - id
+        - organizationId
+        - headquartersLatitude
+        - headquartersLongitude
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        headquartersLatitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -90
+          maximum: 90
+          description: |
+            Used as `BiasPosition` for the address-search typeahead when no
+            explicit `biasLat`/`biasLng` query params are supplied. Stored on
+            the `Organization` row; surfaced here for UI convenience.
+        headquartersLongitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -180
+          maximum: 180
+
+    UpdateSettingsRequest:
+      type: object
+      description: |
+        Only the fields touched by this contract are listed. Either both HQ
+        coords are non-null or both are null — the validator rejects mismatched
+        pairs.
+      properties:
+        headquartersLatitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -90
+          maximum: 90
+        headquartersLongitude:
+          type: number
+          format: double
+          nullable: true
+          minimum: -180
+          maximum: 180
+
+# -----------------------------------------------------------------------------
+# Auth & role matrix
+# -----------------------------------------------------------------------------
+x-auth-matrix:
+  - endpoint: 'POST /api/v1/loads'
+    roles: [ADMIN, DISPATCHER]
+    scoping: 'organizationId from JWT claims; load is created under that org'
+  - endpoint: 'GET /api/v1/loads/{id}'
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
+    scoping: 'organizationId from JWT claims; row must match'
+  - endpoint: 'PATCH /api/v1/loads/{id}'
+    roles: [ADMIN, DISPATCHER]
+    scoping: 'organizationId from JWT claims; row must match'
+  - endpoint: 'POST /api/v1/loads/{loadId}/stops'
+    roles: [ADMIN, DISPATCHER]
+    scoping: 'organizationId from JWT claims; loadId must belong to that org'
+  - endpoint: 'PATCH /api/v1/loads/{loadId}/stops/{stopId}'
+    roles: [ADMIN, DISPATCHER]
+    scoping: 'organizationId from JWT claims; loadId + stopId must belong to that org'
+  - endpoint: 'GET /api/v1/places'
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
+    scoping: 'organizationId from JWT claims'
+  - endpoint: 'GET /api/v1/places/{id}'
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
+    scoping: 'organizationId from JWT claims; row must match'
+  - endpoint: 'POST /api/v1/places'
+    roles: [ADMIN, DISPATCHER]
+    scoping: 'organizationId from JWT claims; place created under that org with source=USER'
+  - endpoint: 'PATCH /api/v1/places/{id}'
+    roles: [ADMIN, DISPATCHER]
+    scoping: 'organizationId from JWT claims; row must match. Triggers AUTO→USER source flip.'
+  - endpoint: 'GET /api/v1/places/address-search'
+    roles: [ADMIN, DISPATCHER, DRIVER, VIEWER]
+    scoping: 'organizationId from JWT claims; saved-result group filtered by org'
+  - endpoint: 'GET /api/v1/settings'
+    roles: [ADMIN, DISPATCHER, VIEWER]
+    scoping: 'organizationId from JWT claims'
+  - endpoint: 'PUT /api/v1/settings'
+    roles: [ADMIN]
+    scoping: 'organizationId from JWT claims'
+
+# -----------------------------------------------------------------------------
+# Data flow maps for the major user actions in the plan
+# -----------------------------------------------------------------------------
+x-data-flow:
+  'Create load with mixed saved + free-text stops (Flow A)':
+    trigger: Dispatcher submits Create Load form
+    steps:
+      - 'Frontend: POST /api/v1/loads with stops[] (one has placeId, one has address only)'
+      - 'Backend (createLoad service): for each stop calls resolveStopToPlace(stop, organizationId)'
+      - 'Backend (resolveStopToPlace): explicit placeId → bypass; free-text → tier-1 dedupe lookup'
+      - 'Backend: tier-1 miss → GeocodingProviderPort.geocode(structured) (AWS v2 GeocodeCommand)'
+      - 'Backend: tier-2 dedupe lookup using AWS-canonical fields → miss → INSERT ... ON CONFLICT DO NOTHING'
+      - 'Backend: stop saved with placeId + resolutionStatus=RESOLVED'
+      - 'Backend: returns 201 { data: load, warnings: [] }'
+      - 'Frontend: navigates to load detail; map renders both pins'
+    services: [dispatch-ui, dispatch-api]
+    endpoints: ['POST /api/v1/loads']
+
+  'Create load with ambiguous address (Flow B)':
+    trigger: Dispatcher submits a typo'd address
+    steps:
+      - 'Frontend: POST /api/v1/loads with free-text stop'
+      - 'Backend: resolveStopToPlace tier-1 miss → AWS Geocode returns matchScore < 0.7'
+      - 'Backend: rejects, stop saves with placeId=NULL and resolutionStatus=AMBIGUOUS'
+      - 'Backend: returns 201 { data, warnings: [{ code: STOP_AMBIGUOUS_ADDRESS, stopSequence, message }] }'
+      - 'Frontend: shows warning toast/banner; dispatcher edits stop'
+      - 'Frontend: PATCH /api/v1/loads/{id}/stops/{stopId} → resolution succeeds → status flips to RESOLVED'
+    services: [dispatch-ui, dispatch-api]
+    endpoints:
+      - 'POST /api/v1/loads'
+      - 'PATCH /api/v1/loads/{loadId}/stops/{stopId}'
+
+  'Geocoder unavailable (Flow C)':
+    trigger: AWS Location Service is down at submit time
+    steps:
+      - 'Frontend: POST /api/v1/loads'
+      - 'Backend: resolveStopToPlace catches SDK throw, logs, returns null result'
+      - 'Backend: each affected stop saved with placeId=NULL and resolutionStatus=UNRESOLVED'
+      - 'Backend: returns 201 { data, warnings: [GEOCODER_UNAVAILABLE per stop] }'
+      - 'Frontend: load is usable; map pins absent until dispatcher re-edits stops post-recovery'
+    services: [dispatch-ui, dispatch-api]
+    endpoints: ['POST /api/v1/loads']
+
+  'Soft-fill enrichment on Place match (Flow D)':
+    trigger: Second stop at the same address is created with additional contact fields
+    steps:
+      - 'Frontend: POST /api/v1/loads (or PATCH stop) with contactName/contactPhone/notes'
+      - 'Backend: resolveStopToPlace tier-1 dedupe matches existing Place P'
+      - 'Backend: writes Stop fields into Place P only where Place fields are null'
+      - 'Backend: source NOT flipped (server-internal write)'
+      - 'Backend: stop saves with placeId=P.id and resolutionStatus=RESOLVED'
+    services: [dispatch-api]
+    endpoints:
+      - 'POST /api/v1/loads'
+      - 'POST /api/v1/loads/{loadId}/stops'
+      - 'PATCH /api/v1/loads/{loadId}/stops/{stopId}'
+
+  'Typeahead with HQ bias (Flow E)':
+    trigger: Dispatcher types a single-word query in the address typeahead
+    steps:
+      - 'Frontend: GET /api/v1/places/address-search?query=walmart (no biasLat/biasLng)'
+      - 'Backend: addressSearchService reads Organization.headquartersLat/Lng for the requesting org'
+      - 'Backend: passes BiasPosition to AWS v2 SearchTextCommand (or US center fallback if null)'
+      - 'Backend: returns merged saved + external results, ranked by proximity to bias'
+      - 'Frontend: dropdown shows nearby Walmarts first'
+    services: [dispatch-ui, dispatch-api]
+    endpoints: ['GET /api/v1/places/address-search']
+
+  'Concurrent novel-address creates (Flow F)':
+    trigger: Two dispatchers create loads with the same novel pickup address simultaneously
+    steps:
+      - 'Both: POST /api/v1/loads → both miss tier-1, both call AWS Geocode'
+      - 'Both: tier-2 miss → both attempt INSERT ... ON CONFLICT DO NOTHING'
+      - 'One INSERT wins, one returns 0 rows'
+      - 'Loser re-reads by canonical dedupe key, links to winner row'
+      - 'Both loads return 201 with resolutionStatus=RESOLVED, single Place row exists'
+    services: [dispatch-api]
+    endpoints: ['POST /api/v1/loads']
+
+  'Update place — AUTO → USER source flip':
+    trigger: Admin edits an auto-generated Place in the Places admin UI
+    steps:
+      - 'Frontend: PATCH /api/v1/places/{id} with field changes'
+      - 'Backend: updatePlace service detects source=AUTO + user-initiated context → flips to USER'
+      - 'Backend: writes update + source flip in one transaction'
+      - 'Backend: returns 200 { ...place, source: USER }'
+    services: [dispatch-ui, dispatch-api]
+    endpoints: ['PATCH /api/v1/places/{id}']
+
+  'Set HQ bias coords':
+    trigger: Admin sets organization headquarters on the settings page
+    steps:
+      - 'Frontend: PUT /api/v1/settings { headquartersLatitude, headquartersLongitude }'
+      - 'Backend: settings service validates pair (both set or both null), writes to Organization row'
+      - 'Backend: returns 200 with updated settings'
+      - 'Subsequent address-search calls in this org use the new bias by default'
+    services: [dispatch-ui, dispatch-api]
+    endpoints:
+      - 'PUT /api/v1/settings'
+      - 'GET /api/v1/places/address-search'

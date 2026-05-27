@@ -1,5 +1,16 @@
-import { Box, Chip, Stack, Typography } from '@mui/material';
-import type { CarrierListItem } from '../../types';
+import { Box, Chip, LinearProgress, Stack } from '@mui/material';
+import { format, formatDistanceToNow } from 'date-fns';
+import { StatusBadge } from 'components/Statusbadge';
+import { BodyStrong, Meta, TwoLineCell } from 'components/Typography';
+import type { CarrierListItem, CarrierType } from '../../types';
+import { CARRIER_STATUS_COLORS, CARRIER_STATUS_LABELS } from '../../constants';
+
+
+export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
+  COMPANY_ASSET: 'Company Asset',
+  EXTERNAL_CARRIER: 'External Carrier',
+  LEASED_CARRIER: 'Leased Carrier',
+};
 
 export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => {
   const initials = data.name
@@ -8,12 +19,12 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
     .map((word) => word.charAt(0).toUpperCase())
     .join('');
   return (
-    // <Stack direction="column" justifyContent="center" sx={{ height: '100%' }}>
-    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ py: 0.5 }}>
-      <Box
+    <Stack direction="row" gap={1.5} alignItems="center" sx={{ py: 0.5 }}>
+      {/* <Box
         sx={{
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
+          flexShrink: 0,
           borderRadius: 1,
           backgroundColor: data.type === 'COMPANY_ASSET' ? 'primary.lighter' : 'success.lighter',
           color: data.type === 'COMPANY_ASSET' ? 'primary.main' : 'success.main',
@@ -25,7 +36,7 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
         }}
       >
         {initials}
-      </Box>
+      </Box> */}
       <Box
         sx={{
           display: 'flex',
@@ -34,29 +45,27 @@ export const CarrierNameCellRenderer = ({ data }: { data: CarrierListItem }) => 
           height: '100%',
         }}
       >
-        <Typography
-          variant="subtitle2"
-          color="primary.main"
-          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-        >
-          {data.name}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {data.mcNumber ?? '—'}
-        </Typography>
+        <BodyStrong>{data.name}</BodyStrong>
+        <Meta>{data.mcNumber ?? '—'}</Meta>
       </Box>
     </Stack>
   );
 };
 
 export const CarrierTypeCellRenderer = ({ value }: { value: CarrierListItem['type'] }) => {
-  const isCompanyAsset = value === 'COMPANY_ASSET';
-  const label = isCompanyAsset ? 'Company Asset' : 'External Carrier';
-  const color = isCompanyAsset ? 'secondary' : 'info';
+  const label = CARRIER_TYPE_LABELS[value] ?? 'Unknown';
 
-  return (
-    <Chip label={label} size="small" color={color} variant="outlined" sx={{ fontWeight: 600 }} />
-  );
+  return <StatusBadge status={value} label={label} />;
+};
+
+export const CarrierStatusCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  const status = data.status ?? 'DRAFT';
+
+  // const chipColor = CARRIER_STATUS_COLORS[status] ?? 'default';
+  const label = CARRIER_STATUS_LABELS[status] ?? status;
+  console.log('status', { status, label });
+  return <StatusBadge status={status} label={label} />;
+  // return <Chip label={label} size="small" color={chipColor} variant="filled" />;
 };
 
 export const CarrierOnboardingTypeCellRenderer = ({ data }: { data: CarrierListItem }) => {
@@ -75,42 +84,41 @@ export const CarrierOnboardingTypeCellRenderer = ({ data }: { data: CarrierListI
 };
 
 export const CarrierContactCellRenderer = ({ data }: { data: CarrierListItem }) => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        py: 0.5,
-      }}
-    >
-      <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-        {data.email}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {data.phone}
-      </Typography>
-    </Box>
-  );
+  const name = data.primaryContactName;
+  const email = data.primaryContactEmail;
+
+  if (!name && !email) {
+    return <Meta>—</Meta>;
+  }
+
+  return <TwoLineCell primary={name ?? '—'} secondary={email ?? ''} />;
 };
 
-export const CarrierStatusCellRenderer = ({ data }: { data: CarrierListItem }) => {
-  const status = 'UNKNOWN';
-  const chipColor: 'success' | 'warning' | 'info' | 'default' = 'default';
+export const InvitedAtCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  if (!data.inviteSentAt) {
+    return <Meta>—</Meta>;
+  }
+  const date = new Date(data.inviteSentAt);
+  return <Meta>{format(date, 'MMM d, yyyy')}</Meta>;
+};
 
-  //   if (status === 'ACTIVE') {
-  //     chipColor = 'success';
-  //   } else if (status === 'PENDING') {
-  //     chipColor = 'warning';
-  //   } else if (status === 'ONBOARDING') {
-  //     chipColor = 'info';
-  //   }
+export const LastActivityCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  const ts = data.onboardingSession?.lastActiveAt;
+  if (!ts) {
+    return <Meta>—</Meta>;
+  }
+  return <Meta>{formatDistanceToNow(new Date(ts), { addSuffix: true })}</Meta>;
+};
 
+export const PhaseProgressCellRenderer = ({ data }: { data: CarrierListItem }) => {
+  const completed = data.onboardingSession?.completedStepIds.length ?? 0;
+  const pct = data.onboardingComplete ? 100 : Math.min(95, completed * 5);
   return (
-    <Chip
-      label={status.charAt(0) + status.slice(1).toLowerCase()}
-      size="small"
-      color={chipColor}
-      variant="filled"
-    />
+    <Box sx={{ width: '100%' }}>
+      <Meta sx={{ display: 'block', mb: 0.5 }}>
+        {data.onboardingComplete ? 'Complete' : `${completed} steps`}
+      </Meta>
+      <LinearProgress variant="determinate" value={pct} sx={{ height: 4, borderRadius: 2 }} />
+    </Box>
   );
 };

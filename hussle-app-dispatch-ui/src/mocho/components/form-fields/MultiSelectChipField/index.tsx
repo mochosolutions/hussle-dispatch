@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Select, MenuItem, Box, Chip, SelectChangeEvent } from '@mui/material';
+import { getIn } from 'formik';
 import { BaseFieldWrapper } from '../BaseFieldWrapper';
 import type { MultiSelectChipFieldProps } from '../types';
 
@@ -19,9 +20,9 @@ export const MultiSelectChipField: React.FC<MultiSelectChipFieldProps> = ({
   required = false,
   formik,
 }) => {
-  const value = (formik.values[name] as string[]) || [];
-  const error = formik.errors[name] as string | undefined;
-  const touched = formik.touched[name] as boolean | undefined;
+  const value = (getIn(formik.values, name) as string[]) || [];
+  const error = getIn(formik.errors, name) as string | undefined;
+  const touched = getIn(formik.touched, name) as boolean | undefined;
 
   const handleChange = useCallback(
     (event: SelectChangeEvent<string[]>) => {

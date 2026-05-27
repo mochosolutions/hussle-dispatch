@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 
 export interface InviteUserInput {
-  users: { email: string; role: string }[];
+  users: { email: string; firstName: string; lastName: string; role: string }[];
   organizationId: string;
   userOrganizationId: string;
 }

@@ -106,7 +106,10 @@ src/
 ├── pages/                       # Feature modules — each is a self-contained domain
 │   ├── <feature>/
 │   │   ├── pages/               # Page-level components (Index, Create, Edit, Detail)
-│   │   ├── components/          # Feature-specific components
+│   │   │   └── <Page>/
+│   │   │       ├── index.tsx    # Page entry — orchestrates state, composes components
+│   │   │       └── components/  # Page-local components (see Component Placement rule)
+│   │   ├── components/          # Feature-shared components (reusable across pages)
 │   │   ├── routes/              # <Feature>Routes.tsx — route definitions
 │   │   ├── store/
 │   │   │   ├── reducers/        # Page slice + entity slice + barrel index.ts
@@ -156,6 +159,47 @@ src/
 ├── providers/                   # Provider wrapper components
 └── assets/                      # Static assets (images, fonts)
 ```
+
+### Component Placement
+
+Feature components live in one of two places under `features/<feature>/components/`:
+
+**Page-local components** live in `features/<feature>/components/<Page>/` when:
+
+1. They are only used by that one page.
+2. They take the page's local state as props — they do not own data fetching, sagas, or selectors.
+3. Their purpose is readability — extracting JSX out of the page file.
+
+**Feature-shared components** live directly in `features/<feature>/components/` (not nested by page) when:
+
+1. They are used by multiple pages within the feature (e.g., drawers, KPI components, shared cell renderers).
+2. They are registered in the drawer/modal system.
+
+```
+features/carrier/
+├── pages/
+│   ├── CarrierListPage/
+│   │   └── index.tsx              ← page orchestration only
+│   └── CarrierDetailPage/
+│       └── index.tsx
+├── components/
+│   ├── CarrierListPage/           ← page-local components
+│   │   └── CarrierCellRenderers.tsx
+│   ├── CarrierDetailPage/         ← page-local components
+│   │   ├── GeneralTab.tsx
+│   │   ├── DriversTab.tsx
+│   │   └── ...
+│   ├── CarrierKPI/                ← feature-shared
+│   │   └── index.tsx
+│   └── CarrierNoteDrawer/         ← feature-shared (registered in modal system)
+│       └── index.tsx
+```
+
+When usage transitions from one page to two, move the component up from `components/<Page>/` to `components/` directly.
+
+**Tab panels** live in `features/<feature>/components/<Page>/` with a `Tab` suffix (e.g., `GeneralTab.tsx`, `OverviewTab.tsx`). Do not create a separate `tabs/` folder.
+
+**The `pages/` folder contains ONLY page index.tsx files.** No `components/` or `tabs/` subfolders under pages. If a section is large enough to deserve its own name and prop interface, give it its own file in `features/<feature>/components/<Page>/`.
 
 ---
 
@@ -464,7 +508,16 @@ export const remove = async (id: string) => {
 
 ## Form Patterns
 
-### Stack: Formik + Yup + BaseFieldWrapper
+### Stack: Formik + Yup + Mocho Form Fields
+
+**Always use form-field components from `@mocho/ui`** when building forms. Import them via:
+```typescript
+import { TextField, SelectField, EmailField, SubmitButton } from '@mocho/ui/components/form-fields';
+```
+
+Available fields: `TextField`, `EmailField`, `PasswordField`, `PasswordFieldWithStrength`, `PasswordFieldWithChecklist`, `ConfirmPasswordField`, `OTPField`, `CheckboxField`, `SelectField`, `TypeaheadField`, `DateField`, `TimeField`, `CharCounterField`, `MultiSelectChipField`, `DateTimePickerField`, `ImageUploadField`, `DocumentImageUploadField`, `DeferredImageUploadField`, `RichTextEditorField`, `SubmitButton`, `SecondaryButton`, `FormLink`, `TermsNotice`, `FormError`, `HelperText`, `BaseFieldWrapper`.
+
+Before creating a new form field component, check if one already exists in this library. Only create a new field if none of the existing ones can handle the use case.
 
 **1. Define schema + derive types:**
 ```typescript
@@ -668,8 +721,222 @@ export default FeatureIndexPage;
 - **Skip `PageWrapper`** — all pages need ErrorBoundary + loading states
 - **Add a second UI component library** — MUI v5 + Ant Design icons only
 - **Create standalone form inputs** — all form fields compose `BaseFieldWrapper` and receive `formik` prop
+- **Create new form field components without checking `@mocho/ui/components/form-fields` first** — use existing mocho form fields
 - **Use `getByTestId` in tests** — prefer accessibility queries
 - **Use React Hook Form, Zustand, or Jotai** — Formik + Yup for forms, Redux for state
 - **Use `moment`** — legacy dependency. Use `date-fns` for all date operations.
 - **Use inline `style={{}}`** — use the `sx` prop on MUI components instead
 - **Use `styled-components`** — use MUI's `styled()` from `@mui/material/styles` for reusable styled components
+- **Declare components inside `pages/<Page>/index.tsx`** — extract them to `features/<feature>/components/<Page>/`. The page file orchestrates state and composes components, it does not declare them.
+- **Create a `tabs/` or `components/` folder under a page** — page-local components live in `features/<feature>/components/<Page>/`, not under the pages directory. The `pages/` folder contains only page index.tsx files.
+- **Put page-local components directly in `features/<feature>/components/`** — if it's only used by one page, nest it under `components/<Page>/`. Only promote to `components/` directly when shared across pages.
+
+---
+
+## Component Selection Rules
+
+When building or refactoring a page, use these shared components. Do not build equivalent functionality from raw MUI primitives.
+
+| Need | Use This | NOT This |
+|------|----------|----------|
+| Table wrapper on list pages | `MainCard` | Raw `Card` or `Paper` |
+| Content sections on detail pages | `SectionCard` | `MainCard` (reserve for list page table wrappers) |
+| Section title with edit action | `SectionHeader` | Custom header JSX |
+| Filter bar on list pages | `FilterBar` (from `components/FilterBar`) | Inline `Stack` + `Select` + `TextField` |
+| Search input | `DebouncedInput` (from `mocho/components`) | Custom `useState` + `setTimeout` debounce |
+| Empty table/list state | `EmptyState` (from `mocho/components`) | Inline `<Typography>No X found</Typography>` |
+| Row actions in tables | `ActionsCell` (from `mocho/components/DataGrid`) | Inline buttons in cell renderers |
+| Key-value display on detail pages | `DetailRow` (from `components/Typography`) | Custom `Grid` + `Typography` pairs |
+| KPI summary on list pages | `ListKpiBar` (from `components/ListKpiBar`) | Inline `Grid` + `MainCard` KPI construction |
+| KPI summary on detail pages | `<Feature>KPI` component (feature-shared, column-grouped layout) | Inline KPI cells or flat grid of KpiCells |
+| Documents tab | `DocumentsTab` (from `components/DocumentsTab`) | Inline `Box` + `Button` + `DocumentTable` |
+| Data tables | `NewDataGrid` (from `mocho/components`) | Custom table implementations |
+
+---
+
+## List Page Standard Structure
+
+Every list page follows this composition:
+
+```
+PageWrapper (errorContext only — NO isLoading prop)
+  └─ ListLayout (title bar + Export + Create buttons)
+       ├─ ListKpiBar (sx={{ mb: 4, px: { xs: 2, sm: 3 }, pt: 2 }})
+       └─ Box (px: { xs: 2, sm: 3 }, pb: 3, flex column)
+            └─ MainCard (content={false}, flex column)
+                 ├─ Box (px: 2, py: 1.5)
+                 │    └─ FilterBar (declarative filter config + search)
+                 └─ Box (flex: 1, minHeight: 0)
+                      └─ Box (minHeight: { xs: 300, md: 420 }, flex: 1)
+                           └─ NewDataGrid (loading={isLoading}, rowHeight: 56, pagination: true)
+```
+
+### List page rules
+
+- **No `isLoading` on PageWrapper.** PageWrapper unmounts children when loading, which destroys DebouncedInput and causes an infinite fetch loop. Use the grid's own `loading` prop instead.
+- **Loading selectors treat `undefined` as loading.** The `loading['getAll']` key starts as `undefined` (empty object). Selectors must return `true` for both `undefined` and `LoadingState.Pending`:
+  ```typescript
+  export const selectFeatureListLoading = (state: RootState) => {
+    const status = state.pages.feature.loading['getAll'];
+    return status === undefined || status === LoadingState.Pending;
+  };
+  ```
+- **DebouncedInput `value` must be `''` (initial only).** Never pass a state variable back as the search config `value`. DebouncedInput manages its own internal state. Feeding state back creates an infinite loop (`onChange` → setState → value prop changes → DebouncedInput syncs → onChange` fires again).
+- Cell renderers live in `pages/<Page>/components/<Feature>CellRenderers.tsx` — never inline in the page file.
+- All tables must have `ActionsCell` with at minimum a view action.
+- Empty state uses `noDataComponent` with `<EmptyState variant="no-results" entityName="Feature" compact />`.
+- Footer uses `showRowCountFooter={true}` with `totalRowCount` and `rowCountLabel`.
+
+---
+
+## Detail Page Standard Structure
+
+Every detail page follows this composition:
+
+```
+PageWrapper
+  └─ DataGuard (loading/error/not-found handling)
+       └─ DetailLayout (back button + entity name + status badge + action buttons)
+            ├─ summary={<FeatureKPI ... />} — rendered inside SummaryBar by DetailLayout
+            ├─ DetailTabBar (tab navigation)
+            └─ Tab panels (in pages/<Page>/components/ with Tab suffix)
+                 └─ SectionCard + DetailRow for content sections
+```
+
+- Tab components live in `pages/<Page>/components/` with a `Tab` suffix (e.g., `OverviewTab.tsx`). No separate `tabs/` folder.
+- Summary KPIs are extracted to a `<Feature>KPI` component in `features/<feature>/components/` — never inline in the page file.
+- Sidebar layout (when used): `Grid md={8}` (main) + `Grid md={4}` (sidebar).
+
+### Detail page KPI bar pattern
+
+The `summary` prop passed to `DetailLayout` is wrapped in `SummaryBar`, which provides the container styling (white background, padding, bottom border). **Do not add your own border/background container** — just return the Grid content.
+
+Every KPI component uses the **column-grouped label:value** layout:
+
+```typescript
+// FeatureKPI component structure
+<Grid container spacing={2}>
+  <Grid item sm={6} md={3}>
+    <KpiLabel>COLUMN TITLE</KpiLabel>
+    <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+      <BodyMuted sx={{ minWidth: 80, flexShrink: 0 }}>Label:</BodyMuted>
+      <BodyStrong sx={{ lineHeight: 1.3 }}>value</BodyStrong>
+    </Box>
+    {/* more rows... */}
+  </Grid>
+  {/* more columns... */}
+</Grid>
+```
+
+- **Column headers:** `<KpiLabel>` (uppercase overline style)
+- **Row labels:** `<BodyMuted>` with `minWidth: 80, flexShrink: 0` for alignment
+- **Row values:** `<BodyStrong>` for text, `<LinkText>` for clickable values
+- **Grid columns:** `sm={6} md={3}` for 4-column, `md={4}` for 3-column
+- Group related data into named columns (e.g., "Company Info", "Contact", "Fleet", "Financials")
+
+---
+
+## Drawer vs Modal Decision Framework
+
+```
+Does the user need to see the parent page while doing this?
+  YES → DRAWER (slide-in panel, page stays visible)
+  NO →
+    Is this a complex, multi-section primary task?
+      YES → FULL PAGE (own route, bookmarkable)
+      NO → MODAL (focused overlay, blocks page)
+```
+
+> **Drawers maintain flow. Modals demand a decision. Pages commit to a task.**
+
+### Sizing Conventions
+
+- **Drawers:** 480px width (standard), 640px (wide — route editing, cargo forms), always right-anchored
+- **Modals:** `sm` (400px) for confirmations, `md` (600px) for forms with 2-4 fields
+- **Full pages:** Standard app layout with back navigation
+
+### Examples
+
+| Use Case | Type | Why |
+|----------|------|-----|
+| Edit entity info/preferences | Drawer | User references detail page while editing |
+| Upload documents | Drawer | User sees document list for context |
+| Confirm delete | Modal | Self-contained yes/no decision |
+| Status transition with warning | Modal | Read warning, decide |
+| Send invoice (enter email) | Modal | Quick input, no page context needed |
+| Add a note | Modal | Quick text entry |
+| Mark as paid (confirm amount) | Modal | Self-contained confirmation |
+| Generate settlement | Modal | Trigger + params, self-contained |
+| Create load | Full page | Complex multi-section primary task |
+
+---
+
+## Drawer/Modal Opening Checklist
+
+When adding a new drawer or modal to any feature:
+
+1. **Decide type:** Use the decision tree above — drawer, modal, or full page?
+2. **Create the component** in `features/<feature>/components/<ComponentName>/index.tsx`
+3. **Add the type** to `DrawerType` or `ModalType` union in `features/ui/types/popupTypes.ts`
+4. **Add the prop shape** to `DrawerTypeMap` or `ModalTypeMap` in the same file
+5. **Register** the component in `features/ui/drawerRegistry.ts` or `features/ui/modalRegistry.ts`
+6. **Open** via `useDrawerActions().openDrawer(type, { entityId })` or `useModalActions().openModal(type, props)` — **never `useState`**
+7. **Close** via the `onClose` prop provided by DrawerManager/ModalManager — **never local state**
+8. **Test** that opening a second drawer/modal replaces the first cleanly (no orphaned state)
+
+**Pass IDs, not objects** — drawers/modals receive entity IDs and read data from Redux store via selectors. This ensures always-current data and avoids stale prop issues.
+
+**Dirty form protection** — drawers with forms use `EditDrawer` which handles dirty state internally with a nested `ConfirmDialog`. This is a local concern of the drawer, not a Redux modal.
+
+---
+
+## Table Standards
+
+All data tables MUST use `NewDataGrid` (AG Grid wrapper from `mocho/components`). No custom table implementations.
+
+| Setting | Value | Required |
+|---------|-------|----------|
+| `rowHeight` | `56` | Yes — all tables |
+| `pagination` | `true` | Yes — all tables |
+| `paginationPageSize` | `25` | Yes — all tables |
+| `headerHeight` | `44` | Yes — all tables |
+| `ActionsCell` | At minimum a view action | Yes — all tables |
+| `domLayout` | `'normal'` | Yes — all tables |
+
+- Cell renderers are extracted to `pages/<Page>/components/<Feature>CellRenderers.tsx` — never defined inline in page files.
+- Row click navigates to detail page. ActionsCell provides visible action discoverability.
+- Empty state uses `noDataComponent` prop with `EmptyState` component.
+- Footer uses `showRowCountFooter={true}` with `totalRowCount` and `rowCountLabel`.
+
+---
+
+## Typography Standards
+
+All text MUST use semantic Typography helpers from `components/Typography/`. **Never use raw `<Typography variant="...">`** in new or refactored code.
+
+| Context | Component | Example |
+|---------|-----------|---------|
+| Page titles | `PageTitle` | "Carriers", "Driver Detail" |
+| Section/card titles | `SectionTitle` | "Company Information", "Dispatch Terms" |
+| Entity IDs and reference numbers | `EntityId` | "MC-123456", "LOAD-789" |
+| Large monetary values (KPIs, summaries) | `AmountDisplay` | "$45,230.00" |
+| Inline monetary values (table cells) | `Amount` | "$1,500" |
+| Standard body text | `Body` | Table cells, descriptions, labels |
+| Emphasized/bold text | `BodyStrong` | KPI values, important fields |
+| Medium-weight text | `BodyMedium` | Sub-headers, field values |
+| Secondary/muted text | `BodyMuted` | Subtitles, helper text, timestamps |
+| Drawer headers | `DrawerTitle` | "Edit Company Info" |
+| Modal headers | `ModalTitle` | "Confirm Delete" |
+| KPI labels (overline style) | `KpiLabel` | "Total Revenue", "Active Drivers" |
+| Field labels in forms/details | `FieldLabel` | "Email", "Phone Number" |
+| Table column headers | `TableHeaderLabel` | Custom header renderers |
+| Timestamps | `Timestamp` | "Updated 2 hours ago" |
+| Warning/error/success text | `WarningText` / `ErrorText` / `SuccessText` | Inline status messages |
+
+### Composite Typography Components
+
+| Component | Purpose | Props |
+|-----------|---------|-------|
+| `KpiCell` | Label + value + optional subtitle for KPI displays | `{ label, value, sub? }` |
+| `TwoLineCell` | Two-line table cell (primary + secondary) | `{ primary, secondary }` |
+| `DetailRow` | Key-value row for detail pages | `{ label, value }` |

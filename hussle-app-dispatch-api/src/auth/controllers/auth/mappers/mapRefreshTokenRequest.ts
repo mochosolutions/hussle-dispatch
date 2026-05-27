@@ -8,5 +8,9 @@ export const mapRefreshTokenRequest = (req: Request): RefreshTokenInput | null =
     return null;
   }
 
-  return { refreshToken };
+  return {
+    refreshToken,
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+  };
 };

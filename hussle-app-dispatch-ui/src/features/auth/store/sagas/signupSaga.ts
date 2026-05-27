@@ -5,16 +5,19 @@ import {signupFailure, signupSuccess, codeConfirmationInit} from '../authSlice';
 
 export function* handleRegister(action) {
   try {
-    console.log('handle Register called...');
-    const {email, password, name, firstName, lastName} = action.payload;
+    const {email, password, orgName, firstName, lastName, orgRole, mcNumber, dotNumber} = action.payload;
     const navigate = yield call(getNavigate);
     const signupRequestBody = {
       email,
       password,
-      orgName: name, // Backend expects orgName, not name
+      orgName,
       firstName,
       lastName,
-      // orgRole and orgVertical are optional - backend will use defaults
+      orgRole,
+      customMetadata: {
+        mcNumber,
+        dotNumber,
+      },
     };
 
     const response = yield call(
@@ -24,7 +27,6 @@ export function* handleRegister(action) {
     );
 
     const {user, tenant} = response.data;
-    console.log('Registered user:', { user, tenant });
     const formattedUser = {
       email: user.email,
       firstName: user.firstName,
@@ -38,12 +40,10 @@ export function* handleRegister(action) {
       subscriptionTier: tenant.subscriptionTier,
     };
 
-    // console.log("Register response", response);
     yield put(codeConfirmationInit({email: formattedUser.email}));
     yield put(signupSuccess({user: formattedUser, tenant: formattedTenant}));
     yield call(navigate, '/code-verification');
-  } catch (error) {
-    console.error('Error registering user', error);
+  } catch (_error: unknown) {
     yield put(signupFailure());
   }
 }

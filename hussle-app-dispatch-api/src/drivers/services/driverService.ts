@@ -1,36 +1,30 @@
-import { LOAD_STATUSES } from '@/shared/constants/loadStatuses';
+import type { Driver } from '@prisma/client';
+import type Redis from 'ioredis';
+import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
+import { OWNER_OPERATOR_ROLE } from '@/shared/constants/roles';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/shared/errors';
+import type { CityCoords } from '@/shared/geoLookup';
+import type { LoadQueryPort } from '@/shared/loadQueries';
+import type { Logger } from '@/shared/utils/logger';
 import { parsePaginationParams, paginateQuery } from '@/shared/pagination';
 import type {
   CarrierRepositoryPort,
   DriverRepositoryPort,
-  DriverResponse,
   LoadRepositoryPort,
 } from '../types/driverTypes';
 import type {
   CreateDriverServiceInput,
   DeleteDriverServiceInput,
+  DriverLocationResult,
   DriverService,
   GetDriverByIdServiceInput,
+  GetDriverLoadHistoryServiceInput,
+  GetDriverLocationServiceInput,
   ListDriversServiceInput,
   UpdateDriverServiceInput,
 } from '../types/driverServiceTypes';
 
-const OWNER_OPERATOR_ROLE = 'owner_operator';
-
-const listSortableFields = ['createdAt', 'updatedAt', 'name', 'cdlExpiry', 'currentState'] as const;
-
-const blockingDeleteStatuses = LOAD_STATUSES.filter((status) =>
-  [
-    'QUOTED',
-    'BOOKED',
-    'DISPATCHED',
-    'EN_ROUTE_PICKUP',
-    'AT_PICKUP',
-    'IN_TRANSIT',
-    'AT_DELIVERY',
-  ].includes(status),
-);
+const listSortableFields = ['createdAt', 'updatedAt', 'firstName', 'lastName', 'licenseExpiry', 'currentState'] as const;
 
 const assertOwnerOperatorIsBlocked = (role: string): void => {
   if (role === OWNER_OPERATOR_ROLE) {
@@ -50,6 +44,10 @@ interface DriverServiceDeps {
   driverRepository: DriverRepositoryPort;
   carrierRepository: CarrierRepositoryPort;
   loadRepository: LoadRepositoryPort;
+  loadQueryPort: LoadQueryPort;
+  redis: Redis;
+  getCityCoords: (redis: Redis, state: string, city: string) => Promise<CityCoords | null>;
+  logger: Logger;
 }
 
 const assertCarrierExists = async (
@@ -67,7 +65,7 @@ const findDriverOrThrow = async (
   id: string,
   organizationId: string,
   deps: DriverServiceDeps,
-): Promise<DriverResponse> => {
+): Promise<Driver> => {
   const driver = await deps.driverRepository.findById(id, organizationId);
   if (driver === null) {
     throw new NotFoundError('Driver not found.');
@@ -117,13 +115,38 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
   updateDriver: async ({ id, organizationId, role, input }: UpdateDriverServiceInput) => {
     assertOwnerOperatorIsBlocked(role);
 
-    await findDriverOrThrow(id, organizationId, deps);
+    const existingDriver = await findDriverOrThrow(id, organizationId, deps);
 
     if (input.carrierId !== undefined) {
       await assertCarrierExists(input.carrierId, organizationId, deps);
     }
 
-    return deps.driverRepository.update(id, input);
+    if (input.currentCity !== undefined || input.currentState !== undefined) {
+      const newCity = input.currentCity !== undefined ? input.currentCity : existingDriver.currentCity;
+      const newState = input.currentState !== undefined
+        ? input.currentState
+        : existingDriver.currentState;
+      const changed =
+        newCity !== existingDriver.currentCity || newState !== existingDriver.currentState;
+
+      if (changed) {
+        if (newCity !== null && newState !== null) {
+          const coords = await deps.getCityCoords(deps.redis, newState, newCity);
+
+          if (coords !== null) {
+            input.currentLatitude = coords.lat;
+            input.currentLongitude = coords.lng;
+          } else {
+            deps.logger.warn('Could not geocode city/state', { city: newCity, state: newState });
+          }
+        } else {
+          input.currentLatitude = null;
+          input.currentLongitude = null;
+        }
+      }
+    }
+
+    return deps.driverRepository.update(id, organizationId, input);
   },
 
   deleteDriver: async ({ id, organizationId, role }: DeleteDriverServiceInput) => {
@@ -132,7 +155,7 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
 
     const blockingLoadIds = await deps.loadRepository.findBlockingLoadIdsByDriver(
       id,
-      blockingDeleteStatuses,
+      BLOCKING_DELETE_STATUSES,
       10,
     );
 
@@ -142,6 +165,31 @@ export const createDriverService = (deps: DriverServiceDeps): DriverService => (
       );
     }
 
-    await deps.driverRepository.softDelete(id, new Date());
+    await deps.driverRepository.softDelete(id, organizationId, new Date());
+  },
+
+  getLoadHistory: async ({ id, organizationId, role, query }: GetDriverLoadHistoryServiceInput) => {
+    assertOwnerOperatorIsBlocked(role);
+    await findDriverOrThrow(id, organizationId, deps);
+
+    return deps.loadQueryPort.getLoadsByDriverId(id, query);
+  },
+
+  getDriverLocation: async ({
+    id,
+    organizationId,
+    role,
+  }: GetDriverLocationServiceInput): Promise<DriverLocationResult> => {
+    assertOwnerOperatorIsBlocked(role);
+    const driver = await findDriverOrThrow(id, organizationId, deps);
+
+    return {
+      driverId: driver.id,
+      city: driver.currentCity,
+      state: driver.currentState,
+      latitude: driver.currentLatitude !== null ? String(driver.currentLatitude) : null,
+      longitude: driver.currentLongitude !== null ? String(driver.currentLongitude) : null,
+      updatedAt: driver.updatedAt,
+    };
   },
 });
