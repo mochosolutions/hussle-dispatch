@@ -61,6 +61,7 @@ export const loadSchema = Yup.object().shape({
   carrierId: Yup.string().required('Carrier is required'),
   driverId: Yup.string(),
   vehicleId: Yup.string(),
+  dispatcherUserId: Yup.string().required('Dispatcher is required'),
   contactId: Yup.string(),
   externalRefNumber: Yup.string(),
   equipmentType: Yup.string().oneOf(EQUIPMENT_VALUES).required('Equipment type is required'),

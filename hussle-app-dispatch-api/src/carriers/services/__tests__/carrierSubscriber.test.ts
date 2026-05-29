@@ -12,6 +12,7 @@ describe('initializeCarrierSubscriber', () => {
 
   const mockCarrierRepo = {
     create: jest.fn().mockResolvedValue({ id: 'carrier-1' }),
+    findCompanyAssetByOrgId: jest.fn().mockResolvedValue(null),
   };
 
   const mockLogger = {
@@ -36,6 +37,8 @@ describe('initializeCarrierSubscriber', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockCarrierRepo.create.mockResolvedValue({ id: 'carrier-1' });
+    mockCarrierRepo.findCompanyAssetByOrgId.mockResolvedValue(null);
 
     (mockEventBus.subscribe as jest.Mock).mockImplementation(
       (_event: string, _queue: string, handler: SubscribeHandler) => {
@@ -184,6 +187,25 @@ describe('initializeCarrierSubscriber', () => {
       dotNumber: undefined,
       status: 'ACTIVE',
     });
+  });
+
+  it('does not create a second carrier when a COMPANY_ASSET already exists (duplicate delivery)', async () => {
+    // Arrange
+    const payload: OrgCreatedPayload = {
+      orgId: 'org-carrier-dup',
+      orgName: 'Dupe Fleet',
+      orgRole: 'CARRIER',
+      userId: 'user-dup',
+      userEmail: 'user@dupefleet.test',
+      customMetadata: {},
+    };
+    mockCarrierRepo.findCompanyAssetByOrgId.mockResolvedValue({ id: 'existing-carrier' });
+
+    // Act
+    await capturedHandler(payload);
+
+    // Assert
+    expect(mockCarrierRepo.create).not.toHaveBeenCalled();
   });
 
   it('logs error when carrier creation fails without throwing', async () => {

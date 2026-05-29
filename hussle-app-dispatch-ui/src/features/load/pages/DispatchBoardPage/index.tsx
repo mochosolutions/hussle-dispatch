@@ -101,6 +101,19 @@ const DispatchBoardPage = () => {
     [dispatch, filters],
   );
 
+  const handleDateRangeChange = useCallback(
+    (from: Date | null, to: Date | null) => {
+      dispatch(
+        setLoadFilters({
+          ...filters,
+          dateFrom: from ? from.toISOString() : undefined,
+          dateTo: to ? to.toISOString() : undefined,
+        }),
+      );
+    },
+    [dispatch, filters],
+  );
+
   const handleRefresh = useCallback(() => {
     dispatch(fetchLoadsRequest({ page: 1, limit: DISPATCH_BOARD_LOAD_LIMIT }));
   }, [dispatch]);
@@ -116,6 +129,8 @@ const DispatchBoardPage = () => {
 
   const currentStatusFilter = filters.status?.[0] ?? 'all';
   const currentCarrierFilter = filters.carrierName ?? 'all';
+  const currentDateFrom = filters.dateFrom;
+  const currentDateTo = filters.dateTo;
 
   return (
     <PageWrapper errorContext="DispatchBoardPage">
@@ -139,6 +154,9 @@ const DispatchBoardPage = () => {
             onSearchChange={handleSearchChange}
             lastRefreshed={lastRefreshed}
             currentCarrierFilter={currentCarrierFilter}
+            currentDateFrom={currentDateFrom}
+            currentDateTo={currentDateTo}
+            onDateRangeChange={handleDateRangeChange}
           />
         }
       >

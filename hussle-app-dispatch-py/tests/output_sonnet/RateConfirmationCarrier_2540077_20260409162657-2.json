@@ -1,0 +1,148 @@
+{
+  "result": {
+    "reference_numbers": [
+      {
+        "value": "2540077",
+        "label": "MCL PO #"
+      }
+    ],
+    "broker": {
+      "name": "MegaCorp Logistics",
+      "contact_name": "Stith Curnutte",
+      "phone": "8599820328 X 2828",
+      "email": "pod@megacorplogistics.com"
+    },
+    "carrier": {
+      "name": "HUSTLE TRANSPORTATION INCORPORATED",
+      "contact_name": "ISAIAH",
+      "phone": "5163841304",
+      "fax": null
+    },
+    "driver": {
+      "name": "GLEN",
+      "phone": "3474842998"
+    },
+    "equipment": {
+      "trailer_type": "Reefer",
+      "trailer_size": "53FT",
+      "temperature": "-10\u00b0F",
+      "reefer_mode": "Continuous"
+    },
+    "commodity": "Frozen Food : Baked Goods",
+    "weight": "41000",
+    "miles": "106.86",
+    "hazmat": false,
+    "stops": [
+      {
+        "sequence": 1,
+        "stop_type": "pickup",
+        "address": {
+          "facility_name": "Lineage",
+          "street": "601 Crossroads Blvd",
+          "city": "Swedesboro",
+          "state": "NJ",
+          "zip_code": "08085"
+        },
+        "date": "4/9/2026",
+        "time": "21:00 APPT",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": null,
+        "reference_numbers": []
+      },
+      {
+        "sequence": 2,
+        "stop_type": "delivery",
+        "address": {
+          "facility_name": "VISTAR NEW YORK",
+          "street": "215 WATERLOO VALLEY RD.",
+          "city": "BUDD LAKE",
+          "state": "NJ",
+          "zip_code": "07828"
+        },
+        "date": "4/10/2026",
+        "time": "07:00 APPT",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": null,
+        "reference_numbers": []
+      }
+    ],
+    "charges": [
+      {
+        "description": "Flat",
+        "amount": 850.0
+      }
+    ],
+    "total_rate": 850.0,
+    "special_instructions": {
+      "precool_required": true,
+      "tracking_required": true,
+      "tracking_provider": "FourKites",
+      "seal_instructions": "Trailers MUST be SEALED and resealed after each stop. DO NOT BREAK SEAL. Driver must have a minimum of 2 load locks to secure the load.",
+      "detention": {
+        "rate": null,
+        "free_time": null,
+        "max_amount": null,
+        "notes": "All detention is processed/approved through FourKites. Detention is on a per load basis and the carrier must get the agreed amount in writing. Carrier must notify broker 1 hour before detention begins to accrue."
+      },
+      "fees_and_penalties": [
+        {
+          "description": "Fuel advance fee",
+          "amount": "$35.00",
+          "conditions": "A fee of $35.00 for all fuel advances will be deducted from your invoice for each fuel advance."
+        },
+        {
+          "description": "Pallet exchange fee",
+          "amount": "$7.50 per pallet",
+          "conditions": "Charged on loads that the carrier is responsible to supply pallets for exchange, and they do not."
+        },
+        {
+          "description": "Transflo convenience fee",
+          "amount": "$3.00",
+          "conditions": "Deducted from final payment for each instance that Transflo is used within each load."
+        },
+        {
+          "description": "Restack fee",
+          "amount": null,
+          "conditions": "If prior approval from broker is not obtained and pictures not provided immediately, carrier may risk restack fee not being reimbursed."
+        },
+        {
+          "description": "Lumpers not reimbursed without receipt",
+          "amount": null,
+          "conditions": "Lumpers will not be reimbursed without receipt."
+        },
+        {
+          "description": "Claim for breaking seal",
+          "amount": null,
+          "conditions": "If load is sealed and driver/carrier breaks any seal, there will be a claim charged to the carrier."
+        },
+        {
+          "description": "Short payment for missing advance receipts",
+          "amount": null,
+          "conditions": "If an advance for unloading is issued and the receipt/receipts are not provided with your invoice and BOLs, this will result in a short payment."
+        }
+      ],
+      "pod_requirements": "All BOL and lumper receipts need to be submitted within 24 hours. Once a load is delivered in full, the carrier is responsible for immediately supplying the broker with the receiver signed BOLs. To process a normal payment (30 days), the paperwork including your invoice, BOLs and any accessorial fees related to the load needs to be submitted within 2 weeks unless otherwise noted under Special Instructions.",
+      "payment_terms": "Normal payment: 30 days. Quick pay options available \u2014 email paperwork to quickpay@megacorplogistics.com or fax to 859-538-3281. Close out date is 30 days.",
+      "additional_notes": [
+        "Driver needs food grade trailer, must precool at -10 and run the unit at -10 continuous on reefer loads unless otherwise notified by MegaCorp.",
+        "If BOL temp is other than -10, please call MegaCorp and confirm load temp.",
+        "Any Overage, short or damaged product on trailer or noted on BOL must be reported to MegaCorp immediately. Failure to do so can result in a claim.",
+        "*All loads going to Stater Bros in SAN BERNARDINO, CA must have a CARB compliant Reefer.",
+        "All accessorial charges must have prior authorization.",
+        "Truck ordered not used (TONU) fees will not be paid unless the driver has been dispatched by a MegaCorp Account manager.",
+        "Advances are limited to 40% of the line haul rate, not to exceed $3000 and no more than $1000 per 24-hour period.",
+        "All drivers are required to check call everyday (including Sat. Sun. and Holidays) between 8:00 AM and 9:00 AM eastern time.",
+        "Have drivers put Logan N Industrial Park 322 East in GPS if can't find (pickup stop special instruction)",
+        "This load is not to be dispatched or double brokered.",
+        "Immediately fax a copy of this signed confirmation to (859) 538-3347."
+      ]
+    },
+    "document_date": "4/09/26 12:26PM"
+  },
+  "usage": {
+    "input_tokens": 8690,
+    "output_tokens": 1625
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "result": {
+    "reference_numbers": [
+      {
+        "value": "1393322",
+        "label": "Order"
+      }
+    ],
+    "broker": {
+      "name": "Scotlynn USA Division V24.2",
+      "contact_name": null,
+      "phone": "888-263-1888",
+      "email": "usa-accounting@scotlynn.com"
+    },
+    "carrier": {
+      "name": "HUSTLE TRANSPORTATION INCORP",
+      "contact_name": "OMAR RUSSELL",
+      "phone": "910-638-0683",
+      "fax": "910-255-0505"
+    },
+    "driver": {
+      "name": "Omar",
+      "phone": "347-484-2998"
+    },
+    "equipment": {
+      "trailer_type": "Reefer",
+      "trailer_size": null,
+      "temperature": "-10.0 to -10.0",
+      "reefer_mode": "Continuous Required"
+    },
+    "commodity": "Frozen Bread",
+    "weight": null,
+    "miles": null,
+    "hazmat": false,
+    "stops": [
+      {
+        "sequence": 1,
+        "stop_type": "pickup",
+        "address": {
+          "facility_name": "Wenner Bread Products",
+          "street": "2001 Orville Dr N",
+          "city": "RONKONKOMA",
+          "state": "NY",
+          "zip_code": "11779"
+        },
+        "date": "04/09/2026",
+        "time": "0800",
+        "appointment_end": null,
+        "contact_name": "Main",
+        "contact_phone": "631-738-1620",
+        "reference_numbers": [
+          {
+            "value": "PU 551056 / LD13454",
+            "label": "Ref"
+          }
+        ]
+      },
+      {
+        "sequence": 2,
+        "stop_type": "delivery",
+        "address": {
+          "facility_name": "Davy Cold Storage II",
+          "street": "2073 W Garden Rd",
+          "city": "VINELAND",
+          "state": "NJ",
+          "zip_code": "08360"
+        },
+        "date": "04/09/2026",
+        "time": "0801",
+        "appointment_end": "04/09/2026 1600",
+        "contact_name": "Garden Road Facility",
+        "contact_phone": "833-327-2653",
+        "reference_numbers": [
+          {
+            "value": "CG 551056 / LD13454",
+            "label": "Ref"
+          }
+        ]
+      }
+    ],
+    "charges": [
+      {
+        "description": "Carrier Freight Pay",
+        "amount": 850.0
+      }
+    ],
+    "total_rate": 850.0,
+    "special_instructions": {
+      "precool_required": true,
+      "tracking_required": true,
+      "tracking_provider": "Trucker Tools",
+      "seal_instructions": "A SEAL MUST BE PUT ON AFTER PICK UP. TWO OR MORE LOAD LOCKS/STRAPS MUST BE ON LOAD TO SECURE PRODUCT.",
+      "detention": {
+        "rate": "Reefer: $25/HR; Dry: $20/HR",
+        "free_time": "Reefer: 5 hours after appointment time; Dry: 4 hours after appointment time",
+        "max_amount": "Reefer: $200 layover; Dry: $150 layover",
+        "notes": "DETENTION AND TONU'S MUST BE REQUESTED VIA EMAIL WITHIN 24 HOURS OF DELIVERY TO JMAULORICO@SCOTLYNN.COM - MUST INCLUDE CHECK IN + CHECK OUT TIMES/ PODs / FACILITY WHERE YOU ARE REQUESTING FROM. FCFS and WORK IN appointments are NOT ELIGIBLE FOR DETENTION. DETENTION IS NOT PAID ON DROP TRAILER LOADS. GATE FEE IS NOT PROVIDED. Detention requests will only be received during Monday-Fridays 0800-1700 est."
+      },
+      "fees_and_penalties": [
+        {
+          "description": "Redelivery or change in addresses",
+          "amount": "Lesser of prorated mileage or $2/mile",
+          "conditions": "No exceptions"
+        },
+        {
+          "description": "BOLs must be sent within 3 hours of loading",
+          "amount": null,
+          "conditions": "Non-compliance not tolerated"
+        },
+        {
+          "description": "Product must be pulped and pulp sheet filled out and sent to account manager",
+          "amount": null,
+          "conditions": "Within 1 hour of loading"
+        },
+        {
+          "description": "Delivering early without permission",
+          "amount": null,
+          "conditions": "Not tolerated"
+        },
+        {
+          "description": "Calling the shipper or receiver without permission",
+          "amount": null,
+          "conditions": "Not tolerated"
+        }
+      ],
+      "pod_requirements": "PODS MUST BE SUBMITTED WITHIN 3 BUSINESS HOURS (EASTERN TIME), FAILURE TO DO SO FORFEITS ALL DETENTION AND LAYOVER",
+      "payment_terms": null,
+      "additional_notes": [
+        "REEFER MUST BE PRE COOLED TO -10 PRIOR TO PICKUP. IF TRUCK ARRIVES AT THE SHIPPER AND IS NOT PRECOOLED IT WILL BE CONSIDERED LATE.",
+        "PRODUCT MUST BE PULPED AND PULP SHEET FILLED OUT AND SENT TO THE ACCOUNT MANAGER WITHIN 1 HOUR OF LOADING.",
+        "BOLS MUST BE SENT WITHIN 3 HOURS OF LOADING.",
+        "ADVANCED NOTICE IS REQUIRED FOR EARLY CHECK IN AT SHIPPER OR RECEIVER.",
+        "PROPER NOTIFICATION IS NEEDED IF YOUR DRIVER IS GOING TO BE LATE.",
+        "Customer may reject a detention request if time at shipper does NOT affect on time delivery.",
+        "Tractor #: 002",
+        "Trailer #: 1082R",
+        "Driver Email: info@hustletransport.com"
+      ]
+    },
+    "document_date": "04/08/2026"
+  },
+  "usage": {
+    "input_tokens": 7180,
+    "output_tokens": 1414
+  }
+}

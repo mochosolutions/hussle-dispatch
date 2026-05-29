@@ -86,6 +86,9 @@ export const createDriverPortalService = (deps: DriverPortalServiceDeps): Driver
         location: input.location ?? null,
         status: input.status ?? null,
         eta: input.eta?.toISOString() ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        occurredAt: checkCall.createdAt.toISOString(),
       })
       .catch((error: unknown) => {
         deps.logger.error('Failed to publish check call event', {

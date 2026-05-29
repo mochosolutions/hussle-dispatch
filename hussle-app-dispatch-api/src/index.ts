@@ -3,7 +3,8 @@ import { env } from './config/env';
 import { prisma } from './config/database';
 import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
-import { createRabbitMqEventBus } from './shared/messaging';
+import { createPrismaMessageDedup, createRabbitMqEventBus } from './shared/messaging';
+import { createProcessedEventCleanup } from './shared/messaging/processedEventCleanup';
 import { logger } from './shared/utils/logger';
 import { stopAgreements } from './agreements';
 
@@ -11,14 +12,22 @@ const start = async (): Promise<void> => {
   await redisClient.connect();
   // await runGeoBootstrap(redisClient);
 
-  const eventBus = createRabbitMqEventBus(env.RABBITMQ_URL, logger);
+  const eventBus = createRabbitMqEventBus(
+    env.RABBITMQ_URL,
+    logger,
+    createPrismaMessageDedup(prisma),
+  );
 
   const app = createApp({ prisma, redis: redisClient, eventBus });
+
+  const processedEventCleanup = createProcessedEventCleanup({ prisma, logger });
+  processedEventCleanup.start();
 
   // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {
     logger.info('Shutting down...');
     stopAgreements();
+    processedEventCleanup.stop();
     await eventBus.close();
     await redisClient.quit();
     process.exit(0);

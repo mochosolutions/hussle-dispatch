@@ -7,11 +7,14 @@ import type { CarrierListItem, Driver, Vehicle } from 'features/carrier/types';
 import type { FormikFieldProps, TypeaheadOption } from '@mocho/ui/forms';
 import { TypeaheadField } from '@mocho/ui/components';
 import { useDrawerActions } from 'features/ui/hooks/useDrawerActions';
-import { useDispatch } from 'store';
+import { useDispatch, useSelector } from 'store';
+import { organizationIdSelector } from 'features/auth/store/selectors/authSelector';
 import { carrierActions } from 'features/carrier/store/reducers/carrierEntitySlice';
 import { getCarriers } from 'utils/api/fleet/carrierApi';
 import { getDrivers } from 'utils/api/fleet/driverApi';
 import { getVehicles } from 'utils/api/fleet/vehicleApi';
+import { getDispatchers } from 'utils/api/team/teamApi';
+import type { Member } from 'utils/api/team/teamApi';
 import getDriverDisplayName from 'utils/getDriverDisplayName';
 
 const DEBOUNCE_MS = 300;
@@ -24,6 +27,7 @@ interface AssignmentFieldGroupValues {
   carrierId?: string;
   driverId?: string;
   vehicleId?: string;
+  dispatcherUserId?: string;
 }
 
 interface AssignmentFieldGroupMeta {
@@ -85,6 +89,13 @@ const mapVehiclesToOptions = (vehicles: Vehicle[]): TypeaheadOption[] =>
     },
   }));
 
+const mapDispatchersToOptions = (members: Member[]): TypeaheadOption[] =>
+  members.map((member) => ({
+    value: member.userId,
+    label: `${member.user.firstName} ${member.user.lastName}`.trim(),
+    description: member.user.email,
+  }));
+
 const searchAdornment = (
   <InputAdornment position="start">
     <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
@@ -93,9 +104,12 @@ const searchAdornment = (
 
 export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ formik }) => {
   const dispatch = useDispatch();
+  const organizationId = useSelector(organizationIdSelector);
   const [carriers, setCarriers] = useState<CarrierListItem[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [dispatchers, setDispatchers] = useState<Member[]>([]);
+  const [dispatchersLoading, setDispatchersLoading] = useState(false);
   const [carrierInputValue, setCarrierInputValue] = useState('');
   const [driverInputValue, setDriverInputValue] = useState('');
   const [vehicleInputValue, setVehicleInputValue] = useState('');
@@ -176,6 +190,35 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
     return () => clearTimeout(timer);
   }, [carrierInputValue]);
 
+  // Fetch org dispatchers once on mount — not carrier-scoped.
+  useEffect(() => {
+    if (!organizationId) {
+      return;
+    }
+    let active = true;
+    setDispatchersLoading(true);
+    void getDispatchers(organizationId)
+      .then((members) => {
+        if (!active) {
+          return;
+        }
+        setDispatchers(members);
+      })
+      .catch(() => {
+        if (active) {
+          setDispatchers([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setDispatchersLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [organizationId]);
+
   // Effect 1: React to carrierId changes — fetch drivers/vehicles for the new carrier
   useEffect(() => {
     const carrierId = formik.values.carrierId;
@@ -232,6 +275,7 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
   const carrierMeta = formik.getFieldMeta('carrierId');
   const driverMeta = formik.getFieldMeta('driverId');
   const vehicleMeta = formik.getFieldMeta('vehicleId');
+  const dispatcherMeta = formik.getFieldMeta('dispatcherUserId');
 
   const pairingWarning = useMemo(() => {
     if (!selectedDriver || !selectedVehicle) {
@@ -254,6 +298,7 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
   const carrierOptions = useMemo(() => mapCarriersToOptions(carriers), [carriers]);
   const driverOptions = useMemo(() => mapDriversToOptions(drivers), [drivers]);
   const vehicleOptions = useMemo(() => mapVehiclesToOptions(vehicles), [vehicles]);
+  const dispatcherOptions = useMemo(() => mapDispatchersToOptions(dispatchers), [dispatchers]);
 
   const handleFieldBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
@@ -276,6 +321,8 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
   const carrierError = carrierMeta.touched && carrierMeta.error ? carrierMeta.error : undefined;
   const driverError = driverMeta.touched && driverMeta.error ? driverMeta.error : undefined;
   const vehicleError = vehicleMeta.touched && vehicleMeta.error ? vehicleMeta.error : undefined;
+  const dispatcherError =
+    dispatcherMeta.touched && dispatcherMeta.error ? dispatcherMeta.error : undefined;
 
   const typeaheadFormik: FormikFieldProps<Record<string, unknown>> = useMemo(
     () => ({
@@ -283,16 +330,19 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
         carrierId: formik.values.carrierId ?? '',
         driverId: formik.values.driverId ?? '',
         vehicleId: formik.values.vehicleId ?? '',
+        dispatcherUserId: formik.values.dispatcherUserId ?? '',
       },
       errors: {
         ...(carrierError ? { carrierId: carrierError } : {}),
         ...(driverError ? { driverId: driverError } : {}),
         ...(vehicleError ? { vehicleId: vehicleError } : {}),
+        ...(dispatcherError ? { dispatcherUserId: dispatcherError } : {}),
       },
       touched: {
         ...(carrierMeta.touched ? { carrierId: true } : {}),
         ...(driverMeta.touched ? { driverId: true } : {}),
         ...(vehicleMeta.touched ? { vehicleId: true } : {}),
+        ...(dispatcherMeta.touched ? { dispatcherUserId: true } : {}),
       },
       handleChange: () => undefined,
       handleBlur: handleFieldBlur,
@@ -302,12 +352,15 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
       formik.values.carrierId,
       formik.values.driverId,
       formik.values.vehicleId,
+      formik.values.dispatcherUserId,
       carrierError,
       driverError,
       vehicleError,
+      dispatcherError,
       carrierMeta.touched,
       driverMeta.touched,
       vehicleMeta.touched,
+      dispatcherMeta.touched,
       handleFieldBlur,
       handleSetFieldValue,
     ],
@@ -547,6 +600,20 @@ export const AssignmentFieldGroup: React.FC<AssignmentFieldGroupProps> = ({ form
           <Alert severity="warning">{pairingWarning}</Alert>
         </Grid>
       ) : null}
+
+      <Grid item xs={12}>
+        <TypeaheadField
+          name="dispatcherUserId"
+          label="Dispatcher"
+          options={dispatcherOptions}
+          formik={typeaheadFormik}
+          placeholder="Assign a dispatcher..."
+          loading={dispatchersLoading}
+          noOptionsText="No dispatchers found"
+          startAdornment={searchAdornment}
+          required
+        />
+      </Grid>
     </>
   );
 };

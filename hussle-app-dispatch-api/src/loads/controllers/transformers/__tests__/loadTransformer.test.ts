@@ -70,6 +70,7 @@ const buildLoad = (overrides?: Partial<LoadWithRelations>): LoadWithRelations =>
     vehicle: null,
     contact: null,
     customer: null,
+    dispatcher: null,
     statusHistory: [],
     checkCalls: [],
     accessorialCharges: [],
@@ -130,6 +131,7 @@ const buildListItem = (overrides?: Partial<LoadListItem>): LoadListItem => {
     driver: null,
     contact: null,
     customer: null,
+    dispatcher: null,
     accessorialCharges: [],
     _count: { accessorialCharges: 0, invoices: 0 },
   };
@@ -154,6 +156,7 @@ const makeDriver = (overrides?: Partial<LoadWithRelations['driver'] & object>) =
   currentState: null,
   currentLatitude: null,
   currentLongitude: null,
+  lastLocationAt: null,
   homeBaseCity: null,
   homeBaseState: null,
   maxDaysOut: 5,
@@ -386,12 +389,114 @@ describe('toLoadDetailResponse', () => {
       expect(result.assignment.vehicle).toBeNull();
     });
 
+    it('includes the assigned dispatcher when present', () => {
+      const load = buildLoad({
+        dispatcher: { id: 'u-1', firstName: 'Dana', lastName: 'Dispatch' },
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.assignment.dispatcher).toEqual({
+        id: 'u-1',
+        firstName: 'Dana',
+        lastName: 'Dispatch',
+      });
+    });
+
+    it('returns null dispatcher when unassigned', () => {
+      const result = toLoadDetailResponse(buildLoad({ dispatcher: null }));
+
+      expect(result.assignment.dispatcher).toBeNull();
+    });
+
     it('groups activity fields correctly', () => {
       const result = toLoadDetailResponse(buildLoad());
 
       expect(result.activity.statusHistory).toEqual([]);
       expect(result.activity.checkCalls).toEqual([]);
       expect(result.activity.accessorialCharges).toEqual([]);
+    });
+  });
+
+  describe('driver pin location fallback', () => {
+    const makeCheckCall = (overrides: {
+      id: string;
+      latitude: Decimal | null;
+      longitude: Decimal | null;
+      createdAt: Date;
+    }) => ({
+      id: overrides.id,
+      loadId: 'load-1',
+      calledByUserId: null,
+      calledBy: null,
+      location: null,
+      latitude: overrides.latitude,
+      longitude: overrides.longitude,
+      status: null,
+      eta: null,
+      notes: null,
+      brokerNotified: false,
+      brokerNotes: null,
+      createdAt: overrides.createdAt,
+    });
+
+    it('uses driver currentLatitude/currentLongitude when present', () => {
+      const load = buildLoad({
+        driver: makeDriver({
+          currentLatitude: new Decimal('36.1627'),
+          currentLongitude: new Decimal('-86.7816'),
+        }),
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.assignment.driver?.currentLatitude).toBe(36.1627);
+      expect(result.assignment.driver?.currentLongitude).toBe(-86.7816);
+    });
+
+    it('falls back to latest check-call with non-null coords when driver coords are null', () => {
+      const load = buildLoad({
+        driver: makeDriver(),
+        // checkCalls come in DESC by createdAt — latest first
+        checkCalls: [
+          makeCheckCall({
+            id: 'cc-newest-no-gps',
+            latitude: null,
+            longitude: null,
+            createdAt: new Date('2026-05-27T14:00:00.000Z'),
+          }),
+          makeCheckCall({
+            id: 'cc-earlier-with-gps',
+            latitude: new Decimal('40.7128'),
+            longitude: new Decimal('-74.0060'),
+            createdAt: new Date('2026-05-27T12:00:00.000Z'),
+          }),
+        ],
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.assignment.driver?.currentLatitude).toBe(40.7128);
+      expect(result.assignment.driver?.currentLongitude).toBe(-74.006);
+    });
+
+    it('returns null pin when all check-calls have null coords (all GPS denied)', () => {
+      const load = buildLoad({
+        driver: makeDriver(),
+        checkCalls: [
+          makeCheckCall({
+            id: 'cc-1',
+            latitude: null,
+            longitude: null,
+            createdAt: new Date('2026-05-27T14:00:00.000Z'),
+          }),
+        ],
+      });
+
+      const result = toLoadDetailResponse(load);
+
+      expect(result.assignment.driver?.currentLatitude).toBeNull();
+      expect(result.assignment.driver?.currentLongitude).toBeNull();
     });
   });
 

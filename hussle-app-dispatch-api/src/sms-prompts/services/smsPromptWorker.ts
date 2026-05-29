@@ -32,6 +32,26 @@ export interface SmsPromptWorkerDeps {
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+interface BuildPromptBodyInput {
+  customBody: string | null | undefined;
+  anchor: Parameters<typeof composeSmsBody>[0]['anchor'];
+  load: Parameters<typeof composeSmsBody>[0]['load'];
+  shortUrl: string;
+}
+
+export const buildPromptBody = ({
+  customBody,
+  anchor,
+  load,
+  shortUrl,
+}: BuildPromptBodyInput): string => {
+  const trimmed = typeof customBody === 'string' ? customBody.trim() : '';
+  if (trimmed.length > 0) {
+    return trimmed.includes(shortUrl) ? trimmed : `${trimmed}\n${shortUrl}`;
+  }
+  return composeSmsBody({ anchor, load, shortUrl });
+};
+
 const processPromptDue = async (
   payload: EventMap['sms.prompt.due'],
   deps: SmsPromptWorkerDeps,
@@ -135,7 +155,7 @@ const processPromptDue = async (
     }
 
     const shortUrl = `${deps.publicShortBaseUrl}/s/${slug}`;
-    const body = composeSmsBody({ anchor, load, shortUrl });
+    const body = buildPromptBody({ customBody: row.customBody, anchor, load, shortUrl });
 
     let messageSid: string | null;
     try {

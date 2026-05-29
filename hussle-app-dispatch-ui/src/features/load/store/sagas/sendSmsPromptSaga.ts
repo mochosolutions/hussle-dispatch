@@ -15,10 +15,10 @@ import { smsPromptEntityActions } from '../reducers/smsPromptEntitySlice';
 export function* sendSmsPromptSaga(
   action: ReturnType<typeof sendSmsPromptRequest>,
 ): Generator {
-  const { loadId } = action.payload;
+  const { loadId, body } = action.payload;
 
   try {
-    const prompt = (yield call(sendSmsPrompt, loadId)) as SmsPromptScheduleResponse;
+    const prompt = (yield call(sendSmsPrompt, loadId, body)) as SmsPromptScheduleResponse;
     yield put(smsPromptEntityActions.upsertMany([prompt]));
     yield put(sendSmsPromptSuccess({ loadId, prompt }));
     yield put(notify({ message: 'SMS prompt queued', variant: 'success' }));

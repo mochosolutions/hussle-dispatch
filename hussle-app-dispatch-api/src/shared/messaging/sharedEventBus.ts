@@ -3,10 +3,12 @@
  * Uses RabbitMQ in production (or when RABBITMQ_URL is set),
  * falls back to InMemoryEventBus for development and testing.
  */
+import { prisma } from '@/config/database';
+import { logger } from '@/shared/utils/logger';
 import type { EventBus } from './eventBus';
 import { createInMemoryEventBus } from './inMemoryEventBus';
+import { createPrismaMessageDedup } from './prismaMessageDedup';
 import { createRabbitMqEventBus } from './rabbitMqEventBus';
-import { logger } from '@/shared/utils/logger';
 
 declare global {
   var __eventBus: EventBus | undefined;
@@ -18,7 +20,7 @@ const createSharedEventBus = (): EventBus => {
 
   if (nodeEnv === 'production' || rabbitMqUrl) {
     const url = rabbitMqUrl ?? 'amqp://localhost';
-    return createRabbitMqEventBus(url, logger);
+    return createRabbitMqEventBus(url, logger, createPrismaMessageDedup(prisma));
   }
 
   return createInMemoryEventBus();

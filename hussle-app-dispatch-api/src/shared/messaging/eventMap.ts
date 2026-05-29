@@ -42,6 +42,9 @@ export interface EventMap {
     location: string | null;
     status: string | null;
     eta: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    occurredAt: string;
   };
   'document.confirmed': {
     documentId: string;
@@ -287,5 +290,14 @@ export interface EventMap {
     correlationId: string;
     templateKey: 'DISPATCH_AGREEMENT';
     reason: 'timeout' | 'rate_limit' | 'provider_error';
+  };
+  'ratecon.import.received': {
+    importId: string;
+    organizationId: string;
+  };
+  'ratecon.import.ready': {
+    importId: string;
+    organizationId: string;
+    status: 'PENDING_REVIEW' | 'EXTRACTION_FAILED';
   };
 }

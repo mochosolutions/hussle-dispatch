@@ -21,6 +21,7 @@ This file adds Express + Prisma specific patterns and overrides.
 | **Request Pipeline** | [Request/Response Flow](#requestresponse-flow) · [Mappers](#mapper-template) · [Transformers](#transformer-template) · [Validators](#validation-vs-business-rules) |
 | **Dependency Injection** | [Composition Root](#composition-root) · [Port Interfaces](#port-interfaces) · [Cross-Entity Dependencies](#cross-entity-dependencies) |
 | **Business Logic** | [Services](#service-template) · [Business Rules](#validation-vs-business-rules) · [Domain Events](#domain-events) |
+| **Event Handlers** | [Event Handler Idempotency](#event-handler-idempotency) |
 | **Error Handling** | [Error Classes](#error-handling) · [CustomError Base](#typed-error-classes) |
 | **Data** | [Type Derivation from Prisma](#type-derivation-from-prisma) · [Repositories](#repository-template) · [Transactions](#when-to-use-transactions) |
 | **Security** | [Authorization](#authorization-pattern) · [Data Scoping](#data-scoping-pattern) |
@@ -666,6 +667,48 @@ export const cacheInvalidationHandler = (deps: {
 1. Create a handler in `<feature>/events/handlers/`
 2. Register it in the module's composition root
 3. **No service changes required**
+
+---
+
+## Event Handler Idempotency
+
+The RabbitMQ event bus (`src/shared/messaging/rabbitMqEventBus.ts`) is **at-least-once**: a handler can run more than once for a single logical event (broker redelivery on lost ack/reconnect, the retry path re-running a handler, or two publishers emitting the same fact). Handlers MUST be safe to run twice — running N times must leave the same result as running once.
+
+### What you get for free (Layer 1)
+
+Any handler registered via `eventBus.subscribe(event, queueGroup, handler)` is automatically protected against **redelivery of the same message**. The bus stamps a `messageId` at publish time and checks the durable `ProcessedEvent` inbox (keyed on `(queueGroup, messageId)`) before invoking the handler, marking it processed only after success. You write nothing for this — provided two conventions hold:
+
+- **Always publish through the `EventBus`** (`publish` / `publishDelayed`). A message published by a raw AMQP path or an external service has no `messageId` and silently skips dedup.
+- **Each subscriber uses its own `queueGroup`.** Dedup is per consumer group, so independent consumers each process once.
+
+### What Layer 1 does NOT cover — you must handle these
+
+The inbox keys on the *message instance*, so it cannot help with:
+
+- **Semantic duplicates** — two publishers emitting the same logical fact get different `messageId`s (e.g. `agreement.signed` from a webhook AND a watchdog).
+- **Partial failure in a swallowed-error handler** — a handler that `try/catch`es without rethrowing "succeeds" and is marked processed even if a later step failed; that step is lost, not retried.
+- **The retry path re-running a multi-step handler** — if you rethrow, the *whole* handler re-runs on retry, repeating every earlier side effect until it succeeds.
+
+So make a handler **internally idempotent** whenever it has more than one side effect, does something irreversible (email/SMS/payment/external API), or creates a record tied to a business invariant.
+
+### Patterns (pick the cheapest that fits)
+
+| Pattern | When | Example in codebase |
+|---------|------|---------------------|
+| **Upsert** keyed by natural identity | recompute-and-store | `stateMileageSubscriber` → `upsertMany` |
+| **State-machine guard** — act only from expected state | status transitions | `smsPromptWorker` (PENDING→SENT), `rateconExtractionHandler` (RECEIVED) |
+| **Conditional / monotonic update** — write only if newer | timestamped data | `checkCallLocationSubscriber` (on `occurredAt`) |
+| **Existence guard** — bail if artifact already exists | one-time creation | `invoicePdfGenerationSubscriber` (on `pdfUrl`), `carrierSubscriber` (`findCompanyAssetByOrgId`) |
+| **Unique constraint + catch-conflict** — let the DB reject the dup | concurrent creates | `settlementGeneratorSubscriber` (catches `ConflictError`), `prismaMessageDedup` (catches P2002) |
+| **Deterministic recompute** — same inputs → same result | derived values | `accessorialSyncSubscriber` (invoice totals) |
+
+### Rules
+
+- Decide your error strategy deliberately: **rethrow** to engage retry (and make every step idempotent), or **swallow** for best-effort effects (and accept no retry). Never both by accident.
+- Keep handlers small — ideally one side effect — so "ran once" equals "done".
+- **Always add a duplicate-delivery test**: invoke the handler twice with the same payload, assert the side effect fires once. Template: `src/carriers/services/__tests__/carrierSubscriber.test.ts`.
+
+> **Rule of thumb:** redelivery of the *same* event is handled for you. You own: irreversible side effects, multi-step handlers, record creation with a business invariant, and anything with more than one publisher. For those, give the work a natural key and check it before acting.
 
 ---
 

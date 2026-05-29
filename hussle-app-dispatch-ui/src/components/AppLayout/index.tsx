@@ -18,6 +18,8 @@ import { formattedCurrentUserSelector } from '../../features/auth/store/selector
 import { logoutRequest } from '../../features/auth/store/authSlice';
 import { fetchCountsRequest } from '../../features/invoices/store/reducers/invoicePageSlice';
 import { selectInvoiceDraftCount } from '../../features/invoices/store/selectors/invoiceSelectors';
+import { fetchImportsRequest } from '../../features/ratecon-imports/store/reducers';
+import { selectPendingReviewCount } from '../../features/ratecon-imports/store/selectors/rateconImportSelectors';
 import { useSelector, useDispatch } from '../../store';
 import type { NavItemType } from '@mocho/ui/types';
 
@@ -123,24 +125,28 @@ const AppLayout = () => {
   const dispatch = useDispatch();
   const formattedUser = useSelector(formattedCurrentUserSelector);
   const draftCount = useSelector(selectInvoiceDraftCount);
+  const pendingRateconCount = useSelector(selectPendingReviewCount);
 
   useEffect(() => {
     dispatch(fetchCountsRequest());
+    dispatch(fetchImportsRequest({}));
   }, [dispatch]);
 
   const dynamicMenuItems: NavItemType[] = useMemo(() => {
-    if (draftCount <= 0) {
-      return menuItems;
-    }
+    const navBadges: Record<string, number> = {
+      invoices: draftCount,
+      ratecons: pendingRateconCount,
+    };
 
     return menuItems.map((group) => ({
       ...group,
       children: group.children?.map((item) => {
-        if (item.id === 'invoices') {
+        const count = item.id !== undefined ? navBadges[item.id] : undefined;
+        if (count !== undefined && count > 0) {
           return {
             ...item,
             chip: {
-              label: String(draftCount),
+              label: String(count),
               color: 'warning' as const,
               size: 'small' as const,
               variant: 'filled' as const,
@@ -150,7 +156,7 @@ const AppLayout = () => {
         return item;
       }),
     }));
-  }, [draftCount]);
+  }, [draftCount, pendingRateconCount]);
 
   const handleNavigateToSettings = useCallback(() => {
     navigate('/settings');

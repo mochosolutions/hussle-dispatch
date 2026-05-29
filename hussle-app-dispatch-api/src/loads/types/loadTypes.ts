@@ -10,6 +10,7 @@ import type {
   Vehicle,
   Contact,
   Customer,
+  User,
   CarrierType,
   DispatchFeeType,
   DispatcherCommType,
@@ -190,6 +191,7 @@ export interface LoadWithRelations extends Load {
   vehicle: Vehicle | null;
   contact: Contact | null;
   customer: Customer | null;
+  dispatcher: Pick<User, 'id' | 'firstName' | 'lastName'> | null;
   statusHistory: LoadStatusHistoryWithUser[];
   checkCalls: CheckCallWithRelations[];
   accessorialCharges: AccessorialCharge[];
@@ -211,6 +213,7 @@ export interface LoadListItem extends Load {
   driver: Pick<Driver, 'id' | 'firstName' | 'lastName'> | null;
   contact: Pick<Contact, 'id' | 'firstName' | 'lastName' | 'email' | 'phone'> | null;
   customer: Pick<Customer, 'id' | 'companyName'> | null;
+  dispatcher: Pick<User, 'id' | 'firstName' | 'lastName'> | null;
   // Slim accessorial rows — amount only — to feed computeLoadFinancials in
   // the list transformer (US-11). Full rows are returned by the detail query.
   accessorialCharges: Pick<AccessorialCharge, 'amount'>[];
@@ -403,6 +406,7 @@ export interface DriverAssignmentQueryPort {
     firstName: string;
     lastName: string;
     isAvailable: boolean;
+    licenseExpiry: Date | null;
   } | null>;
   findRateSnapshot(
     driverId: string,
@@ -420,6 +424,7 @@ export interface VehicleAssignmentQueryPort {
     unitNumber: string;
     driverId: string | null;
     isActive: boolean;
+    type: EquipmentType;
   } | null>;
 }
 
@@ -602,10 +607,17 @@ export interface CargoResponse {
   isTempControlled: boolean;
 }
 
+export interface DispatcherResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface AssignmentResponse {
   carrier: CarrierResponse | null;
   driver: DriverResponse | null;
   vehicle: VehicleResponse | null;
+  dispatcher: DispatcherResponse | null;
   isTeamDriver: boolean;
 }
 
@@ -691,6 +703,7 @@ export interface ListDriverSummary {
 export interface ListAssignmentResponse {
   carrier: ListCarrierSummary | null;
   driver: ListDriverSummary | null;
+  dispatcher: DispatcherResponse | null;
 }
 
 export interface ListContactResponse {

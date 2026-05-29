@@ -33,6 +33,11 @@ const optionalUuid = Yup.string()
   .uuid()
   .notRequired();
 
+const requiredDispatcherUuid = Yup.string()
+  .trim()
+  .uuid('dispatcherUserId must be a valid UUID')
+  .required('Dispatcher is required');
+
 const stopSchema = Yup.object({
   type: Yup.mixed<StopType>()
     .oneOf(stopTypeValues, 'type must be a valid StopType')
@@ -82,7 +87,7 @@ const createBodySchema = Yup.object({
   vehicleId: optionalUuid,
   contactId: optionalUuid,
   customerId: optionalUuid,
-  dispatcherUserId: optionalUuid,
+  dispatcherUserId: requiredDispatcherUuid,
   externalRefNumber: optionalTrimmed,
   equipmentType: Yup.mixed<EquipmentType>()
     .oneOf(equipmentTypeValues, 'equipmentType must be a valid EquipmentType')
@@ -101,6 +106,8 @@ const createBodySchema = Yup.object({
   bolSignedAt: Yup.date().notRequired(),
   dispatcherNotes: optionalTrimmed,
   driverInstructions: optionalTrimmed,
+  overrideDispatch: Yup.boolean().notRequired(),
+  overrideReason: optionalTrimmed,
   stops: Yup.array()
     .of(stopSchema)
     .min(1, 'At least one stop is required')
@@ -179,7 +186,9 @@ export const assignLoadValidator = Yup.object({
     carrierId: optionalUuid,
     driverId: optionalUuid,
     vehicleId: optionalUuid,
-    dispatcherUserId: optionalUuid,
+    dispatcherUserId: requiredDispatcherUuid,
+    overrideDispatch: Yup.boolean().notRequired(),
+    overrideReason: optionalTrimmed,
   }).test('has-any-assignment-field', 'At least one assignment field must be provided', (value) => {
     if (value === undefined) {
       return false;

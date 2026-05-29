@@ -25,6 +25,7 @@ import ContactRoutes from 'features/contact/routes/contactRoutes';
 import CustomerRoutes from 'features/customer/routes/customerRoutes';
 import SettingsRoutes from 'features/settings/routes/settingsRoutes';
 import AccountingRoutes from 'features/accounting/routes/accountingRoutes';
+import RateconImportRoutes from 'features/ratecon-imports/routes/RateconImportRoutes';
 import DriverPortalRoutes from 'features/driver-portal/routes/driverPortalRoutes';
 import CarrierPortalRoutes from 'features/carrier-portal/routes/CarrierPortalRoutes';
 import DevRoutes from 'features/dev/routes/devRoutes';
@@ -94,6 +95,7 @@ export const routes: RouteObject[] = [
       SettingsRoutes,
       InvoiceRoutes,
       AccountingRoutes,
+      RateconImportRoutes,
       {
         path: '*',
         element: <ErrorPage />,

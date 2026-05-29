@@ -13,5 +13,9 @@ export const assignLoadMapper = (req: Request): AssignLoadServiceInput => {
     ...context,
     id,
     input,
+    userId: req.user?.userId ?? '',
+    overrideDispatch: req.body.overrideDispatch === true,
+    overrideReason:
+      typeof req.body.overrideReason === 'string' ? req.body.overrideReason : undefined,
   };
 };

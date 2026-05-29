@@ -23,6 +23,9 @@ const LOAD_DETAIL_INCLUDE = {
   vehicle: true,
   contact: true,
   customer: true,
+  dispatcher: {
+    select: { id: true, firstName: true, lastName: true },
+  },
   statusHistory: {
     orderBy: { createdAt: 'desc' as const },
     include: { changedBy: { select: { id: true, firstName: true, lastName: true } } },
@@ -62,6 +65,9 @@ const LOAD_LIST_INCLUDE = {
   },
   customer: {
     select: { id: true, companyName: true },
+  },
+  dispatcher: {
+    select: { id: true, firstName: true, lastName: true },
   },
   accessorialCharges: {
     // Only the amount is needed at the list site, to feed computeLoadFinancials
@@ -583,6 +589,7 @@ export const driverAssignmentQueryPrisma = (
         firstName: true,
         lastName: true,
         isAvailable: true,
+        licenseExpiry: true,
       },
     });
   },
@@ -633,6 +640,7 @@ export const vehicleAssignmentQueryPrisma = (
         unitNumber: true,
         driverId: true,
         isActive: true,
+        type: true,
       },
     });
   },

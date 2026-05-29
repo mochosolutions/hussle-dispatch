@@ -25,9 +25,14 @@ interface ListSmsPromptsResponse {
   meta: PaginationMeta;
 }
 
-export const sendSmsPrompt = async (loadId: string): Promise<SmsPromptScheduleResponse> => {
+export const sendSmsPrompt = async (
+  loadId: string,
+  body?: string,
+): Promise<SmsPromptScheduleResponse> => {
+  const payload = body !== undefined && body.trim().length > 0 ? { body: body.trim() } : {};
   const response = await axiosInstance.post<SendSmsPromptResponse>(
     `/loads/${loadId}/sms-prompts`,
+    payload,
   );
   return response.data.data;
 };

@@ -109,6 +109,15 @@ export const getMembers = async (orgId: string): Promise<Member[]> => {
   return response.data.data;
 };
 
+// Dispatcher directory — accessible to dispatchers (the members endpoint is
+// tenant-admin only), used to populate the load assignment dispatcher picker.
+export const getDispatchers = async (orgId: string): Promise<Member[]> => {
+  const response = await axiosInstance.get<GetMembersResponse>(
+    `/organizations/${orgId}/dispatchers`,
+  );
+  return response.data.data;
+};
+
 export const changeMemberRole = async (
   orgId: string,
   membershipId: string,

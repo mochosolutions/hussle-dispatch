@@ -194,6 +194,7 @@ export interface CarrierRepositoryPort {
     },
   ): Promise<CarrierWithAssets>;
   findById(id: string, organizationId: string): Promise<CarrierWithCounts | null>;
+  findCompanyAssetByOrgId(orgId: string): Promise<{ id: string } | null>;
   list(input: ListCarriersRepositoryInput): Promise<CarrierWithCounts[]>;
   count(input: CarrierQueryInput): Promise<number>;
   update(id: string, organizationId: string, input: UpdateCarrierInput): Promise<CarrierWithCounts>;

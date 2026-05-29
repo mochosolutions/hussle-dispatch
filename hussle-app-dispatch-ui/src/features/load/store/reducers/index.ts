@@ -31,6 +31,8 @@ export {
   assignAndDispatchRequest,
   assignAndDispatchSuccess,
   assignAndDispatchFailure,
+  setCreateBlockers,
+  setAssignBlockers,
   setOnboardingBlock,
   clearOnboardingBlock,
   createCheckCallRequest,

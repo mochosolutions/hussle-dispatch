@@ -18,6 +18,9 @@ const LOAD_DETAIL_INCLUDE = {
   vehicle: true,
   contact: true,
   customer: true,
+  dispatcher: {
+    select: { id: true, firstName: true, lastName: true },
+  },
   statusHistory: {
     orderBy: { createdAt: 'desc' as const },
     include: { changedBy: { select: { id: true, firstName: true, lastName: true } } },

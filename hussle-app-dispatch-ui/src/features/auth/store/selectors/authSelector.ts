@@ -23,6 +23,14 @@ export const userActiveOrgSelector = createSelector(
   },
 );
 
+export const isAdminSelector = createSelector(
+  userActiveOrgSelector,
+  (activeOrg) => {
+    const role = activeOrg?.role ?? '';
+    return role === 'admin' || role === 'ADMIN';
+  },
+);
+
 export const formattedCurrentUserSelector = createSelector(
   currentUserSelector,
   userActiveOrgSelector,

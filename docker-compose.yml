@@ -27,6 +27,14 @@ services:
       - /usr/app/node_modules
     env_file:
       - ./hussle-app-dispatch-api/.env
+    environment:
+      # Ratecon ingest — docker-network hostnames (override .env localhost values)
+      - PYTHON_SERVICE_URL=http://python-service:8000
+      - PYTHON_SERVICE_TOKEN=dev
+      - RATECON_WEBHOOK_SECRET=dev
+      - RATECON_INBOUND_DOMAIN=notify.localhost
+      - RATECON_DEV_MAILPIT_INBOUND=true
+      - MAILPIT_API_URL=http://hussle-app-mailpit:8025
     depends_on:
       hussle-app-redis:
         condition: service_healthy
@@ -34,12 +42,35 @@ services:
         condition: service_healthy
       hussle-app-rabbitmq:
         condition: service_healthy
+      python-service:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  python-service:
+    build:
+      context: ./hussle-app-dispatch-py
+      dockerfile: Dockerfile.dev
+    container_name: hussle-app-python-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./hussle-app-dispatch-py/app:/usr/app/app
+      - ./hussle-app-dispatch-py/scripts:/usr/app/scripts
+      - ./hussle-app-dispatch-py/tests:/usr/app/tests
+    env_file:
+      - ./hussle-app-dispatch-py/.env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
   hussle-app-postgres:
     image: postgres:15-alpine
@@ -111,6 +142,10 @@ services:
     ports:
       - "8025:8025"
       - "1025:1025"
+    environment:
+      # On each received message, notify the API's dev ratecon inbound webhook.
+      # The handler ignores anything not addressed to ratecon+<orgId>@...
+      - MP_WEBHOOK_URL=http://dispatch-api:3001/api/v1/webhooks/ratecon/mailpit-inbound
     restart: unless-stopped
 
   # DocuSeal — optional. Start with `docker compose --profile docuseal up -d docuseal`.

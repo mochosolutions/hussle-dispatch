@@ -125,19 +125,57 @@ describe('SendSmsPromptModal', () => {
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'load/sendSmsPromptRequest',
-        payload: { loadId: 'load-1' },
+        payload: { loadId: 'load-1', body: undefined },
       }),
     );
     // Saga is now responsible for closing the modal on success.
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('renders an honest preview with a placeholder for the check-in link', () => {
+  it('pre-fills the editable message body with the composed default', () => {
     renderModal(loadWithDriver);
 
-    expect(screen.getByText(/Hussle: Load #.* needs a check-in/)).toBeInTheDocument();
-    expect(screen.getByText('<short check-in link>')).toBeInTheDocument();
-    expect(screen.queryByText(/\[tracking link\]/i)).not.toBeInTheDocument();
+    const textbox = screen.getByRole('textbox', { name: /SMS message body/i }) as HTMLTextAreaElement;
+    expect(textbox.value).toContain('Hussle: Load #L-1001 needs a check-in.');
+  });
+
+  it('dispatches the edited body when the message is modified', () => {
+    const store = buildStoreWithLoad(loadWithDriver);
+    const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+    render(
+      <Provider store={store}>
+        <ThemeProvider theme={createTheme()}>
+          <SendSmsPromptModal loadId={loadWithDriver.id} onClose={jest.fn()} />
+        </ThemeProvider>
+      </Provider>,
+    );
+
+    dispatchSpy.mockClear();
+
+    const textbox = screen.getByRole('textbox', { name: /SMS message body/i });
+    fireEvent.change(textbox, { target: { value: 'Hey John, please check in' } });
+
+    const send = screen.getByRole('button', { name: /^send$/i });
+    fireEvent.click(send);
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'load/sendSmsPromptRequest',
+        payload: { loadId: 'load-1', body: 'Hey John, please check in' },
+      }),
+    );
+  });
+
+  it('shows a Reset to default link only when the body has been edited', () => {
+    renderModal(loadWithDriver);
+
+    expect(screen.queryByRole('button', { name: /Reset to default/i })).not.toBeInTheDocument();
+
+    const textbox = screen.getByRole('textbox', { name: /SMS message body/i });
+    fireEvent.change(textbox, { target: { value: 'Custom message' } });
+
+    expect(screen.getByRole('button', { name: /Reset to default/i })).toBeInTheDocument();
   });
 
   it('shows cooldown warning when a recent SENT prompt exists', () => {

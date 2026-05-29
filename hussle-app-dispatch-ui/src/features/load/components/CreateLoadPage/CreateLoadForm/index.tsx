@@ -4,6 +4,7 @@ import { Box, Grid } from '@mui/material';
 import type { FormikFieldProps } from '@mocho/ui/forms';
 import { TextField } from '@mocho/ui/components';
 import { useSelector } from 'store';
+import { searchAddresses } from 'utils/api/places/placeApi';
 import SectionCard from 'components/SectionCard';
 import { selectCarrierById } from 'features/carrier/store/selectors/carrierSelectors';
 import { useFormHandle } from 'mocho/hooks/useFormHandle';
@@ -19,6 +20,7 @@ import type {
   SelectedDriverInfo,
   StopType,
 } from '../../../types';
+import type { RateconCustomerHint, RateconPrefill } from 'utils/api/ratecon-imports';
 import { LOAD_TYPE_STOP_CONFIG } from '../../../constants';
 import { stripUiOnlyFields } from '../../../utils/stripUiOnlyFields';
 import { LoadDetailsSection } from './sections/LoadDetailsSection';
@@ -42,6 +44,8 @@ interface CreateLoadFormProps {
   initialLoadType: string;
   template?: LoadTemplate;
   intelPrefill?: IntelPrefill;
+  rateconPrefill?: RateconPrefill;
+  rateconCustomerHint?: RateconCustomerHint | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +123,53 @@ const buildInitialStops = (loadType: string, intelPrefill?: IntelPrefill) => {
   });
 };
 
+// Maps extracted rate-con stops into the form's stop shape. Date + time stay
+// separate here; stripUiOnlyFields combines them into appointmentStart on submit.
+const buildInitialStopsFromRatecon = (rateconPrefill: RateconPrefill) => {
+  if (rateconPrefill.stops.length === 0) {
+    return buildInitialStops('std');
+  }
+  const resolveType = (stop: RateconPrefill['stops'][number], idx: number): StopType =>
+    (stop.type as StopType | null) ?? (idx === 0 ? 'PICKUP' : 'DELIVERY');
+
+  // Rate-cons usually state cargo details (weight, commodity, piece count) once
+  // at the load level rather than per stop. The form only renders these on a
+  // pickup's cargo details, so surface the load-level values on the first pickup
+  // when that stop carries none of its own.
+  const firstPickupIdx = rateconPrefill.stops.findIndex(
+    (stop, idx) => resolveType(stop, idx) === 'PICKUP',
+  );
+
+  return rateconPrefill.stops.map((stop, idx) => {
+    const fromLoad = idx === firstPickupIdx;
+    const weight = stop.weight ?? (fromLoad ? rateconPrefill.weight : null);
+    const commodity = stop.commodity ?? (fromLoad ? rateconPrefill.commodity : null);
+    const pieceCount = stop.pieceCount ?? (fromLoad ? rateconPrefill.pieceCount : null);
+    return {
+      ...EMPTY_STOP,
+      type: resolveType(stop, idx),
+      sequence: idx,
+      facilityName: stop.facilityName ?? '',
+      address: stop.address ?? '',
+      city: stop.city ?? '',
+      state: stop.state ?? '',
+      zip: stop.zip ?? '',
+      appointmentDate: stop.appointmentDate ?? '',
+      appointmentTime: stop.appointmentTime ?? '',
+      appointmentNumber: stop.appointmentNumber ?? '',
+      contactName: stop.contactName ?? '',
+      contactPhone: stop.contactPhone ?? '',
+      commodity: commodity ?? '',
+      weight: weight !== null ? String(weight) : '',
+      pieceCount: pieceCount !== null ? String(pieceCount) : '',
+      isHazmat: stop.isHazmat ?? false,
+      isTarp: stop.isTarp ?? false,
+      isTempControlled: stop.isTempControlled ?? false,
+      notes: stop.notes ?? '',
+    };
+  });
+};
+
 const EQUIPMENT_MAP: Record<string, string> = {
   DV: 'DRY_VAN',
   RF: 'REEFER',
@@ -128,22 +179,35 @@ const EQUIPMENT_MAP: Record<string, string> = {
 
 const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
   (
-    { onSubmit, onStateChange, onFinancialsChange, initialLoadType, template, intelPrefill },
+    {
+      onSubmit,
+      onStateChange,
+      onFinancialsChange,
+      initialLoadType,
+      template,
+      intelPrefill,
+      rateconPrefill,
+    },
     ref,
   ) => {
     const [selectedDriver, setSelectedDriver] = useState<SelectedDriverInfo | null>(null);
 
     const initialValues: LoadFormValues = useMemo(() => {
       let mappedEquipment: string | undefined;
-      if (intelPrefill?.equipmentType) {
+      if (rateconPrefill?.equipmentType) {
+        mappedEquipment = rateconPrefill.equipmentType;
+      } else if (intelPrefill?.equipmentType) {
         mappedEquipment = EQUIPMENT_MAP[intelPrefill.equipmentType] ?? intelPrefill.equipmentType;
       } else if (initialLoadType === 'po') {
         mappedEquipment = 'POWER_ONLY';
       }
 
-      const stops = buildInitialStops(initialLoadType, intelPrefill);
+      const stops = rateconPrefill
+        ? buildInitialStopsFromRatecon(rateconPrefill)
+        : buildInitialStops(initialLoadType, intelPrefill);
 
-      const customerRateInit = template?.rate ?? intelPrefill?.rate ?? undefined;
+      const customerRateInit =
+        template?.rate ?? rateconPrefill?.customerRate ?? intelPrefill?.rate ?? undefined;
       // Carrier payout is auto-calculated from the carrier's companyMarginPercent.
       // Pre-compute with default 80% carrier share so formik.dirty is false on mount.
       const carrierPayoutInit =
@@ -155,22 +219,24 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
         carrierId: undefined,
         driverId: undefined,
         vehicleId: undefined,
+        dispatcherUserId: undefined,
         customerId: undefined,
         contactId: undefined,
-        externalRefNumber: template?.brokerRef ?? undefined,
+        externalRefNumber: template?.brokerRef ?? rateconPrefill?.externalRefNumber ?? undefined,
         equipmentType: mappedEquipment,
+        isTeamDriver: rateconPrefill?.isTeamDriver ?? false,
         loadedMiles: intelPrefill?.miles ?? undefined,
         deadheadMiles: undefined,
         totalMiles: undefined,
         customerRate: customerRateInit,
-        dispatcherNotes: undefined,
-        driverInstructions: undefined,
+        dispatcherNotes: rateconPrefill?.dispatcherNotes ?? undefined,
+        driverInstructions: rateconPrefill?.driverInstructions ?? undefined,
         stops,
         loadType: initialLoadType,
-        reeferTempMin: undefined,
-        reeferTempMax: undefined,
-        reeferPrecool: undefined,
-        reeferMode: undefined,
+        reeferTempMin: rateconPrefill?.reeferTempMin ?? undefined,
+        reeferTempMax: rateconPrefill?.reeferTempMax ?? undefined,
+        reeferPrecool: rateconPrefill?.reeferPrecool ?? undefined,
+        reeferMode: rateconPrefill?.reeferMode ?? undefined,
         flatbedLength: undefined,
         flatbedTarpType: undefined,
         flatbedStraps: undefined,
@@ -182,7 +248,7 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
         isMilesEstimated: false,
         hazmatDocFile: null,
       };
-    }, [initialLoadType, template, intelPrefill]);
+    }, [initialLoadType, template, intelPrefill, rateconPrefill]);
 
     const formik = useFormik<LoadFormValues>({
       initialValues,
@@ -218,6 +284,7 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
           cv.carrierId !== iv.carrierId ||
           cv.driverId !== iv.driverId ||
           cv.vehicleId !== iv.vehicleId ||
+          cv.dispatcherUserId !== iv.dispatcherUserId ||
           // Load details
           cv.customerRate !== iv.customerRate ||
           cv.equipmentType !== iv.equipmentType ||
@@ -253,6 +320,19 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
 
     // Update carrierPayout when carrier selection or customerRate changes
     const { setFieldValue } = formik;
+
+    // When the broker (customer) changes, clear the previously-selected contact so a
+    // contact from a different broker doesn't linger. Skip the initial mount so a
+    // prefilled (ratecon/template) contact isn't wiped.
+    const prevCustomerIdRef = useRef(formik.values.customerId);
+    useEffect(() => {
+      if (prevCustomerIdRef.current === formik.values.customerId) {
+        return;
+      }
+      prevCustomerIdRef.current = formik.values.customerId;
+      void setFieldValue('contactId', undefined);
+    }, [formik.values.customerId, setFieldValue]);
+
     useEffect(() => {
       const custRate = Number(formik.values.customerRate) || 0;
       if (custRate <= 0 || !selectedCarrier?.companyMarginPercent) {
@@ -270,6 +350,43 @@ const CreateLoadForm = forwardRef<FormHandle, CreateLoadFormProps>(
         setFieldValue('loadedMiles', calculated);
       }
     }, [formik.values.calculatedTripMiles, setFieldValue]);
+
+    // Ratecon prefill arrives with stop addresses but no coordinates, so the route
+    // calculation (which keys off stop lat/lng) can't run and trip miles stays blank.
+    // Geocode each prefilled address once — mirroring a manual address selection — so
+    // coordinates populate and the existing route/miles/RPM chain fires.
+    const rateconGeocodedRef = useRef(false);
+    useEffect(() => {
+      if (!rateconPrefill || rateconGeocodedRef.current) {
+        return;
+      }
+      rateconGeocodedRef.current = true;
+      const geocodeStops = async (): Promise<void> => {
+        await Promise.all(
+          rateconPrefill.stops.map(async (stop, idx) => {
+            const query = [stop.address, stop.city, stop.state, stop.zip]
+              .filter((part): part is string => Boolean(part))
+              .join(', ');
+            if (query.length === 0) {
+              return;
+            }
+            try {
+              const [match] = await searchAddresses(query, 1);
+              if (match && match.lat !== null && match.lng !== null) {
+                await setFieldValue(`stops.${idx}.lat`, match.lat);
+                await setFieldValue(`stops.${idx}.lng`, match.lng);
+                if (!stop.facilityName) {
+                  await setFieldValue(`stops.${idx}.facilityName`, match.name);
+                }
+              }
+            } catch {
+              // Geocode failure leaves the stop without coords; miles just won't auto-calc.
+            }
+          }),
+        );
+      };
+      void geocodeStops();
+    }, [rateconPrefill, setFieldValue]);
 
     useEffect(() => {
       if (!onFinancialsChange) {

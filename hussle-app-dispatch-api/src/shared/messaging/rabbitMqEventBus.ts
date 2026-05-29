@@ -7,6 +7,7 @@
  * Delayed delivery requires the `rabbitmq_delayed_message_exchange` plugin.
  * See docs/infra-rabbitmq-delayed-messages.md.
  */
+import { randomUUID } from 'crypto';
 import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 import amqplib from 'amqplib';
 
@@ -14,6 +15,8 @@ import { ValidationError } from '../errors/commonErrors';
 import type { Logger } from '../utils/logger';
 import type { EventBus } from './eventBus';
 import type { EventMap } from './eventMap';
+import type { MessageDedupPort } from './messageDedupPort';
+import { createNoopMessageDedup } from './noopMessageDedup';
 
 const EXCHANGE_NAME = 'fleet-command.events';
 const EXCHANGE_TYPE = 'topic';
@@ -81,7 +84,11 @@ const getBackoffMs = (retryCount: number): number => {
   return RETRY_BACKOFF_MS[idx] ?? 0;
 };
 
-export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus => {
+export const createRabbitMqEventBus = (
+  url: string,
+  logger: Logger,
+  dedup: MessageDedupPort = createNoopMessageDedup(),
+): EventBus => {
   let channelModel: ChannelModel | null = null;
   let channel: Channel | null = null;
   let closing = false;
@@ -160,12 +167,69 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
       await ch.bindQueue(queueName, DELAYED_EXCHANGE_NAME, event);
     }
 
-    await ch.consume(queueName, (msg) => {
-      if (!msg) {
+    const scheduleRetryOrDiscard = (msg: ConsumeMessage, error: unknown): void => {
+      const content = msg.content.toString('utf-8');
+      const retryCount = getRetryCount(msg);
+      const nextRetry = retryCount + 1;
+
+      if (nextRetry > MAX_RETRIES) {
+        logger.error('Event handler failed after max retries, discarding message', {
+          event,
+          retryCount,
+          maxRetries: MAX_RETRIES,
+          error: String(error),
+          payload: content,
+        });
+        ch.ack(msg);
         return;
       }
 
+      const backoffMs = getBackoffMs(retryCount);
+      const useDelayed = delayedExchangeAvailable && backoffMs > 0;
+      const targetExchange = useDelayed ? DELAYED_EXCHANGE_NAME : EXCHANGE_NAME;
+      const publishHeaders: Record<string, unknown> = {
+        ...(msg.properties.headers ?? {}),
+        [RETRY_COUNT_HEADER]: nextRetry,
+      };
+      if (useDelayed) {
+        publishHeaders['x-delay'] = backoffMs;
+      }
+
+      try {
+        ch.publish(targetExchange, event, msg.content, {
+          persistent: true,
+          contentType: msg.properties.contentType ?? 'application/json',
+          // Preserve the original messageId so a retried-then-succeeded message
+          // is recorded under the same dedup key.
+          messageId: msg.properties.messageId,
+          headers: publishHeaders,
+        });
+        logger.warn('Event handler failed, scheduled retry', {
+          event,
+          retryCount: nextRetry,
+          maxRetries: MAX_RETRIES,
+          delayMs: useDelayed ? backoffMs : 0,
+          error: String(error),
+        });
+        ch.ack(msg);
+      } catch (republishError: unknown) {
+        // If we can't republish, drop the message rather than risk an
+        // infinite redelivery loop. The original error is the real signal.
+        logger.error('Failed to republish for retry, discarding message', {
+          event,
+          retryCount,
+          originalError: String(error),
+          republishError: String(republishError),
+          payload: content,
+        });
+        ch.nack(msg, false, false);
+      }
+    };
+
+    const handleDelivery = async (msg: ConsumeMessage): Promise<void> => {
       const content = msg.content.toString('utf-8');
+      const messageId =
+        typeof msg.properties.messageId === 'string' ? msg.properties.messageId : null;
 
       let parsed: unknown;
       try {
@@ -176,64 +240,55 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
         return;
       }
 
-      handler(parsed)
-        .then(() => {
-          ch.ack(msg);
-        })
-        .catch((error: unknown) => {
-          const retryCount = getRetryCount(msg);
-          const nextRetry = retryCount + 1;
-
-          if (nextRetry > MAX_RETRIES) {
-            logger.error('Event handler failed after max retries, discarding message', {
-              event,
-              retryCount,
-              maxRetries: MAX_RETRIES,
-              error: String(error),
-              payload: content,
-            });
+      // Idempotency: skip a message this consumer group has already processed.
+      // Fail open — a dedup-store outage must not halt the bus.
+      if (messageId !== null) {
+        try {
+          if (await dedup.wasProcessed(queueGroup, messageId)) {
+            logger.info('Duplicate message skipped', { event, queueGroup, messageId });
             ch.ack(msg);
             return;
           }
+        } catch (dedupError: unknown) {
+          logger.warn('Dedup check failed, processing without dedup', {
+            event,
+            queueGroup,
+            messageId,
+            error: String(dedupError),
+          });
+        }
+      }
 
-          const backoffMs = getBackoffMs(retryCount);
-          const useDelayed = delayedExchangeAvailable && backoffMs > 0;
-          const targetExchange = useDelayed ? DELAYED_EXCHANGE_NAME : EXCHANGE_NAME;
-          const publishHeaders: Record<string, unknown> = {
-            ...(msg.properties.headers ?? {}),
-            [RETRY_COUNT_HEADER]: nextRetry,
-          };
-          if (useDelayed) {
-            publishHeaders['x-delay'] = backoffMs;
-          }
+      try {
+        await handler(parsed);
+      } catch (error: unknown) {
+        scheduleRetryOrDiscard(msg, error);
+        return;
+      }
 
-          try {
-            ch.publish(targetExchange, event, msg.content, {
-              persistent: true,
-              contentType: msg.properties.contentType ?? 'application/json',
-              headers: publishHeaders,
-            });
-            logger.warn('Event handler failed, scheduled retry', {
-              event,
-              retryCount: nextRetry,
-              maxRetries: MAX_RETRIES,
-              delayMs: useDelayed ? backoffMs : 0,
-              error: String(error),
-            });
-            ch.ack(msg);
-          } catch (republishError: unknown) {
-            // If we can't republish, drop the message rather than risk an
-            // infinite redelivery loop. The original error is the real signal.
-            logger.error('Failed to republish for retry, discarding message', {
-              event,
-              retryCount,
-              originalError: String(error),
-              republishError: String(republishError),
-              payload: content,
-            });
-            ch.nack(msg, false, false);
-          }
-        });
+      // Mark processed only after a successful run so failures still retry.
+      if (messageId !== null) {
+        try {
+          await dedup.markProcessed(queueGroup, messageId);
+        } catch (markError: unknown) {
+          logger.warn('Failed to record processed message', {
+            event,
+            queueGroup,
+            messageId,
+            error: String(markError),
+          });
+        }
+      }
+      ch.ack(msg);
+    };
+
+    await ch.consume(queueName, (msg) => {
+      if (!msg) {
+        return;
+      }
+      handleDelivery(msg).catch((error: unknown) => {
+        logger.error('Unexpected error handling delivery', { event, error: String(error) });
+      });
     });
   };
 
@@ -246,6 +301,7 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     ch.publish(EXCHANGE_NAME, String(event), message, {
       persistent: true,
       contentType: 'application/json',
+      messageId: randomUUID(),
     });
     logger.info('Event published', { event: String(event) });
   };
@@ -280,6 +336,7 @@ export const createRabbitMqEventBus = (url: string, logger: Logger): EventBus =>
     ch.publish(DELAYED_EXCHANGE_NAME, String(event), message, {
       persistent: true,
       contentType: 'application/json',
+      messageId: randomUUID(),
       headers: { 'x-delay': delayMs },
     });
     logger.info('Delayed event published', { event: String(event), delayMs });

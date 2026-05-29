@@ -15,6 +15,7 @@ export interface CreateSmsPromptInput {
   organizationId: string;
   anchor: SmsPromptAnchorValue;
   scheduledAt: Date;
+  customBody?: string | null;
 }
 
 export interface PaginationInput {

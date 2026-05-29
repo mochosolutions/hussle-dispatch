@@ -8,6 +8,7 @@ import { LngLatBounds } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import config from '../../config';
+import { computeCameraTarget } from './computeCameraTarget';
 
 interface StopMarker {
   type: string;
@@ -89,23 +90,17 @@ const MapContent: React.FC<{
       return;
     }
 
-    const points: [number, number][] = validStops.map((s) => [s.lng, s.lat]);
-    if (validDriver) {
-      points.push([validDriver.lng, validDriver.lat]);
-    }
-
-    if (points.length === 0) {
+    const target = computeCameraTarget(validStops, validDriver);
+    if (target.kind === 'noop') {
       return;
     }
-
-    if (points.length === 1) {
-      map.flyTo({ center: points[0], zoom: 8 });
+    if (target.kind === 'jump') {
+      map.jumpTo({ center: target.center, zoom: target.zoom });
       return;
     }
-
     const bounds = new LngLatBounds();
-    points.forEach((p) => bounds.extend(p));
-    map.fitBounds(bounds, { padding: 60, maxZoom: 11 });
+    target.points.forEach((p) => bounds.extend(p));
+    map.fitBounds(bounds, { padding: 60, maxZoom: 11, duration: 0, animate: false });
   }, [mapRef, mapLoaded, validStops, validDriver]);
 
   return (

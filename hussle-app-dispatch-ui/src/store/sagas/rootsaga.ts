@@ -17,6 +17,7 @@ import { carrierPortalV2RootSaga } from 'features/carrier-portal/store/sagas';
 import { settlementSagaWatcher } from 'features/accounting/store/sagas/settlementSagaWatcher';
 import { loadBoardSagaWatcher } from 'features/load/store/sagas/loadBoardSagaWatcher';
 import { agreementsSagasWatcher } from 'features/agreements/store/sagas/agreementsSagas';
+import { rateconImportSagaWatcher } from 'features/ratecon-imports/store/sagas';
 
 export default function* rootSaga() {
   yield all([
@@ -38,5 +39,6 @@ export default function* rootSaga() {
     settlementSagaWatcher(),
     loadBoardSagaWatcher(),
     agreementsSagasWatcher(),
+    rateconImportSagaWatcher(),
   ]);
 }

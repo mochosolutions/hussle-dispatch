@@ -34,5 +34,11 @@ export const createLoadMapper = (req: Request): CreateLoadServiceInput => {
     dispatchFeeAmount: body.dispatchFeeAmount,
   };
 
-  return { ...context, input };
+  return {
+    ...context,
+    input,
+    userId: req.user?.userId ?? '',
+    overrideDispatch: body.overrideDispatch === true,
+    overrideReason: typeof body.overrideReason === 'string' ? body.overrideReason : undefined,
+  };
 };

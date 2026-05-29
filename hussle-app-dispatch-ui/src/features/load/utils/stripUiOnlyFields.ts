@@ -66,6 +66,7 @@ export const stripUiOnlyFields = (values: LoadFormValues): CreateLoadInput => {
     carrierId: values.carrierId || undefined,
     driverId: values.driverId || undefined,
     vehicleId: values.vehicleId || undefined,
+    dispatcherUserId: values.dispatcherUserId || undefined,
     contactId: values.contactId || undefined,
     customerId: values.customerId || undefined,
     externalRefNumber: values.externalRefNumber || undefined,

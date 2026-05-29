@@ -153,6 +153,7 @@ describe('smsPromptService', () => {
         organizationId: 'org-1',
         anchor: 'MANUAL',
         scheduledAt: expect.any(Date),
+        customBody: null,
       });
       expect(row.anchor).toBe('MANUAL');
       expect(row.status).toBe('PENDING');
@@ -165,6 +166,22 @@ describe('smsPromptService', () => {
           anchor: 'MANUAL',
         }),
         0,
+      );
+    });
+
+    it('persists customBody on the schedule when provided', async () => {
+      const mocks = buildMocks();
+      const service = createSmsPromptService(mocks);
+
+      await service.sendManualPrompt({
+        loadId: 'load-1',
+        organizationId: 'org-1',
+        requestingUserId: 'user-1',
+        customBody: 'Custom dispatcher message',
+      });
+
+      expect(mocks.scheduleRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ customBody: 'Custom dispatcher message' }),
       );
     });
 

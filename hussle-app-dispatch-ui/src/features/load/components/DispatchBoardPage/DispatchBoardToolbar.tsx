@@ -6,6 +6,7 @@ import { FilterBar } from 'components/FilterBar';
 import type { FilterConfig, SearchConfig } from 'components/FilterBar';
 import { LOAD_STATUSES, STATUS_LABELS } from '../../constants';
 import type { BoardView } from '../../types';
+import { DispatchBoardDateFilter } from './DispatchBoardDateFilter';
 
 export interface DispatchBoardToolbarProps {
   boardView: BoardView;
@@ -17,6 +18,9 @@ export interface DispatchBoardToolbarProps {
   onSearchChange: (value: string | number) => void;
   lastRefreshed?: string | null;
   currentCarrierFilter: string;
+  currentDateFrom?: string;
+  currentDateTo?: string;
+  onDateRangeChange: (from: Date | null, to: Date | null) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -34,6 +38,9 @@ export const DispatchBoardToolbar = ({
   onSearchChange,
   lastRefreshed,
   currentCarrierFilter,
+  currentDateFrom,
+  currentDateTo,
+  onDateRangeChange,
 }: DispatchBoardToolbarProps) => {
   const carrierOptions = useMemo(
     () => [
@@ -90,6 +97,13 @@ export const DispatchBoardToolbar = ({
         search={searchConfig}
         sx={{ alignItems: 'center' }}
       />
+      <Box sx={{ mt: 1.5 }}>
+        <DispatchBoardDateFilter
+          dateFrom={currentDateFrom}
+          dateTo={currentDateTo}
+          onChange={onDateRangeChange}
+        />
+      </Box>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
         <Tooltip title={refreshTooltip}>
           <Button variant="outlined" size="small" startIcon={<RefreshIcon />} onClick={onRefresh}>
