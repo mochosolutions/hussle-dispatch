@@ -43,7 +43,7 @@ export const startWorker = async (): Promise<void> => {
   // Minimal health server — no app routers, just the health probe
   const healthApp = express();
 
-  healthApp.get('/api/health', async (_req: Request, res: Response) => {
+  healthApp.get('/health', async (_req: Request, res: Response) => {
     const [dbResult, redisResult] = await Promise.allSettled([
       prisma.$queryRaw`SELECT 1`,
       redisClient.ping(),
