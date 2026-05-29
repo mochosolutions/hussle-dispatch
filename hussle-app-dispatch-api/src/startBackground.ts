@@ -16,6 +16,7 @@ import { initializeRateconSubscriber } from './ratecon-imports';
 import { startAgreements, stopAgreements } from './agreements';
 import { startSettlements } from './settlements';
 import { initializeSmsPromptsSubscribers } from './sms-prompts';
+import { initializeLoadIntelSubscriber } from './load-intel';
 
 interface BackgroundDeps {
   prisma: PrismaClient;
@@ -37,6 +38,7 @@ const startSubscribers = async (): Promise<void> => {
     initializeInvoiceSubscriber(),
     initializeIftaSubscriber(),
     initializeCarriersSubscriber(),
+    initializeLoadIntelSubscriber(),
   ]);
 
   startDocuments();
@@ -66,7 +68,7 @@ const startCrons = (deps: BackgroundDeps): { stopProcessedEventCleanup: () => vo
 };
 
 /**
- * Start all background work: 12 subscriber groups + 4 cron jobs.
+ * Start all background work: 13 subscriber groups + 4 cron jobs.
  *
  * Returns a `stopAll()` handle that gracefully stops every cron and calls
  * `stopAgreements()` (watchdog shutdown). Subscriber teardown is handled by
@@ -80,7 +82,7 @@ export const startBackground = async (deps: BackgroundDeps): Promise<BackgroundH
   const cronHandles = startCrons(deps);
 
   deps.logger.info('Background workers started', {
-    subscribers: 12,
+    subscribers: 13,
     crons: 4,
   });
 

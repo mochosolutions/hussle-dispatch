@@ -45,3 +45,11 @@ const loadIntelModule = createLoadIntelModule({
 });
 
 export const loadIntelRouter = loadIntelRoutes(loadIntelModule.controllers);
+
+// Initialize subscriber for load-intel events — call initializeLoadIntelSubscriber() explicitly
+export const initializeLoadIntelSubscriber = (): Promise<void> =>
+  loadIntelModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize load-intel CPM invalidation subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });

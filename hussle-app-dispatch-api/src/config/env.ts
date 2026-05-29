@@ -20,6 +20,7 @@ const requireInProd = (key: string): string =>
 
 export const env = {
   PORT: parseInt(getEnv('PORT', '3001'), 10),
+  WORKER_HEALTH_PORT: parseInt(getEnv('WORKER_HEALTH_PORT', '3002'), 10),
   NODE_ENV: getEnv('NODE_ENV', 'development') as 'development' | 'production' | 'test',
   ENVIRONMENT_NAME: getEnv('ENVIRONMENT_NAME', 'unknown') as
     | 'local'

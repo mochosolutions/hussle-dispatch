@@ -41,6 +41,7 @@ interface LoadIntelModule {
   ingest: (orgId: string, payload: unknown) => Promise<IngestResult>;
   ingestBatch: (orgId: string, payloads: unknown[]) => Promise<IngestBatchResult>;
   controllers: LoadIntelControllers;
+  initializeSubscriber: () => Promise<void>;
 }
 
 export const createLoadIntelModule = (deps: LoadIntelModuleDeps): LoadIntelModule => {
@@ -76,17 +77,6 @@ export const createLoadIntelModule = (deps: LoadIntelModuleDeps): LoadIntelModul
     redisPort,
     logger: deps.logger,
   };
-
-  // Initialize event subscribers
-  initializeCpmInvalidationSubscriber({
-    eventBus: deps.eventBus,
-    redisPort,
-    logger: deps.logger,
-  }).catch((error: unknown) => {
-    deps.logger.error('Failed to initialize CPM invalidation subscriber', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  });
 
   const controllers: LoadIntelControllers = {
     getFeed: getFeedController({
@@ -128,10 +118,18 @@ export const createLoadIntelModule = (deps: LoadIntelModuleDeps): LoadIntelModul
     }),
   };
 
+  const initializeSubscriber = () =>
+    initializeCpmInvalidationSubscriber({
+      eventBus: deps.eventBus,
+      redisPort,
+      logger: deps.logger,
+    });
+
   return {
     ingest: (orgId: string, payload: unknown) => ingest(orgId, payload, ingestServiceDeps),
     ingestBatch: (orgId: string, payloads: unknown[]) =>
       ingestBatch(orgId, payloads, ingestServiceDeps),
     controllers,
+    initializeSubscriber,
   };
 };

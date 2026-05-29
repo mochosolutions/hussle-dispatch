@@ -15,7 +15,7 @@ interface HealthCheckResult {
   checks: { db: CheckStatus; redis: CheckStatus; eventBus: CheckStatus };
 }
 
-const WORKER_HEALTH_PORT = env.PORT + 1;
+const { WORKER_HEALTH_PORT } = env;
 
 /**
  * Boot sequence for ROLE=worker.

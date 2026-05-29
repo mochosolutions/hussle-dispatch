@@ -113,15 +113,12 @@ describe('role bootstrap gating', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Api role: createApp does NOT invoke startBackground
+  // Api role: createApp does NOT invoke startBackground and registers 0 subscribers
   //
-  // Note: app.ts imports the loadIntelRouter which eagerly registers a CPM
-  // invalidation subscriber inside createLoadIntelModule (a pre-existing
-  // violation in load-intel/compositionRoot.ts). The critical constraint
-  // enforced here is that app.ts does NOT call startBackground — the full
-  // subscriber + cron orchestrator — so the HTTP-only role never starts the
-  // worker machinery. The dependency-cruiser `no-background-in-api` rule
-  // (T-07) enforces the hard import boundary at build time.
+  // After T-11 the load-intel CPM invalidation subscriber is lazy — it is no
+  // longer called inside createLoadIntelModule. Importing the load-intel router
+  // (via app.ts) must register ZERO subscribers. The dependency-cruiser
+  // `no-background-in-api` rule enforces the hard import boundary at build time.
   // ---------------------------------------------------------------------------
 
   describe('createApp (api role)', () => {
@@ -141,31 +138,21 @@ describe('role bootstrap gating', () => {
       expect(scheduleSpy).not.toHaveBeenCalled();
     });
 
-    it('registers fewer subscribers than startBackground when createApp is called alone', async () => {
-      // Arrange — count subscribe calls from createApp alone
+    it('registers 0 subscribers when createApp is called alone', async () => {
+      // Arrange
       const subscribeSpy = jest.spyOn(sharedEventBus, 'subscribe');
 
       const mockPrisma = buildMockPrisma();
       const mockRedis = { ping: jest.fn().mockResolvedValue('PONG') };
       const mockEventBus = { isReady: jest.fn().mockReturnValue(true) };
 
+      // Act
       const { createApp } = await import('../../app');
       createApp({ prisma: mockPrisma, redis: mockRedis, eventBus: mockEventBus });
-      const countFromCreateApp = subscribeSpy.mock.calls.length;
 
-      jest.clearAllMocks();
-
-      // Count subscribe calls from startBackground
-      const deps = { prisma: buildMockPrisma(), logger: buildMockLogger() };
-      const handles = await startBackground(deps);
-      const countFromStartBackground = subscribeSpy.mock.calls.length;
-
-      await handles.stopAll();
-
-      // Assert — startBackground registers far more subscribers than createApp alone
-      // (createApp only has the pre-existing load-intel eager subscriber;
-      //  startBackground wires all 9+ subscriber groups)
-      expect(countFromStartBackground).toBeGreaterThan(countFromCreateApp);
+      // Assert — the HTTP-only code path registers zero subscribers; all subscriber
+      // init is deferred to startBackground (called only by ROLE=worker and ROLE=all)
+      expect(subscribeSpy).not.toHaveBeenCalled();
     });
   });
 });
