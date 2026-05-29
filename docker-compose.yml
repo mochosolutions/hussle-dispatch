@@ -28,6 +28,8 @@ services:
     env_file:
       - ./hussle-app-dispatch-api/.env
     environment:
+      # HTTP-only role: no subscribers, no crons (those run in dispatch-worker)
+      - ROLE=api
       # Ratecon ingest — docker-network hostnames (override .env localhost values)
       - PYTHON_SERVICE_URL=http://python-service:8000
       - PYTHON_SERVICE_TOKEN=dev
@@ -46,6 +48,47 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Background worker: subscribers + crons (ROLE=worker). Same image as dispatch-api.
+  # Reuses migrate-and-start (idempotent migrate; api migrates first via depends_on).
+  dispatch-worker:
+    build:
+      context: ./hussle-app-dispatch-api
+      dockerfile: Dockerfile.dev
+    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev'
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./hussle-app-dispatch-api:/usr/app
+      - /usr/app/node_modules
+    env_file:
+      - ./hussle-app-dispatch-api/.env
+    environment:
+      - ROLE=worker
+      - WORKER_HEALTH_PORT=3002
+      - PYTHON_SERVICE_URL=http://python-service:8000
+      - PYTHON_SERVICE_TOKEN=dev
+      - RATECON_WEBHOOK_SECRET=dev
+      - RATECON_INBOUND_DOMAIN=notify.localhost
+      - RATECON_DEV_MAILPIT_INBOUND=true
+      - MAILPIT_API_URL=http://hussle-app-mailpit:8025
+    depends_on:
+      hussle-app-redis:
+        condition: service_healthy
+      hussle-app-postgres:
+        condition: service_healthy
+      hussle-app-rabbitmq:
+        condition: service_healthy
+      python-service:
+        condition: service_started
+      dispatch-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
