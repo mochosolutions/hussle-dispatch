@@ -21,6 +21,10 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({ load, onEdit }) 
     ? `#${assignment.vehicle.unitNumber} \u2014 ${formatEquipmentType(assignment.vehicle.type)}`
     : null;
 
+  const dispatcherName = assignment.dispatcher
+    ? `${assignment.dispatcher.firstName} ${assignment.dispatcher.lastName}`
+    : null;
+
   return (
     <SectionCard
       title="Assignment"
@@ -59,6 +63,10 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({ load, onEdit }) 
         <Grid item xs={12} sm={6} md={3}>
           <SectionLabel>Equipment</SectionLabel>
           <BodyStrong>{formatEquipmentType(load.equipmentType)}</BodyStrong>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <SectionLabel>Dispatcher</SectionLabel>
+          <BodyStrong>{dispatcherName ?? 'Unassigned'}</BodyStrong>
         </Grid>
       </Grid>
     </SectionCard>

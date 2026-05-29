@@ -1,4 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
+import { isWithinInterval, parseISO } from 'date-fns';
 import type { RootState } from 'store';
 import { LoadingState } from '@mocho/ui/redux';
 import { loadSelectors } from '../reducers/loadEntitySlice';
@@ -7,6 +8,7 @@ import { formatTimestamp, formatCurrencyCompact } from '../../constants';
 import formatPhone from 'utils/formatPhone';
 import type {
   BoardView,
+  DispatchBlocker,
   KanbanGroup,
   LoadDetail,
   LoadFilters,
@@ -91,6 +93,18 @@ export const selectOnboardingBlock = (state: RootState) =>
   state.pages.loads.onboardingBlock;
 
 // ---------------------------------------------------------------------------
+// Dispatch blocker selectors — structured 422 blockers for inline display
+// ---------------------------------------------------------------------------
+
+export const selectCreateBlockers = (state: RootState): DispatchBlocker[] =>
+  state.pages.loads.createBlockers;
+
+export const selectAssignBlockers =
+  (loadId: string) =>
+  (state: RootState): DispatchBlocker[] =>
+    state.pages.loads.assignBlockers[loadId] ?? [];
+
+// ---------------------------------------------------------------------------
 // Load derivation helpers — pure functions over the canonical nested shape
 // ---------------------------------------------------------------------------
 
@@ -149,8 +163,33 @@ export const selectLoadContactPhone = (load: LoadShape): string | null =>
   load.contact?.phone ?? null;
 
 // ---------------------------------------------------------------------------
-// Filtered loads selector — applies search + status filters from Redux state
+// Filtered loads selector — applies search + status + date filters from state
 // ---------------------------------------------------------------------------
+
+// A load matches the date window when its pickup OR delivery appointment falls
+// within [dateFrom, dateTo] (inclusive). The date-filter UI always supplies a
+// full-day-aligned range, so a same-day boundary still matches.
+export const isLoadInDateRange = (
+  load: LoadShape,
+  dateFrom?: string,
+  dateTo?: string,
+): boolean => {
+  if (!dateFrom && !dateTo) {
+    return true;
+  }
+
+  const start = dateFrom ? parseISO(dateFrom) : new Date(-8640000000000000);
+  const end = dateTo ? parseISO(dateTo) : new Date(8640000000000000);
+  const interval = { start, end };
+
+  const pickup = selectLoadPickupDate(load);
+  const delivery = selectLoadDeliveryDate(load);
+
+  const pickupInRange = pickup !== null && isWithinInterval(parseISO(pickup), interval);
+  const deliveryInRange = delivery !== null && isWithinInterval(parseISO(delivery), interval);
+
+  return pickupInRange || deliveryInRange;
+};
 
 export const selectFilteredLoads = createSelector(
   [selectAllLoads, selectLoadFilters],
@@ -179,6 +218,12 @@ export const selectFilteredLoads = createSelector(
       result = result.filter((load) => filters.status?.includes(load.status));
     }
 
+    if (filters.dateFrom || filters.dateTo) {
+      result = result.filter((load) =>
+        isLoadInDateRange(load, filters.dateFrom, filters.dateTo),
+      );
+    }
+
     return result;
   },
 );
@@ -189,8 +234,11 @@ export const selectUniqueCarrierNames = createSelector(
     [...new Set(loads.map((load) => selectLoadCarrierName(load)).filter(Boolean))] as string[],
 );
 
+// Kanban groups consume the filtered set so the toolbar filters (status,
+// carrier, search, and the date window) apply consistently across every board
+// view — previously Kanban read the unfiltered list and ignored the toolbar.
 export const selectLoadsByKanbanGroup = createSelector(
-  [selectAllLoads],
+  [selectFilteredLoads],
   (loads): Record<KanbanGroup, LoadListItem[]> => {
     const groups: Record<KanbanGroup, LoadListItem[]> = {
       NEW: [],

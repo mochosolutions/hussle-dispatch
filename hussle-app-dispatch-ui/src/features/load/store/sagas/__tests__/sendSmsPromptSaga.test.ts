@@ -38,7 +38,7 @@ describe('sendSmsPromptSaga', () => {
     const prompt = buildPrompt();
 
     const result = await expectSaga(sendSmsPromptSaga, sendSmsPromptRequest({ loadId: 'load-1' }))
-      .provide([[call(sendSmsPrompt, 'load-1'), prompt]])
+      .provide([[call(sendSmsPrompt, 'load-1', undefined), prompt]])
       .put(smsPromptEntityActions.upsertMany([prompt]))
       .put(sendSmsPromptSuccess({ loadId: 'load-1', prompt }))
       .put(fetchSmsPromptHistoryRequest({ loadId: 'load-1' }))
@@ -62,7 +62,7 @@ describe('sendSmsPromptSaga', () => {
       sendSmsPromptSaga,
       sendSmsPromptRequest({ loadId: 'load-1' }),
     )
-      .provide([[call(sendSmsPrompt, 'load-1'), throwError(error)]])
+      .provide([[call(sendSmsPrompt, 'load-1', undefined), throwError(error)]])
       .put(sendSmsPromptFailure({ loadId: 'load-1', error: 'Cooldown not elapsed' }))
       .run();
 
@@ -86,7 +86,7 @@ describe('sendSmsPromptSaga', () => {
     });
 
     const result = await expectSaga(sendSmsPromptSaga, sendSmsPromptRequest({ loadId: 'load-1' }))
-      .provide([[call(sendSmsPrompt, 'load-1'), throwError(error)]])
+      .provide([[call(sendSmsPrompt, 'load-1', undefined), throwError(error)]])
       .put(sendSmsPromptFailure({ loadId: 'load-1', error: 'Driver phone missing' }))
       .run();
 
@@ -98,5 +98,17 @@ describe('sendSmsPromptSaga', () => {
         effect.payload.action.payload.variant === 'error',
     );
     expect(didNotifyError).toBe(true);
+  });
+
+  it('forwards a custom body to the API when provided', async () => {
+    const prompt = buildPrompt();
+
+    await expectSaga(
+      sendSmsPromptSaga,
+      sendSmsPromptRequest({ loadId: 'load-1', body: 'Hey, please check in' }),
+    )
+      .provide([[call(sendSmsPrompt, 'load-1', 'Hey, please check in'), prompt]])
+      .put(smsPromptEntityActions.upsertMany([prompt]))
+      .run();
   });
 });

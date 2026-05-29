@@ -28,6 +28,7 @@ const makeScheduleRow = (
   sentAt: overrides.sentAt ?? null,
   twilioMessageSid: overrides.twilioMessageSid ?? null,
   failureReason: overrides.failureReason ?? null,
+  customBody: overrides.customBody ?? null,
   createdAt: overrides.createdAt ?? new Date(),
   updatedAt: overrides.updatedAt ?? new Date(),
 });
@@ -530,6 +531,68 @@ describe('initializeSmsPromptWorker', () => {
       'sms.prompt.due',
       promptDuePayload({ anchor: 'MANUAL' }),
     );
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(/^Hussle: Load #\S+ needs a check-in\.\n.+$/);
+  });
+
+  it('uses customBody verbatim when present, appending the short URL', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({
+        anchor: 'MANUAL',
+        customBody: 'Dispatcher wrote this — please check in',
+      }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler('sms.prompt.due', promptDuePayload({ anchor: 'MANUAL' }));
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(/^Dispatcher wrote this — please check in\n.+$/);
+  });
+
+  it('does not duplicate the short URL when customBody already contains it', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    const linkInBody = `${deps.publicShortBaseUrl}/s/test-slug`;
+    deps.shortLinkService.createShortLink.mockResolvedValueOnce({
+      slug: 'test-slug',
+    });
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({
+        anchor: 'MANUAL',
+        customBody: `Track here: ${linkInBody}`,
+      }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler('sms.prompt.due', promptDuePayload({ anchor: 'MANUAL' }));
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body.match(new RegExp(linkInBody.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).toHaveLength(1);
+  });
+
+  it('falls back to composeSmsBody when customBody is null', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'MANUAL', customBody: null }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler('sms.prompt.due', promptDuePayload({ anchor: 'MANUAL' }));
+
+    const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
+    expect(body).toMatch(/^Hussle: Load #\S+ needs a check-in\.\n.+$/);
+  });
+
+  it('falls back to composeSmsBody when customBody is whitespace only', async () => {
+    const { deps, invokeHandler } = buildMocks();
+    deps.scheduleRepo.findById.mockResolvedValue(
+      makeScheduleRow({ anchor: 'MANUAL', customBody: '   \n  ' }),
+    );
+    await initializeSmsPromptWorker(deps);
+
+    await invokeHandler('sms.prompt.due', promptDuePayload({ anchor: 'MANUAL' }));
 
     const body = deps.smsService.sendSms.mock.calls[0]?.[0]?.body ?? '';
     expect(body).toMatch(/^Hussle: Load #\S+ needs a check-in\.\n.+$/);

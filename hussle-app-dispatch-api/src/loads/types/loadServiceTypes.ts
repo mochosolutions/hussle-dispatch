@@ -22,7 +22,10 @@ export interface LoadWriteResult {
 export interface CreateLoadServiceInput {
   organizationId: string;
   role: string;
+  userId: string;
   input: CreateLoadInput;
+  overrideDispatch?: boolean;
+  overrideReason?: string;
 }
 
 export interface ListLoadsServiceInput {
@@ -50,6 +53,9 @@ export interface AssignLoadServiceInput {
   organizationId: string;
   input: LoadAssignmentInput;
   role: string;
+  userId: string;
+  overrideDispatch?: boolean;
+  overrideReason?: string;
 }
 
 export interface DeleteLoadServiceInput {

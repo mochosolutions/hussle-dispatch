@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type Redis from 'ioredis';
 import type { PrismaTransaction } from '@/config/database';
+import type { EventBus } from '@/shared/messaging/eventBus';
 import { getCityCoords } from '@/shared/geoLookup';
 import type { Logger } from '@/shared/utils/logger';
 import type { EligibleDriverQueryPort } from '@/loads/types/rankDriverTypes';
@@ -11,15 +12,18 @@ import { createDriverControllers } from './controllers/driverController';
 import { driverAvailabilityRepositoryPrisma } from './repositories/driverAvailabilityRepositoryPrisma';
 import { driverRepositoryPrisma } from './repositories/driverRepositoryPrisma';
 import { eligibleDriverQueryPrisma } from './repositories/eligibleDriverQueryPrisma';
+import { checkCallLocationRepositoryPrisma } from './repositories/checkCallLocationRepositoryPrisma';
 import { calculateDeadheadTo } from './services/deadheadToService';
 import { createDriverService } from './services/driverService';
 import * as availabilityService from './services/driverAvailabilityService';
+import { initializeCheckCallLocationSubscriber } from './services/checkCallLocationSubscriber';
 import type { DriverRouterControllers } from './routes/driverRoutes';
 
 interface DriverModuleDeps {
   prismaClient: PrismaClient | PrismaTransaction;
   redis: Redis;
   logger: Logger;
+  eventBus?: EventBus;
 }
 
 export interface DriverModuleQueries extends EligibleDriverQueryPort {
@@ -34,14 +38,17 @@ export const createDriversModule = ({
   prismaClient,
   redis,
   logger,
+  eventBus,
 }: DriverModuleDeps): {
   controllers: DriverRouterControllers;
   queries: DriverModuleQueries;
+  initializeSubscribers: () => Promise<void>;
 } => {
   const repositories = driverRepositoryPrisma(prismaClient);
   const loadQueryPort = createLoadQueries(prismaClient);
   const availabilityRepo = driverAvailabilityRepositoryPrisma(prismaClient);
   const eligibleDriverQuery = eligibleDriverQueryPrisma(prismaClient);
+  const checkCallLocationRepo = checkCallLocationRepositoryPrisma(prismaClient);
 
   const driverService = createDriverService({
     driverRepository: repositories,
@@ -83,11 +90,23 @@ export const createDriversModule = ({
       availabilityService.checkAvailabilityAt(input, availabilityDeps),
   };
 
+  const initializeSubscribers = async (): Promise<void> => {
+    if (eventBus === undefined) {
+      return;
+    }
+    await initializeCheckCallLocationSubscriber({
+      eventBus,
+      repo: checkCallLocationRepo,
+      logger,
+    });
+  };
+
   return {
     controllers: {
       ...controllers,
       availability: availabilityControllers,
     },
     queries,
+    initializeSubscribers,
   };
 };

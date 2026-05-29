@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -7,7 +7,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Link,
   Stack,
+  TextField,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'store';
 import { DetailRow, Meta } from 'components/Typography';
@@ -23,20 +25,33 @@ interface SendSmsPromptModalProps {
   onClose: () => void;
 }
 
-// Default cooldown; actual cooldown is enforced server-side via OrgSettings.
 const COOLDOWN_MINUTES = 15;
+const MAX_BODY_LENGTH = 640;
+
+const buildDefaultBody = (loadNumber: string): string =>
+  `Hussle: Load #${loadNumber} needs a check-in.`;
 
 export const SendSmsPromptModal: React.FC<SendSmsPromptModalProps> = ({ loadId, onClose }) => {
   const dispatch = useDispatch();
   const load = useSelector(selectLoadDetailById(loadId));
   const lastSentAt = useSelector(selectLastSentAtForLoad(loadId));
 
-  // Captured once on mount via lazy initializer — avoids calling Date.now during render.
   const [mountTime] = useState<number>(() => Date.now());
+
+  const defaultBody = useMemo(
+    () => (load ? buildDefaultBody(load.loadNumber) : ''),
+    [load],
+  );
+
+  const [body, setBody] = useState<string>(defaultBody);
 
   useEffect(() => {
     dispatch(fetchSmsPromptHistoryRequest({ loadId }));
   }, [dispatch, loadId]);
+
+  useEffect(() => {
+    setBody(defaultBody);
+  }, [defaultBody]);
 
   const driver = load?.assignment?.driver ?? null;
   const driverName = driver ? `${driver.firstName} ${driver.lastName}` : '—';
@@ -46,19 +61,21 @@ export const SendSmsPromptModal: React.FC<SendSmsPromptModalProps> = ({ loadId, 
     lastSentAt !== null &&
     mountTime - new Date(lastSentAt).getTime() < COOLDOWN_MINUTES * 60_000;
 
-  const previewBody = load ? (
-    <>
-      Hussle: Load #{load.loadNumber} needs a check-in.
-      <br />
-      <Box component="span" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-        &lt;short check-in link&gt;
-      </Box>
-    </>
-  ) : null;
+  const trimmed = body.trim();
+  const isDirty = trimmed !== defaultBody.trim();
+  const overLimit = trimmed.length > MAX_BODY_LENGTH;
+  const canSend = driverPhone !== null && trimmed.length > 0 && !overLimit;
 
   const handleSend = () => {
-    dispatch(sendSmsPromptRequest({ loadId }));
+    dispatch(
+      sendSmsPromptRequest({
+        loadId,
+        body: isDirty ? trimmed : undefined,
+      }),
+    );
   };
+
+  const handleReset = () => setBody(defaultBody);
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
@@ -68,18 +85,29 @@ export const SendSmsPromptModal: React.FC<SendSmsPromptModalProps> = ({ loadId, 
           <DetailRow label="Driver" value={driverName} />
           <DetailRow label="Phone" value={driverPhone ?? 'Not on file'} />
           <Box>
-            <Meta sx={{ display: 'block', mb: 0.5 }}>Message preview</Meta>
-            <Box
-              sx={{
-                p: 1.5,
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-                fontFamily: 'monospace',
-                fontSize: '0.875rem',
-              }}
-            >
-              {previewBody}
-            </Box>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+              <Meta>Message body</Meta>
+              {isDirty && (
+                <Link component="button" type="button" onClick={handleReset} underline="hover">
+                  Reset to default
+                </Link>
+              )}
+            </Stack>
+            <TextField
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              multiline
+              minRows={4}
+              maxRows={8}
+              fullWidth
+              error={overLimit}
+              helperText={
+                overLimit
+                  ? `Message is ${trimmed.length} characters — limit is ${MAX_BODY_LENGTH}.`
+                  : `${trimmed.length} / ${MAX_BODY_LENGTH} characters. The short check-in link is appended automatically if not already present.`
+              }
+              inputProps={{ 'aria-label': 'SMS message body' }}
+            />
           </Box>
           {cooldownActive && (
             <Alert severity="warning">
@@ -91,7 +119,7 @@ export const SendSmsPromptModal: React.FC<SendSmsPromptModalProps> = ({ loadId, 
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSend} disabled={driverPhone === null}>
+        <Button variant="contained" onClick={handleSend} disabled={!canSend}>
           Send
         </Button>
       </DialogActions>

@@ -8,6 +8,7 @@ import type { SmsPromptScheduleResponse } from 'utils/api/loads/smsPromptApi';
 import type {
   AssignLoadInput,
   BoardView,
+  DispatchBlocker,
   FeedMeta,
   LoadBoardSource,
   LoadFilters,
@@ -45,6 +46,11 @@ export interface LoadPageState extends CrudPageState {
   feedError: string | null;
   datIngesting: boolean;
   onboardingBlock: OnboardingBlockInfo | null;
+  // Structured dispatch blockers from the most recent 422 create response.
+  createBlockers: DispatchBlocker[];
+  // Structured dispatch blockers from the most recent 422 assign response,
+  // keyed by loadId so concurrent drawers don't clobber each other.
+  assignBlockers: Record<string, DispatchBlocker[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +102,8 @@ const loadPageInitialExtras: Pick<
   | 'feedError'
   | 'datIngesting'
   | 'onboardingBlock'
+  | 'createBlockers'
+  | 'assignBlockers'
 > = {
   boardView: readPersistedBoardView(),
   filters: {},
@@ -108,6 +116,8 @@ const loadPageInitialExtras: Pick<
   feedError: null,
   datIngesting: false,
   onboardingBlock: null,
+  createBlockers: [],
+  assignBlockers: {},
 };
 
 export const loadPageSlice = createCrudSlice({
@@ -152,6 +162,13 @@ const setLoadRejected = (
   errors: { ...state.errors, [key]: error },
 });
 
+// Drops the blocker list for a single load while leaving other loads intact.
+const clearAssignBlockersForLoad = (
+  current: Record<string, DispatchBlocker[]>,
+  loadId: string,
+): Record<string, DispatchBlocker[]> =>
+  Object.fromEntries(Object.entries(current).filter(([key]) => key !== loadId));
+
 // Helper — preserves all custom (non-CRUD) fields when merging CRUD state changes
 const preserveCustomFields = (
   crudState: CrudPageState,
@@ -169,6 +186,8 @@ const preserveCustomFields = (
   feedError: customState.feedError,
   datIngesting: customState.datIngesting,
   onboardingBlock: customState.onboardingBlock,
+  createBlockers: customState.createBlockers,
+  assignBlockers: customState.assignBlockers,
 });
 
 export const loadPageReducer = (
@@ -248,6 +267,33 @@ export const loadPageReducer = (
   }
   if (clearOnboardingBlock.match(action)) {
     return { ...state, onboardingBlock: null };
+  }
+
+  // Dispatch-blocker actions — surfaced from 422 create/assign responses so the
+  // page/drawer can render inline errors and an admin override affordance.
+  if (setCreateBlockers.match(action)) {
+    return { ...state, createBlockers: action.payload };
+  }
+  if (setAssignBlockers.match(action)) {
+    return {
+      ...state,
+      assignBlockers: { ...state.assignBlockers, [action.payload.loadId]: action.payload.blockers },
+    };
+  }
+
+  // Reset stale create blockers when a new create attempt starts or succeeds.
+  if (createLoadRequest.match(action) || createLoadSuccess.match(action)) {
+    const nextCrud = crudReducer(state, action);
+    return { ...preserveCustomFields(nextCrud, state), createBlockers: [] };
+  }
+
+  // Reset stale assign blockers (for this load) when a new assign attempt
+  // starts or succeeds, leaving other loads' blockers untouched.
+  if (assignLoadRequest.match(action) || assignLoadSuccess.match(action)) {
+    return {
+      ...state,
+      assignBlockers: clearAssignBlockersForLoad(state.assignBlockers, action.payload.loadId),
+    };
   }
 
   // Assign-and-dispatch lifecycle — composite-key loading state per load
@@ -356,6 +402,17 @@ export const assignAndDispatchFailure = createAction<{
   loadId: string;
   error: string;
 }>('load/assignAndDispatchFailure');
+
+// ---------------------------------------------------------------------------
+// Dispatch blocker actions — populated from 422 create/assign responses
+// ---------------------------------------------------------------------------
+
+export const setCreateBlockers = createAction<DispatchBlocker[]>('load/setCreateBlockers');
+
+export const setAssignBlockers = createAction<{
+  loadId: string;
+  blockers: DispatchBlocker[];
+}>('load/setAssignBlockers');
 
 export const createCheckCallRequest = createAction<{
   loadId: string;
@@ -531,7 +588,9 @@ export const stopPolling = createAction('load/stopPolling');
 // SMS prompt actions
 // ---------------------------------------------------------------------------
 
-export const sendSmsPromptRequest = createAction<{ loadId: string }>('load/sendSmsPromptRequest');
+export const sendSmsPromptRequest = createAction<{ loadId: string; body?: string }>(
+  'load/sendSmsPromptRequest',
+);
 
 export const sendSmsPromptSuccess = createAction<{
   loadId: string;

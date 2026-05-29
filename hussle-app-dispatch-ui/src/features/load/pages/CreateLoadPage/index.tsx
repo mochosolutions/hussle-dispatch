@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Button, Chip, Divider, Fade, Stack } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Chip, Divider, Fade, Stack } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { PageWrapper } from '@mocho/ui/components';
 import { useDispatch, useSelector } from 'store';
@@ -9,8 +9,12 @@ import { useFormRef } from '../../../../mocho/hooks/useFormRef';
 import { useDirtyFormBlocker } from '../../../../mocho/forms/hooks/useDirtyFormBlocker';
 import { useModalActions } from '../../../ui/hooks/useModalActions';
 import { closeModal as closeModalAction } from '../../../ui/store/reducers/uiSlice';
+import { isAdminSelector } from 'features/auth/store/selectors/authSelector';
 import { createLoadRequest } from '../../store/reducers';
-import { selectLoadCreateLoading } from '../../store/selectors/loadSelectors';
+import {
+  selectLoadCreateLoading,
+  selectCreateBlockers,
+} from '../../store/selectors/loadSelectors';
 import type {
   CreateLoadInput,
   FinancialSummary,
@@ -18,8 +22,10 @@ import type {
   LoadTemplate,
   QueuedDocument,
 } from '../../types';
+import { OverrideDispatchDialog } from '../../components/OverrideDispatchDialog';
 import { KpiCell, Meta } from 'components/Typography';
 import type { LoadFormValues } from '../../validators/loadSchema';
+import type { RateconReviewLocationState } from 'features/ratecon-imports/types';
 import {
   LOAD_TYPE_OPTIONS,
   formatCurrency,
@@ -38,7 +44,17 @@ const CreateLoadPage = () => {
   const { formRef, formState, handleFormStateChange, submitForm } = useFormRef();
   const { openModal } = useModalActions();
   const isCreating = useSelector(selectLoadCreateLoading);
+  const isAdmin = useSelector(isAdminSelector);
+  const createBlockers = useSelector(selectCreateBlockers);
   const hasSubmittedRef = useRef(false);
+  // Preserve the exact last-submitted payload so an admin override re-submits
+  // the identical request plus the two override fields.
+  const lastSubmittedPayloadRef = useRef<{
+    data: CreateLoadInput;
+    queuedDocuments: QueuedDocument[];
+    rateconImportId?: string;
+  } | null>(null);
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
 
   useDirtyFormBlocker({
     isDirty: formState.isDirty && !hasSubmittedRef.current,
@@ -51,8 +67,15 @@ const CreateLoadPage = () => {
     },
   });
 
-  const locationState = location.state as IntelLocationState | null;
+  const locationState = location.state as
+    | (IntelLocationState & Partial<RateconReviewLocationState>)
+    | null;
   const intelPrefill = locationState?.intelPrefill;
+  const rateconPrefill = locationState?.rateconPrefill ?? undefined;
+  const rateconImportId = locationState?.rateconImportId;
+  const rateconCustomerHint = locationState?.rateconCustomerHint ?? null;
+  const rateconRequiresReview = locationState?.rateconRequiresReview ?? false;
+  const rateconWarnings = locationState?.rateconWarnings ?? [];
 
   const loadType = 'std';
   // const [loadType, setLoadType] = useState<string | null>(intelPrefill ? 'std' : null);
@@ -94,18 +117,43 @@ const CreateLoadPage = () => {
   const handleSubmit = useCallback(
     (payload: { data: CreateLoadInput; queuedDocuments: QueuedDocument[] }) => {
       hasSubmittedRef.current = true;
-      dispatch(
-        createLoadRequest({
-          data: {
-            ...payload.data,
-            status: 'BOOKED',
-          },
-          queuedDocuments: payload.queuedDocuments,
-        }),
-      );
+      const requestPayload = {
+        data: {
+          ...payload.data,
+          status: 'BOOKED' as const,
+        },
+        queuedDocuments: payload.queuedDocuments,
+        rateconImportId,
+      };
+      lastSubmittedPayloadRef.current = requestPayload;
+      dispatch(createLoadRequest(requestPayload));
+    },
+    [dispatch, rateconImportId],
+  );
+
+  const handleOverrideConfirm = useCallback(
+    (reason: string) => {
+      const original = lastSubmittedPayloadRef.current;
+      if (!original) {
+        return;
+      }
+      setOverrideDialogOpen(false);
+      const overridePayload = {
+        ...original,
+        data: {
+          ...original.data,
+          overrideDispatch: true,
+          overrideReason: reason,
+        },
+      };
+      lastSubmittedPayloadRef.current = overridePayload;
+      dispatch(createLoadRequest(overridePayload));
     },
     [dispatch],
   );
+
+  const canOverrideCreate =
+    isAdmin && createBlockers.length > 0 && createBlockers.every((blocker) => blocker.overridable);
 
   const handleSaveDraft = useCallback(() => {
     if (formRef.current) {
@@ -164,6 +212,47 @@ const CreateLoadPage = () => {
         actions={headerActions}
         summary={<CreateLoadSummaryBar financials={financials} />}
       >
+        {rateconPrefill && (
+          <Alert severity={rateconRequiresReview ? 'warning' : 'info'} sx={{ mb: 2 }}>
+            <AlertTitle>Prefilled from rate confirmation</AlertTitle>
+            Review the details below before creating the load.
+            {rateconCustomerHint?.companyName && (
+              <Box sx={{ mt: 1 }}>
+                Detected customer: <strong>{rateconCustomerHint.companyName}</strong>
+                {rateconCustomerHint.mcNumber && ` (MC# ${rateconCustomerHint.mcNumber})`} — search
+                and select or create it below.
+              </Box>
+            )}
+            {rateconRequiresReview && rateconWarnings.length > 0 && (
+              <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2.5 }}>
+                {rateconWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </Box>
+            )}
+          </Alert>
+        )}
+        {createBlockers.length > 0 && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <AlertTitle>Cannot dispatch this load</AlertTitle>
+            <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2.5 }}>
+              {createBlockers.map((blocker) => (
+                <li key={blocker.code}>{blocker.message}</li>
+              ))}
+            </Box>
+            {canOverrideCreate && (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                sx={{ mt: 1.5 }}
+                onClick={() => setOverrideDialogOpen(true)}
+              >
+                Override & dispatch anyway
+              </Button>
+            )}
+          </Alert>
+        )}
         <CreateLoadForm
           ref={formRef}
           onSubmit={handleSubmit}
@@ -172,8 +261,17 @@ const CreateLoadPage = () => {
           initialLoadType={loadType}
           template={template}
           intelPrefill={intelPrefill}
+          rateconPrefill={rateconPrefill}
+          rateconCustomerHint={rateconCustomerHint}
         />
       </DetailLayout>
+      <OverrideDispatchDialog
+        open={overrideDialogOpen}
+        blockers={createBlockers}
+        submitting={isCreating}
+        onConfirm={handleOverrideConfirm}
+        onCancel={() => setOverrideDialogOpen(false)}
+      />
     </PageWrapper>
   );
 };

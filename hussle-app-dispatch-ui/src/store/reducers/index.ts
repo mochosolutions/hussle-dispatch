@@ -38,6 +38,10 @@ import { settlementPageReducer } from 'features/accounting/store/reducers/settle
 import { iftaPageReducer } from 'features/accounting/store/reducers/iftaPageSlice';
 import { expensePageReducer } from 'features/accounting/store/reducers/expensePageSlice';
 import { expenseReducer } from 'features/accounting/store/reducers/expenseEntitySlice';
+import {
+  rateconImportPageReducer,
+  rateconImportEntityReducer,
+} from 'features/ratecon-imports/store/reducers';
 const pages = combineReducers({
   ui: uiReducer,
   notifications: notificationReducer,
@@ -62,6 +66,7 @@ const pages = combineReducers({
   settlements: settlementPageReducer,
   ifta: iftaPageReducer,
   expenses: expensePageReducer,
+  rateconImports: rateconImportPageReducer,
 });
 
 const entities = combineReducers({
@@ -80,6 +85,7 @@ const entities = combineReducers({
   expenses: expenseReducer,
   orgSettings: settingsEntityReducer,
   teamMembers: teamEntityReducer,
+  rateconImports: rateconImportEntityReducer,
 });
 
 const appReducer = combineReducers({

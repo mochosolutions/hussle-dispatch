@@ -477,6 +477,9 @@ describe('initializeSmsPromptSchedulerSubscriber', () => {
       location: null,
       status: null,
       eta: null,
+      latitude: null,
+      longitude: null,
+      occurredAt: '2026-05-01T15:00:00Z',
     };
 
     // Act

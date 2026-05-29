@@ -127,6 +127,27 @@ const toAccessorialChargeResponse = (
   updatedAt: charge.updatedAt.toISOString(),
 });
 
+const pickLatestDriverPosition = (
+  load: LoadWithRelations,
+): { latitude: number | null; longitude: number | null } => {
+  const driverLat = toCoord(load.driver?.currentLatitude);
+  const driverLng = toCoord(load.driver?.currentLongitude);
+  if (driverLat !== null && driverLng !== null) {
+    return { latitude: driverLat, longitude: driverLng };
+  }
+
+  const latestWithCoords = load.checkCalls.find(
+    (call) => call.latitude !== null && call.longitude !== null,
+  );
+  if (latestWithCoords === undefined) {
+    return { latitude: null, longitude: null };
+  }
+  return {
+    latitude: toCoord(latestWithCoords.latitude),
+    longitude: toCoord(latestWithCoords.longitude),
+  };
+};
+
 const toCheckCallResponse = (call: LoadWithRelations['checkCalls'][number]): CheckCallResponse => ({
   id: call.id,
   location: call.location,
@@ -344,18 +365,29 @@ export const toLoadDetailResponse = (
           : null,
       driver:
         load.driver !== null
-          ? {
-              id: load.driver.id,
-              firstName: load.driver.firstName,
-              lastName: load.driver.lastName,
-              phone: load.driver.phone ?? null,
-              currentLatitude: toCoord(load.driver.currentLatitude),
-              currentLongitude: toCoord(load.driver.currentLongitude),
-            }
+          ? (() => {
+              const position = pickLatestDriverPosition(load);
+              return {
+                id: load.driver.id,
+                firstName: load.driver.firstName,
+                lastName: load.driver.lastName,
+                phone: load.driver.phone ?? null,
+                currentLatitude: position.latitude,
+                currentLongitude: position.longitude,
+              };
+            })()
           : null,
       vehicle:
         load.vehicle !== null
           ? { id: load.vehicle.id, unitNumber: load.vehicle.unitNumber, type: load.vehicle.type }
+          : null,
+      dispatcher:
+        load.dispatcher !== null
+          ? {
+              id: load.dispatcher.id,
+              firstName: load.dispatcher.firstName,
+              lastName: load.dispatcher.lastName,
+            }
           : null,
       isTeamDriver: load.isTeamDriver,
     },
@@ -479,6 +511,14 @@ export const toLoadListItemResponse = (load: LoadListItem): LoadListItemResponse
               id: load.driver.id,
               firstName: load.driver.firstName,
               lastName: load.driver.lastName,
+            }
+          : null,
+      dispatcher:
+        load.dispatcher !== null
+          ? {
+              id: load.dispatcher.id,
+              firstName: load.dispatcher.firstName,
+              lastName: load.dispatcher.lastName,
             }
           : null,
     },

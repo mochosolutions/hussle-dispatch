@@ -36,14 +36,34 @@ describe('smsPromptApi', () => {
   });
 
   describe('sendSmsPrompt', () => {
-    it('POSTs to the correct URL and unwraps data', async () => {
+    it('POSTs to the correct URL with empty body when no custom body provided', async () => {
       const prompt = buildPrompt();
       mockedAxios.post.mockResolvedValue({ data: { data: prompt } });
 
       const result = await sendSmsPrompt('load-1');
 
-      expect(mockedAxios.post).toHaveBeenCalledWith('/loads/load-1/sms-prompts');
+      expect(mockedAxios.post).toHaveBeenCalledWith('/loads/load-1/sms-prompts', {});
       expect(result).toEqual(prompt);
+    });
+
+    it('includes trimmed custom body when provided', async () => {
+      const prompt = buildPrompt();
+      mockedAxios.post.mockResolvedValue({ data: { data: prompt } });
+
+      await sendSmsPrompt('load-1', '  Please confirm pickup  ');
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/loads/load-1/sms-prompts', {
+        body: 'Please confirm pickup',
+      });
+    });
+
+    it('treats whitespace-only custom body as missing', async () => {
+      const prompt = buildPrompt();
+      mockedAxios.post.mockResolvedValue({ data: { data: prompt } });
+
+      await sendSmsPrompt('load-1', '   ');
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/loads/load-1/sms-prompts', {});
     });
   });
 

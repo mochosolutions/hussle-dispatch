@@ -3,6 +3,7 @@ import { loadSchema } from '../loadSchema';
 const baseLoad = {
   customerId: 'cust-1',
   carrierId: 'car-1',
+  dispatcherUserId: 'disp-1',
   equipmentType: 'DRY_VAN',
   customerRate: 1000,
 };
@@ -204,5 +205,38 @@ describe('loadSchema delivery-after-pickup', () => {
         },
       ]),
     ).rejects.toThrow(/At least one delivery stop is required/);
+  });
+});
+
+describe('loadSchema dispatcher required', () => {
+  const validStops = [
+    {
+      ...baseStop,
+      type: 'PICKUP',
+      sequence: 0,
+      appointmentDate: '2026-05-01',
+      appointmentTime: '10:00',
+    },
+    {
+      ...baseStop,
+      type: 'DELIVERY',
+      sequence: 1,
+      appointmentDate: '2026-05-02',
+      appointmentTime: '10:00',
+    },
+  ];
+
+  it('rejects when dispatcherUserId is missing', async () => {
+    const { dispatcherUserId: _omitted, ...loadWithoutDispatcher } = baseLoad;
+    await expect(
+      loadSchema.validate(
+        { ...loadWithoutDispatcher, stops: validStops },
+        { abortEarly: false },
+      ),
+    ).rejects.toThrow(/Dispatcher is required/);
+  });
+
+  it('accepts when dispatcherUserId is provided', async () => {
+    await expect(validate(validStops)).resolves.toBeDefined();
   });
 });

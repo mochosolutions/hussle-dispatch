@@ -215,6 +215,9 @@ describe('notificationSubscriber', () => {
       location: 'Memphis, TN',
       status: 'On time',
       eta: '2026-03-20T14:00:00Z',
+      latitude: null,
+      longitude: null,
+      occurredAt: '2026-03-20T13:00:00Z',
     } satisfies EventMap['load.checkcall.logged']);
 
     expect(deps.smsService.sendSms).toHaveBeenCalledTimes(1);

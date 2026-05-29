@@ -113,6 +113,15 @@ export const createOrganizationRouter = (controllers: AuthControllers): express.
     controllers.listMembersController,
   );
 
+  // Dispatcher directory — dispatchers (not only admins) need this to assign
+  // a dispatcher to a load from the dispatch board.
+  router.get(
+    '/organizations/:organizationId/dispatchers',
+    appAuth,
+    authorizeUserMiddleware({ role: ['admin', 'dispatcher'] }),
+    controllers.listDispatchersController,
+  );
+
   router.patch(
     '/organizations/:organizationId/members/:membershipId/role',
     appAuth,

@@ -1,0 +1,52 @@
+[
+  {
+    "file": "CARRCONFIRM.pdf",
+    "elapsed_seconds": 26.2,
+    "broker": "SUNTECK TRANSPORT CO., LLC",
+    "stops": 2,
+    "refs": 7,
+    "total_rate": 800.0,
+    "input_tokens": 7180,
+    "output_tokens": 1256
+  },
+  {
+    "file": "Confirmation1188244.pdf",
+    "elapsed_seconds": 45.4,
+    "broker": "RLS Logistics",
+    "stops": 2,
+    "refs": 3,
+    "total_rate": 950.0,
+    "input_tokens": 7180,
+    "output_tokens": 2045
+  },
+  {
+    "file": "RateConfirmationCarrier_2540077_20260409162657-2.pdf",
+    "elapsed_seconds": 37.5,
+    "broker": "MegaCorp Logistics",
+    "stops": 2,
+    "refs": 1,
+    "total_rate": 850.0,
+    "input_tokens": 8690,
+    "output_tokens": 1625
+  },
+  {
+    "file": "order_confirmation_3065739.pdf",
+    "elapsed_seconds": 34.9,
+    "broker": "Beemac Logistics",
+    "stops": 2,
+    "refs": 3,
+    "total_rate": 1000.0,
+    "input_tokens": 8822,
+    "output_tokens": 1404
+  },
+  {
+    "file": "semail (2).pdf",
+    "elapsed_seconds": 29.9,
+    "broker": "Scotlynn USA Division V24.2",
+    "stops": 2,
+    "refs": 1,
+    "total_rate": 850.0,
+    "input_tokens": 7180,
+    "output_tokens": 1414
+  }
+]

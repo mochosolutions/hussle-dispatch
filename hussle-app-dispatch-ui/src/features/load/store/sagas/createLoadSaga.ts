@@ -9,13 +9,20 @@ import {
   confirmDocument,
 } from 'utils/api/documents/documentApi';
 import { createContact } from 'utils/api/fleet/contactApi';
-import type { CreateLoadInput, QueuedDocument } from '../../types';
-import { createLoadSuccess, createLoadFailure, fetchLoadsRequest } from '../reducers/loadPageSlice';
+import { acceptImportRequest } from 'features/ratecon-imports/store/reducers';
+import type { CreateLoadInput, DispatchBlocker, QueuedDocument } from '../../types';
+import {
+  createLoadSuccess,
+  createLoadFailure,
+  fetchLoadsRequest,
+  setCreateBlockers,
+} from '../reducers/loadPageSlice';
 import { loadActions } from '../reducers/loadEntitySlice';
 
 interface CreateLoadPayload {
   data: CreateLoadInput;
   queuedDocuments: QueuedDocument[];
+  rateconImportId?: string;
 }
 
 function* uploadQueuedDocuments(loadId: string, documents: QueuedDocument[]) {
@@ -55,6 +62,14 @@ export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Gener
 
     yield put(loadActions.addOne(load));
     yield put(createLoadSuccess({}));
+
+    // Link the originating rate-con import to this load (re-points the PDF document,
+    // marks the import ACCEPTED, drops it from the inbox).
+    if (action.payload.rateconImportId !== undefined) {
+      yield put(
+        acceptImportRequest({ importId: action.payload.rateconImportId, loadId: load.id }),
+      );
+    }
 
     // Surface non-blocking geocoding warnings
     for (const warning of warnings) {
@@ -115,21 +130,33 @@ export function* createLoadSaga(action: PayloadAction<CreateLoadPayload>): Gener
     yield put(fetchLoadsRequest({ page: 1, limit: 25 }));
   } catch (error: unknown) {
     let errorMessage = 'Failed to create load';
+    let blockers: DispatchBlocker[] = [];
 
     if (error instanceof Error) {
       errorMessage = error.message;
     }
 
-    // Extract API validation errors from Axios response
+    // Extract API validation errors + structured dispatch blockers from Axios response
     if (typeof error === 'object' && error !== null && 'response' in error) {
-      const resp = (error as { response?: { data?: { errors?: { message: string }[] } } }).response;
+      const resp = (
+        error as {
+          response?: {
+            data?: { errors?: { message: string }[]; blockers?: DispatchBlocker[] };
+          };
+        }
+      ).response;
       const apiErrors = resp?.data?.errors;
       if (Array.isArray(apiErrors) && apiErrors.length > 0) {
         errorMessage = apiErrors.map((e) => e.message).join('. ');
       }
+      const apiBlockers = resp?.data?.blockers;
+      if (Array.isArray(apiBlockers)) {
+        blockers = apiBlockers;
+      }
     }
 
     yield put(createLoadFailure({ error: errorMessage }));
+    yield put(setCreateBlockers(blockers));
     yield put(notify({ message: errorMessage, variant: 'error' }));
   }
 }

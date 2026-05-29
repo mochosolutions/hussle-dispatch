@@ -10,6 +10,7 @@ interface CreatedCarrier {
 
 interface CarrierCreatePort {
   create(organizationId: string, input: CreateCarrierInput): Promise<CreatedCarrier>;
+  findCompanyAssetByOrgId(orgId: string): Promise<{ id: string } | null>;
 }
 
 interface CarrierSubscriberDeps {
@@ -44,6 +45,14 @@ export const initializeCarrierSubscriber = async (
       : undefined;
 
     try {
+      // Idempotency: at most one COMPANY_ASSET carrier per org, ever. Guards
+      // against a duplicate fleet carrier if organization.created is redelivered
+      // or re-emitted by a future publisher.
+      const existing = await deps.carrierRepo.findCompanyAssetByOrgId(data.orgId);
+      if (existing !== null) {
+        return;
+      }
+
       // COMPANY_ASSET represents the org's own fleet, not a third party.
       // It bypasses the invite/onboarding workflow and lands directly in ACTIVE
       // because there's no separate party to vet — the doc-check job still

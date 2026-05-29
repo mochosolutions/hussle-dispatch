@@ -1,0 +1,151 @@
+{
+  "result": {
+    "reference_numbers": [
+      {
+        "value": "15915025",
+        "label": "LOAD NUMBER"
+      },
+      {
+        "value": "08612363",
+        "label": "B/L#"
+      },
+      {
+        "value": "03651534",
+        "label": "PO#"
+      },
+      {
+        "value": "1288581",
+        "label": "SHIP #"
+      },
+      {
+        "value": "212151",
+        "label": "CARRIER CODE"
+      },
+      {
+        "value": "01145125",
+        "label": "MC#"
+      },
+      {
+        "value": "3485096",
+        "label": "DOT#"
+      }
+    ],
+    "broker": {
+      "name": "SUNTECK TRANSPORT CO., LLC",
+      "contact_name": "BEN HOWARD",
+      "phone": "TEL 813-441-9781",
+      "email": "pcbilling@suntecktts.com"
+    },
+    "carrier": {
+      "name": "HUSTLE TRANSPORTATION INCORPORATED",
+      "contact_name": "Isaiah",
+      "phone": "(910) 638-0683",
+      "fax": "910-255-0505"
+    },
+    "driver": {
+      "name": "Omar",
+      "phone": "347-484-2998"
+    },
+    "equipment": {
+      "trailer_type": "Reefer",
+      "trailer_size": "53ft",
+      "temperature": "38 \u00b0F",
+      "reefer_mode": "Continuous mode cooling"
+    },
+    "commodity": "1 TL FRESH",
+    "weight": "42000lbs",
+    "miles": null,
+    "hazmat": null,
+    "stops": [
+      {
+        "sequence": 1,
+        "stop_type": "pickup",
+        "address": {
+          "facility_name": "PHILADELPHIA (DEL MONTE)",
+          "street": "1001 INDUSTRIAL HIGHWAY",
+          "city": "EDDYSTONE",
+          "state": "PA",
+          "zip_code": "19022"
+        },
+        "date": "04/09/2026",
+        "time": "23:59",
+        "appointment_end": "04/10/2026  00:30",
+        "contact_name": null,
+        "contact_phone": null,
+        "reference_numbers": [
+          {
+            "value": "08612363",
+            "label": "PICKUP #"
+          },
+          {
+            "value": "1288581",
+            "label": "SHIP #"
+          }
+        ]
+      },
+      {
+        "sequence": 2,
+        "stop_type": "delivery",
+        "address": {
+          "facility_name": "EXP GROUP LLC",
+          "street": "2500 83RD STREET, SUITE 2-W",
+          "city": "NORTH BERGEN",
+          "state": "NJ",
+          "zip_code": "07047"
+        },
+        "date": "04/10/2026",
+        "time": "03:00 - 03:30",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": null,
+        "reference_numbers": []
+      }
+    ],
+    "charges": [
+      {
+        "description": "FLAT RATE",
+        "amount": 800.0
+      }
+    ],
+    "total_rate": 800.0,
+    "special_instructions": {
+      "precool_required": true,
+      "tracking_required": null,
+      "tracking_provider": null,
+      "seal_instructions": null,
+      "detention": null,
+      "fees_and_penalties": [
+        {
+          "description": "Missing driver signature on POD deduction",
+          "amount": "$50",
+          "conditions": "IF PAPERWORK IS SENT IN WITHOUT DRIVER'S SIGNATURE, THERE WILL BE A $50 DEDUCTION"
+        },
+        {
+          "description": "Late load cancellation recovery cost",
+          "amount": "up to $250",
+          "conditions": "In the event Carrier cancels the load on the date of pick up, resulting in broker having to recover the load with a different carrier at the last minute, Carrier shall be liable for the difference in the amount it cost to recover the load, not to exceed $250"
+        },
+        {
+          "description": "Minimum charge for missed appointments",
+          "amount": "$100",
+          "conditions": "A minimum charge of $100 shall apply to missed appointments"
+        }
+      ],
+      "pod_requirements": "ALL DOCUMENTS (POD'S & RECEIPTS) MUST BE RECEIVED WITHIN 24 HOURS OF DELIVERY TO PCBILLING@SUNTECKTTS.COM. DRIVER MUST SIGN POD IN ORDER FOR PAYMENT TO PROCEED.",
+      "payment_terms": "Net 30 days from the date Broker receives Carrier's invoice, a legible copy or original proof of delivery, matching confirmation(s), and reimbursable receipts.",
+      "additional_notes": [
+        "You must PRECOOL before arriving to the shipper, at least 4 hours in advance",
+        "ALL loads must be ran in CONTINUOUS MODE or you will be claimed for the load",
+        "Carrier is prohibited from subcontracting this Load to any other Carrier or broker.",
+        "Carrier submit invoices and backup documentation via email to sendmybill@modeglobal.com",
+        "Please access our Carrier Portal at https://carriers.modeglobal.com to request quick pay and make payment status inquiries.",
+        "Broker address: 14785 PRESTON RD, SUITE 850, DALLAS, TX 75254"
+      ]
+    },
+    "document_date": "4/9/2026"
+  },
+  "usage": {
+    "input_tokens": 7180,
+    "output_tokens": 1256
+  }
+}

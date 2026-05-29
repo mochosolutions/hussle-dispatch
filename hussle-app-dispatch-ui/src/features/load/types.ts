@@ -57,6 +57,21 @@ export interface Warning {
 
 export type BoardView = 'kanban' | 'table' | 'map' | 'driver' | 'intel';
 
+// ---------------------------------------------------------------------------
+// Dispatch blockers (422 response from create/assign when requirements fail)
+// ---------------------------------------------------------------------------
+//
+// Each blocker describes one unmet dispatch requirement. When `overridable` is
+// true, an admin may re-submit the same request with `overrideDispatch: true`
+// + `overrideReason` to bypass it. Hard blockers omit the `overridable` flag.
+
+export interface DispatchBlocker {
+  code: string;
+  message: string;
+  field?: string;
+  overridable?: boolean;
+}
+
 export type KanbanGroup = 'NEW' | 'BOOKED' | 'ACTIVE' | 'DELIVERED' | 'COMPLETE' | 'ISSUES';
 
 // ---------------------------------------------------------------------------
@@ -240,10 +255,17 @@ export interface VehicleDetail {
   type: string;
 }
 
+export interface DispatcherDetail {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface AssignmentResponse {
   carrier: CarrierDetail | null;
   driver: DriverDetail | null;
   vehicle: VehicleDetail | null;
+  dispatcher: DispatcherDetail | null;
   isTeamDriver: boolean;
 }
 
@@ -321,6 +343,7 @@ export interface ListDriverAssignment {
 export interface ListAssignmentResponse {
   carrier: ListCarrierAssignment | null;
   driver: ListDriverAssignment | null;
+  dispatcher: DispatcherDetail | null;
 }
 
 export interface ListCustomerResponse {
@@ -391,6 +414,7 @@ export interface CreateLoadInput {
   carrierId?: string;
   driverId?: string;
   vehicleId?: string;
+  dispatcherUserId?: string;
   contactId?: string;
   customerId?: string;
   externalRefNumber?: string;
@@ -403,6 +427,8 @@ export interface CreateLoadInput {
   status?: LoadStatus;
   dispatcherNotes?: string;
   driverInstructions?: string;
+  overrideDispatch?: boolean;
+  overrideReason?: string;
   stops: StopInput[];
   accessorialCharges?: AccessorialChargeInput[];
 }
@@ -449,10 +475,13 @@ export interface AssignLoadInput {
   carrierId?: string;
   driverId?: string;
   vehicleId?: string;
+  dispatcherUserId?: string;
   customerRate?: number | string;
   carrierPayout?: number | string;
   companyMargin?: number | string;
   isTeamDriver?: boolean;
+  overrideDispatch?: boolean;
+  overrideReason?: string;
 }
 
 export interface AssignLoadWarning {

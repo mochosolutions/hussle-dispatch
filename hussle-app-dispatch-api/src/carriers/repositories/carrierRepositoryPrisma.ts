@@ -227,6 +227,16 @@ export const carrierRepositoryPrisma = (
       include: selectWithCounts,
     }),
 
+  findCompanyAssetByOrgId: (orgId: string): Promise<{ id: string } | null> =>
+    prisma.carrier.findFirst({
+      where: {
+        carrierOrgId: orgId,
+        type: 'COMPANY_ASSET',
+        deletedAt: null,
+      },
+      select: { id: true },
+    }),
+
   list: ({ organizationId, filters, skip, take, orderBy }: ListCarriersRepositoryInput) =>
     prisma.carrier.findMany({
       where: buildListWhere(organizationId, filters),

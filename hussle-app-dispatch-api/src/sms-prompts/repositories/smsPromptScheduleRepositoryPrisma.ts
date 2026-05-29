@@ -15,6 +15,7 @@ export const smsPromptScheduleRepositoryPrisma = (
         organizationId: input.organizationId,
         anchor: input.anchor,
         scheduledAt: input.scheduledAt,
+        customBody: input.customBody ?? null,
       },
     }),
 

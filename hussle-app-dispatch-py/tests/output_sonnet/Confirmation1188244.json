@@ -1,0 +1,215 @@
+{
+  "result": {
+    "reference_numbers": [
+      {
+        "value": "1188244",
+        "label": "Order #"
+      },
+      {
+        "value": "561245",
+        "label": "Pickup#"
+      },
+      {
+        "value": "20140036",
+        "label": "PO#"
+      }
+    ],
+    "broker": {
+      "name": "RLS Logistics",
+      "contact_name": null,
+      "phone": null,
+      "email": "carrierpay@rlslogistics.com"
+    },
+    "carrier": {
+      "name": "Hustle Transportation Incorporated",
+      "contact_name": "Sean",
+      "phone": null,
+      "fax": "(856) 210-2853"
+    },
+    "driver": {
+      "name": "Sean Corner",
+      "phone": null
+    },
+    "equipment": {
+      "trailer_type": "Reefer",
+      "trailer_size": "53",
+      "temperature": "-10\u00b0",
+      "reefer_mode": "Continuous"
+    },
+    "commodity": "Frozen Bread",
+    "weight": "20812 lbs",
+    "miles": null,
+    "hazmat": null,
+    "stops": [
+      {
+        "sequence": 1,
+        "stop_type": "pickup",
+        "address": {
+          "facility_name": "Wenner Bread Products",
+          "street": "2001 Orville Drive North",
+          "city": "Ronkonkoma",
+          "state": "NY",
+          "zip_code": "11779"
+        },
+        "date": "4/29/26",
+        "time": "2:00AM - 2:00AM",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": "631-563-6262x182",
+        "reference_numbers": [
+          {
+            "value": "561245",
+            "label": "PU#"
+          },
+          {
+            "value": "20140036",
+            "label": "PO#"
+          },
+          {
+            "value": "561245",
+            "label": "Pickup#"
+          }
+        ]
+      },
+      {
+        "sequence": 2,
+        "stop_type": "delivery",
+        "address": {
+          "facility_name": "Davy Cold",
+          "street": "2073 West Garden Road",
+          "city": "Vineland",
+          "state": "NJ",
+          "zip_code": "08360"
+        },
+        "date": "4/29/26",
+        "time": "8:00AM - 3:00PM",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": "833-DCS-COLDx",
+        "reference_numbers": [
+          {
+            "value": "LD14656",
+            "label": "Reference#"
+          }
+        ]
+      }
+    ],
+    "charges": [
+      {
+        "description": "Rate",
+        "amount": 698.11
+      },
+      {
+        "description": "Fuel",
+        "amount": 151.89
+      },
+      {
+        "description": "Hauling Expense - Tracking",
+        "amount": 100.0
+      }
+    ],
+    "total_rate": 950.0,
+    "special_instructions": {
+      "precool_required": true,
+      "tracking_required": true,
+      "tracking_provider": "Macropoint",
+      "seal_instructions": null,
+      "detention": {
+        "rate": null,
+        "free_time": "3 hours after appointment time",
+        "max_amount": null,
+        "notes": "Detention is payable 3 hours after appointment time as long as driver is on time for their appointment and has in and out times signed and stamped on paperwork, and accepts macropoint. Detention must be approved at the time of occurrence, and RLS must be notified 2 hours after appointment time, that detention is occurring in 1 hour. Trailer inspection sheet must be submitted to RLS in order to be paid detention. This must be sent to your dispatcher, as well as accounting with your invoice."
+      },
+      "fees_and_penalties": [
+        {
+          "description": "Failure to arrive pre-cooled to shipper fine",
+          "amount": "$100",
+          "conditions": "If trailer is not pre-cooled upon arrival at shipper"
+        },
+        {
+          "description": "Late fee for driver arriving late",
+          "amount": "$100 per hour",
+          "conditions": "After one hour grace period, driver is late to pick up appointment"
+        },
+        {
+          "description": "Rescheduling fee",
+          "amount": "$200",
+          "conditions": "If appointment needs to be rescheduled at delivery"
+        },
+        {
+          "description": "Walmart early/late delivery penalty",
+          "amount": "$500 per location",
+          "conditions": "Any driver that delivers before or after the assigned delivery date and time"
+        },
+        {
+          "description": "C&S appointment late fine",
+          "amount": "$300",
+          "conditions": "Failure to arrive on time for C&S appointment; increased to $450 the week prior to and the week of any holidays"
+        },
+        {
+          "description": "C&S holiday late fine (increased)",
+          "amount": "$450",
+          "conditions": "Week prior to and the week of any holidays for C&S appointment"
+        },
+        {
+          "description": "Tracking turned off penalty",
+          "amount": "$100 per day",
+          "conditions": "If tracking is turned off during the load"
+        },
+        {
+          "description": "Late fee for driver arriving with unit off at delivery",
+          "amount": null,
+          "conditions": "IF DRIVER ARRIVES WITH THEIR UNIT OFF, THEY WILL BE CHARGED A LATE FEE"
+        },
+        {
+          "description": "Failure to submit paperwork within 10 business days fee",
+          "amount": "$100",
+          "conditions": "Failure to submit paperwork via email within 10 business days of final delivery"
+        },
+        {
+          "description": "Not arriving pre-cooled to shipper charge (stop-level)",
+          "amount": "$100",
+          "conditions": "Driver's may be charged $100 for not arriving pre-cooled to the shipper"
+        },
+        {
+          "description": "C&S gate pass not turned in \u2014 payment delay and potential fine",
+          "amount": null,
+          "conditions": "All C&S locations will give driver a gate pass; if gate pass is not turned in with your invoice, this will delay payment and potentially result in fines"
+        },
+        {
+          "description": "Payment hold for missing PODs",
+          "amount": null,
+          "conditions": "If all PODs are not submitted along with the carrier invoice, payment will be placed on hold for up to 9 months from date of delivery"
+        }
+      ],
+      "pod_requirements": "Walmart PODs are required for all Walmart deliveries, payment can not be issued with the PROOF OF DELIVERY sheet / Condition report. Driver must obtain Walmart Proof of Delivery Summary Sheet. If all PODs are not submitted along with the carrier invoice, payment will be placed on hold for up to 9 months from date of delivery. Paperwork must be submitted via email to carrierpay@rlslogistics.com in PDF format within 10 business days of final delivery.",
+      "payment_terms": "Paperwork must be submitted via email to carrierpay@rlslogistics.com in PDF format within 10 business days of final delivery. Failure to submit within this time frame could result in a $100 fee for processing.",
+      "additional_notes": [
+        "Driver must check in with PU# 561245 PO# 20140036.",
+        "Driver must maintain -10 degrees continuous through the entire load.",
+        "Driver must call dispatch @ 856-291-6900 upon arrival to each pick up and delivery, and once they are loaded/unloaded.",
+        "Failure to report any OS&D at the time of delivery will result in penalties.",
+        "Driver must accept tracking 2 hours prior to the pick up appointment, otherwise you would be removed from the load.",
+        "Driver must return a signed rate confirmation prior to pick up otherwise driver will not be loaded.",
+        "Must turn in truck inspection sheet for all orders picked up at Wenner Locations.",
+        "All loads must have load bars; load bars are to be used after each stop to reinforce the loads.",
+        "Driver must arrive pre-cooled and on time in order for detention to apply.",
+        "Check in at the shipping and receiving office located by door 16 at delivery.",
+        "No overnight parking but there is a truck stop across the street.",
+        "MUST BRING PROPER EQUIPMENT OR WE WILL REJECT: LENGTH:53' WIDTH:102\"",
+        "Driver must obtain an exit pass on all C&S deliveries. Carrier will not be paid without one.",
+        "OS&D's must be reported at time of occurrence - email or call your dispatch team immediately.",
+        "Picking up of a load is acceptance of this confirmation regardless of signature.",
+        "Any Late/Missing/Lost Receipts will not be reimbursed once the Carrier invoice has been processed for payment.",
+        "Early deliveries to Walmart are the same as a late delivery; must deliver on the date on the rate confirmation.",
+        "We do not update/revise rate confirmations to reflect lumper, loading or unloading charges; these charges are reimbursed with proper documentation.",
+        "Total: 25 plts 20812 lbs."
+      ]
+    },
+    "document_date": null
+  },
+  "usage": {
+    "input_tokens": 7180,
+    "output_tokens": 2045
+  }
+}

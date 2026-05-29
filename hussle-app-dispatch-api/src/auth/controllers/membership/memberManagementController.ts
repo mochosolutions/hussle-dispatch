@@ -1,5 +1,5 @@
 import type { Request, RequestHandler, Response } from 'express';
-import type { Role } from '@/config/roles';
+import { ROLES, type Role } from '@/config/roles';
 import type { MembershipWithUser } from '../../types/membershipTypes';
 import type { CreateAuditLogInput } from '../../types/auditLogPort';
 import { sendSingle } from '@/shared/responseEnvelope';
@@ -35,6 +35,19 @@ export const createListMembersController =
     const input = listMembersMapper(req);
     const members = await deps.memberManagementService.listMembers(input);
     sendSingle(res, toMemberListResponse(members));
+  };
+
+// Dispatcher directory — accessible to dispatchers (not just tenant admins) so
+// they can assign a dispatcher to a load. Returns only active dispatchers.
+export const createListDispatchersController =
+  (deps: MemberManagementControllerDeps): RequestHandler =>
+  async (req: Request, res: Response) => {
+    const input = listMembersMapper(req);
+    const members = await deps.memberManagementService.listMembers(input);
+    const dispatchers = members.filter(
+      (member) => member.role === ROLES.DISPATCHER && member.status === 'active',
+    );
+    sendSingle(res, toMemberListResponse(dispatchers));
   };
 
 export const createChangeMemberRoleController =

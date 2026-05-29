@@ -1,4 +1,6 @@
-import { createLoadValidator, updateLoadValidator } from '../loadValidators';
+import { assignLoadValidator, createLoadValidator, updateLoadValidator } from '../loadValidators';
+
+const DISPATCHER_ID = 'b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e';
 
 const baseStop = {
   facilityName: 'Acme',
@@ -11,7 +13,7 @@ const baseStop = {
 
 const validateCreate = (stops: Record<string, unknown>[]) =>
   createLoadValidator.validate(
-    { body: { stops } },
+    { body: { dispatcherUserId: DISPATCHER_ID, stops } },
     { abortEarly: false },
   );
 
@@ -87,5 +89,42 @@ describe('loadValidators delivery-after-pickup', () => {
         { ...baseStop, type: 'DELIVERY', sequence: 1, appointmentStart: '2026-05-01T10:00:00Z' },
       ]),
     ).rejects.toThrow(/Delivery date cannot be earlier than pickup date/);
+  });
+});
+
+describe('loadValidators dispatcher required', () => {
+  const validStops = [
+    { ...baseStop, type: 'PICKUP', sequence: 0, appointmentStart: '2026-05-01T10:00:00Z' },
+    { ...baseStop, type: 'DELIVERY', sequence: 1, appointmentStart: '2026-05-02T10:00:00Z' },
+  ];
+
+  it('rejects create when dispatcherUserId is missing', async () => {
+    await expect(
+      createLoadValidator.validate({ body: { stops: validStops } }, { abortEarly: false }),
+    ).rejects.toThrow(/Dispatcher is required/);
+  });
+
+  it('rejects assignment when dispatcherUserId is missing', async () => {
+    await expect(
+      assignLoadValidator.validate(
+        {
+          params: { id: 'a3b4f9c2-1d2e-4a5b-8c9d-0e1f2a3b4c5d' },
+          body: { carrierId: 'c1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e' },
+        },
+        { abortEarly: false },
+      ),
+    ).rejects.toThrow(/Dispatcher is required/);
+  });
+
+  it('accepts assignment when dispatcherUserId is provided', async () => {
+    await expect(
+      assignLoadValidator.validate(
+        {
+          params: { id: 'a3b4f9c2-1d2e-4a5b-8c9d-0e1f2a3b4c5d' },
+          body: { dispatcherUserId: DISPATCHER_ID },
+        },
+        { abortEarly: false },
+      ),
+    ).resolves.toBeDefined();
   });
 });

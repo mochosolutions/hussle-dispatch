@@ -27,6 +27,7 @@ import { getOrganizationsByIdController } from './orgs/getOrgByIdController';
 import { updateOrganizationController } from './orgs/updateOrgController';
 import {
   createListMembersController,
+  createListDispatchersController,
   createChangeMemberRoleController,
   createRemoveMemberController,
 } from './membership/memberManagementController';
@@ -164,6 +165,7 @@ export interface AuthControllers {
   getInvitesController: RequestHandler;
   getSubscriptionUsageController: RequestHandler;
   listMembersController: RequestHandler;
+  listDispatchersController: RequestHandler;
   changeMemberRoleController: RequestHandler;
   removeMemberController: RequestHandler;
 }
@@ -256,6 +258,7 @@ export const createAuthControllers = ({
       getUsage: subscriptionUsageService.getUsage,
     }),
     listMembersController: createListMembersController({ memberManagementService }),
+    listDispatchersController: createListDispatchersController({ memberManagementService }),
     changeMemberRoleController: createChangeMemberRoleController({ memberManagementService, auditLogRepo }),
     removeMemberController: createRemoveMemberController({ memberManagementService }),
   };

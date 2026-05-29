@@ -1,6 +1,7 @@
-import type { CarrierType } from '@prisma/client';
+import type { CarrierType, EquipmentType } from '@prisma/client';
 import type { EventBus } from '@/shared/messaging/eventBus';
 import type { ResolveStopInput, ResolveStopResult, Warning } from '@/places';
+import type { AuditLogRepoPort } from '@/audit/types/auditTypes';
 import {
   AssignmentValidationError,
   ConflictError,
@@ -9,7 +10,13 @@ import {
   ValidationError,
 } from '@/shared/errors';
 import { BLOCKING_DELETE_STATUSES } from '@/shared/constants/loadStatuses';
+import { ROLES } from '@/config/roles';
 import { checkCarrierOnboarding } from '@/shared/onboardingGate';
+import {
+  checkDriverLicense,
+  checkEquipmentCompatibility,
+  type DispatchViolation,
+} from '@/shared/dispatchRequirements';
 import {
   computeAgreementStatus,
   computeInsuranceStatus,
@@ -222,6 +229,7 @@ interface LoadServiceDeps {
   settlementFreezeQuery?: SettlementFreezeQueryPort;
   resolveStopToPlace?: ResolveStopToPlace;
   derivedComplianceDeps: DerivedComplianceDeps;
+  auditLogFactory?: (organizationId: string) => AuditLogRepoPort;
   eventBus?: EventBus;
   logger?: Logger;
 }
@@ -345,16 +353,54 @@ const validateAssignmentState = async (
   organizationId: string,
   loadId: string | undefined,
   deps: LoadServiceDeps,
-  options?: { onboardingOverride?: boolean },
-): Promise<LoadAssignmentWarning[]> => {
+  context: {
+    isAdmin: boolean;
+    overrideDispatch: boolean;
+    loadEquipmentType: EquipmentType | null;
+    persistedOverride?: boolean;
+  },
+): Promise<{ warnings: LoadAssignmentWarning[]; overriddenCodes: string[] }> => {
   const blockers: {
     code: string;
     message: string;
     field?: string;
     blockingLoadIds?: string[];
     metadata?: Record<string, unknown>;
+    overridable?: boolean;
   }[] = [];
   const warnings: LoadAssignmentWarning[] = [];
+  const overriddenCodes: string[] = [];
+
+  const resolveViolation = (v: DispatchViolation): void => {
+    if (v.tier === 'hard') {
+      blockers.push({ code: v.code, message: v.message, field: v.field, metadata: v.metadata });
+      return;
+    }
+    if (v.tier === 'silentAdmin') {
+      if (context.isAdmin || context.persistedOverride === true) {
+        warnings.push({ code: v.code, message: v.message, field: v.field });
+        if (context.isAdmin) {
+          overriddenCodes.push(v.code);
+        }
+      } else {
+        blockers.push({ code: v.code, message: v.message, field: v.field, metadata: v.metadata });
+      }
+      return;
+    }
+    // explicitAdmin
+    if (context.isAdmin && context.overrideDispatch) {
+      warnings.push({ code: v.code, message: v.message, field: v.field });
+      overriddenCodes.push(v.code);
+    } else {
+      blockers.push({
+        code: v.code,
+        message: v.message,
+        field: v.field,
+        metadata: v.metadata,
+        overridable: true,
+      });
+    }
+  };
 
   let carrier: {
     id: string;
@@ -369,6 +415,7 @@ const validateAssignmentState = async (
     firstName: string;
     lastName: string;
     isAvailable: boolean;
+    licenseExpiry: Date | null;
   } | null = null;
 
   let vehicle: {
@@ -377,6 +424,7 @@ const validateAssignmentState = async (
     unitNumber: string;
     driverId: string | null;
     isActive: boolean;
+    type: EquipmentType;
   } | null = null;
 
   if (
@@ -435,7 +483,7 @@ const validateAssignmentState = async (
     }
   }
 
-  if (carrier !== null && options?.onboardingOverride !== true) {
+  if (carrier !== null) {
     const [insurance, agreement] = await Promise.all([
       computeInsuranceStatus(carrier.id, deps.derivedComplianceDeps),
       computeAgreementStatus(carrier.id, deps.derivedComplianceDeps),
@@ -449,9 +497,10 @@ const validateAssignmentState = async (
     });
 
     if (!onboardingResult.allowed) {
-      blockers.push({
+      resolveViolation({
         code: 'CARRIER_ONBOARDING_INCOMPLETE',
         field: 'carrierId',
+        tier: 'silentAdmin',
         message: `${carrier.name} cannot be assigned until onboarding is complete.`,
         metadata: {
           carrierId: carrier.id,
@@ -459,6 +508,23 @@ const validateAssignmentState = async (
           missingDocuments: onboardingResult.missingDocuments,
         },
       });
+    }
+  }
+
+  if (vehicle !== null) {
+    const eq = checkEquipmentCompatibility({
+      loadEquipmentType: context.loadEquipmentType,
+      vehicleType: vehicle.type,
+    });
+    if (eq) {
+      resolveViolation(eq);
+    }
+  }
+
+  if (driver !== null) {
+    const lic = checkDriverLicense({ licenseExpiry: driver.licenseExpiry });
+    if (lic) {
+      resolveViolation(lic);
     }
   }
 
@@ -530,7 +596,7 @@ const validateAssignmentState = async (
     throw new AssignmentValidationError('Load assignment blocked.', blockers);
   }
 
-  return warnings;
+  return { warnings, overriddenCodes };
 };
 
 const calculateDeadheadMiles = async (
@@ -643,14 +709,58 @@ const buildRateSnapshot = async (
   return snapshot;
 };
 
-export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
-  createLoad: async ({ organizationId, input }: CreateLoadServiceInput) => {
+export const createLoadService = (deps: LoadServiceDeps): LoadService => {
+  /**
+   * Write a DISPATCH_OVERRIDE audit entry when an admin explicitly overrode one
+   * or more dispatch requirements. Fire-and-forget — never blocks the request,
+   * and skips silently when no audit factory is wired or nothing was overridden.
+   */
+  const writeDispatchOverrideAudit = (params: {
+    organizationId: string;
+    userId: string;
+    loadId: string;
+    carrierId: string | null;
+    overriddenCodes: string[];
+    reason?: string;
+  }): void => {
+    if (deps.auditLogFactory === undefined || params.overriddenCodes.length === 0) {
+      return;
+    }
+    void deps
+      .auditLogFactory(params.organizationId)
+      .create({
+        userId: params.userId || null,
+        action: 'DISPATCH_OVERRIDE',
+        entityType: 'LOAD',
+        entityId: params.loadId,
+        changes: null,
+        metadata: {
+          reason: params.reason ?? null,
+          overriddenCodes: params.overriddenCodes,
+          carrierId: params.carrierId,
+        },
+      })
+      .catch(() => undefined);
+  };
+
+  return {
+  createLoad: async ({
+    organizationId,
+    input,
+    role,
+    userId,
+    overrideDispatch: requestOverrideDispatch,
+    overrideReason,
+  }: CreateLoadServiceInput) => {
     const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
     const shouldValidateAssignment = hasAssignmentInput(normalizedAssignmentInput);
     const resolvedAssignment = resolveAssignmentState(
       { carrierId: null, driverId: null, vehicleId: null },
       normalizedAssignmentInput,
     );
+
+    const isAdmin = role === ROLES.ADMIN;
+    const overrideDispatch = isAdmin && requestOverrideDispatch === true;
 
     validateStops(input.stops);
 
@@ -664,8 +774,16 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
 
     await validateCustomerExists(input.customerId, organizationId, deps.customerQuery);
 
+    let overriddenCodes: string[] = [];
     if (shouldValidateAssignment) {
-      await validateAssignmentState(resolvedAssignment, organizationId, undefined, deps);
+      const validation = await validateAssignmentState(
+        resolvedAssignment,
+        organizationId,
+        undefined,
+        deps,
+        { isAdmin, overrideDispatch, loadEquipmentType: input.equipmentType ?? null },
+      );
+      overriddenCodes = validation.overriddenCodes;
     }
 
     // Resolve each stop to a Place BEFORE we persist the load.
@@ -711,6 +829,17 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       ...(computedTotalMiles !== undefined ? { totalMiles: computedTotalMiles } : {}),
     });
 
+    if (overriddenCodes.length > 0) {
+      writeDispatchOverrideAudit({
+        organizationId,
+        userId,
+        loadId: load.id,
+        carrierId: resolvedAssignment.carrierId,
+        overriddenCodes,
+        reason: overrideReason,
+      });
+    }
+
     // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings };
   },
@@ -743,7 +872,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
     return findLoadOrThrow(id, organizationId, deps);
   },
 
-  updateLoad: async ({ id, organizationId, input }: UpdateLoadServiceInput) => {
+  updateLoad: async ({ id, organizationId, input, role }: UpdateLoadServiceInput) => {
     const existing = await findLoadOrThrow(id, organizationId, deps);
     const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
     const shouldValidateAssignment = hasAssignmentInput(normalizedAssignmentInput);
@@ -824,8 +953,14 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
         normalizedAssignmentInput,
       );
 
+      // Generic PATCH: assignment is re-validated (throws on blockers). The
+      // returned warnings are intentionally unused — updateLoad surfaces stop
+      // resolution warnings only.
       await validateAssignmentState(resolvedAssignment, organizationId, id, deps, {
-        onboardingOverride: existing.onboardingOverride,
+        isAdmin: role === ROLES.ADMIN,
+        overrideDispatch: false,
+        loadEquipmentType: existing.equipmentType ?? null,
+        persistedOverride: existing.onboardingOverride,
       });
 
       // Re-snapshot rate inputs when carrier, driver, or dispatcher changes.
@@ -862,7 +997,15 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
     return { load, warnings: stopWarnings };
   },
 
-  assignLoad: async ({ id, organizationId, input }: AssignLoadServiceInput) => {
+  assignLoad: async ({
+    id,
+    organizationId,
+    input,
+    role,
+    userId,
+    overrideDispatch: requestOverrideDispatch,
+    overrideReason,
+  }: AssignLoadServiceInput) => {
     const existing = await findLoadOrThrow(id, organizationId, deps);
     const normalizedAssignmentInput = getNormalizedAssignmentInput(input);
     const resolvedAssignment = resolveAssignmentState(
@@ -870,9 +1013,21 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       normalizedAssignmentInput,
     );
 
-    const warnings = await validateAssignmentState(resolvedAssignment, organizationId, id, deps, {
-      onboardingOverride: existing.onboardingOverride,
-    });
+    const isAdmin = role === ROLES.ADMIN;
+    const overrideDispatch = isAdmin && requestOverrideDispatch === true;
+
+    const { warnings, overriddenCodes } = await validateAssignmentState(
+      resolvedAssignment,
+      organizationId,
+      id,
+      deps,
+      {
+        isAdmin,
+        overrideDispatch,
+        loadEquipmentType: existing.equipmentType ?? null,
+        persistedOverride: existing.onboardingOverride,
+      },
+    );
 
     let deadheadMiles: number | undefined;
 
@@ -922,6 +1077,17 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
       ...(totalMiles !== undefined ? { totalMiles } : {}),
     });
 
+    if (overriddenCodes.length > 0) {
+      writeDispatchOverrideAudit({
+        organizationId,
+        userId,
+        loadId: load.id,
+        carrierId: resolvedAssignment.carrierId,
+        overriddenCodes,
+        reason: overrideReason,
+      });
+    }
+
     // US-13: financials are computed on-read (US-11). No persistence step here.
     return { load, warnings };
   },
@@ -954,6 +1120,9 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
           location: input.location ?? null,
           status: input.status ?? null,
           eta: input.eta?.toISOString() ?? null,
+          latitude: input.latitude ?? null,
+          longitude: input.longitude ?? null,
+          occurredAt: checkCall.createdAt.toISOString(),
         })
         .catch((error: unknown) => {
           deps.logger?.error('Failed to publish check call event', {
@@ -980,4 +1149,5 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => ({
     await findLoadOrThrow(loadId, organizationId, deps);
     return deps.loadRepository.listDocuments(loadId, organizationId);
   },
-});
+  };
+};

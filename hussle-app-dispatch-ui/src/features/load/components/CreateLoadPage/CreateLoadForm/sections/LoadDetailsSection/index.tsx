@@ -82,6 +82,11 @@ export const LoadDetailsSection: React.FC<LoadDetailsSectionProps> = ({ formik, 
               label="Broker Contact"
               required
               formik={formikProps}
+              scopeParams={
+                formik.values.customerId
+                  ? { customerId: String(formik.values.customerId) }
+                  : undefined
+              }
             />
           </Box>
         </Box>

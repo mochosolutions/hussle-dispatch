@@ -10,6 +10,7 @@ import { carriersRouter } from './carriers';
 import { contactsRouter } from './contacts';
 import { customersRouter } from './customers';
 import { documentsRouter } from './documents';
+import { rateconImportsRouter, rateconWebhookRouter } from './ratecon-imports';
 import { driversRouter } from './drivers';
 import { loadsRouter } from './loads';
 import { placesRouter } from './places';
@@ -124,6 +125,11 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
     app.use(morgan('combined'));
   }
 
+  // Ratecon inbound webhooks — mounted BEFORE the global JSON parser + CSRF so
+  // they get their own larger body limit (base64 PDFs) and bypass CSRF (these
+  // are machine-to-machine calls authenticated by a shared secret header).
+  app.use('/api/v1/webhooks/ratecon', rateconWebhookRouter);
+
   // Body parsing — 2MB limit to accommodate large load-board ingest payloads
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
@@ -148,6 +154,7 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
   app.use('/api/v1/contacts', contactsRouter);
   app.use('/api/v1/customers', customersRouter);
   app.use('/api/v1/documents', documentsRouter);
+  app.use('/api/v1/ratecons/imports', rateconImportsRouter);
   app.use('/api/v1/drivers', driversRouter);
   app.use('/api/v1/places', placesRouter);
   app.use('/api/v1/loads', loadsRouter);

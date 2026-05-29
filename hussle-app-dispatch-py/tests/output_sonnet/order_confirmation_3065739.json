@@ -1,0 +1,156 @@
+{
+  "result": {
+    "reference_numbers": [
+      {
+        "value": "3065739",
+        "label": "Order"
+      },
+      {
+        "value": "#PO35131",
+        "label": "BOL"
+      },
+      {
+        "value": "PO#9107576",
+        "label": "Reference"
+      }
+    ],
+    "broker": {
+      "name": "Beemac Logistics",
+      "contact_name": "Maria Meza",
+      "phone": "(724) 384-6014",
+      "email": "mmeza@beemaclogistics.com"
+    },
+    "carrier": {
+      "name": "HUSTLE TRANSPORTATION INCORP",
+      "contact_name": "ISAIAH CHATMAN",
+      "phone": "910-638-0683",
+      "fax": null
+    },
+    "driver": null,
+    "equipment": {
+      "trailer_type": "Reefer (DAT)",
+      "trailer_size": null,
+      "temperature": "-10.0 to -10.0",
+      "reefer_mode": null
+    },
+    "commodity": "FROZEN BAGELS",
+    "weight": "30000.0",
+    "miles": "197.0",
+    "hazmat": null,
+    "stops": [
+      {
+        "sequence": 1,
+        "stop_type": "pickup",
+        "address": {
+          "facility_name": "Bagels NY",
+          "street": "10 Keyland CT",
+          "city": "BOHEMIA",
+          "state": "NY",
+          "zip_code": "11716"
+        },
+        "date": "04/06/2026",
+        "time": "0800 - 1400",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": null,
+        "reference_numbers": []
+      },
+      {
+        "sequence": 2,
+        "stop_type": "delivery",
+        "address": {
+          "facility_name": "Wegmans Foods Market/Deli",
+          "street": "820 Keystone Blvd",
+          "city": "POTTSVILLE",
+          "state": "PA",
+          "zip_code": "17901"
+        },
+        "date": "04/06/2026",
+        "time": "1900 - 1900",
+        "appointment_end": null,
+        "contact_name": null,
+        "contact_phone": null,
+        "reference_numbers": []
+      }
+    ],
+    "charges": [
+      {
+        "description": "Carrier Freight Pay",
+        "amount": 1000.0
+      }
+    ],
+    "total_rate": 1000.0,
+    "special_instructions": {
+      "precool_required": null,
+      "tracking_required": true,
+      "tracking_provider": "Trucker Tools",
+      "seal_instructions": null,
+      "detention": {
+        "rate": "$25/hr",
+        "free_time": "First two hours are free",
+        "max_amount": "$200",
+        "notes": "No detention will be approved if driver is not tracking. No detention will be available if tracking is not on for the entire shipment, or if driver is late for pick up or delivery. The full $200 will take the place of a layover if required."
+      },
+      "fees_and_penalties": [
+        {
+          "description": "Tracking non-compliance deduction",
+          "amount": "$50",
+          "conditions": "For each time Beemac reaches out to get tracking set up and driver is not tracking via Trucker Tools"
+        },
+        {
+          "description": "Failure to check in as Beemac deduction",
+          "amount": "$100",
+          "conditions": "If driver fails to check in as Beemac and issues arise"
+        },
+        {
+          "description": "Late POD submission deduction",
+          "amount": "$25",
+          "conditions": "After 24 hours of delivery"
+        },
+        {
+          "description": "Late POD submission deduction",
+          "amount": "$50 per day",
+          "conditions": "For each day once 48 hours has passed from the delivery date"
+        },
+        {
+          "description": "Late pick up or late delivery deduction",
+          "amount": "$100",
+          "conditions": "Late pick ups over 1 hour and late deliveries over 1 hour"
+        },
+        {
+          "description": "Rate reduction for failure to maintain GPS tracking / failure to comply with agreement terms",
+          "amount": "$50.00",
+          "conditions": "Failure to maintain GPS tracking or failure to do any required items listed in agreement"
+        },
+        {
+          "description": "Discussing rates with shippers/receivers/loading staff",
+          "amount": "$750",
+          "conditions": "If drivers or dispatchers discuss rates with shippers, receivers, or other loading staff"
+        },
+        {
+          "description": "Lumper/EFS receipt submission after 72 hours",
+          "amount": null,
+          "conditions": "Receipts submitted after 72 hours will result in either failed reimbursement or deduction of the total from the rate for fees paid"
+        }
+      ],
+      "pod_requirements": "Driver must take a picture of POD immediately upon delivery. Send POD to slaconte@beemaclogistics.com within 24 hours of delivery. Also submit Invoice, Signed Bill of Lading and Rate sheet to carrierdocs@beemaclogistics.com within 24 hrs.",
+      "payment_terms": "Pending all required paperwork is received by 12:00 PM EST, the load will be processed and sent to Triumph Pay within 48 hours.",
+      "additional_notes": [
+        "All Loads MUST be tarped unless otherwise stated",
+        "CALL/TEXT SAM @ (724) 276-5605 WHEN LOADED AND DELIVERED",
+        "Driver must check in as Beemac. Failure to do so may result in delays in loading/unloading.",
+        "Driver must sign BOL with their company's name as the carrier. DO NOT sign a BOL as Beemac.",
+        "All OS&D exceptions must be reported to Beemac upon delivery.",
+        "Any accessorial charges must be accompanied with written authorization from Beemac.",
+        "All invoices must have the load # on them to get paid timely.",
+        "Send lumper/EFS receipts to carrierdocs@beemaclogistics.com referencing Pro number at top right of document.",
+        "Driver Load: N at both pickup and delivery"
+      ]
+    },
+    "document_date": "04/03/2026"
+  },
+  "usage": {
+    "input_tokens": 8822,
+    "output_tokens": 1404
+  }
+}

@@ -1,7 +1,13 @@
 import * as Yup from 'yup';
 
 export const sendManualPromptValidator = Yup.object({
-  body: Yup.object({}).defined(),
+  body: Yup.object({
+    body: Yup.string()
+      .trim()
+      .min(1, 'body must not be empty')
+      .max(640, 'body must be 640 characters or fewer')
+      .notRequired(),
+  }).defined(),
   query: Yup.object({}).defined(),
   params: Yup.object({
     loadId: Yup.string()

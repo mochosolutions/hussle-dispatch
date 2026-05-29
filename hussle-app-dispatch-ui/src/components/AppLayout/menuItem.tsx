@@ -9,6 +9,7 @@ import {
   Users,
   Settings,
   Calculator,
+  Inbox,
 } from 'lucide-react';
 
 export const menuItems: NavItemType[] = [
@@ -30,6 +31,13 @@ export const menuItems: NavItemType[] = [
         type: 'item',
         url: '/loads',
         icon: <Truck size={24} />,
+      },
+      {
+        id: 'ratecons',
+        title: 'Rate Cons',
+        type: 'item',
+        url: '/ratecons',
+        icon: <Inbox size={24} />,
       },
       {
         id: 'fleet',

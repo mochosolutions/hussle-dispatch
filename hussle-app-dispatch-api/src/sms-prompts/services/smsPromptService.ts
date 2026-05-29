@@ -27,6 +27,7 @@ export interface SendManualPromptInput {
   loadId: string;
   organizationId: string;
   requestingUserId: string;
+  customBody?: string;
 }
 
 export interface ListPromptsForLoadInput {
@@ -91,6 +92,7 @@ export const createSmsPromptService = (
       organizationId: input.organizationId,
       anchor: 'MANUAL',
       scheduledAt: new Date(),
+      customBody: input.customBody ?? null,
     });
 
     await deps.eventBus

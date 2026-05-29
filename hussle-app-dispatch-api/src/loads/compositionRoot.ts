@@ -8,6 +8,7 @@ import type { PlaceModuleQueries, PlaceModuleServices } from '@/places/compositi
 import { customerRepositoryPrisma } from '@/customers/repositories/customerRepositoryPrisma';
 import { documentRepositoryPrisma } from '@/documents/repositories/documentRepositoryPrisma';
 import { agreementRepositoryPrisma } from '@/agreements/repositories/agreementRepositoryPrisma';
+import { auditLogRepositoryPrisma } from '@/audit/repositories/auditLogRepositoryPrisma';
 import type { SettlementFreezeQueryPort } from './types/loadTypes';
 import { createAccessorialControllers } from './controllers/accessorialController';
 import { createLoadControllers } from './controllers/loadController';
@@ -100,6 +101,8 @@ export const createLoadsModule = ({
       documentRepo: documentRepoForCompliance,
       agreementRepo: agreementRepoForCompliance,
     },
+    auditLogFactory: (organizationId: string) =>
+      auditLogRepositoryPrisma(prismaClient as PrismaClient, organizationId),
     eventBus,
     logger,
   });

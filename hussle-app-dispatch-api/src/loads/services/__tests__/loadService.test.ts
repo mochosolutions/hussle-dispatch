@@ -169,6 +169,7 @@ describe('loadService assignment validation', () => {
       firstName: 'Alex',
       lastName: 'Driver',
       isAvailable: true,
+      licenseExpiry: null,
     });
     mockVehicleAssignmentQuery.findAssignableById.mockResolvedValue({
       id: 'vehicle-1',
@@ -176,7 +177,11 @@ describe('loadService assignment validation', () => {
       unitNumber: 'TRK-1',
       driverId: 'driver-1',
       isActive: true,
+      type: 'DRY_VAN',
     });
+    mockLoadRepository.create.mockResolvedValue(
+      buildLoad({ carrierId: 'carrier-1', driverId: 'driver-1', vehicleId: 'vehicle-1' }),
+    );
     mockLoadRepository.update.mockResolvedValue(
       buildLoad({ carrierId: 'carrier-1', driverId: 'driver-1', vehicleId: 'vehicle-1' }),
     );
@@ -190,6 +195,7 @@ describe('loadService assignment validation', () => {
         id: 'load-1',
         organizationId: 'org-1',
         role: 'admin',
+        userId: 'user-1',
         input: { carrierId: 'carrier-2' },
       }),
     ).rejects.toBeInstanceOf(AssignmentValidationError);
@@ -202,6 +208,7 @@ describe('loadService assignment validation', () => {
       firstName: 'Chris',
       lastName: 'Mismatch',
       isAvailable: true,
+      licenseExpiry: null,
     });
 
     await expect(
@@ -209,6 +216,7 @@ describe('loadService assignment validation', () => {
         id: 'load-1',
         organizationId: 'org-1',
         role: 'dispatcher',
+        userId: 'user-1',
         input: { carrierId: 'carrier-1', driverId: 'driver-9' },
       }),
     ).rejects.toBeInstanceOf(AssignmentValidationError);
@@ -221,6 +229,7 @@ describe('loadService assignment validation', () => {
       firstName: 'Alex',
       lastName: 'Driver',
       isAvailable: false,
+      licenseExpiry: null,
     });
 
     await expect(
@@ -228,6 +237,7 @@ describe('loadService assignment validation', () => {
         id: 'load-1',
         organizationId: 'org-1',
         role: 'dispatcher',
+        userId: 'user-1',
         input: { carrierId: 'carrier-1', driverId: 'driver-1' },
       }),
     ).rejects.toBeInstanceOf(AssignmentValidationError);
@@ -240,6 +250,7 @@ describe('loadService assignment validation', () => {
       id: 'load-1',
       organizationId: 'org-1',
       role: 'dispatcher',
+      userId: 'user-1',
       input: { carrierId: 'carrier-1', vehicleId: 'vehicle-1' },
     });
 
@@ -276,9 +287,254 @@ describe('loadService assignment validation', () => {
         id: 'load-1',
         organizationId: 'org-1',
         role: 'dispatcher',
+        userId: 'user-1',
         input: { carrierId: 'carrier-2' },
       }),
     ).rejects.toBeInstanceOf(AssignmentValidationError);
+  });
+
+  // -------------------------------------------------------------------------
+  // Tier-based dispatch requirements: EQUIPMENT_MISMATCH (explicitAdmin tier)
+  // -------------------------------------------------------------------------
+
+  const buildAuditMock = () => ({
+    create: jest.fn<() => Promise<unknown>>().mockResolvedValue({}),
+    findByEntity: jest.fn(),
+    findByUser: jest.fn(),
+    findRecent: jest.fn(),
+  });
+
+  it('blocks a dispatcher when the vehicle equipment cannot haul the load', async () => {
+    // DRY_VAN load + BOX_TRUCK vehicle = explicitAdmin mismatch, no override available.
+    mockLoadRepository.findById.mockResolvedValue(
+      buildLoad({ carrierId: 'carrier-1', driverId: null, vehicleId: null, equipmentType: 'DRY_VAN' }),
+    );
+    mockVehicleAssignmentQuery.findAssignableById.mockResolvedValue({
+      id: 'vehicle-1',
+      carrierId: 'carrier-1',
+      unitNumber: 'TRK-1',
+      driverId: null,
+      isActive: true,
+      type: 'BOX_TRUCK',
+    });
+
+    await expect(
+      loadService.assignLoad({
+        id: 'load-1',
+        organizationId: 'org-1',
+        role: 'dispatcher',
+        userId: 'user-1',
+        input: { carrierId: 'carrier-1', vehicleId: 'vehicle-1' },
+      }),
+    ).rejects.toBeInstanceOf(AssignmentValidationError);
+    expect(mockLoadRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks an admin equipment mismatch when overrideDispatch is not set', async () => {
+    mockLoadRepository.findById.mockResolvedValue(
+      buildLoad({ carrierId: 'carrier-1', driverId: null, vehicleId: null, equipmentType: 'DRY_VAN' }),
+    );
+    mockVehicleAssignmentQuery.findAssignableById.mockResolvedValue({
+      id: 'vehicle-1',
+      carrierId: 'carrier-1',
+      unitNumber: 'TRK-1',
+      driverId: null,
+      isActive: true,
+      type: 'BOX_TRUCK',
+    });
+
+    await expect(
+      loadService.assignLoad({
+        id: 'load-1',
+        organizationId: 'org-1',
+        role: 'admin',
+        userId: 'admin-1',
+        input: { carrierId: 'carrier-1', vehicleId: 'vehicle-1' },
+      }),
+    ).rejects.toBeInstanceOf(AssignmentValidationError);
+    expect(mockLoadRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('downgrades an equipment mismatch to a warning for an admin with overrideDispatch and audits it', async () => {
+    mockLoadRepository.findById.mockResolvedValue(
+      buildLoad({ carrierId: 'carrier-1', driverId: null, vehicleId: null, equipmentType: 'DRY_VAN' }),
+    );
+    mockVehicleAssignmentQuery.findAssignableById.mockResolvedValue({
+      id: 'vehicle-1',
+      carrierId: 'carrier-1',
+      unitNumber: 'TRK-1',
+      driverId: null,
+      isActive: true,
+      type: 'BOX_TRUCK',
+    });
+    const auditRepo = buildAuditMock();
+    const overrideService = createLoadService({
+      loadRepository: mockLoadRepository,
+      orgSettingsQuery: mockOrgSettingsQuery,
+      carrierAssignmentQuery: mockCarrierAssignmentQuery,
+      driverAssignmentQuery: mockDriverAssignmentQuery,
+      vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+      derivedComplianceDeps: buildDerivedComplianceDeps(),
+      auditLogFactory: () => auditRepo,
+    });
+
+    const result = await overrideService.assignLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      userId: 'admin-1',
+      overrideDispatch: true,
+      overrideReason: 'Customer confirmed equipment swap',
+      input: { carrierId: 'carrier-1', vehicleId: 'vehicle-1' },
+    });
+
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'EQUIPMENT_MISMATCH' })]),
+    );
+    expect(mockLoadRepository.update).toHaveBeenCalled();
+    expect(auditRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'DISPATCH_OVERRIDE',
+        entityType: 'LOAD',
+        entityId: 'load-1',
+        userId: 'admin-1',
+        metadata: expect.objectContaining({
+          overriddenCodes: expect.arrayContaining(['EQUIPMENT_MISMATCH']),
+          reason: 'Customer confirmed equipment swap',
+        }),
+      }),
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Tier-based dispatch requirements: DRIVER_LICENSE_EXPIRED (explicitAdmin)
+  // -------------------------------------------------------------------------
+
+  it('blocks a dispatcher when the assigned driver has an expired license', async () => {
+    mockDriverAssignmentQuery.findAssignableById.mockResolvedValue({
+      id: 'driver-1',
+      carrierId: 'carrier-1',
+      firstName: 'Alex',
+      lastName: 'Driver',
+      isAvailable: true,
+      licenseExpiry: new Date('2020-01-01T00:00:00.000Z'),
+    });
+
+    await expect(
+      loadService.assignLoad({
+        id: 'load-1',
+        organizationId: 'org-1',
+        role: 'dispatcher',
+        userId: 'user-1',
+        input: { carrierId: 'carrier-1', driverId: 'driver-1' },
+      }),
+    ).rejects.toBeInstanceOf(AssignmentValidationError);
+    expect(mockLoadRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('downgrades an expired-license block to a warning for an admin with overrideDispatch and audits it', async () => {
+    mockDriverAssignmentQuery.findAssignableById.mockResolvedValue({
+      id: 'driver-1',
+      carrierId: 'carrier-1',
+      firstName: 'Alex',
+      lastName: 'Driver',
+      isAvailable: true,
+      licenseExpiry: new Date('2020-01-01T00:00:00.000Z'),
+    });
+    const auditRepo = buildAuditMock();
+    const overrideService = createLoadService({
+      loadRepository: mockLoadRepository,
+      orgSettingsQuery: mockOrgSettingsQuery,
+      carrierAssignmentQuery: mockCarrierAssignmentQuery,
+      driverAssignmentQuery: mockDriverAssignmentQuery,
+      vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+      derivedComplianceDeps: buildDerivedComplianceDeps(),
+      auditLogFactory: () => auditRepo,
+    });
+
+    const result = await overrideService.assignLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      userId: 'admin-1',
+      overrideDispatch: true,
+      input: { carrierId: 'carrier-1', driverId: 'driver-1' },
+    });
+
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'DRIVER_LICENSE_EXPIRED' })]),
+    );
+    expect(mockLoadRepository.update).toHaveBeenCalled();
+    expect(auditRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'DISPATCH_OVERRIDE',
+        metadata: expect.objectContaining({
+          overriddenCodes: expect.arrayContaining(['DRIVER_LICENSE_EXPIRED']),
+        }),
+      }),
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Tier-based dispatch requirements: CARRIER_ONBOARDING_INCOMPLETE (silentAdmin)
+  // -------------------------------------------------------------------------
+
+  const buildOnboardingBlockedService = () => {
+    // Existing load already on carrier-2 with no driver/vehicle, so the only
+    // possible blocker is the onboarding gate (no carrier/driver mismatch).
+    mockLoadRepository.findById.mockResolvedValue(
+      buildLoad({ carrierId: 'carrier-2', driverId: null, vehicleId: null }),
+    );
+    mockCarrierAssignmentQuery.findDispatchableById.mockResolvedValue({
+      id: 'carrier-2',
+      name: 'External Carrier',
+      type: 'EXTERNAL_CARRIER',
+      tinOnFile: true,
+    });
+    const noAgreementDeps = buildDerivedComplianceDeps();
+    (noAgreementDeps.agreementRepo.findManySigned as jest.Mock).mockResolvedValue([]);
+    return createLoadService({
+      loadRepository: mockLoadRepository,
+      orgSettingsQuery: mockOrgSettingsQuery,
+      carrierAssignmentQuery: mockCarrierAssignmentQuery,
+      driverAssignmentQuery: mockDriverAssignmentQuery,
+      vehicleAssignmentQuery: mockVehicleAssignmentQuery,
+      derivedComplianceDeps: noAgreementDeps,
+    });
+  };
+
+  it('blocks a non-admin when the carrier is missing a signed agreement (silent tier)', async () => {
+    const service = buildOnboardingBlockedService();
+
+    await expect(
+      service.assignLoad({
+        id: 'load-1',
+        organizationId: 'org-1',
+        role: 'dispatcher',
+        userId: 'user-1',
+        input: { carrierId: 'carrier-2' },
+      }),
+    ).rejects.toBeInstanceOf(AssignmentValidationError);
+    expect(mockLoadRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('lets an admin assign a missing-docs carrier with no flag (silent tier auto-allow)', async () => {
+    const service = buildOnboardingBlockedService();
+
+    const result = await service.assignLoad({
+      id: 'load-1',
+      organizationId: 'org-1',
+      role: 'admin',
+      userId: 'admin-1',
+      input: { carrierId: 'carrier-2' },
+    });
+
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'CARRIER_ONBOARDING_INCOMPLETE' }),
+      ]),
+    );
+    expect(mockLoadRepository.update).toHaveBeenCalled();
   });
 
   it('returns warnings for a home-pairing mismatch but still updates the load', async () => {
@@ -288,12 +544,14 @@ describe('loadService assignment validation', () => {
       unitNumber: 'TRK-1',
       driverId: 'driver-2',
       isActive: true,
+      type: 'DRY_VAN',
     });
 
     const result = await loadService.assignLoad({
       id: 'load-1',
       organizationId: 'org-1',
       role: 'dispatcher',
+      userId: 'user-1',
       input: { carrierId: 'carrier-1', driverId: 'driver-1', vehicleId: 'vehicle-1' },
     });
 
@@ -314,6 +572,7 @@ describe('loadService assignment validation', () => {
       unitNumber: 'TRK-3',
       driverId: null,
       isActive: true,
+      type: 'DRY_VAN',
     });
 
     await expect(
