@@ -1,35 +1,21 @@
-import { useState, useCallback } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Select,
-  MenuItem,
-  Button,
-  Skeleton,
-  Box,
-} from '@mui/material';
-import { Meta } from 'components/Typography';
-import type { SelectChangeEvent } from '@mui/material';
-import { format } from 'date-fns';
+import { useState, useCallback, useMemo } from 'react';
+import { NewDataGrid } from '@mocho/ui/components';
+import { EmptyState } from 'mocho/components/EmptyState';
+import ConfirmDialog from 'mocho/components/ConfirmDialog';
 import { useDispatch, useSelector } from 'store';
 import { currentUserSelector } from 'features/auth/store/selectors/authSelector';
-import ConfirmDialog from 'mocho/components/ConfirmDialog';
+import type { Member } from 'utils/api/team/teamApi';
 import {
   changeMemberRoleRequest,
   removeMemberRequest,
 } from '../../store/reducers/teamSlice';
-import type { Member } from 'utils/api/team/teamApi';
-
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'dispatcher', label: 'Dispatcher' },
-  { value: 'viewer', label: 'Viewer' },
-  { value: 'driver', label: 'Driver' },
-];
+import {
+  MemberNameCellRenderer,
+  MemberRoleCellRenderer,
+  MemberJoinedCellRenderer,
+  MemberActionsCellRenderer,
+} from '../MemberCellRenderers';
+import type { MemberGridContext } from '../MemberCellRenderers';
 
 interface MemberTableProps {
   members: Member[];
@@ -37,7 +23,13 @@ interface MemberTableProps {
   organizationId: string;
 }
 
-const SKELETON_ROWS = [0, 1, 2];
+const defaultColDef = {
+  flex: 1,
+  minWidth: 100,
+  sortable: true,
+  resizable: true,
+  filter: false,
+};
 
 const MemberTable: React.FC<MemberTableProps> = ({ members, loading }) => {
   const dispatch = useDispatch();
@@ -48,8 +40,8 @@ const MemberTable: React.FC<MemberTableProps> = ({ members, loading }) => {
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
 
   const handleRoleChange = useCallback(
-    (membershipId: string) => (event: SelectChangeEvent<string>) => {
-      dispatch(changeMemberRoleRequest({ membershipId, role: event.target.value }));
+    (membershipId: string, role: string) => {
+      dispatch(changeMemberRoleRequest({ membershipId, role }));
     },
     [dispatch],
   );
@@ -72,106 +64,73 @@ const MemberTable: React.FC<MemberTableProps> = ({ members, loading }) => {
     setMemberToRemove(null);
   }, []);
 
+  const gridContext = useMemo<MemberGridContext>(
+    () => ({
+      onRoleChange: handleRoleChange,
+      onRemove: handleRemoveClick,
+      currentUserId,
+    }),
+    [handleRoleChange, handleRemoveClick, currentUserId],
+  );
+
+  const columnDefs = useMemo(
+    () => [
+      {
+        headerName: 'Name',
+        minWidth: 200,
+        flex: 1.5,
+        cellRenderer: MemberNameCellRenderer,
+      },
+      {
+        headerName: 'Role',
+        field: 'role' as const,
+        minWidth: 160,
+        flex: 1,
+        cellRenderer: MemberRoleCellRenderer,
+      },
+      {
+        headerName: 'Joined',
+        field: 'createdAt' as const,
+        minWidth: 140,
+        flex: 1,
+        cellRenderer: MemberJoinedCellRenderer,
+      },
+      {
+        headerName: 'Actions',
+        minWidth: 120,
+        maxWidth: 140,
+        sortable: false,
+        cellRenderer: MemberActionsCellRenderer,
+      },
+    ],
+    [],
+  );
+
   const removeName = memberToRemove
     ? `${memberToRemove.user.firstName} ${memberToRemove.user.lastName}`.trim()
     : '';
 
-  if (loading) {
-    return (
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell width="30%">Name</TableCell>
-              <TableCell width="25%">Role</TableCell>
-              <TableCell width="20%">Joined</TableCell>
-              <TableCell width="25%">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {SKELETON_ROWS.map((row) => (
-              <TableRow key={row}>
-                <TableCell>
-                  <Skeleton variant="rectangular" height={48} />
-                </TableCell>
-                <TableCell>
-                  <Skeleton variant="rectangular" height={48} />
-                </TableCell>
-                <TableCell>
-                  <Skeleton variant="rectangular" height={48} />
-                </TableCell>
-                <TableCell>
-                  <Skeleton variant="rectangular" height={48} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  }
-
   return (
     <>
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell width="30%">Name</TableCell>
-              <TableCell width="25%">Role</TableCell>
-              <TableCell width="20%">Joined</TableCell>
-              <TableCell width="25%">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {members.map((member) => {
-              const fullName = `${member.user.firstName} ${member.user.lastName}`.trim();
-              const isCurrentUser = member.userId === currentUserId;
-
-              return (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <Box>
-                      <Meta sx={{ color: 'text.primary' }}>{fullName}</Meta>
-                      <Meta>{member.user.email}</Meta>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      size="small"
-                      value={member.role}
-                      onChange={handleRoleChange(member.id)}
-                    >
-                      {ROLE_OPTIONS.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Meta sx={{ color: 'text.primary' }}>
-                      {format(new Date(member.createdAt), 'MMM d, yyyy')}
-                    </Meta>
-                  </TableCell>
-                  <TableCell>
-                    {!isCurrentUser && (
-                      <Button
-                        variant="text"
-                        color="inherit"
-                        size="small"
-                        onClick={() => handleRemoveClick(member)}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <NewDataGrid
+        columnDefs={columnDefs}
+        rowData={members}
+        defaultColDef={defaultColDef}
+        showRowCountFooter
+        totalRowCount={members.length}
+        rowCountLabel="members"
+        noDataComponent={<EmptyState variant="no-results" entityName="Member" compact />}
+        gridOptions={{
+          domLayout: 'autoHeight',
+          pagination: true,
+          paginationPageSize: 25,
+          suppressCellFocus: true,
+          headerHeight: 44,
+          rowHeight: 56,
+          context: gridContext,
+        }}
+        loading={loading}
+      />
 
       <ConfirmDialog
         open={confirmOpen}

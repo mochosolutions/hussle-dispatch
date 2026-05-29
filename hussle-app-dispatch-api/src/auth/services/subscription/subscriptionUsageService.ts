@@ -21,12 +21,19 @@ interface SubscriptionUsageServiceDeps {
 
 export const createSubscriptionUsageService = (deps: SubscriptionUsageServiceDeps) => ({
   getUsage: async ({ organizationId }: GetUsageInput): Promise<SubscriptionUsage> => {
-    const [userCount, vehicleCount] = await Promise.all([
+    const [memberCount, pendingInviteCount, vehicleCount] = await Promise.all([
       deps.prismaClient.membership.count({
         where: {
           organizationId,
           deleted: false,
           status: 'active',
+        },
+      }),
+      deps.prismaClient.invitation.count({
+        where: {
+          organizationId,
+          status: 'PENDING',
+          expiresAt: { gt: new Date() },
         },
       }),
       deps.prismaClient.vehicle.count({
@@ -40,7 +47,8 @@ export const createSubscriptionUsageService = (deps: SubscriptionUsageServiceDep
 
     return {
       users: {
-        current: userCount,
+        // Mirror the invite seat-gate: active members + outstanding (non-expired) invites.
+        current: memberCount + pendingInviteCount,
         limit: SUBSCRIPTION_LIMITS.maxUsers,
       },
       vehicles: {

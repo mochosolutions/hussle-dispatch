@@ -5,6 +5,7 @@ import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
 import { createPrismaMessageDedup, createRabbitMqEventBus } from './shared/messaging';
 import { createProcessedEventCleanup } from './shared/messaging/processedEventCleanup';
+import { createInvitationCleanupJob } from './auth/jobs/invitationCleanupJob';
 import { logger } from './shared/utils/logger';
 import { stopAgreements } from './agreements';
 
@@ -23,11 +24,15 @@ const start = async (): Promise<void> => {
   const processedEventCleanup = createProcessedEventCleanup({ prisma, logger });
   processedEventCleanup.start();
 
+  const invitationCleanup = createInvitationCleanupJob({ prisma, logger });
+  invitationCleanup.start();
+
   // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {
     logger.info('Shutting down...');
     stopAgreements();
     processedEventCleanup.stop();
+    invitationCleanup.stop();
     await eventBus.close();
     await redisClient.quit();
     process.exit(0);

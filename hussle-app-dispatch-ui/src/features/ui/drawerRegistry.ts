@@ -34,6 +34,11 @@ import { AddAdjustmentDrawer } from '../accounting/components/AddAdjustmentDrawe
 import { ExpenseQuickAddDrawer } from '../accounting/components/ExpenseQuickAddDrawer';
 import { PaySettlementDrawer } from '../accounting/components/PaySettlementDrawer';
 import { UploadAgreementDrawer } from '../agreements/components/UploadAgreementDrawer';
+import { SettingsFinancialDrawer } from '../settings/components/SettingsFinancialDrawer';
+import { SettingsOperationsDrawer } from '../settings/components/SettingsOperationsDrawer';
+import { SettingsCommunicationDrawer } from '../settings/components/SettingsCommunicationDrawer';
+import { SettingsDriverCommsDrawer } from '../settings/components/SettingsDriverCommsDrawer';
+import { SettingsHeadquartersDrawer } from '../settings/components/SettingsHeadquartersDrawer';
 
 const drawerRegistry: PopupComponentMap = {
   carrierCompanyInfo: CompanyInfoDrawer,
@@ -76,6 +81,13 @@ const drawerRegistry: PopupComponentMap = {
 
   // Agreements drawers
   uploadAgreement: UploadAgreementDrawer,
+
+  // Settings section drawers
+  settingsFinancial: SettingsFinancialDrawer,
+  settingsOperations: SettingsOperationsDrawer,
+  settingsCommunication: SettingsCommunicationDrawer,
+  settingsDriverComms: SettingsDriverCommsDrawer,
+  settingsHeadquarters: SettingsHeadquartersDrawer,
 };
 
 export default drawerRegistry;

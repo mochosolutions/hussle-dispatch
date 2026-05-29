@@ -1,5 +1,5 @@
 export const SUBSCRIPTION_LIMITS = Object.freeze({
-  maxUsers: 3,
+  maxUsers: 10,
   maxVehicles: 3,
 } as const);
 

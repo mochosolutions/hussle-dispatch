@@ -19,6 +19,12 @@ const settingsRoutes = {
     {
       index: true,
       element: <SettingsPage />,
+      handle: {
+        mainContentProps: {
+          container: false,
+          contentPadding: 0,
+        },
+      },
     },
   ],
 };

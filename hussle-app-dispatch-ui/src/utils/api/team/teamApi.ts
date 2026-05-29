@@ -159,6 +159,20 @@ export const getInvitations = async (orgId: string): Promise<Invitation[]> => {
   return response.data.invites ?? [];
 };
 
+export const revokeInvitation = async (orgId: string, inviteId: string): Promise<void> => {
+  await axiosInstance.delete(`/organizations/${orgId}/invites/${inviteId}`);
+};
+
+export const resendInvitation = async (
+  orgId: string,
+  inviteId: string,
+): Promise<Invitation> => {
+  const response = await axiosInstance.post<{ invite: Invitation }>(
+    `/organizations/${orgId}/invites/${inviteId}/resend`,
+  );
+  return response.data.invite;
+};
+
 export const verifyInvitation = async (token: string): Promise<InvitationVerification> => {
   const response = await axiosInstance.post<VerifyInvitationResponse>(
     `/invitations/${token}/verify`,

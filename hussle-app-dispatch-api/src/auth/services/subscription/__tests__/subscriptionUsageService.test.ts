@@ -5,6 +5,7 @@ import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits';
 describe('subscriptionUsageService', () => {
   const mockPrisma = {
     membership: { count: jest.fn() },
+    invitation: { count: jest.fn() },
     vehicle: { count: jest.fn() },
   };
 
@@ -16,9 +17,10 @@ describe('subscriptionUsageService', () => {
     jest.clearAllMocks();
   });
 
-  it('returns correct user and vehicle counts with limits', async () => {
+  it('counts active members plus outstanding invites against the user limit', async () => {
     // Arrange
     mockPrisma.membership.count.mockResolvedValue(2);
+    mockPrisma.invitation.count.mockResolvedValue(1);
     mockPrisma.vehicle.count.mockResolvedValue(1);
 
     // Act
@@ -27,7 +29,7 @@ describe('subscriptionUsageService', () => {
     // Assert
     expect(result).toEqual({
       users: {
-        current: 2,
+        current: 3,
         limit: SUBSCRIPTION_LIMITS.maxUsers,
       },
       vehicles: {
@@ -44,6 +46,14 @@ describe('subscriptionUsageService', () => {
       },
     });
 
+    expect(mockPrisma.invitation.count).toHaveBeenCalledWith({
+      where: {
+        organizationId: 'org-1',
+        status: 'PENDING',
+        expiresAt: { gt: expect.any(Date) },
+      },
+    });
+
     expect(mockPrisma.vehicle.count).toHaveBeenCalledWith({
       where: {
         carrier: { managedByOrgId: 'org-1' },
@@ -56,6 +66,7 @@ describe('subscriptionUsageService', () => {
   it('returns zero counts when no members or vehicles exist', async () => {
     // Arrange
     mockPrisma.membership.count.mockResolvedValue(0);
+    mockPrisma.invitation.count.mockResolvedValue(0);
     mockPrisma.vehicle.count.mockResolvedValue(0);
 
     // Act

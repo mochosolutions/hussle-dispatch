@@ -5,6 +5,7 @@
  */
 
 import { BadRequestError } from '@mocho/common';
+import { InvitationStatus } from '@prisma/client';
 import type { PrismaClient, Invitation as PrismaInvitation } from '@prisma/client';
 import { logger } from '@/shared/utils/logger';
 import type { PrismaTransaction } from '@/config/database';
@@ -90,9 +91,17 @@ export const inviteRepositoryPrisma = (
       }
     },
 
-    findAllInvites: async (filter?: { organizationId?: string }): Promise<Invite[]> => {
+    findAllInvites: async (filter: Record<string, unknown> = {}): Promise<Invite[]> => {
       try {
-        const invites = await baseRepository.findMany(filter ? { filter } : {});
+        // Only surface actionable invites — PENDING and EXPIRED (which can still be
+        // resent). Terminal states (ACCEPTED, REVOKED) are excluded so they never
+        // appear in the "Pending Invitations" list as resend/revoke targets.
+        const invites = await baseRepository.findMany({
+          filter: {
+            status: { notIn: [InvitationStatus.ACCEPTED, InvitationStatus.REVOKED] },
+            ...filter,
+          },
+        });
         if (!invites || invites.length === 0) {
           logger.info('No invites found');
           return [];
@@ -139,6 +148,7 @@ export const inviteRepositoryPrisma = (
           where: {
             organizationId,
             status: 'PENDING',
+            expiresAt: { gt: new Date() },
           },
         });
         return count;

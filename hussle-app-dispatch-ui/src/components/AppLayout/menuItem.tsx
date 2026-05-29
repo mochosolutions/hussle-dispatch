@@ -90,13 +90,13 @@ export const menuItems: NavItemType[] = [
       //     { id: 'expenses', title: 'Expenses', type: 'item', url: '/accounting/expenses' },
       //   ],
       // },
-      // {
-      //   id: 'settings',
-      //   title: 'Settings',
-      //   type: 'item',
-      //   url: '/settings',
-      //   icon: <Settings size={24} />,
-      // },
+      {
+        id: 'settings',
+        title: 'Settings',
+        type: 'item',
+        url: '/settings',
+        icon: <Settings size={24} />,
+      },
     ],
   },
 ];

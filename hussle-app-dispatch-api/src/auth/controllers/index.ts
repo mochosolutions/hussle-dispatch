@@ -14,6 +14,8 @@ import { createSwitchOrgController } from './auth/switchOrgController';
 import { createAcceptInviteController } from './invite/acceptInviteController';
 import { createGetInvitesController } from './invite/getInvitesController';
 import { createInviteUserController } from './invite/inviteUserController';
+import { createRevokeInviteController } from './invite/revokeInviteController';
+import { createResendInviteController } from './invite/resendInviteController';
 import { createVerifyInviteController } from './invite/verifyInviteController';
 import { createVerifyInviteByTokenController } from './invite/verifyInviteByTokenController';
 import { createOrgMembershipController } from './membership/createMembershipController';
@@ -159,6 +161,8 @@ export interface AuthControllers {
   updateMembershipController: RequestHandler;
   deleteOrganizationController: RequestHandler;
   inviteUserController: RequestHandler;
+  revokeInviteController: RequestHandler;
+  resendInviteController: RequestHandler;
   verifyInviteController: RequestHandler;
   verifyInviteByTokenController: RequestHandler;
   acceptInviteController: RequestHandler;
@@ -236,6 +240,14 @@ export const createAuthControllers = ({
       eventBus,
       logger,
       allowedRoles,
+    }),
+    revokeInviteController: createRevokeInviteController({ inviteRepo, logger }),
+    resendInviteController: createResendInviteController({
+      inviteRepo,
+      userRepo,
+      orgRepo,
+      eventBus,
+      logger,
     }),
     verifyInviteController: createVerifyInviteController({
       inviteRepo,

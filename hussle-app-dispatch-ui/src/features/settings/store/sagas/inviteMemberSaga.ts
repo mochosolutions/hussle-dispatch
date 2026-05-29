@@ -20,6 +20,16 @@ export function* inviteMemberSaga(action: ReturnType<typeof inviteMemberRequest>
       typeof inviteMember
     >;
 
+    // The API returns 200 even when an invite is skipped (e.g. already a member
+    // or a pending invite already exists). Only treat it as success when an
+    // invite was actually created — otherwise surface the skip reason.
+    if (result.invites.length === 0) {
+      const reason = result.skipped[0]?.reason ?? 'Invitation could not be sent';
+      yield put(inviteMemberFailure(reason));
+      yield put(notify({ message: reason, variant: 'warning' }));
+      return;
+    }
+
     yield put(inviteMemberSuccess({ invitations: result.invites }));
     yield put(notify({ message: `Invitation sent to ${inviteData.email}`, variant: 'success' }));
 

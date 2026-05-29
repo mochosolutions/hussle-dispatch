@@ -115,6 +115,15 @@ export const getMembershipValidator = Yup.object({
   params: organizationIdSchema,
 });
 
+export const inviteActionParamsSchema = Yup.object({
+  organizationId: Yup.string().required('Organization ID is required').trim(),
+  inviteId: Yup.string().required('Invite ID is required').trim(),
+});
+
+export const inviteActionValidator = Yup.object({
+  params: inviteActionParamsSchema,
+});
+
 export const deleteOrganizationValidator = Yup.object({
   params: organizationIdSchema,
 });

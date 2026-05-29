@@ -6,7 +6,7 @@ import { validateRequest } from '@/shared/middleware/validateRequest';
 import { ROLES } from '@/config/roles';
 import type { AuthControllers } from '../controllers';
 import { acceptInviteValidator } from '../validators/acceptInviteValidator';
-import { getMembershipValidator, inviteUserValidator, verifyInviteValidator } from '../validators/tenantValidator';
+import { getMembershipValidator, inviteActionValidator, inviteUserValidator, verifyInviteValidator } from '../validators/tenantValidator';
 
 export const createInviteRouter = (controllers: AuthControllers): express.Router => {
   const router = express.Router();
@@ -45,6 +45,22 @@ export const createInviteRouter = (controllers: AuthControllers): express.Router
     authorizeUser(tenantAdmin),
     validateRequest(getMembershipValidator),
     controllers.getInvitesController,
+  );
+
+  router.delete(
+    '/organizations/:organizationId/invites/:inviteId',
+    appAuth,
+    authorizeUser(tenantAdmin),
+    validateRequest(inviteActionValidator),
+    controllers.revokeInviteController,
+  );
+
+  router.post(
+    '/organizations/:organizationId/invites/:inviteId/resend',
+    appAuth,
+    authorizeUser(tenantAdmin),
+    validateRequest(inviteActionValidator),
+    controllers.resendInviteController,
   );
 
   return router;

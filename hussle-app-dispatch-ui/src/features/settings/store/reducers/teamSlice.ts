@@ -20,6 +20,12 @@ const initialState: TeamState = {
   errors: {},
 };
 
+// Immer-safe removal of a dynamically-keyed loading/error entry
+// (avoids @typescript-eslint/no-dynamic-delete on computed keys).
+const clearKey = (map: Record<string, string>, key: string): void => {
+  Reflect.deleteProperty(map, key);
+};
+
 interface FetchTeamSuccessPayload {
   members: Member[];
   invitations: Invitation[];
@@ -33,6 +39,10 @@ interface ChangeMemberRolePayload {
 
 interface RemoveMemberPayload {
   membershipId: string;
+}
+
+interface InviteActionPayload {
+  inviteId: string;
 }
 
 export const teamSlice = createSlice({
@@ -73,36 +83,36 @@ export const teamSlice = createSlice({
 
     changeMemberRoleRequest(state, action: PayloadAction<ChangeMemberRolePayload>) {
       state.loading[`changeRole:${action.payload.membershipId}`] = 'Pending';
-      delete state.errors[`changeRole:${action.payload.membershipId}`];
+      clearKey(state.errors, `changeRole:${action.payload.membershipId}`);
     },
     changeMemberRoleSuccess(state, action: PayloadAction<Member>) {
       const index = state.members.findIndex((m) => m.id === action.payload.id);
       if (index !== -1) {
         state.members[index] = action.payload;
       }
-      delete state.loading[`changeRole:${action.payload.id}`];
+      clearKey(state.loading, `changeRole:${action.payload.id}`);
     },
     changeMemberRoleFailure(
       state,
       action: PayloadAction<{ membershipId: string; error: string }>,
     ) {
-      delete state.loading[`changeRole:${action.payload.membershipId}`];
+      clearKey(state.loading, `changeRole:${action.payload.membershipId}`);
       state.errors[`changeRole:${action.payload.membershipId}`] = action.payload.error;
     },
 
     removeMemberRequest(state, action: PayloadAction<RemoveMemberPayload>) {
       state.loading[`remove:${action.payload.membershipId}`] = 'Pending';
-      delete state.errors[`remove:${action.payload.membershipId}`];
+      clearKey(state.errors, `remove:${action.payload.membershipId}`);
     },
     removeMemberSuccess(state, action: PayloadAction<{ membershipId: string }>) {
       state.members = state.members.filter((m) => m.id !== action.payload.membershipId);
-      delete state.loading[`remove:${action.payload.membershipId}`];
+      clearKey(state.loading, `remove:${action.payload.membershipId}`);
     },
     removeMemberFailure(
       state,
       action: PayloadAction<{ membershipId: string; error: string }>,
     ) {
-      delete state.loading[`remove:${action.payload.membershipId}`];
+      clearKey(state.loading, `remove:${action.payload.membershipId}`);
       state.errors[`remove:${action.payload.membershipId}`] = action.payload.error;
     },
 
@@ -117,6 +127,41 @@ export const teamSlice = createSlice({
     inviteMemberFailure(state, action: PayloadAction<string>) {
       delete state.loading.invite;
       state.errors.invite = action.payload;
+    },
+
+    revokeInvitationRequest(state, action: PayloadAction<InviteActionPayload>) {
+      state.loading[`revoke:${action.payload.inviteId}`] = 'Pending';
+      clearKey(state.errors, `revoke:${action.payload.inviteId}`);
+    },
+    revokeInvitationSuccess(state, action: PayloadAction<InviteActionPayload>) {
+      state.invitations = state.invitations.filter((i) => i.id !== action.payload.inviteId);
+      clearKey(state.loading, `revoke:${action.payload.inviteId}`);
+    },
+    revokeInvitationFailure(
+      state,
+      action: PayloadAction<{ inviteId: string; error: string }>,
+    ) {
+      clearKey(state.loading, `revoke:${action.payload.inviteId}`);
+      state.errors[`revoke:${action.payload.inviteId}`] = action.payload.error;
+    },
+
+    resendInvitationRequest(state, action: PayloadAction<InviteActionPayload>) {
+      state.loading[`resend:${action.payload.inviteId}`] = 'Pending';
+      clearKey(state.errors, `resend:${action.payload.inviteId}`);
+    },
+    resendInvitationSuccess(state, action: PayloadAction<{ invitation: Invitation }>) {
+      const index = state.invitations.findIndex((i) => i.id === action.payload.invitation.id);
+      if (index !== -1) {
+        state.invitations[index] = action.payload.invitation;
+      }
+      clearKey(state.loading, `resend:${action.payload.invitation.id}`);
+    },
+    resendInvitationFailure(
+      state,
+      action: PayloadAction<{ inviteId: string; error: string }>,
+    ) {
+      clearKey(state.loading, `resend:${action.payload.inviteId}`);
+      state.errors[`resend:${action.payload.inviteId}`] = action.payload.error;
     },
   },
 });
@@ -137,6 +182,12 @@ export const {
   inviteMemberRequest,
   inviteMemberSuccess,
   inviteMemberFailure,
+  revokeInvitationRequest,
+  revokeInvitationSuccess,
+  revokeInvitationFailure,
+  resendInvitationRequest,
+  resendInvitationSuccess,
+  resendInvitationFailure,
 } = teamSlice.actions;
 
 export const teamReducer = teamSlice.reducer;

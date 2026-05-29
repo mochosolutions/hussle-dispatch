@@ -1,81 +1,127 @@
-import {
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
-import { format } from 'date-fns';
-
-import { ErrorText, Meta } from 'components/Typography';
+import { useCallback, useMemo } from 'react';
+import { NewDataGrid } from '@mocho/ui/components';
+import { EmptyState } from 'mocho/components/EmptyState';
+import { useDispatch, useSelector } from 'store';
+import type { RootState } from 'store';
 import type { Invitation } from 'utils/api/team/teamApi';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const getExpiryText = (expiresAt: string): { text: string; isExpired: boolean } => {
-  const expiry = new Date(expiresAt);
-  const now = new Date();
-  const diffMs = expiry.getTime() - now.getTime();
-
-  if (diffMs <= 0) {
-    return { text: 'Expired', isExpired: true };
-  }
-
-  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  return { text: `in ${days} day${days === 1 ? '' : 's'}`, isExpired: false };
-};
-
-const capitalizeFirst = (value: string): string =>
-  value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+import {
+  revokeInvitationRequest,
+  resendInvitationRequest,
+} from '../../store/reducers/teamSlice';
+import {
+  InvitationNameCellRenderer,
+  InvitationEmailCellRenderer,
+  InvitationRoleCellRenderer,
+  InvitationSentCellRenderer,
+  InvitationExpiryCellRenderer,
+  InvitationActionsCellRenderer,
+} from '../InvitationCellRenderers';
+import type { InvitationGridContext } from '../InvitationCellRenderers';
 
 interface InvitationTableProps {
   invitations: Invitation[];
 }
 
-export const InvitationTable: React.FC<InvitationTableProps> = ({ invitations }) => (
-  <TableContainer>
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell sx={{ width: '30%' }}>Name</TableCell>
-          <TableCell sx={{ width: '30%' }}>Email</TableCell>
-          <TableCell sx={{ width: '15%' }}>Role</TableCell>
-          <TableCell sx={{ width: '15%' }}>Sent</TableCell>
-          <TableCell sx={{ width: '10%' }}>Expires</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {invitations.map((invitation) => {
-          const { text, isExpired } = getExpiryText(invitation.expiresAt);
-          const formattedSent = format(new Date(invitation.createdAt), 'MMM d, yyyy');
+const defaultColDef = {
+  flex: 1,
+  minWidth: 100,
+  sortable: true,
+  resizable: true,
+  filter: false,
+};
 
-          return (
-            <TableRow key={invitation.id}>
-              <TableCell>{`${invitation.firstName} ${invitation.lastName}`}</TableCell>
-              <TableCell>{invitation.email}</TableCell>
-              <TableCell>
-                <Chip label={capitalizeFirst(invitation.role)} size="small" variant="outlined" />
-              </TableCell>
-              <TableCell>{formattedSent}</TableCell>
-              <TableCell>
-                {isExpired ? (
-                  <ErrorText>{text}</ErrorText>
-                ) : (
-                  <Meta sx={{ color: 'text.primary' }}>{text}</Meta>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  </TableContainer>
-);
+export const InvitationTable: React.FC<InvitationTableProps> = ({ invitations }) => {
+  const dispatch = useDispatch();
+  const loading = useSelector((state: RootState) => state.pages.team?.loading ?? {});
+
+  const handleResend = useCallback(
+    (inviteId: string) => {
+      dispatch(resendInvitationRequest({ inviteId }));
+    },
+    [dispatch],
+  );
+
+  const handleRevoke = useCallback(
+    (inviteId: string) => {
+      dispatch(revokeInvitationRequest({ inviteId }));
+    },
+    [dispatch],
+  );
+
+  const gridContext = useMemo<InvitationGridContext>(
+    () => ({
+      onResend: handleResend,
+      onRevoke: handleRevoke,
+      loading,
+    }),
+    [handleResend, handleRevoke, loading],
+  );
+
+  const columnDefs = useMemo(
+    () => [
+      {
+        headerName: 'Name',
+        minWidth: 150,
+        flex: 1.2,
+        cellRenderer: InvitationNameCellRenderer,
+      },
+      {
+        headerName: 'Email',
+        field: 'email' as const,
+        minWidth: 180,
+        flex: 1.5,
+        cellRenderer: InvitationEmailCellRenderer,
+      },
+      {
+        headerName: 'Role',
+        field: 'role' as const,
+        minWidth: 120,
+        flex: 0.8,
+        cellRenderer: InvitationRoleCellRenderer,
+      },
+      {
+        headerName: 'Sent',
+        field: 'createdAt' as const,
+        minWidth: 130,
+        flex: 0.9,
+        cellRenderer: InvitationSentCellRenderer,
+      },
+      {
+        headerName: 'Expires',
+        field: 'expiresAt' as const,
+        minWidth: 120,
+        flex: 0.9,
+        cellRenderer: InvitationExpiryCellRenderer,
+      },
+      {
+        headerName: 'Actions',
+        minWidth: 160,
+        maxWidth: 200,
+        sortable: false,
+        cellRenderer: InvitationActionsCellRenderer,
+      },
+    ],
+    [],
+  );
+
+  return (
+    <NewDataGrid
+      columnDefs={columnDefs}
+      rowData={invitations}
+      defaultColDef={defaultColDef}
+      showRowCountFooter
+      totalRowCount={invitations.length}
+      rowCountLabel="invitations"
+      noDataComponent={<EmptyState variant="no-results" entityName="Invitation" compact />}
+      gridOptions={{
+        domLayout: 'autoHeight',
+        pagination: true,
+        paginationPageSize: 25,
+        suppressCellFocus: true,
+        headerHeight: 44,
+        rowHeight: 56,
+        context: gridContext,
+      }}
+    />
+  );
+};

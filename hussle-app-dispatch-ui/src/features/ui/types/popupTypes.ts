@@ -43,7 +43,12 @@ export type DrawerType =
   | 'loadAccessorial'
   | 'loadCheckCall'
   | 'loadDispatchTerms'
-  | 'uploadAgreement';
+  | 'uploadAgreement'
+  | 'settingsFinancial'
+  | 'settingsOperations'
+  | 'settingsCommunication'
+  | 'settingsDriverComms'
+  | 'settingsHeadquarters';
 
 export interface DrawerTypeMap {
   carrierCompanyInfo: { carrierId: string };
@@ -88,6 +93,11 @@ export interface DrawerTypeMap {
   loadCheckCall: { loadId: string };
   loadDispatchTerms: { loadId: string };
   uploadAgreement: { carrierId: string };
+  settingsFinancial: Record<string, never>;
+  settingsOperations: Record<string, never>;
+  settingsCommunication: Record<string, never>;
+  settingsDriverComms: Record<string, never>;
+  settingsHeadquarters: Record<string, never>;
 }
 
 // ---------------------------------------------------------------------------

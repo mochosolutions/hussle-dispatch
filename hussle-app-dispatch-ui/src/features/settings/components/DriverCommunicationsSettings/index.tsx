@@ -6,10 +6,12 @@ import type { FormikFieldProps } from 'mocho/components/form-fields';
 
 interface DriverCommunicationsSettingsProps {
   formikProps: FormikFieldProps;
+  disabled?: boolean;
 }
 
 export const DriverCommunicationsSettings: React.FC<DriverCommunicationsSettingsProps> = ({
   formikProps,
+  disabled = false,
 }) => (
   <SectionCard title={<SectionTitle>Driver Communications</SectionTitle>}>
     <Stack spacing={2.5}>
@@ -23,6 +25,7 @@ export const DriverCommunicationsSettings: React.FC<DriverCommunicationsSettings
             label="Pre-pickup lead time (minutes)"
             type="number"
             formik={formikProps}
+            disabled={disabled}
             required
           />
         </Grid>
@@ -32,6 +35,7 @@ export const DriverCommunicationsSettings: React.FC<DriverCommunicationsSettings
             label="Transit check-in interval (minutes)"
             type="number"
             formik={formikProps}
+            disabled={disabled}
             required
           />
         </Grid>
@@ -41,6 +45,7 @@ export const DriverCommunicationsSettings: React.FC<DriverCommunicationsSettings
             label="Post-pickup escalation (minutes)"
             type="number"
             formik={formikProps}
+            disabled={disabled}
             required
           />
         </Grid>
@@ -50,6 +55,7 @@ export const DriverCommunicationsSettings: React.FC<DriverCommunicationsSettings
             label="Cooldown between prompts (minutes)"
             type="number"
             formik={formikProps}
+            disabled={disabled}
             required
           />
         </Grid>
