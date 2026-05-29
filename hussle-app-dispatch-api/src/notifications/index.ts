@@ -55,12 +55,13 @@ const notificationModule = createNotificationModule({
   portalBaseUrl: env.FRONTEND_URL,
 });
 
-// Initialize subscriber for auto-notifications
-notificationModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize notification subscriber', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscriber for auto-notifications — call initializeNotificationSubscriber() explicitly
+export const initializeNotificationSubscriber = (): Promise<void> =>
+  notificationModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize notification subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const notificationsRouter = createNotificationRouter(notificationModule.controllers);
 export const notificationSettingsService = notificationModule.settingsService;

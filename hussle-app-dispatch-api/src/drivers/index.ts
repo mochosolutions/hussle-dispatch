@@ -12,11 +12,13 @@ const driversModule = createDriversModule({
   eventBus: sharedEventBus,
 });
 
-driversModule.initializeSubscribers().catch((error: unknown) => {
-  logger.error('Failed to initialize driver subscribers', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscribers — call initializeDriversSubscribers() explicitly
+export const initializeDriversSubscribers = (): Promise<void> =>
+  driversModule.initializeSubscribers().catch((error: unknown) => {
+    logger.error('Failed to initialize driver subscribers', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const driversRouter = createDriversRouter(driversModule.controllers);
 export const driverQueries = driversModule.queries;

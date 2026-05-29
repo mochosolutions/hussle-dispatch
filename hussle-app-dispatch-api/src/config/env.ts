@@ -55,6 +55,15 @@ export const env = {
   SMTP_SECURE: getEnv('SMTP_SECURE', 'false') === 'true',
   SMS_BACKEND: requireInProd('SMS_BACKEND') as 'console' | 'twilio',
   FMCSA_PROVIDER: getEnv('FMCSA_PROVIDER', 'mock') as 'mock' | 'safer-web',
+  ROLE: (() => {
+    const value = getEnv('ROLE', 'all');
+    if (value !== 'api' && value !== 'worker' && value !== 'all') {
+      throw new MissingEnvError(
+        `ROLE must be one of 'api', 'worker', or 'all' — got '${value}'`,
+      );
+    }
+    return value as 'api' | 'worker' | 'all';
+  })(),
   SIGNATURE_PROVIDER: getEnv('SIGNATURE_PROVIDER', 'mock') as 'mock' | 'docuseal',
   DOCUSEAL_BASE_URL: getEnv('DOCUSEAL_BASE_URL', ''),
   DOCUSEAL_API_KEY: getEnv('DOCUSEAL_API_KEY', ''),

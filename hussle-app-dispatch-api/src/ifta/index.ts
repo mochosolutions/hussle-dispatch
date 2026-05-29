@@ -17,8 +17,10 @@ export const iftaRouter = createIftaRouter({
   iftaReportController: iftaModule.iftaReportController,
 });
 
-iftaModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize IFTA subscribers', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscriber — call initializeIftaSubscriber() explicitly
+export const initializeIftaSubscriber = (): Promise<void> =>
+  iftaModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize IFTA subscribers', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});

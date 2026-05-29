@@ -51,11 +51,16 @@ const agreementsModule = createAgreementsModule({
   },
 });
 
-agreementsModule.initialize().catch((error: unknown) => {
-  logger.error('Failed to initialize agreements module', {
-    error: error instanceof Error ? error.message : String(error),
+/**
+ * Start the agreements subscriber and signed-agreement watchdog.
+ * Call this explicitly from startBackground — never at module import time.
+ */
+export const startAgreements = (): Promise<void> =>
+  agreementsModule.initialize().catch((error: unknown) => {
+    logger.error('Failed to initialize agreements module', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const agreementsRouter = agreementsModule.agreementsRouter;
 export const docusealWebhookRouter = agreementsModule.docusealWebhookRouter;

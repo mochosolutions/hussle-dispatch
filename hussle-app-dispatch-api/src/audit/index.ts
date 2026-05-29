@@ -9,9 +9,10 @@ const auditModule = createAuditModule({
   logger,
 });
 
-// Initialize subscriber for audit log events
-auditModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize audit subscriber', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscriber for audit log events — call initializeAuditSubscriber() explicitly
+export const initializeAuditSubscriber = (): Promise<void> =>
+  auditModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize audit subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});

@@ -10,11 +10,12 @@ const carriersModule = createCarriersModule({
   logger,
 });
 
-// Initialize subscriber for carrier events
-carriersModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize carrier subscriber', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscriber for carrier events — call initializeCarriersSubscriber() explicitly
+export const initializeCarriersSubscriber = (): Promise<void> =>
+  carriersModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize carrier subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const carriersRouter = createCarriersRouter(carriersModule.controllers);

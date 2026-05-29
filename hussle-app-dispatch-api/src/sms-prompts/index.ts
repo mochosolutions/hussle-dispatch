@@ -22,12 +22,13 @@ const smsPromptsModule = createSmsPromptsModule({
   publicShortBaseUrl: env.PUBLIC_SHORT_BASE_URL,
 });
 
-// Initialize subscribers — fire-and-forget; errors are logged, not fatal.
-smsPromptsModule.initializeSubscribers().catch((error: unknown) => {
-  logger.error('Failed to initialize SMS prompt subscribers', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscribers — call initializeSmsPromptsSubscribers() explicitly
+export const initializeSmsPromptsSubscribers = (): Promise<void> =>
+  smsPromptsModule.initializeSubscribers().catch((error: unknown) => {
+    logger.error('Failed to initialize SMS prompt subscribers', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const smsPromptScheduleRepo = smsPromptsModule.scheduleRepo;
 export const smsPromptsRouter = createSmsPromptRoutes(

@@ -76,19 +76,23 @@ const documentsModule = createDocumentsModule({
   logger,
 });
 
-// Initialize subscriber for document.confirmed -> load timestamp updates
-documentsModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize document load timestamp subscriber', {
-    error: error instanceof Error ? error.message : String(error),
+/**
+ * Start both document subscribers.
+ * Call this explicitly from startBackground — never at module import time.
+ */
+export const startDocuments = (): void => {
+  documentsModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize document load timestamp subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
-// Initialize subscriber for document.confirmed -> archive prior onePer documents
-documentsModule.initializeArchiveSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize document archive subscriber', {
-    error: error instanceof Error ? error.message : String(error),
+  documentsModule.initializeArchiveSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize document archive subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
+};
 
 export const documentsRouter = createDocumentRoutes(documentsModule.controllers);
 

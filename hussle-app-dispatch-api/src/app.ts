@@ -28,10 +28,6 @@ import { expensesRouter, recurringExpensesRouter, driverPortalExpensesRouter } f
 import { iftaRouter } from './ifta';
 import { settlementsRouter } from './settlements';
 
-// Side-effect imports: initialize subscribers on startup
-import './audit';
-import './notifications';
-import '@/shared/fmcsa';
 import { agreementsRouter, docusealWebhookRouter } from './agreements';
 import { smsPromptsRouter } from './sms-prompts';
 import { shortLinksRouter } from './short-links';

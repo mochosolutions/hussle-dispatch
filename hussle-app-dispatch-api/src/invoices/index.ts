@@ -64,11 +64,12 @@ const invoiceModule = createInvoiceModule({
   logger,
 });
 
-// Initialize subscribers
-invoiceModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize invoice subscribers', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscriber — call initializeInvoiceSubscriber() explicitly
+export const initializeInvoiceSubscriber = (): Promise<void> =>
+  invoiceModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize invoice subscribers', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const invoicesRouter = createInvoiceRouter(invoiceModule.controllers);

@@ -47,13 +47,22 @@ const settlementModule = createSettlementModule({
   logger,
 });
 
-settlementModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize settlement subscribers', {
-    error: error instanceof Error ? error.message : String(error),
+/**
+ * Start the settlement subscriber and cron job.
+ * Returns a stop handle for graceful shutdown.
+ * Call this explicitly from startBackground — never at module import time.
+ */
+export const startSettlements = (): { stop: () => void } => {
+  settlementModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize settlement subscribers', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
-const cronJob = createSettlementCronJob({ prisma, eventBus: sharedEventBus, logger });
-cronJob.start();
+  const cronJob = createSettlementCronJob({ prisma, eventBus: sharedEventBus, logger });
+  cronJob.start();
+
+  return { stop: () => cronJob.stop() };
+};
 
 export const settlementsRouter = createSettlementRouter(settlementModule.controllers);

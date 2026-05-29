@@ -3,37 +3,30 @@ import { env } from './config/env';
 import { prisma } from './config/database';
 import { redisClient } from './shared/redisClient';
 import { createApp } from './app';
-import { createPrismaMessageDedup, createRabbitMqEventBus } from './shared/messaging';
-import { createProcessedEventCleanup } from './shared/messaging/processedEventCleanup';
-import { createInvitationCleanupJob } from './auth/jobs/invitationCleanupJob';
+import { sharedEventBus } from './shared/messaging';
 import { logger } from './shared/utils/logger';
-import { stopAgreements } from './agreements';
+import { startBackground } from './startBackground';
+import { startWorker } from './worker';
 
-const start = async (): Promise<void> => {
+const isErrorWithMessage = (error: unknown): error is { message: string } =>
+  typeof error === 'object' && error !== null && 'message' in error;
+
+/**
+ * ROLE=api — HTTP server only, zero subscribers, zero crons.
+ *
+ * Bus reconciliation: passes `sharedEventBus` to `createApp` for the /health
+ * check. All modules use `sharedEventBus` for publishing, so there is a single
+ * RabbitMQ connection per process (no split topology).
+ */
+const startApi = async (): Promise<void> => {
   await redisClient.connect();
   // await runGeoBootstrap(redisClient);
 
-  const eventBus = createRabbitMqEventBus(
-    env.RABBITMQ_URL,
-    logger,
-    createPrismaMessageDedup(prisma),
-  );
+  const app = createApp({ prisma, redis: redisClient, eventBus: sharedEventBus });
 
-  const app = createApp({ prisma, redis: redisClient, eventBus });
-
-  const processedEventCleanup = createProcessedEventCleanup({ prisma, logger });
-  processedEventCleanup.start();
-
-  const invitationCleanup = createInvitationCleanupJob({ prisma, logger });
-  invitationCleanup.start();
-
-  // Graceful shutdown: close event bus on SIGTERM/SIGINT
   const shutdown = async (): Promise<void> => {
-    logger.info('Shutting down...');
-    stopAgreements();
-    processedEventCleanup.stop();
-    invitationCleanup.stop();
-    await eventBus.close();
+    logger.info('Shutting down (api)...');
+    await sharedEventBus.close();
     await redisClient.quit();
     process.exit(0);
   };
@@ -46,8 +39,53 @@ const start = async (): Promise<void> => {
   });
 
   app.listen(env.PORT, () => {
-    logger.info('Server started', { port: env.PORT, eventBus: 'rabbitmq' });
+    logger.info('Server started', { port: env.PORT, role: 'api' });
   });
+};
+
+/**
+ * ROLE=all (default) — today's behavior: HTTP server + all subscribers + all crons.
+ */
+const startAll = async (): Promise<void> => {
+  await redisClient.connect();
+  // await runGeoBootstrap(redisClient);
+
+  const app = createApp({ prisma, redis: redisClient, eventBus: sharedEventBus });
+
+  const backgroundHandles = await startBackground({ prisma, logger });
+
+  const shutdown = async (): Promise<void> => {
+    logger.info('Shutting down (all)...');
+    await backgroundHandles.stopAll();
+    await sharedEventBus.close();
+    await redisClient.quit();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => {
+    shutdown().catch(() => process.exit(1));
+  });
+  process.on('SIGINT', () => {
+    shutdown().catch(() => process.exit(1));
+  });
+
+  app.listen(env.PORT, () => {
+    logger.info('Server started', { port: env.PORT, role: 'all' });
+  });
+};
+
+const start = async (): Promise<void> => {
+  switch (env.ROLE) {
+    case 'api':
+      await startApi();
+      break;
+    case 'worker':
+      await startWorker();
+      break;
+    case 'all':
+      await startAll();
+      break;
+  }
 };
 
 start().catch((error: unknown) => {
@@ -56,6 +94,3 @@ start().catch((error: unknown) => {
   }
   process.exit(1);
 });
-
-const isErrorWithMessage = (error: unknown): error is { message: string } =>
-  typeof error === 'object' && error !== null && 'message' in error;

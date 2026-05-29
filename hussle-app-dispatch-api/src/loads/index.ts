@@ -32,9 +32,10 @@ export const loadsRouter = createLoadsRouter(
 
 export const loadStatusService = loadsModule.loadStatusService;
 
-// Initialize subscribers
-loadsModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize loads subscribers', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscribers — call initializeLoadsSubscriber() explicitly
+export const initializeLoadsSubscriber = (): Promise<void> =>
+  loadsModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize loads subscribers', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});

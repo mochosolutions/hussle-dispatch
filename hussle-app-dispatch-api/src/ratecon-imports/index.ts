@@ -96,11 +96,13 @@ const rateconImportsModule = createRateconImportsModule({
   ...(mailpitClient !== undefined && { mailpitClient }),
 });
 
-rateconImportsModule.initializeSubscriber().catch((error: unknown) => {
-  logger.error('Failed to initialize ratecon extraction subscriber', {
-    error: error instanceof Error ? error.message : String(error),
+// Initialize subscriber — call initializeRateconSubscriber() explicitly
+export const initializeRateconSubscriber = (): Promise<void> =>
+  rateconImportsModule.initializeSubscriber().catch((error: unknown) => {
+    logger.error('Failed to initialize ratecon extraction subscriber', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   });
-});
 
 export const rateconImportsRouter = createRateconImportRoutes(rateconImportsModule.controllers);
 
