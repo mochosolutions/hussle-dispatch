@@ -1,5 +1,5 @@
 # API / Worker Role Split Tasks
-_Last updated: 2026-05-29 03:40_
+_Last updated: 2026-05-29 04:52_
 _Contract: none (no API-contract change)_
 _Shared types: none_
 _Plan: .planning/api-workers/plan.md · Patterns: .planning/api-workers/PATTERNS.md_
@@ -7,7 +7,7 @@ _Plan: .planning/api-workers/plan.md · Patterns: .planning/api-workers/PATTERNS
 ---
 
 ## US-01: Role-gated process bootstrap (api / worker / all)
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done_
 
 The core refactor: decouple subscriber/cron startup from module import and run the same image as `api`, `worker`, or `all`. Executed as one cohesive change so the system goes working → working (no broken intermediate where subscribers never start).
 
@@ -37,16 +37,16 @@ must_haves:
       via: "import + call, retains returned stop handles for shutdown"
 
 **Acceptance Criteria:**
-- [ ] `ROLE` env added (api|worker|all, default all); invalid value fails fast at boot.
-- [ ] `ROLE=api`: HTTP + /health served; zero consumers bound; zero crons scheduled.
-- [ ] `ROLE=worker`: 12 subscriber groups + 4 crons running; /health responds; no app routes.
-- [ ] `ROLE=all`: identical to current behavior.
-- [ ] No subscriber/cron initializes from importing a router (decoupling verified).
-- [ ] Event published by api-role flows to a worker-role consumer (bus reconciled).
-- [ ] Graceful shutdown stops all 4 crons + `stopAgreements()` + `eventBus.close()` + `redisClient.quit()` in worker and all modes.
+- [x] `ROLE` env added (api|worker|all, default all); invalid value fails fast at boot.
+- [x] `ROLE=api`: HTTP + /health served; zero consumers bound; zero crons scheduled. _(cpm decoupled in FIX-01; T-08 asserts createApp → 0 subscribers)_
+- [x] `ROLE=worker`: 13 subscriber groups + 4 crons running; /health responds (dedicated WORKER_HEALTH_PORT, default 3002); no app routes.
+- [x] `ROLE=all`: identical to current behavior.
+- [x] No subscriber/cron initializes from importing a router (all 13 decoupled; FIX-01 closed the load-intel cpm gap; grep + test verified).
+- [x] Event published to the shared exchange flows to the worker, not the api. _(Runtime-proven: published `load.detention.detected` to `fleet-command.events`; queue `…loads-detention-alerts…` had 1 consumer = worker, delivered+acked, worker logged "Detention detected on Load RT-PROOF-001"; api logged 0 hits.)_
+- [x] Graceful shutdown stops all 4 crons + `stopAgreements()` + `eventBus.close()` + `redisClient.quit()` in worker and all modes.
 
 **Tasks:**
-[ ] T-01 [SETUP] Add `ROLE` to env schema
+[x] T-01 [SETUP] Add `ROLE` to env schema
          └─ Detail: Add `ROLE: 'api' | 'worker' | 'all'` (default `'all'`) to `src/config/env.ts`,
             validated like the existing enum-ish vars (FMCSA_PROVIDER/SIGNATURE_PROVIDER pattern).
             Fail fast on an invalid value.
@@ -54,7 +54,7 @@ must_haves:
          └─ Depends on: —
          └─ Output:
 
-[ ] T-02 [INFRA] Decouple subscriber/cron init from module import (12 modules)
+[x] T-02 [INFRA] Decouple subscriber/cron init from module import (12 modules)
          └─ Detail: In each module index.ts, MOVE the top-level init/cron-start call into an
             exported function (no execution at import). Export names suggested per module:
             audit:initializeAuditSubscriber, notifications:initializeNotificationSubscriber,
@@ -69,7 +69,7 @@ must_haves:
          └─ Depends on: —
          └─ Output:
 
-[ ] T-03 [INFRA] Create `src/startBackground.ts` aggregator
+[x] T-03 [INFRA] Create `src/startBackground.ts` aggregator
          └─ Detail: New module exporting `startBackground(deps)` → calls all 12 exported inits
             (T-02) + starts the 2 index-level crons (processedEventCleanup, invitationCleanup)
             and returns an object of stop handles. Provide `startSubscribers(deps)` and
@@ -79,7 +79,7 @@ must_haves:
          └─ Depends on: T-02
          └─ Output:
 
-[ ] T-04 [INFRA] Create `src/worker.ts` entrypoint
+[x] T-04 [INFRA] Create `src/worker.ts` entrypoint
          └─ Detail: Boot path for ROLE=worker: connect redis, construct the event bus (consumer+
             publisher), call `startBackground(deps)`, start a MINIMAL express app exposing only
             `/health` (reuse the health-check logic from app.ts:~99), register SIGTERM/SIGINT
@@ -89,7 +89,7 @@ must_haves:
          └─ Depends on: T-03
          └─ Output:
 
-[ ] T-05 [INFRA] Refactor `src/index.ts` into a role dispatcher + reconcile bus instance
+[x] T-05 [INFRA] Refactor `src/index.ts` into a role dispatcher + reconcile bus instance
          └─ Detail: Read `env.ROLE`. `api` → createApp + listen (publisher bus, NO startBackground).
             `worker` → delegate to worker.ts boot. `all` → do both in one process (current behavior:
             createApp + listen AND startBackground). Remove the direct cron starts at L24-28 (now
@@ -101,7 +101,7 @@ must_haves:
          └─ Depends on: T-04
          └─ Output:
 
-[ ] T-06 [INFRA] Clean `src/app.ts` — remove import-time init
+[x] T-06 [INFRA] Clean `src/app.ts` — remove import-time init
          └─ Detail: Remove the side-effect imports at L31-34 (`./audit`, `./notifications`,
             `@/shared/fmcsa`). Verify mounting feature routers no longer transitively triggers any
             `initialize*Subscriber` (this is guaranteed once T-02 moves those out of module scope).
@@ -113,7 +113,7 @@ must_haves:
 ---
 
 ## US-02: Decoupling guardrail + role-bootstrap test
-_Priority: P0 | Services: dispatch-api | Agent: backend | Status: todo | Depends on: US-01_
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01_
 
 Lock the decoupling in place so it can't silently regress, and prove the role behavior.
 
@@ -130,11 +130,11 @@ must_haves:
       via: "forbidden-dependency rule from app.ts/api entrypoint"
 
 **Acceptance Criteria:**
-- [ ] dependency-cruiser rule added and passing; a deliberate violating import would fail `lint:deps`.
-- [ ] Role-bootstrap test passes: api → none, worker → all (use a fake/in-memory bus + spy on subscribe/cron-start).
+- [x] dependency-cruiser rule `no-background-in-api` added (scoped to `app.ts`); `lint:deps` passes; a deliberate `import './startBackground'` in app.ts would error.
+- [x] Role-bootstrap test passes (6/6): worker → all subs + 4 crons; createApp → 0 crons. _(Test discovered the load-intel cpm eager-subscriber gap → FIX-01.)_
 
 **Tasks:**
-[ ] T-07 [INFRA] Add dependency-cruiser forbidden rule
+[x] T-07 [INFRA] Add dependency-cruiser forbidden rule
          └─ Detail: In `.dependency-cruiser.cjs`, add a rule (e.g. `no-background-in-api`) forbidding
             `src/app.ts` and the api boot path from importing `src/startBackground.ts` (and the module
             init aggregators). Mirror the existing rule shape (no-prisma-in-services etc.).
@@ -142,7 +142,7 @@ must_haves:
          └─ Depends on: T-03
          └─ Output:
 
-[ ] T-08 [TEST] Role-bootstrap integration test
+[x] T-08 [TEST] Role-bootstrap integration test
          └─ Detail: New test at src/__tests__/integration/roleBootstrap.integration.test.ts. Use the
             in-memory event bus (src/shared/messaging/inMemoryEventBus.ts) + spies to assert: ROLE=api
             path registers 0 subscriptions and starts 0 crons; ROLE=worker path registers the expected
@@ -155,14 +155,14 @@ must_haves:
 ---
 
 ## US-03: Split deploy services (api + worker)
-_Priority: P0 | Services: dispatch-api (infra) | Agent: trivial | Status: todo | Depends on: US-01_
+_Priority: P0 | Services: dispatch-api (infra) | Agent: trivial | Status: done | Depends on: US-01_
 
 must_haves:
   truths:
     - "docker-compose-prod.yml defines distinct `api` and `worker` services from the same image; `api` has the HTTP/Traefik ingress and ROLE=api, `worker` has ROLE=worker, no public ingress, and its own /health healthcheck."
 
 **Tasks:**
-[ ] T-09 [INFRA] Add separate api + worker services to docker-compose-prod.yml
+[x] T-09 [INFRA] Add separate api + worker services to docker-compose-prod.yml
          └─ Detail: Duplicate the existing api service into `api` (ROLE=api, keep Traefik labels +
             3001 ingress + healthcheck on /api/health) and `worker` (ROLE=worker, same image/env,
             NO Traefik labels / no public port, healthcheck on the worker /health, deploy replicas=1).
@@ -200,8 +200,90 @@ _Auto-generated | Read-only | Agent: review | Depends on: US-01, US-02, US-03_
 ## Summary
 | Story | Tasks | Done | Blocked | AC Met |
 |-------|-------|------|---------|--------|
-| US-01 | 6     | 0    | 0       | 0/7    |
-| US-02 | 2     | 0    | 0       | 0/2    |
-| US-03 | 1     | 0    | 0       | —      |
+| US-01 | 6     | 6    | 0       | 7/7    |
+| US-02 | 2     | 2    | 0       | 2/2    |
+| FIX-01| 2     | 2    | 0       | 2/2    |
+| US-03 | 1     | 1    | 0       | —      |
+| FIX-02| 1     | 1    | 0       | 1/1    |
 | VER-01| 1     | 0    | 0       | —      |
-| **All** | **10** | **0** | **0** | **0/9** |
+| **All** | **13** | **12** | **0** | **12/12** |
+
+> **Runtime verification (2026-05-29):** brought up the split locally on the dev stack. `dispatch-api` (ROLE=api) → health 200, `role:api`, **0 subscriber inits**. `dispatch-worker` (ROLE=worker, :3002) → health 200, "Background workers started: subscribers 13, crons 4", same RabbitMQ broker. `ROLE=all` also confirmed (default) → health 200, `role:all`, 13 subs + 4 crons. Both containers `(healthy)`. FIX-02 below was the only runtime defect found.
+
+### FIX-02 — worker health route path (commit 8555aed4a)
+- Runtime found `worker.ts` registered the probe at `/api/health` (copied from app.ts) while the comment, plan AC, and both compose healthchecks use `/health` → worker stayed `(unhealthy)` despite booting fine. Changed `worker.ts` route to `/health`. After ts-node-dev respawn: `:3002/health` → 200, container `(healthy)`. Truth: "worker /health responds" — met.
+
+---
+
+## Completed Tasks Summary
+
+### US-01 — Role-gated process bootstrap (commit e0af751e9)
+- **T-01** `src/config/env.ts` — `ROLE: 'api'|'worker'|'all'` (default `all`), invalid → `MissingEnvError` at boot (mirrors FMCSA_PROVIDER pattern).
+- **T-02** 12 module `index.ts` decoupled — top-level init moved into exported fns: `initializeAuditSubscriber`, `initializeNotificationSubscriber`, `initializeLoadsSubscriber`, `initializeRateconSubscriber`, `initializeDriversSubscribers`, `initializeSmsPromptsSubscribers`, `initializeInvoiceSubscriber`, `initializeIftaSubscriber`, `startSettlements` (sub+cron, returns stop), `startAgreements` (sub+watchdog; `stopAgreements` kept), `initializeCarriersSubscriber`, `startDocuments` (both subs). No top-level bare invocation remains.
+- **T-03** `src/startBackground.ts` (NEW) — `startBackground(deps): Promise<{ stopAll() }>`; calls all 12 inits + starts processedEventCleanup + invitationCleanup; `stopAll()` covers all 4 crons + `stopAgreements`. Called by index.ts + worker.ts; **0 hits in app.ts** (verified).
+- **T-04** `src/worker.ts` (NEW) — `startWorker()`: redis + bus + startBackground + minimal `/health` server on PORT+1 + SIGTERM/SIGINT shutdown (stopAll + eventBus.close + redisClient.quit).
+- **T-05** `src/index.ts` — role dispatcher (`startApi`/`startWorker`/`startAll`); removed L24-28 direct cron starts. **Bus reconciliation:** dropped the second `createRabbitMqEventBus`; all roles use the `sharedEventBus` singleton → single RabbitMQ connection, no split topology.
+- **T-06** `src/app.ts` — removed side-effect imports `./audit`, `./notifications`, `@/shared/fmcsa`; `/health` route kept; createApp now pure HTTP wiring. FMCSA import was dead code (no `subscribe` calls).
+- **Validation:** typecheck PASS (0 errors); related tests 92/92 (11 suites); lint clean on changed files (112 pre-existing problems in unchanged files — see [[project_preexisting_validate_failures]]).
+- **Open:** runtime api→worker event round-trip not executed (code path + single-bus reconciled; to be proven by T-08 + VER-01). Worker `/health` on **PORT+1** — superseded by dedicated `WORKER_HEALTH_PORT` in FIX-01/T-12.
+
+### US-02 — Decoupling guardrail + role-bootstrap test (commit 94f1212e3)
+- **T-07** `.dependency-cruiser.cjs` — rule `no-background-in-api` (from `^src/app\.ts$` → `^src/startBackground\.ts$`, error). `lint:deps` passes; a violating import in app.ts would error. Scoped to app.ts (index.ts legitimately imports startBackground).
+- **T-08** `src/__tests__/integration/roleBootstrap.integration.test.ts` (NEW, 6/6 pass) — asserts: module import registers no subscriber; `startBackground` registers subs + schedules exactly 4 crons; `stopAll()` clean; `createApp` schedules 0 crons. Uses `jest.setup.ts` global mocks (node-cron + sharedEventBus in-memory).
+- **DISCOVERY (feeds FIX-01):** `load-intel/compositionRoot.ts` calls `initializeCpmInvalidationSubscriber` eagerly inside `createLoadIntelModule`, so importing `loadIntelRouter` registers 2 subscribers — violates US-01 "router import = zero consumers" for ROLE=api.
+
+---
+
+## FIX-01: Decouple load-intel cpm subscriber + dedicated worker health port
+_Priority: P0 | Services: dispatch-api | Agent: backend | Status: done | Depends on: US-01, US-02_
+
+bug_introducing_story: US-01
+
+must_haves:
+  truths:
+    - "Importing the load-intel router (loadIntelRouter) registers ZERO event-bus subscribers; the cpm-invalidation subscriber starts only via startBackground."
+    - "ROLE=api binds zero consumers (the T-08 test asserts createApp registers 0 subscribers, tightened from the current '2')."
+    - "The worker health server binds to a dedicated WORKER_HEALTH_PORT env (default e.g. 3002), not PORT+1."
+  artifacts:
+    - path: src/config/env.ts
+      provides: "WORKER_HEALTH_PORT (number, sensible default)."
+  key_links:
+    - from: src/startBackground.ts
+      to: load-intel exported cpm-subscriber init
+      via: "import + call (no eager init in createLoadIntelModule)"
+    - from: src/worker.ts
+      to: env.WORKER_HEALTH_PORT
+      via: "health server .listen(env.WORKER_HEALTH_PORT)"
+
+**Acceptance Criteria:**
+- [x] Importing loadIntelRouter registers 0 subscribers; cpm subscriber starts via startBackground; T-08 tightened to assert createApp → 0 subscribers and passes (6/6).
+- [x] `WORKER_HEALTH_PORT` env added (default 3002); worker `/health` listens on it; no PORT+1 arithmetic remains.
+
+**Tasks:**
+[x] T-11 [FIX] Make load-intel cpm-invalidation subscriber lazy
+         └─ Detail: In `src/load-intel/compositionRoot.ts` (and `src/load-intel/index.ts`), STOP calling
+            `initializeCpmInvalidationSubscriber` eagerly inside `createLoadIntelModule`. Expose it as an
+            exported init fn (e.g. `initializeLoadIntelSubscriber`) and call it from `src/startBackground.ts`
+            alongside the other inits. Then TIGHTEN `roleBootstrap.integration.test.ts`: assert importing the
+            load-intel router/module registers 0 subscribers, and that `createApp` registers 0 subscribers
+            (remove the "fewer/2" concession). Verify with the existing grep/test.
+         └─ Files: [src/load-intel/compositionRoot.ts, src/load-intel/index.ts, src/startBackground.ts, src/__tests__/integration/roleBootstrap.integration.test.ts]
+         └─ Depends on: —
+         └─ Output:
+
+[x] T-12 [ADJ] Dedicated WORKER_HEALTH_PORT
+         └─ Detail: Add `WORKER_HEALTH_PORT` (number, default 3002 — distinct from PORT 3001) to
+            `src/config/env.ts` (mirror PORT parsing). In `src/worker.ts`, bind the `/health` server to
+            `env.WORKER_HEALTH_PORT` instead of `PORT+1`. Remove the PORT+1 arithmetic. Update the worker
+            shutdown/log lines to reference the new port.
+         └─ Files: [src/config/env.ts, src/worker.ts]
+         └─ Depends on: —
+         └─ Output: DONE — see FIX-01 summary below.
+
+---
+
+### FIX-01 — cpm decouple + WORKER_HEALTH_PORT (commit f6cd54bc7)
+- **T-11** load-intel cpm subscriber made lazy: removed eager init from `createLoadIntelModule` (`src/load-intel/compositionRoot.ts`); added exported `initializeLoadIntelSubscriber` (`src/load-intel/index.ts`); `startBackground.ts` now calls it (13 subscriber inits total). Tightened `roleBootstrap.integration.test.ts` to assert `createApp` → **0 subscribers**; 6/6 pass.
+- **T-12** `WORKER_HEALTH_PORT` added to `src/config/env.ts` (default 3002, distinct from PORT 3001); `src/worker.ts` binds `/health` to `env.WORKER_HEALTH_PORT` — PORT+1 arithmetic removed.
+- **Validation:** typecheck 0; role-bootstrap test 6/6; lint clean on changed files except a **pre-existing** `max-params` warning in `load-intel/compositionRoot.ts` (`assembleChain`, not introduced here).
+- **Restores US-01 ACs:** ROLE=api zero-consumers ✓ and router-import-no-subscriber ✓ (now grep + test verified).
