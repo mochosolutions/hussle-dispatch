@@ -38,6 +38,21 @@ module.exports = {
         circular: true,
       },
     },
+    {
+      // app.ts must not import startBackground or any module subscriber-init
+      // aggregator. Those are worker-role concerns — importing them in the api
+      // entrypoint would start subscribers in the HTTP-only process.
+      // Note: src/index.ts legitimately imports startBackground (worker/all
+      // paths) and is intentionally excluded from this rule's `from` scope.
+      name: 'no-background-in-api',
+      severity: 'error',
+      from: {
+        path: '^src/app\\.ts$',
+      },
+      to: {
+        path: '^src/startBackground\\.ts$',
+      },
+    },
   ],
   options: {
     doNotFollow: {
