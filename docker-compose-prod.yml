@@ -29,6 +29,7 @@ services:
       - dokploy-network
     environment:
       - NODE_ENV=production
+      - ROLE=api
       - PORT=3001
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fleet-postgres:5432/${POSTGRES_DB}
       - REDIS_URL=redis://fleet-redis:6379
@@ -59,6 +60,60 @@ services:
       - "traefik.http.routers.fleet-api.tls=true"
       - "traefik.http.routers.fleet-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.fleet-api.loadbalancer.server.port=3001"
+
+  # Background worker: subscribers + crons (ROLE=worker). Same image as api.
+  # No public ingress (no Traefik labels). Runs the dispatcher entrypoint WITHOUT
+  # migrate-and-start — migrations run once on `api`; worker waits for api healthy.
+  # Single instance: crons are not leader-elected yet (see deployment-architecture Phase 3).
+  worker:
+    image: ${ECR_REGISTRY}/fleet-api:${IMAGE_TAG:-prod-latest}
+    restart: unless-stopped
+    command: ["node", "dist/index.js"]
+    deploy:
+      replicas: 1
+    depends_on:
+      fleet-postgres:
+        condition: service_healthy
+      fleet-redis:
+        condition: service_healthy
+      fleet-rabbitmq:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    expose:
+      - "3002"
+    networks:
+      - dokploy-network
+    environment:
+      - NODE_ENV=production
+      - ROLE=worker
+      - WORKER_HEALTH_PORT=3002
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fleet-postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://fleet-redis:6379
+      - RABBITMQ_URL=amqp://guest:${RABBITMQ_DEFAULT_PASS}@fleet-rabbitmq:5672
+      - FRONTEND_URL=${FRONTEND_URL}
+      - TRACKING_BASE_URL=${TRACKING_BASE_URL}
+      - PUBLIC_SHORT_BASE_URL=${PUBLIC_SHORT_BASE_URL}
+      - AWS_REGION=${AWS_REGION}
+      - SMS_BACKEND=${SMS_BACKEND}
+      - STORAGE_BACKEND=${STORAGE_BACKEND}
+      # Secrets injected by Dokploy:
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   ui:
     image: ${ECR_REGISTRY}/fleet-ui:${IMAGE_TAG:-prod-latest}
