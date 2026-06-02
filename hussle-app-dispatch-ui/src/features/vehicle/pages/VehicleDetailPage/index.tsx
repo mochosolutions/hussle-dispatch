@@ -8,10 +8,7 @@ import { useDispatch, useSelector } from 'store';
 import { Body } from 'components/Typography';
 import { DetailLayout } from 'components/DetailLayout';
 import DocumentsTab from 'components/DocumentsTab';
-import {
-  fetchVehicleDetailsRequest,
-  fetchVehicleLoadHistoryRequest,
-} from '../../store/reducers';
+import { fetchVehicleDetailsRequest, fetchVehicleLoadHistoryRequest } from '../../store/reducers';
 import {
   selectVehicleWithCarrier,
   selectVehicleLoadHistory,
@@ -84,26 +81,13 @@ const VehicleDetailPage = () => {
 
   return (
     <PageWrapper errorContext="VehicleDetailPage">
-      <DataGuard
-        data={vehicle}
-        emptyComponent={<Body sx={{ p: 4 }}>Vehicle not found.</Body>}
-      >
+      <DataGuard data={vehicle} emptyComponent={<Body sx={{ p: 4 }}>Vehicle not found.</Body>}>
         {(v) => (
           <DetailLayout
             id={v.unitNumber}
             status={v.isActive ? 'VEHICLE_ACTIVE' : 'VEHICLE_INACTIVE'}
             breadcrumb={{ label: 'Vehicles', href: '/vehicles' }}
             onBack={handleBack}
-            actions={
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                onClick={handleOpenInfoDrawer}
-                sx={{ color: 'common.white', borderColor: 'grey.500' }}
-              >
-                Edit
-              </Button>
-            }
             summary={<VehicleKPI vehicle={v} vehicleLoads={vehicleLoads} />}
             tabs={VEHICLE_TABS}
             activeTab={activeTab}
@@ -118,17 +102,11 @@ const VehicleDetailPage = () => {
             )}
 
             {activeTab === 'expenses' && (
-              <VehicleExpenseTab
-                vehicle={v}
-                onOpenTargetsDrawer={handleOpenTargetsDrawer}
-              />
+              <VehicleExpenseTab vehicle={v} onOpenTargetsDrawer={handleOpenTargetsDrawer} />
             )}
 
             {activeTab === 'load-history' && (
-              <VehicleLoadHistoryTab
-                vehicleLoads={vehicleLoads}
-                isLoading={loadHistoryLoading}
-              />
+              <VehicleLoadHistoryTab vehicleLoads={vehicleLoads} isLoading={loadHistoryLoading} />
             )}
 
             {activeTab === 'documents' && id && (

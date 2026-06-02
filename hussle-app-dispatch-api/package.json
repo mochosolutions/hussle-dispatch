@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
     "test": "jest",
@@ -21,6 +21,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "seed:test-users": "tsx scripts/seedTestUsers.ts",
     "db:clear-tenant": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts",
     "db:clear-tenant:dry": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts --dry-run",
     "db:clear-all": "ts-node -r tsconfig-paths/register src/scripts/clearTenantData.ts --all",
@@ -40,6 +41,7 @@
     "@mocho/common": "^1.0.40",
     "@prisma/client": "^5.16.0",
     "@react-email/components": "^0.0.36",
+    "@socket.io/redis-adapter": "^8.3.0",
     "@turf/boolean-point-in-polygon": "^7.3.4",
     "@turf/helpers": "^7.3.4",
     "@turf/length": "^7.3.4",
@@ -67,6 +69,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "slugify": "^1.6.6",
+    "socket.io": "^4.8.3",
     "uuid": "^9.0.1",
     "yup": "^1.4.0"
   },
@@ -96,9 +99,9 @@
     "prisma": "^5.16.0",
     "ts-jest": "^29.2.2",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.22.3",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.56.1"
   },

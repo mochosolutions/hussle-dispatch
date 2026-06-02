@@ -94,11 +94,11 @@ const LoadDetailPage = () => {
               />
             }
           >
-            {load.status === 'DELIVERED' && !load.tracking?.bolSignedAt && (
+            {load.status === 'DELIVERED' && !load.tracking?.hasSignedBol && (
               <BolUploadAlert loadId={load.id} />
             )}
 
-            {load.status === 'DELIVERED' && load.tracking?.bolSignedAt && (
+            {load.status === 'DELIVERED' && load.tracking?.hasSignedBol && (
               <ContextualAlert
                 severity="success"
                 title="Load delivered — ready to invoice"

@@ -1,4 +1,5 @@
 import type { S3Client } from '@aws-sdk/client-s3';
+import { env } from '../../config/env';
 import type { Logger } from '../utils/logger';
 import { createLocalStorageProvider } from './localStorageProvider';
 import { createS3StorageProvider } from './s3StorageProvider';
@@ -13,6 +14,8 @@ interface LocalStorageConfig {
   backend: 'local';
   basePath: string;
   baseUrl: string;
+  // Defaults to env.JWT_SECRET when omitted — see createStorageProvider.
+  signingSecret?: string;
 }
 
 interface S3StorageConfig {
@@ -38,6 +41,7 @@ export const createStorageProvider = (
     return createLocalStorageProvider({
       basePath: config.basePath,
       baseUrl: config.baseUrl,
+      signingSecret: config.signingSecret ?? env.JWT_SECRET,
       logger,
     });
   }

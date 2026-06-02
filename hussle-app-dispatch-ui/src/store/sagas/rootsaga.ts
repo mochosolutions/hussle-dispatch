@@ -18,6 +18,8 @@ import { settlementSagaWatcher } from 'features/accounting/store/sagas/settlemen
 import { loadBoardSagaWatcher } from 'features/load/store/sagas/loadBoardSagaWatcher';
 import { agreementsSagasWatcher } from 'features/agreements/store/sagas/agreementsSagas';
 import { rateconImportSagaWatcher } from 'features/ratecon-imports/store/sagas';
+import { realtimeSaga } from './realtimeSaga';
+import { driverPortalSagaWatcher, driverPortalRealtimeSaga } from 'features/driver-portal/store/sagas';
 
 export default function* rootSaga() {
   yield all([
@@ -40,5 +42,8 @@ export default function* rootSaga() {
     loadBoardSagaWatcher(),
     agreementsSagasWatcher(),
     rateconImportSagaWatcher(),
+    realtimeSaga(),
+    driverPortalSagaWatcher(),
+    driverPortalRealtimeSaga(),
   ]);
 }

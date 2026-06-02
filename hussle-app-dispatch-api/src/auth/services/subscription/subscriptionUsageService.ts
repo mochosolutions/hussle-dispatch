@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { SUBSCRIPTION_LIMITS } from '@/config/subscriptionLimits';
+import { ROLES } from '@/config/roles';
 
 interface UsageEntry {
   current: number;
@@ -27,6 +28,8 @@ export const createSubscriptionUsageService = (deps: SubscriptionUsageServiceDep
           organizationId,
           deleted: false,
           status: 'active',
+          // DRIVER memberships are first-class portal users, not billable seats.
+          role: { not: ROLES.DRIVER },
         },
       }),
       deps.prismaClient.invitation.count({

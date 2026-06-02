@@ -13,11 +13,16 @@ export interface DriverPhoneInfo {
 export interface DriverPortalLoadQueryPort {
   findDriverPhoneByLoadId(loadId: string): Promise<DriverPhoneInfo | null>;
   findLoadForDriverPortal(loadId: string): Promise<DriverPortalLoadSummary | null>;
+  findLoadsByDriver(
+    driverId: string,
+    organizationId: string,
+  ): Promise<DriverPortalLoadSummary[]>;
 }
 
 export interface DriverPortalLoadSummary {
   id: string;
   organizationId: string;
+  driverId: string | null;
   loadNumber: string;
   status: string;
   equipmentType: string | null;
@@ -48,5 +53,6 @@ export interface DriverPortalStop {
   pieceCount: number | null;
   isHazmat: boolean;
   isTarp: boolean;
+  isTempControlled: boolean;
   notes: string | null;
 }

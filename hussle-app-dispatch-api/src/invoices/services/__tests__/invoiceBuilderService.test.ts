@@ -45,9 +45,18 @@ const buildMockDeps = () => {
     publish: jest.fn().mockResolvedValue(undefined),
   };
 
+  // missingSignedBol is now derived from confirmed documents (US-02); default to
+  // a confirmed BOL_SIGNED doc so existing scenarios mirror prior behaviour.
+  const documentQuery = {
+    findConfirmedByEntity: jest.fn().mockResolvedValue([
+      { id: 'doc-bol', type: 'BOL_SIGNED', fileName: 'bol.pdf', mimeType: 'application/pdf', s3Key: 'k' },
+    ]),
+  };
+
   return {
     invoiceRepo: invoiceRepo as unknown as jest.Mocked<InvoiceRepoPort>,
     loadQuery: loadQuery as unknown as jest.Mocked<InvoiceLoadQueryPort>,
+    documentQuery,
     eventBus: eventBus as unknown as jest.Mocked<EventBus>,
     logger,
   };

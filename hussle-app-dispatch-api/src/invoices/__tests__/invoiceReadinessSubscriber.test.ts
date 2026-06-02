@@ -360,6 +360,7 @@ describe('initializeReadinessSubscriber', () => {
       expect(mockedGenerateTonuInvoice).toHaveBeenCalledWith('load-tonu-1', 'org-1', {
         invoiceRepo: deps.invoiceRepo,
         loadQuery: deps.loadQuery,
+        documentQuery: deps.documentQuery,
         eventBus: deps.eventBus,
         logger: deps.logger,
       });

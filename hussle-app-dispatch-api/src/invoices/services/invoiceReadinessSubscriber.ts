@@ -326,6 +326,7 @@ export const initializeReadinessSubscriber = async (
       const tonuDeps = {
         invoiceRepo: deps.invoiceRepo,
         loadQuery: deps.loadQuery,
+        documentQuery: deps.documentQuery,
         eventBus: deps.eventBus,
         logger: deps.logger,
       };

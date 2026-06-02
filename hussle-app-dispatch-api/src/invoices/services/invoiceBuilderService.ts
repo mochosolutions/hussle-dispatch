@@ -4,6 +4,7 @@ import type { Logger } from '../../shared/utils/logger';
 import type { EventBus } from '../../shared/messaging/eventBus';
 import { generateSequenceNumber } from '../../shared/sequenceGenerator';
 import type { InvoiceRepoPort, InvoiceLoadQueryPort, InvoiceWithRelations } from '../types/invoiceTypes';
+import type { DocumentQueryPort } from '../types/documentPacketTypes';
 import { NotFoundError, ValidationError } from '../../shared/errors';
 import { resolveDispatchFee, computeDispatchFeeAmount } from '../../shared/utils/resolveDispatchFee';
 import { isBilledToCustomer } from '../../shared/utils/accessorialBillTo';
@@ -11,6 +12,7 @@ import { isBilledToCustomer } from '../../shared/utils/accessorialBillTo';
 interface InvoiceBuilderDeps {
   invoiceRepo: InvoiceRepoPort;
   loadQuery: InvoiceLoadQueryPort;
+  documentQuery: DocumentQueryPort;
   eventBus: EventBus;
   logger: Logger;
 }
@@ -91,7 +93,12 @@ export const createInvoiceBuilderService = (
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
-    const missingSignedBol = load.bolSignedAt === null;
+    // Derived from confirmed documents (durable source of truth), not the
+    // Load.bolSignedAt projection — a confirmed BOL_SIGNED doc with a
+    // not-yet-backfilled bolSignedAt must still yield missingSignedBol=false.
+    const confirmedDocs = await deps.documentQuery.findConfirmedByEntity('load', input.loadId);
+    const docTypes = confirmedDocs.map((d) => d.type);
+    const missingSignedBol = !docTypes.includes('BOL_SIGNED');
     const invoiceNumber = await generateSequenceNumber('INVOICE', input.organizationId);
 
     const invoice = await deps.invoiceRepo.create({

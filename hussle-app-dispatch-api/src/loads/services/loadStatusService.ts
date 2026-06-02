@@ -159,6 +159,7 @@ interface PublishDomainEventsInput {
   contactEmail: string | null;
   contactPhone: string | null;
   contactCcEmails: string[];
+  driverId: string | null;
   eventBus: EventBus;
   logger: Logger;
 }
@@ -174,6 +175,7 @@ const publishDomainEvents = async (input: PublishDomainEventsInput): Promise<voi
     contactEmail,
     contactPhone,
     contactCcEmails,
+    driverId,
     eventBus,
     logger: log,
   } = input;
@@ -202,6 +204,7 @@ const publishDomainEvents = async (input: PublishDomainEventsInput): Promise<voi
     contactEmail,
     contactPhone,
     contactCcEmails,
+    driverId,
   });
 
   // Emit specific lifecycle events
@@ -349,6 +352,7 @@ export const createLoadStatusService = (deps: LoadStatusServiceDeps): LoadStatus
       contactEmail: load.contact?.email ?? null,
       contactPhone: load.contact?.phone ?? null,
       contactCcEmails: load.contact?.ccEmails ?? [],
+      driverId: load.driverId ?? null,
       eventBus: deps.eventBus,
       logger: deps.logger,
     });

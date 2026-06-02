@@ -8,9 +8,24 @@ interface LoadTimestampSubscriberDeps {
   logger: Logger;
 }
 
+type TimestampField = 'rateConReceivedAt' | 'bolUnsignedAt' | 'bolSignedAt';
+
+const FIELD_BY_DOCUMENT_TYPE: Record<string, TimestampField> = {
+  BROKER_RATE_CON: 'rateConReceivedAt',
+  BOL_UNSIGNED: 'bolUnsignedAt',
+  BOL_SIGNED: 'bolSignedAt',
+};
+
 /**
- * Subscribes to 'document.confirmed' events and updates load timestamps
- * based on the confirmed document type (rate con, BOL unsigned, BOL signed).
+ * Subscribes to 'document.confirmed' events and projects the confirmed document
+ * type onto the load's timestamp columns (rate con, BOL unsigned, BOL signed).
+ *
+ * Idempotency: the write is a monotonic set-if-null (`setTimestampIfNull`), so a
+ * redelivered event leaves the timestamp set once and a still-null field is
+ * reconcilable by a later event. Errors are swallowed (logged, not rethrown) —
+ * this is a best-effort projection: the durable source of truth is the confirmed
+ * Document itself (read-time derivation drives gates/invoices), so we
+ * deliberately do NOT engage the retry path here.
  */
 export const createLoadTimestampSubscriber = async (
   deps: LoadTimestampSubscriberDeps,
@@ -20,35 +35,13 @@ export const createLoadTimestampSubscriber = async (
       return;
     }
 
+    const field = FIELD_BY_DOCUMENT_TYPE[data.documentType];
+    if (field === undefined) {
+      return;
+    }
+
     try {
-      switch (data.documentType) {
-        case 'BROKER_RATE_CON': {
-          await deps.loadTimestampPort.updateTimestamp(
-            data.entityId,
-            'rateConReceivedAt',
-            new Date(),
-          );
-          break;
-        }
-        case 'BOL_UNSIGNED': {
-          await deps.loadTimestampPort.updateTimestamp(
-            data.entityId,
-            'bolUnsignedAt',
-            new Date(),
-          );
-          break;
-        }
-        case 'BOL_SIGNED': {
-          await deps.loadTimestampPort.updateTimestamp(
-            data.entityId,
-            'bolSignedAt',
-            new Date(),
-          );
-          break;
-        }
-        default:
-          break;
-      }
+      await deps.loadTimestampPort.setTimestampIfNull(data.entityId, field, new Date());
     } catch (error: unknown) {
       deps.logger.error('Failed to process document.confirmed for load timestamp', {
         documentId: data.documentId,

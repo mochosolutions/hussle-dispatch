@@ -67,8 +67,18 @@ export function* handleLogin(action: ReturnType<typeof loginRequest>) {
       yield call(scheduleRefresh, accessTokenExpiresAt, proactiveRefresh);
     }
 
+    // Drivers have no internal dashboard — default them to their loads portal.
+    // A returnTo (e.g. a deep-linked /driver-portal/<loadId>) still wins below.
+    const activeOrg =
+      (accessibleOrgs || []).find(
+        (org: { organizationId?: string }) => org.organizationId === user?.organizationId,
+      ) ?? (accessibleOrgs || [])[0];
+    const role = activeOrg?.role ?? '';
+    const isDriver = role === 'driver' || role === 'DRIVER';
+    const defaultUrl = isDriver ? '/driver-portal' : '/';
+
     // Handle post-login redirect
-    const redirectUrl = getValidRedirectUrl(returnTo);
+    const redirectUrl = getValidRedirectUrl(returnTo, defaultUrl);
 
     if (isExternalUrl(redirectUrl)) {
       // External redirect (e.g., marketing site)

@@ -12,7 +12,7 @@ type CheckStatus = 'ok' | 'fail';
 
 interface HealthCheckResult {
   status: 'ok' | 'degraded';
-  checks: { db: CheckStatus; redis: CheckStatus; eventBus: CheckStatus };
+  checks: { db: CheckStatus; redis: CheckStatus; eventBus: CheckStatus; subscriptions: CheckStatus };
 }
 
 const { WORKER_HEALTH_PORT } = env;
@@ -38,7 +38,11 @@ export const startWorker = async (): Promise<void> => {
     createPrismaMessageDedup(prisma),
   );
 
-  const backgroundHandles = await startBackground({ prisma, logger });
+  // Readiness flag flipped only after startBackground resolves (all subscriber
+  // groups awaited). The /health server starts listening BEFORE that so the
+  // probe returns 503 during startup and 200 once subscribers are ready —
+  // a real readiness signal, never a hardcoded expected count.
+  let subscribersReady = false;
 
   // Minimal health server — no app routers, just the health probe
   const healthApp = express();
@@ -55,6 +59,7 @@ export const startWorker = async (): Promise<void> => {
         db: dbResult.status === 'fulfilled' ? 'ok' : 'fail',
         redis: redisResult.status === 'fulfilled' ? 'ok' : 'fail',
         eventBus: eventBus.isReady() ? 'ok' : 'fail',
+        subscriptions: subscribersReady ? 'ok' : 'fail',
       },
     };
 
@@ -71,6 +76,9 @@ export const startWorker = async (): Promise<void> => {
   healthApp.listen(WORKER_HEALTH_PORT, () => {
     logger.info('Worker health server started', { port: WORKER_HEALTH_PORT });
   });
+
+  const backgroundHandles = await startBackground({ prisma, logger });
+  subscribersReady = backgroundHandles.subscribersReady;
 
   logger.info('Worker started', { role: 'worker' });
 

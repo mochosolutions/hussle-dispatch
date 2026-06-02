@@ -21,6 +21,8 @@ const requireInProd = (key: string): string =>
 export const env = {
   PORT: parseInt(getEnv('PORT', '3001'), 10),
   WORKER_HEALTH_PORT: parseInt(getEnv('WORKER_HEALTH_PORT', '3002'), 10),
+  WS_GATEWAY_HEALTH_PORT: parseInt(getEnv('WS_GATEWAY_HEALTH_PORT', '3003'), 10),
+  WS_GATEWAY_PORT: parseInt(getEnv('WS_GATEWAY_PORT', '3004'), 10),
   NODE_ENV: getEnv('NODE_ENV', 'development') as 'development' | 'production' | 'test',
   ENVIRONMENT_NAME: getEnv('ENVIRONMENT_NAME', 'unknown') as
     | 'local'
@@ -58,12 +60,12 @@ export const env = {
   FMCSA_PROVIDER: getEnv('FMCSA_PROVIDER', 'mock') as 'mock' | 'safer-web',
   ROLE: (() => {
     const value = getEnv('ROLE', 'all');
-    if (value !== 'api' && value !== 'worker' && value !== 'all') {
+    if (value !== 'api' && value !== 'worker' && value !== 'ws-gateway' && value !== 'all') {
       throw new MissingEnvError(
-        `ROLE must be one of 'api', 'worker', or 'all' — got '${value}'`,
+        `ROLE must be one of 'api', 'worker', 'ws-gateway', or 'all' — got '${value}'`,
       );
     }
-    return value as 'api' | 'worker' | 'all';
+    return value as 'api' | 'worker' | 'ws-gateway' | 'all';
   })(),
   SIGNATURE_PROVIDER: getEnv('SIGNATURE_PROVIDER', 'mock') as 'mock' | 'docuseal',
   DOCUSEAL_BASE_URL: getEnv('DOCUSEAL_BASE_URL', ''),

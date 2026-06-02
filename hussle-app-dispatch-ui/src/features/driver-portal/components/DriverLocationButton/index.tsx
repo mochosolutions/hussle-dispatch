@@ -5,10 +5,10 @@ import { checkIn } from 'utils/api/driver-portal/driverPortalApi';
 import { PORTAL_GEOLOCATION_TIMEOUT_MS, PORTAL_SUCCESS_DISMISS_MS } from '../../constants';
 
 interface DriverLocationButtonProps {
-  token: string;
+  loadId: string;
 }
 
-export const DriverLocationButton: React.FC<DriverLocationButtonProps> = ({ token }) => {
+export const DriverLocationButton: React.FC<DriverLocationButtonProps> = ({ loadId }) => {
   const [sharing, setSharing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export const DriverLocationButton: React.FC<DriverLocationButtonProps> = ({ toke
         }
         try {
           await checkIn(
-            token,
+            loadId,
             {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,

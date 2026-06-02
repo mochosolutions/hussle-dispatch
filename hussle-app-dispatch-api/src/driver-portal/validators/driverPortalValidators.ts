@@ -46,7 +46,10 @@ export const presignDocumentSchema = yup.object({
       .string()
       .required()
       .oneOf(['application/pdf', 'image/png', 'image/jpeg', 'image/jpg']),
-    type: yup.string().required().oneOf(['BOL_SIGNED', 'POD']),
+    type: yup
+      .string()
+      .required()
+      .oneOf(['BOL_SIGNED', 'POD', 'LUMPER_RECEIPT', 'SCALE_TICKET', 'FUEL_RECEIPT', 'OTHER']),
   }),
 });
 

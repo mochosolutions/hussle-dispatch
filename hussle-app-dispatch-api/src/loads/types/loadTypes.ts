@@ -631,6 +631,9 @@ export interface TrackingResponse {
   rateConReceivedAt: string | null;
   bolUnsignedAt: string | null;
   bolSignedAt: string | null;
+  // Doc-derived: true when a confirmed BOL_SIGNED document exists, independent
+  // of the bolSignedAt projection column (US-02).
+  hasSignedBol: boolean;
 }
 
 export interface ActivityResponse {

@@ -7,6 +7,7 @@ import { sharedEventBus } from './shared/messaging';
 import { logger } from './shared/utils/logger';
 import { startBackground } from './startBackground';
 import { startWorker } from './worker';
+import { startWsGateway } from './startWsGateway';
 
 const isErrorWithMessage = (error: unknown): error is { message: string } =>
   typeof error === 'object' && error !== null && 'message' in error;
@@ -81,6 +82,9 @@ const start = async (): Promise<void> => {
       break;
     case 'worker':
       await startWorker();
+      break;
+    case 'ws-gateway':
+      await startWsGateway();
       break;
     case 'all':
       await startAll();

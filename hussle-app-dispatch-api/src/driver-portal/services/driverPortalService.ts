@@ -11,16 +11,38 @@ import type {
   DriverCheckCallRecord,
 } from '../repositories/driverPortalCheckCallRepositoryPrisma';
 import type { LoadStatusService } from '../../loads/services/loadStatusService';
-import { NotFoundError, ValidationError } from '@/shared/errors';
+import { ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
 
 export interface DriverPortalService {
-  getLoadSummary(loadId: string): Promise<DriverPortalLoadSummary>;
+  getLoadSummary(loadId: string, requestingDriverId: string): Promise<DriverPortalLoadSummary>;
+  listDriverLoads(
+    requestingDriverId: string,
+    organizationId: string,
+  ): Promise<DriverPortalLoadSummary[]>;
   advanceStatus(
     loadId: string,
     targetStatus: LoadStatus,
+    requestingDriverId: string,
   ): Promise<{ success: boolean; status: string }>;
-  checkIn(loadId: string, input: CreateDriverCheckCallInput): Promise<DriverCheckCallRecord>;
+  checkIn(
+    loadId: string,
+    input: CreateDriverCheckCallInput,
+    requestingDriverId: string,
+  ): Promise<DriverCheckCallRecord>;
 }
+
+/**
+ * Authorizes that the requesting driver session owns the load. Throws
+ * ForbiddenError when the load's assigned driver differs from the session.
+ */
+const assertDriverOwnsLoad = (
+  loadDriverId: string | null,
+  requestingDriverId: string,
+): void => {
+  if (loadDriverId === null || loadDriverId !== requestingDriverId) {
+    throw new ForbiddenError('You are not assigned to this load.');
+  }
+};
 
 interface DriverPortalServiceDeps {
   loadQuery: DriverPortalLoadQueryPort;
@@ -31,22 +53,31 @@ interface DriverPortalServiceDeps {
 }
 
 export const createDriverPortalService = (deps: DriverPortalServiceDeps): DriverPortalService => ({
-  getLoadSummary: async (loadId) => {
+  getLoadSummary: async (loadId, requestingDriverId) => {
     const load = await deps.loadQuery.findLoadForDriverPortal(loadId);
 
     if (load === null) {
       throw new NotFoundError('Load not found.');
     }
+
+    assertDriverOwnsLoad(load.driverId, requestingDriverId);
 
     return load;
   },
 
-  advanceStatus: async (loadId, targetStatus) => {
+  // The query is already scoped to the session's own driverId (and org), so no
+  // per-load ownership assertion is needed — every row already belongs to them.
+  listDriverLoads: async (requestingDriverId, organizationId) =>
+    deps.loadQuery.findLoadsByDriver(requestingDriverId, organizationId),
+
+  advanceStatus: async (loadId, targetStatus, requestingDriverId) => {
     const load = await deps.loadQuery.findLoadForDriverPortal(loadId);
 
     if (load === null) {
       throw new NotFoundError('Load not found.');
     }
+
+    assertDriverOwnsLoad(load.driverId, requestingDriverId);
 
     const result = await deps.loadStatusService.transitionStatus({
       loadId,
@@ -64,12 +95,14 @@ export const createDriverPortalService = (deps: DriverPortalServiceDeps): Driver
     return { success: true, status: targetStatus };
   },
 
-  checkIn: async (loadId, input) => {
+  checkIn: async (loadId, input, requestingDriverId) => {
     const load = await deps.loadQuery.findLoadForDriverPortal(loadId);
 
     if (load === null) {
       throw new NotFoundError('Load not found.');
     }
+
+    assertDriverOwnsLoad(load.driverId, requestingDriverId);
 
     const checkCall = await deps.checkCallRepo.create(loadId, input);
 
@@ -89,6 +122,7 @@ export const createDriverPortalService = (deps: DriverPortalServiceDeps): Driver
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
         occurredAt: checkCall.createdAt.toISOString(),
+        driverId: load.driverId,
       })
       .catch((error: unknown) => {
         deps.logger.error('Failed to publish check call event', {

@@ -26,9 +26,13 @@ const storageProvider = createStorageProvider(
 );
 
 const loadTimestampPort: LoadTimestampPort = {
-  updateTimestamp: async (loadId, field, timestamp) => {
-    await prisma.load.update({
-      where: { id: loadId },
+  // Set-if-null at the data layer via a guarded updateMany — the `field: null`
+  // predicate means a re-delivery affects 0 rows once the timestamp is set,
+  // making the projection idempotent and a null field reconcilable by a later
+  // event (no read-modify-write race).
+  setTimestampIfNull: async (loadId, field, timestamp) => {
+    await prisma.load.updateMany({
+      where: { id: loadId, [field]: null },
       data: { [field]: timestamp },
     });
   },
@@ -42,6 +46,7 @@ const loadContactQuery: LoadContactQueryPort = {
         id: true,
         loadNumber: true,
         customerId: true,
+        driverId: true,
         contact: {
           select: {
             email: true,
@@ -63,6 +68,7 @@ const loadContactQuery: LoadContactQueryPort = {
       contactEmail: load.contact?.email ?? null,
       contactPhone: load.contact?.phone ?? null,
       contactCcEmails: load.contact?.ccEmails ?? [],
+      driverId: load.driverId,
     };
   },
 };

@@ -284,8 +284,11 @@ export interface LoadDetailTransformerExtras {
   // the load detail GET) should pass them in. Callers that don't will see
   // NOT_READY for non-DELIVERED loads and AWAITING_DOCUMENTS for delivered.
   // Accepts the slim shape used by repo.listDocuments (where `type` is widened
-  // to string) as well as full Document rows.
-  documents?: { type: string }[];
+  // to string) as well as full Document rows. `uploadStatus` is optional so the
+  // doc-derived BOL gate (US-02) can restrict to confirmed documents — the same
+  // 'confirmed' filter used by documentQuery.findConfirmedByEntity on the
+  // invoice side; callers that omit it yield hasSignedBol=false (safe default).
+  documents?: { type: string; uploadStatus?: string }[];
 }
 
 export const toLoadDetailResponse = (
@@ -298,6 +301,14 @@ export const toLoadDetailResponse = (
   const persistedShape = pickPersistedShape(financials);
   const documents = extras.documents ?? [];
   const invoiceReadiness = deriveInvoiceReadiness(load, documents);
+  // Doc-derived BOL gate (US-02): a confirmed BOL_SIGNED document is the source
+  // of truth, independent of the bolSignedAt projection column. Restrict to
+  // confirmed docs to match documentQuery.findConfirmedByEntity on the invoice
+  // side. When uploadStatus is not supplied (slim callers), treat as confirmed
+  // so existing detail callers keep prior behaviour.
+  const hasSignedBol = documents.some(
+    (d) => d.type === 'BOL_SIGNED' && (d.uploadStatus === undefined || d.uploadStatus === 'confirmed'),
+  );
 
   return {
     id: load.id,
@@ -416,6 +427,7 @@ export const toLoadDetailResponse = (
       rateConReceivedAt: load.rateConReceivedAt?.toISOString() ?? null,
       bolUnsignedAt: load.bolUnsignedAt?.toISOString() ?? null,
       bolSignedAt: load.bolSignedAt?.toISOString() ?? null,
+      hasSignedBol,
     },
 
     activity: {

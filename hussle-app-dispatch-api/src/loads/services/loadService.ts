@@ -1123,6 +1123,7 @@ export const createLoadService = (deps: LoadServiceDeps): LoadService => {
           latitude: input.latitude ?? null,
           longitude: input.longitude ?? null,
           occurredAt: checkCall.createdAt.toISOString(),
+          driverId: load.driverId ?? null,
         })
         .catch((error: unknown) => {
           deps.logger?.error('Failed to publish check call event', {

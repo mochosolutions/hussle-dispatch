@@ -42,6 +42,8 @@ import {
   rateconImportPageReducer,
   rateconImportEntityReducer,
 } from 'features/ratecon-imports/store/reducers';
+import { driverPortalPageReducer } from 'features/driver-portal/store/reducers/driverPortalPageSlice';
+import { driverPortalReducer } from 'features/driver-portal/store/reducers/driverPortalEntitySlice';
 const pages = combineReducers({
   ui: uiReducer,
   notifications: notificationReducer,
@@ -67,6 +69,7 @@ const pages = combineReducers({
   ifta: iftaPageReducer,
   expenses: expensePageReducer,
   rateconImports: rateconImportPageReducer,
+  driverPortal: driverPortalPageReducer,
 });
 
 const entities = combineReducers({
@@ -86,6 +89,7 @@ const entities = combineReducers({
   orgSettings: settingsEntityReducer,
   teamMembers: teamEntityReducer,
   rateconImports: rateconImportEntityReducer,
+  driverPortalLoads: driverPortalReducer,
 });
 
 const appReducer = combineReducers({

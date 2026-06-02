@@ -25,10 +25,14 @@ interface BackgroundDeps {
 
 interface BackgroundHandles {
   stopAll: () => Promise<void>;
+  // Readiness signal for the worker /health gate. `true` only after every
+  // initialize*Subscriber() awaited resolution — never a hardcoded count.
+  subscribersReady: boolean;
+  subscriberCount: number;
 }
 
-const startSubscribers = async (): Promise<void> => {
-  await Promise.all([
+const startSubscribers = async (): Promise<number> => {
+  const subscriberResults = await Promise.all([
     initializeAuditSubscriber(),
     initializeNotificationSubscriber(),
     initializeLoadsSubscriber(),
@@ -43,6 +47,9 @@ const startSubscribers = async (): Promise<void> => {
 
   startDocuments();
   await startAgreements();
+
+  // Count = the awaited initialize* groups plus documents + agreements.
+  return subscriberResults.length + 2;
 };
 
 const startCrons = (deps: BackgroundDeps): { stopProcessedEventCleanup: () => void; stopInvitationCleanup: () => void; stopSettlements: () => void } => {
@@ -78,11 +85,11 @@ const startCrons = (deps: BackgroundDeps): { stopProcessedEventCleanup: () => vo
  * Must NOT be imported by `src/app.ts`.
  */
 export const startBackground = async (deps: BackgroundDeps): Promise<BackgroundHandles> => {
-  await startSubscribers();
+  const subscriberCount = await startSubscribers();
   const cronHandles = startCrons(deps);
 
   deps.logger.info('Background workers started', {
-    subscribers: 13,
+    subscribers: subscriberCount,
     crons: 4,
   });
 
@@ -93,5 +100,7 @@ export const startBackground = async (deps: BackgroundDeps): Promise<BackgroundH
     cronHandles.stopSettlements();
   };
 
-  return { stopAll };
+  // `subscribersReady` is true here because `await startSubscribers()` has
+  // resolved — the worker /health gate flips to 200 only once this returns.
+  return { stopAll, subscribersReady: true, subscriberCount };
 };

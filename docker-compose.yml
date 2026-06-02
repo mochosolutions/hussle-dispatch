@@ -52,6 +52,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    restart: unless-stopped
 
   # Background worker: subscribers + crons (ROLE=worker). Same image as dispatch-api.
   # Reuses migrate-and-start (idempotent migrate; api migrates first via depends_on).
@@ -93,6 +94,54 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    restart: unless-stopped
+
+  # WebSocket gateway: socket.io + Redis adapter, holds client sockets only
+  # (ROLE=ws-gateway). Same image as dispatch-api; no app routers/crons.
+  ws-gateway:
+    build:
+      context: ./hussle-app-dispatch-api
+      dockerfile: Dockerfile.dev
+    command: sh -c 'sh ./scripts/migrate-and-start.sh --dev'
+    ports:
+      - "3003:3003"
+      - "3004:3004"
+    volumes:
+      - ./hussle-app-dispatch-api:/usr/app
+      - /usr/app/node_modules
+    env_file:
+      - ./hussle-app-dispatch-api/.env
+    environment:
+      - ROLE=ws-gateway
+      - WS_GATEWAY_HEALTH_PORT=3003
+      - WS_GATEWAY_PORT=3004
+      - PYTHON_SERVICE_URL=http://python-service:8000
+      - PYTHON_SERVICE_TOKEN=dev
+      - RATECON_WEBHOOK_SECRET=dev
+      - RATECON_INBOUND_DOMAIN=notify.localhost
+      - RATECON_DEV_MAILPIT_INBOUND=true
+      - MAILPIT_API_URL=http://hussle-app-mailpit:8025
+    depends_on:
+      hussle-app-redis:
+        condition: service_healthy
+      hussle-app-postgres:
+        condition: service_healthy
+      hussle-app-rabbitmq:
+        condition: service_healthy
+      dispatch-api:
+        condition: service_healthy
+    deploy:
+      # Intentionally single-replica for local/dev. The socket.io Redis adapter
+      # is wired and ready for horizontal scale-out; bump this to >=2 (and run
+      # behind a sticky/LB) in staging/prod to exercise cross-replica fan-out.
+      replicas: 1
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
 
   python-service:
     build:

@@ -8,10 +8,12 @@ import {
   type LoadFinancialsSnapshot,
 } from '../../loads/services/derivedFinancials';
 import type { InvoiceRepoPort, InvoiceLoadQueryPort } from '../types/invoiceTypes';
+import type { DocumentQueryPort } from '../types/documentPacketTypes';
 
 interface InvoiceGenerationDeps {
   invoiceRepo: InvoiceRepoPort;
   loadQuery: InvoiceLoadQueryPort;
+  documentQuery: DocumentQueryPort;
   eventBus: EventBus;
   logger: Logger;
 }
@@ -22,7 +24,8 @@ interface InvoiceGenerationDeps {
  * - LEASED_CARRIER carrier → CUSTOMER invoice (your authority; you bill the customer)
  * - EXTERNAL_CARRIER carrier → DISPATCH_FEE invoice (subtotal = dispatchFee)
  * - Idempotency guard: skips if invoice already exists for this load
- * - Checks bolSignedAt: if null, sets missingSignedBol=true
+ * - Derives missingSignedBol from confirmed documents (BOL_SIGNED present?),
+ *   independent of the Load.bolSignedAt projection column
  * - Transitions load to INVOICE_PENDING
  */
 export const generateFromDelivery = async (
@@ -92,8 +95,12 @@ export const generateFromDelivery = async (
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
-  // Check for missing signed BOL
-  const missingSignedBol = load.bolSignedAt === null;
+  // Missing-signed-BOL is derived from confirmed documents (the durable
+  // source of truth), not the Load.bolSignedAt projection — a confirmed
+  // BOL_SIGNED doc with a not-yet-backfilled bolSignedAt must still count.
+  const confirmedDocs = await deps.documentQuery.findConfirmedByEntity('load', loadId);
+  const docTypes = confirmedDocs.map((d) => d.type);
+  const missingSignedBol = !docTypes.includes('BOL_SIGNED');
 
   // Generate invoice number
   const invoiceNumber = await generateSequenceNumber('INVOICE', load.organizationId);

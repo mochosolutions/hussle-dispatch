@@ -91,6 +91,7 @@ export const createInvoiceModule = ({
   const invoiceBuilderService = createInvoiceBuilderService({
     invoiceRepo,
     loadQuery,
+    documentQuery,
     eventBus,
     logger,
   });

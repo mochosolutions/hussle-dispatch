@@ -181,7 +181,7 @@ export const createApp = (deps: CreateAppDeps): express.Application => {
       },
       logger,
     );
-    mountLocalStorageRoutes(app, storageProvider);
+    mountLocalStorageRoutes(app, storageProvider, env.JWT_SECRET);
   }
 
   // Public DocuSeal webhook — mounted outside /api/v1 (HMAC-verified, no auth)

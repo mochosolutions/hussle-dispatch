@@ -11,14 +11,21 @@ import {
   presignDocumentSchema,
   confirmDocumentSchema,
 } from '../validators/driverPortalValidators';
+import {
+  inviteDriverSchema,
+  acceptDriverInviteSchema,
+} from '../validators/driverAuthValidators';
 
 interface DriverPortalRouteControllers {
   getDriverPortalLink: express.RequestHandler<{ loadId: string }>;
+  inviteDriver: express.RequestHandler;
+  acceptDriverInvite: express.RequestHandler;
   portal: DriverPortalControllers;
 }
 
 interface DriverPortalRouteMiddleware {
   authenticateDriverToken: express.RequestHandler;
+  authenticateDriverSession: express.RequestHandler;
 }
 
 export const createDriverPortalRouter = (
@@ -36,10 +43,29 @@ export const createDriverPortalRouter = (
     controllers.getDriverPortalLink,
   );
 
-  // --- Public driver portal endpoints (token auth) ---
+  // Invite a driver (by driverId) to set up a first-class portal account.
+  router.post(
+    '/drivers/:driverId/invite',
+    requireAuth,
+    requireRole([ROLES.ADMIN, ROLES.DISPATCHER]),
+    validateRequest(inviteDriverSchema),
+    controllers.inviteDriver,
+  );
+
+  // --- Public driver invite acceptance (token in URL, creates the session) ---
+  router.post(
+    '/setup/:token',
+    publicRateLimiter,
+    validateRequest(acceptDriverInviteSchema),
+    controllers.acceptDriverInvite,
+  );
+
+  // --- Driver portal endpoints (require a DRIVER session, not a bare token) ---
   const portalRouter = express.Router();
   portalRouter.use(publicRateLimiter);
-  portalRouter.use(middleware.authenticateDriverToken);
+  portalRouter.use(middleware.authenticateDriverSession);
+
+  portalRouter.get('/loads', controllers.portal.listLoads);
 
   portalRouter.get('/load', controllers.portal.getLoadSummary);
 

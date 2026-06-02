@@ -23,6 +23,8 @@ export interface EventMap {
     contactEmail: string | null;
     contactPhone: string | null;
     contactCcEmails: string[];
+    // Assigned driver at emit time; null when unassigned (reassignment-safe).
+    driverId?: string | null;
   };
   'load.delivered': { loadId: string; organizationId: string; status: string };
   'load.canceled': { loadId: string; organizationId: string; status: string };
@@ -45,6 +47,8 @@ export interface EventMap {
     latitude: number | null;
     longitude: number | null;
     occurredAt: string;
+    // Assigned driver at emit time; null when unassigned (reassignment-safe).
+    driverId?: string | null;
   };
   'document.confirmed': {
     documentId: string;
@@ -61,6 +65,16 @@ export interface EventMap {
     contactEmail?: string | null;
     contactPhone?: string | null;
     contactCcEmails?: string[];
+    // Assigned driver of the scoped load at emit time; null when unassigned.
+    driverId?: string | null;
+  };
+  'driver.invited': {
+    driverId: string;
+    organizationId: string;
+    setupUrl: string;
+    firstName: string;
+    email: string | null;
+    phone: string | null;
   };
   'document.archived': {
     documentId: string;

@@ -288,6 +288,7 @@ export interface TrackingResponse {
   rateConReceivedAt: string | null;
   bolUnsignedAt: string | null;
   bolSignedAt: string | null;
+  hasSignedBol: boolean;
 }
 
 export interface ActivityResponse {

@@ -152,6 +152,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
       contactEmail?: string | null;
       contactPhone?: string | null;
       contactCcEmails?: string[];
+      driverId?: string | null;
     } = {};
 
     if (document.entityType === 'load' && deps.loadContactQuery !== undefined) {
@@ -164,6 +165,7 @@ export const createDocumentService = (deps: DocumentServiceDeps): DocumentServic
           contactEmail: load.contactEmail,
           contactPhone: load.contactPhone,
           contactCcEmails: load.contactCcEmails,
+          driverId: load.driverId,
         };
       }
     }

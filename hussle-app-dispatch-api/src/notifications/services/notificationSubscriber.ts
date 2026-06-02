@@ -337,5 +337,35 @@ export const initializeNotificationSubscriber = async (
     },
   );
 
+  // Driver portal setup invite — deliver the setup link (SMS preferred, email
+  // fallback). Best-effort: errors are logged, not rethrown (no retry).
+  await deps.eventBus.subscribe('driver.invited', 'notifications-service', async (data) => {
+    try {
+      const greeting = data.firstName.trim() !== '' ? `Hi ${data.firstName}, ` : '';
+      const message = `${greeting}you've been invited to set up your driver portal account. Get started here: ${data.setupUrl}`;
+
+      if (data.phone !== null && data.phone !== '') {
+        await deps.smsService.sendSms({ to: data.phone, body: message });
+      } else if (data.email !== null && data.email !== '') {
+        await deps.emailService.sendEmail({
+          to: data.email,
+          from: DEFAULT_FROM_EMAIL,
+          subject: 'Set up your driver portal account',
+          html: `<p>${greeting}you've been invited to set up your driver portal account.</p><p><a href="${data.setupUrl}">Set up your account</a></p>`,
+        });
+      }
+
+      deps.logger.info('Driver invite notification sent', {
+        driverId: data.driverId,
+        channel: data.phone !== null && data.phone !== '' ? 'SMS' : 'EMAIL',
+      });
+    } catch (error: unknown) {
+      deps.logger.error('Failed to send driver invite notification', {
+        driverId: data.driverId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   deps.logger.info('Notification subscriber initialized');
 };

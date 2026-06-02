@@ -1,6 +1,27 @@
-import type { Request, Response, Router } from 'express';
+import type { NextFunction, Request, Response, Router } from 'express';
 import { appAuth } from '../middleware/authenticateUser';
+import { verifyStorageSignature } from './localStorageSigning';
 import type { StorageProvider } from './storageProvider';
+
+/**
+ * Allow the request when it carries a valid presigned-URL signature (so
+ * unauthenticated portal clients can upload/download directly, mirroring S3).
+ * Otherwise fall back to requiring an app session — preserving access for
+ * direct, authenticated calls.
+ */
+const storageAuth =
+  (signingSecret: string) => (req: Request, res: Response, next: NextFunction) => {
+    const key = req.params[0];
+    const sig = typeof req.query['sig'] === 'string' ? req.query['sig'] : undefined;
+    const exp = typeof req.query['exp'] === 'string' ? req.query['exp'] : undefined;
+
+    if (key !== undefined && verifyStorageSignature(signingSecret, key, { exp, sig })) {
+      next();
+      return;
+    }
+
+    appAuth(req, res, next);
+  };
 
 /**
  * Mounts local file-serving and upload routes for dev environments.
@@ -18,8 +39,9 @@ import type { StorageProvider } from './storageProvider';
 export const mountLocalStorageRoutes = (
   router: Router,
   storageProvider: StorageProvider,
+  signingSecret: string,
 ): Router => {
-  router.put('/api/v1/storage/*', appAuth, async (req: Request, res: Response) => {
+  router.put('/api/v1/storage/*', storageAuth(signingSecret), async (req: Request, res: Response) => {
     const key = req.params[0];
 
     if (!key) {
@@ -34,7 +56,7 @@ export const mountLocalStorageRoutes = (
     res.status(200).json({ message: 'Upload successful' });
   });
 
-  router.get('/api/v1/storage/*', appAuth, async (req: Request, res: Response) => {
+  router.get('/api/v1/storage/*', storageAuth(signingSecret), async (req: Request, res: Response) => {
     // Express puts the wildcard portion (everything after /api/v1/storage/) in params[0]
     const key = req.params[0];
 

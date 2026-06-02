@@ -31,6 +31,14 @@ export const isAdminSelector = createSelector(
   },
 );
 
+export const isDriverSelector = createSelector(
+  userActiveOrgSelector,
+  (activeOrg) => {
+    const role = activeOrg?.role ?? '';
+    return role === 'driver' || role === 'DRIVER';
+  },
+);
+
 export const formattedCurrentUserSelector = createSelector(
   currentUserSelector,
   userActiveOrgSelector,

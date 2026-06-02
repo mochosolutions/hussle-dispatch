@@ -14,7 +14,8 @@ import {
 import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import { LogoutOutlined } from '@ant-design/icons';
 import { menuItems } from './menuItem';
-import { formattedCurrentUserSelector } from '../../features/auth/store/selectors';
+import { formattedCurrentUserSelector, isDriverSelector } from '../../features/auth/store/selectors';
+import ErrorPage from '../ErrorPage';
 import { logoutRequest } from '../../features/auth/store/authSlice';
 import { fetchCountsRequest } from '../../features/invoices/store/reducers/invoicePageSlice';
 import { selectInvoiceDraftCount } from '../../features/invoices/store/selectors/invoiceSelectors';
@@ -126,11 +127,17 @@ const AppLayout = () => {
   const formattedUser = useSelector(formattedCurrentUserSelector);
   const draftCount = useSelector(selectInvoiceDraftCount);
   const pendingRateconCount = useSelector(selectPendingReviewCount);
+  const isDriver = useSelector(isDriverSelector);
 
   useEffect(() => {
+    // Drivers never see the internal app (gated below), so skip the
+    // dispatcher-only count fetches that would 403 for a DRIVER session.
+    if (isDriver) {
+      return;
+    }
     dispatch(fetchCountsRequest());
     dispatch(fetchImportsRequest({}));
-  }, [dispatch]);
+  }, [dispatch, isDriver]);
 
   const dynamicMenuItems: NavItemType[] = useMemo(() => {
     const navBadges: Record<string, number> = {
@@ -176,6 +183,12 @@ const AppLayout = () => {
       ...match.handle.mainContentProps,
     };
   }, {});
+
+  // Drivers are first-class users but the internal dispatch app is not theirs.
+  // 404 every internal route in one place (their home is the driver portal).
+  if (isDriver) {
+    return <ErrorPage />;
+  }
 
   return (
     <LayoutStateProvider disableMiniDrawer>

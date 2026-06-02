@@ -555,6 +555,39 @@ describe('toLoadDetailResponse', () => {
       expect(result.tracking.bolUnsignedAt).toBeNull();
     });
   });
+
+  describe('tracking.hasSignedBol (US-02)', () => {
+    it('is true from a confirmed BOL_SIGNED doc even when bolSignedAt is null', () => {
+      const result = toLoadDetailResponse(buildLoad({ bolSignedAt: null }), {
+        documents: [{ type: 'BOL_SIGNED', uploadStatus: 'confirmed' }],
+      });
+
+      expect(result.tracking.hasSignedBol).toBe(true);
+      expect(result.tracking.bolSignedAt).toBeNull();
+    });
+
+    it('is false when no BOL_SIGNED doc is present', () => {
+      const result = toLoadDetailResponse(buildLoad({ status: 'DELIVERED' }), {
+        documents: [{ type: 'POD', uploadStatus: 'confirmed' }],
+      });
+
+      expect(result.tracking.hasSignedBol).toBe(false);
+    });
+
+    it('is false when the only BOL_SIGNED doc is not yet confirmed', () => {
+      const result = toLoadDetailResponse(buildLoad({ status: 'DELIVERED' }), {
+        documents: [{ type: 'BOL_SIGNED', uploadStatus: 'pending' }],
+      });
+
+      expect(result.tracking.hasSignedBol).toBe(false);
+    });
+
+    it('is false when no documents are supplied', () => {
+      const result = toLoadDetailResponse(buildLoad({ status: 'DELIVERED' }));
+
+      expect(result.tracking.hasSignedBol).toBe(false);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

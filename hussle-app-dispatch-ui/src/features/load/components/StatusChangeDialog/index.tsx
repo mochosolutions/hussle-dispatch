@@ -181,7 +181,7 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({ load, ta
     prerequisites.some((p) => !p.met && p.field === RATE_CON_FIELD);
 
   const needsOptionalBolUpload =
-    targetStatus === 'DELIVERED' && !load.tracking?.bolSignedAt;
+    targetStatus === 'DELIVERED' && !load.tracking?.hasSignedBol;
 
   // Dynamic prerequisites — check assignment form values and rate con upload status
   const dynamicPrerequisites = useMemo(() => {

@@ -45,7 +45,7 @@ export function* transitionLoadStatusSaga(
     yield put(transitionLoadStatusSuccess({ loadId, newStatus: input.status }));
 
     const isBolMissingAfterDelivery =
-      input.status === 'DELIVERED' && updatedLoad?.tracking?.bolSignedAt == null;
+      input.status === 'DELIVERED' && !updatedLoad?.tracking?.hasSignedBol;
     const successMessage = isBolMissingAfterDelivery
       ? 'Delivered. Invoice will be created once the signed BOL is uploaded.'
       : 'Status updated';

@@ -24,6 +24,7 @@ interface BolWorkflowProps {
   loadStatus: string;
   bolUnsignedAt: string | null;
   bolSignedAt: string | null;
+  hasSignedBol: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,12 +53,13 @@ export const BolWorkflow: React.FC<BolWorkflowProps> = ({
   loadStatus,
   bolUnsignedAt,
   bolSignedAt,
+  hasSignedBol,
 }) => {
   const { openDrawer } = useDrawerActions();
 
   const needsUnsignedBol = loadStatus === 'AT_PICKUP' && !bolUnsignedAt;
   const needsSignedBol =
-    (loadStatus === 'AT_DELIVERY' || loadStatus === 'DELIVERED') && !bolSignedAt;
+    (loadStatus === 'AT_DELIVERY' || loadStatus === 'DELIVERED') && !hasSignedBol;
   const preselectedDocType = needsSignedBol
     ? DocumentType.BOL_SIGNED
     : DocumentType.BOL_UNSIGNED;

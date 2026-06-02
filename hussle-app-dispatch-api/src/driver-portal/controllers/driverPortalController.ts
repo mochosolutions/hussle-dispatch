@@ -1,8 +1,9 @@
 import type { Request, Response } from 'express';
 import type { LoadStatus, DocumentType } from '@prisma/client';
 import type { DocumentService } from '../../documents/types/documentServiceTypes';
+import type { DocumentWithUploader } from '../../documents/types/documentTypes';
 import type { DriverPortalService } from '../services/driverPortalService';
-import type { DriverPortalContext, DriverPortalLoadSummary } from '../types/driverPortalTypes';
+import type { DriverPortalLoadSummary } from '../types/driverPortalTypes';
 import type { DriverCheckCallRecord } from '../repositories/driverPortalCheckCallRepositoryPrisma';
 import { computeCommoditySummary } from '@/shared/utils/computeCommoditySummary';
 import { sendSingle } from '@/shared/responseEnvelope';
@@ -16,9 +17,17 @@ interface DriverPortalControllerDeps {
 // FIXME: Driver-uploadable document types are hard-coded. Move to org-level
 // config (or a shared documents-policy module) so dispatchers can extend the
 // allow-list without a code change. Deferred to post-MVP.
-const DRIVER_DOCUMENT_TYPES: readonly DocumentType[] = ['BOL_SIGNED', 'POD'] as const;
+const DRIVER_DOCUMENT_TYPES: readonly DocumentType[] = [
+  'BOL_SIGNED',
+  'POD',
+  'LUMPER_RECEIPT',
+  'SCALE_TICKET',
+  'FUEL_RECEIPT',
+  'OTHER',
+] as const;
 
 export interface DriverPortalControllers {
+  listLoads: (req: Request, res: Response) => Promise<void>;
   getLoadSummary: (req: Request, res: Response) => Promise<void>;
   advanceStatus: (req: Request, res: Response) => Promise<void>;
   checkIn: (req: Request, res: Response) => Promise<void>;
@@ -27,21 +36,41 @@ export interface DriverPortalControllers {
 }
 
 /**
- * Extracts the driver portal context set by authenticateDriverToken middleware.
- * Throws UnauthorizedError if context is missing (should never happen after middleware).
+ * Driver session context: the authenticated driver and the load they are acting
+ * on. `driverId` is set by authenticateDriverSession (from Driver.userId). The
+ * load is identified explicitly by the request (param → query → body), and the
+ * service authorizes that `load.driverId === driverId`.
  */
-const getDriverPortal = (req: Request): DriverPortalContext => {
-  if (req.driverPortal === undefined) {
-    throw new UnauthorizedError('Driver portal context not set');
+interface DriverRequestContext {
+  driverId: string;
+  loadId: string;
+}
+
+const getDriverRequestContext = (req: Request): DriverRequestContext => {
+  if (req.driverId === undefined) {
+    throw new UnauthorizedError('Driver session not set');
   }
-  return req.driverPortal;
+
+  const fromParam = req.params['loadId'];
+  const fromQuery = typeof req.query['loadId'] === 'string' ? req.query['loadId'] : undefined;
+  const body = req.body as { loadId?: string } | undefined;
+  const loadId = fromParam ?? fromQuery ?? body?.loadId;
+
+  if (loadId === undefined || loadId === '') {
+    throw new ValidationError('loadId is required');
+  }
+
+  return { driverId: req.driverId, loadId };
 };
 
 // ---------------------------------------------------------------------------
 // Transformers
 // ---------------------------------------------------------------------------
 
-const transformLoadSummary = (load: DriverPortalLoadSummary) => {
+const transformLoadSummary = (
+  load: DriverPortalLoadSummary,
+  documents: DocumentWithUploader[],
+) => {
   const cargo = computeCommoditySummary(load.stops);
 
   return {
@@ -51,6 +80,9 @@ const transformLoadSummary = (load: DriverPortalLoadSummary) => {
   equipmentType: load.equipmentType,
   commodity: cargo.commodity ?? null,
   weight: cargo.weight ?? null,
+  pieceCount: cargo.pieceCount ?? null,
+  isHazmat: cargo.isHazmat,
+  isTempControlled: load.stops.some((stop) => stop.isTempControlled === true),
   driverInstructions: load.driverInstructions,
   stops: load.stops.map((stop) => ({
     id: stop.id,
@@ -68,6 +100,14 @@ const transformLoadSummary = (load: DriverPortalLoadSummary) => {
     contactPhone: stop.contactPhone,
     notes: stop.notes,
   })),
+  documents: documents
+    .filter((doc) => doc.uploadStatus === 'confirmed')
+    .map((doc) => ({
+      id: doc.id,
+      type: doc.type,
+      fileName: doc.fileName,
+      uploadedAt: doc.createdAt.toISOString(),
+    })),
   driver: load.driver,
   };
 };
@@ -91,21 +131,49 @@ const transformCheckCall = (checkCall: DriverCheckCallRecord) => ({
 export const createDriverPortalControllers = (
   deps: DriverPortalControllerDeps,
 ): DriverPortalControllers => ({
+  // "My Loads" landing list — all loads assigned to the session's own driver.
+  // No documents are joined here (kept light for the list); the detail page
+  // fetches documents when a card is opened.
+  listLoads: async (req, res) => {
+    if (req.driverId === undefined) {
+      throw new UnauthorizedError('Driver session not set');
+    }
+    if (req.organizationId === undefined) {
+      throw new UnauthorizedError('Organization not resolved for session');
+    }
+
+    const loads = await deps.driverPortalService.listDriverLoads(
+      req.driverId,
+      req.organizationId,
+    );
+
+    sendSingle(res, loads.map((load) => transformLoadSummary(load, [])));
+  },
+
   getLoadSummary: async (req, res) => {
-    const { loadId } = getDriverPortal(req);
-    const load = await deps.driverPortalService.getLoadSummary(loadId);
-    sendSingle(res, transformLoadSummary(load));
+    const { loadId, driverId } = getDriverRequestContext(req);
+    const load = await deps.driverPortalService.getLoadSummary(loadId, driverId);
+    const documents = await deps.documentService.list({
+      organizationId: load.organizationId,
+      entityType: 'load',
+      entityId: loadId,
+    });
+    sendSingle(res, transformLoadSummary(load, documents));
   },
 
   advanceStatus: async (req, res) => {
-    const { loadId } = getDriverPortal(req);
+    const { loadId, driverId } = getDriverRequestContext(req);
     const { status } = req.body as { status: string };
-    const result = await deps.driverPortalService.advanceStatus(loadId, status as LoadStatus);
+    const result = await deps.driverPortalService.advanceStatus(
+      loadId,
+      status as LoadStatus,
+      driverId,
+    );
     sendSingle(res, result);
   },
 
   checkIn: async (req, res) => {
-    const { loadId } = getDriverPortal(req);
+    const { loadId, driverId } = getDriverRequestContext(req);
     const { location, latitude, longitude, status, eta, notes } = req.body as {
       location?: string;
       latitude?: number;
@@ -115,20 +183,24 @@ export const createDriverPortalControllers = (
       notes?: string;
     };
 
-    const checkCall = await deps.driverPortalService.checkIn(loadId, {
-      location,
-      latitude,
-      longitude,
-      status,
-      eta: eta ? new Date(eta) : undefined,
-      notes,
-    });
+    const checkCall = await deps.driverPortalService.checkIn(
+      loadId,
+      {
+        location,
+        latitude,
+        longitude,
+        status,
+        eta: eta ? new Date(eta) : undefined,
+        notes,
+      },
+      driverId,
+    );
 
     sendSingle(res, transformCheckCall(checkCall), 201);
   },
 
   presignDocument: async (req, res) => {
-    const { loadId } = getDriverPortal(req);
+    const { loadId, driverId } = getDriverRequestContext(req);
     const { fileName, mimeType, type } = req.body as {
       fileName: string;
       mimeType: string;
@@ -143,7 +215,7 @@ export const createDriverPortalControllers = (
       );
     }
 
-    const load = await deps.driverPortalService.getLoadSummary(loadId);
+    const load = await deps.driverPortalService.getLoadSummary(loadId, driverId);
 
     const result = await deps.documentService.presign({
       organizationId: load.organizationId,
@@ -158,14 +230,14 @@ export const createDriverPortalControllers = (
   },
 
   confirmDocument: async (req, res) => {
-    const { loadId } = getDriverPortal(req);
+    const { loadId, driverId } = getDriverRequestContext(req);
     const documentId = req.params['id'];
 
     if (documentId === undefined) {
       throw new ValidationError('Document ID is required');
     }
 
-    const load = await deps.driverPortalService.getLoadSummary(loadId);
+    const load = await deps.driverPortalService.getLoadSummary(loadId, driverId);
 
     const document = await deps.documentService.confirm({
       documentId,

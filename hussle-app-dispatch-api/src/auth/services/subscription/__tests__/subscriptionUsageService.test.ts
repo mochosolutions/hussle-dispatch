@@ -43,6 +43,8 @@ describe('subscriptionUsageService', () => {
         organizationId: 'org-1',
         deleted: false,
         status: 'active',
+        // DRIVER memberships are first-class portal users, not billable seats.
+        role: { not: 'driver' },
       },
     });
 

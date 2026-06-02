@@ -96,11 +96,11 @@ const createMockDeps = () => {
 describe('notificationSubscriber', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('subscribes to load.status.changed, load.checkcall.logged, invitation.created, and document.confirmed', async () => {
+  it('subscribes to load.status.changed, load.checkcall.logged, invitation.created, document.confirmed, and driver.invited', async () => {
     const { deps } = createMockDeps();
     await initializeNotificationSubscriber(deps);
 
-    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(4);
+    expect(deps.eventBus.subscribe).toHaveBeenCalledTimes(5);
     expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
       'load.status.changed',
       'notifications-service',
@@ -121,6 +121,58 @@ describe('notificationSubscriber', () => {
       'notifications-service',
       expect.any(Function),
     );
+    expect(deps.eventBus.subscribe).toHaveBeenCalledWith(
+      'driver.invited',
+      'notifications-service',
+      expect.any(Function),
+    );
+  });
+
+  it('sends the driver setup link via SMS when the driver has a phone', async () => {
+    const { deps, invokeHandler } = createMockDeps();
+    await initializeNotificationSubscriber(deps);
+
+    await invokeHandler('driver.invited', {
+      driverId: 'drv-1',
+      organizationId: 'org-1',
+      setupUrl: 'http://localhost:5173/driver-portal/setup/tok-1',
+      firstName: 'Sam',
+      email: 'sam@example.com',
+      phone: '+15551230000',
+    });
+
+    expect(deps.smsService.sendSms).toHaveBeenCalledTimes(1);
+    expect(deps.smsService.sendSms).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: '+15551230000',
+        body: expect.stringContaining('http://localhost:5173/driver-portal/setup/tok-1'),
+      }),
+    );
+    expect(deps.emailService.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('falls back to email when the driver has no phone', async () => {
+    const { deps, invokeHandler } = createMockDeps();
+    await initializeNotificationSubscriber(deps);
+
+    await invokeHandler('driver.invited', {
+      driverId: 'drv-2',
+      organizationId: 'org-1',
+      setupUrl: 'http://localhost:5173/driver-portal/setup/tok-2',
+      firstName: 'Lee',
+      email: 'lee@example.com',
+      phone: null,
+    });
+
+    expect(deps.emailService.sendEmail).toHaveBeenCalledTimes(1);
+    expect(deps.emailService.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'lee@example.com',
+        subject: 'Set up your driver portal account',
+        html: expect.stringContaining('http://localhost:5173/driver-portal/setup/tok-2'),
+      }),
+    );
+    expect(deps.smsService.sendSms).not.toHaveBeenCalled();
   });
 
   it('skips notification when customerId is null', async () => {

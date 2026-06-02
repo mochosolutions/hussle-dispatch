@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from 'path';
 import type { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import type { Logger } from '../utils/logger';
+import { buildSignedStorageQuery } from './localStorageSigning';
 import { StorageDeleteError, StorageFileNotFoundError, StorageWriteError } from './storageErrors';
 import type {
   ContentDisposition,
@@ -16,6 +17,7 @@ import type {
 interface LocalStorageProviderConfig {
   basePath: string;
   baseUrl: string;
+  signingSecret: string;
   logger: Logger;
 }
 
@@ -37,7 +39,7 @@ const readMetadata = async (filePath: string): Promise<string> => {
 export const createLocalStorageProvider = (
   config: LocalStorageProviderConfig,
 ): StorageProvider => {
-  const { basePath, baseUrl, logger } = config;
+  const { basePath, baseUrl, signingSecret, logger } = config;
   const resolvedBase = resolve(basePath);
 
   const getFilePath = (key: string): string => join(resolvedBase, key);
@@ -111,27 +113,31 @@ export const createLocalStorageProvider = (
   const getPresignedPutUrl = async (
     key: string,
     _contentType: string,
-    _expiresIn?: number,
+    expiresIn?: number,
   ): Promise<string> => {
-    // In local dev, presigned URLs point to the local HTTP endpoint
-    return `${baseUrl}/${key}`;
+    // In local dev, presigned URLs point to the local HTTP endpoint. The
+    // signature makes the URL self-authorizing so unauthenticated portal
+    // clients can upload, mirroring S3 presigned-URL behaviour.
+    const { exp, sig } = buildSignedStorageQuery(signingSecret, key, expiresIn);
+    const params = new URLSearchParams({ exp: String(exp), sig });
+    return `${baseUrl}/${key}?${params.toString()}`;
   };
 
   const getPresignedGetUrl = async (
     key: string,
-    _expiresIn?: number,
+    expiresIn?: number,
     displayName?: string,
     disposition: ContentDisposition = 'attachment',
   ): Promise<string> => {
     const base = `${baseUrl}/${key}`;
-    const params = new URLSearchParams();
+    const { exp, sig } = buildSignedStorageQuery(signingSecret, key, expiresIn);
+    const params = new URLSearchParams({ exp: String(exp), sig });
     if (disposition === 'inline') {
       params.set('disposition', 'inline');
     } else if (displayName !== undefined) {
       params.set('filename', displayName);
     }
-    const query = params.toString();
-    return query.length > 0 ? `${base}?${query}` : base;
+    return `${base}?${params.toString()}`;
   };
 
   const deleteFile = async (key: string): Promise<void> => {

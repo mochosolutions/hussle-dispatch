@@ -23,6 +23,7 @@
 import { BadRequestError } from '@mocho/common';
 import type { PrismaClient, Membership as PrismaMembership } from '@prisma/client';
 import { logger } from '@/shared/utils/logger';
+import { ROLES } from '@/config/roles';
 import type { PrismaTransaction } from '@/config/database';
 // TODO: Refactor to use tenantRepositoryFactory or remove baseRepository dependency
 import { repositoryFactoryPrisma } from '@/shared/utils/repositoryFactoryPrisma';
@@ -498,6 +499,8 @@ export const membershipRepositoryPrisma = (
             organizationId,
             deleted: false,
             status: { not: 'deleted' },
+            // DRIVER memberships are first-class portal users, not billable seats.
+            role: { not: ROLES.DRIVER },
           },
         });
         return count;

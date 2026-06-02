@@ -259,6 +259,7 @@ export interface LoadContactQueryPort {
     contactEmail: string | null;
     contactPhone: string | null;
     contactCcEmails: string[];
+    driverId: string | null;
   } | null>;
 }
 
